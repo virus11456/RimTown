@@ -693,38 +693,34 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .ec-local .ec-line { font-size: 0.76rem; line-height: 1.6; color: var(--text-secondary); }
 .rimtown-container .ec-local .ec-muted { color: var(--text-muted); }
 
-/* ---------- v6.78.0 今晚八點檔：一天一集的旁白卡 ---------- */
-.ep-card { margin: 4px 0 12px; padding: 14px 14px 12px; border-radius: 14px; background: linear-gradient(160deg, var(--bg-card), var(--bg-secondary)); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.18); }
-.ep-card.live { border-color: color-mix(in srgb, var(--accent) 45%, var(--border)); }
-.ep-head { display: flex; align-items: center; gap: 10px; }
-.ep-tv { font-size: 1.6rem; line-height: 1; }
-.ep-headtxt { flex: 1; min-width: 0; }
-.ep-show { font-weight: 800; font-size: 0.92rem; color: var(--accent-light); letter-spacing: 0.02em; }
-.ep-date { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
-.ep-live { color: var(--negative); font-weight: 700; }
-.ep-live::before { content: '●'; margin-right: 3px; animation: ep-blink 1.6s ease-in-out infinite; }
-@keyframes ep-blink { 50% { opacity: 0.25; } }
-@media (prefers-reduced-motion: reduce) { .ep-live::before { animation: none; } }
-.ep-ai { flex: none; font-size: 0.66rem; padding: 2px 8px; border-radius: 999px; background: rgba(140,120,255,0.22); color: #d6ccff; }
-.ep-title { margin: 10px 0 4px; font-size: 1.05rem; font-weight: 800; color: var(--text-primary); line-height: 1.45; }
-.ep-weather { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 4px; }
-.ep-body { margin-top: 6px; }
-.ep-p { margin: 0 0 9px; font-size: 0.84rem; line-height: 1.75; color: var(--text-primary); }
-.ep-p.ep-muted { color: var(--text-muted); }
-.ep-tag { display: inline-block; margin-right: 6px; padding: 0 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 700; line-height: 1.6; vertical-align: 1px; background: rgba(242,140,74,0.16); color: var(--accent-light); }
-.ep-next { margin-top: 4px; padding: 9px 11px; border-radius: 10px; background: rgba(127,179,245,0.12); border-left: 3px solid var(--info); font-size: 0.8rem; line-height: 1.7; color: var(--text-primary); }
-.ep-next b { display: block; color: var(--info); font-size: 0.74rem; margin-bottom: 2px; }
-.ep-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-.ep-chip { font-size: 0.68rem; padding: 2px 8px; border-radius: 999px; background: rgba(255,255,255,0.06); color: var(--text-secondary); }
-.ep-foot { margin-top: 8px; font-size: 0.68rem; color: var(--text-muted); }
-.ep-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
-.ep-btn { min-height: 36px; padding: 6px 14px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-secondary); color: var(--text-primary); font-size: 0.78rem; cursor: pointer; }
-.ep-btn:hover:not(:disabled) { border-color: var(--accent); }
-.ep-btn:disabled { opacity: 0.4; cursor: default; }
+/* ---------- v6.78.1 每日報紙（日報 › 日誌最上面） ---------- */
+.np-paper { margin: 4px 0 12px; padding: 14px 14px 12px; border-radius: 10px; background: #f3ead6; color: #2a2419; box-shadow: 0 6px 18px rgba(0,0,0,0.28); font-family: 'Noto Serif TC', 'Songti TC', 'PMingLiU', Georgia, 'Noto Sans TC', serif; }
+.np-mast { text-align: center; border-bottom: 3px double #2a2419; padding-bottom: 8px; margin-bottom: 10px; }
+.np-name { font-size: 1.45rem; font-weight: 900; letter-spacing: 0.12em; line-height: 1.2; }
+.np-meta { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 12px; margin-top: 6px; padding-top: 5px; border-top: 1px solid #2a2419; font-size: 0.7rem; color: #5b513f; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+.np-live { color: #b23a26; font-weight: 700; }
+.np-weather { margin-top: 4px; font-size: 0.72rem; color: #5b513f; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+.np-headline { margin: 2px 0 8px; font-size: 1.12rem; font-weight: 900; line-height: 1.45; color: #1d1810; }
+.np-quote { margin: 0 0 10px; padding: 6px 10px; border-left: 3px solid #b23a26; background: rgba(178,58,38,0.07); font-size: 0.82rem; line-height: 1.6; font-style: normal; }
+.np-quote cite { display: block; margin-top: 2px; font-size: 0.7rem; color: #5b513f; font-style: normal; }
+.np-sec { margin: 0 0 9px; padding-top: 7px; border-top: 1px solid rgba(42,36,25,0.35); break-inside: avoid; }
+.np-sec h4 { margin: 0 0 4px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.06em; color: #6b2a1e; }
+.np-sec ul { margin: 0; padding: 0; list-style: none; }
+.np-sec li { position: relative; padding-left: 12px; margin: 0 0 4px; font-size: 0.8rem; line-height: 1.6; font-family: 'Noto Sans TC', system-ui, sans-serif; color: #2a2419; }
+.np-sec li::before { content: ''; position: absolute; left: 2px; top: 0.62em; width: 5px; height: 5px; background: #6b2a1e; }
+.np-next { background: rgba(42,36,25,0.06); border-top: 1px dashed rgba(42,36,25,0.5); padding: 7px 8px 2px; border-radius: 0 0 6px 6px; }
+.np-empty { margin: 6px 0; font-size: 0.82rem; color: #5b513f; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+.np-stats { margin-top: 6px; padding-top: 6px; border-top: 1px solid rgba(42,36,25,0.35); font-size: 0.68rem; color: #5b513f; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+.np-nav { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+#rimtown-app .np-paper .np-btn, .np-paper .np-btn { min-height: 36px; padding: 6px 14px; border-radius: 8px; border: 1px solid #2a2419; background: transparent; color: #2a2419; font-size: 0.78rem; cursor: pointer; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+.np-paper .np-btn:hover:not(:disabled) { background: rgba(42,36,25,0.08); }
+.np-paper .np-btn:focus-visible { outline: 2px solid #b23a26; outline-offset: 2px; }
+.np-paper .np-btn:disabled { opacity: 0.35; cursor: default; }
+@container (min-width: 560px) { .np-body { columns: 2; column-gap: 18px; } .np-headline, .np-quote { column-span: all; } }
 .log-fold { margin: 6px 0; border: 1px solid var(--border); border-radius: 10px; background: rgba(255,255,255,0.02); }
 .log-fold > summary { cursor: pointer; padding: 9px 12px; font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); list-style: revert; }
 .log-fold[open] > summary { border-bottom: 1px solid var(--border); }
-.rimtown-container.observer.theme-day .ep-card { background: linear-gradient(160deg, #fffaf2, #f6eedf); }
-.rimtown-container.observer.theme-day .ep-show { color: #b35a1f; }
-.rimtown-container.observer.theme-day .ep-tag { color: #9a4a16; }
-.rimtown-container.observer.theme-day .ep-ai { color: #5b4bb3; }
+
+/* v6.78.1 鎮況卡：現任首長名字可點 */
+.pp-mayor-name { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-light); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.pp-mayor-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }

@@ -4,9 +4,9 @@
 
 const CROPS = {
     wheat:        { name:t('小麥'),     icon:'🌾', seasons:['春季','秋季'], growDays:8,  yield:15, sellPrice:2,  category:'grain',     reqLevel:1 },
-    potato:       { name:t('馬鈴薯'),   icon:'🥔', seasons:['春季','秋季'], growDays:7,  yield:20, sellPrice:1,  category:'vegetable',  reqLevel:1 },
+    potato:       { name:t('馬鈴薯'),   icon:'🥔', seasons:['春季','秋季','冬季'], growDays:7,  yield:20, sellPrice:1,  category:'vegetable',  reqLevel:1 }, // v6.79.0 冬天也能種(以前一級農場冬天沒作物可種)
     rice:         { name:t('稻米'),     icon:'🌾', seasons:['夏季'],       growDays:12, yield:20, sellPrice:3,  category:'grain',     reqLevel:2 },
-    corn:         { name:t('玉米'),     icon:'🌽', seasons:['夏季','秋季'], growDays:10, yield:18, sellPrice:2,  category:'grain',     reqLevel:2 },
+    corn:         { name:t('玉米'),     icon:'🌽', seasons:['夏季','秋季'], growDays:10, yield:18, sellPrice:2,  category:'grain',     reqLevel:1 }, // v6.79.0 一級就能種(以前一級農場夏天沒作物可種)
     cotton:       { name:t('棉花'),     icon:'🌸', seasons:['夏季','秋季'], growDays:10, yield:10, sellPrice:4,  category:'fiber',     reqLevel:2 },
     flowers:      { name:t('花卉'),     icon:'🌺', seasons:['春季','夏季'], growDays:5,  yield:12, sellPrice:3,  category:'flower',    reqLevel:2 },
     herbs:        { name:t('草藥'),     icon:'🌿', seasons:['春季','夏季'], growDays:6,  yield:8,  sellPrice:5,  category:'herb',      reqLevel:3 },

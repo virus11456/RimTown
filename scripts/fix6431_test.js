@@ -24,7 +24,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(!r.long.decide && r.long.chat, '60 秒限流最後 30 秒:玩家聊天可插隊、完整智能體決策不行', r.long);
       ok(r.free, '冷卻結束後放行', r);
       r = await page.evaluate(() => { const w = window.rimtownApp.world; const rs = Math.random; Math.random = () => 0.5;
-        const food = () => w.stockpile.get('food'); const run = () => { const f0 = food(); processDailyProduction(w); return food() - f0; };
+        const food = () => w.stockpile.get('food'); const run = () => { w.stockpile.resources.food = 50; w.stockpile.resources.meals = 500; const f0 = food(); processDailyProduction(w); return food() - f0; }; // v6.79.0 起產量看需求，兩次都從同樣的存量開始
         w.buildings.recomputeEffects(w); const before = { eff: w.buildings.getEffect('farm_bonus', 0), gain: run() };
         w.research.projects.agriculture.status = 'complete'; w.buildings.recomputeEffects(w);
         const after = { eff: w.buildings.getEffect('farm_bonus', 0), gain: run() };

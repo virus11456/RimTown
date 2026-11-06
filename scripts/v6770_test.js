@@ -74,7 +74,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 8) 升格要建材:達標三天但缺料就等;補料後升格並扣料
       const T = TIERS.S(w); T.lv = 0; T.up = 0; const _met = TIERS.met; TIERS.met = () => 1;
       w.stockpile.resources.wood = 0; w.stockpile.resources.stone = 0;
-      try { for (let i = 0; i < 4; i++) TIERS.daily(w); out.tierWait = { lv: T.lv, up: T.up, prog: !!TIERS.progress(w)?.mat }; w.stockpile.resources.wood = 100; w.stockpile.resources.stone = 100; TIERS.daily(w); out.tierUp = { lv: T.lv, wood: w.stockpile.get('wood'), stone: w.stockpile.get('stone') }; } catch (e) { out.tierErr = e.message; } finally { TIERS.met = _met; }
+      try { for (let i = 0; i < 4; i++) TIERS.daily(w); out.tierWait = { lv: T.lv, up: T.up, prog: !!TIERS.progress(w)?.mat }; w.stockpile.resources.wood = 100; w.stockpile.resources.stone = 100; w.stockpile.resources.furniture = 10; ['plank', 'hardwood', 'brick', 'marble', 'luxury_furniture'].forEach(k => { w.stockpile.resources[k] = 0; }); TIERS.daily(w); out.tierUp = { lv: T.lv, wood: w.stockpile.get('wood'), stone: w.stockpile.get('stone'), furniture: w.stockpile.get('furniture') }; } catch (e) { out.tierErr = e.message; } finally { TIERS.met = _met; }
       // 9) 生成城鎮:靠海的外銷鹽、內陸的進口鹽;名字不受影響(同種子兩次一樣)
       if (typeof TownGen !== 'undefined') { let harborSalt = true, inlandSalt = true, stable = true; for (let s = 1; s < 60; s++) { const c = TownGen.card(s * 7919); const c2 = TownGen.card(s * 7919); if (c.name !== c2.name) stable = false; if (c.base === 'harbor' && !c.exports.includes('salt')) harborSalt = false; if (c.base !== 'harbor' && !c.exports.includes('salt') && !c.imports.includes('salt')) inlandSalt = false; } out.gen = { harborSalt, inlandSalt, stable }; }
       // 10) 主題貿易:海港外銷鹽,其他鎮進口鹽
@@ -98,7 +98,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.floor.wood === 40 && r.floor.metal === 20, '原料保底:本地產的 40、得靠貿易的 20', r.floor);
     ok(r.paperShort && r.research.pShort < r.research.pOk, '缺紙時研究變慢', { paperShort: r.paperShort, ...r.research });
     ok(r.houseNoMat && r.houseMat?.changed && r.houseMat?.woodUsed, '翻修要用木材石材:沒料不翻修,有料才翻修並扣料', { no: r.houseNoMat, ...r.houseMat });
-    ok(!r.tierErr && r.tierWait.lv === 0 && r.tierWait.prog && r.tierUp.lv === 1 && r.tierUp.wood === 40 && r.tierUp.stone === 40, '升格要擴建鎮公所:缺料先等,補料後升格並扣 60 木 60 石', { err: r.tierErr, ...r.tierWait, ...r.tierUp });
+    ok(!r.tierErr && r.tierWait.lv === 0 && r.tierWait.prog && r.tierUp.lv === 1 && r.tierUp.wood === 40 && r.tierUp.stone === 40 && r.tierUp.furniture === 4, '升格要擴建鎮公所:缺料先等,補料後升格並扣 60 木 60 石 6 家具(v6.79.0)', { err: r.tierErr, ...r.tierWait, ...r.tierUp });
     ok(r.gen && r.gen.harborSalt && r.gen.inlandSalt && r.gen.stable, '生成城鎮:靠海的外銷鹽、內陸的進口鹽、同種子結果不變', r.gen);
     ok(r.trade.harbor === 'salt' && r.trade.inland, '海港商隊優先賣鹽,其他鎮都要進口鹽', r.trade);
     ok(/本鎮擅長|good at/.test(r.harborBrief) && /鹽|salt/i.test(r.harborBrief), 'AI 鎮況知道本鎮擅長什麼', r.harborBrief);

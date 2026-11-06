@@ -223,8 +223,8 @@ class ProcessingSystem {
                 world.logMessageT('factory', '{pick}主動到{def}上工了。', { pick: pick.name, def: def.name });
                 pick.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', `${t('我開始在')}${def.name}${t('幫忙了，多一份收入也多認識些人。')}`, 4, []);
             }
-            // 沒選配方就自動開第一個(玩家改過就尊重玩家的選擇)
-            if (!factory.recipe && def.recipes?.length) factory.recipe = def.recipes[0].id;
+            // v6.79.0 每天依鎮上最缺什麼換配方(以前永遠只做第一個);什麼都不缺就先休息,材料留著
+            if (def.recipes?.length) factory.recipe = (typeof FLOW !== 'undefined') ? FLOW.pickRecipe(world, def, factory) : (factory.recipe || def.recipes[0].id);
         }
     }
 
@@ -308,7 +308,7 @@ class ProcessingSystem {
         this._checkOrderExpiry(world);
 
         // Auto-sell at marketplace (if built)
-        const hasMarket = world.buildings.completed.some(b => b.name === t('市集'));
+        const hasMarket = world.buildings.completed.some(b => b.buildingKey === 'marketplace' || b.name === t('市集')); // v6.79.0 市集升級改名後也算
         if (hasMarket) {
             for (const [key, factory] of Object.entries(this.builtFactories)) {
                 if (factory.status !== 'active') continue;

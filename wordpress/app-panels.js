@@ -938,6 +938,17 @@ Object.assign(RimTownApp.prototype, {
                 const bar = (v, m) => `<span class="pp-tier-req${v >= m ? ' ok' : ''}">${v}/${m}</span>`;
                 T += `<div class="pp-issues pp-tier"><h4 class="pp-h">${I.icon} ${esc(TIERS.name(this.world))} <span class="pp-tier-steps">${L.map((x, i) => `<i class="${i <= TIERS.level(this.world) ? 'on' : ''}" title="${esc(t(x.zh))}">${x.icon}</i>`).join('')}</span></h4>`;
                 T += `<div class="pp-tier-line">${t('首長')}${t('：')}${esc(TIERS.leaderTitle(this.world))} · ${t('議會')}${t('：')}${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}</div>`;
+                { // v6.78.1 現任首長是誰(人不在鎮上時寫出代理人);點名字開村民卡
+                    const E = this.world.election, title = esc(TIERS.leaderTitle(this.world));
+                    const holder = E?._officeHolder?.(this.world), acting = E?.acting && this.world.agents[E.acting.agentId], cur = E?.currentMayor?.(this.world);
+                    const who = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
+                    let line;
+                    if (holder && cur === holder) line = who(holder);
+                    else if (holder && acting && cur === acting) line = `${who(holder)}${t('（')}${E.acting.reason === 'explore' ? t('出去探險') : t('出遠門')}${t('，')}${who(acting)}${t('代理')}${t('）')}`;
+                    else if (!holder && acting && cur === acting) line = `${t('從缺')}${t('（')}${who(acting)}${t('代理')}${t('）')}`;
+                    else line = t('從缺');
+                    T += `<div class="pp-tier-line">👤 ${t('現任{title}').split('{title}').join(title)}${t('：')}${line}</div>`;
+                }
                 if (pg) T += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
                 if (pg && pg.mat) { const lk = pg.matLack || {}; T += `<div class="pp-tier-line">🏗️ ${t('擴建鎮公所要用')}${t('：')}${Object.entries(pg.mat).map(([r, n]) => `<span class="pp-tier-req${lk[r] ? '' : ' ok'}">${esc(this._resName ? this._resName(r) : r)} ${n}</span>`).join(' ')}${Object.keys(lk).length ? '' : ` · ${t('建材已備齊')}`}</div>`; } // v6.77.0
                 else T += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
@@ -1256,75 +1267,23 @@ Object.assign(RimTownApp.prototype, {
         // --- AI Settings Section ---
         const aiConnected = !!(this.llmClient && this.world?.conversationEngine?.llm);
         const isServerAI = this.llmClient?.provider === 'server';
-        const byokActive = this._byokGet?.() || null; // v6.36.0 玩家自備 AI
         const aiLabel = isServerAI ? t('AI:小鎮內建') : (aiConnected ? t('AI:自備') + ' ' + this._byokLabel(this.llmClient.provider) : t('AI:未連接'));
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
-        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}${byokActive && aiConnected ? ' byok' : ''}">${aiLabel}</span></div>`;
+        html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}">${aiLabel}</span></div>`;
         // v5.65.0 AI 全面內建:金鑰由伺服器統一保管;v6.36.0 玩家可改填自己的金鑰(只存本機)
         // v6.76.4 改成條列卡片;額度依伺服器實際回報(登入玩家預設沒有每日上限,不再寫死 300 則)
         {
             const q = this.llmClient?._quota; const today = new Date().toISOString().slice(0, 10);
             const quotaLine = (q && q.limit && q.day === today) ? t('今天的 AI 額度：剩 {r}／{l} 則').replace('{r}', Math.max(0, q.remaining)).replace('{l}', q.limit) : t('登入玩家沒有每日次數上限');
             const li = (x) => `<li>${x}</li>`;
-            if (byokActive && aiConnected) html += `<div class="set-card"><div class="set-card-title">🔑 ${t('正在用你自己的金鑰')}</div><ul class="set-list">${li(t('村民對話、行程、反思直接從這個瀏覽器連到該服務，小鎮伺服器不經手'))}${li(t('費用與額度照你自己的帳戶，不受小鎮的每日額度限制'))}${this.llmClient.model ? li(t('模型：') + this._escapeHtml(this.llmClient.model)) : ''}</ul></div>`;
-            else if (isServerAI) html += `<div class="set-card"><div class="set-card-title">🏘️ ${t('內建小鎮 AI 已啟用，免填金鑰')}</div><ul class="set-list">${li(quotaLine)}${li(t('金鑰由小鎮伺服器統一保管，你不會看到任何金鑰欄位'))}${li(t('對話、行程、反思與完整智能體決策先走 Claude；故障時依序改用 GPT、Groq'))}</ul></div>`;
+            if (isServerAI) html += `<div class="set-card"><div class="set-card-title">🏘️ ${t('內建小鎮 AI 已啟用，免填金鑰')}</div><ul class="set-list">${li(quotaLine)}${li(t('金鑰由小鎮伺服器統一保管，你不會看到任何金鑰欄位'))}${li(t('對話、行程、反思與完整智能體決策先走 Claude；故障時依序改用 GPT、Groq'))}</ul></div>`;
             else html += `<div class="set-card"><div class="set-card-title">💤 ${t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div></div>`;
-        }
-        // v6.36.0 自備 AI(進階):Claude / OpenAI / Gemini / 自訂 OpenAI 相容端點;表單值在重繪時保留
-        {
-            const g = (id) => document.getElementById(id);
-            const cur = byokActive || {};
-            const prov = g('settings-byok-provider') ? g('settings-byok-provider').value : (cur.provider || 'server');
-            const key = g('settings-byok-key') ? g('settings-byok-key').value : (cur.key || '');
-            const model = g('settings-byok-model') ? g('settings-byok-model').value : (cur.model || '');
-            const url = g('settings-byok-url') ? g('settings-byok-url').value : (cur.baseUrl || '');
-            const sel = (v) => prov === v ? ' selected' : '';
-            const inp = 'width:100%;box-sizing:border-box;padding:7px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem;font-family:inherit';
-            const defModel = (typeof LLMClient !== 'undefined' && LLMClient.defaultModel) ? LLMClient.defaultModel(prov) : '';
-            html += `<details class="byok-box"${prov !== 'server' ? ' open' : ''} style="margin-bottom:8px;border:1px dashed var(--border);border-radius:6px;padding:6px 8px">
-            <summary style="cursor:pointer;font-size:0.8rem;color:var(--text-secondary)">🔑 ${t('自備 AI（進階）')}${byokActive ? ' <span style="color:var(--positive)">●</span>' : ''}</summary>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin:6px 0 8px">${t('把你自己的 Claude、OpenAI 或 Gemini 金鑰填在這裡，村民就改用你的金鑰與額度。金鑰只存在這台裝置的瀏覽器，不會上傳、不進存檔、也不會送到小鎮伺服器；清除瀏覽器資料或換裝置要重填。')}</div>
-            <div class="setting-group" style="margin-bottom:6px">
-                <label for="settings-byok-provider" style="font-size:0.78rem;color:var(--text-secondary)">${t('AI 來源')}</label>
-                <select id="settings-byok-provider" style="${inp}" onchange="(function(s){var c=s.value!=='custom';var u=document.getElementById('settings-byok-url-row');if(u)u.style.display=c?'none':'';var m=document.getElementById('settings-byok-model');if(m&&typeof LLMClient!=='undefined'&&LLMClient.defaultModel)m.placeholder=LLMClient.defaultModel(s.value)||'';var k=document.getElementById('settings-byok-fields');if(k)k.style.display=s.value==='server'?'none':'';})(this)">
-                    <option value="server"${sel('server')}>${t('小鎮內建（預設，免金鑰）')}</option>
-                    <option value="anthropic"${sel('anthropic')}>Claude (Anthropic)</option>
-                    <option value="openai"${sel('openai')}>GPT (OpenAI)</option>
-                    <option value="gemini"${sel('gemini')}>Gemini (Google)</option>
-                    <option value="custom"${sel('custom')}>${t('自訂 OpenAI 相容端點')}</option>
-                </select>
-            </div>
-            <div id="settings-byok-fields" style="${prov === 'server' ? 'display:none' : ''}">
-                <div class="setting-group" style="margin-bottom:6px">
-                    <label for="settings-byok-key" style="font-size:0.78rem;color:var(--text-secondary)">${t('API 金鑰')}</label>
-                    <div style="display:flex;gap:6px;align-items:center">
-                        <input type="password" id="settings-byok-key" value="${this._escapeHtml(key)}" placeholder="sk-…" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp};flex:1">
-                        <button type="button" class="trade-btn" style="padding:6px 10px;flex:none" aria-label="${t('顯示或隱藏金鑰')}" onclick="var k=document.getElementById('settings-byok-key');if(k){k.type=k.type==='password'?'text':'password';this.textContent=k.type==='password'?'👁':'🙈';}">👁</button>
-                    </div>
-                </div>
-                <div class="setting-group" style="margin-bottom:6px">
-                    <label for="settings-byok-model" style="font-size:0.78rem;color:var(--text-secondary)">${t('模型（留空用預設）')}</label>
-                    <input type="text" id="settings-byok-model" value="${this._escapeHtml(model)}" placeholder="${this._escapeHtml(defModel)}" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
-                </div>
-                <div class="setting-group" id="settings-byok-url-row" style="margin-bottom:6px;${prov === 'custom' ? '' : 'display:none'}">
-                    <label for="settings-byok-url" style="font-size:0.78rem;color:var(--text-secondary)">${t('基底網址（例如 https://主機/v1）')}</label>
-                    <input type="url" id="settings-byok-url" value="${this._escapeHtml(url)}" placeholder="https://api.example.com/v1" autocomplete="off" autocapitalize="off" spellcheck="false" style="${inp}">
-                </div>
-                <div style="font-size:0.68rem;color:var(--text-muted);margin-bottom:6px">${t('預設模型：Claude 用 claude-haiku-5-5、GPT 用 gpt-4o-mini、Gemini 用 gemini-2.5-flash（都是便宜款）。費用照各家牌價從你的帳戶扣；瀏覽器直連要該服務允許跨網域請求（Claude、OpenAI、Gemini 都可以）。')}</div>
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
-                <button type="button" class="trade-btn" data-action="byok-test" style="padding:6px 12px">🔌 ${t('測試連線')}</button>
-                <button type="button" class="trade-btn btn-accent" data-action="byok-save" style="padding:6px 12px">💾 ${t('儲存並啟用')}</button>
-                ${byokActive ? `<button type="button" class="trade-btn" data-action="byok-clear" style="padding:6px 12px">🗑️ ${t('清除金鑰')}</button>` : ''}
-            </div>
-            <div id="settings-byok-result" role="status" aria-live="polite" style="font-size:0.72rem;color:var(--text-muted);margin-top:6px;min-height:1em">${this._byokLastMsg || ''}</div>
-            </details>`;
         }
         // v6.39.0 完整智能體模式
         {
             let fa = null; try { fa = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
             const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
-            const capNote = !byokActive && this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
+            const capNote = this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
             html += `<div class="set-card set-toggle-card">
             <label class="set-toggle" for="settings-fullagent"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}</label>
             <div class="set-help">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由；AI 失敗時才用規則版墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1 次。')}${capNote}</div>
@@ -1375,7 +1334,7 @@ Object.assign(RimTownApp.prototype, {
         });
     },
 
-    // v6.78.0 今晚八點檔:把一天的日誌整合成一集旁白(sim-episode.js),上一集／下一集可翻
+    // v6.78.1 每日報紙:把一天的八卦與大小事整理成一份報紙(sim-episode.js),上一期／下一期可翻
     _renderEpisode() {
         const w = this.world; if (!w || typeof EPISODE === 'undefined') return '';
         const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -1385,34 +1344,32 @@ Object.assign(RimTownApp.prototype, {
         const liveKey = `${log.length}|${last?.tick}|${lang}|${(w.dramaArchive || []).length}|${todayDay}`;
         if (this._epLiveKey !== liveKey) { this._epLive = EPISODE.view(w, EPISODE.today(w)); this._epLiveKey = liveKey; }
         let sel = this._epSel; const force = sel === 'today'; if (force) sel = null;
-        if (sel == null && !force && this._epLive.empty && eps.length) sel = eps[eps.length - 1].day; // 剛換日、今天還沒什麼事:先播昨天那集
+        if (sel == null && !force && this._epLive.empty && eps.length) sel = eps[eps.length - 1].day; // 剛換日、今天還沒什麼事:先看昨天那份
         const ep = sel != null ? eps.find(e => e.day === sel) : null;
         let v = this._epLive;
-        if (ep) { const k = `${ep.day}|${lang}|${ep.ai ? ep.ai.length : 0}`; if (this._epViewKey !== k) { this._epView = EPISODE.view(w, ep); this._epViewKey = k; } v = this._epView; }
+        if (ep) { const k = `${ep.day}|${lang}`; if (this._epViewKey !== k) { this._epView = EPISODE.view(w, ep); this._epViewKey = k; } v = this._epView; }
         const days = eps.map(e => e.day).filter(d => d !== todayDay).sort((a, b) => a - b);
         const prev = days.filter(d => d < v.day).pop();
         const next = v.live ? null : (days.find(d => d > v.day) ?? 'today');
-        const town = esc(t(w.townName || '邊境鎮'));
-        let body;
-        if (v.ai) body = v.ai.split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<p class="ep-p">${esc(x)}</p>`).join('');
-        else if (v.empty) body = `<p class="ep-p ep-muted">${t('今天才剛開播，小鎮還在醒來……過一會兒再來看。')}</p>`;
-        else body = v.acts.map(a => `<p class="ep-p"><span class="ep-tag">${a.icon} ${esc(a.label)}</span>${esc(a.text)}</p>`).join('')
-            + (v.teaser.length ? `<div class="ep-next"><b>🔮 ${t('下集預告')}</b>${esc(v.teaser.join(' '))} ${t('敬請鎖定明晚八點。')}</div>` : '');
         const c = v.counts || {};
-        const chips = [[c.convo, '💬', '場對話'], [c.gossip, '🗣️', '則八卦'], [c.proposal, '📜', '件新提案'], [c.skill, '📈', '次手藝進步']].filter(x => x[0]).map(x => `<span class="ep-chip">${x[1]} ${x[0]} ${t(x[2])}</span>`).join('');
-        return `<section class="ep-card${v.live ? ' live' : ''}" aria-label="${t('今晚八點檔')}">
-            <div class="ep-head"><span class="ep-tv" aria-hidden="true">📺</span><div class="ep-headtxt"><div class="ep-show">${t('{town}八點檔').split('{town}').join(town)} · ${t('第 {n} 集').split('{n}').join(v.no)}</div>
-            <div class="ep-date">${esc(v.label)}${v.live ? ` · <span class="ep-live">${t('播出中')}</span>` : ''}</div></div>${v.ai ? `<span class="ep-ai">✨ ${t('AI 旁白')}</span>` : ''}</div>
-            ${v.empty ? '' : `<div class="ep-title">${/[「『"]/.test(v.title) ? esc(v.title) : t('「') + esc(v.title) + t('」')}</div>`}
-            ${v.weather && !v.ai ? `<div class="ep-weather">${esc(v.weather)}</div>` : ''}
-            <div class="ep-body">${body}</div>
-            ${chips ? `<div class="ep-chips">${chips}</div>` : ''}
-            ${v.live && !v.empty ? `<div class="ep-foot">${t('今天還沒播完，內容會隨小鎮發生的事更新；換日後定稿。')}</div>` : ''}
-            <div class="ep-nav">
-                <button type="button" class="ep-btn" data-action="ep-nav" data-val="${prev ?? ''}" ${prev == null ? 'disabled' : ''}>‹ ${t('上一集')}</button>
-                <button type="button" class="ep-btn" data-action="ep-nav" data-val="${next ?? ''}" ${next == null ? 'disabled' : ''}>${next === 'today' ? t('今天') : t('下一集')} ›</button>
+        const stats = [[c.convo, '場對話'], [c.gossip, '則八卦'], [c.proposal, '件新提案'], [c.skill, '次手藝進步']].filter(x => x[0]).map(x => `${x[0]} ${t(x[1])}`).join(' · ');
+        let body;
+        if (v.empty) body = `<p class="np-empty">${t('今天的報紙還在等新聞，過一會兒再來看。')}</p>`;
+        else body = `<h3 class="np-headline">${esc(v.title)}</h3>`
+            + (v.quote ? `<blockquote class="np-quote">${t('「')}${esc(v.quote.text)}${t('」')}<cite>— ${esc(v.quote.who)}</cite></blockquote>` : '')
+            + v.sections.map(sec => `<div class="np-sec np-${sec.key}"><h4>${sec.icon} ${esc(sec.label)}</h4><ul>${sec.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
+            + (v.teaser.length ? `<div class="np-sec np-next"><h4>🔭 ${t('明日看點')}</h4><ul>${v.teaser.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '');
+        return `<div role="region" class="np-paper${v.live ? ' live' : ''}" aria-label="${t('每日報紙')}">
+            <div class="np-mast"><div class="np-name">${t('觀察者日報')}</div>
+            <div class="np-meta"><span>${t('第 {n} 期').split('{n}').join(v.no)}</span><span>${esc(v.label)}</span>${v.live ? `<span class="np-live">${t('今日・編輯中')}</span>` : ''}</div>
+            ${v.weather ? `<div class="np-weather">${esc(v.weather)}</div>` : ''}</div>
+            <div class="np-body">${body}</div>
+            ${stats ? `<div class="np-stats">${stats}</div>` : ''}
+            <div class="np-nav">
+                <button type="button" class="np-btn" data-action="ep-nav" data-val="${prev ?? ''}" ${prev == null ? 'disabled' : ''}>‹ ${t('上一期')}</button>
+                <button type="button" class="np-btn" data-action="ep-nav" data-val="${next ?? ''}" ${next == null ? 'disabled' : ''}>${next === 'today' ? t('今天') : t('下一期')} ›</button>
             </div>
-        </section>`;
+        </div>`;
     },
 
     renderLog(container) {
@@ -1420,21 +1377,7 @@ Object.assign(RimTownApp.prototype, {
         const messages = (this.state.recent_messages || []).slice().reverse();
         let html = this._renderEpisode();
 
-        // v5.21.0 小鎮劇場:回顧錯過的名場面(告白/婚禮/修羅場/分手/離婚)
-        const archive = this.state.dramaArchive || this.world?.dramaArchive || [];
-        if (archive.length) {
-            html += `<div class="news-section drama-theater"><h4>🎭 ${t('小鎮劇場')} <span class="dt-count">${archive.length}</span></h4>`;
-            archive.slice().reverse().slice(0, 20).forEach((s, i) => {
-                const realIdx = archive.length - 1 - i;
-                html += `<button class="drama-replay-row" data-action="replay-drama" data-val="${realIdx}">
-                    <span class="dt-ic">${s.icon}</span>
-                    <span class="dt-body"><span class="dt-title">${this._escapeHtml(s.title)}</span>
-                    <span class="dt-who">${this._escapeHtml(s.aName)} × ${this._escapeHtml(s.bName)}</span></span>
-                    <span class="dt-date">${t('第 {y} 年{s}').split('{y}').join(s.year).split('{s}').join(t(s.season))} ${t('第 {d} 天').split('{d}').join(s.day)}</span>
-                    <span class="dt-play">▶</span></button>`;
-            });
-            html += '</div>';
-        }
+        // v6.78.1 「小鎮劇場」拿掉:名場面改成報紙「感情與恩怨」版的一則(同類合併)
 
         // Show recent NPC conversations at the top
         const npcConvos = (this.state.npc_conversations || []).slice().reverse();

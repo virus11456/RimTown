@@ -36,6 +36,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const up = await page.evaluate(() => {
       const app = window.rimtownApp, w = app.world; const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
       while (npcs().length < 32) { const all = npcs(); w.tickCount++; w.lifecycle._birthChild(w, all[0], all[1]); }
+      for (const [k, v] of Object.entries({ wood: 400, stone: 400, furniture: 40, tools: 40 })) w.stockpile.resources[k] = Math.max(w.stockpile.get(k), v); // v6.79.0 升格要家具
       w.prosperity.prosperity = 60; w.council._formCouncil(w); const seats0 = w.council.members.length;
       const mayor = w.election.currentMayor(w); TIERS.daily(w); const after1 = TIERS.level(w); TIERS.daily(w); TIERS.daily(w); w.prosperity.prosperity = 60;
       const lv = TIERS.level(w); const seats1 = w.council.members.length;

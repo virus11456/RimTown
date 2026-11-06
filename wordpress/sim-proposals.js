@@ -286,7 +286,8 @@ class ProposalSystem {
             if (w.research?.isFactoryUnlocked && !w.research.isFactoryUnlocked(key)) continue; // v6.40.0
             const jobs = Object.entries(PROPOSAL_JOB_FACTORIES).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             const afford = Object.entries(def.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.6);
-            out.push({ kind: 'factory', key: 'factory:' + key, weight: afford ? 0.8 : 0.25, jobs, make: (a) => ({ kind: 'factory', key: 'factory:' + key, refKey: key, tk: '開一間{name}', tp: { name: def.name }, dk: '{desc}', dp: { desc: def.description || def.desc || '' }, cost: { ...(def.cost || {}) }, category: 'economy', jobBias: jobs }) });
+            const fit = typeof FLOW !== 'undefined' && FLOW.factoryFit(w, def); // v6.79.1 原料鎮上就有、做出來的東西又缺 → 比較常被提出
+            out.push({ kind: 'factory', key: 'factory:' + key, weight: afford ? (fit ? 1.8 : 0.8) : (fit ? 0.6 : 0.25), jobs, make: (a) => ({ kind: 'factory', key: 'factory:' + key, refKey: key, tk: '開一間{name}', tp: { name: def.name }, dk: '{desc}', dp: { desc: def.description || def.desc || '' }, cost: { ...(def.cost || {}) }, category: 'economy', jobBias: jobs }) });
         }
         // 政令(沿用議會提案表)
         const CP = (typeof COUNCIL_PROPOSALS !== 'undefined') ? COUNCIL_PROPOSALS : [];

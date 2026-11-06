@@ -123,11 +123,12 @@ const ECON = (() => {
     // ---------- 鹽 ----------
     function saltDecay(w) { return S(w).salted ? 0.5 : 1; }
     // ---------- 建材 ----------
-    const HOUSE_MAT = [null, { wood: 15, stone: 20 }, { wood: 10, stone: 35 }];
-    const TIER_MAT = [null, { wood: 60, stone: 60 }, { wood: 100, stone: 140, metal: 20 }, { wood: 150, stone: 220, metal: 40 }];
+    // v6.79.0 翻修與擴建也要家具;木板／硬木可代替木材、磚／大理石代替石材、鋼代替金屬、精裝家具代替家具(sim-flow.js)
+    const HOUSE_MAT = [null, { wood: 15, stone: 20, furniture: 1 }, { wood: 10, stone: 35, furniture: 2 }];
+    const TIER_MAT = [null, { wood: 60, stone: 60, furniture: 6 }, { wood: 100, stone: 140, metal: 20, furniture: 10 }, { wood: 150, stone: 220, metal: 40, furniture: 15 }];
     function houseMat(lv) { return HOUSE_MAT[lv] || null; }
     function tierMat(lv) { return TIER_MAT[lv] || null; }
-    function lack(w, mat) { const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = w.stockpile?.get?.(r) || 0; if (h < n) out[r] = Math.ceil(n - h); } return out; }
+    function lack(w, mat) { if (typeof FLOW !== 'undefined') return FLOW.lack(w, mat); const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = w.stockpile?.get?.(r) || 0; if (h < n) out[r] = Math.ceil(n - h); } return out; }
     const RES_ZH = { wood: '木材', stone: '石材', metal: '金屬', brick: '磚塊', salt: '鹽', paper: '紙', food: '食物', cloth: '布料', herbs: '草藥', tools: '工具' };
     function matText(m) { return Object.entries(m || {}).map(([r, n]) => `${t(RES_ZH[r] || r)} ${n}`).join(t('、')); }
     // ---------- 每天 ----------
@@ -151,7 +152,7 @@ const ECON = (() => {
         const carp = all.filter(a => a.job?.key === 'carpenter');
         if (carp.length && (sp.get('paper') || 0) < 40) { // 紙存到 40 就先不造,木頭留給取暖與建設(多的可以外銷)
             const make = Math.round(carp.length * 2.5 * tf * mult(w, 'paper') * 10) / 10;
-            const wood = Math.min(make * 0.7, Math.max(0, (sp.get('wood') || 0) - 20));
+            const wood = Math.min(make * 0.7, Math.max(0, (sp.get('wood') || 0) - (E.paperShort ? 5 : 20))); // v6.79.0 缺紙時木頭只留 5(以前海港木材不夠，紙一直是 0)
             if (wood > 0.5) { sp.consume('wood', Math.round(wood * 10) / 10, w.tickCount, t('造紙')); const out = Math.round(wood / 0.7 * 10) / 10; sp.add('paper', out, w.tickCount, t('木匠造紙')); E.made.paper = (E.made.paper || 0) + out; }
         }
         const papers = (w.press?.papers?.length || 0) + 1;

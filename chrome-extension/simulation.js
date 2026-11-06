@@ -129,6 +129,7 @@ class World {
             // Daily economy
             processDailyProduction(this);
             try { if (typeof ECON !== 'undefined') ECON.daily(this); } catch (e) { console.warn('[Econ] daily', e); } // v6.77.0 鹽、紙、穀物／魚／肉、飲食多樣
+            try { if (typeof FLOW !== 'undefined') FLOW.daily(this); } catch (e) { console.warn('[Flow] daily', e); } // v6.79.0 作物進糧倉、酒茶香水家具有人用、黃金鑄幣
             this.stockpile.history.filter(h=>h.amount>0).slice(-50).forEach(h=>this.workOrders.updateProgress(h.resource,h.amount));
             this.buildings.dailyConstruction(this);
             this.trade.dailyUpdate(this);
