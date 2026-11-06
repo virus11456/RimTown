@@ -104,13 +104,20 @@ const FLOW = (() => {
     }
 
     // ---------- 工坊配方：做最缺的那樣；什麼都不缺就休息 ----------
+    // v6.79.1 鎮上有在產、卻還沒有工坊用的原料 → 村民比較會提案蓋對應的工坊(例如收了小麥卻沒有麵包坊)
+    function noteSupply(w) { const F = S(w), d = day(w); for (const r of [...CROP_LIKE, 'herbs']) if (get(w, r) >= 1) F.notes['seen:' + r] = d; }
+    function supplied(w, r, a) { const s = S(w).notes['seen:' + r]; return get(w, r) >= a * 2 || (s != null && day(w) - s <= 20); }
+    function factoryFit(w, def) { return (def?.recipes || []).some(rc => Object.entries(rc.input || {}).every(([r, a]) => supplied(w, r, a)) && Object.keys(rc.output || {}).some(o => need(w, o) > 0.2)); }
+
+    // v6.79.1 原料夠時優先做比較精緻的那樣(茶葉夠就先做精製茶)
+    const PREFER = { fine_tea: 0.1 };
     function pickRecipe(w, def, factory) {
         const recipes = def?.recipes || []; if (!recipes.length) return null;
         let best = null, bestScore = 0.05; const turn = day(w) % recipes.length;
         for (const [i, rc] of recipes.entries()) {
             const ok = Object.entries(rc.input || {}).every(([r, a]) => get(w, r) >= a);
             if (!ok) continue;
-            const sc = Math.max(...Object.keys(rc.output || {}).map(r => need(w, r))) + (i === turn ? 0.03 : 0); // 一樣缺就輪流做
+            const sc = Math.max(...Object.keys(rc.output || {}).map(r => need(w, r))) + (i === turn ? 0.03 : 0) + (PREFER[rc.id] || 0); // 一樣缺就輪流做
             if (sc > bestScore) { best = rc.id; bestScore = sc; }
         }
         return best;
@@ -147,6 +154,7 @@ const FLOW = (() => {
         const F = S(w), d = day(w), Sp = sp(w); if (!Sp || F.lastDay === d) return; F.lastDay = d;
         const all = npcs(w), pop = Math.max(1, all.length), tick = w.tickCount || 0;
         const facts = activeFactories(w);
+        noteSupply(w); // v6.79.1 記下鎮上有哪些原料(收成馬上進糧倉，存量看不出來)
         // 1) 收成進糧倉(工坊要用的先留著)
         let toFood = 0;
         for (const [c, val] of Object.entries(CROP_FOOD)) {
@@ -197,7 +205,7 @@ const FLOW = (() => {
         if (r === 'cotton' && need(w, 'cloth') > 0.5) n = Math.max(n, 10);
         return n;
     }
-    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, eatSnacks, daily, CROP_FOOD, SUB, KEEP };
+    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, daily, CROP_FOOD, SUB, KEEP };
 })();
 if (typeof window !== 'undefined') window.FLOW = FLOW;
 

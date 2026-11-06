@@ -41,6 +41,14 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // 7) 商人帶作物、收加工品
     const sells = MERCHANT_TYPES.flatMap(m => m.sells), buys = MERCHANT_TYPES.flatMap(m => m.buys);
     out.merchant = { sellsTea: sells.includes('tea') && sells.includes('grapes') && sells.includes('sugarcane'), buysWine: buys.includes('wine') && buys.includes('bread') && buys.includes('perfume'), noGold: !sells.includes('gold') };
+    // 7b) v6.79.1 雜貨商賣稻米;收了小麥卻沒有麵包坊 → 麵包坊提案比較常出現;茶葉夠先做精製茶;金麥進糧倉
+    out.rice = MERCHANT_TYPES.find(m => m.specialty === 'general').sells.includes('rice');
+    w.processing.builtFactories = {}; set('wheat', 0); set('bread', 0); w.flow = { notes: {}, lastDay: -1 }; out.fitNo = FLOW.factoryFit(w, FACTORIES.bakery);
+    const PM = w.proposals; if (w.research) w.research.isFactoryUnlocked = () => true; const bw = () => { PM.cooldown = {}; PM.items = []; const c = PM._candidates(w, w._absDay() + 100).find(c => c.key === 'factory:bakery'); return c ? c.weight : null; };
+    out.bakeryW0 = bw();
+    set('wheat', 12); FLOW.daily(w); out.wheatGone = sp.get('wheat'); out.fitYes = FLOW.factoryFit(w, FACTORIES.bakery); out.bakeryW = bw();
+    set('tea', 8); set('herbs', 8); set('fine_tea', 0); set('herbal_tea', 0); out.tea = FLOW.pickRecipe(w, FACTORIES.tea_house, {});
+    set('golden_wheat', 10); const g0 = sp.get('food'); w.flow.lastDay = -1; FLOW.daily(w); out.golden = { left: sp.get('golden_wheat'), dFood: Math.round(sp.get('food') - g0) };
     // 8) 跑 60 天:成品不會無限堆
     fresh('frontier'); let err = null; const d0 = w._absDay(); let peak = {};
     for (let i = 0; i < 62 * 96 && w._absDay() - d0 < 60; i++) { w.paused = false; try { w.tick(); } catch (e) { err = e.message; break; } if (i % 96 === 0) for (const k of ['clothing', 'furniture', 'tools', 'medicine']) peak[k] = Math.max(peak[k] || 0, sp.get(k)); if (i % 3000 === 0) await new Promise(r => setTimeout(r, 0)); }
@@ -59,6 +67,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   ok(r.snack >= 16 && r.snackLeft === 0, '麵包、糕點、果醬當正餐吃掉', { eaten: r.snack, left: r.snackLeft });
   ok(r.used.beer > 0 && r.used.perfume > 0 && r.used.gold === 5 && r.used.silver >= 100, '酒館喝酒、約會擦香水、黃金每天鑄 5 兩成銀幣', r.used);
   ok(r.merchant.sellsTea && r.merchant.buysWine && r.merchant.noGold, '異國商隊帶茶葉葡萄甘蔗、商人收酒麵包香水、不賣黃金(避免套利)', r.merchant);
+  ok(r.rice, '雜貨商也賣稻米(農田 2 級以前就買得到)', r.rice);
+  ok(!r.fitNo && r.fitYes && r.wheatGone === 0, '鎮上收了小麥(進糧倉後存量是 0)也記得有小麥 → 麵包坊算「有原料可用」', { no: r.fitNo, yes: r.fitYes, left: r.wheatGone });
+  ok(r.bakeryW0 != null && r.bakeryW > r.bakeryW0 * 2, '有小麥沒麵包坊時，村民比較常提案開麵包坊', { before: r.bakeryW0, after: r.bakeryW });
+  ok(r.tea === 'fine_tea', '茶葉夠時茶館先做精製茶', r.tea);
+  ok(r.golden.left === 0 && r.golden.dFood >= 20, '金色小麥收成進糧倉(1 份抵 2 份糧食)', r.golden);
   const capOk = !r.run.err && Object.entries(r.run.peak).every(([k, v]) => v <= r.run.want[k] * 3 + 30);
   ok(capOk, '60 天：衣服、家具、工具、藥品都不會無限堆積', r.run);
   ok(r.saved, '存讀檔保留', r.saved);
