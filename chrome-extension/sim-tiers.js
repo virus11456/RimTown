@@ -76,13 +76,29 @@ const TIERS = (() => {
         const T = S(w); track(w, T); syncTitles(w);
         const target = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w), d = day(w);
         if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) {
+            T.up = UP_DAYS;
             // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
             const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
-            if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) { T.up = UP_DAYS; if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
-            else { if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); } T.waitMat = null; change(w, T, T.lv + 1); }
+            const canMat = !mat || (typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat));
+            if (T.readySince == null) T.readySince = d;
+            if (!canMat) { if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
+            // v6.81.0 升格要村民提案、投票、首長批准(觀察者模式);太久都沒升(60 天)才直接升,免得卡死
+            else if (!needsVote(w) || d - T.readySince >= 60) { if (needsVote(w)) { try { w.logMessageT?.('event', '🏛️ 升格案拖了好久，鎮公所決定直接擴建、正式升格。', {}); } catch (e) {} } promote(w); }
         } }
         else if (target < T.lv) { T.down++; T.up = 0; if (T.down >= DOWN_DAYS) change(w, T, T.lv - 1); }
-        else { T.up = 0; T.down = 0; }
+        else { T.up = 0; T.down = 0; T.readySince = null; }
+    }
+    // v6.81.0 觀察者模式下升格要走提案(有提案系統時)
+    function needsVote(w) { return !!(w && w.observerMode && w.proposals); }
+    const metNow = (w) => (typeof TIERS !== 'undefined' ? TIERS.met : met)(w);
+    function ready(w) { const T = S(w); return T.up >= UP_DAYS && metNow(w) > T.lv; }
+    // 提案通過後執行升格:再確認一次還夠格、付建材
+    function promote(w) {
+        const T = S(w); if (!(metNow(w) > T.lv)) return { ok: false, error: '現在不夠格了' };
+        const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
+        if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) return { ok: false, error: '擴建鎮公所的建材不夠' };
+        if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); }
+        T.waitMat = null; T.readySince = null; change(w, T, T.lv + 1); return { ok: true };
     }
     function change(w, T, nl) {
         const old = T.lv, d = day(w); T.lv = nl; T.up = 0; T.down = 0; T.since = d; T.history.push({ lv: nl, day: d }); if (T.history.length > 20) T.history.shift();
@@ -129,7 +145,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS };
+    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)

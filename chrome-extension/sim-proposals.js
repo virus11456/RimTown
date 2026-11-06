@@ -27,6 +27,7 @@ const PROPOSAL_KINDS = {
     market:     { icon: '🛒', label: '買賣' },
     upgrade:    { icon: '🔨', label: '升級' },
     industry_up:{ icon: '📈', label: '產業升級' },
+    tier_up:    { icon: '🏛️', label: '申請升格' }, // v6.81.0 升格要村民投票、首長批准
 };
 // v6.37.0 鎮長裁決理由(鍵 → 顯示文字;顯示時才 t())
 const MAYOR_WHY = {
@@ -38,7 +39,7 @@ const VOTE_WHY = {
     value: '價值觀相合', wealth: '看重財富', work: '勤勞肯做', lazy: '懶得折騰', fun: '愛熱鬧', glutton: '貪吃', ascetic: '不愛鋪張', stoic: '不愛熱鬧', charm: '愛出風頭',
     adventure: '愛冒險', family: '顧家', shy: '怕生', care: '重視社群', kind: '心軟', greedy: '捨不得花錢', trial: '考驗當前', moodup: '政令會讓大家開心', mooddown: '政令會讓大家不開心', spend: '政令要花錢',
     pessimist: '悲觀', optimist: '樂觀', job: '跟自己這行有關', relgood: '跟提案人交情好', relbad: '跟提案人處不來', cost: '公庫不夠', gut: '憑直覺',
-    feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了',
+    feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了', growth: '想讓鎮上更興旺', oldways: '喜歡現在的樣子',
 };
 // 職業 → 偏好的建築／工廠
 const PROPOSAL_JOB_BUILDINGS = {
@@ -188,6 +189,7 @@ class ProposalSystem {
         if (p.kind === 'honor' && p.refKey) { const r0 = a.relationships?.relationships?.[p.refKey]; if ((r0?.affinity || 0) > 20) add('proud', 2); if ((r0?.affinity || 0) < -20) add('grudge', -3); if (this._hasTrait(a, 'jealous')) add('grudge', -1); }
         if (p.kind === 'recruit') { if (this._hasValue(a, '社群') || this._hasTrait(a, 'optimist')) add('newcomer', 2); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); }
         if (p.kind === 'trial') add('trial', 2);
+        if (p.kind === 'tier_up') { add('growth', 1.5); if (this._hasValue(a, '財富') || this._hasValue(a, '權力')) add('growth', 1); if (this._hasTrait(a, 'charismatic') || this._hasTrait(a, 'hardworking')) add('growth', 1); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); if (this._hasTrait(a, 'stoic') || this._hasValue(a, '自然') || this._hasValue(a, '和平')) add('oldways', -1.5); } // v6.81.0
         if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
         if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
         if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
@@ -426,6 +428,16 @@ class ProposalSystem {
             const jobs = Object.entries(PROPOSAL_JOB_BUILDINGS).filter(([, ks]) => ks.includes(u.buildingKey)).map(([j]) => j);
             out.push({ kind: 'upgrade', key: 'upgrade:' + u.buildingKey, weight: u.can_afford ? 0.9 : 0.3, jobs, make: (a) => ({ kind: 'upgrade', key: 'upgrade:' + u.buildingKey, refKey: u.buildingKey, tk: '把{name}升到 Lv{lv}', tp: { name: u.name, lv: u.nextLevel }, dk: '{who}提議升級：{desc}', dp: { who: a.name, desc: u.description }, cost: { ...u.costs }, category: 'economy', jobBias: jobs }) });
         }
+        // v6.81.0 申請升格:連續達標、建材也備好了，就由首長或議員提案(建材不夠時先提「為升格進一批…」)
+        try {
+            const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
+            if (pr && pr.next && TIERS.ready?.(w) && !Object.keys(pr.matLack || {}).length && this._cool(day, 'tier_up', 10)) {
+                const tier = t(pr.next.zh), SIx = (typeof SHOP_ITEMS !== 'undefined') ? SHOP_ITEMS : {};
+                const matTxt = Object.entries(pr.mat || {}).map(([r, n]) => `${SIx[r]?.name?.() || t(r)} ${n}`).join(t('、'));
+                const leader = t(pr.next.leader), seats = pr.next.seats;
+                out.push({ kind: 'tier_up', key: 'tier_up', weight: 4, jobs: ['mayor', 'trader', 'guard', 'researcher'], make: (a) => ({ kind: 'tier_up', key: 'tier_up', refKey: pr.next.key, tk: '申請升格為{tier}', tp: { tier }, dk: '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。', dp: { who: a.name, tier, pop: pr.pop[0], pros: pr.pros[0], mat: matTxt, seats, leader }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) });
+            }
+        } catch (e) {}
         // 產業升級
         if (w.industry?.industries) for (const [key, data] of Object.entries(w.industry.industries)) {
             const def = IND[key]; const next = def?.levels?.find(l => l.lv === (data.level || 1) + 1); if (!next || !this._cool(day, 'indup:' + key, 12)) continue;
@@ -643,6 +655,7 @@ class ProposalSystem {
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
                 }
                 case 'upgrade': { const r = w.buildings?.startUpgrade?.(p.refKey, w); ok = !!r; result = ok ? '工匠開始升級了' : '沒辦法升級（正在升級或已到頂）'; break; }
+                case 'tier_up': { const r = (typeof TIERS !== 'undefined') ? TIERS.promote?.(w) : null; ok = !!r?.ok; result = ok ? '正式升格了' : (r?.error || '沒辦法升格'); break; } // v6.81.0
                 case 'industry_up': { const r = w.industry?.upgradeIndustry?.(p.refKey, w); ok = !!r?.ok; result = ok ? '產業升級了' : (r?.error || '沒辦法升級'); break; }
             }
         } catch (e) { console.warn('[Proposals] execute', e); ok = false; result = '執行時出了問題'; }
