@@ -177,7 +177,7 @@ if (typeof CouncilSystem !== 'undefined') {
 if (typeof CouncilSystem !== 'undefined') {
     const CS = CouncilSystem.prototype; const _du = CS.dailyUpdate;
     const seatScore = (world, a) => { let s = 0; if (a.age >= 35) s += 3; if (a.age >= 45) s += 2; s += (a.skills?.skills?.社交?.level || 0) * 2; s += ((a.mood || 50) + 50) / 25; const tr = a.personality?.traits || []; if (tr.includes('hardworking')) s += 2; if (tr.includes('kind')) s += 2; if (tr.includes('charismatic')) s += 2; if (tr.includes('lazy')) s -= 3; if (tr.includes('abrasive')) s -= 2; try { s += (TIERS.S(world).career[a.agentId] || []).length * 1.5; } catch (e) {} return s + Math.random() * 3; };
-    CS._refillSeats = function (world, occupied = 0) {
+    const refillSeats = function (world, occupied = 0) {
         const all = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
         const want = Math.min(TIERS.seats(world), Math.max(3, Math.floor(all.length / 3)));
         if (this.members.length + occupied >= want) return 0;
@@ -197,7 +197,7 @@ if (typeof CouncilSystem !== 'undefined') {
                 const away = new Set((world.events?._travellingAgents || []).map(x => x?.agentData?.agentId).filter(Boolean));
                 awayMembers = (this.members || []).filter(id => !world.agents[id] && away.has(id)); // 出遠門的人保留席次
                 this.members = (this.members || []).filter(id => world.agents[id]);
-                this._refillSeats(world, awayMembers.length);
+                refillSeats.call(this, world, awayMembers.length);
             }
         } catch (e) { console.warn('[Council] refill', e); }
         const r = _du.call(this, world);
