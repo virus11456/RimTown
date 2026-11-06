@@ -61,7 +61,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     if (dev === 'desktop') {
       await page.keyboard.press('Escape'); await page.waitForTimeout(300);
       const c1 = await page.evaluate(() => document.getElementById('gh-tray').classList.contains('open'));
-      await page.keyboard.press('e'); await page.waitForTimeout(300);
+      await page.keyboard.press('e'); await page.waitForFunction(() => document.getElementById('gh-tray').classList.contains('open'), null, { timeout: 2000 }).catch(() => {}); // 打開動畫在下一個畫格才加 open,3D 忙的時候會晚於 300ms
       const c2 = await page.evaluate(() => document.getElementById('gh-tray').classList.contains('open'));
       ok(!c1 && c2, '桌機:Esc 關閉、E 打開', { c1, c2 });
       await page.keyboard.press('Escape');

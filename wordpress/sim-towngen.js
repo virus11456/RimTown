@@ -1,10 +1,10 @@
 // RimTown - sim-towngen.js（v6.45.0）：種子隨機城鎮。
 // 每個人的第一個鎮固定是邊境鎮，四個手寫鄰鎮（海風鎮／礦山鎮／林間村／市集城）照舊；第五個鎮起由「種子」組合生成：
 // 同一個種子永遠產生同一個鎮（鎮名、地形、特色、經濟、科技、政治、民風、人口），存檔只要記種子。
-// 「活著」的鎮（有完整存檔、馬車到得了）最多 10 個；再遠的只留城鎮卡（約 1KB），在背景慢慢變化、上日報跨鎮專欄。
+// v6.76.0 探索過的鎮（城鎮卡上有的）都能搭馬車去，只有封路時暫停；第一次去才建完整存檔，還沒去過的只留城鎮卡（約 1KB），在背景慢慢變化、上日報跨鎮專欄。
 // 載入順序：放在 sim-systems.js 之後（只在執行期用到 TOWN_THEMES／RESEARCH_TREE／I18N，不依賴頂層順序）。
 
-const TOWNGEN_MAX_LIVE = 10;   // 同時「活著」的鎮(含邊境鎮與四個鄰鎮)
+const TOWNGEN_MAX_LIVE = 10;   // (v6.76.0 起不再限制馬車可達的數量,只留給舊程式參考)
 const TOWNGEN_MAX_CARDS = 100; // 城鎮卡上限(每張約 1KB)
 
 const TownGen = (() => {
@@ -218,12 +218,13 @@ const TownGen = (() => {
 
     // ---- 登記簿:這個玩家發現過哪些鎮(只存種子＋狀態,卡片內容隨時可由種子重算) ----
     const KEY = 'rimtown_gen_towns';
-    function _load() { try { const o = JSON.parse(localStorage.getItem(KEY) || 'null'); if (o && Array.isArray(o.list)) return o; } catch (e) {} return { v: 1, base: null, list: [], n: 0, since: 0, seenExp: 0 }; }
-    function _save(o) { try { localStorage.setItem(KEY, JSON.stringify(o)); } catch (e) {} }
+    const WK = (k) => (typeof rimtownWorldKey === 'function' ? rimtownWorldKey(k) : k); // v6.75.0 每個世界各有一本登記簿
+    function _load() { try { const o = JSON.parse(localStorage.getItem(WK(KEY)) || 'null'); if (o && Array.isArray(o.list)) return o; } catch (e) {} return { v: 1, base: null, list: [], n: 0, since: 0, seenExp: 0 }; }
+    function _save(o) { try { localStorage.setItem(WK(KEY), JSON.stringify(o)); } catch (e) {} }
     function registry() { return _load(); }
-    function cards() { const o = _load(); return o.list.map(e => { const c = bySeed(e.seed); c.found = e.found; c.via = e.via; c.by = e.by; c.reachable = !!e.r; c.townId = e.id || null; c.state = e.st || null; return c; }); }
+    function cards() { const o = _load(); return o.list.map(e => { const c = bySeed(e.seed); c.found = e.found; c.via = e.via; c.by = e.by; c.reachable = true; c.townId = e.id || null; c.state = e.st || null; return c; }); }
     function liveCount(app) {
-        let n = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(d.key) === '1') n++; } catch (e) {}
+        let n = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(WK(d.key)) === '1') n++; } catch (e) {}
         return n + _load().list.filter(e => e.r).length;
     }
     // 發現一個新鎮:種子由玩家(帳號)＋序號決定,換裝置也算得出同一串;太像既有鎮或撞名就換下一個種子
@@ -242,7 +243,7 @@ const TownGen = (() => {
         }
         o.n++;
         if (!pick) { _save(o); return null; }
-        const reachable = liveCount() < TOWNGEN_MAX_LIVE;
+        const reachable = true; // v6.76.0 探索過的城鎮都能搭馬車去(封路時暫停),不再限制相連的數量
         o.list.push({ seed: pick.seed, found: opts.day || 0, via: opts.via || 'rumor', by: opts.by || '', r: reachable ? 1 : 0, id: null, st: null });
         o.since = 0;
         _save(o);
@@ -251,6 +252,7 @@ const TownGen = (() => {
     }
     function update(seed, patch) { const o = _load(); const e = o.list.find(x => x.seed === seed); if (!e) return; Object.assign(e, patch); _save(o); }
     function setState(seed, st) { update(seed, { st }); }
+    function setStates(map) { const o = _load(); let n = 0; for (const e of o.list) if (Object.prototype.hasOwnProperty.call(map, e.seed)) { e.st = map[e.seed]; n++; } if (n) _save(o); } // v6.76.1 一次寫回
     function bump(field, v) { const o = _load(); o[field] = v; _save(o); }
     // 跨裝置:存檔裡帶一份精簡登記簿,讀檔時合併(取較多的那份,同種子保留有存檔 id 的)
     function exportCompact() { const o = _load(); return { base: o.base, n: o.n, list: o.list.map(e => ({ seed: e.seed, found: e.found, via: e.via, by: e.by, r: e.r, id: e.id })) }; }
@@ -264,15 +266,14 @@ const TownGen = (() => {
     }
     // v6.48.1 兩台裝置各自開通的路線合併後可能超過 10 座:超過的先降回「只有傳聞」(已經有存檔的鎮不降,後發現的先降)
     function _capLive(o) {
-        let fixed = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(d.key) === '1') fixed++; } catch (e) {}
-        let live = fixed + o.list.filter(e => e.r).length; let changed = false;
-        for (const e of o.list.slice().sort((a, b) => (b.found || 0) - (a.found || 0))) { if (live <= TOWNGEN_MAX_LIVE) break; if (e.r && !e.id) { e.r = 0; live--; changed = true; } }
+        let fixed = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(WK(d.key)) === '1') fixed++; } catch (e) {}
+        let changed = false; for (const e of o.list) if (!e.r) { e.r = 1; changed = true; } // v6.76.0 不再降回「只有傳聞」,以前降過的也恢復
         return changed;
     }
     function normalize() { const o = _load(); if (_capLive(o)) _save(o); }
     function registerAll() { try { for (const e of _load().list) bySeed(e.seed); } catch (e) {} }
 
-    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
+    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, setStates, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
 })();
 if (typeof globalThis !== 'undefined') globalThis.TownGen = TownGen;
 try { TownGen.registerAll(); TownGen.normalize(); } catch (e) {}

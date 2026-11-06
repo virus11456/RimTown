@@ -12,7 +12,8 @@ const L = require('./_lib');
 // v6.42.1 沒登入的人預設不能用伺服器 AI(遊戲本來就要登入＋推薦碼;以前訪客每天 10 次,任何人都能拿來燒額度)。
 // AI_GUEST_DAILY 設成正數才開放;設 0 也真的是 0(舊寫法 parseInt('0') || 10 會變回 10)
 const GUEST_DAILY = Math.max(0, parseInt(process.env.AI_GUEST_DAILY ?? '0', 10) || 0);
-const USER_DAILY = parseInt(process.env.AI_USER_DAILY, 10) || 300; // v6.41.0 完整智能體模式預設開,登入額度 100 → 300
+// v6.74.1 登入玩家不設每日上限(使用者決定);要再設上限就在 Vercel 設 AI_USER_DAILY 為正數。用量照樣記在 quota/ 與 usage/ 方便統計
+const USER_DAILY = Math.max(0, parseInt(process.env.AI_USER_DAILY ?? '0', 10) || 0); // 0 = 不限
 
 // 主渠道(付費中繼):相容 Anthropic(CC 類)與 OpenAI 兩種格式
 const RELAY_BASE = process.env.LLM_BASE_URL || '';
@@ -321,7 +322,7 @@ module.exports = async (req, res) => {
     const q = (await L.readJson(quotaPath)) || { count: 0 };
     // v5.96.0 B8:每日 AI 用量(全站):usage/<day>.json {groq, relay, fallbacks, blocked}
     const bump = async (field) => { try { const up = `usage/${day}.json`; const u = (await L.readJson(up)) || {}; u[field] = (u[field] || 0) + 1; await L.writeJson(up, u); } catch {} };
-    if (q.count >= limit) {
+    if (limit > 0 && q.count >= limit) {
         await bump('blocked');
         return L.err(res, 429, 'quota_exceeded',
             payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
@@ -390,7 +391,7 @@ module.exports = async (req, res) => {
     await L.writeJson(quotaPath, q).catch(() => {}); // 額度寫入失敗不阻擋回覆
     await bump(provider); if (failed.length) await bump('fallbacks'); // v5.96.0 B8
 
-    const out = { reply, remaining: Math.max(0, limit - q.count), provider, lane, lang, model: modelOf(provider) };
+    const out = { reply, remaining: limit > 0 ? Math.max(0, limit - q.count) : null, limit: limit > 0 ? limit : null, provider, lane, lang, model: modelOf(provider) };
     if (failed.length) out.fallback_from = failed;
     if (groqBlock) out.groq_skipped = groqBlock;
     if (_groqQuota.at) out.groq_quota = { tokens: _groqQuota.remainingTokens, requests: _groqQuota.remainingRequests };

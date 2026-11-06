@@ -1,6 +1,12 @@
-// RimTown - Frontend App v6.74.0
-const RIMTOWN_APP_VERSION = '6.74.0';
+// RimTown - Frontend App v6.76.1
+const RIMTOWN_APP_VERSION = '6.76.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
+// v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
+// 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
+function rimtownWorldId() { try { return (typeof window !== 'undefined' && window.rimtownApp?.world?.worldId) || 'w0'; } catch (e) { return 'w0'; } }
+function rimtownWorldKey(k) { const w = rimtownWorldId(); return w === 'w0' ? k : `${k}@${w}`; }
+// v6.76.0 鎮名正名(舊存檔的英文預設名換回中文):路況、去重都用它當鍵,不受介面語言影響
+function rimtownCanonTown(name) { let s = String(name || '').trim(); for (const [en, zh] of [['Frontier Town', '邊境鎮'], ['Seabreeze Harbor', '海風鎮'], ['Mine Ridge', '礦山鎮'], ['Greenwood', '林間村'], ['Market City', '市集城']]) if (s.startsWith(en)) { s = zh + s.slice(en.length); break; } return s; }
 const NEIGHBOR_TOWNS = [
     { theme: 'harbor', name: '海風鎮', prosperity: 20, key: 'rimtown_harbor_unlocked', match: /海風鎮|Seabreeze/i, icon: '🛤️',
       log: () => t('📯 沿海道路修復完成，往海風鎮的馬車恢復通行！'), title: () => t('道路重通！'),
@@ -278,6 +284,7 @@ class RimTownAuth {
             population: meta.population || 0,
             town_theme: meta.theme || window.rimtownApp?.world?.townTheme || '', // v6.35.0
             origin: meta.origin || window.rimtownApp?._getTownList?.().find(tw => tw.id === townId)?.origin || '',
+            world_id: meta.world || (townId === window.rimtownApp?.currentTownId ? rimtownWorldId() : (window.rimtownApp?._townWorld?.(townId) || rimtownWorldId())), // v6.75.0 屬於哪個世界
         };
         // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
         if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }
@@ -319,11 +326,33 @@ const RIMTOWN_SPEEDS = [1, 1.5, 2, 3, 5]; // v6.54.0 速度倍率(基本 2 秒/�
 // v6.55.0 大存檔壓縮:人一多存檔會超過伺服器單次上傳上限(約 4.5MB),超過 300KB 就先 gzip 再上傳('gz:'＋base64);讀檔自動解開,舊存檔照常讀
 const RTZip = {
     ok: typeof CompressionStream !== 'undefined' && typeof DecompressionStream !== 'undefined',
+    // v6.76.1 壓縮丟到背景執行緒做(以前 2MB 存檔會讓畫面卡 0.3 秒、手機上更久);背景執行緒用不了就退回原本的做法
+    _wk: null, _seq: 0, _wait: {},
+    _worker() {
+        if (this._wk !== null) return this._wk;
+        try {
+            const src = "self.onmessage=async(e)=>{const{id,str}=e.data;try{const blob=await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).blob();const url=new FileReaderSync().readAsDataURL(blob);self.postMessage({id,out:'gz:'+url.slice(url.indexOf(',')+1)});}catch(err){self.postMessage({id,out:null});}};";
+            const w = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+            w.onmessage = (e) => { const cb = this._wait[e.data.id]; delete this._wait[e.data.id]; cb?.(e.data.out); };
+            w.onerror = () => { for (const k of Object.keys(this._wait)) { const cb = this._wait[k]; delete this._wait[k]; cb(null); } this._wk = false; };
+            this._wk = w;
+        } catch (e) { this._wk = false; }
+        return this._wk;
+    },
     async pack(str) {
         if (!this.ok || typeof str !== 'string' || str.length < 300000) return str;
+        const wk = typeof Worker !== 'undefined' ? this._worker() : false;
+        if (wk) {
+            const out = await new Promise((res) => { const id = ++this._seq; this._wait[id] = res; setTimeout(() => { if (this._wait[id]) { delete this._wait[id]; res(null); } }, 20000); try { wk.postMessage({ id, str }); } catch (e) { delete this._wait[id]; res(null); } });
+            if (out) return out;
+        }
         try {
-            const buf = new Uint8Array(await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).arrayBuffer());
-            let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
+            const blob = await new Response(new Blob([str]).stream().pipeThrough(new CompressionStream('gzip'))).blob();
+            if (typeof FileReader !== 'undefined') { // v6.76.1 base64 由瀏覽器原生轉(不卡主執行緒)
+                const url = await new Promise((res, rej) => { const fr = new FileReader(); fr.onload = () => res(fr.result); fr.onerror = () => rej(fr.error); fr.readAsDataURL(blob); });
+                return 'gz:' + String(url).slice(String(url).indexOf(',') + 1);
+            }
+            const buf = new Uint8Array(await blob.arrayBuffer()); let bin = ''; for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode.apply(null, buf.subarray(i, i + 0x8000));
             return 'gz:' + btoa(bin);
         } catch (e) { return str; }
     },
@@ -334,6 +363,22 @@ const RTZip = {
     },
 };
 if (typeof window !== 'undefined') window.RTZip = RTZip;
+// v6.76.1 其他城鎮的本機副本改放 IndexedDB(空間大很多,不再擠爆 localStorage 的 5MB);目前這座鎮仍放 localStorage,關頁時同步寫得進去
+const RTStore = {
+    _p: null,
+    open() {
+        if (this._p) return this._p;
+        this._p = new Promise((res) => { try { if (typeof indexedDB === 'undefined') return res(null); const r = indexedDB.open('rimtown', 1); r.onupgradeneeded = () => { try { r.result.createObjectStore('towns'); } catch (e) {} }; r.onsuccess = () => res(r.result); r.onerror = () => res(null); r.onblocked = () => res(null); } catch (e) { res(null); } });
+        return this._p;
+    },
+    async _tx(mode, fn) { const db = await this.open(); if (!db) return undefined; return new Promise((res) => { try { const tx = db.transaction('towns', mode); const req = fn(tx.objectStore('towns')); tx.oncomplete = () => res(req && 'result' in req ? req.result : true); tx.onerror = tx.onabort = () => res(undefined); } catch (e) { res(undefined); } }); },
+    get(id) { return this._tx('readonly', s => s.get(id)); },
+    set(id, v) { return this._tx('readwrite', s => s.put(v, id)); },
+    del(id) { return this._tx('readwrite', s => s.delete(id)); },
+    keys() { return this._tx('readonly', s => s.getAllKeys()); },
+    clear() { return this._tx('readwrite', s => s.clear()); },
+};
+if (typeof window !== 'undefined') window.RTStore = RTStore;
 class RimTownApp {
     constructor() {
         this.world = new World();
@@ -392,6 +437,7 @@ class RimTownApp {
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
         await this.loadSettings();
         // v5.62.1 一次性遷移:清掉城鎮列表裡同名的「第1天孤兒」重複條目
+        try { await this._initLocalStore(); } catch (e) { console.warn('[RimTown] local store init', e); } // v6.76.1 其他鎮的本機副本搬去 IndexedDB
         this._dedupeTownList();
         // Try to load saved game
         let loaded = false;
@@ -406,7 +452,7 @@ class RimTownApp {
                     const cloudData = await this.auth.cloudLoad(cloudMatch.town_id);
                     // v5.63.0 雲端與本機同一鎮比新舊(tickCount),雲端寫入曾失敗時不再載到舊進度
                     let localData = null;
-                    try { const j = localStorage.getItem('rimtown_town_' + cloudMatch.town_id); if (j) localData = JSON.parse(j); } catch (e) {}
+                    try { localData = await this._readLocalTown(cloudMatch.town_id); } catch (e) {}
                     const saveData = this._newerSave(cloudData, localData);
                     if (saveData && this.world.loadSave(saveData)) {
                         this.currentTownId = cloudMatch.town_id;
@@ -428,7 +474,7 @@ class RimTownApp {
                 const tryIds = [localStorage.getItem('rimtown_last_town'),
                     ...this._getTownList().map(tw => tw.id)].filter(Boolean);
                 for (const tid of tryIds) {
-                    if (this._loadTownById(tid)) { loaded = true; break; }
+                    if (await this._loadTownById(tid)) { loaded = true; break; }
                 }
             }
             if (!loaded) {
@@ -450,14 +496,14 @@ class RimTownApp {
             // Not logged in — use local saves
             const lastTownId = localStorage.getItem('rimtown_last_town');
             if (lastTownId) {
-                loaded = this._loadTownById(lastTownId);
+                loaded = await this._loadTownById(lastTownId);
             }
             if (!loaded) {
                 // v5.62.1 last_town 失效時先試列表裡其他有存檔的鎮(新到舊)
                 const rest = this._getTownList()
                     .sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')));
                 for (const tw of rest) {
-                    if (this._loadTownById(tw.id)) { loaded = true; break; }
+                    if (await this._loadTownById(tw.id)) { loaded = true; break; }
                 }
             }
             if (!loaded) {
@@ -1246,6 +1292,7 @@ class RimTownApp {
             if (this._landingMode === 'auth') {
                 // v5.68.0 首頁註冊:清掉本機其他帳號殘留,標記新城鎮名,重載走正規登入流程(會顯示教學)
                 this._getTownList().forEach(_tw => { localStorage.removeItem('rimtown_town_' + _tw.id); localStorage.removeItem('rimtown_town_' + _tw.id + '_archives'); });
+                try { await RTStore.clear(); } catch (e) {} // v6.76.1
                 ['rimtown_town_list', 'rimtown_last_town', 'rimtown_achievements', 'rimtown_raid_count', 'rimtown_tutorial_done'].forEach(k => localStorage.removeItem(k));
                 localStorage.setItem('rimtown_pending_town_name', `${user}的邊境鎮`);
                 try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {}
@@ -1259,6 +1306,7 @@ class RimTownApp {
             this._pushCloudSettings();
             // New user gets a fresh world — clear all old local data
             const oldTowns = this._getTownList();
+            try { await RTStore.clear(); this._idbTowns = new Set(); } catch (e) {} // v6.76.1
             oldTowns.forEach(_tw => {
                 localStorage.removeItem('rimtown_town_' + _tw.id);
                 localStorage.removeItem('rimtown_town_' + _tw.id + '_archives');
@@ -1683,6 +1731,8 @@ class RimTownApp {
             towns.forEach((twn, i) => {
                 // v6.44.2 目的地用顯示名(舊存檔的鄰鎮可能存成英文 Seabreeze Harbor,中文介面要顯示海風鎮)
                 const shown = this._townDisplayName ? this._townDisplayName(twn.name, (typeof themeKeyOfTownName === 'function' && themeKeyOfTownName(twn.name)) || this._guessTheme?.(twn.name)) : twn.name;
+                const closed = this._roadInfo?.(twn.name); // v6.76.0 封路中
+                if (closed) { inner += `<button class="trade-btn coach-closed" disabled style="width:100%;margin:3px 0;padding:9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;opacity:0.55;cursor:not-allowed"><span>🚧 ${esc(shown)}</span><small style="font-size:0.72rem">${esc(closed.text)}</small></button>`; return; }
                 inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}${twn.firstVisit ? `<small style="opacity:.7;margin-left:4px">${t('（初次造訪）')}</small>` : ''}</span></button>`;
             });
         }
@@ -2698,12 +2748,13 @@ class RimTownApp {
             const sc = parseInt(localStorage.getItem('rimtown_save_count') || '0') + 1;
             localStorage.setItem('rimtown_save_count', sc.toString());
             const saveData = this.world.serialize();
+            const saveStr = JSON.stringify(saveData); // v6.76.1 只序列化一次,本機與雲端共用(以前每次存檔整座鎮序列化兩遍)
             if (this.auth?.loggedIn) {
                 // v5.63.0 登入也同時寫本機:雲端寫入失敗時進度不再蒸發(重新整理後任務/進度回捲的根因)
-                try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
+                try { if (this.currentTownId) this._saveCurrentTown(undefined, saveData, saveStr); } catch (e) {}
                 try {
                     const clock = saveData.clock || {};
-                    const r = await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveData, {
+                    const r = await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveStr, {
                         season: clock.season, year: clock.year, day: clock.day,
                         population: Object.keys(saveData.agents || {}).length,
                     });
@@ -2721,9 +2772,9 @@ class RimTownApp {
             } else {
                 // Not logged in — save locally
                 if (this.currentTownId) {
-                    this._saveCurrentTown();
-                }
-                localStorage.setItem('rimtown_save', JSON.stringify(saveData));
+                    this._saveCurrentTown(undefined, saveData, saveStr);
+                    try { localStorage.removeItem('rimtown_save'); } catch (e) {} // v6.76.1 舊的單一存檔槽不再重複存一份(省一半空間)
+                } else localStorage.setItem('rimtown_save', saveStr);
                 this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
@@ -2753,15 +2804,17 @@ class RimTownApp {
         // Auto-save every 60 seconds (saveGame already handles cloud sync when logged in)
         // v5.63.2 雲端額度止血:本機每 60 秒存,雲端改為「有進度變化且距上次雲端存檔 ≥5 分鐘」
         // 才寫(關頁/手動存檔/切鎮仍立即寫雲端)——Vercel Blob 每月 2K 次寫入額度,原本每分鐘 2 次寫入撐不住
+        const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 5000 }) : setTimeout(fn, 0)); // v6.76.1
+        idle(() => { try { RTZip.ok && typeof Worker !== 'undefined' && RTZip._worker(); } catch (e) {} }); // 先把壓縮用的背景執行緒熱起來,第一次上雲端就不會卡
         this._autoSaveInterval = setInterval(() => {
             if (this.world.paused) return;
             if (this.auth?.loggedIn) {
-                try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
-                const due = Date.now() - (this._lastCloudSaveAt || 0) >= 300000;
-                const changed = this.world.tickCount !== this._lastCloudTick;
-                if (due && changed) this.saveGame();
+                const due0 = Date.now() - (this._lastCloudSaveAt || 0) >= 300000 && this.world.tickCount !== this._lastCloudTick;
+                if (!due0) { idle(() => { try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {} }); return; } // 只存本機:等閒下來再存
+                // 要上雲端:saveGame 會順便存本機(只序列化一次),一樣等閒下來
+                idle(() => this.saveGame());
             } else {
-                this.saveGame();
+                idle(() => this.saveGame());
             }
         }, 60000);
         // Also save when tab is closing

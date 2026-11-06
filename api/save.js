@@ -33,6 +33,7 @@ module.exports = async (req, res) => {
         population: parseInt(b.population, 10) || 0,
         town_theme: String(b.town_theme || '').slice(0, 20), // v6.35.0 主題鍵(frontier/harbor/…)
         origin: String(b.origin || '').slice(0, 20),         // v6.35.0 'user' 自己建的 / 'neighbor' 道路開通後自動生成的鄰鎮
+        world_id: String(b.world_id || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40), // v6.75.0 這個存檔屬於哪一場遊戲(世界);舊存檔沒有＝原本的世界
         updated_at: updatedAt,
     };
     const tc = parseInt(b.tick_count, 10); if (Number.isFinite(tc) && tc >= 0) meta.tick_count = tc;

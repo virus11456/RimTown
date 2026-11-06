@@ -44,13 +44,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       TownGen.mergeCompact(other);
       return { before, after: TownGen.liveCount(), cards: TownGen.cards().length };
     });
-    ok(r2.before <= 10 && r2.after <= 10 && r2.cards >= 10, '合併別台裝置的城鎮紀錄後,相連城鎮仍不超過 10 座', r2);
+    ok(r2.cards >= 10 && r2.after >= r2.before && r2.after >= r2.cards, 'v6.76.0 合併別台裝置的城鎮紀錄後,探索過的城鎮全部保留可達(不再降回只有傳聞)', r2);
     // 3) 帳號選單開著旋轉螢幕
     await page.setViewportSize({ width: 390, height: 844 });
     await page.evaluate(() => window.rimtownApp._showAccountMenu()); await page.waitForTimeout(250);
     const fits = async () => page.evaluate(() => { const p = document.getElementById('account-menu-popup'); if (!p) return null; const b = p.getBoundingClientRect(); const lo = p.querySelector('[data-action="auth-logout"]'); lo.scrollIntoView({ block: 'nearest' }); const l = lo.getBoundingClientRect(); return { top: Math.round(b.top), bottom: Math.round(b.bottom), logout: Math.round(l.bottom), vh: innerHeight }; });
     const p1 = await fits();
-    await page.setViewportSize({ width: 568, height: 320 }); await page.waitForTimeout(400); const p2 = await fits();
+    await page.setViewportSize({ width: 568, height: 320 }); await page.waitForTimeout(400); let p2 = await fits(); for (let i = 0; i < 8 && !(p2 && p2.bottom <= p2.vh && p2.top >= 0 && p2.logout <= p2.vh); i++) { await page.waitForTimeout(200); p2 = await fits(); } // 轉向後選單重新定位,機器忙時會晚一點
     await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(400); const p3 = await fits();
     ok(p1 && p1.bottom <= p1.vh, '直向:選單在畫面內', p1);
     ok(p2 && p2.bottom <= p2.vh && p2.top >= 0 && p2.logout <= p2.vh, '開著選單轉成橫向(568×320):不被切掉、登出看得到', p2);
