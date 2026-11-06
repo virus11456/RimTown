@@ -128,6 +128,7 @@ class World {
             this.news.dailyUpdate(this);
             // Daily economy
             processDailyProduction(this);
+            try { if (typeof ECON !== 'undefined') ECON.daily(this); } catch (e) { console.warn('[Econ] daily', e); } // v6.77.0 鹽、紙、穀物／魚／肉、飲食多樣
             this.stockpile.history.filter(h=>h.amount>0).slice(-50).forEach(h=>this.workOrders.updateProgress(h.resource,h.amount));
             this.buildings.dailyConstruction(this);
             this.trade.dailyUpdate(this);
@@ -235,10 +236,11 @@ class World {
         const recvAmt = giveAmt + hub;
         this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
         this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
+        try { if (typeof ECON !== 'undefined') ECON.noteTrade(this, give, giveAmt, recv, recvAmt, pick.key); } catch (e) {} // v6.77.0 帶來的食物算成魚／肉／穀物
         this.lastCaravanDay = day;
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
-        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣' }; // v6.22.0 模板參數用原文,顯示時再翻
+        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣', salt: '鹽', paper: '紙' }; // v6.22.0 模板參數用原文,顯示時再翻
         const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: pick.tw.name, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
         const msg = Memory.render(msgT.k, msgT.p);
         this.logMessageT('trade', '🐪 {msg}', { msg: msgT });

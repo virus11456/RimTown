@@ -74,8 +74,13 @@ const TIERS = (() => {
     // ---------- 每天 ----------
     function daily(w) {
         const T = S(w); track(w, T); syncTitles(w);
-        const target = met(w), d = day(w);
-        if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) change(w, T, T.lv + 1); }
+        const target = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w), d = day(w);
+        if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) {
+            // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
+            const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
+            if (mat && !w.stockpile?.canAfford?.(mat)) { T.up = UP_DAYS; if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
+            else { if (mat) w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); T.waitMat = null; change(w, T, T.lv + 1); }
+        } }
         else if (target < T.lv) { T.down++; T.up = 0; if (T.down >= DOWN_DAYS) change(w, T, T.lv - 1); }
         else { T.up = 0; T.down = 0; }
     }
@@ -96,7 +101,8 @@ const TIERS = (() => {
     // 進度(下一級還差什麼)
     function progress(w) {
         const T = S(w); const nx = LV[T.lv + 1]; if (!nx) return null;
-        return { next: nx, pop: [npcs(w).length, nx.pop], pros: [Math.round(pros(w)), nx.pros], era: [era(w), nx.era], streak: T.up, need: UP_DAYS };
+        const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null; // v6.77.0 擴建鎮公所的建材
+        return { next: nx, pop: [npcs(w).length, nx.pop], pros: [Math.round(pros(w)), nx.pros], era: [era(w), nx.era], streak: T.up, need: UP_DAYS, mat, matLack: mat ? ECON.lack(w, mat) : {} };
     }
     // ---------- 稱號換字(介面、紀錄、記憶、AI 提示詞都走 t()) ----------
     const RE_EN = /(?<![Ll]ord )\b(Acting )?([Mm])ayor\b/g; // 「Lord Mayor」本身不再換(避免換兩次)

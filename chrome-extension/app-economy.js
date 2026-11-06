@@ -17,7 +17,7 @@ Object.assign(RimTownApp.prototype, {
     // --- Economy Tab (with factory sub-tab) ---
     // v5.53.2 資源 key → 在地化名稱(跨分頁共用,修工廠/產業成本露出英文 key 的問題)
     _resName(r) {
-        if (!this._resNameMap) this._resNameMap = { food:t('食物'), wood:t('木材'), stone:t('石材'), metal:t('金屬'), cloth:t('布料'), herbs:t('草藥'), silver:t('銀幣'), meals:t('餐食'), tools:t('工具'), clothing:t('衣物'), medicine:t('藥品'), furniture:t('家具'), research_points:t('研究'),
+        if (!this._resNameMap) this._resNameMap = { salt:t('鹽'), paper:t('紙'), food:t('食物'), wood:t('木材'), stone:t('石材'), metal:t('金屬'), cloth:t('布料'), herbs:t('草藥'), silver:t('銀幣'), meals:t('餐食'), tools:t('工具'), clothing:t('衣物'), medicine:t('藥品'), furniture:t('家具'), research_points:t('研究'),
             plank:t('木板'), hardwood:t('硬木'), brick:t('磚塊'), marble:t('大理石'), steel:t('鋼鐵'), gold:t('黃金'),
             wheat:t('小麥'), rice:t('稻米'), corn:t('玉米'), potato:t('馬鈴薯'), cotton:t('棉花'), flowers:t('花卉'), mushroom:t('蘑菇'), sugarcane:t('甘蔗'), tea:t('茶葉'), grapes:t('葡萄'), golden_wheat:t('金色小麥'), dragon_fruit:t('火龍果'),
             bread:t('麵包'), pastry:t('糕點'), beer:t('啤酒'), wine:t('葡萄酒'), perfume:t('香水'), fine_tea:t('精品茶'), herbal_tea:t('草本茶'), sugar:t('砂糖'), jam:t('果醬'), luxury_furniture:t('高級家具') };
@@ -129,11 +129,11 @@ Object.assign(RimTownApp.prototype, {
 
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
-        const icons = {food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
+        const icons = {salt:'🧂',paper:'📄',food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
             plank:'🪵',hardwood:'🪓',brick:'🧱',marble:'🏛️',steel:'⚔️',gold:'🥇',
             wheat:'🌾',rice:'🍚',corn:'🌽',potato:'🥔',cotton:'🧶',flowers:'🌸',mushroom:'🍄',sugarcane:'🎋',tea:'🍵',grapes:'🍇',golden_wheat:'✨',dragon_fruit:'🐉',
             bread:'🍞',pastry:'🧁',beer:'🍺',wine:'🍷',perfume:'🌹',fine_tea:'🫖',herbal_tea:'🍃',sugar:'🍬',jam:'🫙',luxury_furniture:'🛋️'};
-        const labels = {food:t('食物'),wood:t('木材'),stone:t('石材'),metal:t('金屬'),cloth:t('布料'),herbs:t('草藥'),silver:t('銀幣'),meals:t('餐食'),tools:t('工具'),clothing:t('衣物'),medicine:t('藥品'),furniture:t('家具'),research_points:t('研究'),
+        const labels = {salt:t('鹽'),paper:t('紙'),food:t('食物'),wood:t('木材'),stone:t('石材'),metal:t('金屬'),cloth:t('布料'),herbs:t('草藥'),silver:t('銀幣'),meals:t('餐食'),tools:t('工具'),clothing:t('衣物'),medicine:t('藥品'),furniture:t('家具'),research_points:t('研究'),
             plank:t('木板'),hardwood:t('硬木'),brick:t('磚塊'),marble:t('大理石'),steel:t('鋼鐵'),gold:t('黃金'),
             wheat:t('小麥'),rice:t('稻米'),corn:t('玉米'),potato:t('馬鈴薯'),cotton:t('棉花'),flowers:t('花卉'),mushroom:t('蘑菇'),sugarcane:t('甘蔗'),tea:t('茶葉'),grapes:t('葡萄'),golden_wheat:t('金色小麥'),dragon_fruit:t('火龍果'),
             bread:t('麵包'),pastry:t('糕點'),beer:t('啤酒'),wine:t('葡萄酒'),perfume:t('香水'),fine_tea:t('精品茶'),herbal_tea:t('草本茶'),sugar:t('砂糖'),jam:t('果醬'),luxury_furniture:t('高級家具')};
@@ -167,6 +167,27 @@ Object.assign(RimTownApp.prototype, {
                         <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
                         <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>
                 </div></div>`;
+            // v6.77.0 本鎮物產:存糧是什麼(穀物／魚／肉)、誰在種田捕魚打獵、工具、鹽、紙、本鎮擅長與要靠貿易的
+            try { if (typeof ECON !== 'undefined' && this.world) {
+                const V = ECON.view(this.world); const tot = Math.max(1, V.food); const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x)) : String(x);
+                const bar = ECON.KINDS.map(k => { const pct = Math.round(V.pantry[k] / tot * 100); return pct > 0 ? `<span class="ec-kind ec-${k}" style="flex:${Math.max(4, pct)}" title="${esc(t(ECON.KIND_ZH[k]))} ${pct}%">${ECON.KIND_ICON[k]}</span>` : ''; }).join('');
+                const kinds = ECON.KINDS.map(k => `${ECON.KIND_ICON[k]} ${t(ECON.KIND_ZH[k])} ${Math.round(V.pantry[k])}`).join(' · ');
+                const roles = `${t('農夫')} ${V.roles.grain} · ${t('漁夫')} ${V.roles.fish} · ${t('獵人')} ${V.roles.meat}`;
+                const diet = V.variety == null ? '' : V.variety >= 3 ? `😋 ${t('飲食多樣，大家心情好')}` : V.variety <= 1 ? `😒 ${t('天天吃一樣的，大家吃膩了')}` : `🙂 ${t('飲食還算有變化')}`;
+                const toolPct = Math.round(V.toolF * 100);
+                const toolTxt = V.toolF >= 1.05 ? `🔧 ${t('工具充裕')}${t('：')}${t('工作效率')} ${toolPct}%` : V.toolF >= 1 ? `🔧 ${t('工具夠用')}` : `🔧 ${t('工具不夠')}${t('：')}${t('工作效率')} ${toolPct}%${t('（')}${t('需要')} ${V.toolNeed}${t('）')}`;
+                const saltTxt = V.salted ? `🧂 ${t('有鹽醃漬：存糧腐壞減半')} (${Math.round(V.salt)})` : `🧂 ${V.canSalt ? t('鹽還在曬，今天不夠用') : t('缺鹽：只有靠海的鎮曬得出鹽，要靠商隊買')}`;
+                const paperTxt = V.paperShort ? `📄 ${t('缺紙：報社可能停刊、研究變慢')}` : `📄 ${t('紙')} ${Math.round(V.paper)}`;
+                const good = V.spec.good.map(x => t(x)).join(t('、')), bad = V.spec.bad.map(x => t(x)).join(t('、'));
+                html += `<div class="econ-section ec-local"><h3>🗺️ ${t('本鎮物產')}</h3>
+                    <div class="ec-bar">${bar}</div>
+                    <div class="ec-line">${kinds}</div>
+                    <div class="ec-line ec-muted">${roles}${V.canFish ? '' : ` · ${t('不靠水，不能捕魚')}`}</div>
+                    ${diet ? `<div class="ec-line">${diet}</div>` : ''}
+                    <div class="ec-line">${toolTxt}</div><div class="ec-line">${saltTxt}</div><div class="ec-line">${paperTxt}</div>
+                    ${good ? `<div class="ec-line">💪 ${t('本鎮擅長')}${t('：')}${esc(good)}</div>` : ''}${bad ? `<div class="ec-line ec-muted">🐪 ${t('得靠貿易')}${t('：')}${esc(bad)}</div>` : ''}
+                </div>`;
+            } } catch (e) { console.warn('[Econ] panel', e); }
             // ② 加工產能:看今日流量(做了幾個/用掉幾個),不是純庫存
             const PROCESSED = ['meals','tools','clothing','medicine','furniture'];
             const flow = this._econDailyFlow(PROCESSED);
@@ -209,7 +230,7 @@ Object.assign(RimTownApp.prototype, {
             });
             html += '</div>';
             // ③ 原料倉庫:收成一顆燈,細目摺疊
-            const RAWS = ['wood','stone','metal','cloth','herbs'];
+            const RAWS = ['wood','stone','metal','cloth','herbs','salt','paper']; // v6.77.0 鹽、紙
             const short = RAWS.filter(k => (res[k] || 0) < 10);
             const tight = RAWS.filter(k => (res[k] || 0) >= 10 && (res[k] || 0) < 40);
             const light = short.length ? '🔴' : tight.length ? '🟡' : '🟢';

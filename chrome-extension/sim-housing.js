@@ -27,7 +27,11 @@ const HOUSING = (() => {
             if (done >= 2) break; const lv = H.lv[home] ?? top; if (lv >= top) continue;
             const cost = COST[lv + 1]; const payer = people.slice().sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
             if (!payer || WALLET.get(w, payer) < cost * 1.2 || Math.random() > 0.35) continue;
+            // v6.77.0 翻修要用建材(錢付給公庫＝跟鎮上買料);鎮上木材石材不夠就先等
+            const mat = (typeof ECON !== 'undefined') ? ECON.houseMat(lv + 1) : null;
+            if (mat && !w.stockpile?.canAfford?.(mat)) { H.waitMat = (H.waitMat || 0) + 1; if (H.waitMat % 5 === 1) { try { w.logMessageT?.('economy', '🔨 {a}想把家翻修成{s}，但鎮上{m}不夠，只好先等。', { a: payer.name, s: STYLE[lv + 1], m: ECON.matText(ECON.lack(w, mat)) }, payer.name); } catch (e) {} } continue; }
             if (!WALLET.pay(w, payer, null, cost, t('{a}翻修房子').replace('{a}', payer.name))) continue;
+            if (mat) w.stockpile.pay(mat, w.tickCount, t('{a}翻修房子').replace('{a}', payer.name));
             H.lv[home] = lv + 1; H.ver++; done++;
             for (const p of people) { p.moodModifier = (p.moodModifier || 0) + 4; mem(w, p, p === payer ? '我花了 {n} 銀幣把家翻修成{s}，住起來舒服多了。' : '{a}出錢把我們家翻修成{s}了。', { n: cost, s: STYLE[lv + 1], a: payer.name }, 5); }
             try { w.logMessageT?.('social', '🔨 {a}花了 {n} 銀幣，把家翻修成{s}。', { a: payer.name, n: cost, s: STYLE[lv + 1] }, payer.name); } catch (e) {}

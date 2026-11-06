@@ -177,7 +177,7 @@ class IndustryManager {
             // Produce resources
             ind.dailyOutput = {};
             for (const [resource, amount] of Object.entries(levelDef.output)) {
-                const produced = Math.round(amount * efficiency * synergyMult * 10) / 10;
+                const produced = Math.round(amount * efficiency * synergyMult * (typeof ECON !== 'undefined' ? ECON.toolFactor(world) : 1) * 10) / 10; // v6.77.0 工具影響產能
                 world.stockpile.add(resource, produced, world.tickCount, `${def.name} Lv${ind.level}`, def.name);
                 ind.dailyOutput[resource] = produced;
             }
