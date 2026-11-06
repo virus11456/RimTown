@@ -331,6 +331,14 @@
 
 /* v6.37.0 鎮長裁決列 */
 .rimtown-container .pp-mayor { font-size: 0.72rem; color: var(--accent); margin-top: 3px; }
+.rimtown-container .pp-council { margin: 3px 0 4px; font-size: 0.7rem; color: var(--text-muted); }
+.rimtown-container .pp-council-h { color: var(--text); }
+.rimtown-container .pp-council-list { display: flex; flex-wrap: wrap; gap: 3px 8px; margin-top: 2px; }
+.rimtown-container .pp-cv-for { color: var(--success, #6fbf73); }
+.rimtown-container .pp-cv-against { color: var(--danger, #e07a6a); }
+.rimtown-container .pp-stage { font-size: 0.68rem; color: var(--text-muted); margin: 2px 0; }
+.rimtown-container .pp-veto { font-size: 0.72rem; color: var(--accent); margin-top: 3px; }
+.rimtown-container .as-sub { font-size: 0.7rem; color: var(--text-muted); margin: 2px 0 4px; }
 
 /* ===== v6.38.0 事件卡（上帝視角） ===== */
 .rimtown-container .ec-panel { padding: 10px 12px 14px; }

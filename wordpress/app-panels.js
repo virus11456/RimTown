@@ -828,7 +828,7 @@ Object.assign(RimTownApp.prototype, {
                 const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); stampShown.push(p.id + stampKind);
                 const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
                 const word = (en ? { ok: 'APPROVED', no: 'REJECTED', off: 'WITHDRAWN' } : { ok: '核准', no: '否決', off: '收回' })[stampKind];
-                const by = p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : '');
+                const by = (p.decidedBy === 'override' || p.decidedBy === 'council') ? t((typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會') : p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : ''); // v6.82.0 議會否決／推翻首長否決時章上寫議會
                 stamp = `<div class="pp-stamp pp-stamp-${stampKind}${fresh ? ' pp-stamp-new' : ''}${en ? ' pp-stamp-en' : ''}" aria-label="${esc(word)}"><b>${esc(word)}</b>${by ? `<small>${esc(by)}</small>` : ''}</div>`;
             }
             let html = `<div class="pp-card pp-${p.status}${stampKind ? ' pp-stamped' : ''}" data-pid="${p.id}">${stamp}
@@ -843,6 +843,11 @@ Object.assign(RimTownApp.prototype, {
             // v6.30.0 投票理由(各取前兩名)
             const whyText = (arr) => (arr || []).map(x => x.llm ? `${x.who ? esc(t(x.who)) : ''}${t('「')}${esc(x.why)}${t('」')}` : `${esc(x.why)} ×${x.n}`).join(t('、')); // v6.41.2 村民自己說的話用引號＋名字
             if ((p.forWhy && p.forWhy.length) || (p.againstWhy && p.againstWhy.length)) html += `<div class="pp-why">${p.forWhy?.length ? `<span>👍 ${whyText(p.forWhy)}</span>` : ''}${p.againstWhy?.length ? `<span>👎 ${whyText(p.againstWhy)}</span>` : ''}</div>`;
+            // v6.82.0 大事要議會表決:每位議員怎麼投、首長否決有沒有被推翻
+            const cName = (typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會';
+            if (p.council) { const C = p.council; html += `<div class="pp-council"><div class="pp-council-h">🏛️ ${esc(t(cName))}${t('表決')} <b>${C.for}:${C.against}</b> · ${C.pass ? (C.sup ? t('通過（超過三分之二）') : t('通過')) : t('否決')}</div><div class="pp-council-list">${(C.list || []).map(x => `<span class="pp-cv pp-cv-${x.v === 'for' ? 'for' : 'against'}" title="${esc(x.why)}">${x.v === 'for' ? '👍' : '👎'} ${esc(t(x.name))}${String(x.why).includes('🕵️') ? ' 🕵️' : ''}</span>`).join('')}</div></div>`; }
+            else if (p.needsCouncil) html += `<div class="pp-stage">🏛️ ${t('大事：村民投票後先送{council}表決，再由鎮長拍板').replace('{council}', esc(t(cName)))}</div>`;
+            if (p.veto) html += `<div class="pp-veto">${p.veto.over ? '⚔️ ' + t('鎮長否決，被{council}以三分之二推翻').replace('{council}', esc(t(cName))) : '✋ ' + t('鎮長否決，{council}未達三分之二，否決成立').replace('{council}', esc(t(cName)))}</div>`;
             if (mode === 'decide') {
                 // v6.37.0 上帝視角:觀察者只看,投票兩天後由 NPC 鎮長裁決
                 html += `<div class="pp-deadline">${p.status === 'open' ? t('投票中，鎮長 {n} 天內裁決').replace('{n}', Math.max(1, p.daysLeft)) : t('鎮長先擱著，過幾天會重新拍板')}</div>`;
@@ -858,6 +863,7 @@ Object.assign(RimTownApp.prototype, {
         // v6.53.0 分成三個子分頁:提案(投票與進度)、鎮況(急事、派系、規矩與統計)、真相(只有你知道的)
         let P = '', T = '', S = '';
         P += this._electionCardHtml(); // v6.42.0 鎮長選舉／代理鎮長
+        P += this._assemblyCardHtml(); // v6.82.0 議會改選
         P += `<h4 class="pp-h">🗳️ ${t('投票中')} <span class="pp-count">${d.open.length}</span></h4>`;
         if (!d.open.length) P += `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">☕</span>${t('現在沒有投票中的提案。村民會依鎮上的情況陸續提出，通常每天一兩件。')}</div>`;
         else d.open.forEach(p => { P += card(p, 'decide'); });
@@ -1044,7 +1050,7 @@ Object.assign(RimTownApp.prototype, {
         let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}">${icon} ${t(label)}${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
         let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${tabBtn('town', '🏘️', '鎮況', nIss, hot)}${tabBtn('truth', '🕵️', '真相', nSec)}</div>`;
-        html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票、鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
+        html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
         html += tab === 'town' ? T : tab === 'truth' ? S : P;
         if (tab === 'props') for (const k of stampShown) this._stampSeen.add(k);
         html += '</div>';
@@ -1058,6 +1064,29 @@ Object.assign(RimTownApp.prototype, {
     },
 
     // v6.42.0 提案分頁頂端的選舉卡:代理鎮長、選舉／補選進度(候選人政見與演說、得票、支持者說的話)、上一屆結果
+    // v6.82.0 議會改選卡:競選中列候選人與政見,開票後十天內列結果
+    _assemblyCardHtml() {
+        const W = this.world; if (!W || typeof ASSEMBLY === 'undefined' || !W.council?._formed) return '';
+        const esc = (x) => this._escapeHtml(String(x ?? '')); const nm = (n) => esc(t(n || ''));
+        let v; try { v = ASSEMBLY.view(W); } catch (e) { return ''; }
+        const cn = esc(t(v.council)); let html = '';
+        if (v.elec) {
+            const E = v.elec;
+            const phase = E.phase === 'campaign' ? t('競選中，還有 {n} 天').replace('{n}', E.left) : t('明天開票');
+            html += `<div class="el-card as-card"><div class="el-head">🗳️ <b>${cn}${t('改選')}</b><span class="el-phase">${phase}</span></div><div class="as-sub">${t('{n} 人搶 {s} 席').replace('{n}', E.cands.length).replace('{s}', E.seats)}</div>`;
+            for (const c of E.cands) html += `<div class="el-cand" data-action="select-agent" data-val="${esc(c.id)}"><div class="el-row"><span class="el-name">${nm(c.name)}</span>${c.inc ? `<span class="el-pol">${t('現任')}</span>` : ''}</div><div class="el-speech">${t('「')}${esc(t(c.pitch).split('{council}').join(t(v.council)))}${t('」')}</div></div>`;
+            return html + '</div>';
+        }
+        const L = v.last; const d = W._absDay ? W._absDay() : 0;
+        if (L && d - L.day <= 10) {
+            html += `<div class="el-card as-card"><div class="el-head">🗳️ <b>${cn}${t('改選結果')}</b><span class="el-phase">${t('投票率 {p}%').replace('{p}', L.voters ? Math.round(L.turnout / L.voters * 100) : 0)}</span></div>`;
+            const top = Math.max(1, ...L.results.map(x => x.votes));
+            for (const x of L.results) html += `<div class="el-cand${x.won ? ' el-win' : ''}" data-action="select-agent" data-val="${esc(x.id)}"><div class="el-row"><span class="el-name">${x.won ? '🏛️ ' : ''}${nm(x.name)}</span>${x.inc ? `<span class="el-pol">${t('現任')}</span>` : ''}<span class="el-votes">${x.votes}${t(' 票')}</span></div><div class="election-bar"><div class="election-bar-fill${x.won ? ' winner' : ''}" style="width:${Math.round(x.votes / top * 100)}%"></div></div></div>`;
+            if (v.runners.length) html += `<div class="as-sub">${t('出缺時依序遞補')}${t('：')}${v.runners.slice(0, 4).map(nm).join(t('、'))}</div>`;
+            return html + '</div>';
+        }
+        return '';
+    },
     _electionCardHtml() {
         const el = this.state?.election; const W = this.world; if (!el || !W) return '';
         const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -1102,6 +1131,7 @@ Object.assign(RimTownApp.prototype, {
         } else {
             html += `<div class="el-last">🏛️ ${t('鎮長每年秋季第 1 天改選；鎮長永久離開小鎮會馬上補選。')}</div>`;
         }
+        if (W.council?._formed && typeof TIERS !== 'undefined' && !W.assembly?.elec) html += `<div class="el-last">🏛️ ${t('{council}每年春季第 3 天改選；有人出缺由上次落選者依票數遞補。').replace('{council}', esc(t(TIERS.LV[TIERS.level(W)].council)))}</div>`; // v6.82.0
         return html;
     },
 
