@@ -1938,20 +1938,10 @@ class RimTownApp {
         } catch(e) { console.log('[RimTown] Settings load error:', e); }
     }
 
-    // v6.36.0 玩家自備 AI(BYOK):金鑰只存這台裝置的瀏覽器(localStorage rimtown_byok),
-    // 不推雲端設定、不進存檔、不經小鎮伺服器;沒填的玩家照走內建 AI
+    // v6.78.1 關閉玩家自備 AI:全部改用小鎮內建 AI(伺服器的 Claude → GPT → Groq);舊的自備金鑰讀到就從這台裝置刪掉
     _byokGet() {
-        try {
-            const o = JSON.parse(localStorage.getItem('rimtown_byok') || 'null');
-            if (o && typeof o === 'object' && o.provider && o.key && o.provider !== 'server') return o;
-        } catch (e) {}
+        try { localStorage.removeItem('rimtown_byok'); } catch (e) {}
         return null;
-    }
-    _byokSet(cfg) {
-        try {
-            if (cfg && cfg.provider && cfg.provider !== 'server' && cfg.key) localStorage.setItem('rimtown_byok', JSON.stringify({ provider: cfg.provider, key: cfg.key, model: cfg.model || '', baseUrl: cfg.baseUrl || '' }));
-            else localStorage.removeItem('rimtown_byok');
-        } catch (e) {}
     }
     // v6.39.0 完整智能體模式:'1' 開 / '0' 關 / 未設定 = 開(v6.41.0 起內建 AI 也預設開)
     _fullAgentOn() {
@@ -1967,13 +1957,7 @@ class RimTownApp {
         return { anthropic: 'Claude', openai: 'GPT', gemini: 'Gemini', custom: t('自訂端點') }[provider] || provider || '';
     }
     _buildLLMClient() {
-        const byok = this._byokGet();
-        if (byok) {
-            this.llmClient = new LLMClient(byok.provider, byok.key, byok.model || null, byok.baseUrl || '');
-            try { localStorage.setItem('llm_provider', byok.provider); } catch (e) {}
-            console.log('[RimTown] LLM client: 玩家自備', byok.provider, byok.model || '(default model)');
-            return;
-        }
+        this._byokGet(); // v6.78.1 清掉舊的自備金鑰
         // 網站(rimtown.cc)走內建 AI /api/chat;本機開檔(file://)沒有代理端點 → 模擬對話
         const provider = location.protocol.startsWith('http') ? 'server' : 'none';
         try { localStorage.setItem('llm_provider', provider); } catch (e) {}
@@ -1984,61 +1968,6 @@ class RimTownApp {
             this.llmClient = null;
         }
     }
-    _byokReadForm() {
-        const g = (id) => document.getElementById(id);
-        return {
-            provider: g('settings-byok-provider')?.value || 'server',
-            key: String(g('settings-byok-key')?.value || '').trim(),
-            model: String(g('settings-byok-model')?.value || '').trim(),
-            baseUrl: String(g('settings-byok-url')?.value || '').trim(),
-        };
-    }
-    _byokMsg(text, ok) {
-        this._byokLastMsg = text; // 設定分頁重繪時保留最後一則結果
-        const el = document.getElementById('settings-byok-result');
-        if (!el) return;
-        el.textContent = text;
-        el.style.color = ok === true ? 'var(--positive)' : ok === false ? 'var(--negative)' : 'var(--text-muted)';
-    }
-    _byokApplyClient() {
-        this._buildLLMClient();
-        this.world.conversationEngine = this.llmClient ? this._makeConversationEngine() : new ConversationEngine();
-        this.world.fullAgentMode = this._fullAgentOn(); // v6.39.0
-        this._updateLLMStatus(); // 泡泡掛勾由 _hookConversationBubbles 的定時檢查自動補上
-    }
-    async _byokTest() {
-        const cfg = this._byokReadForm();
-        if (cfg.provider === 'server') { this._byokMsg(t('目前選的是小鎮內建 AI，不需要測試。'), null); return; }
-        if (!cfg.key) { this._byokMsg(t('請先貼上 API 金鑰。'), false); return; }
-        if (cfg.provider === 'custom' && !cfg.baseUrl) { this._byokMsg(t('自訂端點要填基底網址。'), false); return; }
-        this._byokMsg(t('測試中…'), null);
-        const c = new LLMClient(cfg.provider, cfg.key, cfg.model || null, cfg.baseUrl);
-        const r = await c.testConnection(cfg.provider, cfg.key, cfg.model || null, cfg.baseUrl);
-        if (r.ok) this._byokMsg('✅ ' + t('連線成功，可以按「儲存並啟用」。'), true);
-        else this._byokMsg('❌ ' + t('連線失敗：') + (r.error || ''), false);
-    }
-    _byokSave(silent) {
-        const cfg = this._byokReadForm();
-        if (cfg.provider !== 'server' && !cfg.key) { if (!silent) this._byokMsg(t('請先貼上 API 金鑰。'), false); return false; }
-        if (cfg.provider === 'custom' && !cfg.baseUrl) { if (!silent) this._byokMsg(t('自訂端點要填基底網址。'), false); return false; }
-        this._byokSet(cfg.provider === 'server' ? null : cfg);
-        this._byokApplyClient();
-        if (!silent) {
-            const byok = this._byokGet();
-            this.world.logMessage('system', byok ? t('已改用你自備的 AI：') + this._byokLabel(byok.provider) + (byok.model ? ' / ' + byok.model : '') : t('已切回小鎮內建 AI。'));
-            this.renderSidebar();
-        }
-        return true;
-    }
-    _byokClear() {
-        if (!this._byokGet()) { this._byokMsg(t('目前沒有自備金鑰。'), null); return; }
-        if (!confirm(t('要清除這台裝置上的自備 AI 金鑰、切回小鎮內建 AI 嗎？'))) return;
-        this._byokSet(null);
-        this._byokApplyClient();
-        this.world.logMessage('system', t('已切回小鎮內建 AI。'));
-        this.renderSidebar();
-    }
-
     // v5.65.0 AI 全面內建:設定只剩模擬速度(AI 由伺服器統一提供,玩家端沒有可填的金鑰)
     async saveSettings() { // v6.54.0 速度不在設定裡了(上方倍率鈕),這裡只管 AI 與雲端設定
         this._buildLLMClient(); // v6.36.0 依本機設定決定:自備 AI / 小鎮內建 / 模擬
@@ -2071,11 +2000,6 @@ class RimTownApp {
         // v5.73.0 AI 對話語言
         const dlEl = document.getElementById('settings-tab-dialoglang');
         if (dlEl) this._setDialogueLang(dlEl.value);
-        // v6.36.0 「儲存設定」也一併收自備 AI 表單(有填金鑰才存;選回內建就清掉)
-        if (document.getElementById('settings-byok-provider')) {
-            const cfg = this._byokReadForm();
-            if (cfg.provider === 'server' || cfg.key) this._byokSet(cfg.provider === 'server' ? null : cfg);
-        }
         this.saveSettings();
         const langSelect = document.getElementById('lang-select') || document.getElementById('settings-tab-lang');
         if (langSelect) {
@@ -2517,16 +2441,12 @@ class RimTownApp {
                 case 'proposal-decide': this._proposalDecide(val); break; // v6.26.0
                 // Settings tab actions
                 case 'settings-save-all': this._saveSettingsFromTab(); break;
-                // v6.36.0 玩家自備 AI
                 // v6.38.0 事件卡
                 case 'event-open': this._ecOpen = (this._ecOpen === val) ? null : val; this.renderSidebar(); break;
                 case 'event-filter': this._ecFilter = val; this.renderSidebar(); break;
                 case 'event-play': this._playEventCard(val); break;
                 case 'gh-open': this._ghShow?.(); break; // v6.48.0
                 case 'event-random': { const h = (this.state?.eventCards?.hand || []).filter(c => c.left <= 0 && !c.dailyFull); if (h.length) { const c = h[Math.floor(Math.random() * h.length)]; this._ecOpen = c.id; this._playEventCard(c.id); } else this._showCornerNotice({ icon: '🃏', title: t('事件卡'), name: '', desc: t('今天沒有可打的卡了') }); break; }
-                case 'byok-test': this._byokTest(); break;
-                case 'byok-save': this._byokSave(false); break;
-                case 'byok-clear': this._byokClear(); break;
                 case 'settings-login': document.getElementById('auth-modal')?.classList.remove('hidden'); break;
                 case 'settings-register': {
                     document.getElementById('auth-modal')?.classList.remove('hidden');

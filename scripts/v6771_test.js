@@ -23,13 +23,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
           sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: L.scrollWidth, lcw: L.clientWidth,
           reg: !!document.getElementById('landing-register') && !!document.getElementById('landing-login') };
       });
-      ok(r.howto === 4 && r.feats === 8 && r.ai === 3, '怎麼玩 4 步、特色 8 張、AI 與金鑰 3 張', { howto: r.howto, feats: r.feats, ai: r.ai });
+      ok(r.howto === 4 && r.feats === 8 && r.ai === 2, '怎麼玩 4 步、特色 8 張、AI 與金鑰 2 張(v6.78.1 起沒有自備金鑰)', { howto: r.howto, feats: r.feats, ai: r.ai });
       ok(r.reg, '未登入時有註冊／登入按鈕', r.reg);
       const stale = lang === 'zh'
-        ? /五座城鎮、近百位|玩家附近|不需要、也不能填自己的金鑰|你唯一能做的|看顧小鎮的觀察者/
+        ? /五座城鎮、近百位|玩家附近|你唯一能做的|看顧小鎮的觀察者/
         : /five towns|near the player|cannot enter their own key|only thing you can do/i;
       ok(!stale.test(r.txt), '沒有過時的說法', (r.txt.match(stale) || [])[0]);
-      ok(lang === 'zh' ? /自己的 Claude、GPT 或 Gemini 金鑰/.test(r.txt) && /只存在你這台裝置的瀏覽器/.test(r.txt) : /own Claude, GPT or Gemini key/.test(r.txt) && /this device's browser only/.test(r.txt), 'AI 段落說明自備金鑰只存在瀏覽器', null);
+      ok(lang === 'zh' ? !/自己的 Claude、GPT 或 Gemini 金鑰/.test(r.txt) && /Claude 不能用才換 GPT/.test(r.txt) : !/own Claude, GPT or Gemini key/.test(r.txt) && /GPT only if Claude/.test(r.txt), 'AI 段落：全部用內建 AI(Claude → GPT → Groq)，不再有自備金鑰', null);
       ok(lang === 'zh' ? /邀請碼/.test(r.txt) : /invite code/i.test(r.txt), '頁尾提到註冊需要邀請碼', null);
       if (lang === 'en') ok(!r.cjk.length, '英文版沒有殘留中文', r.cjk.slice(0, 5));
       ok(r.sw <= r.cw && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });

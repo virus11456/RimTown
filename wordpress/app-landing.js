@@ -338,8 +338,7 @@ Object.assign(RimTownApp.prototype, {
         ];
         const aiNotes = [
             ['🤖', t('完整智能體模式（預設開啟）'), t('村民要不要提案、怎麼投票、鎮長怎麼裁決，都交給 AI 依各自的記憶、性格和交情推理，並說出理由。')],
-            ['🔑', t('內建 AI，不用填金鑰'), t('設定裡選「小鎮內建」就是用遊戲伺服器的 AI，每個帳號每天有使用上限。金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。')],
-            ['🧩', t('也可以用自己的金鑰'), t('想多用，可以在設定填自己的 Claude、GPT 或 Gemini 金鑰。金鑰只存在你這台裝置的瀏覽器，不上傳伺服器、不進存檔，用的是你自己的額度。')],
+            ['🔑', t('內建 AI，不用填金鑰'), t('所有玩家都用小鎮內建的 AI：先用 Claude，Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。每個帳號每天有使用上限；金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。')],
         ];
         const roadmap = [
             [t('已上線'), '#34d399', [t('村民全自主、事件卡、完整智能體模式'), t('四級城鎮、世界地圖與馬車'), t('各鎮物產與貿易（穀物、魚、肉、鹽、紙、工具、建材）'), t('宗教、報社、銀行、國王')]],
@@ -556,7 +555,7 @@ Object.assign(RimTownApp.prototype, {
                 <dl class="landing-dl">${ingredients.map(x => `<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>
                 <h4>② ${t('兩條車道：誰先上')}</h4>
                 <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('車道')}</th><th>${t('用在哪')}</th><th>${t('先問誰')}</th><th>${t('備援')}</th><th>${t('時限')}</th></tr></thead><tbody>${lanes.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-                <p class="landing-muted">${t('對話、行程、反思、投票與鎮長裁決一律先問 Claude，品質一致；Claude 故障才依序換 GPT、Groq，三邊互為備援。玩家自備金鑰時，直接用玩家選的那一家。')}</p>
+                <p class="landing-muted">${t('對話、行程、反思、投票與鎮長裁決一律先問 Claude，品質一致；Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。')}</p>
                 <h4>③ ${t('互相接手與冷卻')}</h4>
                 <ul class="landing-list">${handoff.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
                 <h4>④ ${t('免費額度保護')}</h4>
@@ -565,7 +564,7 @@ Object.assign(RimTownApp.prototype, {
                 <ul class="landing-list">${guard.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
                 <h4>⑥ ${t('成本閘門')}</h4>
                 <ul class="landing-list">${cost.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-                <p class="landing-muted">${t('小鎮內建 AI 的金鑰全部放在伺服器環境變數，網頁原始碼與存檔裡都沒有；玩家自備的金鑰只存在自己的瀏覽器。')}</p>
+                <p class="landing-muted">${t('AI 金鑰全部放在伺服器環境變數，網頁原始碼與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。')}</p>
             </div>
         </details>`;
     },
