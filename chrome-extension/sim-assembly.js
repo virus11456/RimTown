@@ -349,6 +349,24 @@ if (typeof ProposalSystem !== 'undefined') {
         } catch (e) {}
         return it;
     };
+    // v6.82.1 政令(原本議會自己那一套固定清單)改由議員在提案頁提出
+    const _cands = PS._candidates;
+    PS._candidates = function (w, day, ...rest) {
+        const out = _cands.call(this, w, day, ...rest);
+        try {
+            const seat = ASSEMBLY.seated(w), ms = new Set(seat.map(a => a.agentId));
+            const free = seat.filter(a => (day - (this.proposerCooldown?.[a.agentId] ?? -99)) >= 5);
+            if (ms.size && !free.length) return (out || []).filter(c => !(c && c.kind === 'policy' && String(c.key || '').startsWith('policy:'))); // 議員這幾天都提過案了,政令改天再提
+            if (ms.size) {
+                const mjobs = new Set([...ms].map(id => w.agents[id]?.job?.key).filter(Boolean));
+                for (const c of out || []) if (c && c.kind === 'policy' && String(c.key || '').startsWith('policy:')) {
+                    c.pred = (a) => ms.has(a.agentId);
+                    c.jobs = (c.jobs || []).filter(j => mjobs.has(j)); // 沒有議員做這行時就不限職業,由任一位議員提
+                }
+            }
+        } catch (e) {}
+        return out;
+    };
     const _daily = PS.daily;
     PS.daily = function (w, ...rest) {
         const r = _daily.call(this, w, ...rest);
@@ -370,7 +388,13 @@ if (typeof ConversationEngine !== 'undefined' && ConversationEngine.prototype.de
 // ---- 議會:出缺先由落選者遞補;升格擴席時保留選上的議員
 if (typeof CouncilSystem !== 'undefined') {
     const CS = CouncilSystem.prototype; const _du = CS.dailyUpdate, _f = CS._formCouncil;
-    CS.dailyUpdate = function (world) { try { ASSEMBLY.fillFromRunners.call(this, world); } catch (e) { console.warn('[Assembly] fill', e); } return _du.call(this, world); };
+    CS.dailyUpdate = function (world) {
+        try { ASSEMBLY.fillFromRunners.call(this, world); } catch (e) { console.warn('[Assembly] fill', e); }
+        if (world.observerMode && this.pendingProposal) this.pendingProposal = null; // v6.82.1 舊的議會自訂提案(要觀察者投票)不再跑;政令改走提案頁
+        return _du.call(this, world);
+    };
+    const _gen = CS._generateProposal;
+    CS._generateProposal = function (world) { if (world.observerMode) { this._daysSinceProposal = 0; return; } return _gen.call(this, world); };
     CS._formCouncil = function (world) {
         const A = world.assembly;
         if (!A?.elections || !(this.members || []).some(id => world.agents[id])) return _f.call(this, world);
