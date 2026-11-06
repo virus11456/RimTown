@@ -113,14 +113,53 @@ const FLOW = (() => {
     const PREFER = { fine_tea: 0.1 };
     function pickRecipe(w, def, factory) {
         const recipes = def?.recipes || []; if (!recipes.length) return null;
+        const fk = factory?.key || (typeof FACTORIES !== 'undefined' ? (Object.entries(FACTORIES).find(([, v]) => v === def) || [])[0] : null);
         let best = null, bestScore = 0.05; const turn = day(w) % recipes.length;
         for (const [i, rc] of recipes.entries()) {
             const ok = Object.entries(rc.input || {}).every(([r, a]) => get(w, r) >= a);
             if (!ok) continue;
-            const sc = Math.max(...Object.keys(rc.output || {}).map(r => need(w, r))) + (i === turn ? 0.03 : 0) + (PREFER[rc.id] || 0); // 一樣缺就輪流做
+            const sc = Math.max(...Object.keys(rc.output || {}).map(r => Math.max(need(w, r), FINE_FROM[r] === fk ? fineNeed(w, r) * 0.8 : 0))) + (i === turn ? 0.03 : 0) + (PREFER[rc.id] || 0); // 一樣缺就輪流做;v6.80.0 精製品還不夠時工坊也會做(優先度低一點)
             if (sc > bestScore) { best = rc.id; bestScore = sc; }
         }
         return best;
+    }
+
+    // ---------- v6.80.0 精製品：工坊做的工具(煉鋼坊)、衣服(紡織廠)、家具(家具工坊)比較耐用，耗損減半 ----------
+    // 倉庫總數照舊；另外記其中有幾件是精製的。賣掉、蓋房子等其他用途先用普通的，精製的留著自己用
+    const FINE_FROM = { tools: 'steelworks', clothing: 'textile_mill', furniture: 'furniture_workshop' };
+    const FINE_WEAR = 0.5;
+    function fineMap(w) { const F = S(w); if (!F.fine || typeof F.fine !== 'object') F.fine = {}; return F.fine; }
+    function fine(w, r) { const m = fineMap(w); const n = Math.max(0, Math.min(m[r] || 0, get(w, r))); m[r] = n; return n; }
+    function addFine(w, factoryKey, r, n) { if (FINE_FROM[r] !== factoryKey || !(n > 0)) return 0; const m = fineMap(w); m[r] = (m[r] || 0) + n; return n; }
+    // 每天的耗損：用到精製品的那部分只壞一半
+    function wear(w, r, base, reason) {
+        const total = get(w, r); if (!(total > 0) || !(base > 0)) return 0;
+        const f = fine(w, r), share = f / total;
+        const fromFine = Math.min(f, base * share * FINE_WEAR), fromNormal = Math.min(total - f, base * (1 - share));
+        const n = Math.round((fromFine + fromNormal) * 100) / 100; if (n <= 0) return 0;
+        if (!sp(w).consume(r, Math.min(n, total), w.tickCount || 0, reason)) return 0;
+        fineMap(w)[r] = Math.max(0, f - fromFine); fine(w, r);
+        return n;
+    }
+    function fineNeed(w, r) { const T = want(w, r); return T > 0 ? Math.max(0, Math.min(1, 1 - fine(w, r) / T)) : 0; }
+    function wearRate(w, r) { const total = get(w, r); if (!(total > 0)) return 1; const share = fine(w, r) / total; return 1 - share + share * FINE_WEAR; }
+
+    // ---------- v6.80.0 吃得好：飲食多樣、有麵包糕點果醬、有好酒好茶甜點，三樣裡有兩樣就算「吃得好」 ----------
+    // 吃得好的隔天比較耐餓(少吃一成正餐)；連續吃得好三天全鎮心情 +1、七天 +2
+    function diet(w) { const F = S(w); if (!F.diet || typeof F.diet !== 'object') F.diet = { streak: 0, good: false, score: 0, today: {} }; if (!F.diet.today) F.diet.today = {}; return F.diet; }
+    function dietNote(w, kind, n) { const T = diet(w).today; T[kind] = (T[kind] || 0) + (n || 0); }
+    function mealFactor(w) { return diet(w).good ? 0.9 : 1; }
+    function dietParts(w, pop) { const T = diet(w).today; return { variety: w.econ?.variety >= 3, snack: (T.snack || 0) >= pop * 0.1, fine: (T.fine || 0) >= Math.max(1.5, pop * 0.05) }; }
+    function dietScore(w, pop) { const P = dietParts(w, pop); return (P.variety ? 1 : 0) + (P.snack ? 1 : 0) + (P.fine ? 1 : 0); }
+    function dietSettle(w, pop) {
+        const D = diet(w), sc = dietScore(w, pop);
+        D.parts = dietParts(w, pop); D.raw = { variety: w.econ?.variety ?? 0, snack: Math.round((D.today.snack || 0) * 10) / 10, fine: Math.round((D.today.fine || 0) * 10) / 10 };
+        D.score = sc; D.good = sc >= 2; D.streak = D.good ? (D.streak || 0) + 1 : 0; D.today = {};
+        const bonus = D.streak >= 7 ? 2 : D.streak >= 3 ? 1 : 0;
+        if (bonus) for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + bonus;
+        if (D.streak === 3) log(w, '🍰 鎮上連著三天都吃得很好，大家心情跟著好起來。', {});
+        else if (D.streak === 7) log(w, '🍰 鎮上已經連續一週吃得很好，大家都說這是最好過的日子。', {});
+        return D;
     }
 
     // ---------- 正餐以外的吃法：麵包、糕點、果醬可以代替正餐 ----------
@@ -131,7 +170,7 @@ const FLOW = (() => {
             const have = get(w, r); if (have < 1) continue;
             const use = Math.min(have, Math.ceil((maxN - eaten) / per));
             if (use > 0 && S.consume(r, use, tick, t('當正餐吃'))) {
-                eaten += use * per;
+                eaten += use * per; dietNote(w, 'snack', use * per); if (mood) dietNote(w, 'fine', use); // v6.80.0 記下今天吃得好不好
                 if (mood) for (let i = 0; i < Math.min(use, all.length); i++) { const a = pick(all); a.moodModifier = (a.moodModifier || 0) + mood; }
             }
         }
@@ -168,19 +207,18 @@ const FLOW = (() => {
         // 3) 花：布置小鎮(香水坊要用的先留著)
         { const extra = get(w, 'flowers') - reserveFor(w, 'flowers'); const n = Math.min(extra, Math.max(1, pop * 0.1)); if (n >= 1 && Sp.consume('flowers', Math.floor(n), tick, t('插花布置'))) for (const a of all) a.moodModifier = (a.moodModifier || 0) + 0.3; }
         // 4) 糖：廚師拿來做菜(留 10 給糕點與果醬)
-        { const cooks = all.filter(a => a.job?.key === 'cook').length; const n = Math.min(cooks, Math.floor(get(w, 'sugar') - 10)); if (n >= 1 && Sp.consume('sugar', n, tick, t('做菜用糖'))) Sp.add('meals', n * 2, tick, t('甜點與好菜')); }
+        { const cooks = all.filter(a => a.job?.key === 'cook').length; const n = Math.min(cooks, Math.floor(get(w, 'sugar') - 10)); if (n >= 1 && Sp.consume('sugar', n, tick, t('做菜用糖'))) dietNote(w, 'fine', n), Sp.add('meals', n * 2, tick, t('甜點與好菜')); }
         // 5) 酒館與茶館：喝的人心情變好
         let drinks = 0;
-        drinks += enjoy(w, 'beer', pop * 0.12, 1, t('酒館的啤酒'));
-        drinks += enjoy(w, 'wine', pop * 0.05, 1.5, t('酒館的葡萄酒'));
-        drinks += enjoy(w, 'fine_tea', pop * 0.04, 1, t('茶館的好茶'));
-        drinks += enjoy(w, 'herbal_tea', pop * 0.04, 1, t('養生茶'));
-        { const extra = get(w, 'tea') - reserveFor(w, 'tea'); if (extra >= 1) drinks += enjoy(w, 'tea', Math.min(extra, pop * 0.04), 0.8, t('泡茶喝')); }
+        { const a = enjoy(w, 'beer', pop * 0.12, 1, t('酒館的啤酒')); drinks += a; dietNote(w, 'fine', a * 0.5); } // v6.80.0 啤酒算半份好酒
+        { const a = enjoy(w, 'wine', pop * 0.05, 1.5, t('酒館的葡萄酒')), b = enjoy(w, 'fine_tea', pop * 0.04, 1, t('茶館的好茶')); drinks += a + b; dietNote(w, 'fine', a + b); } // v6.80.0 好酒好茶算吃得好
+        { const a = enjoy(w, 'herbal_tea', pop * 0.04, 1, t('養生茶')); drinks += a; dietNote(w, 'fine', a * 0.5); }
+        { const extra = get(w, 'tea') - reserveFor(w, 'tea'); if (extra >= 1) { const a = enjoy(w, 'tea', Math.min(extra, pop * 0.04), 0.8, t('泡茶喝')); drinks += a; dietNote(w, 'fine', a * 0.5); } }
         if (drinks >= 3) once(w, 'drinks', 7, () => log(w, '🍻 晚上酒館與茶館很熱鬧，今天喝掉了 {n} 份酒和茶。', { n: Math.round(drinks) }));
         // 6) 香水：約會時用
         enjoy(w, 'perfume', Math.max(0.5, pop * 0.02), 2, t('約會擦香水'));
         // 7) 家具會舊、精裝家具給講究的人家
-        Sp.consume('furniture', Math.min(get(w, 'furniture'), Math.round(pop * 0.01 * 10) / 10), tick, t('家具用舊了'));
+        wear(w, 'furniture', pop * 0.01, t('家具用舊了')); // v6.80.0 家具工坊做的精製家具壞得慢一半
         enjoy(w, 'luxury_furniture', pop * 0.004, 2, t('添購精裝家具'));
         // 8) 黃金送去鑄成銀幣(一天最多 5 兩)
         { const g = Math.min(5, Math.floor(get(w, 'gold'))); if (g >= 1 && Sp.consume('gold', g, tick, t('鑄幣'))) { Sp.add('silver', g * 20, tick, t('黃金鑄成銀幣')); once(w, 'mint', 10, () => log(w, '🪙 鎮上把 {g} 兩黃金鑄成了銀幣。', { g })); } }
@@ -192,6 +230,7 @@ const FLOW = (() => {
               if (cand) { cand.job = new Job('cook'); F.lastHire = d; F.mealShort = 0; try { cand.memory?.addT?.(tick, w.clock?.timeStr || '', 'social', '鎮上的廚房忙不過來，我放下鋤頭改去當廚師了。', {}, 6, []); } catch (e) {} log(w, '🍳 廚房人手不夠、糧倉卻很滿：{who}改行當廚師了。', { who: cand.name }); }
           } }
         F.facts = facts.length;
+        dietSettle(w, pop); // v6.80.0 今天吃得好不好，影響明天要吃多少正餐
     }
 
     const CROP_LIKE = new Set([...Object.keys(CROP_FOOD), 'cotton', 'flowers', 'tea', 'sugar']);
@@ -205,15 +244,15 @@ const FLOW = (() => {
         if (r === 'cotton' && need(w, 'cloth') > 0.5) n = Math.max(n, 10);
         return n;
     }
-    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, daily, CROP_FOOD, SUB, KEEP };
+    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, fine, addFine, wear, wearRate, FINE_FROM, FINE_WEAR, diet, mealFactor, dietScore, daily, CROP_FOOD, SUB, KEEP };
 })();
 if (typeof window !== 'undefined') window.FLOW = FLOW;
 
-// 存讀檔：只存每日提示的冷卻
+// 存讀檔：每日提示的冷卻、精製品數量(v6.80.0)、吃得好的連續天數(v6.80.0)
 if (typeof World !== 'undefined' && !World.prototype._flowHooked) {
     World.prototype._flowHooked = true;
     const _ser = World.prototype.serialize, _load = World.prototype.loadSave, _reset = World.prototype.reset;
-    World.prototype.serialize = function () { const d = _ser.call(this); try { if (d && this.flow) d.flow = { notes: this.flow.notes || {}, lastDay: this.flow.lastDay ?? null }; } catch (e) {} return d; };
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.flow = (data && data.flow && typeof data.flow === 'object') ? { notes: { ...(data.flow.notes || {}) }, lastDay: data.flow.lastDay ?? null } : null; } catch (e) {} return r; };
+    World.prototype.serialize = function () { const d = _ser.call(this); try { if (d && this.flow) d.flow = { notes: this.flow.notes || {}, lastDay: this.flow.lastDay ?? null, fine: this.flow.fine || {}, diet: this.flow.diet ? { streak: this.flow.diet.streak || 0, good: !!this.flow.diet.good, score: this.flow.diet.score || 0, today: this.flow.diet.today || {} } : null }; } catch (e) {} return d; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.flow = (data && data.flow && typeof data.flow === 'object') ? { notes: { ...(data.flow.notes || {}) }, lastDay: data.flow.lastDay ?? null, fine: { ...(data.flow.fine || {}) }, diet: data.flow.diet && typeof data.flow.diet === 'object' ? { streak: data.flow.diet.streak || 0, good: !!data.flow.diet.good, score: data.flow.diet.score || 0, today: { ...(data.flow.diet.today || {}) } } : null } : null; } catch (e) {} return r; };
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.flow = null; return r; };
 }

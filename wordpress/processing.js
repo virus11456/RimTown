@@ -170,6 +170,7 @@ class ProcessingSystem {
         factory.warehouse[resource] -= take;
         if (factory.warehouse[resource] <= 0) delete factory.warehouse[resource];
         world.stockpile.add(resource, take, world.tickCount, `${FACTORIES[factoryKey].name}${t('出貨')}`);
+        if (typeof FLOW !== 'undefined') FLOW.addFine(world, factoryKey, resource, take); // v6.80.0 工坊做的工具、衣服、家具是精製品
         return true;
     }
 
@@ -313,6 +314,7 @@ class ProcessingSystem {
             for (const [key, factory] of Object.entries(this.builtFactories)) {
                 if (factory.status !== 'active') continue;
                 for (const [r, amount] of Object.entries(factory.warehouse)) {
+                    if (typeof FLOW !== 'undefined' && FLOW.FINE_FROM[r] === key && FLOW.fine(world, r) < FLOW.want(world, r)) continue; // v6.80.0 精製品先留給鎮上
                     if (amount >= 3) {
                         const sellAmount = Math.min(2, amount); // Sell up to 2 per day at market
                         this.sellProduct(key, r, sellAmount, world);

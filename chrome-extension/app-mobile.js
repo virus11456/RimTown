@@ -22,7 +22,16 @@ Object.assign(RimTownApp.prototype, {
             <button id="kairo-chat-btn" data-tab="chat">💬 <span>${t('聊天')}</span></button>
             <button id="kairo-menu-btn">⚙️ <span>${t('設定')}</span></button>`;
         root.appendChild(bar);
-        bar.addEventListener('click', (e) => { const b = e.target.closest('[data-kairo-tab]'); if (b) { this._openKairoTab(b.dataset.kairoTab); bar.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b)); } });
+        // v6.80.1 再點一次正在開的那顆 → 收起面板、看回村莊(跟聊天鈕一樣)
+        const cardOpen = () => { const c = document.getElementById('kairo-card'); return !!(this._kairoCardOpen && c && !c.classList.contains('hidden')); };
+        const clearActive = () => bar.querySelectorAll('button').forEach(x => x.classList.remove('active'));
+        this._kairoClearBar = clearActive;
+        bar.addEventListener('click', (e) => {
+            const b = e.target.closest('[data-kairo-tab]'); if (!b) return;
+            const tab = b.dataset.kairoTab, cur = this.activeTab, inGroup = cur && cur !== 'detail' && cur !== 'chat-archives' && ((this._mobileSubToMain || {})[cur] || cur) === tab; // 正在看這組(含子分頁);看村民詳情時點「村民」是回列表
+            if (inGroup && cardOpen()) { this._dismissKairoPanels(); clearActive(); return; }
+            this._openKairoTab(tab); bar.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === b));
+        });
 
         // 底部狀態帶(機場物語式:繁榮/銀幣/食物/人口)
         const status = document.createElement('div');
@@ -60,7 +69,11 @@ Object.assign(RimTownApp.prototype, {
         });
 
         // 事件
-        document.getElementById('kairo-menu-btn').addEventListener('click', () => { this._openKairoTab('settings'); }); // v6.25.0 直接開設定
+        document.getElementById('kairo-menu-btn').addEventListener('click', (e) => { // v6.25.0 直接開設定;v6.80.1 設定開著再點一次就收起
+            const btn = e.currentTarget, c = document.getElementById('kairo-card');
+            if (this.activeTab === 'settings' && this._kairoCardOpen && c && !c.classList.contains('hidden')) { this._dismissKairoPanels(); this._kairoClearBar?.(); return; }
+            this._openKairoTab('settings'); bar.querySelectorAll('button').forEach(x => x.classList.toggle('active', x === btn));
+        });
         document.getElementById('kairo-chat-btn').addEventListener('click', () => {
             // v5.11.0 切換:聊天已開 → 再點一次收起
             if (sheet.classList.contains('chat-open')) { this._dismissKairoPanels(); return; }
@@ -91,13 +104,13 @@ Object.assign(RimTownApp.prototype, {
             const hdr = document.getElementById('kairo-card-header'); if (!hdr) return;
             let startY = 0, startH = 0, dragging = false, lastTap = 0;
             hdr.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; dragging = true; startY = e.clientY; startH = card.getBoundingClientRect().height; hdr.setPointerCapture?.(e.pointerId); });
-            hdr.addEventListener('pointermove', (e) => { if (!dragging) return; const h = Math.max(window.innerHeight * 0.25, Math.min(window.innerHeight * 0.92, startH + (startY - e.clientY))); card.style.height = h + 'px'; });
+            hdr.addEventListener('pointermove', (e) => { if (!dragging) return; const maxH = Math.max(120, card.getBoundingClientRect().bottom - 10); const h = Math.max(window.innerHeight * 0.25, Math.min(window.innerHeight * 0.92, maxH, startH + (startY - e.clientY))); card.style.height = h + 'px'; }); // v6.80.1 拖到最高也不會把標題列拖出螢幕
             const end = (e) => { if (!dragging) return; dragging = false; const h = card.getBoundingClientRect().height; const moved = Math.abs(e.clientY - startY) > 6; card.style.height = ''; if (moved) card.classList.toggle('tall', h > window.innerHeight * 0.62); else { const now = Date.now(); if (now - lastTap < 350) card.classList.toggle('tall'); lastTap = now; } };
             hdr.addEventListener('pointerup', end); hdr.addEventListener('pointercancel', end);
         })();
         document.getElementById('kairo-card-back').addEventListener('click', () => {
             card.classList.add('hidden');
-            this._kairoCardOpen = false;
+            this._kairoCardOpen = false; this._kairoClearBar?.();
             this.bgm?.sfx?.('close');
             setTimeout(() => this._ghFab?.(), 50);
         });
@@ -128,6 +141,7 @@ Object.assign(RimTownApp.prototype, {
         if (sheet && sheet.classList.contains('chat-open')) { sheet.classList.remove('chat-open'); sheet.classList.add('kairo-hidden'); closed = true; }
         else if (sheet && !sheet.classList.contains('kairo-hidden')) { sheet.classList.add('kairo-hidden'); closed = true; }
         if (closed) {
+            this._kairoClearBar?.(); // v6.80.1 收起後底部按鈕不再亮著
             this.activeTab = null; // 不再是聊天/卡片,_syncKairoLayout 會維持隱藏
             this._kairoCardOpen = false;
             this.bgm?.sfx?.('close');

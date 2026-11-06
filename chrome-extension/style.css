@@ -2707,7 +2707,7 @@ body.rimtown-page .wp-block-post-title {
 }
 @media (max-width: 768px) {
     /* v5.12.0 手機版把中央通知卡(含小鎮日報)字放大到看得清楚 */
-    .center-notification-card { padding: 20px 16px 18px; width: calc(100vw - 20px); max-height: 82vh; }
+    .center-notification-card { padding: 20px 16px 18px; width: calc(100vw - 20px); max-height: 82vh; max-height: 82dvh; }
     .center-notif-icon { font-size: 2.5rem; }
     .center-notif-title { font-size: 1.1rem; }
     .center-notif-name { font-size: 1rem; }
@@ -3291,6 +3291,7 @@ body.rimtown-page .wp-block-post-title {
         width: 95vw;
         padding: 16px;
         max-height: 85vh;
+        max-height: 85dvh; /* v6.80.1 iPhone Safari:用看得到的高度，彈窗頂端不被網址列吃掉 */
         overflow-y: auto;
     }
 

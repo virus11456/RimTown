@@ -194,6 +194,10 @@
         backdrop-filter: blur(10px);
     }
     .rimtown-container.observer #kairo-card.tall { height: 86vh; }
+    /* v6.80.1 iPhone Safari 的 vh 算進網址列後面的高度，86vh 會把標題列和「返回」推出螢幕外、回不去。
+       改用看得到的高度(dvh)，並且永遠不超過容器(標題列一定留在畫面裡) */
+    .rimtown-container.observer #kairo-card { height: 46dvh; max-height: calc(100% - 56px - env(safe-area-inset-bottom, 0px) - 12px); }
+    .rimtown-container.observer #kairo-card.tall { height: auto; top: calc(env(safe-area-inset-top, 0px) + 10px); }
     .rimtown-container.observer #kairo-card-header { padding: 8px 12px; }
     .rimtown-container.observer #kairo-card-header::before { content: ''; position: absolute; left: 50%; top: 4px; width: 36px; height: 4px; border-radius: 2px; background: var(--border); transform: translateX(-50%); }
     .rimtown-container.observer #kairo-card-back { border-radius: 999px; }
@@ -602,7 +606,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 @media (max-width: 768px) {
     .rimtown-container .gh-fab { left: auto; right: 12px; bottom: calc(env(safe-area-inset-bottom, 0px) + 132px); padding: 0 12px 0 10px; }
     .rimtown-container .gh-fab-txt { display: none; }
-    .rimtown-container .gh-tray { left: 0 !important; right: 0; bottom: 0; width: auto !important; max-height: 84vh; border-radius: 20px 20px 0 0; padding: 6px 14px calc(env(safe-area-inset-bottom, 0px) + 14px); transform: translateY(40px); }
+    .rimtown-container .gh-tray { left: 0 !important; right: 0; bottom: 0; width: auto !important; max-height: 84vh; max-height: 84dvh; border-radius: 20px 20px 0 0; padding: 6px 14px calc(env(safe-area-inset-bottom, 0px) + 14px); transform: translateY(40px); }
     .rimtown-container .gh-grab { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--border); margin: 2px auto 8px; }
     .rimtown-container .gh-head { flex-wrap: wrap; }
     .rimtown-container .gh-help { margin-left: auto; }
@@ -692,6 +696,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .ec-local .ec-kind.ec-meat { background: rgba(232,120,120,0.18); }
 .rimtown-container .ec-local .ec-line { font-size: 0.76rem; line-height: 1.6; color: var(--text-secondary); }
 .rimtown-container .ec-local .ec-muted { color: var(--text-muted); }
+.rimtown-container .ec-fine { color: #c9a227; margin-left: 2px; white-space: nowrap; } /* v6.80.0 精製品 */
 
 /* ---------- v6.78.1 每日報紙（日報 › 日誌最上面） ---------- */
 .np-paper { margin: 4px 0 12px; padding: 14px 14px 12px; border-radius: 10px; background: #f3ead6; color: #2a2419; box-shadow: 0 6px 18px rgba(0,0,0,0.28); font-family: 'Noto Serif TC', 'Songti TC', 'PMingLiU', Georgia, 'Noto Sans TC', serif; }
