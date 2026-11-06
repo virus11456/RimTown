@@ -144,7 +144,7 @@ class ProposalSystem {
             }
         }
     }
-    _count(p, v) { return Object.values(p.votes || {}).filter(x => x === v).length; }
+    _count(p, v) { let n = 0; const vs = p.votes; if (vs) for (const k in vs) if (vs[k] === v) n++; return n; }
 
     // ---------- 投票(全鎮參考票) ----------
     _vote(w) {
@@ -703,14 +703,22 @@ class ProposalSystem {
         return { made: inP.length, approved: resolved.filter(p => ['approved', 'done', 'failed'].includes(p.status)).length, rejected: resolved.filter(p => p.status === 'rejected').length, done: resolved.filter(p => p.status === 'done').length, top: top ? { name: top[0], n: top[1] } : null };
     }
     toDict(w) {
-        const items = this.items.map(p => this.toItem(w, p));
         const isHist = (s) => ['done', 'failed', 'rejected', 'expired'].includes(s);
+        // v6.76.2 歷史只畫最近 20 件:其餘不必算;已結案的內容不會再變,同語言／同稱號等級下沿用上次算好的
+        const live = this.items.filter(p => !isHist(p.status)).map(p => this.toItem(w, p));
+        const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() + (I18N._ver || 0) : 'zh';
+        const sig = L + '|' + w?.tierState?.lv;
+        const hist = this.items.filter(p => isHist(p.status)).sort((a, b) => b.n - a.n).slice(0, 20).map(p => {
+            const k = sig + '|' + p.status + '|' + (p.outcome ? 1 : 0) + '|' + (p.pitch || '').length + '|' + (p.result || '') + '|' + String(p.mayorWhy || '').length;
+            if (p._ti && p._tk === k) return p._ti;
+            const it = this.toItem(w, p); Object.defineProperty(p, '_ti', { value: it, writable: true, configurable: true, enumerable: false }); Object.defineProperty(p, '_tk', { value: k, writable: true, configurable: true, enumerable: false }); return it;
+        });
         return {
-            open: items.filter(x => x.status === 'open').sort((a, b) => b.n - a.n),
-            shelved: items.filter(x => x.status === 'shelved').sort((a, b) => b.n - a.n),
-            active: items.filter(x => x.status === 'approved').sort((a, b) => b.n - a.n),
-            history: items.filter(x => isHist(x.status)).sort((a, b) => b.n - a.n).slice(0, 20),
-            stats: { ...this.stats }, pendingCount: items.filter(x => x.status === 'open').length,
+            open: live.filter(x => x.status === 'open').sort((a, b) => b.n - a.n),
+            shelved: live.filter(x => x.status === 'shelved').sort((a, b) => b.n - a.n),
+            active: live.filter(x => x.status === 'approved').sort((a, b) => b.n - a.n),
+            history: hist,
+            stats: { ...this.stats }, pendingCount: live.filter(x => x.status === 'open').length,
         };
     }
     serialize() { return { counter: this.counter, items: this.items, cooldown: this.cooldown, proposerCooldown: this.proposerCooldown, stats: this.stats, track: this.track, _lastDay: this._lastDay }; }

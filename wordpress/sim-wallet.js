@@ -35,11 +35,19 @@ const WALLET = (() => {
         if (!w.wallet || typeof w.wallet.bal !== 'object') w.wallet = { bal: {}, tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } };
         const W = w.wallet; W.stats = W.stats || { wages: 0, taxes: 0, spent: 0 }; if (typeof W.tax !== 'number') W.tax = 0.1;
         for (const a of npcs(w)) if (typeof W.bal[a.agentId] !== 'number') W.bal[a.agentId] = Math.round((WAGE[a.job?.key] || 3) * 6 + Math.random() * 20);
+        W_OK.add(W); // 結構檢查過了;S1 之後只補單人
         return W;
     }
-    const get = (w, a) => a ? Math.max(0, Math.round((S(w).bal[a.agentId] || 0) * 10) / 10) : 0;
-    const add = (w, a, n) => { if (!a || !(n > 0)) return; const W = S(w); W.bal[a.agentId] = Math.round(((W.bal[a.agentId] || 0) + n) * 10) / 10; };
-    const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S(w); const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 10) / 10; return true; };
+    // v6.76.2 單人查／加／扣錢只補這個人的初始存款(以前每次都把全鎮掃一遍,一格叫上百次);全鎮的補齊留給每天結算與總覽
+    function S1(w, a) {
+        const W = (w.wallet && typeof w.wallet.bal === 'object' && W_OK.has(w.wallet)) ? w.wallet : S(w);
+        if (typeof W.bal[a.agentId] !== 'number' && !a.isPlayer && !a.isDead) W.bal[a.agentId] = Math.round((WAGE[a.job?.key] || 3) * 6 + Math.random() * 20);
+        return W;
+    }
+    const W_OK = new WeakSet();
+    const get = (w, a) => a ? Math.max(0, Math.round((S1(w, a).bal[a.agentId] || 0) * 10) / 10) : 0;
+    const add = (w, a, n) => { if (!a || !(n > 0)) return; const W = S1(w, a); W.bal[a.agentId] = Math.round(((W.bal[a.agentId] || 0) + n) * 10) / 10; };
+    const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S1(w, a); const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 10) / 10; return true; };
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 10) / 10, w.tickCount, why); };
     const fromTown = (w, n, why) => n > 0 && !!w.stockpile?.consume?.('silver', n, w.tickCount, why);

@@ -911,13 +911,19 @@ class World {
         return this.dailyFocus;
     }
 
+    // v6.76.2 讀到才算:getState 每格都叫(模擬迴圈＋各種事件),但關係／記憶／提案／紀錄只有打開那個面板才會看。
+    // 第一次讀時算一次並換成一般屬性(JSON.stringify、展開運算子照常可用)
+    static lazy(o, key, fn) {
+        const fix = (v) => { Object.defineProperty(o, key, { value: v, writable: true, enumerable: true, configurable: true }); return v; };
+        Object.defineProperty(o, key, { enumerable: true, configurable: true, get() { return fix(fn()); }, set(v) { fix(v); } });
+        return o;
+    }
     getState() {
-        return {
+        const st = {
             clock: this.clock.toDict(), tick: this.tickCount, paused: this.paused,
             agents: Object.fromEntries(Object.entries(this.agents).map(([id,a]) => [id, a.toDict()])),
             locations: this.townMap?.toDict() || {},
             recent_events: this.events.getRecentEvents().map(([t,e]) => ({time:t, name:e.name, description:e.description, severity:e.severity, event_type:e.event_type})),
-            recent_messages: this.messageLog.slice(-500).map(m => m.k ? { time:m.time, tick:m.tick, type:m.type, content:World.logText(m), agent:m.agent, target:m.target } : m), // v5.99.0 紀錄分頁只畫最近 500 條;v6.18.0 依當下語言;v6.19.0 不帶 k/p
             travelling_agents: this.events.getTravellingAgents(),
             active_chains: this.events.getActiveChains(),
             stockpile: this.stockpile.toDict(),
@@ -956,12 +962,15 @@ class World {
             npcHelp: this.npcHelp.toDict(),
             reputationSystem: this.reputationSystem.toDict(),
             weather: this.weather.toDict(),
-            proposals: this.proposals ? this.proposals.toDict(this) : null, // v6.26.0
             autonomy: this.autonomy ? this.autonomy.toDict() : null, // v6.37.0 村民自主日誌
             eventCards: this.eventCards ? this.eventCards.toDict(this) : null, // v6.38.0 事件卡手牌與反應追蹤
             council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),
             lifeGoals: (() => { const m = {}; if (this.lifeGoals) for (const a of Object.values(this.agents)) { if (a.isPlayer) continue; const d = this.lifeGoals.describe(a.agentId); if (d) m[a.agentId] = d; } return m; })(),
         };
+        const log = this.messageLog;
+        World.lazy(st, 'recent_messages', () => log.slice(-500).map(m => m.k ? { time:m.time, tick:m.tick, type:m.type, content:World.logText(m), agent:m.agent, target:m.target } : m)); // v5.99.0 紀錄分頁只畫最近 500 條;v6.18.0 依當下語言;v6.19.0 不帶 k/p
+        World.lazy(st, 'proposals', () => this.proposals ? this.proposals.toDict(this) : null); // v6.26.0
+        return st;
     }
     reset(seed = null) {
         this._gen = (this._gen || 0) + 1; // v6.74.0 世代:換鎮後舊的 AI 回覆作廢(見 ConversationEngine._askJson)

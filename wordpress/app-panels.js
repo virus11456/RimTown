@@ -874,7 +874,7 @@ Object.assign(RimTownApp.prototype, {
     renderProposals(container) {
         const d = this.state?.proposals;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
-        if (!d) { container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，由你批准、否決或擱置；三天沒處理就依票數自動定案。')}</div>`; return; }
+        if (!d) { container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，再由村長（鎮長）自己拍板並說明理由。你在一旁看就好。')}</div>`; return; }
         const resLabel = (r) => this._resLabel ? this._resLabel(r) : r;
         const costText = (c) => Object.entries(c || {}).map(([r, n]) => `${resLabel(r)} ${n}`).join(t('、'));
         const avatar = (id) => { const a = this.state.agents?.[id]; if (!a) return ''; let url = ''; try { if (this.tileMap?.renderAvatarDataURL) url = this.tileMap.renderAvatarDataURL(a.job?.key || a.jobKey, a.gender, a.name, this.world?.agents?.[id]?.look || null); } catch (e) {} return `<div class="pp-avatar">${url ? `<img src="${url}" alt="">` : '👤'}</div>`; };

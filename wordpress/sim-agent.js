@@ -212,10 +212,13 @@ class Relationship {
         this.affinity = 0; this.trust = 0; this.romanticInterest = 0;
         this.interactionCount = 0; this.lastInteractionTick = 0; this.sharedMemories = [];
         // Formal relationship status: null, 'dating', 'married', 'ex'
-        this.status = null;
+        this._st = null; // 存在 _st,讀寫走下面的 status(新關係一開始沒有狀態,不必讓快取作廢)
         this.statusSince = 0; // tick when status changed
         this.isCheating = false; // currently cheating with this person
     }
+    // v6.76.2 感情狀態一改就讓全鎮的「伴侶／配偶」查詢快取作廢(查詢每格被叫上千次,狀態一年才改幾次)
+    get status() { return this._st; }
+    set status(v) { if (this._st !== v) { this._st = v; Relationship._sv++; } }
     get type() {
         if (this.status === 'married') return REL_TYPES.MARRIED;
         if (this.status === 'dating') return REL_TYPES.DATING;
@@ -251,20 +254,32 @@ class Relationship {
     }
 }
 
+Relationship._sv = 0;
+
 class RelationshipManager {
     constructor() { this.relationships = {}; }
     getOrCreate(targetId, targetName) {
         if (!this.relationships[targetId]) this.relationships[targetId] = new Relationship(targetId, targetName);
         return this.relationships[targetId];
     }
-    getFriends() { return Object.values(this.relationships).filter(r => r.affinity > 20); }
-    getRomanticInterests() { return Object.values(this.relationships).filter(r => r.romanticInterest > 40); }
-    getBestFriend() {
-        const friends = this.getFriends();
-        return friends.length ? friends.reduce((a,b) => a.affinity > b.affinity ? a : b) : null;
+    getFriends() { const out = [], R = this.relationships; for (const k in R) if (R[k].affinity > 20) out.push(R[k]); return out; }
+    getRomanticInterests() { const out = [], R = this.relationships; for (const k in R) if (R[k].romanticInterest > 40) out.push(R[k]); return out; }
+    getBestFriend() { // 同分時取後出現的(和以前的 reduce 一樣)
+        let best = null; const R = this.relationships;
+        for (const k in R) { const r = R[k]; if (r.affinity > 20 && (!best || r.affinity >= best.affinity)) best = r; }
+        return best;
     }
-    getPartner() { return Object.values(this.relationships).find(r => r.status === 'dating' || r.status === 'married') || null; }
-    getSpouse() { return Object.values(this.relationships).find(r => r.status === 'married') || null; }
+    _pair() { // 依目前感情狀態版本快取;關係被刪掉或換成新物件也會重查
+        const c = this._pc;
+        if (c && c.v === Relationship._sv && (!c.p || this.relationships[c.p.targetId] === c.p) && (!c.s || this.relationships[c.s.targetId] === c.s)) return c;
+        let p = null, sp = null; const R = this.relationships;
+        for (const k in R) { const r = R[k], st = r.status; if (!p && (st === 'dating' || st === 'married')) p = r; if (!sp && st === 'married') sp = r; if (p && sp) break; }
+        const nc = { v: Relationship._sv, p, s: sp };
+        Object.defineProperty(this, '_pc', { value: nc, writable: true, configurable: true, enumerable: false });
+        return nc;
+    }
+    getPartner() { return this._pair().p; }
+    getSpouse() { return this._pair().s; }
     toDict() { return Object.values(this.relationships).map(r => r.toDict()); }
 }
 
@@ -1244,18 +1259,22 @@ class Agent {
     }
 
     toDict() {
-        return {
+        const d = {
             id:this.agentId, name:this.name, age:this.age, gender:this.gender, gender_label:this.genderLabel,
             job: this.job?.toDict() || null, personality: this.personality.toDict(),
             mood:this.mood, moodModifier:this.moodModifier, mood_description:this.moodDescription, mood_label:this.moodLabel,
             activity:this.activity, activity_label:this.activityLabel,
             current_location:this.currentLocation, home_location:this.homeLocation, current_thought:this.currentThought,
             needs:this.needs.toDict(), skills:this.skills.toDict(),
-            relationships:this.relationships.toDict(), recent_memories:this.memory.toDict(),
             thoughts: (this.thoughts || []).map(t2 => ({ ...t2 })), // v5.15.0 記憶想法(供 UI 顯示心情來源)
             attributes: { ...(this.attributes || {}) }, // v5.26.0 核心屬性
             look: this.look ? { ...this.look } : null, // v5.89.0 自訂外觀(地圖/頭像用)
         };
+        // v6.76.2 關係與記憶清單最貴(每人幾十筆),只有村民卡／關係圖讀到才算
+        const L = (typeof World !== 'undefined' && World.lazy) ? World.lazy : null;
+        if (L) { L(d, 'relationships', () => this.relationships.toDict()); L(d, 'recent_memories', () => this.memory.toDict()); }
+        else { d.relationships = this.relationships.toDict(); d.recent_memories = this.memory.toDict(); }
+        return d;
     }
 }
 

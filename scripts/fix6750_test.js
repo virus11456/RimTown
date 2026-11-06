@@ -47,7 +47,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 新世界道路開通 → 生成自己的海風鎮
       localStorage.setItem(rimtownWorldKey('rimtown_harbor_unlocked'), '1'); app._neighborEnsured = {};
       await app._ensureNeighborTown('harbor');
-      const nh = app._getTownList().find(tw => tw.world === nw && /海風鎮/.test(tw.name)); out.newHarbor = !!nh && JSON.parse(localStorage.getItem('rimtown_town_' + nh.id) || '{}').worldId === nw;
+      const nh = app._getTownList().find(tw => tw.world === nw && /海風鎮/.test(tw.name)); out.newHarbor = !!nh && ((await app._readLocalTown(nh.id)) || {}).worldId === nw; // v6.76.1 別鎮副本在 IndexedDB
       const idsN = rebuild(); out.onlyOwnHarbor = idsN.length === 1 && idsN[0] === nh?.id;
       // 雲端存檔帶世界 id
       const _fx = app.auth._fetch; let sent = null; app.auth._fetch = async (ep, m, body) => { sent = body; return { ok: true }; }; await app.auth.cloudSave(app.currentTownId, '邊境鎮', w.serialize(), {}); app.auth._fetch = _fx; out.cloudWorld = sent?.world_id === nw;
