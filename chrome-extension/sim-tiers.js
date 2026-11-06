@@ -198,7 +198,7 @@ if (typeof window !== 'undefined' && typeof window.t === 'function' && !window.t
     const _t = window.t; const _rc = new Map(); let _rk = '';
     const wrapped = function (x) {
         if (typeof x !== 'string' || x.length > 400 || arguments.length > 1) return TIERS.retitle(_t.apply(this, arguments));
-        const lv = window.rimtownApp?.world?.tierState?.lv; const k = (window.I18N?._ver || 0) + ':' + (lv || 1);
+        const lv = window.rimtownApp?.world?.tierState?.lv; const k = (window.I18N?._ver || 0) + ':' + lv; // lv 從 0 起算(0=村莊),不能用 || 合併
         if (k !== _rk) { _rc.clear(); _rk = k; }
         let r = _rc.get(x);
         if (r === undefined) { r = TIERS.retitle(_t(x)); if (_rc.size >= 20000) _rc.clear(); _rc.set(x, r); }

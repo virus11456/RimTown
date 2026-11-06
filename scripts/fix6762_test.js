@@ -19,8 +19,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp, w = app.world; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; w.paused = false; w.fullAgentMode = false; const out = {};
       const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
       // 1) 稱號換字:等級一變快取就作廢
-      const T = TIERS.S(w); const lv0 = T.lv; T.lv = 1; const a1 = t('鎮長'); T.lv = 2; const a2 = t('鎮長'); T.lv = 1; const a3 = t('鎮長'); T.lv = lv0;
-      out.tier = { a1, a2, a3, want2: lang === 'zh' ? TIERS.LV[2].leader : null };
+      const T = TIERS.S(w); const lv0 = T.lv; T.lv = 0; const z0 = t('鎮長'); T.lv = 1; const a1 = t('鎮長'); T.lv = 2; const a2 = t('鎮長'); T.lv = 1; const a3 = t('鎮長'); T.lv = 0; const z1 = t('鎮長'); T.lv = lv0;
+      out.tier = { z0, z1, a1, a2, a3, want0: lang === 'zh' ? TIERS.LV[0].leader : TIERS.LV[0].leaderEn, want2: lang === 'zh' ? TIERS.LV[2].leader : null };
       // 2) 人名對照登記後,已快取的句子也換成新英文名
       const s0 = t('阿測試今天來了'); I18N.registerName('阿測試', 'Testy'); const s1 = t('阿測試今天來了');
       out.name = { s0, s1 };
@@ -85,7 +85,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       return out;
     }, lang);
     const want = lang === 'zh' ? '鎮長' : 'Mayor';
-    ok(r.tier.a1 === want && r.tier.a3 === want && r.tier.a2 !== want && (lang !== 'zh' || r.tier.a2 === r.tier.want2), '稱號換字跟著城鎮等級變(快取會作廢)', r.tier);
+    ok(r.tier.a1 === want && r.tier.a3 === want && r.tier.a2 !== want && (lang !== 'zh' || r.tier.a2 === r.tier.want2) && r.tier.z0 === r.tier.want0 && r.tier.z1 === r.tier.want0, '稱號換字跟著城鎮等級變(村莊 0 → 城鎮 1 → 城市 2,快取會作廢)', r.tier);
     ok(lang === 'zh' ? r.name.s1 === r.name.s0 : (r.name.s1.includes('Testy') && !r.name.s0.includes('Testy')), lang === 'zh' ? '中文介面人名不換' : '登記英文名後,先前快取的句子也換成新名字', r.name);
     ok(r.lang.before === r.lang.after && r.lang.mid !== r.lang.before, '切語言後翻譯跟著換,切回來也正確', r.lang);
     if (lang === 'zh') ok(r.punct.p1 === '喲，這不是你嗎？' && r.punct.p2 === r.punct.p1, '中文半形標點照樣轉全形', r.punct);

@@ -707,7 +707,7 @@ class ProposalSystem {
         // v6.76.2 歷史只畫最近 20 件:其餘不必算;已結案的內容不會再變,同語言／同稱號等級下沿用上次算好的
         const live = this.items.filter(p => !isHist(p.status)).map(p => this.toItem(w, p));
         const L = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() + (I18N._ver || 0) : 'zh';
-        const sig = L + '|' + (w?.tierState?.lv || 1);
+        const sig = L + '|' + w?.tierState?.lv;
         const hist = this.items.filter(p => isHist(p.status)).sort((a, b) => b.n - a.n).slice(0, 20).map(p => {
             const k = sig + '|' + p.status + '|' + (p.outcome ? 1 : 0) + '|' + (p.pitch || '').length + '|' + (p.result || '') + '|' + String(p.mayorWhy || '').length;
             if (p._ti && p._tk === k) return p._ti;
