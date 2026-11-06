@@ -50,6 +50,9 @@ const WALLET = (() => {
     const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S1(w, a); const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 10) / 10; return true; };
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 10) / 10, w.tickCount, why); };
+    // v6.81.0 營業稅:做生意賣東西的收入(開店、廚師賣餐、裁縫賣衣)先繳 15% 給公庫,剩下才進自己口袋
+    const BIZ_TAX = 0.15;
+    const bizIncome = (w, a, n) => { if (!a || !(n > 0)) return 0; const tax = Math.round(n * BIZ_TAX * 100) / 100; if (tax > 0) { toTown(w, tax, t('營業稅')); const W = S(w); W.stats.bizTax = Math.round(((W.stats.bizTax || 0) + tax) * 10) / 10; } add(w, a, n - tax); return n - tax; };
     const fromTown = (w, n, why) => n > 0 && !!w.stockpile?.consume?.('silver', n, w.tickCount, why);
     // a 付 n 給 b(b 為 null 就是付給公庫)
     function pay(w, a, b, n, why) { if (!take(w, a, n)) return false; if (b) add(w, b, n); else toTown(w, n, why || t('村民付款')); return true; }
@@ -79,7 +82,7 @@ const WALLET = (() => {
         // v6.81.0 廚師、裁縫的分成平均給鎮上每一位廚師／裁縫,而且每人每天有上限(以前全給第一位,百人大城一天進帳四十多、其他人一毛都沒有)
         const cooks = all.filter(a => a.job?.key === 'cook'), tailors = all.filter(a => a.job?.key === 'tailor');
         const tipCap = 6, tips = new Map();
-        const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { add(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
+        const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
         const winter = w.clock?.season === '冬季'; const d = day(w);
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
@@ -199,9 +202,9 @@ const WALLET = (() => {
     function summary(w) {
         if (!w.wallet) return null; const all = npcs(w); if (!all.length) return null;
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
-        return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax };
+        return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, bizIncome, BIZ_TAX };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

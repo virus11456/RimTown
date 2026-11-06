@@ -49,7 +49,7 @@ const BIZ = (() => {
             for (const c of all) { if (c === o || cash(w, c) < s.price + 5) continue; const p = 0.08 / same * (6 / (s.price + 2)) * (1 + (has(o, 'charismatic') ? 0.3 : 0) + (aff(c, o) > 30 ? 0.3 : 0) - (aff(c, o) < -20 ? 0.6 : 0)); if (Math.random() < p && WALLET.take(w, c, s.price)) { s.till += s.price; sales++; } }
             const upkeep = 2; s.till -= upkeep; s.week += sales * s.price - upkeep; s.profit += sales * s.price - upkeep;
             s.lossDays = s.till < 0 ? s.lossDays + 1 : 0;
-            if (s.till > 0) { WALLET.add(w, o, s.till * (s.partner ? 0.5 : 1)); if (s.partner && w.agents[s.partner]) WALLET.add(w, w.agents[s.partner], s.till * 0.5); s.till = 0; }
+            if (s.till > 0) { const pay = (a, n) => (WALLET.bizIncome ? WALLET.bizIncome(w, a, n) : WALLET.add(w, a, n)); pay(o, s.till * (s.partner ? 0.5 : 1)); if (s.partner && w.agents[s.partner]) pay(w.agents[s.partner], s.till * 0.5); s.till = 0; } // v6.81.0 店裡的進帳先繳營業稅
             if (s.lossDays >= 15 || (s.till < -40)) close(w, s, 'broke');
             if (d % 7 === 0) weekly(w, s);
         }

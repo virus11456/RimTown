@@ -875,6 +875,12 @@ Object.assign(RimTownApp.prototype, {
                 const bar = (v, m) => `<span class="pp-tier-req${v >= m ? ' ok' : ''}">${v}/${m}</span>`;
                 T += `<div class="pp-issues pp-tier"><h4 class="pp-h">${I.icon} ${esc(TIERS.name(this.world))} <span class="pp-tier-steps">${L.map((x, i) => `<i class="${i <= TIERS.level(this.world) ? 'on' : ''}" title="${esc(t(x.zh))}">${x.icon}</i>`).join('')}</span></h4>`;
                 T += `<div class="pp-tier-line">${t('首長')}${t('：')}${esc(TIERS.leaderTitle(this.world))} · ${t('議會')}${t('：')}${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}</div>`;
+                { // v6.81.0 寫出現任議員(點名字開村民卡);沒坐滿就寫還空幾席
+                    const ms = (this.world.council?.members || []).map(id => this.world.agents[id]).filter(Boolean);
+                    const btn = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
+                    const empty = Math.max(0, TIERS.seats(this.world) - ms.length);
+                    T += `<div class="pp-tier-line">🏛️ ${esc(t(I.member))}${t('：')}${ms.length ? ms.map(btn).join(t('、')) : t('還沒成立')}${ms.length && empty ? `${t('（')}${t('空 {n} 席').replace('{n}', empty)}${t('）')}` : ''}</div>`;
+                }
                 { // v6.78.1 現任首長是誰(人不在鎮上時寫出代理人);點名字開村民卡
                     const E = this.world.election, title = esc(TIERS.leaderTitle(this.world));
                     const holder = E?._officeHolder?.(this.world), acting = E?.acting && this.world.agents[E.acting.agentId], cur = E?.currentMayor?.(this.world);
