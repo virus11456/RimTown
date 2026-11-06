@@ -108,7 +108,8 @@ class VillagerAutonomy {
                 if (!amt || amt < 1) continue;
                 const stock = w.stockpile.get(r);
                 // 鎮上已經很多（> 保留量）且賣得掉的拿去賣（有市集時 processing 自己會賣一點，這裡補足），其餘入倉大家用
-                if (stock > VillagerAutonomy.GOOD_RESERVE && (SI[r] || hasMarket)) {
+                const keepFine = typeof FLOW !== 'undefined' && FLOW.FINE_FROM[r] === key && FLOW.fine(w, r) < FLOW.want(w, r); // v6.80.0 精製品先留給鎮上自己用，夠了才賣
+                if (!keepFine && stock > VillagerAutonomy.GOOD_RESERVE && (SI[r] || hasMarket)) {
                     const sell = Math.min(Math.floor(amt), 6);
                     if (sell > 0 && pr.sellProduct(key, r, sell, w)) continue;
                 }

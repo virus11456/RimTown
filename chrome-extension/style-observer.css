@@ -692,6 +692,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .ec-local .ec-kind.ec-meat { background: rgba(232,120,120,0.18); }
 .rimtown-container .ec-local .ec-line { font-size: 0.76rem; line-height: 1.6; color: var(--text-secondary); }
 .rimtown-container .ec-local .ec-muted { color: var(--text-muted); }
+.rimtown-container .ec-fine { color: #c9a227; margin-left: 2px; white-space: nowrap; } /* v6.80.0 精製品 */
 
 /* ---------- v6.78.1 每日報紙（日報 › 日誌最上面） ---------- */
 .np-paper { margin: 4px 0 12px; padding: 14px 14px 12px; border-radius: 10px; background: #f3ead6; color: #2a2419; box-shadow: 0 6px 18px rgba(0,0,0,0.28); font-family: 'Noto Serif TC', 'Songti TC', 'PMingLiU', Georgia, 'Noto Sans TC', serif; }

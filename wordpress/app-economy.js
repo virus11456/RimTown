@@ -174,6 +174,10 @@ Object.assign(RimTownApp.prototype, {
                 const kinds = ECON.KINDS.map(k => `${ECON.KIND_ICON[k]} ${t(ECON.KIND_ZH[k])} ${Math.round(V.pantry[k])}`).join(' · ');
                 const roles = `${t('農夫')} ${V.roles.grain} · ${t('漁夫')} ${V.roles.fish} · ${t('獵人')} ${V.roles.meat}`;
                 const diet = V.variety == null ? '' : V.variety >= 3 ? `😋 ${t('飲食多樣，大家心情好')}` : V.variety <= 1 ? `😒 ${t('天天吃一樣的，大家吃膩了')}` : `🙂 ${t('飲食還算有變化')}`;
+                // v6.80.0 吃得好：飲食多樣／麵包糕點果醬／好酒好茶甜點，湊齊兩樣就算；隔天少吃一成正餐，連續三天心情加
+                let eatWell = ''; if (typeof FLOW !== 'undefined') { const D = FLOW.diet(this.world);
+                    eatWell = D.good ? `<div class="ec-line">🍰 ${t('昨天吃得好：今天少吃一成正餐')}${D.streak >= 3 ? `${t('（')}${t('已連續 {n} 天，大家心情變好').replace('{n}', D.streak)}${t('）')}` : ''}</div>`
+                        : `<div class="ec-line ec-muted">🍽️ ${t('吃得普通')}${t('：')}${[['variety', '飲食多樣'], ['snack', '麵包糕點果醬'], ['fine', '好酒好茶甜點']].map(([k, l]) => `${D.parts?.[k] ? '✓' : '✗'}${t(l)}`).join(' ')}${t('（')}${t('湊齊兩樣就算吃得好')}${t('）')}</div>`; }
                 const toolPct = Math.round(V.toolF * 100);
                 const toolTxt = V.toolF >= 1.05 ? `🔧 ${t('工具充裕')}${t('：')}${t('工作效率')} ${toolPct}%` : V.toolF >= 1 ? `🔧 ${t('工具夠用')}` : `🔧 ${t('工具不夠')}${t('：')}${t('工作效率')} ${toolPct}%${t('（')}${t('需要')} ${V.toolNeed}${t('）')}`;
                 const saltTxt = V.salted ? `🧂 ${t('有鹽醃漬：存糧腐壞減半')} (${Math.round(V.salt)})` : `🧂 ${V.canSalt ? t('鹽還在曬，今天不夠用') : t('缺鹽：只有靠海的鎮曬得出鹽，要靠商隊買')}`;
@@ -183,7 +187,7 @@ Object.assign(RimTownApp.prototype, {
                     <div class="ec-bar">${bar}</div>
                     <div class="ec-line">${kinds}</div>
                     <div class="ec-line ec-muted">${roles}${V.canFish ? '' : ` · ${t('不靠水，不能捕魚')}`}</div>
-                    ${diet ? `<div class="ec-line">${diet}</div>` : ''}
+                    ${diet ? `<div class="ec-line">${diet}</div>` : ''}${eatWell}
                     <div class="ec-line">${toolTxt}</div><div class="ec-line">${saltTxt}</div><div class="ec-line">${paperTxt}</div>
                     ${good ? `<div class="ec-line">💪 ${t('本鎮擅長')}${t('：')}${esc(good)}</div>` : ''}${bad ? `<div class="ec-line ec-muted">🐪 ${t('得靠貿易')}${t('：')}${esc(bad)}</div>` : ''}
                 </div>`;
@@ -193,8 +197,8 @@ Object.assign(RimTownApp.prototype, {
             const flow = this._econDailyFlow(PROCESSED);
             const demandNote = {
                 meals: `${t('每日需')} ${Math.round(npcCount * 1.5)}`,
-                tools: `${t('每日耗損')} ${(npcCount * 0.05).toFixed(1)}`,
-                clothing: `${t('每日耗損')} ${(npcCount * 0.03).toFixed(1)}`,
+                tools: `${t('每日耗損')} ${(npcCount * 0.05 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'tools') : 1)).toFixed(1)}`, // v6.80.0 精製品壞得慢
+                clothing: `${t('每日耗損')} ${(npcCount * 0.03 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'clothing') : 1)).toFixed(1)}`,
                 medicine: t('生病時消耗'),
                 furniture: t('建設與新居用'),
             };
@@ -205,6 +209,7 @@ Object.assign(RimTownApp.prototype, {
             PROCESSED.forEach(k => {
                 const f = flow[k];
                 const stock = Math.round(res[k] || 0);
+                const fineN = (typeof FLOW !== 'undefined' && this.world && FLOW.FINE_FROM[k]) ? Math.floor(FLOW.fine(this.world, k)) : 0; // v6.80.0
                 const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
                 const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
                 const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
@@ -218,7 +223,7 @@ Object.assign(RimTownApp.prototype, {
                     <div style="display:flex;align-items:center;gap:6px">
                         <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
                         <span style="color:var(--text-muted);font-size:0.66rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${makers.length ? '👤 ' + makers.join('、') : t('（無人手）')}</span>
-                        <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}</span>
+                        <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}${fineN >= 1 ? `<span class="ec-fine" title="${t('工坊做的精製品，耗損只有一半')}">${t('（')}✨${t('精製')} ${fineN}${t('）')}</span>` : ''}</span>
                     </div>
                     <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
                         <span style="flex:1;font-size:0.7rem;color:${flowClr}">${prodHtml}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>

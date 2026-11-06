@@ -135,7 +135,7 @@ function processDailyProduction(world) {
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-    let mealsNeeded = 1.5*npcCount;
+    let mealsNeeded = 1.5*npcCount * ((typeof FLOW !== 'undefined') ? FLOW.mealFactor(world) : 1); // v6.80.0 昨天吃得好，今天比較耐餓
     if (typeof FLOW !== 'undefined') mealsNeeded = Math.max(0, mealsNeeded - FLOW.eatSnacks(world, mealsNeeded * 0.4)); // v6.79.0 麵包、糕點、果醬可以代替正餐
     const mealsAvailable = sp.get('meals');
     if (mealsAvailable >= mealsNeeded) {
@@ -147,9 +147,9 @@ function processDailyProduction(world) {
         else { world.logMessage('economy',t('糧食短缺！居民正在挨餓！')); Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-10; a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
     }
     if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5,world.tickCount,`natural (${locId})`); } } }
-    sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear');
+    if (typeof FLOW !== 'undefined') FLOW.wear(world, 'tools', npcCount*0.05, 'tool wear'); else sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear'); // v6.80.0 鋼做的精製工具壞得慢一半
     // v5.51.0 需求波動:天冷要衣(冬季衣物耗損翻倍)
-    sp.consume('clothing',npcCount*(world.clock.season==='冬季'?0.06:0.03),world.tickCount,'clothing wear');
+    { const cw = npcCount*(world.clock.season==='冬季'?0.06:0.03); if (typeof FLOW !== 'undefined') FLOW.wear(world, 'clothing', cw, 'clothing wear'); else sp.consume('clothing',cw,world.tickCount,'clothing wear'); } // v6.80.0 紡織廠做的衣服耐穿一倍
     // v5.51.0 需求波動:心情低落的村民找醫生拿藥(每天最多 3 人),藥品因此有了用處
     const downcast = Object.values(world.agents).filter(a => !a.isPlayer && a.mood < 30).slice(0, 3);
     downcast.forEach(a => {
