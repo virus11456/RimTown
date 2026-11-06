@@ -44,12 +44,12 @@ const TERRAIN_TYPES = [
 // v5.55.0 主題城鎮:每個主題有自己的地點皮膚、開局物資性格與專屬名冊
 // frontier = 邊境鎮(現況,一切照舊);harbor = 海風鎮(漁村:討海文化、鹽場、燈塔)
 const TOWN_THEMES = {
-    frontier: { key: 'frontier', townName: '邊境鎮', exports: ['food', 'wood'], imports: ['stone', 'metal'] },
+    frontier: { key: 'frontier', townName: '邊境鎮', exports: ['food', 'wood'], imports: ['salt', 'stone', 'metal'] }, // v6.77.0 內陸要買鹽
     harbor: {
         key: 'harbor',
         townName: '海風鎮',
         terrain: 'coastal',
-        exports: ['food', 'cloth'], imports: ['wood', 'herbs'], // v5.80.0 跨鎮商隊:賣漁獲帆布、買木材草藥
+        exports: ['salt', 'food', 'cloth'], imports: ['wood', 'paper', 'herbs'], // v5.80.0 跨鎮商隊:賣漁獲帆布、買木材草藥;v6.77.0 曬鹽外銷、買紙
         locationNames: {
             town_hall: t('港務所'), tavern: t('海味居'), clinic: t('海風診療所'), workshop: t('修船工房'),
             farm: t('蚵田菜畦'), quarry: t('鹽場'), general_store: t('南北雜貨行'), library: t('燈塔書房'),
@@ -66,7 +66,7 @@ const TOWN_THEMES = {
         key: 'mountain',
         townName: '礦山鎮',
         terrain: 'mountain',
-        exports: ['stone', 'metal'], imports: ['food', 'cloth'],
+        exports: ['stone', 'metal'], imports: ['food', 'salt', 'cloth'],
         unlockProsperity: 40,
         locationNames: {
             town_hall: '礦務所', tavern: '礦燈酒館', clinic: '坑口醫站', workshop: '熔爐鍛坊',
@@ -83,7 +83,7 @@ const TOWN_THEMES = {
         key: 'forest',
         townName: '林間村',
         terrain: 'forest',
-        exports: ['wood', 'herbs'], imports: ['stone', 'metal'],
+        exports: ['wood', 'paper', 'herbs'], imports: ['salt', 'stone', 'metal'],
         unlockProsperity: 60,
         locationNames: {
             town_hall: '村長木屋', tavern: '松脂酒館', clinic: '藥草小屋', workshop: '木工坊',
@@ -100,7 +100,7 @@ const TOWN_THEMES = {
         key: 'market',
         townName: '市集城',
         terrain: 'plains',
-        exports: ['silver', 'cloth'], imports: ['wood', 'stone', 'food'],
+        exports: ['silver', 'cloth'], imports: ['wood', 'stone', 'food', 'salt', 'paper'],
         unlockProsperity: 80,
         locationNames: {
             town_hall: '商會大樓', tavern: '金馬車客棧', clinic: '杏林藥堂', workshop: '百工坊',

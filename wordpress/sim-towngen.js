@@ -31,7 +31,7 @@ const TownGen = (() => {
         frontier: { terrain: null,       sfx: [['原', 'Plain'], ['屯', 'Stead'], ['堡', 'Fort'], ['田', 'Fields'], ['橋', 'Bridge']], exp: [['food', 4], ['wood', 3], ['stone', 1], ['herbs', 1]], pop: [10, 22] },
     };
     const RES = ['food', 'wood', 'stone', 'metal', 'cloth', 'herbs', 'silver', 'tools', 'clothing', 'furniture'];
-    const RES_NAME = { food: ['食物', 'food'], wood: ['木材', 'wood'], stone: ['石材', 'stone'], metal: ['金屬', 'metal'], cloth: ['布料', 'cloth'], herbs: ['草藥', 'herbs'], silver: ['銀幣', 'silver'], tools: ['工具', 'tools'], clothing: ['衣物', 'clothing'], furniture: ['家具', 'furniture'] };
+    const RES_NAME = { food: ['食物', 'food'], wood: ['木材', 'wood'], stone: ['石材', 'stone'], metal: ['金屬', 'metal'], cloth: ['布料', 'cloth'], herbs: ['草藥', 'herbs'], silver: ['銀幣', 'silver'], tools: ['工具', 'tools'], clothing: ['衣物', 'clothing'], furniture: ['家具', 'furniture'], salt: ['鹽', 'salt'], paper: ['紙', 'paper'] };
     const PREFIX = [['霧', 'Mist'], ['赤', 'Red'], ['銀', 'Silver'], ['柳', 'Willow'], ['鷺', 'Heron'], ['楓', 'Maple'], ['青', 'Azure'], ['白', 'White'], ['金', 'Gold'], ['墨', 'Ink'], ['松', 'Pine'], ['梅', 'Plum'],
         ['雲', 'Cloud'], ['月', 'Moon'], ['星', 'Star'], ['風', 'Wind'], ['鐵', 'Iron'], ['鹿', 'Deer'], ['狐', 'Fox'], ['鷹', 'Hawk'], ['龜', 'Turtle'], ['桃', 'Peach'], ['竹', 'Bamboo'], ['蘆', 'Reed'],
         ['苔', 'Moss'], ['琥珀', 'Amber'], ['翠', 'Jade'], ['曉', 'Dawn'], ['暮', 'Dusk'], ['霜', 'Frost'], ['雪', 'Snow'], ['雷', 'Thunder'], ['泉', 'Spring'], ['燕', 'Swallow'], ['鶴', 'Crane'], ['蓮', 'Lotus'],
@@ -126,6 +126,11 @@ const TownGen = (() => {
         for (const [loc, pats] of Object.entries(LOC_PAT)) { if (!r.chance(0.75)) continue; const p = r.pick(pats); locNames[loc] = p[0].replace('{p}', stem[0]); locEn[locNames[loc]] = p[1].replace('{P}', stem[1]); }
         const c = { v: 1, seed: seed >>> 0, key: 'g' + (seed >>> 0).toString(36), name, nameEn, base, terrain: B.terrain || r.pick(['plains', 'riverside']), traits: traitKeys, exports: [exp1, exp2], imports, wealth, pop, era, techDone, bias, policy, temper, relation,
             festival: { zh: festival[0], en: festival[1] }, founded, roof, locNames, locEn };
+        // v6.77.0 地形專長(不動亂數序列,舊城鎮卡的名字、人口、特色都不變):靠海曬鹽外銷、林地造紙外銷、內陸要買鹽
+        if (base === 'harbor' && !c.exports.includes('salt')) c.exports[1] = 'salt';
+        else if (base === 'forest' && !c.exports.includes('paper') && c.exports[1] !== 'wood' && c.exports[1] !== 'herbs') c.exports[1] = 'paper';
+        if (base !== 'harbor' && !c.exports.includes('salt') && !c.imports.includes('salt')) c.imports[1] = 'salt';
+        c.imports = c.imports.filter(k => !c.exports.includes(k));
         return c;
     }
 

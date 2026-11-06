@@ -71,7 +71,7 @@ class World {
     getAgentByName(name) { return Object.values(this.agents).find(a => a.name === name) || null; }
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
     logMessage(type, content, agentName = '', targetName = '', k = null, p = null) {
-        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) });
+        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, d:this._absDay(), type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) }); // v6.78.0 d:絕對日,八點檔依日分集
         if (this.messageLog.length > 800) this.messageLog = this.messageLog.slice(-800); // v5.99.0 B12;v6.19.0 1000→800(紀錄分頁只畫最近 500 條)
     }
     // v6.18.0 B1 第二步:日誌也存「模板 key＋參數」,紀錄分頁依當下語言渲染;content 仍照建立當下語言存一份(舊存檔、跑馬燈、編年史照舊)
@@ -128,6 +128,7 @@ class World {
             this.news.dailyUpdate(this);
             // Daily economy
             processDailyProduction(this);
+            try { if (typeof ECON !== 'undefined') ECON.daily(this); } catch (e) { console.warn('[Econ] daily', e); } // v6.77.0 鹽、紙、穀物／魚／肉、飲食多樣
             this.stockpile.history.filter(h=>h.amount>0).slice(-50).forEach(h=>this.workOrders.updateProgress(h.resource,h.amount));
             this.buildings.dailyConstruction(this);
             this.trade.dailyUpdate(this);
@@ -235,10 +236,11 @@ class World {
         const recvAmt = giveAmt + hub;
         this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
         this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
+        try { if (typeof ECON !== 'undefined') ECON.noteTrade(this, give, giveAmt, recv, recvAmt, pick.key); } catch (e) {} // v6.77.0 帶來的食物算成魚／肉／穀物
         this.lastCaravanDay = day;
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
-        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣' }; // v6.22.0 模板參數用原文,顯示時再翻
+        const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣', salt: '鹽', paper: '紙' }; // v6.22.0 模板參數用原文,顯示時再翻
         const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: pick.tw.name, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
         const msg = Memory.render(msgT.k, msgT.p);
         this.logMessageT('trade', '🐪 {msg}', { msg: msgT });
@@ -1955,7 +1957,7 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-500).map(m => ({ time:m.time, tick:m.tick, type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
+            messageLog: this.messageLog.slice(-500).map(m => ({ time:m.time, tick:m.tick, ...(m.d != null ? { d:m.d } : {}), type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),

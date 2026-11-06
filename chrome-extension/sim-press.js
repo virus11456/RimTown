@@ -146,6 +146,7 @@ const PRESS = (() => {
     }
     function daily(w) {
         const R = S(w), d = day(w); if (R.lastDay === d) return; R.lastDay = d;
+        if (w.econ?.paperShort && Math.random() < 0.5) return; // v6.77.0 缺紙:約一半的日子停刊
         for (const P of R.papers) if (!w.agents[P.journo] || w.agents[P.journo].isDead) P.journo = pickJourno(w, P);
         const E = w.election; if (E && E.active && (E.phase === 'campaign' || E.phase === 'voting')) electionDay(w, R, E, d); else { weekday(w, R, d); for (const P of R.papers) P.bribedBy = null; }
     }

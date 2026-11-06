@@ -49,7 +49,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 5) 存讀檔
       const blob = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(blob);
       eng.fullAgentOk = _ok;
-      return { promptOk: prompt.length > 300 && prompt.includes(A.name) || prompt.includes(I18N.localizeName ? I18N.localizeName(A.name) : A.name), promptLen: prompt.length, created: !!p && p.kind === 'free', fb: !!window.__fb, fxTypes, fx: p?.fx, cost: p?.cost, item: { effects: item.effectsText, kind: item.kindLabel }, after, herbsDaily: h2 - h1, brief: brief.slice(-120),
+      return { promptOk: prompt.length > 300 && prompt.includes(A.name) || prompt.includes(I18N.localizeName ? I18N.localizeName(A.name) : A.name), promptLen: prompt.length, created: !!p && p.kind === 'free', fb: !!window.__fb, fxTypes, fx: p?.fx, cost: p?.cost, item: { effects: item.effectsText, kind: item.kindLabel }, after, herbsDaily: h2 - h1, brief: brief.slice(-600),
         rt: { trad: (w2.proposals.traditions || []).length, lm: (w2.proposals.landmarks || []).length, ongoing: (w2.proposals.ongoing || []).length } };
     });
     ok(r.promptOk, '自由發想的提示詞組得出來(含鎮況與自己的資料)', r.promptLen);

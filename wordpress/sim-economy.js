@@ -1,7 +1,8 @@
 // RimTown - sim-economy.js：從 simulation.js 拆出的 倉庫、每日生產、建築、貿易、科技、工單、新聞（v6.1.0 B14）。
 // 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // --- Economy: Stockpile ---
-const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0,
+const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0, salt:0, paper:6, // v6.77.0 鹽(靠海才曬得出)、紙(木匠造)
+   
     // New resources (industry + processing)
     plank:0, hardwood:0, brick:0, marble:0, steel:0, gold:0,
     // Crop resources
@@ -71,8 +72,9 @@ function processDailyProduction(world) {
       if (extra > 0) sp.consume('silver', extra, world.tickCount, t('公共開支'), 'upkeep'); }
     // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
     // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
+    // v6.77.0 只有本地產得出的原料保底 40,其他保底 12(不夠就靠商隊)
     RAW_MATERIALS.forEach(r => {
-        const gap = 40 - sp.get(r);
+        const gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r);
         if (gap > 0) sp.add(r, gap, world.tickCount, t('原料自動補給'));
     });
     if (!world.workPolicy) world.workPolicy = {};
@@ -114,6 +116,7 @@ function processDailyProduction(world) {
         if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
+        if (typeof ECON !== 'undefined') { eff *= ECON.toolFactor(world); if (agent.job.key === 'farmer') eff *= ECON.foodMult(world, agent); } // v6.77.0 工具影響每個職業;農夫依種田／捕魚／打獵與地形換算
         // v5.51.0 材料不足不再罷工:改為就地取材、產能打四折(原料層有自動補給,此情況應少見)
         let canProduce = true;
         for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
@@ -124,6 +127,7 @@ function processDailyProduction(world) {
             for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
         }
         for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*10)/10,world.tickCount,`${agent.name}${t('（')}${agent.job.title}${t('）')}`,agent.name);
+        if (agent.job.key === 'farmer' && typeof ECON !== 'undefined') ECON.noteFood(world, agent, Math.round((recipe.outputs.food || 0) * eff * 10) / 10); // v6.77.0 記下是穀物、魚還是肉
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
@@ -165,7 +169,7 @@ function processDailyProduction(world) {
     }
     // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
     const foodCap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
-    const decayMod = Math.max(0, 1 + (world.buildings?.getEffect?.('food_decay', 0) || 0));
+    const decayMod = Math.max(0, 1 + (world.buildings?.getEffect?.('food_decay', 0) || 0)) * (typeof ECON !== 'undefined' ? ECON.saltDecay(world) : 1); // v6.77.0 有鹽醃漬,腐壞減半
     const excessFood = sp.get('food') - foodCap;
     if (excessFood > 0) {
         const spoiled = Math.floor(excessFood * 0.05 * decayMod);
@@ -567,7 +571,8 @@ class ResearchManager {
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
              const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
-        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0); // v6.40.0 文書房／印刷坊／天文台等加速研究
+        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
+        if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,10); // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
