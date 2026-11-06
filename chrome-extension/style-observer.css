@@ -91,13 +91,13 @@
 /* v6.53.0 播放／暫停合一:隱藏多出來的「播放」;跑馬燈移到上方資訊列下面,不蓋住天氣 */
 .rimtown-container.observer .header .controls #btn-resume { display: none; }
 .rimtown-container.observer .header .controls #btn-pause { min-width: 76px; }
-@media (min-width: 769px) { .rimtown-container.observer .drama-ticker { top: 64px; } }
+@media (min-width: 769px) { .rimtown-container.observer .drama-ticker { top: calc(var(--ob-header-b, 50px) + 14px); } } /* v6.76.3 上方列換行(英文 1280px)時跟著往下 */
 .rimtown-container.observer .header .version-display { display: none; }
 
 .rimtown-container.observer .main-layout { position: absolute !important; inset: 0 !important; }
 .rimtown-container.observer .map-panel { right: 0 !important; top: 0 !important; }
 .rimtown-container.observer .rt-sidebar {
-    top: 60px !important;
+    top: calc(var(--ob-header-b, 46px) + 14px) !important; /* v6.76.3 跟著上方列實際高度:英文標籤在 1280px 會換成兩行,以前固定 60px 會被控制列蓋住四個主分頁 */
     right: 14px !important;
     bottom: 14px !important;
     width: 372px !important;

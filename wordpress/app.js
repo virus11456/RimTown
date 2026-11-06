@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.76.2
-const RIMTOWN_APP_VERSION = '6.76.2';
+// RimTown - Frontend App v6.76.3
+const RIMTOWN_APP_VERSION = '6.76.3';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -419,6 +419,7 @@ class RimTownApp {
 
     async init() {
         this.setupEventDelegation();
+        this._watchHeaderHeight();
         // v5.68.0 首頁(Landing):Vercel 版一律先看首頁。未登入只能註冊/登入(不啟動世界);
         // 已登入在底下載好世界、暫停等你按「繼續遊戲」。登入/註冊成功後帶 rimtown_enter_now 重載直接進遊戲。
         this._landingActive = false;
@@ -825,7 +826,7 @@ class RimTownApp {
     _chapterDefs() {
         return [
             { n: 1, need: 0,  icon: '🌱', name: t('初來乍到'),   desc: t('認識村民、聽他們聊天，看見他們的愛恨與記憶。村民很快就會開始提案。') },
-            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你的決定：重大事件的應對與更多提案向你敞開。') },
+            { n: 2, need: 20, icon: '🤝', name: t('小鎮的一份子'), desc: t('村民開始信任你這位常來的旅人：你跟他們說的話更有分量，可能讓他們自己提出新的提案。') },
             { n: 3, need: 45, icon: '🏡', name: t('安家立業'),   desc: t('小鎮的經濟長起來了：商店、農場、產業，村民會提更大的案子。') },
             { n: 4, need: 70, icon: '🏛️', name: t('小鎮的支柱'),  desc: t('小鎮的未來由大家一起塑造：工廠、研究、建築升級、議會。') },
         ];
@@ -2115,6 +2116,15 @@ class RimTownApp {
         this._questDataLoading = new Promise((res) => { const sc = document.createElement('script'); const base = (document.querySelector('script[src*="quest-system.js"]')?.src || 'quest-system.js').replace(/quest-system\.js.*$/, ''); sc.src = base + 'quest-data.js?v=' + RIMTOWN_APP_VERSION; /* 跟著 quest-system.js 的路徑找 */ sc.onload = () => { try { this.world?.questSystem?.init?.(); } catch (e) {} res(); }; sc.onerror = () => res(); document.head.appendChild(sc); });
         return this._questDataLoading;
     }
+    // v6.76.3 上方資訊列＋控制列的實際下緣(px)寫進 --ob-header-b,側欄與跑馬燈排在它下面;換語言、視窗變窄換行時自動跟上
+    _watchHeaderHeight() {
+        try {
+            const hd = document.querySelector('.rimtown-container .header'); const root = document.querySelector('.rimtown-container'); if (!hd || !root) return;
+            const sync = () => { const r = hd.getBoundingClientRect(); const ctr = root.getBoundingClientRect(); let b = 0; for (const el of hd.querySelectorAll('h1, .header-info > *')) { if (!el.getClientRects().length) continue; b = Math.max(b, el.getBoundingClientRect().bottom); } if (!b) b = r.bottom; const v = Math.max(0, Math.round(b - ctr.top)); if (!hd.getClientRects().length) { if (this._hdrB) { this._hdrB = 0; root.style.removeProperty('--ob-header-b'); } return; } if (v > 0 && this._hdrB !== v) { this._hdrB = v; root.style.setProperty('--ob-header-b', v + 'px'); } }; // 手機版上方列藏起來:回到預設值
+            sync(); if (window.ResizeObserver) { const ro = new ResizeObserver(sync); ro.observe(hd); const ctl = hd.querySelector('.controls'); if (ctl) ro.observe(ctl); } window.addEventListener('resize', sync);
+            this._syncHeaderB = sync;
+        } catch (e) {}
+    }
     startSimulation() {
         if (this.simInterval) clearInterval(this.simInterval);
         if (this.world && !this.world.observerMode) this._loadQuestData();
@@ -2543,25 +2553,7 @@ class RimTownApp {
                 case 'settings-toggle-pause': { const wantPaused = this._notifCardOpen ? !this._pausedBeforeNotif : !this.world.paused; this._setPaused(wantPaused); this.world.logMessage('system', wantPaused ? t('遊戲已暫停。') : t('遊戲已繼續。')); this.renderSidebar(); break; }
                 case 'settings-speed-mult': { this._setSpeed(val); this.renderSidebar(); break; } // v6.54.0 舊入口(設定頁已移除)
                 case 'settings-roster': { try { localStorage.setItem('rimtown_roster_mode', val === 'random' ? 'random' : 'scripted'); } catch(e){} this.renderSidebar(); break; }
-                case 'settings-new-map': {
-                    const name = prompt(t('為新城鎮命名：'), t('邊境鎮 ') + (this._getTownList().length + 1));
-                    if (!name) break;
-                    this.archiveChatHistory();
-                    this._saveCurrentTown();
-                    this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
-                    this.world.reset();
-                    if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
-                    this.currentTownId = this._generateTownId(name);
-                    this._saveCurrentTown(name);
-                    this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-                    this.state = this.world.getState();
-                    this._generateTileMapLayout();
-                    if (this.tileMap) this.tileMap.agentPositions = {};
-                    this._updateHeaderTownName(name);
-                    this.world.logMessageT('system', '🏘️ 新城鎮「{name}」已建立！', { name });
-                    this.render();
-                    break;
-                }
+                case 'settings-new-map': this.createNewTown(); break; // v6.76.3 跟城鎮列表的「開新遊戲」同一條路:新的世界、原本這座搬去 IndexedDB
                 default: console.log('Unknown action:', action, val);
             }
         });
@@ -2620,23 +2612,7 @@ class RimTownApp {
             btn.addEventListener('click', (e) => { e.stopPropagation(); this._setSpeed(btn.dataset.speed); });
         });
         this._syncSpeedButtons();
-        document.getElementById('btn-new-game')?.addEventListener('click', async () => {
-            // v6.34.1 「新城鎮」會另開一座、目前這座保留在城鎮列表(之前叫「新地圖」,常被當成重畫地圖,按幾次就多幾座)
-            if (!confirm(t('這會另外開一座新城鎮，目前這座會保留在「城鎮列表」裡，可以隨時切回來。確定要新開嗎？'))) return;
-            const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + (this._getTownList().length + 1));
-            if (!name) return;
-            await this.archiveChatHistory();
-            this._saveCurrentTown();
-            this.world.reset();
-            if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
-            this.currentTownId = this._generateTownId(name);
-            this._saveCurrentTown(name);
-            this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-            this.state = this.world.getState();
-            this._generateTileMapLayout();
-            if (this.tileMap) this.tileMap.agentPositions = {};
-            this.render();
-        });
+        document.getElementById('btn-new-game')?.addEventListener('click', () => this.createNewTown()); // v6.76.3 同一條路
         document.getElementById('btn-save')?.addEventListener('click', async () => {
             await this.saveGame();
             this.state = this.world.getState();
