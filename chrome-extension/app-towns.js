@@ -430,13 +430,9 @@ Object.assign(RimTownApp.prototype, {
         return id;
     },
     async createNewTown() {
-        const defaultSuffix = this.auth.loggedIn
-            ? ((this._cloudSaves?.length || 0) + 1)
-            : (this._getTownList().length + 1);
         // v5.58.0 建立新城鎮恢復原行為(邊境鎮);海風鎮不用建立——它本來就存在,搭馬車去即可
         if (!confirm(t('這會開一場全新的遊戲：新的世界、新的鄰鎮與道路，跟目前的存檔完全分開、互不影響。目前這場會保留在「城鎮列表」裡，隨時可以切回來。確定要開新遊戲嗎？'))) return; // v6.75.0 開新遊戲＝新世界
-        const name = prompt(t('為新城鎮命名：'), '邊境鎮 ' + defaultSuffix); // v6.34.1 預設名存中文正名,顯示時再翻
-        if (!name) return;
+        const name = '邊境鎮'; // v6.76.8 每場新遊戲的起始城鎮都叫邊境鎮(各自是獨立的世界,不會撞名;要改名用城鎮列表的 ✏️)
         this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
         const prevTownId = this.currentTownId; // v6.76.3 新世界建好後把原本這座搬去 IndexedDB(localStorage 只留目前這座)
         try { await this.archiveChatHistory?.(); } catch (e) {}
