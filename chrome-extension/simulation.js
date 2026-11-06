@@ -1970,7 +1970,7 @@ class World {
             playerActions: (this.playerActions || []).slice(-60).map(a => ({ ...a })), // v5.45.0 蝴蝶效應
             dailyEcho: [...(this.dailyEcho || [])], // v5.45.0 昨日回響
             dailyFocus: this.dailyFocus ? { key: this.dailyFocus.key, items: this.dailyFocus.items.map(i => ({ ...i })) } : null, // v5.31.0 今日焦點
-            gossip: this.gossipNetwork.activeGossip.slice(-10000),
+            gossip: (this.gossipNetwork.activeGossip.length > 400 ? (this.gossipNetwork.activeGossip = this.gossipNetwork.activeGossip.slice(-300)) : this.gossipNetwork.activeGossip).slice(-300), // v6.76.1 存檔時順便把記憶體裡的也裁短(有些功能直接 push,不經過上限檢查)
             townFeed: this.townFeed ? this.townFeed.serialize() : null,
             events: {
                 eventLog: this.events.eventLog.slice(-10000),
@@ -2199,7 +2199,7 @@ class World {
             // Gossip
             this.gossipNetwork = new GossipNetwork();
         this.townFeed = new TownFeedSystem(); // v5.2.0 鎮民動態
-            this.gossipNetwork.activeGossip = data.gossip || [];
+            this.gossipNetwork.activeGossip = (data.gossip || []).slice(-300); // v6.76.1 舊存檔的長八卦清單讀進來就裁掉
             if (this.townFeed) this.townFeed.load(data.townFeed);
 
             // Events

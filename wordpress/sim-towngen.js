@@ -252,6 +252,7 @@ const TownGen = (() => {
     }
     function update(seed, patch) { const o = _load(); const e = o.list.find(x => x.seed === seed); if (!e) return; Object.assign(e, patch); _save(o); }
     function setState(seed, st) { update(seed, { st }); }
+    function setStates(map) { const o = _load(); let n = 0; for (const e of o.list) if (Object.prototype.hasOwnProperty.call(map, e.seed)) { e.st = map[e.seed]; n++; } if (n) _save(o); } // v6.76.1 一次寫回
     function bump(field, v) { const o = _load(); o[field] = v; _save(o); }
     // 跨裝置:存檔裡帶一份精簡登記簿,讀檔時合併(取較多的那份,同種子保留有存檔 id 的)
     function exportCompact() { const o = _load(); return { base: o.base, n: o.n, list: o.list.map(e => ({ seed: e.seed, found: e.found, via: e.via, by: e.by, r: e.r, id: e.id })) }; }
@@ -272,7 +273,7 @@ const TownGen = (() => {
     function normalize() { const o = _load(); if (_capLive(o)) _save(o); }
     function registerAll() { try { for (const e of _load().list) bySeed(e.seed); } catch (e) {} }
 
-    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
+    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, setStates, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
 })();
 if (typeof globalThis !== 'undefined') globalThis.TownGen = TownGen;
 try { TownGen.registerAll(); TownGen.normalize(); } catch (e) {}

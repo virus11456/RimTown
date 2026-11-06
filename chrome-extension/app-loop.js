@@ -274,8 +274,11 @@ Object.assign(RimTownApp.prototype, {
     _collectCrossTownNews(towns) {
         const out = [];
         const cache = this._crossNewsCache || (this._crossNewsCache = {});
+        const metaById = Object.fromEntries(this._getTownList().map(x => [x.id, x]));
         for (const tw of towns || []) {
             try {
+                // v6.76.1 先用城鎮列表上記的頭條摘要(不必讀整份存檔);沒有摘要的舊鎮才退回讀本機存檔
+                const mt = metaById[tw.id]; if (mt && mt.news !== undefined) { if (mt.news) out.push({ town: mt.blobName || tw.name, ...mt.news }); continue; }
                 const raw = localStorage.getItem('rimtown_town_' + tw.id);
                 if (!raw) continue;
                 const c = cache[tw.id];
@@ -324,7 +327,7 @@ Object.assign(RimTownApp.prototype, {
                 list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); // v6.35.0 標成鄰鎮
                 this._saveTownList(list);
             }
-            try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); } catch (e) {}
+            try { await this._writeOtherTown(tid, blob); this._noteSummary(tid, blob); } catch (e) {} // v6.76.1 鄰鎮副本直接放 IndexedDB
             if (this.auth.loggedIn) {
                 try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); } catch (e) {}
             }
@@ -375,14 +378,14 @@ Object.assign(RimTownApp.prototype, {
             const prog = (id) => { const c = Array.isArray(this._cloudSaves) ? this._cloudSaves.find(s => s.town_id === id) : null; const l = this._getTownList().find(tw => tw.id === id); const x = c || l || {}; if (Number.isFinite(+x.tick_count)) return +x.tick_count; const si = ['春季', '夏季', '秋季', '冬季'].indexOf(x.season); return (((x.year || 1) - 1) * 60 + Math.max(0, si) * 15 + (x.day || 1)) * 96; };
             const push = (id, name) => {
                 if (!id || !name) return;
-                const hasLocal = !!localStorage.getItem('rimtown_town_' + id);
+                const hasLocal = this._hasLocalTown(id); // v6.76.1 不再為了確認存在而把整份存檔讀出來
                 const inCloud = Array.isArray(this._cloudSaves) && this._cloudSaves.some(s => s.town_id === id);
                 if (!hasLocal && !inCloud) return;
                 // v5.59.5 名字以本地存檔「內」的鎮名為準:meta 名字曾被錯寫成「邊境鎮」,
                 // 會把海風鎮的分身當成回程目的地(每 id 只解析一次,結果快取整個 session)
                 if (hasLocal) {
                     const cache = this._blobNameCache || (this._blobNameCache = {});
-                    if (!(id in cache)) { try { cache[id] = JSON.parse(localStorage.getItem('rimtown_town_' + id))?.townName || null; } catch (e) { cache[id] = null; } }
+                    if (!(id in cache)) { const mt = this._getTownList().find(x => x.id === id); if (mt?.blobName) cache[id] = mt.blobName; else if (('rimtown_town_' + id) in localStorage) { try { cache[id] = JSON.parse(localStorage.getItem('rimtown_town_' + id))?.townName || null; } catch (e) { cache[id] = null; } } else cache[id] = null; } // v6.76.1 先用列表記的鎮名
                     if (cache[id]) name = cache[id];
                 }
                 // v5.59.5 也用世界鎮名擋自己:meta id 分裂時,同名的「自己」不再混進出訪名單
@@ -692,7 +695,7 @@ Object.assign(RimTownApp.prototype, {
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案
     _offerRelocation(w, ag, e) {
         const r = e.romance; if (!r || !r.localData) return true;
-        if (!localStorage.getItem('rimtown_town_' + e.visitedTownId)) return true; // 對方鎮不在本機:不提案(對方存檔改不到)
+        if (!this._hasLocalTown(e.visitedTownId)) return true; // 對方鎮不在本機:不提案(對方存檔改不到)
         if (w.eventChoice?.pendingEvent) return false;
         const full = Object.values(w.agents).filter(a => !a.isPlayer).length >= 30;
         const base = { romance: r, otherTownId: e.visitedTownId, otherTownName: e.visitedTownName, residentId: ag.agentId, residentName: ag.name };

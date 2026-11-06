@@ -36,7 +36,7 @@ class GossipNetwork {
         const contentT = pickRandom(pool); const content = Memory.render(contentT.k, contentT.p);
         const gossip = { about: a.name, content, contentT, source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true, kind, juicy: true };
         this.activeGossip.push(gossip);
-        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
+        if (this.activeGossip.length > 400) this.activeGossip = this.activeGossip.slice(-300); // v6.76.1 只留最近的(以前上限一萬則,五年後存檔光八卦就幾百 KB,篩話題也越來越慢)
         // 直接進八卦頭條 & 每日報
         world.logMessageT('gossip', '🗞️ {content}', { content: contentT }, a.name, b.name); // v6.20.0 模板
         if (world.dailyNews) world.dailyNews.collectEvent('gossip', content, kind === 'newCouple' ? 7 : 5, [a.name, b.name]);
@@ -63,7 +63,7 @@ class GossipNetwork {
         const contentT = pickRandom(templates); const content = Memory.render(contentT.k, contentT.p);
         const gossip = { about:about.name, content, contentT, source:source.name, spreadCount:0, tickCreated:world.tickCount, isTrue:Math.random()>0.2 };
         this.activeGossip.push(gossip);
-        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
+        if (this.activeGossip.length > 400) this.activeGossip = this.activeGossip.slice(-300); // v6.76.1 只留最近的(以前上限一萬則,五年後存檔光八卦就幾百 KB,篩話題也越來越慢)
         return gossip;
     }
     spreadGossip(speaker, listener, world) {
@@ -159,7 +159,7 @@ class GossipNetwork {
             shipWith: shipWith || null,
         };
         this.activeGossip.push(gossip);
-        if (this.activeGossip.length > 10000) this.activeGossip = this.activeGossip.slice(-10000);
+        if (this.activeGossip.length > 400) this.activeGossip = this.activeGossip.slice(-300); // v6.76.1 只留最近的(以前上限一萬則,五年後存檔光八卦就幾百 KB,篩話題也越來越慢)
         listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{player}偷偷跟我說:「{content}」', { player: player.name, content: contentT }, 5, [player.name, about.name]);
         world.logMessageT('gossip', '🗣️ {v}偷偷向{listener}爆料了{about}的事...', { v: playerTitle(world), listener: listener.name, about: about.name }, player.name, listener.name);
         return gossip;

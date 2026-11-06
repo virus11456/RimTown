@@ -23,7 +23,9 @@ Object.assign(RimTownApp.prototype, {
         const reg = TownGen.registry();
         const days = (reg.days || 0) + 1; TownGen.bump('days', days);
         // 背景發展(只有城鎮卡、還沒建存檔的鎮)
-        for (const c of TownGen.cards()) { if (c.townId) continue; const before = c.state ? c.state.news.length : 0; TownGen.drift(c, days); TownGen.setState(c.seed, c.state); if (c.state.news.length !== before) this._genCrossNewsAt = 0; }
+        const _states = {}; const _cards = TownGen.cards(); // v6.76.1 先在記憶體裡算完,最後一次寫回
+        for (const c of _cards) { if (c.townId) continue; const before = c.state ? c.state.news.length : 0; TownGen.drift(c, days); _states[c.seed] = c.state; if (c.state.news.length !== before) this._genCrossNewsAt = 0; }
+        TownGen.setStates(_states);
         if (!this._genTownsOpen()) return;
         TownGen.bump('since', (reg.since || 0) + 1);
         // 探險隊凱旋:有機會發現新聚落
@@ -112,7 +114,7 @@ Object.assign(RimTownApp.prototype, {
             this._genDropOrphans(c);
             tid = this._generateTownId(c.name);
             const meta = { season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: c.key, origin: 'generated', world: rimtownWorldId() };
-            let stored = false; try { localStorage.setItem('rimtown_town_' + tid, JSON.stringify(blob)); stored = true; } catch (e) {}
+            let stored = false; try { stored = await this._writeOtherTown(tid, blob); } catch (e) {} // v6.76.1 放 IndexedDB
             if (this.auth?.loggedIn) { try { await this.auth.cloudSave(tid, c.name, blob, meta); stored = true; this._cloudSaves = null; try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} } catch (e) {} }
             if (!stored) throw new Error(t('存檔空間不足'));
             // v6.48.1 存檔真的存到了才寫進城鎮列表(以前先寫列表,空間不足時每重試一次就多一座沒有存檔的同名鎮)
@@ -126,7 +128,7 @@ Object.assign(RimTownApp.prototype, {
     _genDropOrphans(c) {
         try {
             const list = this._getTownList(); const cloud = new Set((this._cloudSaves || []).map(s => s.town_id));
-            const keep = list.filter(tw => !(tw.origin === 'generated' && (tw.theme === c.key || tw.name === c.name) && !localStorage.getItem('rimtown_town_' + tw.id) && !cloud.has(tw.id)));
+            const keep = list.filter(tw => !(tw.origin === 'generated' && (tw.theme === c.key || tw.name === c.name) && !this._hasLocalTown(tw.id) && !cloud.has(tw.id)));
             if (keep.length !== list.length) this._saveTownList(keep);
         } catch (e) {}
     },
