@@ -2,7 +2,7 @@
   "name": "邊境鎮 - AI Town Simulation",
   "short_name": "邊境鎮",
   "description": "RimWorld-inspired AI town simulation with autonomous agents, relationships, and dynamic events.",
-  "start_url": "./index.html",
+  "start_url": "./town",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#1a1a2e",

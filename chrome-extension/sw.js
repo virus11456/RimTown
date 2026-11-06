@@ -1,8 +1,9 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v6.82.1';
+const CACHE_NAME = 'rimtown-v6.82.2';
+// v6.82.2 首頁(/)與遊戲(/town)分頁。Vercel 開了 cleanUrls,index.html／town.html 會轉址到 / 與 /town,
+// 轉址回應不能拿來回應頁面導覽,所以清單只放 './',遊戲頁另外試著快取 './town'(本機沒有乾淨網址就略過)
 const ASSETS_TO_CACHE = [
   './',
-  './index.html',
   './style.css',
   './style-observer.css',
   './pwa-manifest.json',
@@ -83,7 +84,7 @@ const ASSETS_TO_CACHE = [
 // Install: cache core assets
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE).then(() => cache.add('./town').catch(() => {})))
   );
   self.skipWaiting();
 });
@@ -120,7 +121,7 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        if (response.ok) {
+        if (response.ok && !response.redirected) { // v6.82.2 轉址過的回應不快取(拿來回應導覽會失敗)
           const clone = response.clone();
           caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         }

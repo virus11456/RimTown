@@ -378,30 +378,38 @@ Object.assign(RimTownApp.prototype, {
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
         const sky = (() => {
             const stars = [[60, 40], [140, 90], [220, 30], [330, 70], [410, 25], [520, 60], [610, 35], [700, 85], [790, 45], [880, 20], [960, 70], [1050, 40], [1130, 95], [1180, 30], [260, 120], [470, 110], [740, 130], [1000, 125]]
-                .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 3 ? 1.4 : 2.2}" class="lp-star" style="animation-delay:${(i % 6) * 0.7}s"/>`).join('');
+                .map(([x, y], i) => [x, y, i % 3 ? 1.4 : 2.2, i % 3]); // v6.82.2 星星分三組，各一層整層變亮變暗(只動透明度，GPU 合成，不用每格重畫 SVG)
             const houses = [[90, 300, 70, 46], [190, 312, 54, 34], [300, 292, 80, 54], [420, 306, 60, 40], [560, 286, 96, 60], [700, 304, 64, 42], [800, 296, 76, 50], [930, 310, 58, 36], [1040, 298, 72, 48], [1150, 308, 60, 40]];
             const hs = houses.map(([x, y, w, h], i) => {
                 const roof = `<polygon points="${x - 6},${y} ${x + w / 2},${y - h * 0.62} ${x + w + 6},${y}" fill="#3a2a3f"/>`;
                 const body = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#2a2235"/>`;
-                const win = `<rect x="${x + w * 0.2}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win"/>` + (w > 60 ? `<rect x="${x + w * 0.6}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win" style="animation-delay:${i * 0.4}s"/>` : '');
+                const win = `<rect x="${x + w * 0.2}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win"/>` + (w > 60 ? `<rect x="${x + w * 0.6}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win"/>` : '');
                 return roof + body + win;
             }).join('');
+            // 窗燈明暗:同樣的窗戶在上面一層畫成橘色，整層慢慢淡入淡出
+            const glow = houses.map(([x, y, w, h], i) => `<rect x="${x + w * 0.2}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}"/>` + (w > 60 ? `<rect x="${x + w * 0.6}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}"/>` : '')).join('');
+            const layer = (cls, inner) => `<svg class="lp-sky lp-sky-l ${cls}" viewBox="0 0 1240 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">${inner}</svg>`;
+            const starG = (g) => stars.filter(s => s[3] === g).map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('');
             const trees = [40, 250, 380, 510, 670, 880, 1000, 1220].map((x, i) => `<polygon points="${x - 16},350 ${x},${300 - (i % 2) * 14} ${x + 16},350" fill="#1f3a34"/>`).join('');
             return `<svg class="lp-sky" viewBox="0 0 1240 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
                 <defs><linearGradient id="lpSkyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151230"/><stop offset="0.6" stop-color="#2b2350"/><stop offset="1" stop-color="#3d2f55"/></linearGradient></defs>
-                <rect width="1240" height="360" fill="url(#lpSkyG)"/>${stars}
+                <rect width="1240" height="360" fill="url(#lpSkyG)"/>
                 <circle cx="760" cy="62" r="26" fill="#f6e7c1" opacity="0.92"/><circle cx="771" cy="55" r="23" fill="#1d1838"/>
                 <polygon points="0,300 160,230 330,280 520,210 700,270 900,215 1080,265 1240,225 1240,360 0,360" fill="#241f3d"/>
-                ${hs}${trees}<rect y="348" width="1240" height="12" fill="#1a1630"/></svg>`;
+                ${hs}${trees}<rect y="348" width="1240" height="12" fill="#1a1630"/></svg>`
+                + layer('lp-stars lp-stars-0', starG(0)) + layer('lp-stars lp-stars-1', starG(1)) + layer('lp-stars lp-stars-2', starG(2))
+                + layer('lp-glow-l', glow);
         })();
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
-        if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
+        // v6.82.2 再延後:捲到更新紀錄附近才載(550KB,大多數人不會往下捲到那裡)
+        const loadLog = () => {
+            if (typeof RIMTOWN_CHANGELOG !== 'undefined' || this._changelogLoading) return;
             this._changelogLoading = true;
             const sc = document.createElement('script');
             sc.src = 'changelog.js?v=' + encodeURIComponent(RIMTOWN_APP_VERSION);
             sc.onload = () => { if (this._landingActive) { try { this._renderLanding(); } catch (e) {} } };
             document.head.appendChild(sc);
-        }
+        };
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
         const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
@@ -436,7 +444,7 @@ Object.assign(RimTownApp.prototype, {
                 ${sec('landing-faq', t('常見問題'), t('你可能想問'), `<div class="lp-faq">${faq.map(q => `<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`)}
                 ${this._renderBrainSection()}
                 <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('一直在更新')}</span><h2>${t('更新紀錄')}</h2></div>
-                    <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
+                    <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${typeof RIMTOWN_CHANGELOG === 'undefined' ? t('載入中…') : t('尚無紀錄')}</div>`}</div>
                     ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
                 </section>
                 <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('接下來')}</span><h2>${t('即將實現')}</h2></div>
@@ -447,6 +455,12 @@ Object.assign(RimTownApp.prototype, {
             </div>
         </div>`;
         this._wireBrainDemo(el);
+        if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
+            const box = el.querySelector('#landing-log');
+            if (box && 'IntersectionObserver' in window) { try { this._lpLogObs?.disconnect(); this._lpLogObs = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { this._lpLogObs.disconnect(); loadLog(); } }, { root: el, rootMargin: '900px 0px' }); this._lpLogObs.observe(box); } catch (e) { loadLog(); } } else loadLog();
+        }
+        // v6.82.2 主視覺捲出畫面就暫停星星與窗燈動畫
+        try { this._lpHeroObs?.disconnect(); const hero = el.querySelector('.lp-hero'); if (hero && 'IntersectionObserver' in window) { this._lpHeroObs = new IntersectionObserver(es => es.forEach(e => hero.classList.toggle('lp-off', !e.isIntersecting))); this._lpHeroObs.observe(hero); } } catch (e) {}
         // v5.74.1 首頁語言切換:切完整頁重畫(首頁本身全部字串都有英文對照)
         el.querySelectorAll('.landing-lang [data-lang]').forEach(b => b.addEventListener('click', () => {
             const v = b.getAttribute('data-lang');
