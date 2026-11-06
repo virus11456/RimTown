@@ -177,28 +177,31 @@ if (typeof CouncilSystem !== 'undefined') {
 if (typeof CouncilSystem !== 'undefined') {
     const CS = CouncilSystem.prototype; const _du = CS.dailyUpdate;
     const seatScore = (world, a) => { let s = 0; if (a.age >= 35) s += 3; if (a.age >= 45) s += 2; s += (a.skills?.skills?.社交?.level || 0) * 2; s += ((a.mood || 50) + 50) / 25; const tr = a.personality?.traits || []; if (tr.includes('hardworking')) s += 2; if (tr.includes('kind')) s += 2; if (tr.includes('charismatic')) s += 2; if (tr.includes('lazy')) s -= 3; if (tr.includes('abrasive')) s -= 2; try { s += (TIERS.S(world).career[a.agentId] || []).length * 1.5; } catch (e) {} return s + Math.random() * 3; };
-    CS._refillSeats = function (world) {
+    CS._refillSeats = function (world, occupied = 0) {
         const all = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
         const want = Math.min(TIERS.seats(world), Math.max(3, Math.floor(all.length / 3)));
-        if (this.members.length >= want) return 0;
+        if (this.members.length + occupied >= want) return 0;
         const have = new Set(this.members); const leaderId = world.election?._officeHolder?.(world)?.agentId;
         const cands = all.filter(a => !have.has(a.agentId) && a.agentId !== leaderId && (a.age || 0) >= 18).map(a => [a, seatScore(world, a)]).sort((x, y) => y[1] - x[1]);
         let n = 0; const lv = TIERS.level(world), L = TIERS.LV[lv];
-        while (this.members.length < want && cands.length) { const [a] = cands.shift(); this.members.push(a.agentId); n++;
+        while (this.members.length + occupied < want && cands.length) { const [a] = cands.shift(); this.members.push(a.agentId); n++;
             try { world.logMessageT('council', '🏛️ {council}有空位，大家推舉{name}遞補為{member}。', { council: L.council, name: a.name, member: L.member }, a.name); } catch (e) {}
             try { a.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'social', '大家推舉我進{council}，我得好好做。', { council: L.council }, 7, []); } catch (e) {} }
         return n;
     };
     CS.dailyUpdate = function (world) {
-        const before = (this.members || []).slice();
-        const r = _du.call(this, world);
+        let awayMembers = [];
         try {
             if (this._formed) {
+                // 先處理席次再讓原本的流程跑(原本有人離開就只刪不補,剩一人時整個議會解散)
                 const away = new Set((world.events?._travellingAgents || []).map(x => x?.agentData?.agentId).filter(Boolean));
-                for (const id of before) if (away.has(id) && !this.members.includes(id)) this.members.push(id); // 出遠門的人保留席次
-                this._refillSeats(world);
+                awayMembers = (this.members || []).filter(id => !world.agents[id] && away.has(id)); // 出遠門的人保留席次
+                this.members = (this.members || []).filter(id => world.agents[id]);
+                this._refillSeats(world, awayMembers.length);
             }
         } catch (e) { console.warn('[Council] refill', e); }
+        const r = _du.call(this, world);
+        try { if (this._formed) for (const id of awayMembers) if (!this.members.includes(id)) this.members.push(id); } catch (e) {}
         return r;
     };
 }
