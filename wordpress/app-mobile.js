@@ -388,6 +388,7 @@ Object.assign(RimTownApp.prototype, {
         try {
             const ag = this.world?.agents?.[agentId];
             if (ag && typeof TIERS !== 'undefined') { const bd = TIERS.badge(this.world, ag); if (bd) chips.push({ text: `${bd.icon} ${bd.text}`, cls: 'nqc-office nqc-office-' + bd.cls }); const ct = TIERS.careerText(this.world, ag); if (ct) inner.unshift(`🗂️ ${t('從政經歷')}${t('：')}${ct}`); } // v6.56.0 官職標籤與從政經歷
+            if (ag && typeof ASSEMBLY !== 'undefined' && this.world.assembly) { const rt = ASSEMBLY.recordText(this.world, ag); if (rt) inner.unshift(`🏛️ ${t('議事紀錄')}${t('：')}${rt}`); const tt = ASSEMBLY.truthText(this.world, ag); if (tt) inner.push(`🕵️ ${tt}`); } // v6.82.0 議事紀錄(收錢、買票只有上帝視角看得到)
             if (ag && typeof CLASS !== 'undefined' && this.world.classes) { const lv = CLASS.level(this.world, ag), tt = CLASS.titleOf(this.world, ag); chips.push(`${CLASS.NAMES[lv].icon} ${CLASS.label(this.world, ag)}${tt ? ' · ' + tt : ''}`); } // v6.58.0 社會階層與頭銜
             if (ag && typeof WALLET !== 'undefined' && this.world.wallet) { const n = Math.round(WALLET.get(this.world, ag)); chips.push(`👛 ${n} ${t('銀幣')}${t('（')}${t(WALLET.word(n))}${t('）')}`); } // v6.54.0 個人錢包
             if (ag && typeof PETS !== 'undefined') { const pd = PETS.describe(this.world, ag); if (pd) chips.push(pd); }
