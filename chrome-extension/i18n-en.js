@@ -7479,6 +7479,8 @@
         '湊齊兩樣就算吃得好': 'any two of these count as eating well',
         '🍰 鎮上連著三天都吃得很好，大家心情跟著好起來。': '🍰 The town has eaten well three days running, and everyone is in better spirits.',
         '🍰 鎮上已經連續一週吃得很好，大家都說這是最好過的日子。': '🍰 A whole week of eating well — people say these are the best days the town has had.',
+        '為升格進一批{item}': 'Buy {item} for the upgrade',
+        '鎮上已經夠格升格為{tier}，只差擴建鎮公所的{item} {lack} 份。{who}提議從公庫撥 {n} 銀幣去商店進 {qty} 份。': 'The town already qualifies to become a {tier}, but the town hall expansion is {lack} {item} short. {who} proposes spending {n} silver from the treasury to buy {qty} at the shop.',
         '最近的王令': 'Recent decrees',
         '王位被搶': 'Throne lost',
         '小鎮衰敗了——連續兩季的考驗都沒撐過去。再撐過兩季考驗，小鎮就能復興。': 'The town has declined: two seasonal trials lost in a row. Pass two trials in a row and it will recover.',

@@ -446,7 +446,7 @@ const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5
 };
 // v5.52.0 經濟C波:商人改以「收購加工品」為主(價值層 sink)——原料有自動補給,買賣原料已無意義
 const MERCHANT_TYPES = [
-    {names:[t('張商人') /* v6.22.0 中文不再夾英文括號 */,t('老趙商隊')],specialty:'general',sells:['food','herbs','wheat','potato','rice'],buys:['meals','furniture','clothing','tools','bread','beer']} /* v6.79.0 帶作物來、收麵包與啤酒 */,
+    {names:[t('張商人') /* v6.22.0 中文不再夾英文括號 */,t('老趙商隊')],specialty:'general',sells:['food','herbs','wheat','potato','rice','wood','stone'],buys:['meals','furniture','clothing','tools','bread','beer']} /* v6.79.0 帶作物來、收麵包與啤酒 */,
     {names:[t('礦商老李')],specialty:'metals',sells:['metal','tools','steel'],buys:['meals','medicine','plank','steel']},
     {names:[t('藥師小雪')],specialty:'medicine',sells:['herbs','medicine','flowers'],buys:['meals','clothing','herbal_tea','perfume']},
     {names:[t('絲綢商人')],specialty:'textiles',sells:['cloth','clothing','cotton'],buys:['furniture','medicine','meals','luxury_furniture','perfume']},

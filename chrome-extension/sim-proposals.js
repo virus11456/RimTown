@@ -394,6 +394,19 @@ class ProposalSystem {
         // 買賣:大宗進貨(原料見底)／大宗拋售(倉庫爆了),由商人、鎮長提;日常小量補貨由 autonomy 自己做
         {
             const SI = (typeof SHOP_ITEMS !== 'undefined') ? SHOP_ITEMS : {};
+            // v6.81.0 已經夠格升格、只差擴建鎮公所的建材:馬上有人提案去進貨(以前只會等，沒有木材的鎮會卡在村莊很久)
+            try {
+                const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
+                if (pr && pr.next && pr.streak >= pr.need && pr.matLack && Object.keys(pr.matLack).length) {
+                    for (const [r, lackN] of Object.entries(pr.matLack)) {
+                        if (!SI[r] || !(lackN > 0) || !this._cool(day, 'market:buy:tier:' + r, 4)) continue;
+                        const qty = Math.ceil(lackN + 10), price = SI[r].buyPrice * qty;
+                        if (silver < price + 40) continue;
+                        const tier = t(pr.next.zh);
+                        out.push({ kind: 'market', key: 'market:buy:tier:' + r, weight: 3, jobs: ['mayor', 'trader', 'carpenter'], make: (a) => ({ kind: 'market', key: 'market:buy:tier:' + r, refKey: r, qty, side: 'buy', tk: '為升格進一批{item}', tp: { item: SI[r].name() }, dk: '鎮上已經夠格升格為{tier}，只差擴建鎮公所的{item} {lack} 份。{who}提議從公庫撥 {n} 銀幣去商店進 {qty} 份。', dp: { tier, item: SI[r].name(), lack: Math.ceil(lackN), who: a.name, n: price, qty }, cost: { silver: price }, category: 'economy', jobBias: ['mayor', 'trader'] }) });
+                    }
+                }
+            } catch (e) {}
             for (const r of ['wood', 'stone', 'metal', 'cloth', 'herbs']) {
                 if (!SI[r] || (sp?.get?.(r) || 0) >= 25 || silver < SI[r].buyPrice * 30 + 60 || !this._cool(day, 'market:buy:' + r, 8)) continue;
                 const qty = 30, price = SI[r].buyPrice * qty;

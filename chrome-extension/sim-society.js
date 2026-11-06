@@ -965,8 +965,9 @@ class LifecycleSystem {
         const usedNames = new Set(Object.values(world.agents).map(a => a.name));
         const graveyardNames = new Set(this.graveyard.map(g => g.name));
         const availableNames = namePool.filter(n => !usedNames.has(n) && !graveyardNames.has(n));
-        const name = availableNames.length > 0 ? pickRandom(availableNames) :
+        let name = availableNames.length > 0 ? pickRandom(availableNames) :
             `${parentA.name.charAt(0)}${pickRandom(namePool).slice(-1)}`;
+        if (typeof uniqueVillagerName === 'function') name = uniqueVillagerName(world, name); // v6.81.0 不跟還在鎮上的人同名
 
         // Inherit traits from parents
         const allTraits = [...parentA.personality.traits, ...parentB.personality.traits];

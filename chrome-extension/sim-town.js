@@ -291,6 +291,18 @@ const DEPARTURE_REASONS = [
     '出發去探索荒野','離開去遠方的學院進修',
     '前往首都尋求發展','出門旅行增廣見聞',
 ]; // v6.19.0 原文 key,顯示時再翻
+// v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個叫法(阿／小／老／大＋末字，或加排行)，確保沒有兩個同名村民
+function uniqueVillagerName(world, name) {
+    const live = new Set(Object.values(world?.agents || {}).filter(a => !a.isDead).map(a => a.name));
+    if (!live.has(name)) return name;
+    const last = String(name).slice(-1);
+    const cands = ['阿' + last, '小' + last, '老' + last, '大' + last, name + '二', name + '三', name + '四', name + '五', name + '六'];
+    for (const c of cands) if (!live.has(c)) return c;
+    for (let k = 2; k < 99; k++) if (!live.has(name + k)) return name + k;
+    return name;
+}
+if (typeof window !== 'undefined') window.uniqueVillagerName = uniqueVillagerName;
+
 const IMMIGRANT_POOL = [
     {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
     {name:'李雪',age:31,gender:'female',traits:['kind','perfectionist'],job:'tailor',background:'聽說邊境鎮需要她的手藝的熟練裁縫。'},
@@ -546,9 +558,9 @@ class EventSystem {
             const ags = Object.values(world.agents).filter(a => !a.isPlayer);
             const mood = ags.reduce((s, a) => s + (a.mood || 0), 0) / Math.max(1, ags.length);
             const moodF = mood >= 55 ? 1 : mood >= 40 ? 0.6 : 0.3;
-            const chance = Math.min(0.9, (0.3 + Math.min(0.3, gap * 0.02) + immigrationBoost) * fed * moodF);
+            const chance = Math.min(0.7, (0.2 + Math.min(0.15, gap * 0.01) + immigrationBoost) * fed * moodF); // 約一年(60 天)多三十個人
             if (Math.random() < chance) this._spawnImmigrant(world);
-            if (gap >= 10 && Math.random() < chance * 0.4) this._spawnImmigrant(world);
+            if (gap >= 20 && Math.random() < chance * 0.3) this._spawnImmigrant(world);
         } else if (immigrationBoost > 0 && Math.random() < immigrationBoost && total < this.TARGET_POPULATION + 3) {
             this._spawnImmigrant(world);
         }
@@ -566,7 +578,7 @@ class EventSystem {
         if (!imm) imm = pickRandom(available);
         this._usedImmigrantNames.add(imm.name);
         // v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個名字(加上家鄉／排行),避免兩個同名村民
-        { const live = new Set(Object.values(world.agents).map(a => a.name)); if (live.has(imm.name)) { const last = imm.name.slice(-1); const nm = ['阿' + last, '小' + last, '老' + last, '大' + last, imm.name + '二', imm.name + '三', imm.name + '四'].find(x => !live.has(x)); if (nm) imm = { ...imm, name: nm }; } }
+        { const nm = uniqueVillagerName(world, imm.name); if (nm !== imm.name) imm = { ...imm, name: nm }; }
         const id = `imm_${imm.name}_${world.tickCount}`;
         const personality = new Personality(imm.traits, imm.background);
         personality.values = shuffle([t('家庭'),t('自由'),t('知識'),t('財富'),t('權力'),t('藝術'),t('自然'),t('社群'),t('冒險'),t('和平')]).slice(0, 1+Math.floor(Math.random()*3));
