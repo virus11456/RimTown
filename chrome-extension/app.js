@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.80.1
-const RIMTOWN_APP_VERSION = '6.80.1';
+// RimTown - Frontend App v6.80.2
+const RIMTOWN_APP_VERSION = '6.80.2';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2292,7 +2292,6 @@ class RimTownApp {
                 case 'close-town-modal': document.getElementById('town-modal')?.classList.add('hidden'); this.world.paused = !!this._pausedBeforeTownModal; break;
                 // Chat
                 case 'start-chat': this.startChatWith(val); break;
-                case 'edit-look': this._openLookEditor(val); break; // v5.89.0
                 case 'req-act': this._requestAct(val); break; // v5.91.0 委託板
                 case 'req-buy-ap': this._requestBuyAP(); break;
                 case 'open-caravan': this._showCaravanDialog(); break; // v5.92.0
@@ -2300,11 +2299,6 @@ class RimTownApp {
                 case 'recap-go': this._recapGo(val); break; // v6.6.0
                 case 'recap-close': document.getElementById('season-recap')?.remove(); break;
                 case 'perk-pick': { const r = this.world?.growth?.choose(val, this.world); if (r?.ok) { this.state = this.world.getState(); try { this.renderSidebar(); } catch (e) {} } break; } // v5.94.0
-                case 'look-set': this._setLookDraft(val); break;
-                case 'look-random': this._randomLookDraft(); break;
-                case 'look-reset': this._applyLookDraft('reset'); break;
-                case 'look-save': this._applyLookDraft('save'); break;
-                case 'look-cancel': document.getElementById('look-modal')?.remove(); break;
                 case 'send-chat': this._sendFromInput(); break;
                 case 'chat-intent': this._sendIntent(val); break;
                 case 'open-gift': this._showGiftPicker(); break;
