@@ -5,7 +5,7 @@
 // 影響：商人來訪頻率、移民速度、NPC 心情、事件觸發
 
 // v6.81.0 人口目標:各級上限 × 繁榮度係數(繁榮度 10 以下三成、60 以上滿額)
-const POP_CAPS = [35, 70, 115, 160];
+const POP_CAPS = [38, 72, 115, 140];
 function popTargetFor(world, prosperity) {
     let lv = 0; try { if (typeof TIERS !== 'undefined' && TIERS.level) lv = Math.max(0, Math.min(3, TIERS.level(world) || 0)); } catch (e) {}
     const p = Number.isFinite(prosperity) ? prosperity : 50;
@@ -266,7 +266,7 @@ class ProsperityEngine {
     _applyEffects(world) {
         // 影響目標人口（移民速率）
         // v6.81.0 鎮上能長到多少人跟著城鎮等級走(以前最多約 33 人，城市 60、王都 100 永遠到不了):
-        // 村莊最多 35、城鎮 70、城市 115、王都 160;繁榮度越高越接近上限,繁榮度 50 的村莊約 30 人(剛好夠升城鎮)
+        // 村莊最多 38、城鎮 72、城市 115、王都 140;繁榮度越高越接近上限,繁榮度 50 的村莊約 33 人(夠升城鎮)
         if (world.events) world.events.TARGET_POPULATION = popTargetFor(world, this.prosperity);
     }
 

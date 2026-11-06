@@ -294,6 +294,7 @@ const DEPARTURE_REASONS = [
 // v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個叫法(阿／小／老／大＋末字，或加排行)，確保沒有兩個同名村民
 function uniqueVillagerName(world, name) {
     const live = new Set(Object.values(world?.agents || {}).filter(a => !a.isDead).map(a => a.name));
+    for (const tr of (world?.events?._travellingAgents || [])) if (tr?.agentData?.name) live.add(tr.agentData.name); // 出遠門的人也算(回來時才不會撞名)
     if (!live.has(name)) return name;
     const last = String(name).slice(-1);
     const cands = ['阿' + last, '小' + last, '老' + last, '大' + last, name + '二', name + '三', name + '四', name + '五', name + '六'];
