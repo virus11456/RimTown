@@ -78,8 +78,8 @@ const TIERS = (() => {
         if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) {
             // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
             const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
-            if (mat && !w.stockpile?.canAfford?.(mat)) { T.up = UP_DAYS; if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
-            else { if (mat) w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); T.waitMat = null; change(w, T, T.lv + 1); }
+            if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) { T.up = UP_DAYS; if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
+            else { if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); } T.waitMat = null; change(w, T, T.lv + 1); }
         } }
         else if (target < T.lv) { T.down++; T.up = 0; if (T.down >= DOWN_DAYS) change(w, T, T.lv - 1); }
         else { T.up = 0; T.down = 0; }

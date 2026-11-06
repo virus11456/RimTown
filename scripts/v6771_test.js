@@ -21,10 +21,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         return { howto: n('#landing-howto .landing-step'), feats: n('#landing-features .landing-card'), ai: n('#landing-ai .landing-card'),
           h2: [...L.querySelectorAll('h2')].map(x => x.textContent.trim()), txt, cjk: (txt.match(/[一-鿿]{2,}/g) || []).filter(s => s !== '邊境鎮' && s !== '中文'),
           sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: L.scrollWidth, lcw: L.clientWidth,
-          reg: !!document.getElementById('landing-register') && !!document.getElementById('landing-login') };
+          reg: !!document.getElementById('landing-register') && !!document.getElementById('landing-login'),
+          lp: { stats: n('.lp-stats li'), day: n('.lp-day li'), gallery: [...document.querySelectorAll('.lp-gallery img')].map(i => i.getAttribute('src')), tiers: n('.lp-tiers li'), faq: n('.lp-faq details'), final: n('.lp-final [data-lp-go]'), hero: !!document.querySelector('.lp-hero .lp-sky') && !!document.querySelector('.lp-hero-shot img') } };
       });
       ok(r.howto === 4 && r.feats === 8 && r.ai === 2, '怎麼玩 4 步、特色 8 張、AI 與金鑰 2 張(v6.78.1 起沒有自備金鑰)', { howto: r.howto, feats: r.feats, ai: r.ai });
       ok(r.reg, '未登入時有註冊／登入按鈕', r.reg);
+      ok(r.lp.hero && r.lp.stats === 6 && r.lp.day === 6 && r.lp.tiers === 4 && r.lp.faq === 6 && r.lp.final === 2, 'v6.79.0 首頁各區：主視覺、數字、小鎮的一天、成長路線、常見問題、頁尾按鈕', r.lp);
+      ok(r.lp.gallery.length === 4 && r.lp.gallery.every(x => x.endsWith('-' + lang + '.jpg')), '畫面一覽用對應語言的實際截圖', r.lp.gallery);
       const stale = lang === 'zh'
         ? /五座城鎮、近百位|玩家附近|你唯一能做的|看顧小鎮的觀察者/
         : /five towns|near the player|cannot enter their own key|only thing you can do/i;

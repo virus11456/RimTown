@@ -62,7 +62,8 @@ class VillagerAutonomy {
                 let pool = crops.slice();
                 if (food < 120) { const f = pool.filter(foodCrop); if (f.length) pool = f; }
                 const rot = pool.filter(c => c.key !== plot.lastCrop); if (rot.length) pool = rot;
-                pool.sort((a, b) => b.reqLevel - a.reqLevel || b.sellPrice - a.sellPrice);
+                if (typeof FLOW !== 'undefined') { pool.sort((a, b) => FLOW.cropScore(w, b) - FLOW.cropScore(w, a)); if (FLOW.cropScore(w, pool[0]) < 0.15) continue; } // v6.79.0 種鎮上需要的(缺糧種糧、工坊缺料種原料);什麼都不缺就休耕,省種子錢
+                else pool.sort((a, b) => b.reqLevel - a.reqLevel || b.sellPrice - a.sellPrice);
                 const top = pool.slice(0, 3);
                 const crop = Math.random() < 0.6 ? top[0] : this._pick(top);
                 if (!crop) continue;
@@ -92,7 +93,7 @@ class VillagerAutonomy {
     _factories(w) {
         const pr = w.processing; if (!pr?.builtFactories) return;
         const SI = (typeof SHOP_ITEMS !== 'undefined') ? SHOP_ITEMS : {};
-        const hasMarket = (w.buildings?.completed || []).some(b => b.name === t('市集'));
+        const hasMarket = (w.buildings?.completed || []).some(b => b.buildingKey === 'marketplace' || b.name === t('市集')); // v6.79.0 市集升級改名後也算
         // 訂單先交（訂單是從工坊倉庫出貨），剩下的再入倉或賣
         for (const o of (pr.orders || []).filter(o => o.status === 'active')) {
             try {
@@ -124,7 +125,7 @@ class VillagerAutonomy {
         if (!who) return;
         const pop = Math.max(1, this._npcs(w).length);
         const reserve = (r) => r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
-        const low = (r) => r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5;
+        const low = (r) => { const b = (typeof FLOW !== 'undefined') ? FLOW.buyLow(w, r) : null; if (b != null) return b; return Math.max(r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5, (typeof FLOW !== 'undefined' ? FLOW.inputNeed(w, r) : 0)); }; // v6.79.0 作物只買用得到的;工坊要用的料買夠三批
         const deals = [];
         // 先賣（進帳），再買;v6.40.1 一天跟行商賣貨最多進帳 100 銀幣
         let earned = 0;

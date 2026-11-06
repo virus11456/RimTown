@@ -117,21 +117,26 @@ function processDailyProduction(world) {
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
         if (typeof ECON !== 'undefined') { eff *= ECON.toolFactor(world); if (agent.job.key === 'farmer') eff *= ECON.foodMult(world, agent); } // v6.77.0 工具影響每個職業;農夫依種田／捕魚／打獵與地形換算
+        // v6.79.0 需求導向:鎮上這樣東西夠了就放慢(材料也照比例少用),不再無限堆
+        const dm = (typeof FLOW !== 'undefined') ? FLOW.jobDemand(world, agent.job.key) : 1;
+        eff *= dm;
         // v5.51.0 材料不足不再罷工:改為就地取材、產能打四折(原料層有自動補給,此情況應少見)
         let canProduce = true;
-        for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a)) { canProduce=false; break; } }
+        for (const [r,a] of Object.entries(recipe.inputs)) { if (!sp.has(r,a*dm)) { canProduce=false; break; } }
         if (!canProduce) {
             eff *= 0.4;
             world.logMessageT('economy', '{agent}材料短缺，用邊角料將就趕工。', { agent: agent.name }, agent.name);
         } else {
-            for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,a,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
+            for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,Math.round(a*dm*100)/100,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
         }
-        for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*10)/10,world.tickCount,`${agent.name}${t('（')}${agent.job.title}${t('）')}`,agent.name);
+        for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*((typeof FLOW !== 'undefined' && FLOW.multiOut(agent.job.key) && dm > 0) ? FLOW.demandMult(world, r) / dm : 1)*10)/10, // v6.79.0 礦工的石材、金屬各自看夠不夠
+            world.tickCount,`${agent.name}${t('（')}${agent.job.title}${t('）')}`,agent.name);
         if (agent.job.key === 'farmer' && typeof ECON !== 'undefined') ECON.noteFood(world, agent, Math.round((recipe.outputs.food || 0) * eff * 10) / 10); // v6.77.0 記下是穀物、魚還是肉
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-    const mealsNeeded = 1.5*npcCount;
+    let mealsNeeded = 1.5*npcCount;
+    if (typeof FLOW !== 'undefined') mealsNeeded = Math.max(0, mealsNeeded - FLOW.eatSnacks(world, mealsNeeded * 0.4)); // v6.79.0 麵包、糕點、果醬可以代替正餐
     const mealsAvailable = sp.get('meals');
     if (mealsAvailable >= mealsNeeded) {
         sp.consume('meals',mealsNeeded,world.tickCount,'daily consumption');
@@ -441,11 +446,11 @@ const BASE_PRICES = {food:1,wood:1.5,stone:2,metal:4,cloth:3,herbs:3.5,meals:2.5
 };
 // v5.52.0 經濟C波:商人改以「收購加工品」為主(價值層 sink)——原料有自動補給,買賣原料已無意義
 const MERCHANT_TYPES = [
-    {names:[t('張商人') /* v6.22.0 中文不再夾英文括號 */,t('老趙商隊')],specialty:'general',sells:['food','herbs'],buys:['meals','furniture','clothing','tools']},
-    {names:[t('礦商老李')],specialty:'metals',sells:['metal','tools'],buys:['meals','medicine']},
-    {names:[t('藥師小雪')],specialty:'medicine',sells:['herbs','medicine'],buys:['meals','clothing']},
-    {names:[t('絲綢商人')],specialty:'textiles',sells:['cloth','clothing'],buys:['furniture','medicine','meals']},
-    {names:[t('異國商隊')],specialty:'exotic',sells:['herbs','food'],buys:['meals','clothing','furniture','tools','medicine']},
+    {names:[t('張商人') /* v6.22.0 中文不再夾英文括號 */,t('老趙商隊')],specialty:'general',sells:['food','herbs','wheat','potato'],buys:['meals','furniture','clothing','tools','bread','beer']} /* v6.79.0 帶作物來、收麵包與啤酒 */,
+    {names:[t('礦商老李')],specialty:'metals',sells:['metal','tools','steel'],buys:['meals','medicine','plank','steel']},
+    {names:[t('藥師小雪')],specialty:'medicine',sells:['herbs','medicine','flowers'],buys:['meals','clothing','herbal_tea','perfume']},
+    {names:[t('絲綢商人')],specialty:'textiles',sells:['cloth','clothing','cotton'],buys:['furniture','medicine','meals','luxury_furniture','perfume']},
+    {names:[t('異國商隊')],specialty:'exotic',sells:['herbs','food','tea','grapes','sugarcane','sugar','mushroom'],buys:['meals','clothing','furniture','tools','medicine','wine','fine_tea','jam']} /* v6.79.0 本地種不出的作物靠異國商隊 */,
 ];
 
 class TradeManager {

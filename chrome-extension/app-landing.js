@@ -319,31 +319,81 @@ Object.assign(RimTownApp.prototype, {
                <button class="landing-btn secondary" id="landing-logout">${t('登出')}</button>`
             : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
                <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
-        // v6.77.1 首頁改寫:先講怎麼玩(開世界 → 看 → 推一把 → 看後果),再講小鎮裡會自己長出什麼,最後講 AI 與金鑰
+        // v6.79.0 首頁重新設計:主視覺(手繪夜景＋實際遊戲畫面)、數字、怎麼玩、小鎮的一天、特色、畫面一覽、成長路線、AI、常見問題
+        const L = I18N.getLang() === 'en' ? 'en' : 'zh';
+        const shot = (k) => `img/landing/${k}-${L}.jpg`;
+        const stats = [['30', t('張事件卡')], ['28', t('項研究')], ['33', t('種建築')], ['4', t('級城鎮')], ['6', t('種宗教骨架')], ['500', t('條記憶／每人')]];
         const howto = [
-            ['🏘️', t('開一個世界'), t('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場，跟其他存檔互不影響。')],
-            ['👀', t('在天上看'), t('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。提案頁看大家想做什麼，日報看昨天發生了什麼。')],
-            ['🃏', t('偶爾推一把'), t('你能做的事很少：每天最多打 2 張事件卡（天災、人禍、機運、人際共 30 張），託夢給某位村民，或化身路過的旅人跟人聊天。')],
-            ['📜', t('看小鎮怎麼回應'), t('「反應追蹤」記下每個人的反應、提了什麼案、七天後小鎮變成什麼樣；每一季寫成一章鎮史。沒有結局，可以一直玩下去。')],
+            ['🏘️', t('開一個世界'), t('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場，跟其他存檔互不影響。'), t('例：開新遊戲 → 新的邊境鎮、新的鄰居、新的地圖')],
+            ['👀', t('在天上看'), t('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。提案頁看大家想做什麼，觀察者日報看昨天發生了什麼。'), t('例：點鐵匠 → 看到他暗戀麵包師、還欠酒館三天的帳')],
+            ['🃏', t('偶爾推一把'), t('你能做的事很少：每天最多打 2 張事件卡（天災、人禍、機運、人際共 30 張），託夢給某位村民，或化身路過的旅人跟人聊天。'), t('例：打出「旱災」→ 農夫提案開水圳 → 全鎮投票')],
+            ['📜', t('看小鎮怎麼回應'), t('「反應追蹤」記下每個人的反應、提了什麼案、七天後小鎮變成什麼樣；每一季寫成一章鎮史。沒有結局，可以一直玩下去。'), t('例：七天後糧價回穩，提案的農夫在下次選舉多拿了票')],
+        ];
+        const day = [
+            ['06:00', '🌅', t('天亮開工'), t('農夫依地形去種田、捕魚或打獵，鐵匠打工具，木匠造紙做家具。')],
+            ['10:00', '🏛️', t('提案與投票'), t('有人提議蓋穀倉、有人想調稅率；全鎮投票，村長拍板並說出理由。')],
+            ['12:30', '🍲', t('酒館八卦'), t('午飯時間最熱鬧：誰暗戀誰、誰欠錢不還，消息一傳十、十傳百，越傳越走樣。')],
+            ['15:00', '🐎', t('商隊進城'), t('海港帶來魚和鹽、林間村帶來木材和紙，缺什麼就靠貿易補。')],
+            ['19:00', '💞', t('約會與吵架'), t('有人在廣場告白，有人當眾對嗆；派系在角落密謀下一次選舉。')],
+            ['23:00', '🗞️', t('觀察者日報'), t('一天的八卦與大小事整理成一份報紙，隔天早上讀。')],
         ];
         const features = [
-            ['🧠', t('像真人的村民'), t('每個人有個性、記憶、六項需求和自己的心事。他們聊天、八卦、交朋友、戀愛結婚，也會講壞話、說謊、設局；做錯事會道歉，不被原諒就報復。你在天上看得到真相。')],
-            ['🗳️', t('自己治理小鎮'), t('提案全是村民自己想的，全鎮投票，鎮長拍板並說明理由。每年秋天改選，有辯論、議會、法庭；長成王都後還有國王、王令、政變與起義。')],
-            ['🌾', t('各鎮物產與貿易'), t('食物分穀物、魚、肉，產多少看地形，不靠水就捕不了魚。只有靠海的鎮曬得出鹽，木匠把木頭做成紙給報社和研究用。工具好不好影響每個人的效率，翻修房子、城鎮升格都要木材和石材，缺的就得靠商隊。')],
-            ['💰', t('錢包、生意與銀行'), t('村民各有自己的銀幣：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。會借錢欠債、請客接濟、買票，也會創業開店；銀行放貸、遇上擠兌、發債紓困。')],
-            ['⛪', t('信仰、報紙與文化'), t('每座鎮有隨機生成的宗教、節日、分裂與異端；立場不同的報社在選舉時表態、揭弊；還有藝術作品、吟遊詩人的歌謠，和越傳越離譜的謠言。')],
-            ['🗺️', t('一整個世界'), t('城鎮分村莊、城鎮、城市、王都四級。搭馬車去探索過的城鎮，大雪、坍方、盜匪會封路；外地消息會晚到、會走樣；鎮與鎮之間有外交、聯姻和貿易戰。')],
-            ['🔬', t('科技與觀念'), t('三個時代、28 項研究、33 種建築。新技術在村民之間傳開，分出保守派和革新派，左右選舉；發明家會留下冠名的發明。')],
-            ['🧊', t('3D 小鎮'), t('three.js 低多邊形畫面：日夜、四季、雨雪雷暴、燈籠串燈、螢火蟲；房子從木屋翻修成磚樓。不用安裝，手機也能玩。')],
+            ['🧠', '#f28c4a', t('像真人的村民'), t('每個人有個性、記憶、六項需求和自己的心事。他們聊天、八卦、交朋友、戀愛結婚，也會講壞話、說謊、設局；做錯事會道歉，不被原諒就報復。你在天上看得到真相。'), [t('記憶與反思'), t('戀愛與婚姻'), t('謊言與陰謀')]],
+            ['🗳️', '#7fb3f5', t('自己治理小鎮'), t('提案全是村民自己想的，全鎮投票，鎮長拍板並說明理由。每年秋天改選，有辯論、議會、法庭；長成王都後還有國王、王令、政變與起義。'), [t('提案與投票'), t('選舉與議會'), t('國王與政變')]],
+            ['🌾', '#6fcf97', t('各鎮物產與貿易'), t('食物分穀物、魚、肉，產多少看地形，不靠水就捕不了魚。只有靠海的鎮曬得出鹽，木匠把木頭做成紙給報社和研究用。工具好不好影響每個人的效率，翻修房子、城鎮升格都要木材和石材，缺的就得靠商隊。'), [t('地形決定物產'), t('商隊貿易'), t('建材與工具')]],
+            ['💰', '#f2c14e', t('錢包、生意與銀行'), t('村民各有自己的銀幣：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。會借錢欠債、請客接濟、買票，也會創業開店；銀行放貸、遇上擠兌、發債紓困。'), [t('個人錢包'), t('創業開店'), t('擠兌與紓困')]],
+            ['⛪', '#c39bd3', t('信仰、報紙與文化'), t('每座鎮有隨機生成的宗教、節日、分裂與異端；立場不同的報社在選舉時表態、揭弊；還有藝術作品、吟遊詩人的歌謠，和越傳越離譜的謠言。'), [t('宗教與節日'), t('報社與輿論'), t('藝術與謠言')]],
+            ['🗺️', '#5fc4b8', t('一整個世界'), t('城鎮分村莊、城鎮、城市、王都四級。搭馬車去探索過的城鎮，大雪、坍方、盜匪會封路；外地消息會晚到、會走樣；鎮與鎮之間有外交、聯姻和貿易戰。'), [t('四級城鎮'), t('馬車與路況'), t('外交與聯姻')]],
+            ['🔬', '#e5736b', t('科技與觀念'), t('三個時代、28 項研究、33 種建築。新技術在村民之間傳開，分出保守派和革新派，左右選舉；發明家會留下冠名的發明。'), [t('三個時代'), t('保守與革新'), t('冠名發明')]],
+            ['🧊', '#9aa7ff', t('3D 小鎮'), t('three.js 低多邊形畫面：日夜、四季、雨雪雷暴、燈籠串燈、螢火蟲；房子從木屋翻修成磚樓。不用安裝，手機也能玩。'), [t('日夜四季'), t('天氣與夜景'), t('手機可玩')]],
+        ];
+        const gallery = [
+            ['paper', t('觀察者日報'), t('每天的八卦與大小事整理成一份報紙，可以翻前幾期。')],
+            ['proposals', t('提案與投票'), t('村民自己提案，票數、投票理由和村長裁決都看得到。')],
+            ['villager', t('村民資訊卡'), t('點一下就知道他在做什麼、為什麼、心裡在想什麼。')],
+            ['economy', t('本鎮物產'), t('這座鎮擅長產什麼、缺什麼、要靠商隊買什麼。')],
+        ];
+        const tiers = [
+            ['🏡', t('村莊'), t('村長＋長老會 3 席'), t('一切的開始：二十幾個人、一間鎮公所。')],
+            ['🏘️', t('城鎮'), t('人口 30＋繁榮 50＋第一時代'), t('鎮長與 5 席鎮議會，銀行與報社陸續出現。')],
+            ['🏙️', t('城市'), t('人口 60＋繁榮 65＋第二時代'), t('市長與 7 席市議會，石板路、旗幟、更多移民。')],
+            ['🏰', t('王都'), t('人口 100＋繁榮 80＋第三時代'), t('國王加冕、王令與政變，9 席王都議會。')],
         ];
         const aiNotes = [
             ['🤖', t('完整智能體模式（預設開啟）'), t('村民要不要提案、怎麼投票、鎮長怎麼裁決，都交給 AI 依各自的記憶、性格和交情推理，並說出理由。')],
             ['🔑', t('內建 AI，不用填金鑰'), t('所有玩家都用小鎮內建的 AI：先用 Claude，Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。每個帳號每天有使用上限；金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。')],
         ];
+        const faq = [
+            [t('要下載或安裝嗎？'), t('不用。打開網頁就能玩，電腦、平板、手機都可以。')],
+            [t('我可以控制村民嗎？'), t('不行，這是觀察型遊戲。你能做的是打事件卡、託夢、化身旅人聊天，其他全由村民自己決定。')],
+            [t('存檔會不會不見？'), t('登入後存檔會自動同步到雲端，換裝置登入就能接著玩；本機也會留一份備份。')],
+            [t('為什麼要邀請碼？'), t('小鎮的 AI 由伺服器負擔，目前用邀請制控制人數。')],
+            [t('AI 會不會亂講話？'), t('村民只能根據自己的記憶、性格和鎮上真的發生的事說話；伺服器也會擋掉不像村民的回覆。')],
+            [t('有英文版嗎？'), t('有。右上角切換中文／English，村民對話、日報、介面都會換。')],
+        ];
         const roadmap = [
             [t('已上線'), '#34d399', [t('村民全自主、事件卡、完整智能體模式'), t('四級城鎮、世界地圖與馬車'), t('各鎮物產與貿易（穀物、魚、肉、鹽、紙、工具、建材）'), t('宗教、報社、銀行、國王')]],
             [t('構想'), '#60a5fa', [t('學校與工會'), t('自由輸入一句話當事件'), t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
+        // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
+        const sky = (() => {
+            const stars = [[60, 40], [140, 90], [220, 30], [330, 70], [410, 25], [520, 60], [610, 35], [700, 85], [790, 45], [880, 20], [960, 70], [1050, 40], [1130, 95], [1180, 30], [260, 120], [470, 110], [740, 130], [1000, 125]]
+                .map(([x, y], i) => `<circle cx="${x}" cy="${y}" r="${i % 3 ? 1.4 : 2.2}" class="lp-star" style="animation-delay:${(i % 6) * 0.7}s"/>`).join('');
+            const houses = [[90, 300, 70, 46], [190, 312, 54, 34], [300, 292, 80, 54], [420, 306, 60, 40], [560, 286, 96, 60], [700, 304, 64, 42], [800, 296, 76, 50], [930, 310, 58, 36], [1040, 298, 72, 48], [1150, 308, 60, 40]];
+            const hs = houses.map(([x, y, w, h], i) => {
+                const roof = `<polygon points="${x - 6},${y} ${x + w / 2},${y - h * 0.62} ${x + w + 6},${y}" fill="#3a2a3f"/>`;
+                const body = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#2a2235"/>`;
+                const win = `<rect x="${x + w * 0.2}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win"/>` + (w > 60 ? `<rect x="${x + w * 0.6}" y="${y + h * 0.28}" width="${w * 0.18}" height="${h * 0.26}" class="lp-win" style="animation-delay:${i * 0.4}s"/>` : '');
+                return roof + body + win;
+            }).join('');
+            const trees = [40, 250, 380, 510, 670, 880, 1000, 1220].map((x, i) => `<polygon points="${x - 16},350 ${x},${300 - (i % 2) * 14} ${x + 16},350" fill="#1f3a34"/>`).join('');
+            return `<svg class="lp-sky" viewBox="0 0 1240 360" preserveAspectRatio="xMidYMax slice" aria-hidden="true" focusable="false">
+                <defs><linearGradient id="lpSkyG" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151230"/><stop offset="0.6" stop-color="#2b2350"/><stop offset="1" stop-color="#3d2f55"/></linearGradient></defs>
+                <rect width="1240" height="360" fill="url(#lpSkyG)"/>${stars}
+                <circle cx="760" cy="62" r="26" fill="#f6e7c1" opacity="0.92"/><circle cx="771" cy="55" r="23" fill="#1d1838"/>
+                <polygon points="0,300 160,230 330,280 520,210 700,270 900,215 1080,265 1240,225 1240,360 0,360" fill="#241f3d"/>
+                ${hs}${trees}<rect y="348" width="1240" height="12" fill="#1a1630"/></svg>`;
+        })();
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
             this._changelogLoading = true;
@@ -356,39 +406,45 @@ Object.assign(RimTownApp.prototype, {
         const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
                 <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
-        el.innerHTML = `<div class="landing-inner">
-            <header class="landing-hero">
-                <div class="landing-pixel-bg" aria-hidden="true"></div>
+        const sec = (id, kicker, title, body, extra = '') => `<section class="landing-section lp-sec${extra}" id="${id}"><div class="lp-sec-head"><span class="lp-kicker">${kicker}</span><h2>${title}</h2></div>${body}</section>`;
+        el.innerHTML = `<div class="lp">
+            <header class="lp-hero">${sky}
                 <div class="landing-lang" role="group" aria-label="Language">
-                    <button type="button" data-lang="zh" class="${I18N.getLang() === 'zh' ? 'active' : ''}">中文</button><button type="button" data-lang="en" class="${I18N.getLang() === 'en' ? 'active' : ''}">EN</button>
+                    <button type="button" data-lang="zh" class="${L === 'zh' ? 'active' : ''}">中文</button><button type="button" data-lang="en" class="${L === 'en' ? 'active' : ''}">EN</button>
                 </div>
-                <div class="landing-hero-content">
-                    <div class="landing-logo">🏘️</div>
-                    <h1>${t('邊境鎮')}<span>RimTown</span></h1>
-                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。')}</p>
-                    <p class="landing-sub">${t('每位村民都有個性、記憶、錢包和心事。他們自己工作、戀愛、吵架、提案、投票、選鎮長、做生意、蓋房子；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。')}</p>
-                    <div class="landing-cta">${cta}</div>
-                    <div class="landing-version">v${esc(ver)} · ${t('免安裝，手機也能玩')}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
+                <div class="lp-hero-grid landing-inner">
+                    <div class="lp-hero-copy">
+                        <span class="lp-kicker">${t('瀏覽器 3D・AI 小鎮沙盒')}</span>
+                        <h1 class="lp-title">${t('邊境鎮')}<span>RimTown</span></h1>
+                        <p class="lp-tagline">${t('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。')}</p>
+                        <p class="lp-lead">${t('每位村民都有個性、記憶、錢包和心事。他們自己工作、戀愛、吵架、提案、投票、選鎮長、做生意、蓋房子；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。')}</p>
+                        <div class="landing-cta">${cta}</div>
+                        <ul class="lp-badges">${[['🖥️', t('免安裝')], ['📱', t('手機也能玩')], ['☁️', t('雲端存檔')], ['🌐', t('中文／English')]].map(b => `<li><span aria-hidden="true">${b[0]}</span>${b[1]}</li>`).join('')}</ul>
+                        <div class="landing-version">v${esc(ver)}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
+                    </div>
+                    <figure class="lp-frame lp-hero-shot"><div class="lp-frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>rimtown.cc</span></div><img src="${shot('proposals')}" width="1280" height="760" alt="${t('遊戲畫面：3D 小鎮與村民提案')}" fetchpriority="high"></figure>
                 </div>
             </header>
-            <section class="landing-section" id="landing-howto"><h2>${t('怎麼玩')}</h2>
-                <div class="landing-steps landing-howto">${howto.map((s, i) => `<div class="landing-step"><div class="landing-step-no">${i + 1}</div><div class="landing-step-ic">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
-            </section>
-            <section class="landing-section" id="landing-features"><h2>${t('小鎮裡會自己長出什麼')}</h2>
-                <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
-            </section>
-            <section class="landing-section" id="landing-ai"><h2>${t('AI 與金鑰')}</h2>
-                <div class="landing-cards landing-ai">${aiNotes.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
-            </section>
-            ${this._renderBrainSection()}
-            <section class="landing-section"><h2>${t('更新紀錄')}</h2>
-                <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
-                ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
-            </section>
-            <section class="landing-section"><h2>${t('即將實現')}</h2>
-                <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
-            </section>
-            <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。')}</footer>
+            <div class="landing-inner">
+                <ul class="lp-stats" aria-label="${t('遊戲規模')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
+                ${sec('landing-howto', t('第一步'), t('怎麼玩'), `<ol class="lp-steps landing-steps">${howto.map((s, i) => `<li class="lp-step landing-step"><div class="lp-step-num" aria-hidden="true">${i + 1}</div><div class="lp-step-ic" aria-hidden="true">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p><p class="lp-eg">${s[3]}</p></li>`).join('')}</ol>`)}
+                ${sec('landing-day', t('一天的樣子'), t('小鎮的一天'), `<ol class="lp-day">${day.map(d => `<li><time>${d[0]}</time><span class="lp-day-ic" aria-hidden="true">${d[1]}</span><div><h3>${d[2]}</h3><p>${d[3]}</p></div></li>`).join('')}</ol>`)}
+                ${sec('landing-features', t('沒有劇本'), t('小鎮裡會自己長出什麼'), `<div class="lp-feats landing-cards">${features.map(f => `<article class="lp-feat landing-card" style="--c:${f[1]}"><div class="lp-feat-ic" aria-hidden="true">${f[0]}</div><h3>${f[2]}</h3><p>${f[3]}</p><ul class="lp-tags">${f[4].map(x => `<li>${x}</li>`).join('')}</ul></article>`).join('')}</div>`)}
+                ${sec('landing-gallery', t('實際畫面'), t('畫面一覽'), `<div class="lp-gallery">${gallery.map(g => `<figure class="lp-frame"><img src="${shot(g[0])}" width="1280" height="760" loading="lazy" decoding="async" alt="${esc(g[1])}"><figcaption><b>${g[1]}</b>${g[2]}</figcaption></figure>`).join('')}</div>`)}
+                ${sec('landing-tiers', t('成長路線'), t('從村莊到王都'), `<ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${t('人口、繁榮或時代掉下來，城鎮也會降級。')}</p>`)}
+                ${sec('landing-ai', t('AI 怎麼運作'), t('AI 與金鑰'), `<div class="lp-ai landing-cards landing-ai">${aiNotes.map(f => `<div class="landing-card"><div class="ic" aria-hidden="true">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div><div class="lp-flow" aria-label="${t('AI 備援順序')}"><span class="lp-flow-chip on">Claude</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">GPT</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">Groq</span><span class="lp-flow-note">${t('前一個不能用才換下一個')}</span></div>`)}
+                ${sec('landing-faq', t('常見問題'), t('你可能想問'), `<div class="lp-faq">${faq.map(q => `<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`)}
+                ${this._renderBrainSection()}
+                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('一直在更新')}</span><h2>${t('更新紀錄')}</h2></div>
+                    <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${t('尚無紀錄')}</div>`}</div>
+                    ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
+                </section>
+                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('接下來')}</span><h2>${t('即將實現')}</h2></div>
+                    <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+                </section>
+                <section class="lp-final"><h2>${t('去看看你的小鎮今天發生了什麼')}</h2><p>${t('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。')}</p><div class="landing-cta">${loggedIn ? `<button class="landing-btn primary" data-lp-go="continue">▶ ${t('繼續遊戲')}</button>` : `<button class="landing-btn primary" data-lp-go="register">✨ ${t('註冊')}</button><button class="landing-btn secondary" data-lp-go="login">🔑 ${t('登入')}</button>`}</div></section>
+                <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}</footer>
+            </div>
         </div>`;
         this._wireBrainDemo(el);
         // v5.74.1 首頁語言切換:切完整頁重畫(首頁本身全部字串都有英文對照)
@@ -402,6 +458,7 @@ Object.assign(RimTownApp.prototype, {
         el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
         el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
         el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
+        el.querySelectorAll('[data-lp-go]').forEach(btn => btn.addEventListener('click', () => { const g = btn.dataset.lpGo; if (g === 'continue') this._enterGame(); else this._openAuth(g); })); // v6.79.0 頁尾再放一次按鈕
         el.querySelector('#landing-logout')?.addEventListener('click', () => this._doLogout());
         el.querySelector('#landing-log-more')?.addEventListener('click', (ev) => {
             const box = el.querySelector('#landing-log'); if (!box) return;
