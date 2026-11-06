@@ -663,3 +663,21 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-legit.low { color: #C62828; }
 .t3d-tag .t3d-office-clergy { background: #5A3E7A; color: #F3EAFB; }
 .t3d-tag.has-office { border-color: #E8A33C; }
+
+/* v6.76.4 設定頁:AI 區塊改成卡片＋條列;勾選列不被 .setting-group input{width:100%} 撐開 */
+.rimtown-container .set-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+.rimtown-container .set-card-title { font-size: 0.82rem; font-weight: 700; color: var(--text-primary); line-height: 1.45; }
+.rimtown-container .set-list { margin: 6px 0 0; padding-left: 1.1em; font-size: 0.74rem; line-height: 1.6; color: var(--text-secondary); }
+.rimtown-container .set-list li + li { margin-top: 2px; }
+.rimtown-container .set-toggle { display: flex !important; align-items: center; gap: 10px; margin: 0 !important; cursor: pointer; min-height: 32px; flex-wrap: wrap; }
+.rimtown-container .set-toggle input[type="checkbox"] { width: 20px !important; height: 20px; min-width: 20px; flex: 0 0 auto; margin: 0; padding: 0; accent-color: var(--accent); cursor: pointer; }
+.rimtown-container .set-toggle-title { font-size: 0.86rem; font-weight: 700; color: var(--text-primary); }
+.rimtown-container .set-chip { font-size: 0.66rem; font-weight: 600; color: var(--accent); background: rgba(242,140,74,0.12); border: 1px solid rgba(242,140,74,0.35); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.rimtown-container .set-help { font-size: 0.72rem; line-height: 1.6; color: var(--text-muted); margin-top: 6px; }
+.rimtown-container .set-field { margin-bottom: 12px; }
+.rimtown-container .set-label { display: block; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; }
+.rimtown-container .set-input { width: 100%; box-sizing: border-box; min-height: 38px; padding: 7px 10px; background: var(--bg-primary); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; font-size: 0.82rem; font-family: inherit; }
+.rimtown-container .set-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.rimtown-container .set-input.set-input-num { width: 110px !important; flex: 0 0 auto; }
+.rimtown-container .set-meta { font-size: 0.74rem; color: var(--text-muted); }
+@media (max-width: 768px) { .rimtown-container .set-input { font-size: 16px !important; } }

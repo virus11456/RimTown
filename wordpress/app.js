@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.76.3
-const RIMTOWN_APP_VERSION = '6.76.3';
+// RimTown - Frontend App v6.76.4
+const RIMTOWN_APP_VERSION = '6.76.4';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2095,7 +2095,7 @@ class RimTownApp {
                 // v5.64.0 內建小鎮 AI:徽章顯示「AI:小鎮內建」
                 el.textContent = t('AI:小鎮內建');
                 el.className = 'llm-status connected';
-                el.title = t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）');
+                el.title = '🏘️ ' + t('內建小鎮 AI 已啟用，免填金鑰'); // v6.76.4 不再寫死每日 300 則
             } else {
                 // v6.36.0 玩家自備 AI:徽章顯示「AI:自備 Claude／GPT／Gemini／自訂端點」
                 const providerLabel = this._byokLabel(this.llmClient.provider) + (hasFallback ? t('+備用') : '');

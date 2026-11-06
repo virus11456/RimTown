@@ -874,7 +874,7 @@ Object.assign(RimTownApp.prototype, {
     renderProposals(container) {
         const d = this.state?.proposals;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
-        if (!d) { container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，再由村長（鎮長）自己拍板並說明理由。你在一旁看就好。')}</div>`; return; }
+        if (!d) { container.innerHTML = `<div class="ob-empty"><span class="ob-empty-icon">📜</span><b>${t('村民的提案會出現在這裡')}</b>${t('村民會依性格、職業與小鎮近況主動提出提案，大家投票，再由鎮長自己拍板並說明理由。你在一旁看就好。')}</div>`; return; }
         const resLabel = (r) => this._resLabel ? this._resLabel(r) : r;
         const costText = (c) => Object.entries(c || {}).map(([r, n]) => `${resLabel(r)} ${n}`).join(t('、'));
         const avatar = (id) => { const a = this.state.agents?.[id]; if (!a) return ''; let url = ''; try { if (this.tileMap?.renderAvatarDataURL) url = this.tileMap.renderAvatarDataURL(a.job?.key || a.jobKey, a.gender, a.name, this.world?.agents?.[id]?.look || null); } catch (e) {} return `<div class="pp-avatar">${url ? `<img src="${url}" alt="">` : '👤'}</div>`; };
@@ -1260,11 +1260,15 @@ Object.assign(RimTownApp.prototype, {
         html += t('<div class="econ-section"><h3>🤖 AI 語言模型</h3>');
         html += `<div style="margin-bottom:8px"><span class="llm-status ${aiConnected ? 'connected' : 'disconnected'}${byokActive && aiConnected ? ' byok' : ''}">${aiLabel}</span></div>`;
         // v5.65.0 AI 全面內建:金鑰由伺服器統一保管;v6.36.0 玩家可改填自己的金鑰(只存本機)
-        html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${byokActive && aiConnected
-            ? t('🔑 目前用你自己的金鑰與額度：村民對話、行程、反思全部直接從這個瀏覽器連到該服務，小鎮伺服器不經手，也不受每日 300 則限制。') + (this.llmClient.model ? ' ' + t('模型：') + this._escapeHtml(this.llmClient.model) : '')
-            : isServerAI
-            ? t('🏘️ 內建小鎮 AI 已啟用，不需填任何金鑰（登入每日 300 則）') + ' ' + t('所有 AI 金鑰由小鎮伺服器統一保管，你不需要、也不會看到任何金鑰欄位。') + ' ' + t('所有 AI 呼叫（對話、行程、反思、完整智能體決策）一律先走 Claude；Claude 故障時依序改用 GPT、Groq。')
-            : t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div>`;
+        // v6.76.4 改成條列卡片;額度依伺服器實際回報(登入玩家預設沒有每日上限,不再寫死 300 則)
+        {
+            const q = this.llmClient?._quota; const today = new Date().toISOString().slice(0, 10);
+            const quotaLine = (q && q.limit && q.day === today) ? t('今天的 AI 額度：剩 {r}／{l} 則').replace('{r}', Math.max(0, q.remaining)).replace('{l}', q.limit) : t('登入玩家沒有每日次數上限');
+            const li = (x) => `<li>${x}</li>`;
+            if (byokActive && aiConnected) html += `<div class="set-card"><div class="set-card-title">🔑 ${t('正在用你自己的金鑰')}</div><ul class="set-list">${li(t('村民對話、行程、反思直接從這個瀏覽器連到該服務，小鎮伺服器不經手'))}${li(t('費用與額度照你自己的帳戶，不受小鎮的每日額度限制'))}${this.llmClient.model ? li(t('模型：') + this._escapeHtml(this.llmClient.model)) : ''}</ul></div>`;
+            else if (isServerAI) html += `<div class="set-card"><div class="set-card-title">🏘️ ${t('內建小鎮 AI 已啟用，免填金鑰')}</div><ul class="set-list">${li(quotaLine)}${li(t('金鑰由小鎮伺服器統一保管，你不會看到任何金鑰欄位'))}${li(t('對話、行程、反思與完整智能體決策先走 Claude；故障時依序改用 GPT、Groq'))}</ul></div>`;
+            else html += `<div class="set-card"><div class="set-card-title">💤 ${t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div></div>`;
+        }
         // v6.36.0 自備 AI(進階):Claude / OpenAI / Gemini / 自訂 OpenAI 相容端點;表單值在重繪時保留
         {
             const g = (id) => document.getElementById(id);
@@ -1319,9 +1323,10 @@ Object.assign(RimTownApp.prototype, {
         {
             let fa = null; try { fa = localStorage.getItem('rimtown_full_agent'); } catch (e) {}
             const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
-            html += `<div class="setting-group" style="margin-bottom:8px;padding:8px 10px;border:1px solid var(--border);border-radius:8px">
-            <label style="font-size:0.82rem;color:var(--text-primary);display:flex;align-items:center;gap:8px;font-weight:700"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"> 🧠 ${t('完整智能體模式')}${auto ? ` <span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted)">${t('（預設開）')}</span>` : ''}</label>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並附理由；規則版只在 AI 失敗時墊底。每件提案約多 2～4 次 AI 呼叫、每天多 1 次。')}${!byokActive ? ' ' + t('走小鎮內建 AI 時，每日 300 則可能撐不滿一整天；用完會改用規則版，隔天恢復。') : ''}</div>
+            const capNote = !byokActive && this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
+            html += `<div class="set-card set-toggle-card">
+            <label class="set-toggle" for="settings-fullagent"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}</label>
+            <div class="set-help">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由；AI 失敗時才用規則版墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1 次。')}${capNote}</div>
             </div>`;
         }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
@@ -1329,26 +1334,26 @@ Object.assign(RimTownApp.prototype, {
             const existingDl = document.getElementById('settings-tab-dialoglang');
             let dl = 'auto'; try { dl = existingDl ? existingDl.value : (localStorage.getItem('rimtown_dialogue_lang') || 'auto'); } catch (e) {}
             const optSel = (v) => dl === v ? ' selected' : '';
-            html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">🗣️ ${t('AI 對話語言')}</label>
-            <select id="settings-tab-dialoglang" style="padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px">
+            html += `<div class="setting-group set-field">
+            <label for="settings-tab-dialoglang" class="set-label">🗣️ ${t('AI 對話語言')}</label>
+            <select id="settings-tab-dialoglang" class="set-input">
                 <option value="auto"${optSel('auto')}>${t('跟隨介面語言')}</option>
                 <option value="zh"${optSel('zh')}>繁體中文</option>
                 <option value="en"${optSel('en')}>English</option>
             </select>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。')}</div></div>`;
+            <div class="set-help">${t('村民對話、行程、反思與日報由 AI 生成時使用的語言，不影響介面文字。')}</div></div>`;
         }
         // v5.29.0 混合成本控制:NPC 之間的對話只有在玩家附近才用 LLM,並受每日額度限制
         const existingBudget = document.getElementById('settings-tab-npcbudget');
         const npcBudget = existingBudget ? existingBudget.value : (localStorage.getItem('rimtown_npc_llm_budget') ?? '');
         const npcUsed = this.world?.npcLlmUsedToday || 0;
-        html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">💰 ${t('NPC 每日 AI 額度')}</label>
-            <div style="display:flex;gap:6px;align-items:center">
-                <input type="number" id="settings-tab-npcbudget" value="${this._escapeHtml(String(npcBudget))}" placeholder="${t('無上限')}" min="0" max="9999" style="width:80px;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem">
-                <span style="font-size:0.72rem;color:var(--text-muted)">${t('今日已用')} ${npcUsed} ${t('次')}</span>
+        html += `<div class="setting-group set-field">
+            <label for="settings-tab-npcbudget" class="set-label">💰 ${t('村民背景 AI 每日上限')}</label>
+            <div class="set-row">
+                <input type="number" id="settings-tab-npcbudget" class="set-input set-input-num" value="${this._escapeHtml(String(npcBudget))}" placeholder="${t('無上限')}" min="0" max="9999" inputmode="numeric">
+                <span class="set-meta">${t('今日已用')} ${npcUsed} ${t('次')}</span>
             </div>
-            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${t('留空＝無上限。村民的每日行程、你附近的村民對話與夜間反思會呼叫 AI；遠處對話走內建模擬並照樣寫入記憶。與你的聊天、劇情名場面不受此額度限制。想控制費用可填每日次數上限，填 0 完全關閉。')}</div>
+            <div class="set-help">${t('留空＝無上限，填 0＝完全關閉。村民的每日行程、鏡頭附近的村民對話與夜間反思會用到 AI；遠處對話改用內建模擬，照樣寫進記憶。你和村民的聊天、事件卡反應不算在內。')}</div>
         </div>`;
         html += '</div>';
 
