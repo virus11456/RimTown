@@ -1375,10 +1375,50 @@ Object.assign(RimTownApp.prototype, {
         });
     },
 
+    // v6.78.0 今晚八點檔:把一天的日誌整合成一集旁白(sim-episode.js),上一集／下一集可翻
+    _renderEpisode() {
+        const w = this.world; if (!w || typeof EPISODE === 'undefined') return '';
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const lang = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
+        const eps = EPISODE.list(w); const todayDay = w._absDay ? w._absDay() : 0;
+        const log = w.messageLog || []; const last = log[log.length - 1];
+        const liveKey = `${log.length}|${last?.tick}|${lang}|${(w.dramaArchive || []).length}|${todayDay}`;
+        if (this._epLiveKey !== liveKey) { this._epLive = EPISODE.view(w, EPISODE.today(w)); this._epLiveKey = liveKey; }
+        let sel = this._epSel; const force = sel === 'today'; if (force) sel = null;
+        if (sel == null && !force && this._epLive.empty && eps.length) sel = eps[eps.length - 1].day; // 剛換日、今天還沒什麼事:先播昨天那集
+        const ep = sel != null ? eps.find(e => e.day === sel) : null;
+        let v = this._epLive;
+        if (ep) { const k = `${ep.day}|${lang}|${ep.ai ? ep.ai.length : 0}`; if (this._epViewKey !== k) { this._epView = EPISODE.view(w, ep); this._epViewKey = k; } v = this._epView; }
+        const days = eps.map(e => e.day).filter(d => d !== todayDay).sort((a, b) => a - b);
+        const prev = days.filter(d => d < v.day).pop();
+        const next = v.live ? null : (days.find(d => d > v.day) ?? 'today');
+        const town = esc(t(w.townName || '邊境鎮'));
+        let body;
+        if (v.ai) body = v.ai.split(/\n+/).map(x => x.trim()).filter(Boolean).map(x => `<p class="ep-p">${esc(x)}</p>`).join('');
+        else if (v.empty) body = `<p class="ep-p ep-muted">${t('今天才剛開播，小鎮還在醒來……過一會兒再來看。')}</p>`;
+        else body = v.acts.map(a => `<p class="ep-p"><span class="ep-tag">${a.icon} ${esc(a.label)}</span>${esc(a.text)}</p>`).join('')
+            + (v.teaser.length ? `<div class="ep-next"><b>🔮 ${t('下集預告')}</b>${esc(v.teaser.join(' '))} ${t('敬請鎖定明晚八點。')}</div>` : '');
+        const c = v.counts || {};
+        const chips = [[c.convo, '💬', '場對話'], [c.gossip, '🗣️', '則八卦'], [c.proposal, '📜', '件新提案'], [c.skill, '📈', '次手藝進步']].filter(x => x[0]).map(x => `<span class="ep-chip">${x[1]} ${x[0]} ${t(x[2])}</span>`).join('');
+        return `<section class="ep-card${v.live ? ' live' : ''}" aria-label="${t('今晚八點檔')}">
+            <div class="ep-head"><span class="ep-tv" aria-hidden="true">📺</span><div class="ep-headtxt"><div class="ep-show">${t('{town}八點檔').split('{town}').join(town)} · ${t('第 {n} 集').split('{n}').join(v.no)}</div>
+            <div class="ep-date">${esc(v.label)}${v.live ? ` · <span class="ep-live">${t('播出中')}</span>` : ''}</div></div>${v.ai ? `<span class="ep-ai">✨ ${t('AI 旁白')}</span>` : ''}</div>
+            ${v.empty ? '' : `<div class="ep-title">${/[「『"]/.test(v.title) ? esc(v.title) : t('「') + esc(v.title) + t('」')}</div>`}
+            ${v.weather && !v.ai ? `<div class="ep-weather">${esc(v.weather)}</div>` : ''}
+            <div class="ep-body">${body}</div>
+            ${chips ? `<div class="ep-chips">${chips}</div>` : ''}
+            ${v.live && !v.empty ? `<div class="ep-foot">${t('今天還沒播完，內容會隨小鎮發生的事更新；換日後定稿。')}</div>` : ''}
+            <div class="ep-nav">
+                <button type="button" class="ep-btn" data-action="ep-nav" data-val="${prev ?? ''}" ${prev == null ? 'disabled' : ''}>‹ ${t('上一集')}</button>
+                <button type="button" class="ep-btn" data-action="ep-nav" data-val="${next ?? ''}" ${next == null ? 'disabled' : ''}>${next === 'today' ? t('今天') : t('下一集')} ›</button>
+            </div>
+        </section>`;
+    },
+
     renderLog(container) {
         if (!this.state) return;
         const messages = (this.state.recent_messages || []).slice().reverse();
-        let html = '';
+        let html = this._renderEpisode();
 
         // v5.21.0 小鎮劇場:回顧錯過的名場面(告白/婚禮/修羅場/分手/離婚)
         const archive = this.state.dramaArchive || this.world?.dramaArchive || [];
@@ -1399,9 +1439,10 @@ Object.assign(RimTownApp.prototype, {
         // Show recent NPC conversations at the top
         const npcConvos = (this.state.npc_conversations || []).slice().reverse();
         if (npcConvos.length) {
-            html += t('<div class="npc-convo-section"><h4 style="padding:8px 10px;color:var(--accent);font-size:0.8rem;margin:0">村民對話</h4>');
+            // v6.78.0 對話與逐筆紀錄收進摺疊區,預設收起(八點檔已經講過一遍)
+            html += `<details class="log-fold npc-convo-section"><summary>💬 ${t('村民對話')}${t('（')}${Math.min(8, npcConvos.length)}${t('）')}</summary>`;
             npcConvos.slice(0, 8).forEach(c => {
-                html += `<div class="npc-convo-entry expanded" data-action="toggle-convo">
+                html += `<div class="npc-convo-entry" data-action="toggle-convo">
                     <div class="npc-convo-header"><span class="npc-convo-toggle">▶</span><span class="log-time">${c.time}</span><strong>${c.agentA}</strong> &amp; <strong>${c.agentB}</strong>
                     <span style="font-size:0.65rem;color:var(--text-muted);margin-left:4px">@ ${this._locationLabel(c.location)}</span>${c.llm ? `<span style="font-size:0.62rem;margin-left:6px;padding:1px 5px;border-radius:6px;background:rgba(140,120,255,0.25);color:#c9bfff">✨ AI</span>` : ''}</div>
                     <div class="npc-convo-summary">${c.summary}</div>
@@ -1411,16 +1452,20 @@ Object.assign(RimTownApp.prototype, {
                 });
                 html += '</div></div>';
             });
-            html += '</div>';
+            html += '</details>';
         }
 
-        // Standard log messages
-        html += '<div class="log-messages-section">';
-        messages.forEach(msg => {
-            html += `<div class="log-entry type-${msg.type}"><span class="log-time">${msg.time}</span>
+        // Standard log messages(v6.78.0 收進「逐筆紀錄」;技能升級太多,合併成一行)
+        const shown = messages.filter(m => m.type !== 'skill_up'); const skillN = messages.length - shown.length;
+        if (messages.length) {
+            html += `<details class="log-fold log-messages-section"><summary>📋 ${t('逐筆紀錄')}${t('（')}${shown.length}${t('）')}</summary>`;
+            if (skillN) html += `<div class="log-entry type-skill_up">📈 ${t('另有 {n} 則技能升級，已合併不列出。').split('{n}').join(skillN)}</div>`;
+            shown.forEach(msg => {
+                html += `<div class="log-entry type-${msg.type}"><span class="log-time">${msg.time}</span>
                 ${msg.agent?`<strong>${msg.agent}</strong>`:''} ${msg.content} ${msg.target?` &rarr; ${msg.target}`:''}</div>`;
-        });
-        html += '</div>';
+            });
+            html += '</details>';
+        }
         container.innerHTML = html || t('<p class="muted-text" style="padding:20px">尚無訊息...</p>');
     },
 

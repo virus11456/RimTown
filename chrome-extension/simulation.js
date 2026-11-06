@@ -71,7 +71,7 @@ class World {
     getAgentByName(name) { return Object.values(this.agents).find(a => a.name === name) || null; }
     getAgentsAtLocation(locId) { return Object.values(this.agents).filter(a => a.currentLocation === locId); }
     logMessage(type, content, agentName = '', targetName = '', k = null, p = null) {
-        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) });
+        this.messageLog.push({ time:this.clock.timeStr, tick:this.tickCount, d:this._absDay(), type, content, agent:agentName, target:targetName, ...(k ? { k, p: p || {} } : {}) }); // v6.78.0 d:絕對日,八點檔依日分集
         if (this.messageLog.length > 800) this.messageLog = this.messageLog.slice(-800); // v5.99.0 B12;v6.19.0 1000→800(紀錄分頁只畫最近 500 條)
     }
     // v6.18.0 B1 第二步:日誌也存「模板 key＋參數」,紀錄分頁依當下語言渲染;content 仍照建立當下語言存一份(舊存檔、跑馬燈、編年史照舊)
@@ -1957,7 +1957,7 @@ class World {
             clock: { day:this.clock.day, hour:this.clock.hour, minute:this.clock.minute, season:this.clock.season, year:this.clock.year },
             tickCount: this.tickCount,
             paused: this.paused,
-            messageLog: this.messageLog.slice(-500).map(m => ({ time:m.time, tick:m.tick, type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
+            messageLog: this.messageLog.slice(-500).map(m => ({ time:m.time, tick:m.tick, ...(m.d != null ? { d:m.d } : {}), type:m.type, agent:m.agent, target:m.target, ...(m.k ? { k:m.k, p:m.p } : { content:m.content }) })), // v6.18.0 帶 k/p、不帶快取;v6.19.0 有模板就不存 content
             townMap: this.townMap ? { seed:this.townMap.seed, terrain:this.townMap.terrain, width:this.townMap.width, height:this.townMap.height,
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),

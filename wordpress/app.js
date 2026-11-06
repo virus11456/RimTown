@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.77.1
-const RIMTOWN_APP_VERSION = '6.77.1';
+// RimTown - Frontend App v6.78.0
+const RIMTOWN_APP_VERSION = '6.78.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2409,6 +2409,7 @@ class RimTownApp {
                 case 'select-agent': this.selectAgent(val); break;
                 // NPC conversation expand
                 case 'toggle-convo': el.classList.toggle('expanded'); break;
+                case 'ep-nav': { this._epSel = val === 'today' ? 'today' : (val === '' ? null : parseInt(val, 10)); this.renderSidebar(); break; } // v6.78.0 八點檔上一集／下一集
                 // Economy
                 case 'trade': { const [idx, amount] = val.split(','); this.executeTrade(parseInt(idx), parseInt(amount)); this._unlockAchievement('first_trade'); this._tradeCount++; } break;
                 case 'build': this.startBuilding(val); break;
