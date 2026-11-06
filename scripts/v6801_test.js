@@ -1,5 +1,5 @@
 // v6.80.1 手機底部選單:再點一次正在開的那顆就收起面板、看回村莊;面板拉高也不會把「返回」推出螢幕(iPhone 網址列);點別顆是切換;子分頁也算同一組;看村民詳情時點「村民」回列表;設定鈕也能收;收起後按鈕不亮
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

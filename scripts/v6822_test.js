@@ -1,7 +1,7 @@
 // v6.82.2 首頁與遊戲分頁＋首頁瘦身:首頁(/)不載遊戲(沒有世界、沒有 three.js／模擬)、星空動畫只動圖層透明度(不重畫)、
 // 捲出畫面暫停、更新紀錄捲到附近才載;登入後進 /town(town.html)、遊戲頁有載入畫面且準備好就收起;
 // 沒登入開遊戲頁會回首頁、已登入在首頁按「繼續遊戲」進遊戲、剛登入(enter_now)直接進遊戲、遊戲裡登出回首頁;中英、桌機與 390px
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

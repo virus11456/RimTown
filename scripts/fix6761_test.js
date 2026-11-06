@@ -1,7 +1,7 @@
 // v6.76.1 本機存檔與效能:其他鎮的本機副本搬去 IndexedDB(localStorage 只留目前這座)、切鎮從 IndexedDB 讀、
 // 每次存檔只序列化一次且不重複存 rimtown_save、八卦清單有上限、遠方城鎮每天只讀寫登記簿一次、壓縮走背景執行緒、
 // 刪鎮連 IndexedDB 一起刪、跨鎮專欄用列表上的頭條摘要
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

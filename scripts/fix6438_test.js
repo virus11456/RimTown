@@ -1,5 +1,5 @@
 // v6.43.8 回歸:手機／桌機按「帳號」要看得到選單(以前沒有樣式,被 3D 地圖蓋住)、選項能用、點外面會關;沒登入則打開登入視窗
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

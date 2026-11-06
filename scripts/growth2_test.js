@@ -1,4 +1,4 @@
-// 選跑:node scripts/growth2_test.js   需本機 http://127.0.0.1:8126 服務 wordpress/,NODE_PATH 指到有 playwright 的 node_modules
+// 選跑:node scripts/growth2_test.js   需本機 http://127.0.0.1:8126 服務 chrome-extension/,NODE_PATH 指到有 playwright 的 node_modules
 // 天賦學完後升級 → 屬性 +1、pendingLevels 不累積、存讀檔保留 extra
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

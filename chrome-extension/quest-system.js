@@ -1404,7 +1404,7 @@ class TravellerGrowth {
     attr(world, key) { return ((world?.agents?.player?.attributes || {})[key] || 5) + this.attrBonus()[key]; }
     _pool() { return Object.keys(GROWTH_PERKS).filter(k => !this.has(k)); }
     addXp(n, reason, world) {
-        if (!n) return;
+        if (!n || world?.observerMode) return; // v6.83.0 旅人等級是玩家時代的系統,觀察者模式不累積(以前會一直提示去選天賦)
         this.xp += n; this.total = (this.total || 0) + n; this.log = this.log.concat([{ n, reason, day: world?.clock?.day }]).slice(-20);
         let gained = 0;
         while (this.xp >= this.xpToNext()) { this.xp -= this.xpToNext(); this.level++; gained++; }
@@ -1485,7 +1485,7 @@ class SeasonRecap {
         if (!this.start) { this.start = this._snap(w); return; }
         if (this.start.key === key) return;
         const s = this.start, now = this._snap(w);
-        const gains = this._npcs(w).map(a => ({ id: a.agentId, name: a.name, delta: (now.aff[a.agentId] || 0) - (a.agentId in s.aff ? s.aff[a.agentId] : (now.aff[a.agentId] || 0)) })).filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
+        const gains = w.observerMode ? [] : this._npcs(w).map(a => ({ id: a.agentId, name: a.name, delta: (now.aff[a.agentId] || 0) - (a.agentId in s.aff ? s.aff[a.agentId] : (now.aff[a.agentId] || 0)) })).filter(x => x.delta > 0).sort((a, b) => b.delta - a.delta).slice(0, 3);
         const left = (w.movedOut || []).filter(m => m.absDay >= s.absDay && m.absDay < now.absDay).map(m => m.name);
         const joined = this._npcs(w).filter(a => !(a.agentId in s.aff)).map(a => a.name);
         // v6.11.0 考驗結算後 trials.current 會清空,要從 history 找本季那筆(之前永遠顯示「本季沒有考驗」、評等也少算)

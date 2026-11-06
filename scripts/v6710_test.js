@@ -1,5 +1,5 @@
 // v6.71.0 文化、宗教、媒體深化:記者頭條(規則／AI)、讀者投書與筆戰、藝術作品與傳世傑作、吟遊詩人歌謠、講道、神諭、新教派教義、謠言變形、AI 知道鎮上的歌、畫面、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

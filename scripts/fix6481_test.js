@@ -1,5 +1,5 @@
 // v6.48.1 回歸:存檔空間不足時重試首次造訪不會累積沒有存檔的同名城鎮;合併別台裝置的城鎮紀錄後相連城鎮不超過 10 座;帳號選單開著旋轉螢幕不會被切掉
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -1,5 +1,5 @@
 // v6.44.1 回歸:小手機橫放(568×320)帳號選單不超出畫面、登出點得到;clipText 不切開附加符號、印度語系、分解韓文字母、emoji
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

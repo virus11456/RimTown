@@ -1,5 +1,5 @@
 // v6.53.2 修正:新建城鎮不帶入舊鎮的寵物／祕密／名聲／恩怨(存讀檔也一樣);停在別的子分頁時定案的提案,第一次切回「提案」才播蓋章
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

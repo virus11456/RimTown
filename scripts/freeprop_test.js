@@ -1,5 +1,5 @@
 // v6.47.0 村民自由提案:AI 回傳天馬行空的提案(含不合法的值)→ 只留白名單效果、數值夾住、好處打折;通過後真的改變世界(資源、每日產出、心情、人際、政令、轉職、傳統、地標);提示詞組得出來;存讀檔;中英
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

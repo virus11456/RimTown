@@ -1,6 +1,6 @@
 // v6.77.1 首頁改寫:怎麼玩／小鎮裡會自己長出什麼／AI 與金鑰三段都在;過時說法(五座城鎮、玩家附近、玩家不能填金鑰、事件卡是唯一能做的)不再出現;
 // 英文版沒有殘留中文;桌機與 390px 手機沒有橫向捲動
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
 let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail++; console.log('  ✗ ' + m + ' → ' + JSON.stringify(x)); } };

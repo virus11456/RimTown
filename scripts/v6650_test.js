@@ -1,5 +1,5 @@
 // v6.65.0 探索四級城鎮＋分級商品:種子城鎮等級(越高越稀有)、標籤顯示等級、遠方城鎮升級、城市／王都商人帶珍品、有錢人收藏(地位)、公庫買地標、聖物獻給宗教、畫面、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

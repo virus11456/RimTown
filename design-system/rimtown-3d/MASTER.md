@@ -99,4 +99,4 @@
 
 ## 10. 檔案與交付
 - `chrome-extension/vendor/three.min.js`（r159 UMD，離線與 WordPress 同用）；`town3d.js` 渲染器；HUD 樣式 `style-3d.css`（之後併回 `style.css`）。
-- 每版照舊：README、changelog（zh/en）、鏡像到 `wordpress/`、排程部署。
+- 每版照舊：README、changelog（zh/en）、排程部署（v6.83.0 之後不必再鏡像到 `wordpress/`，那份已拿掉）。

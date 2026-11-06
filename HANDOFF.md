@@ -3,7 +3,7 @@
 > 給下一個 Claude 對話視窗：請先完整讀完本文件再開始工作。
 > 上一個 session 結束於 2026-07-15，本文件由該 session 產生。
 >
-> ⚠️ **2026-11 更新**：這份是 v5.14 時期的舊交接，部分內容已過時。WordPress 外掛版（`rimtown.php`）已在 v6.50.0 移除，現在只剩 Vercel 上的 rimtown.cc；`wordpress/` 資料夾名稱沒改，它是 `build.sh` 產出 Vercel 靜態站的來源。發版流程以 README「發版前必跑」為準。
+> ⚠️ **2026-11 更新**：這份是 v5.14 時期的舊交接，部分內容已過時。WordPress 外掛版（`rimtown.php`）已在 v6.50.0 移除，現在只剩 Vercel 上的 rimtown.cc；`wordpress/` 鏡像也在 v6.83.0 之後拿掉，`chrome-extension/` 是唯一來源，`build.sh` 從它產出 Vercel 靜態站。下面提到 `wordpress/` 的地方都是舊資訊。發版流程以 README「發版前必跑」為準。
 
 ---
 

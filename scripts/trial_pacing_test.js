@@ -1,4 +1,4 @@
-// 選跑:node scripts/trial_pacing_test.js   v6.22.0 B23 考驗失敗節奏回歸(有斷言,失敗 exit 1;需本機 8126 服務 wordpress/ 與 NODE_PATH 指到有 playwright 的 node_modules)
+// 選跑:node scripts/trial_pacing_test.js   v6.22.0 B23 考驗失敗節奏回歸(有斷言,失敗 exit 1;需本機 8126 服務 chrome-extension/ 與 NODE_PATH 指到有 playwright 的 node_modules)
 // 連續失敗:繁榮扣分累計不低於 −20、衰敗後每季最多走 1 人、人口不低於 8;撐過:先補回扣分;存讀檔保留 penalty
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

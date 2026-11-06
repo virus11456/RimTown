@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // v5.81.0 發版前的瀏覽器冒煙測試(選跑;需要 playwright 與本機 http server):
-//   cd wordpress && python3 -m http.server 8126 &      # 先起本機站
+//   cd chrome-extension && python3 -m http.server 8126 &      # 先起本機站
 //   npm i playwright@1 (一次) ;  node scripts/smoke_playwright.js [http://127.0.0.1:8126]
 // 檢查:五種主題世界都能生成與產圖、英文介面地圖標籤/名牌無中文、鄰鎮生成不重複、住房分配、商隊交易、無 page error。
 const BASE = process.argv[2] || 'http://127.0.0.1:8126';

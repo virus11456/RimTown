@@ -1,6 +1,6 @@
 // v6.74.1 (1) 今天 AI 額度剩不到三成:背景功能(閒聊、完整智能體決策)改規則,事件卡反應與玩家聊天照常用 AI
 // (2) 事件卡反應遇到每分鐘上限會等(最多一分鐘),真的叫不到才用預設台詞;同一張卡的預設台詞不重複
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

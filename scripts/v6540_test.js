@@ -1,5 +1,5 @@
 // v6.54.0:速度控制合一、個人錢包(工資／生活費／借錢／提案出資)、夜景(窗燈依睡覺開關、燈籠、串燈、螢火蟲)、長時間遊玩不卡(提案頁不重畫、已定案只列 8 件、動態圖層合併)
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

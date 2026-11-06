@@ -1,5 +1,5 @@
 // v6.42.0 鎮長選舉測試:外鎮訪客不能選、鎮長出遠門由代理、永久離開馬上補選、完整智能體由 AI 寫政見演說與投票、
-// 前任出遠門回來不會變兩位鎮長、存檔往返、提案分頁選舉卡(390px)。需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 前任出遠門回來不會變兩位鎮長、存檔往返、提案分頁選舉卡(390px)。需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

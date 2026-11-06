@@ -1,5 +1,5 @@
 // v6.45.0 種子隨機城鎮:同種子同鎮、1000 鎮分布夠散、發現上限(活著 10 個)、馬車初次造訪建存檔、存讀檔、城鎮列表、中英鎮名
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const fs = require('fs');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

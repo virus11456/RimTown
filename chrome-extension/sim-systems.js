@@ -60,8 +60,8 @@ class ReputationSystem {
         const newTierIdx = this.tierIndex;
         if (newTierIdx > this._lastEffectTier && this._lastEffectTier >= 0) {
             const tier = this.tier;
-            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}${t('「')}${tier.icon} ${tier.name()}${t('」')}— ${tier.desc()}`);
-            if (world?.dailyNews) {
+            if (!world?.observerMode) world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}${t('「')}${tier.icon} ${tier.name()}${t('」')}— ${tier.desc()}`); // v6.83.0 這是玩家個人聲望,觀察者模式不公告
+            if (world?.dailyNews && !world?.observerMode) {
                 world.dailyNews.collectEvent('social', `${playerTitle(world)}${t('的聲望提升為')}${t('「')}${tier.name()}${t('」')}${t('！')}`, 7);
             }
             // Tier-up mood boost
@@ -396,7 +396,7 @@ class WeatherSystem {
             ],
             timestamp: world.tickCount,
         };
-        world.logMessage('event_choice', `⚡ ${t('災害預警——你需要決定如何防災！')}`);
+        world.logMessage('event_choice', `⚡ ${world.observerMode ? t('災害預警——鎮長正在決定要怎麼防災。') : t('災害預警——你需要決定如何防災！')}`);
     }
 
     _startDisaster(type, world) {
@@ -1245,7 +1245,8 @@ class EventChoiceSystem {
             choices: choices,
             timestamp: world.tickCount,
         };
-        world.logMessageT('event_choice', '⚡ {event}——{asker}來徵詢你的意見！', { event: event.name, asker });
+        if (world.observerMode) world.logMessageT('event_choice', '⚡ {event}——大家聚到廣場商量怎麼辦。', { event: event.name }); // v6.83.0 由首長決定(sim-assembly CRISIS)
+        else world.logMessageT('event_choice', '⚡ {event}——{asker}來徵詢你的意見！', { event: event.name, asker });
     }
 
     _generateChoices(event, world) {
@@ -1277,7 +1278,7 @@ class EventChoiceSystem {
         return null;
     }
 
-    resolveChoice(choiceIndex, world) {
+    resolveChoice(choiceIndex, world, by) { // v6.82.3 by:觀察者模式由首長(或大家)決定時傳入決定者名字;'' 代表大家商量
         if (!this.pendingEvent || !this.pendingEvent.choices[choiceIndex]) return null;
         const choice = this.pendingEvent.choices[choiceIndex];
         const effects = choice.effects;
@@ -1323,9 +1324,15 @@ class EventChoiceSystem {
 
         if (effects.relocate) { try { world.onRelocate?.(effects.relocate, world); } catch (e) { console.warn('[relocate]', e); } } // v5.90.0 跨鎮搬家(由 app 處理信箱)
 
-        world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
-        if (world.dailyNews) {
-            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}${t('「')}${choice.label}${t('」')}`, 7);
+        if (by !== undefined) {
+            if (by) world.logMessageT('event_choice', '⚡ 面對{eventName}，鎮長{who}決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName, who: by }, by);
+            else world.logMessageT('event_choice', '⚡ 面對{eventName}，大家商量後決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName });
+            if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${by ? `${t('鎮長')}${t(by)}` : t('大家商量後')}${t('決定')}${t('「')}${choice.label}${t('」')}`, 7, by ? [by] : []);
+        } else {
+            world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
+            if (world.dailyNews) {
+                world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}${t('「')}${choice.label}${t('」')}`, 7);
+            }
         }
 
         this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });

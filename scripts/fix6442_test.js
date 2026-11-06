@@ -1,5 +1,5 @@
 // v6.44.2 回歸:睡前一小時待在家(不再 21:30 出門吃飯、22:00 頂著 zzz 走回家);馬車站文字看得清楚、鄰鎮名依語言顯示
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

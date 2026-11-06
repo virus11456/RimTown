@@ -1,6 +1,6 @@
 // v6.80.2 拿掉「改外觀」:村民詳情沒有改外觀按鈕、創建新居民表單沒有外觀選項、新居民依名字與職業自動配外觀(look 為 null)、
 // 舊存檔裡已經改過的外觀照常讀得到;中英、桌機與 390px
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

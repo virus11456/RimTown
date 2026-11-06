@@ -165,7 +165,7 @@ class World {
             try { this.autonomy?.daily(this); } catch (e) { console.warn('[RimTown] autonomy error:', e); } // v6.37.0 農夫種收、工坊出貨、商人談生意、缺貨補貨
             this.npcEvents.dailyUpdate(this);
             if (this.prosperity) this.prosperity.dailyUpdate(this);
-            if (this.npcQuests) this.npcQuests.dailyUpdate(this);
+            if (this.npcQuests && !this.observerMode) this.npcQuests.dailyUpdate(this); // v6.83.0 個人委託是找玩家幫忙的,觀察者模式不跑
             if (this.lifeGoals) this.lifeGoals.dailyUpdate(this); // v5.4.0
             // v5.58.0 邊境鎮主線任務不在海風鎮跑(任務卡司是邊境鎮居民;海風鎮主題任務鏈待後續)
             if (this.questSystem && !this.observerMode && typeof questChainFor === 'function' && questChainFor(this.townTheme)) { this.questSystem.theme = this.townTheme || 'frontier'; this.questSystem.checkProgress(this); } // v6.31.0 觀察者不跑旅人主線(故事是「你來到鎮上」的第一人稱;故事分頁改成小鎮年表) // v5.83.0 依主題跑對應任務鏈
@@ -174,7 +174,7 @@ class World {
             const chapterPros = this.prosperity?.prosperity || 0;
             if (chapterPros >= 20 && !this.observerMode) this.dailyDecision.dailyUpdate(this); // v6.31.0 觀察者沒有「村民來找你商量」的每日決策(文案都是住在鎮上的旅人視角;提案系統接手)
             // v5.49.0 際遇卡停止每日抽;v5.82.0 整個系統移除
-            this.dailyDecision.processFollowups(this);
+            if (!this.observerMode) this.dailyDecision.processFollowups(this); // v6.83.0
             if (chapterPros >= 20 && !this.observerMode) this.npcHelp.dailyUpdate(this); // v6.31.0 觀察者沒有村民求助卡(分食物、陪聊、評理都是對住在鎮上的人說的)
             this.reputationSystem.dailyUpdate(this);
             this.weather.dailyUpdate(this);
@@ -191,7 +191,7 @@ class World {
             agent.update(this);
         });
         // NPC proactive messaging to player
-        this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e));
+        if (!this.observerMode) this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e)); // v6.83.0 觀察者模式村民不再主動傳訊息給你(你不住在鎮上)
         // v5.39.1 每個遊戲日補排一次 LLM 行程佇列:換日觸發之外,讀檔/開頁在一天中途也會立刻補生成
         // (queueDailyPlans 只收「今天還沒有 AI 行程」的村民,已完成的不會重做)
         const planDayKey = `${this.clock.year}-${this.clock.season}-${this.clock.day}`;
@@ -424,7 +424,7 @@ class World {
         const today = this._absDay();
         // v5.90.0 搬家提案三天沒選就依兩人意願自動定案
         const pe = this.eventChoice?.pendingEvent;
-        if (pe?.autoResolve && today >= pe.autoResolve.absDay) { try { this.eventChoice.resolveChoice(pe.autoResolve.choice, this); } catch (e) {} }
+        if (pe?.autoResolve && today >= pe.autoResolve.absDay) { try { this.eventChoice.resolveChoice(pe.autoResolve.choice, this, this.observerMode ? '' : undefined); } catch (e) {} }
         // 1) 到期訪客返鄉,帶走在本鎮最重要的三則見聞
         for (const [aid, meta] of Object.entries(this.visitors)) {
             const ag = this.agents[aid];
@@ -786,6 +786,11 @@ class World {
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
     _autoResolveStaleChoices() {
         const DAY = 96;
+        if (this.observerMode) { // v6.83.0 觀察者模式:舊存檔留下的「每日決策／村民求助」直接收掉(這兩個系統已不跑);事件抉擇由首長決定(sim-assembly CRISIS)
+            if (this.dailyDecision?.pendingDecision) this.dailyDecision.pendingDecision = null;
+            if (this.npcHelp?.pendingRequest) this.npcHelp.pendingRequest = null;
+            return;
+        }
         const pickLog = (what, label) => this.logMessageT('event_choice', '⏳ 你遲遲沒有決定,小鎮自行處理了「{what}」:{label}', { what, label });
         try {
             const ev = this.eventChoice?.pendingEvent;

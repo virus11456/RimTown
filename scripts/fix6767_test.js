@@ -1,6 +1,6 @@
 // v6.76.7 回歸:城鎮列表(登入):被誤標成「自己建的」鄰鎮回到鄰鎮區;同名鄰鎮與比雲端舊的本機副本收進「重複與舊的本機備份」,每座鎮只列一筆;
 // 只在本機、雲端沒有同名的鎮自動補傳雲端;存檔時更正誤標的來源。不會自動刪除任何存檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

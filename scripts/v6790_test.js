@@ -1,6 +1,6 @@
 // v6.79.0 物資流通:需求導向生產(夠了就放慢)、作物進糧倉(工坊要用的先留)、工坊依需求換配方、精製建材可代替原料、
 // 麵包糕點果醬當正餐、酒茶香水家具有人用、黃金鑄幣、商人帶作物與收加工品、60 天不會有成品無限堆積
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

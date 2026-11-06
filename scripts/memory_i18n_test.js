@@ -1,4 +1,4 @@
-// 選跑:node scripts/memory_i18n_test.js   v6.17.0 記憶模板化回歸(有斷言,失敗 exit 1;需本機 8126 服務 wordpress/ 與 NODE_PATH 指到有 playwright 的 node_modules)
+// 選跑:node scripts/memory_i18n_test.js   v6.17.0 記憶模板化回歸(有斷言,失敗 exit 1;需本機 8126 服務 chrome-extension/ 與 NODE_PATH 指到有 playwright 的 node_modules)
 // 規則式記憶以 k/p 存檔,切換語言後顯示跟著翻;舊存檔(只有 content)照舊;存讀檔保留 k/p;關係史面板與資訊卡用翻譯後文字;getState 效能
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

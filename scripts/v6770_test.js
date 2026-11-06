@@ -1,6 +1,6 @@
 // v6.77.0 經濟細緻化:穀物／魚／肉依地形、靠水才能捕魚、鹽(靠海)、紙(木匠造,報社研究用)、工具影響效率、
 // 原料保底依本地產出、房子翻修與城鎮升格要建材、各鎮專長與商隊、存讀檔、本鎮物產面板(中英)、AI 鎮況
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

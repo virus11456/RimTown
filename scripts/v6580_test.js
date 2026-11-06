@@ -1,5 +1,5 @@
 // v6.58.0 社會階層:六階判定、城鎮以上相差兩階不隨機閒聊(熟人除外)、引薦、城市以上冊封與買爵位、AI 知道地位、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

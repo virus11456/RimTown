@@ -1,6 +1,6 @@
 // v6.75.0 開新遊戲＝新世界:馬車不列重複的鄰鎮(海風鎮只留進度最多的一座)、新遊戲看不到舊世界的鄰鎮與道路、
 // 鄰鎮在新世界重新生成、切回舊世界一切照舊、去重不會刪掉新世界的第 1 天城鎮、雲端存檔帶世界 id、城鎮列表分組
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

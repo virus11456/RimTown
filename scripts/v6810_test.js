@@ -1,7 +1,7 @@
 // v6.81.0 人口與升格:人口目標跟城鎮等級走(38/72/115/140)、移民一天最多一兩個、出生不再卡 20 人、新居民不重名(含出遠門的人)、
 // 雜貨商賣木材石材、升格要提案(投票＋首長批准;缺料先提進貨;60 天保底)、議員出缺遞補(出遠門保留席次)、
 // 廚師裁縫分成平均分且有上限、做生意的收入繳 15% 營業稅、作物不標紅、AI 鎮況寫出糧倉狀態;存讀檔;中英面板
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

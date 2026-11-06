@@ -1,5 +1,5 @@
 // v6.43.2 回歸:第一年秋季第 1 天會開選、競選與投票遇到 AI 冷卻隔天會再問、研究點每天最多用 10、研究空檔 2 天
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

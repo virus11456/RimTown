@@ -4,7 +4,7 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 瀏覽器裡的 3D 上帝視角 AI 小鎮沙盒。每位村民都是有個性、記憶、情緒與需求的 AI 智能體；你在天上看著他們過日子、吵架、提案、投票、選鎮長。線上遊玩：**https://rimtown.cc**（繁體中文／英文）。
 
-## 現在的玩法（v6.82.2）
+## 現在的玩法（v6.83.0）
 
 - **上帝視角觀察者**：你不在鎮上。3D 低多邊形小鎮（three.js），日夜、季節、天氣、節慶都會變；點村民可以跟拍、看他在想什麼。
 - **完整智能體模式（預設開啟）**：提案十成由村民自己發想，投票和鎮長裁決也由 AI 依每個人的性格、記憶和交情推理。提案效果走白名單落地（資源、每日產出、心情、人際、政令加成、建設、研究、轉職、傳統、地標），所以天馬行空的點子也會真的改變小鎮。
@@ -47,6 +47,8 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 - **觀察者日報（v6.79.0）**：日報 › 日誌每天一份報紙：頭條、一句話引述，分鎮公所、感情與恩怨、八卦、街頭巷尾、民生幾欄，最後是「明日看點」；今天這期邊發生邊排版、換日定稿，可翻最近 10 期（不呼叫 AI）；逐筆紀錄與村民對話預設收起，技能升級合併成一行。鎮況卡寫出現任首長（代理或從缺也會寫）。
 - **物資流通（v6.79.0）**：產量看需求——存量低於目標六成全力做、到目標只做一成五（糧食三成五），成品不會無限堆；工坊每天換做最缺的配方；作物進糧倉（工坊要用的先留三天份）；麵包糕點果醬當正餐、酒與茶在酒館喝、香水約會用、糖讓廚師多做飯、家具會用舊、黃金鑄成銀幣；木板硬木／磚大理石／鋼可代替木材／石材／金屬；商人帶作物（雜貨商也賣稻米）、收加工品，不賣黃金；收了作物卻沒有工坊用時，村民比較常提案開對應的工坊（v6.79.1）；茶館茶葉夠先做精製茶。
 - **人口與升格（v6.81.0）**：人口上限跟城鎮等級走（村莊 38、城鎮 72、城市 115、王都 140，繁榮度越高越接近上限），移民一天最多一兩個；升格要村民提案、投票、首長批准（缺建材先提進貨，夠格 60 天沒升才直接升）；議員出缺隔天遞補、出遠門保留席次；做生意的收入繳 15% 營業稅；廚師裁縫分成平均分；新居民不重名。6 年模擬：城鎮約 1～2 年、城市 2.5～3 年、王都 3～4.5 年（一年 60 天）。
+- **舊機制大掃除（v6.83.0）**：觀察者模式下沒有任何要你動手或把你當鎮民的殘留：選舉不投票、日報不表態、探險不手動派、動態牆只看；村民不主動傳訊、不邀你逛祭典；沒有登入獎勵、旅人等級、個人委託、玩家聲望公告；新居民不花公庫；文字一律第三人稱，教學改觀察者口吻。
+- **突發狀況由首長拍板（v6.82.3）**：盜匪、壞事件、災害預警防災、搬家提案在觀察者模式不跳視窗，由首長依付不付得起、效果與個性當場決定（`sim-assembly.js` 的 CRISIS），日誌與日報寫「鎮長某某決定」。
 - **首頁與遊戲分頁（v6.82.2）**：rimtown.cc（`index.html`）只放介紹與登入註冊，不載遊戲；遊戲在 rimtown.cc/town（`town.html`，Vercel `cleanUrls`），進入時有載入畫面；沒登入開 /town 會回首頁。首頁星空改成整層透明度動畫（GPU 合成，不重畫），更新紀錄捲到附近才載。
 - **議會（v6.82.0／v6.82.1）**：鎮上有 6 人就成立（村莊叫長老會）；政令由議員在提案頁提出。大事（花 100 銀幣以上，或建設、產業、工廠、升級、稅率、政令、升格）在全鎮投票後先送議會表決，過了才給首長；首長否決可被議會三分之二推翻。議員每年春季第 3 天改選（登記、拉票、開票），出缺由落選者依票數遞補；提案人可能私下收買議員、候選人可能買票，被揭穿會辭職、難連任；村民卡列出議事紀錄。
 - **精製品與吃得好（v6.80.0）**：煉鋼坊的工具、紡織廠的衣服、家具工坊的家具是精製品，耗損減半，先留給鎮上用、夠了才賣，經濟頁顯示精製數量；飲食多樣、麵包糕點果醬、好酒好茶甜點（啤酒、茶算半份）湊齊兩樣算「吃得好」，隔天少吃一成正餐（通常要有麵包坊、酒館或茶館才會出現），經濟頁逐項標出差哪幾樣，連續三天心情加、一週再加。
@@ -58,8 +60,7 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 | 位置 | 內容 |
 |---|---|
-| `chrome-extension/` | 前端開發來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除）：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
-| `wordpress/` | 前端的鏡像（資料夾名稱沿用，WordPress 外掛版已在 v6.50.0 移除）；`build.sh` 從這裡產出網站 |
+| `chrome-extension/` | 前端唯一來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除；以前的 `wordpress/` 鏡像在 v6.83.0 之後拿掉），`build.sh` 從這裡產出網站：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
 | `api/` | Vercel Serverless Functions：帳號、雲端存檔、成就、排行榜、AI 對話代理 `/api/chat`（所有金鑰只放在 Vercel 環境變數，前端看不到） |
 | `scripts/` | 檢查與測試腳本（見「發版前必跑」） |
 | `build.sh`、`vercel.json` | Vercel 建置：輸出到 `public/` |
@@ -288,9 +289,9 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ## 部署與執行
 
-- 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `wordpress/` 的前端檔、`vendor/`、`chrome-extension/icons|img` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
-- `wordpress/` 與 `chrome-extension/` 只是資料夾名稱沿用（WordPress 外掛版與 Chrome 擴充功能版已在 v6.50.0 移除）：`chrome-extension/` 是開發來源，改完鏡像到 `wordpress/`，`build.sh` 從 `wordpress/` 產出網站。
-- 本機：`cd wordpress && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
+- 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `chrome-extension/` 的前端檔、`vendor/`、`icons/`、`img/` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
+- `chrome-extension/` 只是資料夾名稱沿用（Chrome 擴充功能版已在 v6.50.0 移除），它是前端唯一來源；以前要同步一份到 `wordpress/`，v6.83.0 之後拿掉，改完不必再鏡像。
+- 本機：`cd chrome-extension && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
 
 ---
 
@@ -300,7 +301,6 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
-# 鏡像:chrome-extension/{*.js(含 i18n-en.js、town3d.js、sim-proposals.js),index.html,style.css,style-observer.css,vendor/three.min.js} → wordpress/
 # 翻譯:新的中文鍵一律加在 chrome-extension/i18n-en.js(v6.28.0 起字典拆出,只在英文介面載入;i18n.js 只剩 t()/setLang 等執行期)
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
@@ -328,6 +328,8 @@ node scripts/v6730_test.js       # v6.73.0 歷史與傳承(史書、換季、傳
 node scripts/v6740_test.js       # v6.74.0 擠兌紓困與債券(銀行家自掏腰包、發債、鎮長規則／AI 紓困、背債還款與罰息、債券到期與違約、祕密、畫面、存讀檔;中英)(需本機 8126)
 node scripts/v6770_test.js       # v6.77.0 經濟細緻化(穀物／魚／肉與地形、不靠水不能捕魚、鹽、紙與研究、工具效率、原料保底、翻修與升格建材、生成城鎮專長、存讀檔與舊檔、本鎮物產面板、AI 鎮況;中英)(需本機 8126)
 node scripts/v6771_test.js       # v6.77.1／v6.79.0 首頁(怎麼玩 4 步、特色 8 張、AI 與金鑰 2 張、主視覺／數字／小鎮的一天／成長路線／常見問題／頁尾按鈕、截圖依語言;過時說法不再出現;沒有自備金鑰;邀請碼;英文版無殘留中文;桌機與 390px 無橫向捲動;中英)(需本機 8126)
+node scripts/v6830_test.js       # v6.83.0 舊機制大掃除(選舉／日報／探險／動態牆不能動手、不主動傳訊、節慶不累積好感、贊助寫提案人、無玩家聲望公告、無旅人升級、無登入獎勵、舊待決卡收掉、新居民不花公庫、親手成就不頒、人際不列你、教學口吻、徵詢與防災由首長;中英、桌機與 390px)
+node scripts/v6823_test.js       # v6.82.3 突發狀況由首長決定(不跳視窗、盜匪／壞事件／防災／搬家、付不起不選、日誌寫鎮長決定、首長記得;中英、桌機與 390px)
 node scripts/v6822_test.js       # v6.82.2 首頁與遊戲分頁(首頁不載遊戲、星空不重畫、捲出暫停、更新紀錄延後載、登入進 /town、載入畫面、沒登入回首頁、繼續遊戲、enter_now、登出回首頁;中英、桌機與 390px)
 node scripts/v6821_test.js       # v6.82.1 議會提早成立(6 人就成立、村莊長老會)、舊議會自訂提案不再跑也不跳投票視窗、政令由議員提出(議員都在冷卻時改天再提)
 node scripts/v6820_test.js       # v6.82.0 議會(大事判定、議會否決、首長否決被三分之二推翻／否決成立、春季改選與首長不參選、落選者遞補、收錢辭職、提案卡與改選卡、村民卡議事紀錄、存讀檔;中英、桌機與 390px)
@@ -358,12 +360,12 @@ node scripts/extend6520_test.js # v6.52.0 道歉原諒、報復連載、派系�
 node scripts/pets_dark_test.js # v6.51.0 寵物動物、講壞話／說謊／陰謀／誤會／日常糾紛、農田破壞修正(需本機 8126)
 node scripts/issues_test.js    # v6.50.0 鎮上急事:村民真的受影響(餓、冷、做不了工、吵架、搬走)、AI 看得到、提案對應、存讀檔、提案頁(需本機 8126)
 node scripts/fix6491_test.js   # v6.50.0 完整智能體模式提案十成由 AI 發想、鎮況當提示(需本機 8126)
-node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 wordpress/)
-node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.50.0 起;以前從 rimtown.php 產生),加新版本並鏡像到 wordpress/;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
+node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 chrome-extension/)
+node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.50.0 起;以前從 rimtown.php 產生),加新版本;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
-# 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
+# 選跑:cd chrome-extension && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
 # 選跑:node scripts/trial_pacing_test.js # v6.22.0 B23 考驗失敗節奏(扣分有底、衰敗後搬走放緩、人口下限、撐過補回、復興、存讀檔;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
@@ -380,6 +382,21 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 5. **資料格式向後相容**：`loadSave` 對缺少的欄位一律給預設值，舊存檔永遠讀得開。
 
 ## Changelog
+
+### v6.83.0 (2026-11-07)
+- 🧹 舊機制大掃除：把以前「玩家住在鎮上」時代留下、還會叫你動手或把你當成鎮民的東西全部改掉，你從頭到尾只看、偶爾用事件卡推一把
+- 🗳️ 選舉不再有「投票給某某」和「想自己選鎮長？」，日報不再有「調查／支持／忽略」按鈕，探險不能手動派人（改由村民提案），動態牆只看
+- 💬 村民不再主動傳訊息給你、節慶不再邀你去逛、蓋好房子不再跟你報告；節慶不再累積村民對你的好感，人際關係不再列出你
+- 🎁 拿掉每日登入獎勵、旅人等級與選天賦提示、找你幫忙的個人委託、玩家聲望公告、季末「對你好感升最多」，以及你沒做過的成就
+- 🧳 「創建新居民」改成上帝的安排，不再從公庫扣錢
+- 📝 文字改成第三人稱（事件徵詢、災害預警、搬家、提案贊助、糧倉），教學改觀察者口吻
+- 🗂️ 舊存檔的待決卡收掉、不再跳出
+- 測試 `scripts/v6830_test.js`（72 項）
+- 🛠️ 開發：拿掉 `wordpress/` 鏡像資料夾，`chrome-extension/` 是前端唯一來源（`build.sh` 直接從這裡產出網站，產出檔案與以前逐一比對相同；`gen-changelog.js` 不再寫第二份；本機 8126 改服務 `chrome-extension/`）。網站內容不變，不換版號
+
+### v6.82.3 (2026-11-06)
+- ⚡ 突發狀況不再跳視窗要你選：盜匪來襲、饑荒等壞事件、災害預警要不要防災、村民的搬家提案，以前都會跳出「見你經過，想聽你的看法」並倒數讓你決定；現在由首長當場拍板——看公庫和存糧付不付得起、每個做法的效果，再加上首長自己的個性，搬家提案則照兩人的意思。日誌和日報寫「面對盜匪來襲，鎮長某某決定：全力防禦」，首長也會記得自己做過的決定
+- 測試 `scripts/v6823_test.js`（36 項）
 
 ### v6.82.2 (2026-11-06)
 - 🚪 首頁和遊戲分成兩頁：rimtown.cc 只放介紹和登入註冊，遊戲搬到 rimtown.cc/town。沒登入只開首頁時不再下載整個遊戲（3D 引擎、模擬、更新紀錄都不載），首頁的程式從約 5MB 降到約 0.4MB（英文版多一份字典，約 1.2MB）
