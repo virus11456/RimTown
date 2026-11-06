@@ -108,7 +108,7 @@ const I18N = (() => {
         zh = zh.trim(); en = en.trim();
         if (!zh || !en || NAME_FIXED[zh] === en) return;
         NAME_FIXED[zh] = en;
-        _nameRe = null; _revRe = null;
+        _nameRe = null; _revRe = null; _bump();
     }
     function delocalizeNames(str) {
         if (!str || typeof str !== 'string' || !/[A-Za-z]/.test(str)) return str;
@@ -140,10 +140,19 @@ const I18N = (() => {
     const _ZP_RE = /([\u3400-\u9fff\u3001-\u303f\uff01-\uff5e])([,?!;:])(?!\/\/)/g;
     function zhPunct(s) { if (typeof s !== 'string' || !_ZP_TEST.test(s)) return s; return s.replace(_ZP_RE, (m, a, p) => a + _ZP[p]); }
     window.zhPunct = zhPunct;
+    // v6.76.2 翻譯結果快取:介面每格重畫都會把同一批字串翻一次。語言、字典、人名對照一變就整批作廢(_ver 也給別的快取比對)
+    let _ver = 0; const _tc = new Map();
+    function _bump() { _ver++; _tc.clear(); if (typeof window !== 'undefined' && window.I18N) window.I18N._ver = _ver; }
     function t(text) {
-        if (currentLang === 'zh') return zhPunct(text);
-        if (!text || typeof text !== 'string') return text;
-        return localizeNames(_t(text)); // v5.72.0 翻譯後再把夾在句子裡的中文人名換成英文名
+        if (typeof text !== 'string' || !text) return currentLang === 'zh' ? zhPunct(text) : text;
+        if (text.length > 400) return currentLang === 'zh' ? zhPunct(text) : localizeNames(_t(text)); // 長段落(AI 回覆等)不進快取
+        let r = _tc.get(text);
+        if (r === undefined) {
+            r = currentLang === 'zh' ? zhPunct(text) : localizeNames(_t(text)); // v5.72.0 翻譯後再把夾在句子裡的中文人名換成英文名
+            if (_tc.size >= 20000) _tc.clear();
+            _tc.set(text, r);
+        }
+        return r;
     }
     function _t(text) {
         // Direct lookup
@@ -175,7 +184,7 @@ const I18N = (() => {
     }
 
     function setLang(lang) {
-        currentLang = lang;
+        currentLang = lang; _bump();
         localStorage.setItem('rimtown-lang', lang);
         if (lang === 'en' && !dictReady()) { ensureDict(() => { _applyLang(); try { window.rimtownApp?.render?.(); window.rimtownApp?.renderSidebar?.(); } catch (e) {} }); return; } // v6.28.0
         _applyLang();
@@ -213,7 +222,7 @@ const I18N = (() => {
 
     // Expose globally
     window.t = t;
-    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, ensureDict, dictReady, _onDictLoaded: () => { try { _buildNameRe?.(); } catch (e) {} } };
+    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, ensureDict, dictReady, _ver, _onDictLoaded: () => { _bump(); try { _buildNameRe?.(); } catch (e) {} } };
     if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _syncNameObserver); else _syncNameObserver(); }
 
     return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, ensureDict, dictReady };

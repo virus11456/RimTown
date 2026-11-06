@@ -194,6 +194,16 @@ if (typeof World !== 'undefined') {
 }
 // ---- 稱號換字:包住全域 t()
 if (typeof window !== 'undefined' && typeof window.t === 'function' && !window.t._tiers) {
-    const _t = window.t; const wrapped = function (x) { return TIERS.retitle(_t.apply(this, arguments)); }; wrapped._tiers = true; window.t = wrapped;
+    // v6.76.2 換字結果快取:城鎮等級或語言(I18N._ver)一變就整批作廢;長段落不進快取
+    const _t = window.t; const _rc = new Map(); let _rk = '';
+    const wrapped = function (x) {
+        if (typeof x !== 'string' || x.length > 400 || arguments.length > 1) return TIERS.retitle(_t.apply(this, arguments));
+        const lv = window.rimtownApp?.world?.tierState?.lv; const k = (window.I18N?._ver || 0) + ':' + (lv || 1);
+        if (k !== _rk) { _rc.clear(); _rk = k; }
+        let r = _rc.get(x);
+        if (r === undefined) { r = TIERS.retitle(_t(x)); if (_rc.size >= 20000) _rc.clear(); _rc.set(x, r); }
+        return r;
+    };
+    wrapped._tiers = true; window.t = wrapped;
 }
 if (typeof globalThis !== 'undefined') globalThis.TIERS = TIERS;

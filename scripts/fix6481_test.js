@@ -24,14 +24,15 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp; app._gameAlert = () => {}; app._coachTravelTo = () => {};
       const c = app._discoverGenTown('merchant'); const seed = c.seed;
       const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('rimtown_town_') && String(v).length > 20000) throw new DOMException('full', 'QuotaExceededError'); return orig.call(this, k, v); };
+      const wo = app._writeOtherTown; app._writeOtherTown = async () => false; // v6.76.1 起別鎮存 IndexedDB:模擬兩邊都滿
       for (let i = 0; i < 3; i++) await app._visitGenTown(seed);
       const failed = app._getTownList().filter(tw => tw.name === c.name).length;
-      Storage.prototype.setItem = orig;
+      Storage.prototype.setItem = orig; app._writeOtherTown = wo;
       // 舊版留下的兩筆空殼也要清掉
       const L = app._getTownList(); L.push({ id: 'ghost1', name: c.name, theme: c.key, origin: 'generated' }, { id: 'ghost2', name: c.name, theme: c.key, origin: 'generated' }); app._saveTownList(L);
       await app._visitGenTown(seed);
       const okList = app._getTownList().filter(tw => tw.name === c.name);
-      return { failed, after: okList.length, hasSave: okList.every(tw => !!localStorage.getItem('rimtown_town_' + tw.id)), townId: TownGen.cards().find(x => x.seed === seed).townId };
+      return { failed, after: okList.length, hasSave: okList.every(tw => app._hasLocalTown(tw.id)), townId: TownGen.cards().find(x => x.seed === seed).townId };
     });
     ok(r1.failed === 0, '空間不足時重試三次,城鎮列表沒有多出空殼', r1);
     ok(r1.after === 1 && r1.hasSave && r1.townId, '有空間後只留一座、而且有存檔(舊空殼一起清掉)', r1);
