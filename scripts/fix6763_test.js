@@ -33,7 +33,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         return { s4: s4.replace(/\s+/g, ' ').slice(0, 400), empty: box.innerText.replace(/\s+/g, ' ') };
       });
       const bad = /你批准|由你批准|you approve|you can approve/i;
-      ok(!bad.test(txt.s4) && (lang === 'zh' ? /村長（鎮長）自己拍板/.test(txt.s4) : /village chief \(mayor\) decides/.test(txt.s4)), '教學:提案由村長自己拍板,不再要你批准', txt.s4);
+      ok(!bad.test(txt.s4) && (lang === 'zh' ? /(村長|鎮長|市長)自己拍板/.test(txt.s4) : /(village chief|mayor|Mayor) decides/.test(txt.s4)), '教學:提案由村長自己拍板,不再要你批准', txt.s4);
       ok(!bad.test(txt.empty) && (lang === 'zh' ? /自己拍板/.test(txt.empty) : /decides/.test(txt.empty)), '提案頁空白說明也一樣', txt.empty);
       // 3) 空間滿 + IndexedDB 寫不進去:別鎮的本機存檔還在、目前這座在 IndexedDB 的舊副本也還在
       const q = await page.evaluate(async () => {

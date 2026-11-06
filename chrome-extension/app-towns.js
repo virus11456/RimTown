@@ -141,7 +141,7 @@ Object.assign(RimTownApp.prototype, {
             day: clock.day || 1,
             population: Object.keys(saveData.agents || {}).length,
             theme: this.world?.townTheme || existing?.theme || '', // v6.35.0 主題鍵
-            origin: existing?.origin || 'user',                   // v6.35.0 自己建的;鄰鎮由 _ensureNeighborTown 標 neighbor
+            origin: (existing?.origin && existing.origin !== 'user') ? existing.origin : (this._inferOrigin(this.world?.townName || name || existing?.name, this.world?.townTheme || existing?.theme) || existing?.origin || 'user'), // v6.35.0 自己建的;鄰鎮由 _ensureNeighborTown 標 neighbor(v6.76.7 被誤標 user 的鄰鎮在這裡更正)
             world: this.world?.worldId || existing?.world || 'w0', // v6.75.0
             blobName: this.world?.townName || existing?.blobName || '', // v6.76.1 存檔裡的鎮名(列鄰鎮時不必讀整份存檔)
             news: this._townSummary(saveData).news,                 // v6.76.1 最新頭條(跨鎮專欄用)
@@ -239,8 +239,15 @@ Object.assign(RimTownApp.prototype, {
         return lang === 'zh' ? zh : t(zh);
     },
     // v6.35.0 城鎮列表資料:雲端＋只在本機的,補主題／來源,標鄰鎮與疑似重複
+    // v6.76.7 由主題＋鎮名推斷來源:非邊境主題、名字又是那個鄰鎮的預設名 → 鄰鎮(以前在別台裝置或沒有列表條目時存檔,一律被標成 user,鄰鎮就跑到「我的城鎮」)
+    _inferOrigin(name, theme) {
+        if (theme && typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[theme]?.generated) return 'generated';
+        if (theme && theme !== 'frontier' && typeof NEIGHBOR_TOWNS !== 'undefined' && NEIGHBOR_TOWNS.some(d => d.theme === theme && d.match.test(name || ''))) return 'neighbor';
+        return '';
+    },
     _isNeighborTown(e) {
-        if (e.origin === 'neighbor' || e.origin === 'generated') return true; if (e.origin === 'user') return false;
+        if (e.origin === 'neighbor' || e.origin === 'generated') return true;
+        if (e.origin === 'user') return !!this._inferOrigin(e.name, e.theme);
         if (e.theme && typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[e.theme]?.generated) return true; // v6.45.0 種子鎮
         return (typeof NEIGHBOR_TOWNS !== 'undefined') && NEIGHBOR_TOWNS.some(d => d.match.test(e.name || '')) && (!e.theme || e.theme !== 'frontier');
     },
@@ -259,7 +266,30 @@ Object.assign(RimTownApp.prototype, {
         { const prog = (e) => ((e.year || 1) - 1) * 60 + Math.max(0, ['春季', '夏季', '秋季', '冬季'].indexOf(e.season)) * 15 + (e.day || 1); const g = {}; for (const e of entries.filter(x => x.isNeighbor)) (g[e.world + '|' + rimtownCanonTown(e.name)] = g[e.world + '|' + rimtownCanonTown(e.name)] || []).push(e); for (const list of Object.values(g)) if (list.length > 1) { list.sort((a, b) => prog(b) - prog(a)); for (const e of list.slice(1)) if (!e.isActive) e.dupNb = true; } } // v6.76.0
         const mine = entries.filter(e => !e.isNeighbor);
         for (const e of mine) e.dup = e.year <= 1 && e.day <= 1 && mine.some(o => o !== e && o.world === e.world && o.year <= 1 && o.day <= 1 && (o.display === e.display || (o.theme && o.theme === e.theme)));
+        // v6.76.7 同一個世界裡同名的「只在本機」副本:雲端那座進度較多 → 收進「重複與舊的本機備份」;本機較新就照列(之後會同步上去)
+        { const prog = (e) => ((e.year || 1) - 1) * 60 + Math.max(0, ['春季', '夏季', '秋季', '冬季'].indexOf(e.season)) * 15 + (e.day || 1);
+          for (const e of entries) if (e.source === 'local' && !e.isActive && e.sameNameCloud) { const c = entries.find(o => o.source === 'cloud' && o.world === e.world && rimtownCanonTown(o.name) === rimtownCanonTown(e.name)); if (c && prog(c) >= prog(e)) e.staleLocal = true; } }
+        for (const e of entries) e.folded = !e.isActive && !!(e.dupNb || e.staleLocal);
         return entries;
+    },
+    // v6.76.7 登入時把「只在本機」的鎮補傳雲端(同名的舊副本不傳,避免雲端出現兩座);每座一個工作階段只試一次,傳完重畫列表
+    async _syncLocalOnly(entries, container) {
+        if (!this.auth?.loggedIn || this._syncingLocal) return;
+        const todo = (entries || []).filter(e => e.source === 'local' && !e.sameNameCloud && !e.isActive && !(this._syncTried || (this._syncTried = new Set())).has(e.id));
+        if (!todo.length) return;
+        this._syncingLocal = true; let n = 0;
+        try {
+            for (const e of todo) {
+                this._syncTried.add(e.id);
+                try {
+                    const blob = await this._readLocalTown(e.id); if (!blob) continue;
+                    const c = blob.clock || {};
+                    await this.auth.cloudSave(e.id, e.name, blob, { season: c.season, year: c.year, day: c.day, population: Object.keys(blob.agents || {}).length, theme: e.theme || blob.townTheme || '', origin: e.isNeighbor ? (e.origin && e.origin !== 'user' ? e.origin : (this._inferOrigin(e.name, e.theme) || 'neighbor')) : 'user', world: e.world });
+                    n++;
+                } catch (err) { console.warn('[RimTown] local→cloud sync', e.id, err?.message || err); }
+            }
+            if (n) { console.log('[RimTown] 已把', n, '座只在本機的城鎮同步到雲端'); try { this._cloudSaves = await this.auth.listSaves(); } catch (err) {} if (container && container.isConnected) this._renderTownSections(container, this._townEntries(this._cloudSaves)); }
+        } finally { this._syncingLocal = false; }
     },
     _townRow(e) {
         const icon = ({ frontier: '🏡', harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️' })[e.theme] || (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[e.theme]?.generated ? ({ harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️', frontier: '🌾' })[TOWN_THEMES[e.theme].base] : '') || '🏘️';
@@ -268,6 +298,7 @@ Object.assign(RimTownApp.prototype, {
         if (e.source === 'local' && this.auth.loggedIn) tags.push(`📱 ${t('本機')}${e.sameNameCloud ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}`);
         if (e.dup) tags.push(`⚠️ ${t('疑似重複：還在第 1 天')}`);
         if (e.dupNb) tags.push(`⚠️ ${t('重複的鄰鎮：馬車不會去這座，可以刪除')}`); // v6.76.0
+        if (e.staleLocal) tags.push(`🗂️ ${t('舊的本機備份：雲端那座進度比較多')}`); // v6.76.7
         const date = e.at ? new Date(e.at).toLocaleString() : '';
         const actions = (e.source === 'cloud' || !this.auth.loggedIn)
             ? `<button data-action="rename-town" data-val="${e.id}" title="${t('重新命名')}">✏️</button>${!e.isActive ? `<button data-action="delete-town" data-val="${e.id}" title="${t('刪除')}" class="btn-danger">🗑️</button>` : ''}`
@@ -282,6 +313,7 @@ Object.assign(RimTownApp.prototype, {
     },
     _renderTownSections(container, entries) {
         // v6.75.0 依世界分組:目前這場遊戲的城鎮與鄰鎮在上面,其他遊戲(其他世界)的存檔另外列
+        const folded = entries.filter(e => e.folded); entries = entries.filter(e => !e.folded); // v6.76.7 每座鎮只列一筆,重複與舊備份收起來
         const cur = rimtownWorldId(); const others = entries.filter(e => e.world !== cur); entries = entries.filter(e => e.world === cur);
         const mine = entries.filter(e => !e.isNeighbor), nb = entries.filter(e => e.isNeighbor);
         let html = '';
@@ -294,6 +326,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<h4 class="town-section">🌍 ${t('其他遊戲（各自獨立的世界）')} <span class="pp-count">${Object.keys(byW).length}</span></h4><p class="muted-text town-hint">${t('每場遊戲是一個獨立的世界，鄰鎮、道路和馬車只在同一個世界裡；點城鎮就能切過去玩。')}</p>`;
                 for (const list of Object.values(byW)) { const head = list.find(e => !e.isNeighbor) || list[0]; html += `<div class="town-world">` + [head, ...list.filter(e => e !== head)].map(e => this._townRow(e)).join('') + `</div>`; }
             }
+            if (folded.length) html += `<details class="town-fold"><summary>🗂️ ${t('重複與舊的本機備份')} <span class="pp-count">${folded.length}</span></summary><p class="muted-text town-hint">${t('同一座鎮多出來的存檔：重複生成的鄰鎮，或比雲端進度舊的本機副本。馬車和存檔都只用上面那一座；不會自動刪除，確定不要就按 🗑️。')}</p>${folded.map(e => this._townRow(e)).join('')}</details>`;
             if (mine.some(e => e.dup)) html += `<p class="muted-text town-hint">${t('⚠️ 標「疑似重複」的是兩座都還在第 1 天的同名或同主題城鎮，多半是以前按「新地圖」或切換語言時多建的；確定不要的那座按 🗑️ 刪掉。不會自動刪除任何存檔。')}</p>`;
         }
         try { html += this._genTownSectionHtml ? this._genTownSectionHtml() : ''; } catch (e) {} // v6.45.0 遠方城鎮
@@ -315,7 +348,9 @@ Object.assign(RimTownApp.prototype, {
             const saves = await this.auth.listSaves();
             this._cloudSaves = saves;
             // v5.59.0 TC-01:雲端寫入失敗時本地存檔仍在——併入「只存在本機」的城鎮;v5.96.0 以 town_id 為主鍵;v6.35.0 分區＋主題＋疑似重複
-            this._renderTownSections(container, this._townEntries(saves));
+            const ents = this._townEntries(saves);
+            this._renderTownSections(container, ents);
+            this._syncLocalOnly(ents, container); // v6.76.7 只在本機、雲端沒有同名的鎮:背景補上雲端,兩邊同步
         } catch (e) {
             console.error('[RimTown] Cloud town list error:', e);
             container.innerHTML = `<p class="muted-text">${t('載入雲端存檔失敗。')}</p>

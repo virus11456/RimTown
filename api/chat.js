@@ -12,8 +12,9 @@ const L = require('./_lib');
 // v6.42.1 沒登入的人預設不能用伺服器 AI(遊戲本來就要登入＋推薦碼;以前訪客每天 10 次,任何人都能拿來燒額度)。
 // AI_GUEST_DAILY 設成正數才開放;設 0 也真的是 0(舊寫法 parseInt('0') || 10 會變回 10)
 const GUEST_DAILY = Math.max(0, parseInt(process.env.AI_GUEST_DAILY ?? '0', 10) || 0);
-// v6.74.1 登入玩家不設每日上限(使用者決定);要再設上限就在 Vercel 設 AI_USER_DAILY 為正數。用量照樣記在 quota/ 與 usage/ 方便統計
-const USER_DAILY = Math.max(0, parseInt(process.env.AI_USER_DAILY ?? '0', 10) || 0); // 0 = 不限
+// v6.74.1 登入玩家不設每日上限;v6.76.6 改成預設每日 5000 次(使用者決定:防帳號被盜用時無限燒 AI 費用;實測 5x 一小時約 870 次)。
+// Vercel 設 AI_USER_DAILY 可覆蓋(填 0 = 不限)。用量照樣記在 quota/ 與 usage/ 方便統計
+const USER_DAILY = Math.max(0, parseInt(process.env.AI_USER_DAILY ?? '5000', 10) || 0); // 0 = 不限
 
 // 主渠道(付費中繼):相容 Anthropic(CC 類)與 OpenAI 兩種格式
 const RELAY_BASE = process.env.LLM_BASE_URL || '';
