@@ -104,7 +104,7 @@ Object.assign(RimTownApp.prototype, {
             const hdr = document.getElementById('kairo-card-header'); if (!hdr) return;
             let startY = 0, startH = 0, dragging = false, lastTap = 0;
             hdr.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; dragging = true; startY = e.clientY; startH = card.getBoundingClientRect().height; hdr.setPointerCapture?.(e.pointerId); });
-            hdr.addEventListener('pointermove', (e) => { if (!dragging) return; const h = Math.max(window.innerHeight * 0.25, Math.min(window.innerHeight * 0.92, startH + (startY - e.clientY))); card.style.height = h + 'px'; });
+            hdr.addEventListener('pointermove', (e) => { if (!dragging) return; const maxH = Math.max(120, card.getBoundingClientRect().bottom - 10); const h = Math.max(window.innerHeight * 0.25, Math.min(window.innerHeight * 0.92, maxH, startH + (startY - e.clientY))); card.style.height = h + 'px'; }); // v6.80.1 拖到最高也不會把標題列拖出螢幕
             const end = (e) => { if (!dragging) return; dragging = false; const h = card.getBoundingClientRect().height; const moved = Math.abs(e.clientY - startY) > 6; card.style.height = ''; if (moved) card.classList.toggle('tall', h > window.innerHeight * 0.62); else { const now = Date.now(); if (now - lastTap < 350) card.classList.toggle('tall'); lastTap = now; } };
             hdr.addEventListener('pointerup', end); hdr.addEventListener('pointercancel', end);
         })();

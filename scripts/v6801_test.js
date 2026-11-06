@@ -1,4 +1,4 @@
-// v6.80.1 手機底部選單:再點一次正在開的那顆就收起面板、看回村莊;點別顆是切換;子分頁也算同一組;看村民詳情時點「村民」回列表;設定鈕也能收;收起後按鈕不亮
+// v6.80.1 手機底部選單:再點一次正在開的那顆就收起面板、看回村莊;面板拉高也不會把「返回」推出螢幕(iPhone 網址列);點別顆是切換;子分頁也算同一組;看村民詳情時點「村民」回列表;設定鈕也能收;收起後按鈕不亮
 // 需要本機伺服器:cd wordpress && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
@@ -42,6 +42,22 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // 點地圖收起也一樣
     await tap(B('proposals')); await page.mouse.click(195, 200); await page.waitForTimeout(350); const f1 = await st();
     ok(!f1.open && !f1.lit.length, '點地圖收起面板後按鈕不再亮', f1);
+    // v6.80.1 拉高(tall)也不會把標題列與「返回」推出螢幕(模擬 iPhone Safari:可見高度比 vh 小)
+    await tap(B('records'));
+    const hdrPos = () => page.evaluate(() => { const h = document.getElementById('kairo-card-header').getBoundingClientRect(), b = document.getElementById('kairo-card-back').getBoundingClientRect(), c = document.getElementById('kairo-card'); return { top: Math.round(h.top), backTop: Math.round(b.top), backBottom: Math.round(b.bottom), tall: c.classList.contains('tall'), cardH: Math.round(c.getBoundingClientRect().height) }; });
+    await page.evaluate(() => document.getElementById('kairo-card').classList.add('tall')); await page.waitForTimeout(200); const g1 = await hdrPos();
+    // iPhone Safari 的 86vh 是用「網址列收起時」的高度算的，比看得到的高:直接給卡片一個比畫面還高的高度
+    await page.evaluate(() => { document.getElementById('kairo-card').style.height = Math.round(window.innerHeight * 1.1) + 'px'; }); await page.waitForTimeout(200); const g2 = await hdrPos();
+    await page.evaluate(() => { document.getElementById('kairo-card').style.height = ''; });
+    ok(g1.tall && g1.top >= 0 && g1.backTop >= 0, '拉高時標題列和「返回」都在畫面裡', g1);
+    ok(g2.top >= 0 && g2.backTop >= 0, '可見高度比 vh 小(iPhone 網址列)時，拉高也不會把「返回」推出螢幕', g2);
+    // 點「返回」真的回得去
+    await tap('#kairo-card-back'); const g3 = await st();
+    ok(!g3.open, '拉高後按「返回」能收起、看回村莊', g3);
+    // 拖標題列往上拖到底也不會出界
+    await tap(B('records')); await page.evaluate(() => document.getElementById('kairo-card').classList.remove('tall'));
+    const hb = await page.locator('#kairo-card-header').boundingBox(); await page.mouse.move(hb.x + 40, hb.y + 10); await page.mouse.down(); await page.mouse.move(hb.x + 40, -200, { steps: 8 }); const g4 = await hdrPos(); await page.mouse.up(); await page.waitForTimeout(200); const g5 = await hdrPos();
+    ok(g4.top >= 0 && g5.top >= 0 && g5.backTop >= 0, '把標題列往上拖到底也不會拖出螢幕', { during: g4, after: g5 });
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
   }
