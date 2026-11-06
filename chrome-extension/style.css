@@ -4338,11 +4338,17 @@ body.landing-open { overflow: hidden; }
 .lp .landing-inner { max-width: 1120px; margin: 0 auto; padding: 0 20px 64px; }
 .lp-hero { position: relative; overflow: hidden; padding: 72px 0 120px; isolation: isolate; }
 .lp-sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; }
-.lp-star { fill: #fff; opacity: 0.8; animation: lp-twinkle 4s ease-in-out infinite; }
-.lp-win { fill: #ffcf73; animation: lp-glow 6s ease-in-out infinite; }
-@keyframes lp-twinkle { 50% { opacity: 0.25; } }
-@keyframes lp-glow { 50% { fill: #f6a948; } }
-@media (prefers-reduced-motion: reduce) { .lp-star, .lp-win { animation: none; } }
+/* v6.82.2 星星與窗燈:SVG 本體靜態，上面幾層各自整層做透明度動畫(GPU 合成，不會每格重畫整張圖);捲出畫面就暫停 */
+.lp-win { fill: #ffcf73; }
+.lp-sky-l { pointer-events: none; will-change: opacity; animation-duration: 4s; animation-timing-function: ease-in-out; animation-iteration-count: infinite; }
+.lp-stars { fill: #fff; opacity: 0.8; animation-name: lp-twinkle; }
+.lp-stars-1 { animation-delay: -1.4s; animation-duration: 5s; }
+.lp-stars-2 { animation-delay: -2.8s; animation-duration: 6s; }
+.lp-glow-l { fill: #f6a948; opacity: 0; animation-name: lp-glow; animation-duration: 6s; }
+@keyframes lp-twinkle { 0%, 100% { opacity: 0.8; } 50% { opacity: 0.25; } }
+@keyframes lp-glow { 0%, 100% { opacity: 0; } 50% { opacity: 1; } }
+.lp-hero.lp-off .lp-sky-l { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) { .lp-sky-l { animation: none; } }
 .lp .landing-lang { top: 16px; right: 16px; }
 .lp-hero-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 40px; align-items: center; padding-bottom: 0 !important; }
 .lp-hero-copy { position: relative; }

@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.82.1
-const RIMTOWN_APP_VERSION = '6.82.1';
+// RimTown - Frontend App v6.82.2
+const RIMTOWN_APP_VERSION = '6.82.2';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -424,15 +424,9 @@ class RimTownApp {
         // 已登入在底下載好世界、暫停等你按「繼續遊戲」。登入/註冊成功後帶 rimtown_enter_now 重載直接進遊戲。
         this._landingActive = false;
         if (this.auth._serverless) {
-            let enterNow = false;
-            try { enterNow = sessionStorage.getItem('rimtown_enter_now') === '1'; if (enterNow) sessionStorage.removeItem('rimtown_enter_now'); } catch (e) {}
-            if (!this.auth.loggedIn) {
-                this._landingActive = true; this._landingMode = 'auth';
-                this.setupAuthListeners();
-                this._renderLanding(); this._showLanding();
-                return; // 一律要登入才能玩
-            }
-            if (!enterNow) { this._landingActive = true; this._landingMode = 'continue'; this._renderLanding(); this._showLanding(); }
+            // v6.82.2 首頁與遊戲分成兩頁:首頁(/)只有介紹與登入,這一頁(/town)就是遊戲,直接進入;沒登入就回首頁
+            try { sessionStorage.removeItem('rimtown_enter_now'); } catch (e) {}
+            if (!this.auth.loggedIn) { location.replace('./'); return; }
         }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
@@ -581,6 +575,7 @@ class RimTownApp {
         this._startLastSeenTracker();
         this._initReady = true;
         this._landingUpdateContinue();
+        try { window.__rtHideLoading?.(); } catch (e) {} // v6.82.2 載入畫面收起
 
         // Auto-show login modal if not logged in (with guest option)
         if (!this.auth.loggedIn) {
@@ -1424,7 +1419,7 @@ class RimTownApp {
     async _doLogout() {
         try {
             await this.auth.logout();
-            if (this.auth._serverless) { location.reload(); return; } // v5.68.0 回到首頁
+            if (this.auth._serverless) { location.replace('./'); return; } // v6.82.2 登出回首頁(首頁與遊戲分頁)
             this._updateAccountButton();
             this.world.logMessage('system', t('已登出。'));
         } catch(e) { console.error(e); }
