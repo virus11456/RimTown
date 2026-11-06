@@ -141,7 +141,7 @@ Object.assign(RimTownApp.prototype, {
         if (this._economySubTab === 'resources') {
             // v6.54.0 公庫 vs 村民荷包
             try { const ws = typeof WALLET !== 'undefined' && this.world?.wallet ? WALLET.summary(this.world) : null;
-                if (ws) html += `<div class="econ-section"><h3>👛 ${t('村民荷包')}</h3><div style="font-size:0.78rem;line-height:1.6">${t('大家身上合計')} ${ws.total} ${t('銀幣')} · ${t('最有錢')}${t('：')}${this._escapeHtml(t(ws.rich.a.name))} ${Math.round(ws.rich.n)} · ${t('最窮')}${t('：')}${this._escapeHtml(t(ws.poor.a.name))} ${Math.round(ws.poor.n)}${ws.broke ? ` · <span style="color:var(--danger,#E04848)">${t('{n} 人吃不起三餐').replace('{n}', ws.broke)}</span>` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted)">${t('公庫發薪水（先扣 {p}% 稅）；村民自己付三餐、衣服、冬天的柴。提案可以自己出錢、找朋友湊，或請公庫出。').replace('{p}', Math.round(ws.tax * 100))}</div></div>`; } catch (e) {}
+                if (ws) html += `<div class="econ-section"><h3>👛 ${t('村民荷包')}</h3><div style="font-size:0.78rem;line-height:1.6">${t('大家身上合計')} ${ws.total} ${t('銀幣')} · ${t('最有錢')}${t('：')}${this._escapeHtml(t(ws.rich.a.name))} ${Math.round(ws.rich.n)} · ${t('最窮')}${t('：')}${this._escapeHtml(t(ws.poor.a.name))} ${Math.round(ws.poor.n)}${ws.broke ? ` · <span style="color:var(--danger,#E04848)">${t('{n} 人吃不起三餐').replace('{n}', ws.broke)}</span>` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted)">${t('公庫發薪水（先扣 {p}% 稅）；村民自己付三餐、衣服、冬天的柴。提案可以自己出錢、找朋友湊，或請公庫出。').replace('{p}', Math.round(ws.tax * 100))}</div>${ws.bizRate ? `<div style="font-size:0.7rem;color:var(--text-muted)">🏪 ${t('做生意的人（開店、廚師賣餐、裁縫賣衣）收入先繳 {p}% 營業稅，至今繳了 {n} 銀幣').replace('{p}', Math.round(ws.bizRate * 100)).replace('{n}', ws.bizTax)}</div>` : ''}</div>`; } catch (e) {}
             // v6.37.0 上帝視角:村民自己做的事(種收、出貨、談生意、補貨)
             const alog = (this.state.autonomy?.log || []).slice(-6).reverse();
             html += `<div class="econ-section"><h3>👐 ${t('村民自己做的事')}</h3>
@@ -247,12 +247,16 @@ Object.assign(RimTownApp.prototype, {
                 <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
                 <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
                 <div class="resource-grid" style="margin-top:6px">`;
+            // v6.81.0 作物收成會直接進糧倉(算在食物裡),這裡只留工坊要用的一點:不要標成短缺的紅色,免得以為鎮上缺糧
+            const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
             detailKeys.forEach(k => {
                 const amount = res[k];
-                const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
+                const cls = (amount < 10 && RAWS.includes(k)) ? 'res-low' : amount > 100 ? 'res-high' : '';
                 html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
             });
-            html += '</div></details></div>';
+            html += '</div>';
+            if (detailKeys.some(k => CROPS.includes(k))) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>`;
+            html += '</details></div>';
             // Trade
             const trade = this.state.trade || {};
             html += t('<div class="econ-section"><h3>交易</h3>');

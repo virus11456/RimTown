@@ -76,13 +76,29 @@ const TIERS = (() => {
         const T = S(w); track(w, T); syncTitles(w);
         const target = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w), d = day(w);
         if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) {
+            T.up = UP_DAYS;
             // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
             const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
-            if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) { T.up = UP_DAYS; if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
-            else { if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); } T.waitMat = null; change(w, T, T.lv + 1); }
+            const canMat = !mat || (typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat));
+            if (T.readySince == null) T.readySince = d;
+            if (!canMat) { if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
+            // v6.81.0 升格要村民提案、投票、首長批准(觀察者模式);太久都沒升(60 天)才直接升,免得卡死
+            else if (!needsVote(w) || d - T.readySince >= 60) { if (needsVote(w)) { try { w.logMessageT?.('event', '🏛️ 升格案拖了好久，鎮公所決定直接擴建、正式升格。', {}); } catch (e) {} } promote(w); }
         } }
         else if (target < T.lv) { T.down++; T.up = 0; if (T.down >= DOWN_DAYS) change(w, T, T.lv - 1); }
-        else { T.up = 0; T.down = 0; }
+        else { T.up = 0; T.down = 0; T.readySince = null; }
+    }
+    // v6.81.0 觀察者模式下升格要走提案(有提案系統時)
+    function needsVote(w) { return !!(w && w.observerMode && w.proposals); }
+    const metNow = (w) => (typeof TIERS !== 'undefined' ? TIERS.met : met)(w);
+    function ready(w) { const T = S(w); return T.up >= UP_DAYS && metNow(w) > T.lv; }
+    // 提案通過後執行升格:再確認一次還夠格、付建材
+    function promote(w) {
+        const T = S(w); if (!(metNow(w) > T.lv)) return { ok: false, error: '現在不夠格了' };
+        const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
+        if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) return { ok: false, error: '擴建鎮公所的建材不夠' };
+        if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); }
+        T.waitMat = null; T.readySince = null; change(w, T, T.lv + 1); return { ok: true };
     }
     function change(w, T, nl) {
         const old = T.lv, d = day(w); T.lv = nl; T.up = 0; T.down = 0; T.since = d; T.history.push({ lv: nl, day: d }); if (T.history.length > 20) T.history.shift();
@@ -129,7 +145,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS };
+    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)
@@ -155,6 +171,38 @@ if (typeof CouncilSystem !== 'undefined') {
                 this.members = this.members.slice(0, want); while (this.members.length < want && extra.length) this.members.push(extra.shift().agentId);
             }
         } catch (e) {}
+    };
+}
+// ---- v6.81.0 議員出缺就遞補:以前有人搬走、過世或只是出遠門,席次就空著,要等議會少到剩一人才整個重組
+if (typeof CouncilSystem !== 'undefined') {
+    const CS = CouncilSystem.prototype; const _du = CS.dailyUpdate;
+    const seatScore = (world, a) => { let s = 0; if (a.age >= 35) s += 3; if (a.age >= 45) s += 2; s += (a.skills?.skills?.社交?.level || 0) * 2; s += ((a.mood || 50) + 50) / 25; const tr = a.personality?.traits || []; if (tr.includes('hardworking')) s += 2; if (tr.includes('kind')) s += 2; if (tr.includes('charismatic')) s += 2; if (tr.includes('lazy')) s -= 3; if (tr.includes('abrasive')) s -= 2; try { s += (TIERS.S(world).career[a.agentId] || []).length * 1.5; } catch (e) {} return s + Math.random() * 3; };
+    const refillSeats = function (world, occupied = 0) {
+        const all = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);
+        const want = Math.min(TIERS.seats(world), Math.max(3, Math.floor(all.length / 3)));
+        if (this.members.length + occupied >= want) return 0;
+        const have = new Set(this.members); const leaderId = world.election?._officeHolder?.(world)?.agentId;
+        const cands = all.filter(a => !have.has(a.agentId) && a.agentId !== leaderId && (a.age || 0) >= 18).map(a => [a, seatScore(world, a)]).sort((x, y) => y[1] - x[1]);
+        let n = 0; const lv = TIERS.level(world), L = TIERS.LV[lv];
+        while (this.members.length + occupied < want && cands.length) { const [a] = cands.shift(); this.members.push(a.agentId); n++;
+            try { world.logMessageT('council', '🏛️ {council}有空位，大家推舉{name}遞補為{member}。', { council: L.council, name: a.name, member: L.member }, a.name); } catch (e) {}
+            try { a.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'social', '大家推舉我進{council}，我得好好做。', { council: L.council }, 7, []); } catch (e) {} }
+        return n;
+    };
+    CS.dailyUpdate = function (world) {
+        let awayMembers = [];
+        try {
+            if (this._formed) {
+                // 先處理席次再讓原本的流程跑(原本有人離開就只刪不補,剩一人時整個議會解散)
+                const away = new Set((world.events?._travellingAgents || []).map(x => x?.agentData?.agentId).filter(Boolean));
+                awayMembers = (this.members || []).filter(id => !world.agents[id] && away.has(id)); // 出遠門的人保留席次
+                this.members = (this.members || []).filter(id => world.agents[id]);
+                refillSeats.call(this, world, awayMembers.length);
+            }
+        } catch (e) { console.warn('[Council] refill', e); }
+        const r = _du.call(this, world);
+        try { if (this._formed) for (const id of awayMembers) if (!this.members.includes(id)) this.members.push(id); } catch (e) {}
+        return r;
     };
 }
 // ---- 選舉:城鎮以上要有資歷才能參選

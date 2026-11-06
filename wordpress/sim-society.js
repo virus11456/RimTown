@@ -950,7 +950,7 @@ class LifecycleSystem {
             } else {
                 // NPC-NPC couples: limited by total population
                 const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
-                if (currentPop >= 20) continue;
+                if (currentPop >= Math.max(20, world.events?.TARGET_POPULATION || 20)) continue; // v6.81.0 以前滿 20 人就不生,現在跟著鎮上的人口上限
             }
 
             if (Math.random() < birthChance) {
@@ -965,8 +965,9 @@ class LifecycleSystem {
         const usedNames = new Set(Object.values(world.agents).map(a => a.name));
         const graveyardNames = new Set(this.graveyard.map(g => g.name));
         const availableNames = namePool.filter(n => !usedNames.has(n) && !graveyardNames.has(n));
-        const name = availableNames.length > 0 ? pickRandom(availableNames) :
+        let name = availableNames.length > 0 ? pickRandom(availableNames) :
             `${parentA.name.charAt(0)}${pickRandom(namePool).slice(-1)}`;
+        if (typeof uniqueVillagerName === 'function') name = uniqueVillagerName(world, name); // v6.81.0 不跟還在鎮上的人同名
 
         // Inherit traits from parents
         const allTraits = [...parentA.personality.traits, ...parentB.personality.traits];
