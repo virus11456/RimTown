@@ -1277,7 +1277,7 @@ class EventChoiceSystem {
         return null;
     }
 
-    resolveChoice(choiceIndex, world) {
+    resolveChoice(choiceIndex, world, by) { // v6.82.3 by:觀察者模式由首長(或大家)決定時傳入決定者名字;'' 代表大家商量
         if (!this.pendingEvent || !this.pendingEvent.choices[choiceIndex]) return null;
         const choice = this.pendingEvent.choices[choiceIndex];
         const effects = choice.effects;
@@ -1323,9 +1323,15 @@ class EventChoiceSystem {
 
         if (effects.relocate) { try { world.onRelocate?.(effects.relocate, world); } catch (e) { console.warn('[relocate]', e); } } // v5.90.0 跨鎮搬家(由 app 處理信箱)
 
-        world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
-        if (world.dailyNews) {
-            world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}${t('「')}${choice.label}${t('」')}`, 7);
+        if (by !== undefined) {
+            if (by) world.logMessageT('event_choice', '⚡ 面對{eventName}，鎮長{who}決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName, who: by }, by);
+            else world.logMessageT('event_choice', '⚡ 面對{eventName}，大家商量後決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName });
+            if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${by ? `${t('鎮長')}${t(by)}` : t('大家商量後')}${t('決定')}${t('「')}${choice.label}${t('」')}`, 7, by ? [by] : []);
+        } else {
+            world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
+            if (world.dailyNews) {
+                world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${playerTitle(world)}${t('選擇了')}${t('「')}${choice.label}${t('」')}`, 7);
+            }
         }
 
         this.eventLog.push({ event: this.pendingEvent.eventName, choice: choice.label, tick: world.tickCount });

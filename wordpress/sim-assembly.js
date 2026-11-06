@@ -414,4 +414,51 @@ if (typeof World !== 'undefined') {
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.assembly = (data?.assembly && typeof data.assembly.rec === 'object') ? data.assembly : null; } catch (e) {} return r; };
 }
+// ---- v6.82.3 突發狀況由首長當場決定(觀察者模式):盜匪、災害預警防災、搬家提案……以前會跳視窗要觀察者選
+const CRISIS = (() => {
+    const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+    const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || (typeof t === 'function' && vs.includes(t(v))); };
+    const leader = (w) => { try { return w.proposals?._mayor?.(w) || null; } catch (e) { return null; } };
+    const RES = ['silver', 'food', 'wood', 'stone', 'metal', 'tools', 'herbs', 'cloth'];
+    function pick(w, ev) {
+        const ch = ev.choices || []; if (!ch.length) return -1;
+        if (ev.autoResolve && Number.isInteger(ev.autoResolve.choice)) return Math.max(0, Math.min(ev.autoResolve.choice, ch.length - 1)); // 搬家:照兩人的意思
+        const L = leader(w), sp = w.stockpile; let best = 0, bs = -Infinity;
+        ch.forEach((c, i) => {
+            const e = c.effects || {}; let s = 0, costs = false;
+            for (const r of RES) { const v = e[r] || 0; if (v < 0) { costs = true; const have = sp?.get?.(r) || 0; s -= have < -v ? 100 : (-v) / Math.max(30, have) * 3; } else if (v > 0) s += 0.5; }
+            s += (e.mood_all || 0) * 0.25 + (e.disaster_prep || 0) * 1.6 + (e.social_boost || 0) * 0.1 + (e.defense_bonus || 0) * 0.5 - (e.resource_loss ? 1.2 : 0);
+            if (L) {
+                if (has(L, 'kind') && (e.mood_all || 0) > 0) s += 0.5;
+                if (has(L, 'greedy') && costs) s -= 0.8;
+                if (has(L, 'pessimist') && e.disaster_prep) s += 0.6;
+                if (has(L, 'optimist') && !costs) s += 0.4;
+                if (has(L, 'abrasive') && e.defense_bonus) s += 0.6;
+                if (e.moodTarget === 'priest' && (hasV(L, '信仰') || hasV(L, '傳統'))) s += 1;
+            }
+            s += Math.random() * 0.8;
+            if (s > bs) { bs = s; best = i; }
+        });
+        return best;
+    }
+    function decide(w) {
+        const ec = w.eventChoice, ev = ec?.pendingEvent; if (!ev || ev._npc) return null;
+        ev._npc = true;
+        const i = pick(w, ev); if (i < 0) { ec.pendingEvent = null; return null; }
+        const L = leader(w), label = ev.choices[i]?.label || '', name = ev.eventName || '';
+        const r = ec.resolveChoice(i, w, L ? L.name : '');
+        try { if (L) L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{e}的時候，我決定「{c}」。', { e: name, c: label }, 6, []); } catch (e) {}
+        return r;
+    }
+    return { pick, decide };
+})();
+if (typeof World !== 'undefined') {
+    const _tick = World.prototype.tick;
+    World.prototype.tick = function (...args) {
+        const r = _tick.apply(this, args);
+        if (this.observerMode && this.eventChoice?.pendingEvent) { try { CRISIS.decide(this); } catch (e) { console.warn('[Crisis]', e); } }
+        return r;
+    };
+}
+if (typeof globalThis !== 'undefined') globalThis.CRISIS = CRISIS;
 if (typeof globalThis !== 'undefined') globalThis.ASSEMBLY = ASSEMBLY;

@@ -279,7 +279,7 @@ Object.assign(RimTownApp.prototype, {
 
         // Event choice
         const ec = this.world.eventChoice;
-        if (ec?.pendingEvent && !this._shownEventChoiceId) {
+        if (ec?.pendingEvent && !this._shownEventChoiceId && !this.world.observerMode) { // v6.82.3 觀察者模式由首長決定,不跳視窗
             this._shownEventChoiceId = ec.pendingEvent.timestamp;
             this._showEventChoiceCard(ec.pendingEvent);
         } else if (!ec?.pendingEvent) {
