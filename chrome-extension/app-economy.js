@@ -247,12 +247,16 @@ Object.assign(RimTownApp.prototype, {
                 <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
                 <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
                 <div class="resource-grid" style="margin-top:6px">`;
+            // v6.81.0 作物收成會直接進糧倉(算在食物裡),這裡只留工坊要用的一點:不要標成短缺的紅色,免得以為鎮上缺糧
+            const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
             detailKeys.forEach(k => {
                 const amount = res[k];
-                const cls = amount < 10 ? 'res-low' : amount > 100 ? 'res-high' : '';
+                const cls = (amount < 10 && RAWS.includes(k)) ? 'res-low' : amount > 100 ? 'res-high' : '';
                 html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
             });
-            html += '</div></details></div>';
+            html += '</div>';
+            if (detailKeys.some(k => CROPS.includes(k))) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>`;
+            html += '</details></div>';
             // Trade
             const trade = this.state.trade || {};
             html += t('<div class="econ-section"><h3>交易</h3>');

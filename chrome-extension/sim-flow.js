@@ -248,6 +248,20 @@ const FLOW = (() => {
 })();
 if (typeof window !== 'undefined') window.FLOW = FLOW;
 
+// v6.81.0 給 AI 的鎮況多一句糧倉狀態(以前 AI 看到小麥只剩幾份，就在提案裡說糧倉見底)
+if (typeof ConversationEngine !== 'undefined' && !ConversationEngine.prototype._flowBrief) {
+    const CE = ConversationEngine.prototype; CE._flowBrief = true; const _tb = CE._townBrief;
+    CE._townBrief = function (world) {
+        const s = _tb.call(this, world);
+        try {
+            const food = Math.round(world.stockpile?.get?.('food') || 0), cap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const pop = Math.max(1, Object.values(world.agents || {}).filter(a => !a.isPlayer && !a.isDead).length);
+            const st = food >= cap ? t('糧倉滿了') : food >= pop * 15 ? t('存糧充足') : food >= pop * 4 ? t('存糧還夠') : t('存糧快見底');
+            return `${s}${t('；')}${t('糧倉')} ${food}/${cap}${t('（')}${st}${t('）')}${t('；')}${t('作物收成會直接存進糧倉，小麥等作物存量少是正常的')}`;
+        } catch (e) { return s; }
+    };
+}
+
 // 存讀檔：每日提示的冷卻、精製品數量(v6.80.0)、吃得好的連續天數(v6.80.0)
 if (typeof World !== 'undefined' && !World.prototype._flowHooked) {
     World.prototype._flowHooked = true;
