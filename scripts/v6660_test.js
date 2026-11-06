@@ -1,5 +1,5 @@
 // v6.66.0 外交:初始關係、派使節(魅力加分)、送珍品、貿易協定→同盟→聯姻、盟友送糧、貿易戰與禁運(經濟影響)、遠方消息影響關係、AI 決定、AI 知道盟友對頭、畫面、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

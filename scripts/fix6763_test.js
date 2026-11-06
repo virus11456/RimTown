@@ -1,7 +1,7 @@
 // v6.76.3 回歸:空間滿而且 IndexedDB 寫不進去時,不會刪掉別鎮唯一的本機存檔(目前這座的舊副本也不會先被刪);
 // 開新遊戲(城鎮列表／設定的新地圖)後,原本那座立刻搬去 IndexedDB 而且是新的世界;桌機 1280px 英文介面控制列換行時不蓋住四個主分頁;
 // 教學與提案頁不再說「由你批准」
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -1,5 +1,5 @@
 // v6.61.0 宗教第二部:宗教領袖(稱號依等級、官職標籤、城市以上算貴族)、加冕由宗教領袖主持(加正當性／拒絕)、分裂自立教派與異端審判、科技與信仰衝突、AI 知道神職、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

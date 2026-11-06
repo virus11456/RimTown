@@ -1,5 +1,5 @@
 // v6.62.0 消息傳遞:遠方地點(鄰鎮、王國首都、異國)、事件有時差(信差較快)、管道不準會走樣、帶消息的人先知道再沿交情擴散、AI 只知道自己聽過的、到了才生效(新聞修正值)、升格、外地消息頁、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

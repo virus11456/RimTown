@@ -1,6 +1,6 @@
 // v6.76.2 執行效能:翻譯結果快取(語言／字典／人名／城鎮等級一變就作廢)、getState 的關係／記憶／提案／紀錄讀到才算、
 // 已定案提案沿用算好的內容、伴侶／配偶查詢依感情狀態版本快取、錢包單人查詢不再掃全鎮
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

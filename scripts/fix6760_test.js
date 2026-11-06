@@ -1,6 +1,6 @@
 // v6.76.0 探索過的城鎮都能搭馬車(以前超過 10 座就只剩傳聞)、封路(下雪封山、坍方、淹水、盜匪)時馬車站反灰並寫原因與天數、
 // 路通了會恢復、村民出遠門避開封路的鎮、路況跟著存檔、同一個世界的重複鄰鎮在城鎮列表標出來
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

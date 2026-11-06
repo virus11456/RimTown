@@ -2,7 +2,7 @@
 // 選舉沒有投票／參選、日報沒有表態按鈕、探險不能手動派、動態牆只看不按讚留言、村民不主動傳訊息、節慶不邀你也不累積對你的好感、
 // 提案贊助寫提案人、聲望不公告「你」、旅人不升級、沒有每日登入獎勵、舊的待決卡收掉不跳、新居民不花公庫、親手成就不頒、
 // 人際關係不列你、教學是觀察者口吻、個人委託不跑、事件徵詢與防災由首長、搬家由兩人;中英、桌機與 390px
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

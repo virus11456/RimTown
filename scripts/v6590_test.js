@@ -1,5 +1,5 @@
 // v6.59.0 國王:只有王都有、第一位國王議會確認加冕、官職標籤與王族、王令(規則與 AI)、政變(被識破走審判／成功改朝換代)、世襲與繼承危機、起義推翻王室、降級失去王位、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

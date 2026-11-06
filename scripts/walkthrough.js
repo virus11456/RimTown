@@ -1,5 +1,5 @@
 // v6.27.0 觀察者走一遍(3D):用 app 自己的遊戲迴圈真跑一季,在關鍵時刻截圖(早安卡/提案分頁與批准/聊天/考驗/季末回顧/事件卡/日報)。
-// 用法:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir> [theme] [seasons]   需本機 http://127.0.0.1:8126 服務 wordpress/,且能 require('playwright')。
+// 用法:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir> [theme] [seasons]   需本機 http://127.0.0.1:8126 服務 chrome-extension/,且能 require('playwright')。
 // 選跑、不進發版檢查;看截圖找版面與文案問題。v6.11.0–v6.22.4 的玩家版(委託/意圖/押商隊/天賦)已隨觀察者沙盒移除。
 const { chromium } = require('playwright');
 const fs = require('fs');

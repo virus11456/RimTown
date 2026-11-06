@@ -1,6 +1,6 @@
 // v6.76.4 設定頁 AI 區塊版面:勾選框不被撐滿、標題同一行、條列卡片、額度依伺服器實際回報(不再寫死 300 則)、
 // 稱號不重複(村長（村長）)、桌機與手機都沒有橫向溢出
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

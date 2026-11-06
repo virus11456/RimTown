@@ -1,5 +1,5 @@
 // v6.46.0 科技樹玩法:研究完成→新觀念靠聊天傳開(有人接受有人反對)、革新派／保守派、匠人抗議提案、發明家靈光、科技面板、存讀檔、中英
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

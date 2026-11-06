@@ -1,6 +1,6 @@
 // v6.82.3 突發狀況不再要觀察者選:盜匪來襲、壞事件、災害預警防災、搬家提案在觀察者模式由首長當場決定(看付不付得起、效果與個性)，
 // 不跳視窗、日誌與日報寫「鎮長某某決定」、首長記得自己的決定;中英
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -1,5 +1,5 @@
 // v6.73.0 歷史與傳承:史書(規則／AI、換季自動寫)、名人登記與傳說(過世後成為傳說、立像)、家族家訓與名聲、世仇與聯姻化解、AI 知道家族與傳說、畫面(中英家族名)、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -1,5 +1,5 @@
 // v6.63.0 報社:媒體隨城鎮等級、讀者與信任度、選舉期間表態／民調／揭弊／抹黑與更正、收買、影響投票、AI 讀到的報導、國王查禁與地下報紙、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

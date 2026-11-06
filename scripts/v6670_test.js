@@ -1,5 +1,5 @@
 // v6.67.0 治安與民生:偷竊(衛兵抓到坐牢、沒抓到成祕密)、出獄、貧民區、稅率提案與投票執行、房租、王都壽宴與皇家婚禮、依等級吸引移民、畫面、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

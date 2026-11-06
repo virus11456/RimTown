@@ -60,8 +60,7 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 | 位置 | 內容 |
 |---|---|
-| `chrome-extension/` | 前端開發來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除）：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
-| `wordpress/` | 前端的鏡像（資料夾名稱沿用，WordPress 外掛版已在 v6.50.0 移除）；`build.sh` 從這裡產出網站 |
+| `chrome-extension/` | 前端唯一來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除；以前的 `wordpress/` 鏡像在 v6.83.0 之後拿掉），`build.sh` 從這裡產出網站：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
 | `api/` | Vercel Serverless Functions：帳號、雲端存檔、成就、排行榜、AI 對話代理 `/api/chat`（所有金鑰只放在 Vercel 環境變數，前端看不到） |
 | `scripts/` | 檢查與測試腳本（見「發版前必跑」） |
 | `build.sh`、`vercel.json` | Vercel 建置：輸出到 `public/` |
@@ -290,9 +289,9 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ## 部署與執行
 
-- 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `wordpress/` 的前端檔、`vendor/`、`chrome-extension/icons|img` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
-- `wordpress/` 與 `chrome-extension/` 只是資料夾名稱沿用（WordPress 外掛版與 Chrome 擴充功能版已在 v6.50.0 移除）：`chrome-extension/` 是開發來源，改完鏡像到 `wordpress/`，`build.sh` 從 `wordpress/` 產出網站。
-- 本機：`cd wordpress && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
+- 線上：https://rimtown.cc（Vercel）。`build.sh` 把 `chrome-extension/` 的前端檔、`vendor/`、`icons/`、`img/` 複製到 `public/`；`api/` 是 Serverless Functions（帳號、雲端存檔、AI 對話代理）。
+- `chrome-extension/` 只是資料夾名稱沿用（Chrome 擴充功能版已在 v6.50.0 移除），它是前端唯一來源；以前要同步一份到 `wordpress/`，v6.83.0 之後拿掉，改完不必再鏡像。
+- 本機：`cd chrome-extension && python3 -m http.server 8126`，打開 http://localhost:8126/（沒有 `/api/` 時只能訪客模式、村民走規則式對話）。
 
 ---
 
@@ -302,7 +301,6 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)
-# 鏡像:chrome-extension/{*.js(含 i18n-en.js、town3d.js、sim-proposals.js),index.html,style.css,style-observer.css,vendor/three.min.js} → wordpress/
 # 翻譯:新的中文鍵一律加在 chrome-extension/i18n-en.js(v6.28.0 起字典拆出,只在英文介面載入;i18n.js 只剩 t()/setLang 等執行期)
 node scripts/lane_test.js      # /api/chat 分流、冷卻、逾時、額度感知(v5.67.0 起)
 node scripts/refusal_test.js   # /api/chat 拒絕扮演偵測與退回(v5.67.2 起)
@@ -362,12 +360,12 @@ node scripts/extend6520_test.js # v6.52.0 道歉原諒、報復連載、派系�
 node scripts/pets_dark_test.js # v6.51.0 寵物動物、講壞話／說謊／陰謀／誤會／日常糾紛、農田破壞修正(需本機 8126)
 node scripts/issues_test.js    # v6.50.0 鎮上急事:村民真的受影響(餓、冷、做不了工、吵架、搬走)、AI 看得到、提案對應、存讀檔、提案頁(需本機 8126)
 node scripts/fix6491_test.js   # v6.50.0 完整智能體模式提案十成由 AI 發想、鎮況當提示(需本機 8126)
-node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 wordpress/)
-node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.50.0 起;以前從 rimtown.php 產生),加新版本並鏡像到 wordpress/;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
+node scripts/proposal_test.js  # 村民主動提案:生成/投票/批准執行/自動定案/存檔往返(v6.26.0 起;需本機 8126 服務 chrome-extension/)
+node scripts/gen-changelog.js --add entry.json  # 首頁更新紀錄:chrome-extension/changelog.js 是單一來源(v6.50.0 起;以前從 rimtown.php 產生),加新版本;v5.74.0 起每版必須同時有 changes 與 changes_en,缺英文會失敗
 node scripts/i18n-audit.js     # i18n 重複鍵=0、新 t('…') 字串必須有英文(v5.81.0 起)
 node scripts/cjk-punct-audit.js # 模板字串裡沒包 t() 的 CJK 標點,基準 10(AI 提示詞與訪客名),新增就失敗;--list 列全部(v6.22.3 起)
 node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改版面才 --update(v5.81.0 起)
-# 選跑:cd wordpress && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
+# 選跑:cd chrome-extension && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
 # 選跑:node scripts/trial_pacing_test.js # v6.22.0 B23 考驗失敗節奏(扣分有底、衰敗後搬走放緩、人口下限、撐過補回、復興、存讀檔;有斷言,失敗 exit 1)
 # 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
@@ -394,6 +392,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 - 📝 文字改成第三人稱（事件徵詢、災害預警、搬家、提案贊助、糧倉），教學改觀察者口吻
 - 🗂️ 舊存檔的待決卡收掉、不再跳出
 - 測試 `scripts/v6830_test.js`（72 項）
+- 🛠️ 開發：拿掉 `wordpress/` 鏡像資料夾，`chrome-extension/` 是前端唯一來源（`build.sh` 直接從這裡產出網站，產出檔案與以前逐一比對相同；`gen-changelog.js` 不再寫第二份；本機 8126 改服務 `chrome-extension/`）。網站內容不變，不換版號
 
 ### v6.82.3 (2026-11-06)
 - ⚡ 突發狀況不再跳視窗要你選：盜匪來襲、饑荒等壞事件、災害預警要不要防災、村民的搬家提案，以前都會跳出「見你經過，想聽你的看法」並倒數讓你決定；現在由首長當場拍板——看公庫和存糧付不付得起、每個做法的效果，再加上首長自己的個性，搬家提案則照兩人的意思。日誌和日報寫「面對盜匪來襲，鎮長某某決定：全力防禦」，首長也會記得自己做過的決定

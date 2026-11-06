@@ -1,7 +1,7 @@
 // v6.78.1 每日報紙(取代 v6.78.0 的「八點檔」):日報 › 日誌最上面是一份報紙(報頭、期數、頭條、各版、明日看點)，換日定稿、可翻上一期／下一期；
 // 「小鎮劇場」拿掉，名場面同類合併成報紙上的一則；村民對話與逐筆紀錄預設收起、技能升級合併；不另外呼叫 AI；
 // 存讀檔保留、重設清空；鎮況卡寫出現任首長(可點開村民卡)；自備金鑰關閉(舊金鑰清掉、設定頁沒有表單)；英文版無殘留中文；手機 390px 不溢出
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

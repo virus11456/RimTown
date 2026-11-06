@@ -1,5 +1,5 @@
 // v6.50.0 完整智能體模式:提案十成由村民(AI)自己發想;系統偵測到的鎮況(依急迫度排序)當參考提示放進提示詞;沒有任何狀況時也能自己想
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

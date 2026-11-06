@@ -1,5 +1,5 @@
 // v6.53.0 版面整合:提案頁三個子分頁、播放／暫停一顆鈕、通知不疊(上限＋「還有 N 則」、大視窗開著先排隊)、早安卡等季末回顧、村民卡標籤列與心事收合、手機 🃏 讓開、跑馬燈不蓋上方資訊列
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

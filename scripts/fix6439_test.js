@@ -1,5 +1,5 @@
 // v6.43.9 回歸:手機 ☰ 選單在有通知時也點得到;上傳雲端成功／失敗／雲端較新都要有看得到的提示;載入雲端存檔有提示;英文單複數
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

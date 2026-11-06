@@ -1,6 +1,6 @@
 // v6.74.0 擠兌紓困與債券:銀行家先自掏腰包、發債券、鎮長(規則／AI)決定紓困、鎮公所背債每天還、還不出加罰息、
 // 債券到期付息或違約、平時準備金太低也發債、鎮長自己有存款會變成祕密、畫面(中英)、AI 知道鎮上欠債、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

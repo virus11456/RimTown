@@ -1,6 +1,6 @@
 // v6.82.1 議會提早成立＋舊議會提案併入提案頁:觀察者模式鎮上有 6 人就成立議會(村莊叫長老會)、不再跑舊的議會自訂提案、
 // 不會跳視窗要觀察者投票、政令改由議員在提案頁提出;中英
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

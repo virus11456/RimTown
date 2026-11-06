@@ -1,5 +1,5 @@
 // v6.48.0 事件卡獨立介面:地圖上的 🃏 按鈕(不被擋、44px 以上)、抽屜開關(按鈕／E／Esc)、選卡、打出(張數減少、抽屜收起)、反應追蹤分頁、事件分頁入口、手機底部抽屜不超出畫面;中英、桌機與手機
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -1,5 +1,5 @@
 // v6.60.0 宗教:依鎮名生成 1–3 個宗教(六種骨架、隨機名稱、中英)、村民信仰與虔誠度、什一與濟貧、節日、祈禱與應驗、事件卡依信仰解讀、喪親、傳教改宗與家庭失和、神職貪污、AI 知道信仰、鎮況頁與角色卡、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

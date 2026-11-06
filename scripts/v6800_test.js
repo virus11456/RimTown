@@ -1,6 +1,6 @@
 // v6.80.0 精製品與吃得好:工坊做的工具／衣服／家具是精製品、耗損減半、其他用途先用普通的;倉庫顯示精製數量與實際耗損;
 // 吃得好(飲食多樣／麵包糕點果醬／好酒好茶甜點湊齊兩樣)隔天少吃一成正餐、連續三天心情加;存讀檔;全工坊 40 天不出錯、成品不暴增;中英面板
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

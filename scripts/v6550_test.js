@@ -1,5 +1,5 @@
 // v6.55.0 大人口:人多時關係／記憶精簡(存讀檔一致)、重要人物才用 AI、遠處村民簡化繪製與名牌、雲端存檔壓縮上傳與解壓讀回
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

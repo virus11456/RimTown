@@ -1,5 +1,5 @@
 // v6.72.0 你與 AI:發現祕密後公開／掩護／勒索(規則／AI)、原諒的理由、AI 禱詞、託夢(解讀、誤解、行動、冷卻、寫進教義)、預言押注(選舉／政變、準確率)、畫面、存讀檔
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

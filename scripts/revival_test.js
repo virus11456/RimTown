@@ -1,4 +1,4 @@
-// 選跑:node scripts/revival_test.js   需本機 http://127.0.0.1:8126 服務 wordpress/,NODE_PATH 指到有 playwright 的 node_modules
+// 選跑:node scripts/revival_test.js   需本機 http://127.0.0.1:8126 服務 chrome-extension/,NODE_PATH 指到有 playwright 的 node_modules
 // 衰敗 → 連續撐過兩季 → 復興;存讀檔;回顧有復興行;UI 有衰敗中提示
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');

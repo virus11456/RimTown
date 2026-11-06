@@ -1,6 +1,6 @@
 // v6.50.0 鎮上急事:缺糧／缺衣／冬天沒柴／缺貨／有人過不下去／結仇／士氣低落 → 村民真的受影響(餓、冷、心情、吵架、搬走),
 // 自己記得、AI 看得到(村民自身狀態、鎮況、發想提示的急事清單),有對應提案就算有人處理,拖著沒人管會抱怨;存讀檔;提案頁顯示
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

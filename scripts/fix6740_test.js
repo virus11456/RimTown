@@ -1,6 +1,6 @@
 // v6.74.0 銀行 P2 回歸:(1) 審貸等待中存讀檔,之後大額貸款仍走 AI 審查(含舊存檔殘留的等待旗標)
 // (2) 審貸等待中新建城鎮,舊回覆不會讓新鎮居民多出錢、也不寫日誌;(3) 紓困等待中存讀檔會重問;等太久改規則決定
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

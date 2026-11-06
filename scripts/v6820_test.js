@@ -1,6 +1,6 @@
 // v6.82.0 議會實權:哪些案子算大事、議會否決、首長否決被三分之二推翻／否決成立、春季改選(候選人、開票、席次、首長不參選)、
 // 出缺由落選者遞補、收錢被揭穿辭職、提案卡顯示議會表決與否決、改選卡、村民卡議事紀錄、存讀檔;中英、桌機與 390px
-// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+// 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';
