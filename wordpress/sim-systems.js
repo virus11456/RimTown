@@ -60,8 +60,8 @@ class ReputationSystem {
         const newTierIdx = this.tierIndex;
         if (newTierIdx > this._lastEffectTier && this._lastEffectTier >= 0) {
             const tier = this.tier;
-            world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}${t('「')}${tier.icon} ${tier.name()}${t('」')}— ${tier.desc()}`);
-            if (world?.dailyNews) {
+            if (!world?.observerMode) world?.logMessage?.('reputation', `⭐ ${t('聲望提升！你現在是')}${t('「')}${tier.icon} ${tier.name()}${t('」')}— ${tier.desc()}`); // v6.83.0 這是玩家個人聲望,觀察者模式不公告
+            if (world?.dailyNews && !world?.observerMode) {
                 world.dailyNews.collectEvent('social', `${playerTitle(world)}${t('的聲望提升為')}${t('「')}${tier.name()}${t('」')}${t('！')}`, 7);
             }
             // Tier-up mood boost
@@ -396,7 +396,7 @@ class WeatherSystem {
             ],
             timestamp: world.tickCount,
         };
-        world.logMessage('event_choice', `⚡ ${t('災害預警——你需要決定如何防災！')}`);
+        world.logMessage('event_choice', `⚡ ${world.observerMode ? t('災害預警——鎮長正在決定要怎麼防災。') : t('災害預警——你需要決定如何防災！')}`);
     }
 
     _startDisaster(type, world) {
@@ -1245,7 +1245,8 @@ class EventChoiceSystem {
             choices: choices,
             timestamp: world.tickCount,
         };
-        world.logMessageT('event_choice', '⚡ {event}——{asker}來徵詢你的意見！', { event: event.name, asker });
+        if (world.observerMode) world.logMessageT('event_choice', '⚡ {event}——大家聚到廣場商量怎麼辦。', { event: event.name }); // v6.83.0 由首長決定(sim-assembly CRISIS)
+        else world.logMessageT('event_choice', '⚡ {event}——{asker}來徵詢你的意見！', { event: event.name, asker });
     }
 
     _generateChoices(event, world) {

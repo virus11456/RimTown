@@ -326,7 +326,8 @@ Object.assign(RimTownApp.prototype, {
         const posts = this.world?.townFeed?.posts ? [...this.world.townFeed.posts].reverse().slice(0, 40) : [];
         const playerName = this.world?.agents?.['player']?.name || t('旅人');
         let html = toggleHtml || '';
-        html += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">${t('村民們的日常、心情和玻璃心文都在這裡。按讚留言可以刷好感!')}</div>`;
+        const obs = !!this.world?.observerMode; // v6.83.0 觀察者模式只看不按讚、不留言(以前是刷好感)
+        html += `<div style="font-size:0.7rem;color:var(--text-secondary);margin-bottom:8px">${obs ? t('村民們的日常、心情和玻璃心文都在這裡，按讚和留言的都是鎮上的人。') : t('村民們的日常、心情和玻璃心文都在這裡。按讚留言可以刷好感!')}</div>`;
         if (!posts.length) html += `<p class="muted-text">${t('還沒有人發文。村民們每天都會更新動態!')}</p>`;
         for (const p of posts) {
             const liked = p.likes.includes(playerName);
@@ -339,8 +340,9 @@ Object.assign(RimTownApp.prototype, {
                 </div>
                 <div style="margin:6px 0;font-size:0.85rem;line-height:1.55">${esc(p.text)}</div>
                 <div style="display:flex;gap:10px">
-                    <button data-action="feed-like" data-val="${p.id}" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">${liked ? '❤️' : '🤍'} ${p.likes.length}</button>
+                    ${obs ? `<span style="font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">❤️ ${p.likes.length}</span><span style="font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">💬 ${(p.comments || []).length}</span>` : `<button data-action="feed-like" data-val="${p.id}" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">${liked ? '❤️' : '🤍'} ${p.likes.length}</button>
                     <button data-action="feed-comment" data-val="${p.id}" style="background:none;border:none;cursor:pointer;font-size:0.8rem;color:var(--text-secondary);padding:2px 4px">💬 ${(p.comments || []).length}</button>
+                `}
                 </div>
                 ${cmts}
                 ${this._feedCommentPost === p.id ? `<div style="display:flex;gap:6px;margin-top:8px">
@@ -353,6 +355,7 @@ Object.assign(RimTownApp.prototype, {
     },
 
     _feedLike(postId) {
+        if (this.world?.observerMode) return; // v6.83.0
         const post = this.world?.townFeed?.posts.find(p => p.id === postId);
         const player = this.world?.agents?.['player'];
         if (!post || !player || post.likes.includes(player.name)) return;
@@ -364,6 +367,7 @@ Object.assign(RimTownApp.prototype, {
     },
 
     _feedCommentSend(postId) {
+        if (this.world?.observerMode) return; // v6.83.0
         const input = document.getElementById('feed-comment-input');
         const text = (input?.value || '').trim();
         if (!text) return;

@@ -66,7 +66,7 @@ class CustomNPCSystem {
 
         // Deduct resources (pre-validated, consume atomically)
         const consumed = [];
-        for (const [res, amount] of Object.entries(this.creationCost)) {
+        for (const [res, amount] of Object.entries(this.costFor(world))) {
             if (!world.stockpile?.consume(res, amount, world.tickCount, `${t('招募新居民')}${t('：')}${config.name}`)) {
                 // Rollback already consumed resources
                 for (const [rRes, rAmt] of consumed) {
@@ -107,7 +107,8 @@ class CustomNPCSystem {
             createdYear: world.clock.year,
         });
 
-        world.logMessage?.('system', `🎉 ${t('新居民')}${t('「')}${config.name}${t('」')}${t('加入了')}${t(world.townName || '邊境鎮')}${t('！')}`); // v6.11.0 用實際鎮名
+        if (world.observerMode) world.logMessageT?.('system', '🧳 一位新面孔「{name}」聽說了{town}，提著行李搬了進來。', { name: config.name, town: world.townName || '邊境鎮' }, config.name);
+        else world.logMessage?.('system', `🎉 ${t('新居民')}${t('「')}${config.name}${t('」')}${t('加入了')}${t(world.townName || '邊境鎮')}${t('！')}`); // v6.11.0 用實際鎮名
         if (world.dailyNews) {
             world.dailyNews.collectEvent('lifecycle', `${t('新居民')}${t('「')}${config.name}${t('」')}${t('從遠方來到了')}${t(world.townName || '邊境鎮')}${t('！')}`, 7, [config.name]);
         }
@@ -166,7 +167,7 @@ class CustomNPCSystem {
         }
 
         // Resource check
-        for (const [res, amount] of Object.entries(this.creationCost)) {
+        for (const [res, amount] of Object.entries(this.costFor(world))) {
             if ((world.stockpile?.get(res) || 0) < amount) {
                 return `${t('資源不足')}${t('：')}${t('需要')} ${amount} ${res === 'silver' ? t('銀幣') : res === 'food' ? t('食物') : res}`;
             }
@@ -178,9 +179,11 @@ class CustomNPCSystem {
     // ============================================================
     // 查詢
     // ============================================================
+    // v6.83.0 觀察者模式:迎來新居民是上帝的能力,不從公庫扣錢(以前是管理者花鎮上的銀幣與食物招募)
+    costFor(world) { return world?.observerMode ? {} : this.creationCost; }
     canCreate(world) {
         if (this.customNPCs.length >= this.maxCustomNPCs) return false;
-        for (const [res, amount] of Object.entries(this.creationCost)) {
+        for (const [res, amount] of Object.entries(this.costFor(world))) {
             if ((world.stockpile?.get(res) || 0) < amount) return false;
         }
         return true;

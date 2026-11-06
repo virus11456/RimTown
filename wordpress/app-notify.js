@@ -187,6 +187,8 @@ Object.assign(RimTownApp.prototype, {
         if (this._unlockedAchievements.has(key)) return;
         const def = ACHIEVEMENTS[key];
         if (!def) return;
+        // v6.83.0 觀察者模式不頒「親手做了某事」的成就(村民自己收成、探險、選舉跟你無關)
+        if (this.world?.observerMode && (def.category === 'player' || def.category === 'legacy' || ['ran_for_mayor', 'elected_mayor', 'peacemaker', 'voted', 'proposed', 'player_farmer', 'player_trader', 'player_explorer', 'speed_runner', 'first_child'].includes(key))) return;
         this._unlockedAchievements.add(key);
 
         // Save locally
@@ -270,7 +272,7 @@ Object.assign(RimTownApp.prototype, {
 
         // Daily decision
         const dd = this.world.dailyDecision;
-        if (dd?.pendingDecision && !this._shownDecisionId) {
+        if (dd?.pendingDecision && !this._shownDecisionId && !this.world.observerMode) { // v6.83.0
             this._shownDecisionId = dd.pendingDecision.dayKey;
             this._showDecisionCard(dd.pendingDecision);
         } else if (!dd?.pendingDecision) {
@@ -288,7 +290,7 @@ Object.assign(RimTownApp.prototype, {
 
         // NPC help
         const nh = this.world.npcHelp;
-        if (nh?.pendingRequest && !this._shownHelpId) {
+        if (nh?.pendingRequest && !this._shownHelpId && !this.world.observerMode) { // v6.83.0
             this._shownHelpId = nh.pendingRequest.timestamp;
             this._showNPCHelpCard(nh.pendingRequest);
         } else if (!nh?.pendingRequest) {

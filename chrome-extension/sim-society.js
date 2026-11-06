@@ -593,21 +593,21 @@ class FestivalSystem {
         if (win.phase === 'eve') {
             if (this.activeQuest && this.activeQuest.season === world.clock.season) this.activeQuest.progress = Math.min(this.activeQuest.goal, this.activeQuest.progress + 50);
             npcs.forEach(a => { a.moodModifier = (a.moodModifier || 0) + 5; a.memory.add(world.tickCount, world.clock.timeStr, 'social', t('聽說{who}出錢贊助了明天的{fest}，大家都很期待').split('{who}').join(who).split('{fest}').join(win.festival.name), 6, [who]); });
-            text = t('你贊助了 {n} 銀幣辦{fest}：籌備進度 +50、全鎮心情 +5、聲望 +10、繁榮 +3，明天的節慶會更熱鬧').split('{n}').join(cost).split('{fest}').join(win.festival.name);
+            text = (whoName ? t('{who}提案從公庫撥 {n} 銀幣贊助{fest}：籌備進度 +50、全鎮心情 +5，明天的節慶會更熱鬧').split('{who}').join(t(whoName)) : t('你贊助了 {n} 銀幣辦{fest}：籌備進度 +50、全鎮心情 +5、聲望 +10、繁榮 +3，明天的節慶會更熱鬧')).split('{n}').join(cost).split('{fest}').join(win.festival.name); // v6.83.0 提案贊助寫提案人
         } else {
             npcs.forEach(a => { a.moodModifier = (a.moodModifier || 0) + 8; a.memory.add(world.tickCount, world.clock.timeStr, 'social', t('{who}贊助了{fest}，攤位和篝火都更熱鬧了').split('{who}').join(who).split('{fest}').join(win.festival.name), 6, [who]); });
             this._boostRelationships(world, 0.25);
             const last = this.festivalLog[this.festivalLog.length - 1]; if (last && last.season === world.clock.season && last.year === world.clock.year) last.sponsored = true;
-            text = t('你贊助了 {n} 銀幣給{fest}：全鎮心情 +8、村民更常聊開、聲望 +10、繁榮 +3').split('{n}').join(cost).split('{fest}').join(win.festival.name);
+            text = (whoName ? t('{who}提案從公庫撥 {n} 銀幣贊助{fest}：全鎮心情 +8、村民更常聊開').split('{who}').join(t(whoName)) : t('你贊助了 {n} 銀幣給{fest}：全鎮心情 +8、村民更常聊開、聲望 +10、繁榮 +3')).split('{n}').join(cost).split('{fest}').join(win.festival.name);
         }
-        if (player) npcs.forEach(a => { const rel = a.relationships.getOrCreate(player.agentId, player.name); rel.modifyAffinity(2); });
+        if (player && !whoName && !world.observerMode) npcs.forEach(a => { const rel = a.relationships.getOrCreate(player.agentId, player.name); rel.modifyAffinity(2); }); // v6.83.0 提案贊助不是玩家出錢
         world.events?.conversationTopics?.push(t('{who}贊助的{fest}').split('{who}').join(who).split('{fest}').join(win.festival.name));
         world.gossipNetwork?.activeGossip?.push({ about: who, content: t('{who}出錢贊助{fest}，真大方！').split('{who}').join(who).split('{fest}').join(win.festival.name), contentT: tpl('{who}出錢贊助{fest}，真大方！', { who, fest: win.festival.name }), source: t('鎮民'), spreadCount: 0, tickCreated: world.tickCount, isTrue: true });
         world.logMessage?.('festival', `${win.festival.icon} ${text}`); world.dailyNews?.collectEvent?.('festival', text, 7);
         return { ok: true, msg: text };
     }
     _boostRelationships(world, chance) {
-        const agents = Object.values(world.agents);
+        const agents = Object.values(world.agents).filter(a => !(world.observerMode && a.isPlayer)); // v6.83.0 觀察者不在鎮上,節慶不累積對你的好感
         for (let i = 0; i < agents.length; i++) {
             for (let j = i + 1; j < agents.length; j++) {
                 if (Math.random() < chance) {
@@ -678,7 +678,7 @@ class FestivalSystem {
 
             // v5.0.0 祭典邀約:對玩家最有感情的 NPC(伴侶>心動>最好的朋友)主動傳訊邀玩家逛祭典
             const playerAgent = Object.values(world.agents).find(a => a.isPlayer);
-            if (playerAgent && world.conversationEngine?.sendEventComment) {
+            if (playerAgent && !world.observerMode && world.conversationEngine?.sendEventComment) { // v6.83.0 觀察者模式不邀你逛祭典
                 let inviter = null, best = -Infinity;
                 for (const a of Object.values(world.agents)) {
                     if (a.isPlayer || a.isDead) continue;

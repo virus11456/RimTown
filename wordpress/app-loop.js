@@ -511,7 +511,7 @@ Object.assign(RimTownApp.prototype, {
         else if (!tr && w.clock.day < 5) rows.push(`⚖️ ${t('第 5 天公布本季考驗')}`);
         const pd = w.proposals?.toDict?.(w); if (pd && pd.open.length) rows.push(`📜 ${t('投票中的提案')} ${pd.open.length} ${t('件')}${pd.open.some(p => p.daysLeft <= 1) ? ` · ${t('有的今天鎮長就會裁決')}` : ''}`); // v6.26.0
         const td = w.trials?.toDict ? w.trials.toDict(w) : null; if (td?.declined) rows.push(`🍂 ${t('衰敗中')} · ${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}`); // v6.13.0 與故事分頁同一份資料
-        const fs = w.festivals?.sponsorStatus?.(w); if (fs?.open && !fs.sponsored) rows.push(`${fs.icon || '🎪'} ${esc((fs.phase === 'eve' ? t('{fest}明天開始') : t('{fest}進行中')).replace('{fest}', t(fs.name)))} · ${t('可贊助 {n} 銀幣讓它更熱鬧').replace('{n}', fs.cost)}`); // v6.15.0
+        const fs = w.observerMode ? null : w.festivals?.sponsorStatus?.(w); if (fs?.open && !fs.sponsored) rows.push(`${fs.icon || '🎪'} ${esc((fs.phase === 'eve' ? t('{fest}明天開始') : t('{fest}進行中')).replace('{fest}', t(fs.name)))} · ${t('可贊助 {n} 銀幣讓它更熱鬧').replace('{n}', fs.cost)}`); // v6.15.0
         const pl = w.observerMode ? 0 : (w.growth?.pendingLevels?.() || 0); if (pl > 0 && w.growth?.pending?.length) rows.push(`⬆️ ${t('升級了！選一個天賦')}${pl > 1 ? `${t('（')}${t('還有 {n} 次').replace('{n}', pl)}${t('）')}` : ''}`); // v6.11.0 天賦還沒選就每天提醒
         const el = document.createElement('div'); el.id = 'morning-card'; el.className = 'rt-toast morning';
         el.style.cssText = 'background:rgba(22,22,32,0.96);border:1px solid var(--accent,#e94560);border-radius:12px;padding:10px 12px;max-width:min(360px,calc(100vw - 28px));pointer-events:auto;box-shadow:0 6px 24px rgba(0,0,0,0.45);opacity:0;transform:translateY(8px);transition:all .3s';
@@ -709,6 +709,7 @@ Object.assign(RimTownApp.prototype, {
             severity: 'minor', choices, timestamp: w.tickCount,
             autoResolve: { absDay: w._absDay() + 3, choice: Math.random() < 0.5 ? 0 : Math.min(1, choices.length - 2) },
         };
+        if (w.observerMode) { w.logMessageT('event_choice', '💌 {ag}與{localName}想住在同一個鎮上，兩人正在商量誰搬家。', { ag: ag.name, localName: r.localName }, ag.name); return true; } // v6.83.0 由兩人決定(sim-assembly CRISIS 照兩人意思)
         w.logMessageT('event_choice', '💌 搬家提案：{ag}與{localName}想住在同一個鎮上，等你決定。', { ag: ag.name, localName: r.localName });
         this._showCornerNotice({ icon: '💌', title: t('搬家提案'), name: `${t(ag.name)} ♥ ${t(r.localName)}`, desc: t('到「事件」決定讓誰搬家') });
         return true;
@@ -727,7 +728,8 @@ Object.assign(RimTownApp.prototype, {
             } else {
                 const ag = w.agents[data.residentId];
                 ag?.memory?.add?.(w.tickCount, w.clock.timeStr, 'romance', `${t('鎮長沒有插手，我和')}${r.localName}${t('只能隔著一條路想念彼此。')}`, 7, [r.localName]);
-                w.logMessageT('event_choice', '🤷 你決定不干涉{residentName}與{localName}的事。', { residentName: data.residentName, localName: r.localName });
+                if (w.observerMode) w.logMessageT('event_choice', '🤷 {residentName}和{localName}決定先各自留在原本的鎮上。', { residentName: data.residentName, localName: r.localName }, data.residentName); // v6.83.0
+                else w.logMessageT('event_choice', '🤷 你決定不干涉{residentName}與{localName}的事。', { residentName: data.residentName, localName: r.localName });
             }
         } catch (e) { console.warn('[relocate]', e); }
         this.state = w.getState(); try { this._syncHousing?.(); } catch (e) {} try { this.renderSidebar(); } catch (e) {}

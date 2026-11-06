@@ -180,7 +180,7 @@ function processDailyProduction(world) {
         const spoiled = Math.floor(excessFood * 0.05 * decayMod);
         if (spoiled > 0) {
             sp.consume('food', spoiled, world.tickCount, t('存糧過多腐壞'));
-            world.logMessageT('economy', '糧倉滿了，{spoiled}份食物腐壞——可辦慶典或賣給商人消化存糧。', { spoiled });
+            world.logMessageT('economy', world.observerMode ? '糧倉滿了，{spoiled}份食物腐壞，大家開始嘀咕該辦個慶典或賣給商人。' : '糧倉滿了，{spoiled}份食物腐壞——可辦慶典或賣給商人消化存糧。', { spoiled });
         }
     }
 }

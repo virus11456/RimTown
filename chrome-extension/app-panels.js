@@ -603,13 +603,14 @@ Object.assign(RimTownApp.prototype, {
         if (this.world.customNPC) {
             const remaining = this.world.customNPC.getRemainingSlots();
             const canCreate = this.world.customNPC.canCreate(this.world);
-            const cost = this.world.customNPC.creationCost;
+            const cost = this.world.customNPC.costFor ? this.world.customNPC.costFor(this.world) : this.world.customNPC.creationCost; const obs = !!this.world.observerMode;
             html += `<div style="margin-top:12px;padding:10px;border-top:1px solid rgba(255,255,255,0.1)">`;
             if (remaining > 0) {
                 html += `<button class="btn-accent" data-action="show-custom-npc" style="width:100%;padding:8px;font-size:0.85rem"${!canCreate ? ' disabled style="opacity:0.5;width:100%;padding:8px;font-size:0.85rem"' : ''}>`;
-                html += `${t('👤 創建新居民 (剩餘 ')}${remaining}${t(' 位)')}`;
+                html += obs ? `${t('🧳 迎來一位新居民（剩 {n} 位）').replace('{n}', remaining)}` : `${t('👤 創建新居民 (剩餘 ')}${remaining}${t(' 位)')}`;
                 html += `</button>`;
-                html += `${t('<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center">需要 ')}${cost.silver}${t(' 銀幣 + ')}${cost.food}${t(' 食物</div>')}`;
+                if (obs) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center">${t('上帝的安排：一位新面孔聽說了這座小鎮搬進來，不花鎮上的錢')}</div>`;
+                else html += `${t('<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;text-align:center">需要 ')}${cost.silver}${t(' 銀幣 + ')}${cost.food}${t(' 食物</div>')}`;
             } else {
                 html += `${t('<div style="font-size:0.8rem;color:var(--text-muted);text-align:center">已達自訂居民上限 (')}${this.world.customNPC.maxCustomNPCs}/${this.world.customNPC.maxCustomNPCs})</div>`;
             }
@@ -677,7 +678,7 @@ Object.assign(RimTownApp.prototype, {
         }
 
         // Sort relationships: partners first, then by affinity
-        const sortedRels = [...relationships].sort((a, b) => {
+        const sortedRels = [...relationships].filter(r => !(this.world?.observerMode && r.target_id === 'player')).sort((a, b) => { // v6.83.0 觀察者不在鎮上的人際關係裡
             const statusOrder = { married: 0, dating: 1, ex: 2 };
             const sa = statusOrder[a.status] ?? 99;
             const sb = statusOrder[b.status] ?? 99;
@@ -751,7 +752,7 @@ Object.assign(RimTownApp.prototype, {
                     return bits.length ? bits.join(t('、')) + t('。') : t('過得還不錯,沒什麼匱乏。');
                 })()}</p></div>`}
             <div class="detail-section"><h3>${t('技能（總計：')}${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
-            <div class="detail-section"><h3>${t('人際關係（')}${relationships.length}）</h3>
+            <div class="detail-section"><h3>${t('人際關係（')}${sortedRels.length}）</h3>
                 ${sortedRels.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>'):
                 sortedRels.map(r=>{
                     let badge = '';
@@ -1455,7 +1456,7 @@ Object.assign(RimTownApp.prototype, {
                 });
                 // v5.38.0 旅人參選:競選登記期內可親自出馬
                 const isPlayerCand = election.candidates.some(c => c.agentId === 'player');
-                if (!isPlayerCand) {
+                if (this.world.observerMode) { /* v6.83.0 觀察者不參選、不投票 */ } else if (!isPlayerCand) {
                     const elig = this.world.election?.playerEligibility?.(this.world);
                     if (elig?.ok) {
                         html += `<button class="btn-vote" data-action="run-for-mayor" style="width:100%;margin-top:6px">👑 ${t('我要參選鎮長！')}</button>`;
@@ -1469,7 +1470,7 @@ Object.assign(RimTownApp.prototype, {
             } else if (election.phase === 'voting') {
                 html += t('<h4>🗳️ 鎮長選舉 — 投票進行中</h4>');
                 html += `${t('<div class="election-info">剩餘 ')}${election.votingDaysLeft}${t(' 天投票</div>')}`;
-                const playerVoted = this.world.election?._playerVoted;
+                const playerVoted = this.world.election?._playerVoted || this.world.observerMode; // v6.83.0 觀察者不投票(沒有投票按鈕)
                 const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
                 election.candidates.forEach(c => {
                     const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
@@ -1483,7 +1484,7 @@ Object.assign(RimTownApp.prototype, {
                         ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${t(c.name)}</button>` : ''}
                     </div>`;
                 });
-                html += `${t('<div class="election-total">已投票：')}${totalVotes}${t(' 人')}${playerVoted ? t(' (你已投票)') : ''}</div>`;
+                html += `${t('<div class="election-total">已投票：')}${totalVotes}${t(' 人')}${playerVoted && !this.world.observerMode ? t(' (你已投票)') : ''}</div>`;
             } else if (election.phase === 'results') {
                 const winner = election.candidates[0];
                 const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
@@ -1707,7 +1708,7 @@ Object.assign(RimTownApp.prototype, {
                         html += `</div>`;
                     }
                     // v4.0: Interactive newspaper reaction buttons (only for latest)
-                    if (isLatest && !this._newsReacted) {
+                    if (isLatest && !this._newsReacted && !this.world.observerMode) { // v6.83.0 觀察者不對日報表態
                         html += `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">`;
                         html += `<button class="trade-btn" data-action="news-react" data-val="investigate" style="flex:1;font-size:0.72rem">🔍 ${t('調查')}</button>`;
                         html += `<button class="trade-btn" data-action="news-react" data-val="support" style="flex:1;font-size:0.72rem">👍 ${t('支持')}</button>`;
@@ -1815,7 +1816,7 @@ Object.assign(RimTownApp.prototype, {
                         <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
                     <div class="zone-desc">${zoneDef.description}</div>
                     <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
-                    ${canSend ? `<div class="zone-send">
+                    ${this.world.observerMode ? (canSend ? `<div class="zone-stats">${t('要不要派人探險由村民提案決定')}</div>` : t('<div class="zone-busy">探險進行中...</div>')) : canSend ? `<div class="zone-send">
                         <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
                             ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
                         </select>

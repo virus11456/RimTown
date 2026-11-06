@@ -956,6 +956,7 @@ ${mayorLine}${t('- 不要加任何前綴、名字標籤、引號、旁白')}`;
     }
 
     async sendEventComment(world, eventText, preferJobs = [], preferIds = [], fallbackLines = null) {
+        if (world.observerMode) return; // v6.83.0 觀察者不住在鎮上:村民不再傳訊息跟你報告鎮上的事
         try {
             const player = Object.values(world.agents).find(a => a.isPlayer);
             if (!player) return;
@@ -1210,7 +1211,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
     }
 
     _buildQuestContext(world, npc, relToPlayer) {
-        if (!world.questSystem) return '';
+        if (!world.questSystem || world.observerMode) return ''; // v6.83.0 觀察者模式不再對旅人提委託
         const parts = [];
         // Active quest context
         const questCtx = world.questSystem.getActiveQuestContext();

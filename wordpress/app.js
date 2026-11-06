@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.82.3
-const RIMTOWN_APP_VERSION = '6.82.3';
+// RimTown - Frontend App v6.83.0
+const RIMTOWN_APP_VERSION = '6.83.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -748,6 +748,7 @@ class RimTownApp {
     // v4.5.0 留存機制:每日登入獎勵 + 離線進度結算
     // =====================================================
     _checkDailyReward() {
+        if (this.world?.observerMode) return; // v6.83.0 每日登入獎勵會把銀幣食物塞進公庫,觀察者模式拿掉
         try {
             const today = new Date().toISOString().slice(0, 10);
             const last = localStorage.getItem('rimtown_login_date');
@@ -1536,6 +1537,7 @@ class RimTownApp {
 
     // v4.0: News reaction
     _newsReaction(reaction) {
+        if (this.world?.observerMode) return; // v6.83.0 觀察者不參與
         const labels = { investigate: t('調查'), support: t('支持'), ignore: t('忽略') };
         const effects = {
             investigate: { mood_all: 1, reputation: 1 },
@@ -1599,6 +1601,7 @@ class RimTownApp {
     }
 
     _playerVote(candidateId) {
+        if (this.world?.observerMode) return; // v6.83.0 觀察者不參與
         const election = this.world.election;
         if (!election || !election.active || election.phase !== 'voting') return;
         const candidate = election.candidates?.find(c => c.agentId === candidateId);
