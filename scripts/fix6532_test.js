@@ -63,7 +63,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         saveOld: save.includes('ZZOLD') || save.includes('ZZ|OLD'), rtOld: rt.includes('ZZOLD') || rt.includes('ZZ|OLD'), rtPets: (w2.pets?.list || []).length, rtDark: !!w2.dark && w2.dark.secrets.length,
         oldIntact: (app._getTownList?.() || []).length };
     });
-    ok(after.name === 'Test New Town', '新城鎮建好了', after.name);
+    ok(after.name === '邊境鎮', '新城鎮建好了(起始鎮名一律邊境鎮)', after.name);
     ok(!after.petOld && after.petsOk, '新城鎮沒有舊鎮的寵物（地圖與資料都沒有）', after);
     ok(after.secrets === 0 && after.mis === 0 && after.rep && after.feuds && after.cliques === 0, '新城鎮沒有舊鎮的祕密、誤會、名聲、恩怨、小團體', after);
     ok(!after.saveOld && !after.rtOld, '新城鎮存檔與存讀檔往返後也沒有舊鎮資料', after);

@@ -319,19 +319,31 @@ Object.assign(RimTownApp.prototype, {
                <button class="landing-btn secondary" id="landing-logout">${t('登出')}</button>`
             : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
                <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
+        // v6.77.1 首頁改寫:先講怎麼玩(開世界 → 看 → 推一把 → 看後果),再講小鎮裡會自己長出什麼,最後講 AI 與金鑰
+        const howto = [
+            ['🏘️', t('開一個世界'), t('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場，跟其他存檔互不影響。')],
+            ['👀', t('在天上看'), t('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。提案頁看大家想做什麼，日報看昨天發生了什麼。')],
+            ['🃏', t('偶爾推一把'), t('你能做的事很少：每天最多打 2 張事件卡（天災、人禍、機運、人際共 30 張），託夢給某位村民，或化身路過的旅人跟人聊天。')],
+            ['📜', t('看小鎮怎麼回應'), t('「反應追蹤」記下每個人的反應、提了什麼案、七天後小鎮變成什麼樣；每一季寫成一章鎮史。沒有結局，可以一直玩下去。')],
+        ];
         const features = [
-            ['🧠', t('會記得彼此的村民'), t('五座城鎮、近百位村民各有性格、記憶與人際關係。誰說過什麼、誰幫過誰，他們都記得，也會拿去跟別人八卦。')],
-            ['💬', t('真的在聊天'), t('對話由內建 AI 生成，不用填任何金鑰。村民之間會聊天、反思、寫日記；你也可以隨時跟任何一位村民聊，他會記得你說過的話。')],
-            ['🐎', t('多鎮往返'), t('邊境鎮之外還有漁村海風鎮、山上的礦山鎮、密林裡的林間村、平原樞紐市集城，五座城鎮各有自己的地圖、卡司與故事。村民會互訪、通商、跨鎮戀愛。')],
-            ['📜', t('村民自己治理小鎮'), t('村民依性格、職業與鎮況提案，全鎮投票，鎮長拍板並說明理由；種田、做工、跟行商談價、研究科技也都是他們自己來。你不花錢、不下令，只看小鎮怎麼長。')],
-            ['🃏', t('上帝視角事件卡'), t('你唯一能做的，是從 30 張事件卡裡挑一張打出去：旱災、火災、流言、豐收、婚禮、鎮長醜聞……然後看每個村民怎麼反應、提了什麼案、七天後小鎮變成什麼樣。')],
-            ['🧠', t('完整智能體模式'), t('打開後，村民的投票、要不要提案、鎮長的裁決，全部交給 AI 依各自的記憶、性格與交情推理，並說出理由。也可以填自己的 Claude、GPT 或 Gemini 金鑰。')],
-            ['🔬', t('三個時代的科技樹'), t('拓荒、手工、工坊三個時代、28 項研究、33 種建築：從穀倉一路蓋到鐘樓、劇場、天文台，全看村民先研究什麼。')],
-            ['🧊', t('3D 小鎮'), t('整座小鎮用 three.js 程序化幾何重畫：低多邊形地形、建築與村民，日夜、雲、雨雪、節慶、墓園一眼看得到。')],
+            ['🧠', t('像真人的村民'), t('每個人有個性、記憶、六項需求和自己的心事。他們聊天、八卦、交朋友、戀愛結婚，也會講壞話、說謊、設局；做錯事會道歉，不被原諒就報復。你在天上看得到真相。')],
+            ['🗳️', t('自己治理小鎮'), t('提案全是村民自己想的，全鎮投票，鎮長拍板並說明理由。每年秋天改選，有辯論、議會、法庭；長成王都後還有國王、王令、政變與起義。')],
+            ['🌾', t('各鎮物產與貿易'), t('食物分穀物、魚、肉，產多少看地形，不靠水就捕不了魚。只有靠海的鎮曬得出鹽，木匠把木頭做成紙給報社和研究用。工具好不好影響每個人的效率，翻修房子、城鎮升格都要木材和石材，缺的就得靠商隊。')],
+            ['💰', t('錢包、生意與銀行'), t('村民各有自己的銀幣：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。會借錢欠債、請客接濟、買票，也會創業開店；銀行放貸、遇上擠兌、發債紓困。')],
+            ['⛪', t('信仰、報紙與文化'), t('每座鎮有隨機生成的宗教、節日、分裂與異端；立場不同的報社在選舉時表態、揭弊；還有藝術作品、吟遊詩人的歌謠，和越傳越離譜的謠言。')],
+            ['🗺️', t('一整個世界'), t('城鎮分村莊、城鎮、城市、王都四級。搭馬車去探索過的城鎮，大雪、坍方、盜匪會封路；外地消息會晚到、會走樣；鎮與鎮之間有外交、聯姻和貿易戰。')],
+            ['🔬', t('科技與觀念'), t('三個時代、28 項研究、33 種建築。新技術在村民之間傳開，分出保守派和革新派，左右選舉；發明家會留下冠名的發明。')],
+            ['🧊', t('3D 小鎮'), t('three.js 低多邊形畫面：日夜、四季、雨雪雷暴、燈籠串燈、螢火蟲；房子從木屋翻修成磚樓。不用安裝，手機也能玩。')],
+        ];
+        const aiNotes = [
+            ['🤖', t('完整智能體模式（預設開啟）'), t('村民要不要提案、怎麼投票、鎮長怎麼裁決，都交給 AI 依各自的記憶、性格和交情推理，並說出理由。')],
+            ['🔑', t('內建 AI，不用填金鑰'), t('設定裡選「小鎮內建」就是用遊戲伺服器的 AI，每個帳號每天有使用上限。金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。')],
+            ['🧩', t('也可以用自己的金鑰'), t('想多用，可以在設定填自己的 Claude、GPT 或 Gemini 金鑰。金鑰只存在你這台裝置的瀏覽器，不上傳伺服器、不進存檔，用的是你自己的額度。')],
         ];
         const roadmap = [
-            [t('已上線'), '#34d399', [t('上帝視角：村民全自主、事件卡、完整智能體模式'), t('三個時代科技樹與 33 種建築'), t('自備 AI 金鑰（Claude／GPT／Gemini）')]],
-            [t('構想'), '#60a5fa', [t('自由輸入一句話當事件'), t('玩家之間互訪城鎮'), t('手機 App 版')]],
+            [t('已上線'), '#34d399', [t('村民全自主、事件卡、完整智能體模式'), t('四級城鎮、世界地圖與馬車'), t('各鎮物產與貿易（穀物、魚、肉、鹽、紙、工具、建材）'), t('宗教、報社、銀行、國王')]],
+            [t('構想'), '#60a5fa', [t('學校與工會'), t('自由輸入一句話當事件'), t('玩家之間互訪城鎮'), t('手機 App 版')]],
         ];
         // v5.81.0 更新紀錄(240KB)不再隨頁面載入:首頁第一次畫時才動態載 changelog.js,載完重畫一次;直接進遊戲的人完全不載
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
@@ -354,14 +366,20 @@ Object.assign(RimTownApp.prototype, {
                 <div class="landing-hero-content">
                     <div class="landing-logo">🏘️</div>
                     <h1>${t('邊境鎮')}<span>RimTown</span></h1>
-                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的小鎮。你是看著它長大的觀察者。')}</p>
-                    <p class="landing-sub">${t('村民有記憶、有個性、有人際關係；他們會工作、戀愛、吵架、選鎮長、提案、研究、蓋房子，全都自己來。你不花錢、不下令，只能跟他們聊天，或打出一張事件卡，看小鎮自己長出故事。')}</p>
+                    <p class="landing-tagline">${t('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。')}</p>
+                    <p class="landing-sub">${t('每位村民都有個性、記憶、錢包和心事。他們自己工作、戀愛、吵架、提案、投票、選鎮長、做生意、蓋房子；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。')}</p>
                     <div class="landing-cta">${cta}</div>
                     <div class="landing-version">v${esc(ver)} · ${t('免安裝，手機也能玩')}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
                 </div>
             </header>
-            <section class="landing-section"><h2>${t('這是什麼遊戲')}</h2>
+            <section class="landing-section" id="landing-howto"><h2>${t('怎麼玩')}</h2>
+                <div class="landing-steps landing-howto">${howto.map((s, i) => `<div class="landing-step"><div class="landing-step-no">${i + 1}</div><div class="landing-step-ic">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p></div>`).join('')}</div>
+            </section>
+            <section class="landing-section" id="landing-features"><h2>${t('小鎮裡會自己長出什麼')}</h2>
                 <div class="landing-cards">${features.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
+            </section>
+            <section class="landing-section" id="landing-ai"><h2>${t('AI 與金鑰')}</h2>
+                <div class="landing-cards landing-ai">${aiNotes.map(f => `<div class="landing-card"><div class="ic">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div>
             </section>
             ${this._renderBrainSection()}
             <section class="landing-section"><h2>${t('更新紀錄')}</h2>
@@ -371,7 +389,7 @@ Object.assign(RimTownApp.prototype, {
             <section class="landing-section"><h2>${t('即將實現')}</h2>
                 <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
             </section>
-            <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('存檔自動同步雲端，換裝置登入即可繼續。')}</footer>
+            <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}<br>${t('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。')}</footer>
         </div>`;
         this._wireBrainDemo(el);
         // v5.74.1 首頁語言切換:切完整頁重畫(首頁本身全部字串都有英文對照)
@@ -404,7 +422,7 @@ Object.assign(RimTownApp.prototype, {
             ['🎯', t('挑對象'), t('權重 = 5 ＋ 好感÷10 ＋ 心動÷10；好感低於 −30 的人權重大減。互動後冷卻 6 tick。')],
             ['🗣️', t('八卦'), t('30% 機率先講一則八卦。八卦性格的人一定講，其他人 30%。傳到第 2 手有 40% 會被誇大，20% 的八卦本來就是假的。')],
             ['🍻', t('約出去'), t('好感 ≥ 30 時 12% 機率相約去酒館、公園、廣場、教堂、森林或圖書館；心動 > 40 就算約會。')],
-            ['💬', t('對話'), t('玩家附近的對話由內建 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。')],
+            ['💬', t('對話'), t('鏡頭附近的對話由 AI 生成（受每日額度限制）；遠處的對話走規則式模板，但同樣寫進記憶。')],
             ['📈', t('效果'), t('對話改變雙方好感（−2 到 +5）與心動；正向增幅乘上性格相容度 0.2 到 1.6。約定會寫成「計畫」記憶，情緒波動大就當場改寫今天剩下的行程。')],
             ['🧠', t('記憶'), t('每人 500 條記憶流。對話寫進「他會記住的那句話」，重要度 4 到 8。')],
             ['🌙', t('反思與計畫'), t('每晚合成 1 到 2 條想法（跟誰走得近、暗戀、夢想）；每天最多 3 位由 AI 深度反思。清晨依記憶排今日行程。')],
@@ -479,14 +497,14 @@ Object.assign(RimTownApp.prototype, {
                     <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('想法')}</th><th>${t('心情')}</th><th>${t('持續天數')}</th><th>${t('對人看法')}</th></tr></thead><tbody>${thoughtRows}</tbody></table></div>
                 </div>
             </div>
-            <p class="landing-muted landing-brain-foot">${t('成本閘門：只有玩家附近的對話與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一整鎮 20 多人同時「活著」也不會燒錢。')}</p>
+            <p class="landing-muted landing-brain-foot">${t('成本閘門：只有鏡頭附近的對話、重要人物與每日額度內的行程／反思會呼叫 AI，其餘一律規則式運算，所以一百多人的城鎮同時「活著」也不會燒錢。')}</p>
             ${this._renderTechDetails()}
         </details></section>`;
     },
     // v5.70.0 首頁「技術細節」摺疊區:一次 AI 請求的旅程、兩個 AI 怎麼協作
     _renderTechDetails() {
         const flow = [
-            ['🗣️', t('玩家附近發生對話')],
+            ['🗣️', t('鏡頭附近發生對話')],
             ['📝', t('組提示詞')],
             ['⚡', t('先問 Claude')],
             ['🤝', t('失敗依序換 GPT、Groq 接手')],
@@ -494,7 +512,7 @@ Object.assign(RimTownApp.prototype, {
             ['🧠', t('寫回記憶與關係')],
         ];
         const ingredients = [
-            [t('身分行'), t('「你是某某，對面是看顧小鎮的觀察者，不住鎮上也不是鎮長；現任鎮長是誰」——避免叫錯人')],
+            [t('身分行'), t('「你是某某；跟你說話的是常路過的旅人（村民不知道祂是神）；現任鎮長是誰」——避免叫錯人')],
             [t('抽出的記憶'), t('用時近×相關×重要度挑出最該想起的 3 到 6 條，不是整本翻')],
             [t('關係數字'), t('對這個人的好感、信任、心動，以及目前的稱呼（朋友／對手／暗戀）')],
             [t('今天的計畫'), t('清晨排好的行程與現在正在做的事，讓對話有上下文')],
@@ -502,7 +520,7 @@ Object.assign(RimTownApp.prototype, {
             [t('輸出格式'), t('只准輸出台詞與 EFFECTS 行（好感／心動／記憶變動），不准前言、分析、免責聲明')],
         ];
         const lanes = [
-            [t('快車道 chat'), t('玩家附近的即時對話、完整智能體決策'), t('Claude'), t('GPT → Groq'), '15s → 15s → 12s'],
+            [t('快車道 chat'), t('鏡頭附近的即時對話、完整智能體決策'), t('Claude'), t('GPT → Groq'), '15s → 15s → 12s'],
             [t('慢車道 background'), t('每日行程、深度反思、八卦與劇情'), t('Claude'), t('GPT → Groq'), '15s → 15s → 12s'],
         ];
         const handoff = [
@@ -524,7 +542,7 @@ Object.assign(RimTownApp.prototype, {
             t('每位村民 500 條記憶上限，對話結束後只把「他會記住的那句話」寫進去，重要度 4 到 8。'),
         ];
         const cost = [
-            t('只有玩家附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。'),
+            t('只有鏡頭附近的村民才會呼叫 AI 對話，遠處的走規則式模板，但一樣寫進記憶、一樣影響好感。'),
             t('每天有 AI 額度：行程一批打包成一次請求（每人約 450 token），深度反思每天最多 3 位。'),
             t('Groq 免費層大約每分鐘 30 次、每天 1,000 次、每分鐘 8,000 token；只在 Claude 與 GPT 都故障時才用到，玩家不會感覺到斷線。'),
         ];
@@ -538,7 +556,7 @@ Object.assign(RimTownApp.prototype, {
                 <dl class="landing-dl">${ingredients.map(x => `<dt>${esc(x[0])}</dt><dd>${esc(x[1])}</dd>`).join('')}</dl>
                 <h4>② ${t('兩條車道：誰先上')}</h4>
                 <div class="landing-table-wrap"><table class="landing-table"><thead><tr><th>${t('車道')}</th><th>${t('用在哪')}</th><th>${t('先問誰')}</th><th>${t('備援')}</th><th>${t('時限')}</th></tr></thead><tbody>${lanes.map(l => `<tr>${l.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-                <p class="landing-muted">${t('對話、行程、反思、投票與鎮長裁決一律先問 Claude，品質一致；Claude 故障才依序換 GPT、Groq，三邊互為備援。')}</p>
+                <p class="landing-muted">${t('對話、行程、反思、投票與鎮長裁決一律先問 Claude，品質一致；Claude 故障才依序換 GPT、Groq，三邊互為備援。玩家自備金鑰時，直接用玩家選的那一家。')}</p>
                 <h4>③ ${t('互相接手與冷卻')}</h4>
                 <ul class="landing-list">${handoff.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
                 <h4>④ ${t('免費額度保護')}</h4>
@@ -547,7 +565,7 @@ Object.assign(RimTownApp.prototype, {
                 <ul class="landing-list">${guard.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
                 <h4>⑥ ${t('成本閘門')}</h4>
                 <ul class="landing-list">${cost.map(x => `<li>${esc(x)}</li>`).join('')}</ul>
-                <p class="landing-muted">${t('金鑰全部放在伺服器環境變數，前端與存檔裡都沒有；玩家不需要、也不能填自己的金鑰。')}</p>
+                <p class="landing-muted">${t('小鎮內建 AI 的金鑰全部放在伺服器環境變數，網頁原始碼與存檔裡都沒有；玩家自備的金鑰只存在自己的瀏覽器。')}</p>
             </div>
         </details>`;
     },

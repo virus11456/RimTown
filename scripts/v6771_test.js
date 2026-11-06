@@ -1,0 +1,42 @@
+// v6.77.1 首頁改寫:怎麼玩／小鎮裡會自己長出什麼／AI 與金鑰三段都在;過時說法(五座城鎮、玩家附近、玩家不能填金鑰、事件卡是唯一能做的)不再出現;
+// 英文版沒有殘留中文;桌機與 390px 手機沒有橫向捲動
+// 需要本機伺服器:cd wordpress && python3 -m http.server 8126
+const { chromium } = require('playwright');
+const BASE = process.env.BASE || 'http://localhost:8126/';
+let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail++; console.log('  ✗ ' + m + ' → ' + JSON.stringify(x)); } };
+(async () => {
+  const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+  for (const lang of ['zh', 'en']) {
+    for (const [W, H, mob] of [[1280, 900, false], [390, 844, true]]) {
+      console.log(`${lang} ${W}px`);
+      const ctx = await browser.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block', isMobile: mob, hasTouch: mob });
+      const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+      await page.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: false } : { saves: [] }) }));
+      await page.addInitScript((lang) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_3d_quality', 'low'); }, lang);
+      await page.goto(BASE, { waitUntil: 'load' });
+      await page.waitForSelector('#landing-howto', { timeout: 60000 }); await page.waitForTimeout(800);
+      const r = await page.evaluate(() => {
+        const L = document.getElementById('landing'); const C = L.cloneNode(true); C.querySelector('#landing-log')?.remove(); const txt = C.textContent;
+        const n = (sel) => document.querySelectorAll(sel).length;
+        return { howto: n('#landing-howto .landing-step'), feats: n('#landing-features .landing-card'), ai: n('#landing-ai .landing-card'),
+          h2: [...L.querySelectorAll('h2')].map(x => x.textContent.trim()), txt, cjk: (txt.match(/[一-鿿]{2,}/g) || []).filter(s => s !== '邊境鎮' && s !== '中文'),
+          sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: L.scrollWidth, lcw: L.clientWidth,
+          reg: !!document.getElementById('landing-register') && !!document.getElementById('landing-login') };
+      });
+      ok(r.howto === 4 && r.feats === 8 && r.ai === 3, '怎麼玩 4 步、特色 8 張、AI 與金鑰 3 張', { howto: r.howto, feats: r.feats, ai: r.ai });
+      ok(r.reg, '未登入時有註冊／登入按鈕', r.reg);
+      const stale = lang === 'zh'
+        ? /五座城鎮、近百位|玩家附近|不需要、也不能填自己的金鑰|你唯一能做的|看顧小鎮的觀察者/
+        : /five towns|near the player|cannot enter their own key|only thing you can do/i;
+      ok(!stale.test(r.txt), '沒有過時的說法', (r.txt.match(stale) || [])[0]);
+      ok(lang === 'zh' ? /自己的 Claude、GPT 或 Gemini 金鑰/.test(r.txt) && /只存在你這台裝置的瀏覽器/.test(r.txt) : /own Claude, GPT or Gemini key/.test(r.txt) && /this device's browser only/.test(r.txt), 'AI 段落說明自備金鑰只存在瀏覽器', null);
+      ok(lang === 'zh' ? /邀請碼/.test(r.txt) : /invite code/i.test(r.txt), '頁尾提到註冊需要邀請碼', null);
+      if (lang === 'en') ok(!r.cjk.length, '英文版沒有殘留中文', r.cjk.slice(0, 5));
+      ok(r.sw <= r.cw && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
+      ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
+      await ctx.close();
+    }
+  }
+  await browser.close();
+  console.log(`${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
+})();

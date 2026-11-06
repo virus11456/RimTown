@@ -4228,6 +4228,11 @@ body.landing-open { overflow: hidden; }
 .landing-step-ic { font-size: 1.6rem; }
 .landing-step h3 { margin: 4px 0 4px; font-size: 0.95rem; }
 .landing-step p { margin: 0; color: var(--text-secondary); font-size: 0.8rem; line-height: 1.5; }
+.landing-howto .landing-step { padding: 16px 14px 14px; }
+.landing-howto .landing-step-ic { font-size: 1.9rem; }
+.landing-howto .landing-step h3 { font-size: 1.02rem; }
+.landing-howto .landing-step p { font-size: 0.88rem; line-height: 1.6; }
+.landing-ai .landing-card { border-left: 3px solid var(--accent); }
 /* v5.69.2 桌機固定兩欄:auto-fit 在 960px 容器會排成 3+1,第四張卡孤零零掉到下一列 */
 .landing-brain-grid { columns: 2; column-gap: 12px; margin-top: 14px; }
 .landing-brain-grid > .landing-card { break-inside: avoid; page-break-inside: avoid; -webkit-column-break-inside: avoid; margin: 0 0 12px; box-sizing: border-box; }
