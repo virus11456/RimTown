@@ -297,7 +297,7 @@ Object.assign(RimTownApp.prototype, {
 
         // Council proposal
         const cc = this.world.council;
-        if (cc?.pendingProposal && !cc.pendingProposal.playerVoted && !this._shownCouncilId) {
+        if (cc?.pendingProposal && !cc.pendingProposal.playerVoted && !this._shownCouncilId && !this.world.observerMode) { // v6.82.1 觀察者不投票
             this._shownCouncilId = cc.pendingProposal.id + '_' + cc._daysSinceProposal;
             this._showCouncilCard(cc.pendingProposal);
         } else if (!cc?.pendingProposal || cc.pendingProposal.playerVoted) {

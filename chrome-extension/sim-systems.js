@@ -721,9 +721,10 @@ class CouncilSystem {
         this._formed = true;
 
         const names = this.members.map(id => world.agents[id]?.name).filter(Boolean).join(t('、'));
-        world.logMessageT('council', '🏛️ 議會成立！成員：{names}', { names });
+        const cname = (typeof TIERS !== 'undefined') ? TIERS.LV[TIERS.level(world)].council : '議會'; // v6.82.1 村莊叫長老會
+        world.logMessageT('council', '🏛️ {council}成立！成員：{names}', { council: cname, names });
         if (world.dailyNews) {
-            world.dailyNews.collectEvent('politics', `${t('小鎮議會正式成立，成員有')}${names}`, 8);
+            world.dailyNews.collectEvent('politics', `${t(cname)}${t('正式成立，成員有')}${names}`, 8);
         }
     }
 

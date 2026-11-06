@@ -7573,6 +7573,8 @@
         '出缺時依序遞補': 'Next in line for vacancies',
         '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。': 'Villagers propose, the town votes, major measures go to the council, and the Mayor decides. You just watch.',
         '{council}每年春季第 3 天改選；有人出缺由上次落選者依票數遞補。': 'The {council} is elected on day 3 of every spring; vacancies go to the last runners-up in order of votes.',
+        '🏛️ {council}成立！成員：{names}': '🏛️ The {council} is formed! Members: {names}',
+        '正式成立，成員有': ' is formed. Members: ',
         '最近的王令': 'Recent decrees',
         '王位被搶': 'Throne lost',
         '小鎮衰敗了——連續兩季的考驗都沒撐過去。再撐過兩季考驗，小鎮就能復興。': 'The town has declined: two seasonal trials lost in a row. Pass two trials in a row and it will recover.',

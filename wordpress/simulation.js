@@ -178,7 +178,7 @@ class World {
             if (chapterPros >= 20 && !this.observerMode) this.npcHelp.dailyUpdate(this); // v6.31.0 觀察者沒有村民求助卡(分食物、陪聊、評理都是對住在鎮上的人說的)
             this.reputationSystem.dailyUpdate(this);
             this.weather.dailyUpdate(this);
-            if (chapterPros >= 70) this.council.dailyUpdate(this);
+            if (chapterPros >= 70 || this.observerMode) this.council.dailyUpdate(this); // v6.82.1 觀察者模式:鎮上有 6 人就成立議會(村莊是長老會),不再等繁榮 70
             // AI Daily News (async, fire-and-forget)
             this.dailyNews.generateNewspaper(this).catch(e => console.warn('[DailyNews] Error:', e));
             // v5.31.0 今日焦點:回答「我現在該做什麼、為什麼」(放最後,讓它讀得到當日 pending 狀態)
