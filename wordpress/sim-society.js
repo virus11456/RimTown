@@ -950,7 +950,7 @@ class LifecycleSystem {
             } else {
                 // NPC-NPC couples: limited by total population
                 const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
-                if (currentPop >= 20) continue;
+                if (currentPop >= Math.max(20, world.events?.TARGET_POPULATION || 20)) continue; // v6.81.0 以前滿 20 人就不生,現在跟著鎮上的人口上限
             }
 
             if (Math.random() < birthChance) {

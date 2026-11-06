@@ -538,7 +538,17 @@ class EventSystem {
         const repImmigration = world.reputationSystem ? world.reputationSystem.getModifier('immigration_bonus') : 0;
         const immigrationBoost = (world.news ? world.news.getModifier('immigration_chance', 0) : 0) + repImmigration;
         if (total < this.TARGET_POPULATION) {
-            for (let i = 0; i < this.TARGET_POPULATION - total; i++) this._spawnImmigrant(world);
+            // v6.81.0 一天最多來一兩個人(以前差多少就一次補滿);糧食不夠、大家心情差時比較少人想搬來
+            const gap = this.TARGET_POPULATION - total;
+            if (npcCount < 6) { for (let i = 0; i < gap; i++) this._spawnImmigrant(world); return; } // 快滅村時照舊補人
+            const food = world.stockpile?.get?.('food') || 0;
+            const fed = food >= npcCount * 6 ? 1 : food >= npcCount * 3 ? 0.5 : 0.15;
+            const ags = Object.values(world.agents).filter(a => !a.isPlayer);
+            const mood = ags.reduce((s, a) => s + (a.mood || 0), 0) / Math.max(1, ags.length);
+            const moodF = mood >= 55 ? 1 : mood >= 40 ? 0.6 : 0.3;
+            const chance = Math.min(0.9, (0.3 + Math.min(0.3, gap * 0.02) + immigrationBoost) * fed * moodF);
+            if (Math.random() < chance) this._spawnImmigrant(world);
+            if (gap >= 10 && Math.random() < chance * 0.4) this._spawnImmigrant(world);
         } else if (immigrationBoost > 0 && Math.random() < immigrationBoost && total < this.TARGET_POPULATION + 3) {
             this._spawnImmigrant(world);
         }
@@ -555,6 +565,8 @@ class EventSystem {
         }
         if (!imm) imm = pickRandom(available);
         this._usedImmigrantNames.add(imm.name);
+        // v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個名字(加上家鄉／排行),避免兩個同名村民
+        { const live = new Set(Object.values(world.agents).map(a => a.name)); if (live.has(imm.name)) { const last = imm.name.slice(-1); const nm = ['阿' + last, '小' + last, '老' + last, '大' + last, imm.name + '二', imm.name + '三', imm.name + '四'].find(x => !live.has(x)); if (nm) imm = { ...imm, name: nm }; } }
         const id = `imm_${imm.name}_${world.tickCount}`;
         const personality = new Personality(imm.traits, imm.background);
         personality.values = shuffle([t('家庭'),t('自由'),t('知識'),t('財富'),t('權力'),t('藝術'),t('自然'),t('社群'),t('冒險'),t('和平')]).slice(0, 1+Math.floor(Math.random()*3));
