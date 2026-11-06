@@ -76,15 +76,18 @@ const WALLET = (() => {
         if (ratio < 1 && Math.random() < 0.5) log(w, 'economy', '💸 公庫只剩 {n} 銀幣，薪水只發得出 {p}%。', { n: Math.round(have), p: Math.round(ratio * 100) });
     }
     function living(w, W, all) {
-        const cook = all.find(a => a.job?.key === 'cook'), tailor = all.find(a => a.job?.key === 'tailor');
+        // v6.81.0 廚師、裁縫的分成平均給鎮上每一位廚師／裁縫,而且每人每天有上限(以前全給第一位,百人大城一天進帳四十多、其他人一毛都沒有)
+        const cooks = all.filter(a => a.job?.key === 'cook'), tailors = all.filter(a => a.job?.key === 'tailor');
+        const tipCap = 6, tips = new Map();
+        const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { add(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
         const winter = w.clock?.season === '冬季'; const d = day(w);
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
-            if (take(w, a, MEAL)) { W.stats.spent += MEAL; if (cook && cook !== a) { add(w, cook, MEAL * 0.1); toTown(w, MEAL * 0.9, t('餐費')); } else toTown(w, MEAL, t('餐費')); }
+            if (take(w, a, MEAL)) { W.stats.spent += MEAL; tip(cooks, MEAL * 0.1, t('餐費'), a); toTown(w, MEAL * 0.9, t('餐費')); }
             else { a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 25)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天只吃了一點點。', {}, 5); }
             // 衣服:每人錯開,每十天一次
             if ((d + (a.agentId.length * 7)) % 10 === 0) {
-                if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; if (tailor && tailor !== a) { add(w, tailor, CLOTHES * 0.25); toTown(w, CLOTHES * 0.75, t('衣服')); } else toTown(w, CLOTHES, t('衣服')); }
+                if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多)
