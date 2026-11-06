@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.76.4
-const RIMTOWN_APP_VERSION = '6.76.4';
+// RimTown - Frontend App v6.76.5
+const RIMTOWN_APP_VERSION = '6.76.5';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -3247,6 +3247,7 @@ class RimTownApp {
         document.querySelector('.rimtown-container')?.classList.toggle('chat-wide', this.activeTab === 'chat' && !!this.chatTarget);
         this._syncKairoLayout();
         const content = document.getElementById('sidebar-content');
+        const keep = this._snapDetails(content); // v6.76.5 側欄每秒重畫:記住哪些「展開明細」是打開的,畫完再還原
 
         // v5.20.0 三大入口的次級分頁列(桌面與手機皆顯示;手機聊天抽屜為全幅,不加列)
         const isMobile = window.innerWidth <= 768;
@@ -3266,7 +3267,20 @@ class RimTownApp {
         } else {
             this._renderTabContent(content);
         }
+        this._restoreDetails(content, keep);
     }
+    // v6.76.5 <details> 開合狀態:以「分頁＋摘要文字(去掉數字,計數會變)＋第幾個同名」為鍵;使用者手動收起的也照收起還原
+    _detailsKeys(root) {
+        const seen = {}; const out = [];
+        if (!root) return out;
+        for (const d of root.querySelectorAll('details')) {
+            const sm = d.querySelector(':scope > summary'); const base = (sm ? sm.textContent : '').replace(/[0-9０-９]+/g, '#').replace(/\s+/g, ' ').trim().slice(0, 80);
+            const k = (this.activeTab || '') + '|' + base; seen[k] = (seen[k] || 0) + 1; out.push([k + '#' + seen[k], d]);
+        }
+        return out;
+    }
+    _snapDetails(root) { const m = new Map(); for (const [k, d] of this._detailsKeys(root)) m.set(k, d.open); return m; }
+    _restoreDetails(root, m) { if (!m || !m.size) return; for (const [k, d] of this._detailsKeys(root)) if (m.has(k) && d.open !== m.get(k)) d.open = m.get(k); }
 
     _renderTabContent(content) {
         switch (this.activeTab) {
