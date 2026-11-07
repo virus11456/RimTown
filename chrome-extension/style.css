@@ -4450,3 +4450,9 @@ body.landing-open { overflow: hidden; }
     .lp .landing-cta { flex-direction: column; align-items: stretch; }
 }
 .lp .landing-lang button.active { background: var(--lp-accent); color: #1e1b2a; }
+/* v6.88.0 社交圈層 */
+.social-circles { font-size: 0.7rem; color: var(--text-muted); margin: 0 0 6px; line-height: 1.5; overflow-wrap: anywhere; }
+.rel-circle { display: inline-block; font-size: 0.62rem; padding: 0 5px; border-radius: 8px; margin-left: 2px; border: 1px solid var(--border, #ffffff22); color: var(--text-muted); white-space: nowrap; }
+.rel-circle.rel-circle-0 { color: #fbbf24; border-color: #fbbf2455; }
+.rel-circle.rel-circle-1 { color: #f472b6; border-color: #f472b655; }
+.rel-circle.rel-circle-2 { color: #60a5fa; border-color: #60a5fa55; }
