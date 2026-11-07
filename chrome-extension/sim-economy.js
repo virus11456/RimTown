@@ -93,6 +93,7 @@ function processDailyProduction(world) {
     Object.values(world.agents).forEach(agent => {
         if (agent.isPlayer || !agent.job) return;
         const recipe = JOB_PRODUCTION[agent.job.key]; if (!recipe) return;
+        if (typeof MARKET !== 'undefined' && world.market && MARKET.onStrike(world, agent)) return; // v6.90.0 罷工中不上工
         // v5.51.0 勞動力排班:鎮長(玩家)可對加工線下休工/正常/加班指令,產能 vs 生活的取捨
         const craftGood = CRAFT_JOB_GOOD[agent.job.key];
         const policy = craftGood ? (world.workPolicy[craftGood] || 'normal') : 'normal';

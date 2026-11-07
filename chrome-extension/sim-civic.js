@@ -73,6 +73,7 @@ const CIVIC = (() => {
     const landPrice = (w) => Math.round(50 * (1 + tierLv(w) * 0.6) * (0.6 + (w.prosperity?.prosperity || 50) / 100));
     function rent(w, C, d) {
         if (!W() || !w.wallet || typeof HOUSING === 'undefined' || d % 7 !== 0 || C.rentDay === d) return; C.rentDay = d;
+        if (typeof ESTATE !== 'undefined' && w.estate) return; // v6.90.0 改由住宅市場收租(房東、欠租、驅逐)
         const byHome = {}; for (const a of npcs(w)) { const h = HOUSING.houseOf(w, a); if (h) (byHome[h] || (byHome[h] = [])).push(a); }
         let total = 0;
         for (const [h, people] of Object.entries(byHome)) {

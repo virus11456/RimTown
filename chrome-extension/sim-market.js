@@ -73,6 +73,7 @@ const MARKET = (() => {
         const M = S(w); const tax = Wl.tax || 0; const floorNet = Wl.minWage || 0;
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id];
+            if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
             const ws = workersOf(w, k, all).filter(a => a.agentId !== id); if (!ws.length) continue;
             const rate = payRate(w, k);
             const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
@@ -95,7 +96,8 @@ const MARKET = (() => {
         // 記帳:每天的營收與工資支出,留七天
         for (const k of Object.keys(SECTORS)) { const h = M.hist[k] = (M.hist[k] || []); h.push([Math.round((M.rev[k] || 0) * 10) / 10, Math.round((M.cost[k] || 0) * 10) / 10]); if (h.length > 7) h.shift(); M.rev[k] = 0; M.cost[k] = 0; }
         assign(w, all, d);
-        if (d % 7 === 0) { corpTax(w, all); adjust(w, all); }
+        if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d); risk(w, all); }
+        endStrikes(w, all, d);
         hunger(w, all);
     }
     // 產業估價:底價＋每個工人＋最近一週的利潤。公營產業的工資由公庫付、帳上看不到,要用估計的工資扣掉(以前漏扣,估價虛高到沒人買得起)
@@ -154,6 +156,35 @@ const MARKET = (() => {
             else for (const a of workersOf(w, k, all)) if (a.agentId !== id && Math.random() < 0.4) mem(w, a, '{o}給大家加薪了。', { o: boss?.name || '' }, 4);
         }
     }
+    // v6.90.0 罷工:工資被壓到七成以下、工人心情又差,就罷工兩天;老闆通常讓步加薪(吝嗇的不一定)
+    function unrest(w, all, d) {
+        const M = S(w); M.strike = M.strike || {};
+        for (const k of Object.keys(SECTORS)) {
+            const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id); if (ws.length < 4) continue;
+            const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if (payRate(w, k) > 0.7 || mood > 48 || Math.random() > 0.5) continue;
+            M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1; const boss = w.agents[id];
+            log(w, '✊ {s}的 {n} 個工人罷工了，要求{o}加薪。', { s: name(k), n: ws.length, o: boss?.name || '' }, boss?.name || '');
+            for (const a of ws) mem(w, a, '我們{s}的人一起罷工，工資再這樣壓下去活不下去。', { s: name(k) }, 7);
+        }
+    }
+    function endStrikes(w, all, d) {
+        const M = S(w); if (!M.strike) return;
+        for (const [k, until] of Object.entries(M.strike)) {
+            if (until !== d - 1) continue; const id = ownerOf(w, k); const boss = id && w.agents[id]; if (!boss) continue;
+            if (!has(boss, 'greedy') || Math.random() < 0.4) { M.pay[k] = Math.min(1.1, Math.round((payRate(w, k) + 0.15) * 100) / 100); log(w, '🤝 {o}讓步了，{s}的工資調回原本的 {p}%。', { o: boss.name, s: name(k), p: Math.round(M.pay[k] * 100) }, boss.name); }
+            else log(w, '😠 {o}不肯讓步，{s}的工人只好回去上工。', { o: boss.name, s: name(k) }, boss.name);
+        }
+    }
+    // v6.90.0 經營風險:每週每家產業有小機率出事(火災、壞帳、貨物被偷),老闆自己吸收損失
+    const RISKS = ['🔥 {o}的{s}失火，損失 {n} 銀幣。', '📉 {o}的{s}被客人倒帳，損失 {n} 銀幣。', '🦹 {o}的{s}遭小偷，損失 {n} 銀幣。'];
+    function risk(w, all) {
+        for (const k of Object.keys(SECTORS)) {
+            const id = ownerOf(w, k); if (!id || Math.random() > 0.04) continue; const boss = w.agents[id]; if (!boss) continue;
+            const loss = Math.round(Math.min(bal(w, id) * 0.25, value(w, k, all) * 0.6)); if (loss < 5 || !takeId(w, id, loss)) continue;
+            log(w, RISKS[Math.floor(Math.random() * RISKS.length)], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
+        }
+    }
+    const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; return !!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId); };
     // 沒錢就真的吃不到:先找家人接濟
     function family(w, a) {
         const out = new Set(); const R = a.relationships?.relationships || {};
@@ -216,7 +247,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, TAX, CORP, PROCURE_SHARE };
+    return { SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
