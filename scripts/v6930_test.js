@@ -27,7 +27,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const o of all.slice(9)) if (o.job?.key === 'farmer') o.job = new Job('guard');
       M.owners = M.owners || {}; for (const k of Object.keys(MARKET.SECTORS)) M.owners[k] = null; M.owners.farm = boss.agentId; M.pay.farm = 0.6;
       // 1) 組工會
-      U.on = false; withR(0.01, () => UNION.found(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d));
+      TIERS.S(w); w.tierState.lv = 1; U.on = false; withR(0.01, () => UNION.found(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d)); out.noUnionInTown = !U.on;
+      w.tierState.lv = 2; withR(0.01, () => UNION.found(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d));
       out.founded = U.on && Object.keys(U.members).length >= 4 && !!w.agents[U.leader]; out.uname = U.name;
       for (const a of workers) U.members[a.agentId] = d; const L = w.agents[U.leader];
       // 2) 會費
@@ -54,7 +55,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 10) 選舉:會員投領袖、不投老闆;老闆不投工會領袖
       const voter = workers.find(a => U.members[a.agentId] && a.agentId !== U.leader); out.biasMember = UNION.bias(w, voter, U.leader); out.biasBossCand = UNION.bias(w, voter, boss.agentId); out.biasBoss = UNION.bias(w, boss, U.leader);
       // 11) 工會推領袖選鎮長
-      try { const E = w.election; if (E) { E.active = false; withR(0.01, () => E._startElection(w)); out.unionCand = (E.candidates || []).some(c => c.agentId === U.leader && c.union); E.active = false; E.phase = null; } } catch (e) { out.elecErr = e.message; }
+      try { const E = w.election; if (E) { E.active = false; withR(0.01, () => E._startElection(w)); out.unionCand = (E.candidates || []).some(c => c.agentId === U.leader && c.union); out.elecDbg = { c: (E.candidates || []).map(c => [c.agentId, !!c.union]), L: U.leader, m: Object.keys(U.members).length, res: E._residents(w).length, on: U.on, lv: TIERS.level(w) }; E.active = false; E.phase = null; } } catch (e) { out.elecErr = e.message; }
       // 12) AI、詳情、經濟頁
       const CE = Object.create(ConversationEngine.prototype); out.brief = (CE._agentBrief(w, voter, null).mem || []).join(' | '); out.bossBrief = (CE._agentBrief(w, boss, null).mem || []).join(' | ');
       const save = app.world; app.state = w.getState(); app.selectedAgent = voter.agentId; const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
@@ -70,6 +71,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       return out;
     });
     const zh = lang === 'zh';
+    ok(r.noUnionInTown, '還是村莊、城鎮時不會有工會', r.noUnionInTown);
     ok(r.founded && (zh ? /工人聯合會/.test(r.uname) : /Union/.test(r.uname)), '被壓薪的工人一多，有人號召成立工會', { f: r.founded, n: r.uname });
     ok(r.dues, '會員每週繳會費存成罷工基金', r.dues);
     ok(r.deal, '工會找賺錢、心腸軟的老闆談，老闆讓步加薪', r.deal);
@@ -81,7 +83,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.ousted, '收賄曝光，會員把領袖趕下台、換人帶', r.ousted);
     ok(r.fired, '強硬的老闆開除帶頭的人（兩週沒工作）', r.fired);
     ok(r.biasMember > 0 && r.biasBossCand < 0 && r.biasBoss < 0, '選舉：會員投領袖、不投老闆；老闆不投工會領袖', { m: r.biasMember, b: r.biasBossCand, bb: r.biasBoss });
-    ok(r.unionCand && !r.elecErr, '工會推領袖出來選鎮長', { c: r.unionCand, e: r.elecErr });
+    ok(r.unionCand && !r.elecErr, '工會推領袖出來選鎮長', { c: r.unionCand, e: r.elecErr, d: r.elecDbg });
     ok(zh ? /工會/.test(r.brief) : /union/i.test(r.brief), 'AI 知道自己是工會會員', r.brief);
     ok(zh ? /工會/.test(r.bossBrief) : /union/i.test(r.bossBrief), '老闆的 AI 知道自己有多少工人入了會', r.bossBrief);
     ok(!r.detailErr && (zh ? /工會|開除/.test(r.detail) : /Union|Fired/i.test(r.detail)), '村民詳情的「生計」寫出工會身分', { d: r.detail, e: r.detailErr });

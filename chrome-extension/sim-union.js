@@ -1,5 +1,5 @@
 // v6.93.0 工會
-// - 私人產業的工人被壓薪、欠薪、挨餓的人一多,有號召力的人會出來組工會;之後每週有人入會(看委屈程度、跟領袖和老闆的交情)
+// - 升格為城市以後才有工會(村莊、城鎮只有工人自發的罷工);私人產業的工人被壓薪、欠薪、挨餓的人一多,有號召力的人會出來組工會;之後每週有人入會(看委屈程度、跟領袖和老闆的交情)
 // - 會員每週繳一點會費存成罷工基金
 // - 集體談判:某產業的會員過半、工資沒給足,工會就找老闆談加薪;老闆依個性:讓步、拒絕、收買工會領袖(真相頁看得到)、開除帶頭的人(兩週沒工作)
 // - 談不攏就由工會發動罷工:只有會員罷工,沒入會的照常上工(工賊,會員會記恨);罷工期間基金每天發補貼,基金見底或撐太久罷工就失敗、有人退會
@@ -17,6 +17,7 @@ const UNION = (() => {
     const cash = (w, a) => (WL() && w.wallet ? WALLET.get(w, a) : 0);
     const MK = () => (typeof MARKET !== 'undefined' ? MARKET : null);
     const STRIKE_PAY = 2, STRIKE_MAX = 6, DUES = 1;
+    const tierLv = (w) => { try { return typeof TIERS !== 'undefined' ? TIERS.level(w) : 0; } catch (e) { return 0; } };
 
     function S(w) {
         if (!w.union || typeof w.union !== 'object') w.union = { on: false, name: '', leader: null, members: {}, fund: 0, founded: null, strikes: 0, won: 0, lost: 0, bribed: 0, fired: 0, raises: 0, talks: {}, strike: {}, firedUntil: {}, lastDay: -1, history: [] };
@@ -38,7 +39,8 @@ const UNION = (() => {
 
     // ---------- 組工會、入會、退會、會費 ----------
     function found(w, all, d) {
-        const U = S(w); const ws = privateWorkers(w, all); if (ws.length < 6) return;
+        const U = S(w); if (tierLv(w) < 2) return; // 工會是城市才有的:村莊、城鎮的工人只會自發罷工,還組織不起來
+        const ws = privateWorkers(w, all); if (ws.length < 6) return;
         const angry = ws.filter(a => grievance(w, a) >= 0.3); if (angry.length < 4 || Math.random() > 0.35) return;
         const lead = angry.slice().sort((x, y) => leaderScore(w, y) - leaderScore(w, x))[0];
         U.on = true; U.founded = d; U.leader = lead.agentId; U.members = {}; for (const a of angry) if (a === lead || Math.random() < 0.6) U.members[a.agentId] = d;
@@ -218,7 +220,9 @@ if (typeof ElectionSystem !== 'undefined') {
         const r = _start.call(this, world, opts);
         try {
             const U = world.union; const L = U?.on && world.agents[U.leader];
-            if (L && !L.isDead && Object.keys(U.members).length >= 5 && this.candidates?.length && !this.candidates.some(c => c.agentId === L.agentId) && this._residents(world).includes(L) && Math.random() < 0.6) {
+            const mine = L && this.candidates?.find(c => c.agentId === L.agentId);
+            if (mine) { mine.union = true; world.logMessageT?.('event', '✊ {u}表態支持自家領袖{a}。', { u: U.name, a: L.name }, L.name); } // 領袖本來就有出來選:工會全力支持
+            else if (L && !L.isDead && Object.keys(U.members).length >= 5 && this.candidates?.length && this._residents(world).includes(L) && Math.random() < 0.6) {
                 const pol = (typeof ELECTION_POLICIES !== 'undefined' && ELECTION_POLICIES.find(p => p.id === 'welfare')) || this._pickPolicy(L);
                 const c = { agentId: L.agentId, name: L.name, policy: pol.id, policyLabel: pol.label, policyIcon: pol.icon, votes: 0, speech: this._generateSpeech(L, pol), union: true };
                 this.candidates[this.candidates.length - 1] = c;
@@ -228,6 +232,11 @@ if (typeof ElectionSystem !== 'undefined') {
         } catch (e) { console.warn('[Union] election', e); }
         return r;
     };
+}
+// 城市以上參選要有資歷:帶領 5 人以上工會的領袖也算(工會領袖從政是常見的路)
+if (typeof TIERS !== 'undefined' && TIERS.qualified) {
+    const _q = TIERS.qualified;
+    TIERS.qualified = function (w, a) { try { const U = w?.union; if (U?.on && a && U.leader === a.agentId && Object.keys(U.members).length >= 5) return true; } catch (e) {} return _q.call(this, w, a); };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype; const _ab = CE._agentBrief;

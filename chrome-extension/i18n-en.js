@@ -7726,6 +7726,7 @@
         '👑 國王{k}回到王都，攝政結束。': '👑 King {k} is back in the capital; the regency ends.',
         '本機空間不足': 'Local storage is full',
         // v6.93.0 工會
+        '✊ {u}表態支持自家領袖{a}。': '✊ {u} came out in support of its own leader, {a}.',
         '工會解散的基金': 'Fund of a dissolved union',
         '工人聯合會': 'Workers\' Union',
         '✊ {a}號召{n}個工人成立了「{u}」，要一起跟老闆爭取工資。': '✊ {a} rallied {n} workers to found "{u}" to fight their bosses for fair wages.',
