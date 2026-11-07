@@ -31,11 +31,11 @@ TT......R.........#ffffffff#..::::f::::f.HH...==..########..▒▒▒.###D##.###
 TT....^^^^^^^^....#####D####.....*......*HH...==..#ffffFf#..▒▒▒.:::::::::::::.TT
 TT....########........======.............HH...==..#fffffo#..▒▒▒.:::::::::::::.TT
 TT....#ffffff#........===.==........WW...oo...==..#fffffo#..▒▒▒.^^^^^^.^^^^^^.TT
-TT....#ffffff#............==........WW........==..#ffffff#..▒▒▒.######.######.TT
-TT....#ffffff#............==..................==..#offffo#..▒▒▒.#ffff#.#ffff#.TT
-TT....#ffffff#............==..................==..####D###..▒▒▒.#ffff#.#ffff#.TT
-TT....#ffffff#............==..................==.....===....▒▒▒.#ffff#.#ffff#.TT
-TT....####D###............==...*..............==.....===....▒▒▒.###D##.###D##.TT
+TT....#ffffff#.--------...==........WW........==..#ffffff#..▒▒▒.######.######.TT
+TT....#ffffff#.|......|...==..................==..#offffo#..▒▒▒.#ffff#.#ffff#.TT
+TT....#ffffff#.|......|...==..................==..####D###..▒▒▒.#ffff#.#ffff#.TT
+TT....#ffffff#.|......|...==..................==.....===....▒▒▒.#ffff#.#ffff#.TT
+TT....####D###.---==---...==...*..............==.....===....▒▒▒.###D##.###D##.TT
 TT.=========================================================BBB===============TT
 TT.=========================================================BBB===============TT
 TT....^^^^^^..............==......^^^^^^^^....==....T..bTTT.▒▒▒....=..........TT
@@ -58,4 +58,4 @@ TT................==========..................==............▒▒▒...........
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-zones=26 nature=park,forest,river,hill,cave,meadow coach={"x":73,"y":18,"w":5,"h":5} houses=11
+zones=26 nature=park,forest,river,hill,cave,meadow,graveyard coach={"x":73,"y":18,"w":5,"h":5} houses=11
