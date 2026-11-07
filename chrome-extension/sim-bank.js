@@ -28,7 +28,7 @@ const BANK = (() => {
     const totalLoan = (B) => Object.values(B.loans).reduce((s, l) => s + (l.owed || 0), 0);
     function pickBanker(w) { const all = npcs(w).filter(a => a.age >= 20); const tr = all.filter(a => a.job?.key === 'trader'); return (tr.length ? tr : all).sort((x, y) => cash(w, y) - cash(w, x))[0] || null; }
     function openBank(w, B) {
-        const b = pickBanker(w); if (!b) return; B.open = true; B.status = 'ok'; B.banker = b.agentId; B.openDay = day(w);
+        const b = pickBanker(w); if (!b) return; B.open = true; B.status = 'ok'; B.banker = b.agentId; B.openDay = day(w); B.bad = 0; // v6.87.0 重新開張,舊呆帳不算
         const seed = Math.min(150, Math.floor(cash(w, b) * 0.4)); if (seed > 0 && WALLET.take(w, b, seed)) B.reserve += seed; // 銀行家出本錢
         log(w, '🏦 {a}開了鎮上第一家銀行，存錢有利息，也可以借錢。', { a: b.name }, b.name);
         mem(w, b, '我開了銀行，鎮上的錢都會經過我手上。', {}, 8);
@@ -49,6 +49,10 @@ const BANK = (() => {
         if (!B.open) { if (tierLv(w) >= 1 && B.status !== 'failed') openBank(w, B); else if (B.status === 'failed' && d - (B.failDay || d) >= 30 && tierLv(w) >= 1) { B.status = 'ok'; openBank(w, B); } return; }
         const banker = w.agents[B.banker]; if (!banker || banker.isDead) { const nb = pickBanker(w); if (nb) { B.banker = nb.agentId; log(w, '🏦 {a}接手經營銀行。', { a: nb.name }, nb.name); } }
         matureBonds(w, B, d); // v6.74.0 債券到期
+        // v6.87.0 呆帳慢慢沖銷(約三週減半),以前只增不減,呆帳一過 40 就天天有擠兌風險
+        B.bad = Math.max(0, Math.round(((B.bad || 0) * 0.97 - 0.5) * 10) / 10);
+        // 搬走的人把存款領走(出遠門的人存款留著)
+        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; B.reserve = Math.max(0, B.reserve - Math.min(v, B.reserve)); delete B.dep[id]; }
         if (B.status === 'run') { bankRun(w, B, d); return; }
         if (B.reserve < totalDep(B) * 0.35 && totalDep(B) >= 40 && !B.bonds.length && d - (B.lastIssue ?? -99) >= 20 && Math.random() < 0.3) issueBonds(w, B, d, 80, false);
         const all = npcs(w);
@@ -64,7 +68,8 @@ const BANK = (() => {
         }
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {
-            const a = w.agents[id]; if (!a || a.isDead) { B.bad += L.owed; delete B.loans[id]; continue; }
+            const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; // v6.87.0 出遠門的人回來再還
+            if (!a || a.isDead) { B.bad += L.owed; delete B.loans[id]; continue; }
             const pay = Math.min(L.owed, Math.max(1, Math.floor(cash(w, a) * 0.2))); if (cash(w, a) >= pay && pay > 0 && WALLET.take(w, a, pay)) { L.owed -= pay; B.reserve += pay; }
             if (L.owed <= 0) { delete B.loans[id]; mem(w, a, '終於把銀行的錢還清了。', {}, 5); continue; }
             if (d > L.due + 10 && cash(w, a) < 3) { B.bad += L.owed; delete B.loans[id]; try { DARK.bump(w, a, 'exposed'); } catch (e) {} log(w, '📉 {a}還不出銀行的 {n} 銀幣，成了呆帳。', { a: a.name, n: L.owed }, a.name); mem(w, a, '我欠銀行的錢還不出來，大家都知道了，好丟臉。', {}, 7); a.moodModifier = (a.moodModifier || 0) - 6; }
@@ -77,7 +82,7 @@ const BANK = (() => {
         // 謠言 → 擠兌
         const ratio = totalDep(B) ? totalLoan(B) / totalDep(B) : 0; const gossip = all.find(a => has(a, 'gossip') && (B.dep[a.agentId] || 0) > 0);
         const badNews = (w.news?.getModifier?.('mood_modifier', 0) || 0) <= -4;
-        if (totalDep(B) >= 60 && (ratio > 0.65 || badNews || B.bad > 40) && Math.random() < (gossip ? 0.12 : 0.05)) startRun(w, B, d, gossip);
+        if (totalDep(B) >= 60 && d - (B.lastRunEnd ?? -99) >= 20 && (ratio > 0.65 || badNews || B.bad > 40) && Math.random() < (gossip ? 0.12 : 0.05)) startRun(w, B, d, gossip);
     }
     async function setRate(w, B) {
         const ce = w.conversationEngine; const banker = w.agents[B.banker];
@@ -110,7 +115,7 @@ const BANK = (() => {
         for (const id of Object.keys(B.dep)) { const a = w.agents[id]; if (!a || Math.random() > 0.6) continue; withdraw(w, B, a, B.dep[id]); }
         if (totalDep(B) > 0 && B.reserve < 1 && !R.asked) { askBailout(w, B, d, R); if (R.asked === 'pending') return; } // 一天就被領光:倒閉前還是要先問政府
         if (totalDep(B) > 0 && B.reserve < 1) return fail(w, B, d);
-        if (d - B.runDay >= 3) { B.status = 'ok'; B.run = null; log(w, '🏦 銀行撐過了擠兌，大家慢慢放心了。', {}); }
+        if (d - B.runDay >= 3) { B.status = 'ok'; B.run = null; B.bad = Math.round((B.bad || 0) * 0.3); B.lastRunEnd = d; log(w, '🏦 銀行撐過了擠兌，大家慢慢放心了。', {}); }
     }
     // 銀行家掏自己的錢補準備金(最多手上的七成)
     function inject(w, B, banker, R) {
@@ -243,7 +248,7 @@ const BANK = (() => {
         log(w, '💥 銀行倒閉了！存戶損失 {n} 銀幣。', { n: Math.round(lost) }, banker?.name || '');
         if (banker) { mem(w, banker, '我的銀行倒了，大家都在罵我。', {}, 10); try { DARK.bump(w, banker, 'exposed'); } catch (e) {} }
         B.history.push({ day: d, lost: Math.round(lost), banker: banker?.name || '' });
-        B.dep = {}; B.reserve = 0; B.open = false; B.status = 'failed'; B.failDay = d; // 放款還是要還,但銀行沒了就一筆勾銷
+        B.dep = {}; B.reserve = 0; B.open = false; B.status = 'failed'; B.failDay = d; B.bad = 0; // 放款還是要還,但銀行沒了就一筆勾銷
         for (const bd of (B.bonds || [])) { const a = w.agents[bd.holder]; if (a) mem(w, a, '銀行倒了，我買的 {n} 銀幣債券變成廢紙。', { n: bd.n }, 8); }
         B.loans = {}; B.run = null; B.bonds = [];
     }

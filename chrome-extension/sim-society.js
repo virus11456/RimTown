@@ -1006,10 +1006,10 @@ class LifecycleSystem {
         parentA.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
         parentB.relationships.getOrCreate(agent.agentId, name).modifyAffinity(60);
 
+        agent._parentNames = [parentA.name, parentB.name]; // v6.87.0 每個新生兒都記得爸媽是誰(以前只有玩家的孩子有,繼承、王室、家人判斷都用得到)
         // Track player's children for inheritance
         if (isPlayerChild) {
             agent._isPlayerChild = true;
-            agent._parentNames = [parentA.name, parentB.name];
             if (!this.playerChildren) this.playerChildren = [];
             this.playerChildren.push({ agentId: agent.agentId, name, parentNames: [parentA.name, parentB.name], birthTick: world.tickCount });
             world.logMessageT('system', '🎉 你的孩子{name}出生了！將來可以繼承你的一切。', { name });

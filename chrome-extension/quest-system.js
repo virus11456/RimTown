@@ -1284,7 +1284,7 @@ class SeasonTrials {
         const c = this.current; const k = (c && c.type === type && c.contrib) ? c.contrib : { food: 0, herb: 0, silver: 0 };
         if (type === 'famine') return Math.round(k.food);
         if (type === 'plague') return Math.round(k.herb);
-        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; const building = (w.buildings?.projects || []).reduce((acc, p) => acc + (p.effects?.defense_bonus || 0) * Math.min(1, (p.workDone || 0) / Math.max(1, p.workRequired || 1)), 0); return guards * 2 + Math.round((w.buildings?.getEffect?.('defense_bonus', 0) || 0) + building) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); } // v6.2.0 蓋到一半的防禦建築按進度計
+        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; const building = (w.buildings?.projects || []).reduce((acc, p) => acc + (p.effects?.defense_bonus || 0) * Math.min(1, (p.workDone || 0) / Math.max(1, p.workRequired || 1)), 0); return guards * 2 + Math.round((w.buildings?.getEffect?.('defense_bonus', 0) || 0) + (w.news?.getModifier?.('defense_bonus', 0) || 0) + building) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); } // v6.2.0 蓋到一半的防禦建築按進度計
         if (type === 'pricewar') return Math.round(k.silver);
         return 0;
     }

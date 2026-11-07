@@ -662,15 +662,7 @@ class CouncilSystem {
             if (!this._formed) return;
         }
 
-        // Expire old decrees
-        // v6.43.2 統一用 world._absDay()(提案政令也是用它);以前這裡多算 60 天,提案通過的政令隔天就被當成過期刪掉。
-        // 舊檔用舊算法存的到期日會比現在多 60 天,剩超過 60 天的就扣回來(政令最長 20 天)
-        const currentDay = world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day;
-        for (const d of this.activeDecrees) if (d.expiresDay - currentDay > 60) d.expiresDay -= 60;
-        this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > currentDay);
-
-        // Apply active decree effects
-        this._applyDecreeEffects(world);
+        // v6.87.0 政令到期與效果改由 refreshDecrees 每天處理（不管議會有沒有成立）
 
         // Clean up members who left the town
         this.members = this.members.filter(id => world.agents[id]);
@@ -825,7 +817,7 @@ class CouncilSystem {
             const sp = world.stockpile;
             if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
-            if (p.effects.food_save) { /* passive effect via decree */ }
+            if (p.effects.mood_traders) Object.values(world.agents).forEach(a => { if (!a.isPlayer && a.job?.key === 'trader') a.moodModifier = (a.moodModifier || 0) + p.effects.mood_traders; }); // v6.87.0 商人不高興
             if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.wood && p.effects.wood < 0) sp.consume('wood', Math.abs(p.effects.wood), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
@@ -841,6 +833,7 @@ class CouncilSystem {
             this.activeDecrees.push({
                 id: p.id, title: p.title, effects: p.effects, expiresDay: currentDay + 20,
             });
+            this._aggregateDecrees(world); // v6.87.0 當天就生效
 
             // Reputation gain for passing proposals
             if (world.reputationSystem) world.reputationSystem.addReputation(3, 'council', world);
@@ -859,21 +852,34 @@ class CouncilSystem {
         this.pendingProposal = null;
     }
 
-    _applyDecreeEffects(world) {
-        // Aggregate all active decree modifiers into news system
-        for (const decree of this.activeDecrees) {
-            const e = decree.effects;
-            if (e.merchant_chance && world.news) world.news.activeModifiers['council_merchant'] = (world.news.activeModifiers['council_merchant'] || 0) + e.merchant_chance;
-            if (e.raid_chance && world.news) world.news.activeModifiers['council_raid'] = (world.news.activeModifiers['council_raid'] || 0) + e.raid_chance;
-            if (e.immigration_chance && world.news) world.news.activeModifiers['council_immigration'] = (world.news.activeModifiers['council_immigration'] || 0) + e.immigration_chance;
-            if (e.research_bonus && world.news) world.news.activeModifiers['council_research'] = (world.news.activeModifiers['council_research'] || 0) + e.research_bonus;
-            if (e.farm_bonus && world.news) world.news.activeModifiers['council_farm'] = (world.news.activeModifiers['council_farm'] || 0) + e.farm_bonus;
-            if (e.gathering_bonus && world.news) world.news.activeModifiers['council_gathering'] = (world.news.activeModifiers['council_gathering'] || 0) + e.gathering_bonus;
-            if (e.sell_bonus && world.news) world.news.activeModifiers['council_sell'] = (world.news.activeModifiers['council_sell'] || 0) + e.sell_bonus;
-            if (e.defense_bonus && world.news) world.news.activeModifiers['council_defense'] = (world.news.activeModifiers['council_defense'] || 0) + e.defense_bonus;
-            if (e.festival_chance && world.news) world.news.activeModifiers['council_festival'] = (world.news.activeModifiers['council_festival'] || 0) + e.festival_chance;
+    // v6.87.0 政令效果真的生效:以前寫進 council_* 這種沒人讀的鍵,隔天又被新聞重算洗掉。
+    // 現在用真正的鍵(farm_bonus、raid_chance…)彙整到 news._decreeMods,getModifier 會加上去
+    static get DECREE_KEYS() { return ['merchant_chance', 'raid_chance', 'immigration_chance', 'research_bonus', 'farm_bonus', 'gathering_bonus', 'sell_bonus', 'buy_bonus', 'defense_bonus', 'festival_chance', 'chain_chance', 'mining_bonus', 'food_save']; }
+    _decreeDay(world) { return world._absDay ? world._absDay() : world.clock.year * 60 + (['春季','夏季','秋季','冬季'].indexOf(world.clock.season)) * 15 + world.clock.day; }
+    _aggregateDecrees(world) {
+        const mods = {}; const keys = CouncilSystem.DECREE_KEYS;
+        for (const d of (this.activeDecrees || [])) {
+            const e = d.effects || {};
+            for (const k of keys) if (typeof e[k] === 'number' && e[k]) mods[k] = (mods[k] || 0) + e[k];
+        }
+        if (mods.food_save) mods.food_save = Math.max(0, Math.min(0.3, mods.food_save));
+        if (mods.defense_bonus) mods.defense_bonus = Math.max(-5, Math.min(10, mods.defense_bonus));
+        if (world.news) world.news._decreeMods = mods;
+        return mods;
+    }
+    refreshDecrees(world) {
+        // v6.43.2 舊檔用舊算法存的到期日會比現在多 60 天,剩超過 60 天的就扣回來(政令最長 30 天)
+        const cur = this._decreeDay(world);
+        this.activeDecrees = (this.activeDecrees || []).filter(d => d && d.effects);
+        for (const d of this.activeDecrees) if (d.expiresDay - cur > 60) d.expiresDay -= 60;
+        this.activeDecrees = this.activeDecrees.filter(d => d.expiresDay > cur);
+        this._aggregateDecrees(world);
+        // 夜間巡邏:守衛比較累
+        if (this.activeDecrees.some(d => d.effects.guard_fatigue)) {
+            for (const a of Object.values(world.agents || {})) if (!a.isPlayer && a.job?.key === 'guard') a.moodModifier = (a.moodModifier || 0) - 1;
         }
     }
+    _applyDecreeEffects(world) { this._aggregateDecrees(world); }
 
     toDict() {
         return {

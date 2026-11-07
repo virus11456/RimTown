@@ -48,8 +48,8 @@ const CLASS = (() => {
     function daily(w) {
         const C = S(w), d = day(w); const all = npcs(w);
         for (const a of all) { const old = C.lv[a.agentId]; const nv = compute(w, a); C.lv[a.agentId] = nv; if (old !== undefined && nv !== old && Math.abs(nv - old) >= 1 && Math.random() < 0.5) mem(w, a, nv > old ? '我現在也算是{c}了，走在路上別人看我的眼神不一樣。' : '從{c}掉了下來，以前的朋友好像不太跟我往來了。', { c: NAMES[nv > old ? nv : old].zh }, 6); }
-        for (const id of Object.keys(C.lv)) if (!w.agents[id]) delete C.lv[id];
-        for (const id of Object.keys(C.titles)) if (!w.agents[id] && !C.titles[id].royal) delete C.titles[id];
+        for (const id of Object.keys(C.lv)) if (!w.agents[id] && !w.isAway?.(id)) delete C.lv[id]; // v6.87.0 出遠門的人頭銜、階層留著
+        for (const id of Object.keys(C.titles)) if (!w.agents[id] && !w.isAway?.(id) && !C.titles[id].royal) delete C.titles[id];
         if (tier(w) >= 1) introduce(w, all);
         if (tier(w) >= 2) titles(w, all, d);
     }

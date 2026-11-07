@@ -395,7 +395,7 @@ class EventSystem {
         this.eventLog.push([world.clock.timeStr, event]);
         this._applyEffects(event, world);
         const guards = Object.values(world.agents).filter(a => a.job?.key==='guard' && !a.isPlayer);
-        const buildingDefense = world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0;
+        const buildingDefense = (world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0) + (world.news ? (world.news.getModifier('defense_bonus',0)||0) : 0); // v6.87.0 政令防衛
         const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         if (defense >= rd.threat_level) {
             world.logMessageT('raid', '小鎮成功抵禦了{attacker}！', { attacker: rd.attacker });
@@ -475,7 +475,8 @@ class EventSystem {
             traits:agent.personality.traits, values:agent.personality.values, background:agent.personality.background,
             homeLocation:agent.homeLocation, gender:agent.gender, look:agent.look||null, // v5.90.0 外觀跟著旅行
             skills:agent.skills.toDict(), relationships:agent.relationships.toDict(),
-            memories:agent.memory.toDict(true), mood:agent.mood, moodModifier:agent.moodModifier||0 }; // v6.19.0 存檔版
+            memories:agent.memory.toDict(true), mood:agent.mood, moodModifier:agent.moodModifier||0, // v6.19.0 存檔版
+            _parentNames:agent._parentNames||null, nameEn:agent.nameEn||null }; // v6.87.0 出遠門回來還記得爸媽是誰
         this._travellingAgents.push({agentData:data, returnTick:world.tickCount+(travelDays*96), reason});
         world.logMessageT('departure', '{agent}{reason}。過幾天就會回來。', { agent: agent.name, reason }, agent.name);
         const event = {name:t('居民出行'),description:`${agent.name}${reasonText}${t('。')}`,severity:'minor',effects:{conversation_topic:`${agent.name}${t('離開了小鎮')}`},event_type:'departure'};
@@ -500,6 +501,8 @@ class EventSystem {
         const agent = new Agent(d.agentId, d.name, d.age, personality, job, d.homeLocation || 'residential_north');
         if (d.gender) agent.gender = d.gender;
         if (d.look && typeof d.look === 'object') agent.look = { ...d.look }; // v5.90.0
+        if (Array.isArray(d._parentNames)) agent._parentNames = d._parentNames; // v6.87.0
+        if (d.nameEn) agent.nameEn = d.nameEn;
         agent.mood = d.mood ?? agent.mood;
         agent.moodModifier = d.moodModifier || 0;
         // Restore skills

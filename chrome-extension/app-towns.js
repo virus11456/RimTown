@@ -168,7 +168,16 @@ Object.assign(RimTownApp.prototype, {
                     try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
                 }
             } else {
-                this._gameAlert(t('儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。'), '💾');
+                // v6.87.0 訪客:localStorage 滿了就把這座鎮整份放進 IndexedDB(空間大很多),真的不行才跳警告
+                const alertFull = () => this._gameAlert(t('儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。'), '💾');
+                if (typeof RTStore === 'undefined') return alertFull();
+                let str = null; try { str = JSON.stringify(saveData); } catch (e) { return alertFull(); }
+                RTStore.set(tid, str).then(r => {
+                    if (r === undefined) return alertFull();
+                    (this._idbTowns || (this._idbTowns = new Set())).add(tid);
+                    try { localStorage.removeItem(key); } catch (e) {} // 舊的那份比較舊,讀檔時別先讀到它
+                    if (!this._idbSaveNoticeShown) { this._idbSaveNoticeShown = true; try { this._showCornerNotice({ icon: '💾', title: t('本機空間不足'), name: '', desc: t('存檔改放瀏覽器資料庫，進度沒有遺失。') }); } catch (e) {} }
+                }).catch(alertFull);
             }
         };
         let ok = tryWrite(saveData);

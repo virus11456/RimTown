@@ -323,7 +323,15 @@ class ProposalSystem {
         // 宴席
         if (food >= 120 && avgMood < 58 && this._cool(day, 'feast', 10)) out.push({ kind: 'feast', key: 'feast', weight: 1.4, jobs: ['cook', 'tavern', 'trader'], make: (a) => ({ kind: 'feast', key: 'feast', tk: '辦一桌全鎮的宴席', tp: {}, dk: '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。', dp: { who: a.name }, cost: { food: 40 }, category: 'welfare', jobBias: ['cook'] }) });
         // 救濟
-        const low = npcs.filter(a => (a.mood || 0) < 15).sort((x, y) => (x.mood || 0) - (y.mood || 0))[0];
+        // v6.87.0 救濟也看錢包:身上快沒錢的人優先(以前只看心情,錢也沒發到人手上)
+        const bal = (a) => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99);
+        const low = npcs.filter(a => bal(a) < 6).sort((x, y) => bal(x) - bal(y))[0] || npcs.filter(a => (a.mood || 0) < 15).sort((x, y) => (x.mood || 0) - (y.mood || 0))[0];
+        // v6.87.0 公庫生活補助:公庫錢多、窮人也多時,從公庫發錢給身上沒錢的人(錢不再卡在公庫)
+        const poorList = npcs.filter(a => bal(a) < 8);
+        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && silver >= 200 + npcs.length * 6 && this._cool(day, 'stipend', 10)) {
+            const per = Math.max(5, Math.min(20, Math.floor((silver * 0.35) / poorList.length))); const total = per * poorList.length;
+            out.push({ kind: 'stipend', key: 'stipend', weight: 3.5, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
+        }
         if (low && silver >= 60 && this._cool(day, 'relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
         // 考驗對策
         const tr = w.trials?.current;
@@ -586,8 +594,14 @@ class ProposalSystem {
                     try { w.festivals?._boostRelationships?.(w, 0.25); } catch (e) {}
                     ok = true; result = '全鎮吃了一頓好的，心情 +6'; break;
                 }
+                case 'stipend': { // v6.87.0 公庫生活補助:發給當下身上沒錢的人
+                    const poor = this._npcs(w).filter(a => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99) < 8); const per = p.per || 10;
+                    let n = 0; for (const a of poor) { if (!w.stockpile.consume('silver', per, w.tickCount, t('生活補助'), 'proposal')) break; WALLET.add(w, a, per); a.moodModifier = (a.moodModifier || 0) + 4; a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上發了 {n} 銀幣的生活補助，總算吃得上飯了。', { n: per }, 6, []); n++; }
+                    ok = n > 0; result = ok ? `${t('發給')} ${n} ${t('人')}${t('，')}${t('每人')} ${per} ${t('銀幣')}` : '沒有需要補助的人了'; break;
+                }
                 case 'relief': {
                     const x = w.agents[p.refKey]; w.stockpile.consume('silver', 20, w.tickCount, t('救濟金'), 'proposal');
+                    if (x && typeof WALLET !== 'undefined') WALLET.add(w, x, 20); // v6.87.0 救濟金真的發到人手上
                     if (x) { x.moodModifier = (x.moodModifier || 0) + 15; x.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上撥了救濟金給我，{who}幫我說話。', { who: p.proposerName }, 7, [p.proposerName]); const rel = x.relationships?.getOrCreate?.(p.proposerId, p.proposerName); rel?.modifyAffinity?.(8); }
                     ok = true; result = `${x?.name || ''}${t('心情好多了')}`; break;
                 }
@@ -637,7 +651,7 @@ class ProposalSystem {
                 }
                 case 'envoy': {
                     w.stockpile.consume('silver', 25, w.tickCount, t('結盟禮物'), 'proposal');
-                    if (w.council) { w.council.activeDecrees = w.council.activeDecrees || []; w.council.activeDecrees.push({ id: 'prop_envoy', title: this.title(p), effects: { ...(p.effects || {}) }, expiresDay: day + 20 }); }
+                    if (w.council) { w.council.activeDecrees = w.council.activeDecrees || []; w.council.activeDecrees.push({ id: 'prop_envoy', title: this.title(p), effects: { ...(p.effects || {}) }, expiresDay: day + 20 }); w.council._aggregateDecrees?.(w); }
                     if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 4;
                     w.events?.conversationTopics?.push(`${p.proposerName}${t('去鄰鎮談成了互保')}`);
                     ok = true; result = '鄰鎮答應互保，20 天內襲擊機率下降'; break;
@@ -672,6 +686,7 @@ class ProposalSystem {
         const cur = this._abs(w);
         w.council.activeDecrees = w.council.activeDecrees || [];
         w.council.activeDecrees.push({ id: 'prop_' + p.id, title: this.title(p), effects: p.effects, expiresDay: cur + days });
+        w.council._aggregateDecrees?.(w); // v6.87.0 當天就生效
     }
     _applyPolicy(w, p) {
         const e = p.effects || {}; const sp = w.stockpile; if (!sp) return false;

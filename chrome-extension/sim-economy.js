@@ -136,6 +136,7 @@ function processDailyProduction(world) {
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
     let mealsNeeded = 1.5*npcCount * ((typeof FLOW !== 'undefined') ? FLOW.mealFactor(world) : 1); // v6.80.0 昨天吃得好，今天比較耐餓
+    mealsNeeded *= 1 - Math.max(0, Math.min(0.3, world.news ? world.news.getModifier('food_save', 0) : 0)); // v6.87.0 糧食儲備政令
     if (typeof FLOW !== 'undefined') mealsNeeded = Math.max(0, mealsNeeded - FLOW.eatSnacks(world, mealsNeeded * 0.4)); // v6.79.0 麵包、糕點、果醬可以代替正餐
     const mealsAvailable = sp.get('meals');
     if (mealsAvailable >= mealsNeeded) {
@@ -146,7 +147,7 @@ function processDailyProduction(world) {
         if (sp.consume('food',deficit*2,world.tickCount,t('緊急食物'))) world.logMessage('economy',t('餐食不夠！居民正在吃生食。'));
         else { world.logMessage('economy',t('糧食短缺！居民正在挨餓！')); Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-10; a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
     }
-    if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5,world.tickCount,`natural (${locId})`); } } }
+    if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5*Math.max(0.5,1+(world.news?world.news.getModifier('gathering_bonus',0):0)),world.tickCount,`natural (${locId})`); } } }
     if (typeof FLOW !== 'undefined') FLOW.wear(world, 'tools', npcCount*0.05, 'tool wear'); else sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear'); // v6.80.0 鋼做的精製工具壞得慢一半
     // v5.51.0 需求波動:天冷要衣(冬季衣物耗損翻倍)
     { const cw = npcCount*(world.clock.season==='冬季'?0.06:0.03); if (typeof FLOW !== 'undefined') FLOW.wear(world, 'clothing', cw, 'clothing wear'); else sp.consume('clothing',cw,world.tickCount,'clothing wear'); } // v6.80.0 紡織廠做的衣服耐穿一倍
@@ -765,7 +766,9 @@ class NewsSystem {
     }
 
     getModifier(key, defaultVal = 0) {
-        return this.activeModifiers[key] ?? defaultVal;
+        const v = this.activeModifiers[key] ?? defaultVal;
+        const dm = this._decreeMods ? this._decreeMods[key] : undefined; // v6.87.0 議會／提案政令
+        return (typeof dm === 'number' && typeof v === 'number') ? v + dm : v;
     }
 
     getActiveBulletins() {

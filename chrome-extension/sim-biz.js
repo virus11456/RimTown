@@ -43,7 +43,7 @@ const BIZ = (() => {
     function trade(w, B, d) {
         const all = npcs(w);
         for (const s of B.shops) {
-            if (s.closed) continue; const o = w.agents[s.owner]; if (!o || o.isDead) { close(w, s, 'gone'); continue; }
+            if (s.closed) continue; const o = w.agents[s.owner]; if (!o && w.isAway?.(s.owner)) continue; if (!o || o.isDead) { close(w, s, 'gone'); continue; } // v6.87.0 老闆出遠門就先歇業,回來照開
             const same = B.shops.filter(x => !x.closed && x.type === s.type).length;
             let sales = 0;
             for (const c of all) { if (c === o || cash(w, c) < s.price + 5) continue; const p = 0.08 / same * (6 / (s.price + 2)) * (1 + (has(o, 'charismatic') ? 0.3 : 0) + (aff(c, o) > 30 ? 0.3 : 0) - (aff(c, o) < -20 ? 0.6 : 0)); if (Math.random() < p && WALLET.take(w, c, s.price)) { s.till += s.price; sales++; } }

@@ -45,6 +45,15 @@ const CROWN = (() => {
         const C = S(w), d = day(w);
         if (!isCapital(w)) { if (C.king && !C.republic) { const k = king(w); if (k) setRoyal(w, k, false); log(w, 'event', '🏚️ 王都降級，王室失去了王位。', {}); C.king = null; } return; }
         if (C.republic) return;
+        // v6.87.0 國王出巡:王位不算空出,由攝政代理,回來就恢復(以前出遠門就被當成駕崩、開始繼承)
+        if (C.king && !w.agents[C.king] && w.isAway?.(C.king)) {
+            if (!C.regent || !w.agents[C.regent]) {
+                const r = (w.council?.members || []).map(id => w.agents[id]).filter(a => a && !a.isDead)[0] || npcs(w).map(a => ({ a, s: prestige(w, a) })).sort((x, y) => y.s - x.s)[0]?.a;
+                if (r) { C.regent = r.agentId; log(w, 'event', '👑 國王{k}出巡，由{r}暫時攝政。', { k: (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === C.king)?.agentData?.name || '', r: r.name }, r.name); }
+            }
+            return;
+        }
+        if (C.regent) { const kk = king(w); if (kk) log(w, 'event', '👑 國王{k}回到王都，攝政結束。', { k: kk.name }, kk.name); C.regent = null; }
         const k = king(w);
         if (!k && C.king) { const old = w.agents[C.king]; if (old) setRoyal(w, old, false); log(w, 'event', '🕯️ 國王{a}駕崩，王位空了出來。', { a: C.history[C.history.length - 1]?.name || '' }); C.king = null; }
         if (!k) { if (!C.crisis) startSuccession(w, C, d, !C.history.length); else resolveCrisis(w, C, d); return; }

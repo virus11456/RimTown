@@ -39,6 +39,7 @@ class ProsperityEngine {
     recalcTotal() {
         let total = 0;
         for (const dim of Object.values(this.dimensions)) total += dim.value * dim.weight;
+        this.questBonus = Math.max(-20, Math.min(20, this.questBonus || 0)); // v6.87.0 事件／贊助加成最多 ±20(以前會一路累積到 +88,繁榮卡在 100)
         this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0) + (this.originBonus || 0)))); // v6.85.0 originBonus:初遇時就是城鎮／城市的老底子(街道、城牆、名聲等沒模擬到的部分)
         // v5.54.0 早期爬坡上限:繁榮度是「現狀快照」,新鎮第一晚就會反映 ~40 的底子,
         // 導致第 1 章(門檻 20)只活一天。前 5 天封頂在 天數×8(8/16/24/32/40),
@@ -48,6 +49,8 @@ class ProsperityEngine {
     }
     dailyUpdate(world) {
         if (this._lastUpdateDay === world.clock.day && this._lastUpdateYear === world.clock.year) return;
+        // v6.87.0 加成是一時的:每天慢慢回到 0(約三週減半)
+        if (this.questBonus) { const q = Math.abs(this.questBonus) * 0.97 - 0.15; this.questBonus = q > 0 ? Math.sign(this.questBonus) * Math.round(q * 100) / 100 : 0; }
         this._lastUpdateDay = world.clock.day;
         this._lastUpdateYear = world.clock.year;
         this._townAgeDays = (this._townAgeDays || 0) + 1;
