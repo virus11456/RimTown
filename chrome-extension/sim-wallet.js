@@ -104,8 +104,8 @@ const WALLET = (() => {
                 if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
-            // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多)
-            const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 4 + Math.random() * 8); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
+            // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多);v6.90.0 越有錢花得越多(大約跟財富的平方根成正比)
+            const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
                 if (take(w, a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }

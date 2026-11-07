@@ -69,14 +69,18 @@ const BANK = (() => {
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {
             const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; // v6.87.0 出遠門的人回來再還
-            if (!a || a.isDead) { B.bad += L.owed; delete B.loans[id]; continue; }
-            const pay = Math.min(L.owed, Math.max(1, Math.floor(cash(w, a) * 0.2))); if (cash(w, a) >= pay && pay > 0 && WALLET.take(w, a, pay)) { L.owed -= pay; B.reserve += pay; }
+            if (!a || a.isDead) { if (!(typeof ESTATE !== 'undefined' && ESTATE.foreclose(w, id, L))) B.bad += L.owed; delete B.loans[id]; continue; } // v6.90.0 有抵押品就收房子
+            const pay = Math.min(L.owed, Math.max(1, Math.floor(cash(w, a) * 0.2))); if (cash(w, a) >= pay && pay > 0 && WALLET.take(w, a, pay)) { L.owed -= pay; B.reserve += pay; B.earned = (B.earned || 0) + pay * (L.rate || 0) / (1 + (L.rate || 0)); } // v6.90.0 記下利息收入
             if (L.owed <= 0) { delete B.loans[id]; mem(w, a, '終於把銀行的錢還清了。', {}, 5); continue; }
-            if (d > L.due + 10 && cash(w, a) < 3) { B.bad += L.owed; delete B.loans[id]; try { DARK.bump(w, a, 'exposed'); } catch (e) {} log(w, '📉 {a}還不出銀行的 {n} 銀幣，成了呆帳。', { a: a.name, n: L.owed }, a.name); mem(w, a, '我欠銀行的錢還不出來，大家都知道了，好丟臉。', {}, 7); a.moodModifier = (a.moodModifier || 0) - 6; }
+            if (d > L.due + 10 && cash(w, a) < 3) { const seized = typeof ESTATE !== 'undefined' && ESTATE.foreclose(w, id, L); if (!seized) B.bad += L.owed; delete B.loans[id]; try { DARK.bump(w, a, 'exposed'); } catch (e) {} log(w, '📉 {a}還不出銀行的 {n} 銀幣，成了呆帳。', { a: a.name, n: L.owed }, a.name); mem(w, a, '我欠銀行的錢還不出來，大家都知道了，好丟臉。', {}, 7); a.moodModifier = (a.moodModifier || 0) - 6; }
         }
         // 每七天付存款利息、銀行家調整利率
         if (d % 7 === 0) {
-            for (const [id, v] of Object.entries(B.dep)) { const it = Math.floor(v * B.depRate); if (it >= 1 && B.reserve > it) { B.dep[id] = v + it; } }
+            // v6.90.0 存款利息從放款賺到的利息裡付(最多七成),賺不到就付不出;剩下的是銀行家的利潤
+            { const want = Object.values(B.dep).reduce((s, v) => s + v * B.depRate, 0); const pool = Math.max(0, (B.earned || 0) * 0.7); const ratio = want > 0 ? Math.min(1, pool / want) : 0;
+              let paid = 0; if (ratio > 0) for (const [id, v] of Object.entries(B.dep)) { const it = Math.round(v * B.depRate * ratio * 100) / 100; if (it > 0) { B.dep[id] = v + it; paid += it; } }
+              B.earned = Math.max(0, (B.earned || 0) - paid); B.interestPaid = (B.interestPaid || 0) + paid;
+              const bk = w.agents[B.banker]; const profit = Math.floor(Math.min(B.earned || 0, Math.max(0, B.reserve - totalDep(B) * 0.4))); if (bk && profit >= 1) { B.reserve -= profit; B.earned -= profit; WALLET.add(w, bk, profit); B.bankerProfit = (B.bankerProfit || 0) + profit; } }
             setRate(w, B);
         }
         // 謠言 → 擠兌

@@ -27,7 +27,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const saver = all[1]; saver.personality.traits = [...saver.personality.traits, 'stoic']; w.wallet.bal[saver.agentId] = 300;
       D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); out.deposit = (B.dep[saver.agentId] || 0) > 0 && WALLET.get(w, saver) < 300;
       // 利息(第 7 的倍數天)
-      const dv0 = B.dep[saver.agentId]; D = 308; fix(0.99, () => { B.lastDay = null; BANK.daily(w); }); out.interest = B.dep[saver.agentId] > dv0;
+      const dv0 = B.dep[saver.agentId]; B.earned = (B.earned || 0) + 50; /* v6.90 存款利息由放款賺到的利息支付 */ D = 308; fix(0.99, () => { B.lastDay = null; BANK.daily(w); }); out.interest = B.dep[saver.agentId] > dv0;
       // 借款與還款
       const poor = all[2]; w.wallet.bal[poor.agentId] = 0; D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); });
       out.loan = !!B.loans[poor.agentId] && WALLET.get(w, poor) > 0; const owed0 = B.loans[poor.agentId]?.owed || 0;
