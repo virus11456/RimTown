@@ -1148,22 +1148,34 @@ class Town3D extends PixelTileMap {
     _agentMesh(aid, agent, pos) {
         const jobKey = pos.job || agent.job?.key || 'default';
         const base = JOB_COLORS[jobKey] || JOB_COLORS.default;
-        const c = this._variedColors(base, agent.name || aid, jobKey, agent.look || null);
-        const sig = jobKey + '|' + lookSig(agent.look) + '|' + (pos.gender || '');
+        const c = { ...this._variedColors(base, agent.name || aid, jobKey, agent.look || null) };
+        const ap = agent.appear || null; // v6.92.0 年齡段、社會階層、國王、無家可歸
+        const sig = jobKey + '|' + lookSig(agent.look) + '|' + (pos.gender || '') + '|' + (typeof LOOK !== 'undefined' ? LOOK.sig(ap) : '');
         let m = this._agentMeshes[aid];
         if (m && m.userData.sig === sig) return m;
         if (m) { this._agentGroup.remove(m); this._disposeAgent(m); }
         m = new THREE.Group(); m.userData = { sig, aid };
         const female = (pos.gender || agent.gender) === 'female';
         const shade = (hex, k) => { const x = new THREE.Color(hex); x.multiplyScalar(k); return '#' + x.getHexString(); };
+        // v6.92.0 依年齡與貧富換外觀
+        const mix = (hex, to, k) => { const x = new THREE.Color(hex); x.lerp(new THREE.Color(to), k); return '#' + x.getHexString(); };
+        const ab = ap?.b || 'a', cls = ap?.cls ?? 1, child = ab === 'c', poor = cls === 0 || !!ap?.hl, king = !!ap?.king;
+        if (ab === 'e') c.hair = mix(c.hair, '#BDBDBD', 0.75); else if (ab === 'o') c.hair = '#ECECEC';
+        if (poor) { c.body = shade(mix(c.body, '#7A7366', 0.55), 0.82); c.bodyDk = shade(c.body, 0.8); c.pants = shade(mix(c.pants, '#6B6358', 0.5), 0.85); c.boots = '#4A3B2E'; }
+        else if (cls >= 3) { c.body = shade(c.body, 1.08); c.bodyDk = shade(c.bodyDk, 1.05); c.boots = cls >= 4 ? '#2B1D14' : c.boots; }
         const skinDk = shade(c.skin, 0.82), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
         const body = [];   // [w,h,d,hex,x,y,z]
         const B = (w, h, d, hex, x, y, z) => body.push([w, h, d, hex, x, y, z]);
         // 軀幹、衣領、腰帶與扣環
         B(0.46, 0.5, 0.28, c.body, 0, 0.61, 0);
         B(0.48, 0.08, 0.3, c.bodyDk, 0, 0.4, 0);
-        B(0.1, 0.07, 0.02, '#D9B85C', 0, 0.4, 0.155);
-        B(0.3, 0.06, 0.06, bodyLt, 0, 0.85, 0.13);
+        B(0.1, 0.07, 0.02, poor ? '#6B5A45' : '#D9B85C', 0, 0.4, 0.155);
+        B(0.3, 0.06, 0.06, cls >= 3 && !poor ? '#F2F2F2' : bodyLt, 0, 0.85, 0.13);
+        if (poor) { B(0.13, 0.12, 0.02, mix(c.body, '#A08C6E', 0.6), 0.11, 0.66, 0.145); B(0.15, 0.11, 0.02, mix(c.body, '#5C5247', 0.6), -0.1, 0.52, -0.145); } // 補丁
+        if (cls >= 3 && !poor) { B(0.04, 0.04, 0.02, '#D9B85C', 0, 0.71, 0.145); B(0.04, 0.04, 0.02, '#D9B85C', 0, 0.59, 0.145); } // 金扣
+        if (cls >= 4 && !poor) { const cape = cls >= 5 ? '#9E1B1B' : '#5E2A84'; B(0.52, 0.66, 0.05, cape, 0, 0.55, -0.17); B(0.5, 0.05, 0.36, cape, 0, 0.87, -0.02); // 披風
+            if (cls >= 5) { B(0.54, 0.07, 0.08, '#F5F5F5', 0, 0.87, -0.16); B(0.54, 0.06, 0.07, '#F5F5F5', 0, 0.23, -0.17); } // 白毛邊
+            B(0.24, 0.03, 0.02, '#E6C350', 0, 0.82, 0.15); B(0.06, 0.07, 0.02, cls >= 5 ? '#C62828' : '#2E7D32', 0, 0.76, 0.152); } // 金項鍊與墜子
         if (female) B(0.5, 0.16, 0.32, c.body, 0, 0.32, 0); // 裙擺
         // 頭:臉、耳朵、眼睛、眉毛、鼻子、嘴
         B(0.42, 0.4, 0.4, c.skin, 0, 1.08, 0);
@@ -1181,9 +1193,11 @@ class Town3D extends PixelTileMap {
         if (hairStyle === 3) B(0.46, 0.12, 0.08, c.hair, 0, 1.2, 0.18);
         if (hairStyle === 5) B(0.52, 0.2, 0.5, c.hair, 0, 1.33, 0);
         // 職業帽／配件
-        const acc = agent.look?.acc ?? 0;
+        const acc = child ? 0 : (agent.look?.acc ?? 0);
         let minerLamp = false;
-        if (acc === 1 || jobKey === 'farmer') { B(0.62, 0.05, 0.62, '#D9B36B', 0, 1.36, 0); B(0.4, 0.16, 0.4, '#D9B36B', 0, 1.45, 0); B(0.42, 0.04, 0.42, '#8C5A3C', 0, 1.39, 0); }
+        if (king) { B(0.46, 0.1, 0.46, '#E6C350', 0, 1.42, 0); for (const [x, z] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17], [0, 0.2]]) B(0.07, 0.12, 0.07, '#E6C350', x, 1.52, z); B(0.07, 0.07, 0.02, '#C62828', 0, 1.43, 0.235); } // 王冠
+        else if (child) { /* 小孩不戴職業帽 */ }
+        else if (acc === 1 || jobKey === 'farmer') { B(0.62, 0.05, 0.62, '#D9B36B', 0, 1.36, 0); B(0.4, 0.16, 0.4, '#D9B36B', 0, 1.45, 0); B(0.42, 0.04, 0.42, '#8C5A3C', 0, 1.39, 0); }
         else if (jobKey === 'guard') { B(0.46, 0.16, 0.46, '#90A4AE', 0, 1.4, 0); B(0.06, 0.12, 0.06, '#C9533D', 0, 1.53, 0); }
         else if (jobKey === 'miner') { B(0.46, 0.16, 0.46, '#D2B23D', 0, 1.4, 0); minerLamp = true; }
         else if (jobKey === 'cook') { B(0.4, 0.26, 0.4, '#FFFFFF', 0, 1.46, 0); B(0.36, 0.3, 0.02, '#F4F4F4', 0, 0.58, 0.15); }
@@ -1197,7 +1211,7 @@ class Town3D extends PixelTileMap {
         m.add(this._partMesh(body));
         // 四肢(各自一個網格,掛在樞紐上擺動):腿＋靴＋鞋底、手臂＋袖口＋手
         const limb = (name, x, pivotY, boxes) => { const g = new THREE.Group(); g.position.set(x, pivotY, 0); g.name = name; g.add(this._partMesh(boxes)); m.add(g); return g; };
-        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.36, [[0.17, 0.36, 0.18, c.pants, 0, -0.18, 0], [0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01], [0.21, 0.03, 0.24, shade(c.boots, 0.6), 0, -0.36, 0.01]]);
+        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.36, [[0.17, 0.36, 0.18, c.pants, 0, -0.18, 0], [0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01], [0.21, 0.03, 0.24, shade(c.boots, 0.6), 0, -0.36, 0.01], ...(poor && x > 0 ? [[0.1, 0.08, 0.02, mix(c.pants, '#A08C6E', 0.6), 0, -0.14, 0.095]] : [])]);
         leg(-0.11); leg(0.11);
         const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.83, [[0.13, 0.42, 0.14, c.body, 0, -0.21, 0], [0.145, 0.06, 0.155, c.bodyDk, 0, -0.38, 0], [0.11, 0.1, 0.12, c.skin, 0, -0.45, 0]]);
         arm(-0.3); const armR = arm(0.3);
@@ -1205,7 +1219,7 @@ class Town3D extends PixelTileMap {
         tool.add(this._partMesh([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
         m.userData.tool = tool;
         if (minerLamp) { const l = new THREE.Mesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.06); l.position.set(0, 1.4, 0.24); m.add(l); }
-        m.scale.setScalar(1.3);
+        m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1)); m.userData.ab = ab; // v6.92.0 小孩、青少年個子小
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
         return m;
     }
@@ -1389,7 +1403,7 @@ class Town3D extends PixelTileMap {
             const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : '';
             let office = ''; try { const W = window.rimtownApp?.world; const bd = W && typeof TIERS !== 'undefined' ? TIERS.badge(W, W.agents[aid]) : null; if (bd && bd.cls !== 'former') office = `<b class="t3d-office t3d-office-${bd.cls}">${bd.icon} ${this._esc(bd.text)}</b>`; } catch (e) {} // v6.56.0 官職標籤
             const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : ''), `${office}${this._esc(t3(agent.name || aid))}${extra}`);
-            this._place(el, wx, gy + 2.15, wz);
+            this._place(el, wx, gy + 0.3 + 1.85 * ((m.scale.y || 1.3) / 1.3), wz); // v6.92.0 小孩的名牌跟著放低
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
         }
         // 對話泡泡
@@ -1400,7 +1414,7 @@ class Town3D extends PixelTileMap {
             shownBubble.add(b.agentId);
             const full = String(b.text || ''); const text = clipText(full, 56); // v6.36.0 截斷補省略號
             const el = this._ov('bb:' + b.agentId, 't3d-bubble', `<b>${this._esc(t3(b.speaker || ''))}</b>${this._esc(t3(text))}`);
-            this._place(el, pos.x / TILE, m.position.y + 2.5, pos.y / TILE);
+            this._place(el, pos.x / TILE, m.position.y + 0.3 + 2.2 * ((m.scale.y || 1.3) / 1.3), pos.y / TILE);
         }
         // 浮動特效
         const fx = this._floatFx;
