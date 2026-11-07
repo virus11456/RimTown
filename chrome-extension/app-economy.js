@@ -309,11 +309,11 @@ Object.assign(RimTownApp.prototype, {
             const scholars = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'researcher').map(a => t(a.name));
             html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究，等村民提「研究」提案（三天沒人提，學者會自己挑）') : ''}</div>`;
             html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。')}</div>`;
-            for (const era of [1, 2, 3]) {
+            for (const era of [1, 2, 3, 4]) {
                 const list = Object.values(projects).filter(p => (p.era || 1) === era);
                 if (!list.length) continue;
                 const done = list.filter(p => p.status === 'complete').length;
-                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', ['', '一', '二', '三'][era])}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
+                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', ['', '一', '二', '三', '四'][era])}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
                 for (const p of list) {
                     const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
                     const icon = { done: '✅', now: '🔬', open: '🟢', locked: '🔒' }[st];

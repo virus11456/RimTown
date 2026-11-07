@@ -514,41 +514,67 @@ class TradeManager {
 }
 
 // --- Economy: Research ---
+// v6.91.0 科技樹分細成四個時代 48 項(多了畜牧、輪作、簿記、行會、蒸汽動力、疫苗、鐵道…),成本拉高(拓荒×3、手工×6、工坊×15,機械時代每項 5100～7200),
+// 研究員做出的研究點每天最多用 40(以前 10,用不完一直堆);沒東西可研究時研究點最多留 200。整棵樹大約要 8～10 年
 // v6.40.0 科技樹擴成三個時代(拓荒→手工→工坊)28 節點:每個節點解鎖建築或工坊(unlocks 裡 'factory:' 開頭是工坊),
 // 沒被任何節點列在 unlocks 裡的建築(穀倉、深井)一開始就能蓋。effects 會在研究完成時加進 buildings.activeEffects。
-const RESEARCH_ERAS = { 1: { name: '拓荒', icon: '🪓' }, 2: { name: '手工', icon: '🔨' }, 3: { name: '工坊', icon: '⚙️' } };
+const RESEARCH_ERAS = { 1: { name: '拓荒', icon: '🪓' }, 2: { name: '手工', icon: '🔨' }, 3: { name: '工坊', icon: '⚙️' }, 4: { name: '機械', icon: '🏭' } };
 const RESEARCH_TREE = {
     // ---- 第一時代 拓荒 ----
-    agriculture:{era:1,name:t('進階農業'),description:t('更好的農耕（+30%食物）'),cost:50,prerequisites:[],effects:{farm_bonus:1.3},unlocks:['farm_irrigation','garden']},
-    metallurgy:{era:1,name:t('冶金術'),description:t('更好的金屬冶煉'),cost:60,prerequisites:[],effects:{smithing_bonus:1.2},unlocks:['forge_bellows']},
-    medicine_research:{era:1,name:t('草藥醫學'),description:t('更好的療癒草藥'),cost:55,prerequisites:[],effects:{healing_bonus:1.3},unlocks:['clinic_upgrade','garden']},
-    fortification:{era:1,name:t('防禦工事'),description:t('防禦性建築'),cost:70,prerequisites:[],effects:{defense_bonus:2},unlocks:['watchtower','training_ground']},
-    commerce:{era:1,name:t('商業'),description:t('更好的貿易方式'),cost:45,prerequisites:[],effects:{trade_bonus:0.15},unlocks:['marketplace']},
-    carpentry:{era:1,name:t('木工'),description:t('榫接與鋸木，蓋房更快'),cost:40,prerequisites:[],effects:{build_speed:1.1},unlocks:['factory:sawmill','factory:furniture_workshop']},
-    pottery:{era:1,name:t('陶藝'),description:t('窯燒磚瓦與器皿'),cost:40,prerequisites:[],effects:{beauty_bonus:3},unlocks:['factory:brickworks']},
-    writing:{era:1,name:t('文字記錄'),description:t('把經驗寫下來，研究更快'),cost:45,prerequisites:[],effects:{research_bonus:0.1},unlocks:['archive']},
+    agriculture:{era:1,name:t('進階農業'),description:t('更好的農耕（+30%食物）'),cost:150,prerequisites:[],effects:{farm_bonus:1.3},unlocks:['farm_irrigation','garden']},
+    metallurgy:{era:1,name:t('冶金術'),description:t('更好的金屬冶煉'),cost:180,prerequisites:[],effects:{smithing_bonus:1.2},unlocks:['forge_bellows']},
+    medicine_research:{era:1,name:t('草藥醫學'),description:t('更好的療癒草藥'),cost:160,prerequisites:[],effects:{healing_bonus:1.3},unlocks:['clinic_upgrade','garden']},
+    fortification:{era:1,name:t('防禦工事'),description:t('防禦性建築'),cost:210,prerequisites:[],effects:{defense_bonus:2},unlocks:['watchtower','training_ground']},
+    commerce:{era:1,name:t('商業'),description:t('更好的貿易方式'),cost:140,prerequisites:[],effects:{trade_bonus:0.15},unlocks:['marketplace']},
+    carpentry:{era:1,name:t('木工'),description:t('榫接與鋸木，蓋房更快'),cost:120,prerequisites:[],effects:{build_speed:1.1},unlocks:['factory:sawmill','factory:furniture_workshop']},
+    pottery:{era:1,name:t('陶藝'),description:t('窯燒磚瓦與器皿'),cost:120,prerequisites:[],effects:{beauty_bonus:3},unlocks:['factory:brickworks']},
+    writing:{era:1,name:t('文字記錄'),description:t('把經驗寫下來，研究更快'),cost:140,prerequisites:[],effects:{research_bonus:0.1},unlocks:['archive']},
+    // v6.91.0 拓荒時代多分出幾步(畜牧、磨石器、採藥、以物易物)
+    animal_husbandry:{era:1,name:t('畜牧'),description:t('養雞養羊，田裡多了肥料'),cost:120,prerequisites:[],effects:{farm_bonus:1.05},unlocks:[]},
+    stone_tools:{era:1,name:t('磨製石器'),description:t('打磨過的石斧石鑿，採石省力'),cost:110,prerequisites:[],effects:{stone_efficiency:1.1},unlocks:[]},
+    herb_lore:{era:1,name:t('採藥知識'),description:t('認得哪些草能治病'),cost:120,prerequisites:[],effects:{healing_bonus:1.1},unlocks:[]},
+    barter:{era:1,name:t('以物易物'),description:t('跟過路商人換東西的門道'),cost:110,prerequisites:[],effects:{trade_bonus:0.05},unlocks:[]},
     // ---- 第二時代 手工 ----
-    architecture:{era:2,name:t('建築學'),description:t('進階建造'),cost:80,prerequisites:['metallurgy','carpentry'],effects:{build_speed:1.3},unlocks:['school']},
-    brewing:{era:2,name:t('釀造術'),description:t('發酵的藝術'),cost:70,prerequisites:['agriculture'],effects:{recreation_bonus:5},unlocks:['brewery','factory:brewery']},
-    logistics:{era:2,name:t('後勤學'),description:t('更好的儲存'),cost:75,prerequisites:['commerce'],effects:{storage_bonus:1.5},unlocks:['warehouse']},
-    masonry:{era:2,name:t('石匠術'),description:t('進階石工'),cost:80,prerequisites:['fortification'],effects:{stone_efficiency:1.3},unlocks:['town_walls','paved_roads']},
-    education:{era:2,name:t('教育'),description:t('正式教育（+15%經驗）'),cost:100,prerequisites:['architecture','writing'],effects:{xp_bonus:1.15},unlocks:['lecture_hall']},
-    textiles:{era:2,name:t('紡織術'),description:t('棉花成布，布成衣'),cost:70,prerequisites:['agriculture'],effects:{trade_bonus:0.05},unlocks:['factory:textile_mill','dye_works']},
-    herbalism:{era:2,name:t('藥劑學'),description:t('把草藥煉成藥品'),cost:80,prerequisites:['medicine_research'],effects:{healing_bonus:1.2},unlocks:['factory:herbal_workshop','bathhouse']},
-    milling:{era:2,name:t('磨坊'),description:t('磨粉、製糖，糧食變商品'),cost:75,prerequisites:['agriculture','carpentry'],effects:{farm_bonus:1.1},unlocks:['factory:bakery','factory:sugar_refinery','windmill']},
-    smithing:{era:2,name:t('鍛造'),description:t('煉鋼與兵器'),cost:90,prerequisites:['metallurgy'],effects:{defense_bonus:1},unlocks:['factory:steelworks','armory']},
-    cartography:{era:2,name:t('製圖'),description:t('把山野畫進地圖'),cost:85,prerequisites:['commerce','writing'],effects:{discover_bonus:0.03},unlocks:['map_room','factory:tea_house']},
+    architecture:{era:2,name:t('建築學'),description:t('進階建造'),cost:480,prerequisites:['metallurgy','carpentry'],effects:{build_speed:1.3},unlocks:['school']},
+    brewing:{era:2,name:t('釀造術'),description:t('發酵的藝術'),cost:420,prerequisites:['agriculture'],effects:{recreation_bonus:5},unlocks:['brewery','factory:brewery']},
+    logistics:{era:2,name:t('後勤學'),description:t('更好的儲存'),cost:450,prerequisites:['commerce'],effects:{storage_bonus:1.5},unlocks:['warehouse']},
+    masonry:{era:2,name:t('石匠術'),description:t('進階石工'),cost:480,prerequisites:['fortification'],effects:{stone_efficiency:1.3},unlocks:['town_walls','paved_roads']},
+    education:{era:2,name:t('教育'),description:t('正式教育（+15%經驗）'),cost:600,prerequisites:['architecture','writing'],effects:{xp_bonus:1.15},unlocks:['lecture_hall']},
+    textiles:{era:2,name:t('紡織術'),description:t('棉花成布，布成衣'),cost:420,prerequisites:['agriculture'],effects:{trade_bonus:0.05},unlocks:['factory:textile_mill','dye_works']},
+    herbalism:{era:2,name:t('藥劑學'),description:t('把草藥煉成藥品'),cost:480,prerequisites:['medicine_research'],effects:{healing_bonus:1.2},unlocks:['factory:herbal_workshop','bathhouse']},
+    milling:{era:2,name:t('磨坊'),description:t('磨粉、製糖，糧食變商品'),cost:450,prerequisites:['agriculture','carpentry'],effects:{farm_bonus:1.1},unlocks:['factory:bakery','factory:sugar_refinery','windmill']},
+    smithing:{era:2,name:t('鍛造'),description:t('煉鋼與兵器'),cost:540,prerequisites:['metallurgy'],effects:{defense_bonus:1},unlocks:['factory:steelworks','armory']},
+    cartography:{era:2,name:t('製圖'),description:t('把山野畫進地圖'),cost:510,prerequisites:['commerce','writing'],effects:{discover_bonus:0.03},unlocks:['map_room','factory:tea_house']},
+    // v6.91.0 手工時代分細
+    crop_rotation:{era:2,name:t('輪作'),description:t('田地輪流休耕，地力不衰'),cost:480,prerequisites:['agriculture','animal_husbandry'],effects:{farm_bonus:1.1},unlocks:[]},
+    accounting:{era:2,name:t('簿記'),description:t('帳記清楚，生意好做'),cost:450,prerequisites:['writing','barter'],effects:{trade_bonus:0.05},unlocks:[]},
+    toolmaking:{era:2,name:t('工具製作'),description:t('鐵頭木柄的好工具'),cost:480,prerequisites:['metallurgy','stone_tools'],effects:{smithing_bonus:1.1},unlocks:[]},
+    folk_music:{era:2,name:t('民謠'),description:t('節慶有歌，工作有調'),cost:420,prerequisites:['pottery'],effects:{recreation_bonus:3},unlocks:[]},
     // ---- 第三時代 工坊 ----
-    engineering:{era:3,name:t('工程學'),description:t('齒輪、水道與鐘樓'),cost:150,prerequisites:['architecture','smithing'],effects:{build_speed:1.2},unlocks:['clock_tower','aqueduct']},
-    printing:{era:3,name:t('印刷術'),description:t('知識不再靠手抄'),cost:140,prerequisites:['education','pottery'],effects:{research_bonus:0.15},unlocks:['press']},
-    banking:{era:3,name:t('銀行業'),description:t('讓錢生錢'),cost:140,prerequisites:['logistics','commerce'],effects:{trade_bonus:0.1},unlocks:['bank']},
-    surgery:{era:3,name:t('外科醫學'),description:t('開刀與住院照護'),cost:150,prerequisites:['herbalism','education'],effects:{healing_bonus:1.5},unlocks:['hospital']},
-    civics:{era:3,name:t('市政'),description:t('議事規則與公共事務'),cost:160,prerequisites:['education','banking'],effects:{culture_bonus:5},unlocks:['council_hall']},
-    astronomy:{era:3,name:t('天文學'),description:t('看星星定節氣'),cost:180,prerequisites:['printing'],effects:{research_bonus:0.2},unlocks:['observatory']},
-    fine_arts:{era:3,name:t('藝術'),description:t('劇場、雕像與壁畫'),cost:170,prerequisites:['printing','pottery'],effects:{beauty_bonus:5},unlocks:['theater','statue_plaza']},
-    sanitation:{era:3,name:t('衛生學'),description:t('下水道與公共衛生'),cost:170,prerequisites:['engineering','surgery'],effects:{healing_bonus:1.2},unlocks:['sewers']},
-    siegecraft:{era:3,name:t('城防工程'),description:t('兵營與長期守備'),cost:180,prerequisites:['engineering','masonry'],effects:{defense_bonus:3},unlocks:['barracks']},
-    trade_routes:{era:3,name:t('商路'),description:t('固定商隊與驛站'),cost:160,prerequisites:['cartography','banking'],effects:{merchant_frequency:0.3},unlocks:['caravanserai']},
+    engineering:{era:3,name:t('工程學'),description:t('齒輪、水道與鐘樓'),cost:2250,prerequisites:['architecture','smithing'],effects:{build_speed:1.2},unlocks:['clock_tower','aqueduct']},
+    printing:{era:3,name:t('印刷術'),description:t('知識不再靠手抄'),cost:2100,prerequisites:['education','pottery'],effects:{research_bonus:0.15},unlocks:['press']},
+    banking:{era:3,name:t('銀行業'),description:t('讓錢生錢'),cost:2100,prerequisites:['logistics','commerce'],effects:{trade_bonus:0.1},unlocks:['bank']},
+    surgery:{era:3,name:t('外科醫學'),description:t('開刀與住院照護'),cost:2250,prerequisites:['herbalism','education'],effects:{healing_bonus:1.5},unlocks:['hospital']},
+    civics:{era:3,name:t('市政'),description:t('議事規則與公共事務'),cost:2400,prerequisites:['education','banking'],effects:{culture_bonus:5},unlocks:['council_hall']},
+    astronomy:{era:3,name:t('天文學'),description:t('看星星定節氣'),cost:2700,prerequisites:['printing'],effects:{research_bonus:0.2},unlocks:['observatory']},
+    fine_arts:{era:3,name:t('藝術'),description:t('劇場、雕像與壁畫'),cost:2550,prerequisites:['printing','pottery'],effects:{beauty_bonus:5},unlocks:['theater','statue_plaza']},
+    sanitation:{era:3,name:t('衛生學'),description:t('下水道與公共衛生'),cost:2550,prerequisites:['engineering','surgery'],effects:{healing_bonus:1.2},unlocks:['sewers']},
+    siegecraft:{era:3,name:t('城防工程'),description:t('兵營與長期守備'),cost:2700,prerequisites:['engineering','masonry'],effects:{defense_bonus:3},unlocks:['barracks']},
+    trade_routes:{era:3,name:t('商路'),description:t('固定商隊與驛站'),cost:2400,prerequisites:['cartography','banking'],effects:{merchant_frequency:0.3},unlocks:['caravanserai']},
+    // v6.91.0 工坊時代分細
+    anatomy:{era:3,name:t('解剖學'),description:t('搞懂身體裡面長什麼樣'),cost:2250,prerequisites:['herbalism','herb_lore'],effects:{healing_bonus:1.1},unlocks:[]},
+    guilds:{era:3,name:t('行會'),description:t('師傅帶徒弟，手藝傳得更快'),cost:2200,prerequisites:['textiles','accounting'],effects:{xp_bonus:1.05,trade_bonus:0.03},unlocks:[]},
+    navigation:{era:3,name:t('航海術'),description:t('看星辰認路，遠方商人來得更勤'),cost:2500,prerequisites:['cartography','astronomy'],effects:{merchant_frequency:0.15},unlocks:[]},
+    // ---- 第四時代 機械(v6.91.0 新增) ----
+    steam_power:{era:4,name:t('蒸汽動力'),description:t('燒水推動機器'),cost:5400,prerequisites:['engineering','toolmaking'],effects:{build_speed:1.2},unlocks:[]},
+    mechanized_farming:{era:4,name:t('機械農耕'),description:t('犁和收割都交給機器'),cost:5700,prerequisites:['steam_power','crop_rotation'],effects:{farm_bonus:1.2},unlocks:[]},
+    scientific_method:{era:4,name:t('科學方法'),description:t('假設、實驗、記錄、再實驗'),cost:5100,prerequisites:['astronomy','printing'],effects:{research_bonus:0.15},unlocks:[]},
+    chemistry:{era:4,name:t('化學'),description:t('物質的變化有規律'),cost:6000,prerequisites:['scientific_method','sanitation'],effects:{healing_bonus:1.15,stone_efficiency:1.1},unlocks:[]},
+    vaccination:{era:4,name:t('疫苗'),description:t('先讓身體認識病，病就不可怕'),cost:6600,prerequisites:['chemistry','anatomy'],effects:{healing_bonus:1.3},unlocks:[]},
+    modern_finance:{era:4,name:t('近代金融'),description:t('票據、保險與合股'),cost:5700,prerequisites:['banking','civics','accounting'],effects:{trade_bonus:0.1},unlocks:[]},
+    public_schooling:{era:4,name:t('國民教育'),description:t('每個孩子都上學'),cost:6000,prerequisites:['printing','civics'],effects:{xp_bonus:1.2},unlocks:[]},
+    railways:{era:4,name:t('鐵道'),description:t('鐵軌把城鎮連在一起'),cost:7200,prerequisites:['steam_power','trade_routes'],effects:{merchant_frequency:0.3,discover_bonus:0.03},unlocks:[]},
+    steel_frame:{era:4,name:t('鋼骨建築'),description:t('更高、更大、更快蓋好'),cost:6300,prerequisites:['steam_power','siegecraft'],effects:{build_speed:1.15,storage_bonus:1.2},unlocks:[]},
 };
 // 建築／工坊 → 解鎖它的研究(任一完成即可)
 const RESEARCH_UNLOCKED_BY = {};
@@ -578,7 +604,7 @@ class ResearchManager {
         if (this.current && this.projects[this.current]?.status !== 'researching') this.current = null;
     }
     eraProgress() { const out = {}; for (const p of Object.values(this.projects)) { const e = out[p.era] || (out[p.era] = { total: 0, done: 0 }); e.total++; if (p.status === 'complete') e.done++; } return out; }
-    currentEra() { const ep = this.eraProgress(); let era = 1; for (const k of [1, 2, 3]) { if (ep[k] && ep[k].done >= Math.ceil(ep[k].total / 2)) era = Math.min(3, k + 1); else break; } return era; }
+    currentEra() { const ep = this.eraProgress(); let era = 1; for (const k of [1, 2, 3]) { if (ep[k] && ep[k].done >= Math.ceil(ep[k].total / 2)) era = Math.min(4, k + 1); else break; } return era; }
     startResearch(key) {
         const p=this.projects[key]; if(!p||p.status!=='available') return false;
         if(this.current&&this.projects[this.current]?.status==='researching') this.projects[this.current].status='available';
@@ -586,14 +612,15 @@ class ResearchManager {
     }
     dailyUpdate(world) {
         // v6.37.0 沒在研究時先空 3 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
-        if(!this.current) { this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
+        if(!this.current) { const rp0=world.stockpile.get('research_points'); if(!this.getAvailable().length && rp0>200) world.stockpile.consume('research_points',rp0-200,world.tickCount,'research'); // v6.91.0 全部研究完:研究點不再無限堆
+             this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
              const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
              const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
         if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
-        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,10); // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
+        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40); // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
         const p=this.projects[this.current]; if(!p||p.status!=='researching') return;
