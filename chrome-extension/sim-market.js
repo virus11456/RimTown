@@ -74,7 +74,7 @@ const MARKET = (() => {
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id];
             if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
-            const ws = workersOf(w, k, all).filter(a => a.agentId !== id); if (!ws.length) continue;
+            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
             const rate = payRate(w, k);
             const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
@@ -184,7 +184,7 @@ const MARKET = (() => {
             log(w, RISKS[Math.floor(Math.random() * RISKS.length)], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
         }
     }
-    const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; return !!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId); };
+    const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; if (typeof UNION !== 'undefined' && UNION.idle(w, a)) return true; /* v6.93.0 工會罷工的會員、被開除的人不上工 */ return !!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId); };
     // 沒錢就真的吃不到:先找家人接濟
     function family(w, a) {
         const out = new Set(); const R = a.relationships?.relationships || {};
