@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.83.0
-const RIMTOWN_APP_VERSION = '6.83.0';
+// RimTown - Frontend App v6.84.0
+const RIMTOWN_APP_VERSION = '6.84.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2763,9 +2763,12 @@ class RimTownApp {
         const a = document.createElement('a');
         a.href = url;
         const ck = saveData.clock || {};
-        a.download = `rimtown_save_${ck.season || 'unknown'}_Y${ck.year || 1}D${ck.day || 1}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
+        const sea = { '春季': 'spring', '夏季': 'summer', '秋季': 'autumn', '冬季': 'winter' }[ck.season] || 'unknown'; // v6.84.0 檔名只用英數:有中文時 Chromium 會改成沒副檔名的「download」
+        const town = String(this.world.townId || this.world.townTheme || 'town').replace(/[^A-Za-z0-9_-]/g, '');
+        a.download = `rimtown_save_${town}_Y${ck.year || 1}_${sea}_D${ck.day || 1}.json`;
+        // v6.84.0 先掛到頁面再點、晚一點才回收網址:立刻回收的話瀏覽器拿不到檔名,下載成沒有副檔名的「download」
+        a.style.display = 'none'; document.body.appendChild(a); a.click();
+        setTimeout(() => { try { a.remove(); URL.revokeObjectURL(url); } catch (e) {} }, 1500);
         this._gameAlert(t('存檔已匯出。'), '✅');
     }
 

@@ -737,3 +737,12 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 /* v6.78.1 鎮況卡：現任首長名字可點 */
 .pp-mayor-name { background: none; border: 0; padding: 0; font: inherit; color: var(--accent-light); font-weight: 700; cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
 .pp-mayor-name:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+/* v6.84.0 從政履歷 */
+.rimtown-container .career-item { padding: 6px 8px; margin: 4px 0; border-left: 3px solid var(--border); border-radius: 4px; background: var(--bg-card); font-size: 0.74rem; line-height: 1.5; }
+.rimtown-container .career-item.is-current { border-left-color: var(--accent, #d4a64a); }
+.rimtown-container .career-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 8px; }
+.rimtown-container .career-title { font-weight: 600; color: var(--text); }
+.rimtown-container .career-now { font-size: 0.66rem; padding: 0 5px; border-radius: 8px; background: var(--accent, #d4a64a); color: #1a1a1a; font-weight: 600; }
+.rimtown-container .career-period { color: var(--text-muted); font-size: 0.7rem; }
+.rimtown-container .career-notes { color: var(--text-secondary); }
+.rimtown-container .career-bills { color: var(--text-muted); font-size: 0.7rem; overflow-wrap: anywhere; }

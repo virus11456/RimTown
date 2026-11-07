@@ -546,6 +546,21 @@ Object.assign(RimTownApp.prototype, {
         this.renderSidebar();
     },
 
+    // v6.84.0 從政履歷:每段任期(新的在前)、屆數、怎麼卸任、任內批准／否決幾案與大案
+    _renderCareer(agentId) {
+        const w = this.world, a = w?.agents?.[agentId];
+        if (!a || typeof TIERS === 'undefined' || !TIERS.resume) return '';
+        let rows = []; try { rows = TIERS.resume(w, a); } catch (e) { return ''; }
+        if (!rows.length) return '';
+        const esc = (x) => this._escapeHtml(String(x));
+        const items = rows.slice(0, 8).map(r => `<div class="career-item${r.current ? ' is-current' : ''}">
+            <div class="career-head"><span class="career-title">${r.role === 'council' ? '🏛️' : r.role === 'acting' ? '🪑' : '🎖️'} ${esc(r.title)}${r.current ? ` <span class="career-now">${t('任職中')}</span>` : ''}</span><span class="career-period">${esc(r.period)}</span></div>
+            ${r.notes.length ? `<div class="career-notes">${r.notes.map(esc).join(t('；'))}</div>` : ''}
+            ${r.bills.length ? `<div class="career-bills">${t('任內大案')}${t('：')}${r.bills.map(esc).join(t('、'))}</div>` : ''}
+        </div>`).join('');
+        return `<div class="detail-section career-section"><h3>🗂️ ${t('從政履歷')}</h3>${items}</div>`;
+    },
+
     _renderAgentFactions(agentId) {
         const factionData = this.state?.factions || {};
         const factions = Object.values(factionData.factions || {}).filter(f => f.members.includes(agentId));
