@@ -36,15 +36,96 @@ const TIERS = (() => {
     const seats = (w) => LV[level(w)].seats;
     const leaderOf = (w) => { try { return w.election?.currentMayor?.(w) || null; } catch (e) { return null; } };
     // ---------- 從政紀錄 ----------
-    function open(T, id, role, lv, d) { const c = T.career[id] || (T.career[id] = []); c.push({ role, lv, from: d, to: null }); if (c.length > 12) c.splice(0, c.length - 12); }
-    function close(T, id, role, d) { const c = T.career[id]; if (!c) return; for (let i = c.length - 1; i >= 0; i--) if (c[i].role === role && c[i].to === null) { c[i].to = d; break; } }
+    // v6.84.0 每段任期多記:w 當選次數、init 開鎮首任、e 怎麼卸任、a/v 任內批准／否決幾案、b 任內大案(最多 4 件)
+    //   首長(leader)只記正式掛職的人(出遠門、探險期間仍算任內);代理首長另記 acting,不算資歷、不掛「前首長」
+    function open(T, id, role, lv, d, cont) {
+        const c = T.career[id] || (T.career[id] = []);
+        const dup = openOf(T, id, role); if (dup) { if (dup.lv === lv) return; close(T, id, role, d, 'promo'); cont = true; } // v6.84.0 同一職位不會同時開兩段
+        const x = { role, lv, from: d, to: null };
+        if (role === 'leader') { x.w = 0; if (cont) x.cont = 1; else if (!T._inElec) x.init = 1; const pw = T.pendWin?.[id]; if (pw) { x.w += pw; delete T.pendWin[id]; } }
+        c.push(x); if (c.length > 16) c.splice(0, c.length - 16);
+    }
+    function close(T, id, role, d, e) { const c = T.career[id]; if (!c) return; for (let i = c.length - 1; i >= 0; i--) if (c[i].role === role && c[i].to === null) { c[i].to = d; if (e) c[i].e = e; break; } }
+    function endWhy(w, T, id) {
+        const h = T.endHint?.[id]; if (h) { delete T.endHint[id]; return h; }
+        const a = w.agents?.[id]; if (a?.isDead) return 'died';
+        if (!a) { const g = w.lifecycle?.graveyard || []; return g.some(x => x.agentId === id) ? 'died' : 'left'; }
+        return 'ended';
+    }
+    function holderOf(w) {
+        const E = w.election; if (!E || typeof E._officeHolder !== 'function') return leaderOf(w)?.agentId || null;
+        try { return E._officeHolder(w)?.agentId || E._mayorTravelling?.(w)?.agentData?.agentId || null; } catch (e) { return null; }
+    }
     function track(w, T) {
-        const d = day(w), L = leaderOf(w), lid = L?.agentId || null;
-        if (lid !== T.leaderId) { if (T.leaderId) close(T, T.leaderId, 'leader', d); if (lid) open(T, lid, 'leader', T.lv, d); T.leaderId = lid; }
+        const d = day(w), L = leaderOf(w), lid = L?.agentId || null, hid = holderOf(w), aid = (lid && lid !== hid) ? lid : null;
+        if (T.holderId === undefined) T.holderId = T.leaderId ?? null; // v6.84.0 舊存檔:原本開著的首長紀錄屬於 leaderId
+        if (hid !== T.holderId) { if (T.holderId) close(T, T.holderId, 'leader', d, endWhy(w, T, T.holderId)); if (hid) open(T, hid, 'leader', T.lv, d); T.holderId = hid; }
+        if (aid !== (T.actingId || null)) { if (T.actingId) close(T, T.actingId, 'acting', d, 'ended'); if (aid) open(T, aid, 'acting', T.lv, d); T.actingId = aid; }
+        T.leaderId = lid;
         const now = (w.council?.members || []).slice(); const prev = new Set(T.council); const cur = new Set(now);
-        for (const id of prev) if (!cur.has(id)) close(T, id, 'council', d);
+        for (const id of prev) if (!cur.has(id)) close(T, id, 'council', d, endWhy(w, T, id));
         for (const id of cur) if (!prev.has(id)) open(T, id, 'council', T.lv, d);
         T.council = now;
+    }
+    function openOf(T, id, role) { const c = T.career[id] || []; for (let i = c.length - 1; i >= 0; i--) if (c[i].to === null && (!role || c[i].role === role)) return c[i]; return null; }
+    function addWin(w, id) { if (!id) return; const T = S(w); const x = openOf(T, id, 'leader'); if (x) x.w = (x.w || 0) + 1; else { T.pendWin = T.pendWin || {}; T.pendWin[id] = (T.pendWin[id] || 0) + 1; } }
+    // 任內拍板:記在當下拍板的人(正式首長或代理)那段任期上
+    function onDecide(w, p, ok) {
+        const T = S(w); const L = leaderOf(w); if (!L) return;
+        const x = openOf(T, L.agentId, L.agentId === T.holderId ? 'leader' : 'acting') || openOf(T, L.agentId, 'leader'); if (!x) return;
+        if (ok) x.a = (x.a || 0) + 1; else x.v = (x.v || 0) + 1;
+        let major = !!p.council; try { if (!major && typeof ASSEMBLY !== 'undefined') major = ASSEMBLY.isMajor(w, p); } catch (e) {}
+        if (major && p.tk) { x.b = x.b || []; x.b.push({ id: p.id, tk: p.tk, tp: p.tp || {}, ok: ok ? 1 : 0 }); if (x.b.length > 4) x.b.shift(); }
+    }
+    const terms = (x) => Math.max(1, (x.w || 0) + (x.init || x.cont ? 1 : 0));
+    const SEAS = ['春季', '夏季', '秋季', '冬季'], SEAS_EN = ['Spring', 'Summer', 'Autumn', 'Winter'];
+    function dateText(d) { const n = Math.max(0, (d || 1) - 1), y = Math.floor(n / 60) + 1, si = Math.floor((n % 60) / 15); return en() ? `Y${y} ${SEAS_EN[si]}` : `第${y}年${SEAS[si]}`; }
+    const titleOf = (w, x) => x.role === 'council' ? memberTitle(w, x.lv) : x.role === 'acting' ? (en() ? 'Acting ' : '代理') + leaderTitle(w, x.lv) : leaderTitle(w, x.lv);
+    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], ended: ['卸任', 'left office'] };
+    const endText = (e) => { const z = END[e] || END.ended; return en() ? z[1] : t(z[0]); };
+    function leaderNote(x) {
+        const w = x.w || 0;
+        if (x.init || x.cont) { const head = x.init ? (en() ? 'first in office when the town began' : t('開鎮首任')) : (en() ? 'stayed on after the town changed level' : t('小鎮升降級後續任'));
+            return w ? (en() ? `${head}, then re-elected ${w} time(s)` : `${head}${t('，')}${t('之後連任')} ${w} ${t('次')}`) : head; }
+        return w <= 1 ? (en() ? 'won the election' : t('選舉當選')) : (en() ? `won ${w} elections (${w} terms)` : `${t('當選')} ${w} ${t('次')}${t('（')}${w} ${t('屆')}${t('）')}`);
+    }
+    // 完整履歷(村民詳情):新的在前
+    function resume(w, a) {
+        const c = S(w).career[a?.agentId] || []; const nowD = day(w); const P = w.proposals;
+        return c.filter(x => x.role !== 'acting' || ((x.to ?? nowD) - x.from) >= 2).slice().reverse().map(x => {
+            const notes = [];
+            if (x.role === 'leader') notes.push(leaderNote(x));
+            if (x.a || x.v) notes.push(en() ? `approved ${x.a || 0}, vetoed ${x.v || 0}` : `${t('批准')} ${x.a || 0} ${t('案')}${t('、')}${t('否決')} ${x.v || 0} ${t('案')}`);
+            if (x.to !== null) notes.push(endText(x.e));
+            const bills = (x.b || []).slice().reverse().map(b => { let tt = b.tk; try { tt = P ? P._fill(b.tk, b.tp) : t(b.tk); } catch (e) {} return en() ? `${b.id} "${tt}" (${b.ok ? 'passed' : 'vetoed'})` : `${b.id}${t('「')}${tt}${t('」')}${t('（')}${b.ok ? t('通過') : t('否決')}${t('）')}`; });
+            return { role: x.role, title: titleOf(w, x), period: `${dateText(x.from)} ～ ${x.to === null ? t('至今') : dateText(x.to)}`, current: x.to === null, notes, bills };
+        });
+    }
+    // 摘要:同職位合併屆數(給 AI 與小卡)
+    function summary(w, a) {
+        const c = (S(w).career[a?.agentId] || []); if (!c.length) return [];
+        const g = new Map(); const nowD = day(w);
+        for (const x of c) { if (x.role === 'acting' && ((x.to ?? nowD) - x.from) < 2) continue; if (x.role === 'council' && x.to !== null && (x.to - x.from) < 5) continue;
+            const k = x.role + x.lv; const o = g.get(k) || { role: x.role, lv: x.lv, n: 0, cur: false, last: 0, e: '' }; o.n += x.role === 'leader' ? terms(x) : 1; o.cur = o.cur || x.to === null; if (x.from >= o.last) { o.last = x.from; o.e = x.e || ''; } g.set(k, o); }
+        return [...g.values()].sort((p, q) => (q.cur - p.cur) || (q.last - p.last));
+    }
+    function careerText(w, a) {
+        return summary(w, a).slice(0, 3).map(o => { const ti = titleOf(w, o); const n = o.role === 'leader' && o.n > 1 ? (en() ? ` ×${o.n}` : `${t('（')}${o.n} ${t('屆')}${t('）')}`) : ''; return (o.cur ? (en() ? 'current ' : '現任') : (en() ? 'former ' : '前')) + ti + n; }).join(en() ? ', ' : '、');
+    }
+    // 給 AI 的一句話:讓他一直記得自己當過什麼
+    function careerBrief(w, a) {
+        const s = summary(w, a); if (!s.length) return '';
+        const bits = s.slice(0, 3).map(o => { const ti = titleOf(w, o); if (en()) return `${o.cur ? 'currently ' : 'formerly '}${ti}${o.role === 'leader' ? ` (${o.n} term${o.n > 1 ? 's' : ''}${!o.cur && o.e ? ', ' + endText(o.e) : ''})` : ''}`;
+            const n = o.role === 'leader' && o.n > 1 ? o.n : 0;
+            if (o.cur) return `${t('現任')}${ti}${n ? `${t('（')}${t('第')} ${n} ${t('屆')}${t('）')}` : ''}`;
+            return `${t('當過')}${n ? ` ${n} ${t('屆')}` : ''}${ti}${o.role === 'leader' && o.e ? `${t('（')}${endText(o.e)}${t('）')}` : ''}`; });
+        return en() ? `Your political career: ${bits.join('; ')}.` : `${t('你的從政經歷')}${t('：')}${bits.join(t('；'))}${t('。')}`;
+    }
+    // 墓誌銘用:最高的官職
+    function topOffice(w, a) {
+        const s = summary(w, a).filter(o => o.role !== 'acting'); if (!s.length) return null;
+        s.sort((p, q) => ((q.role === 'leader') - (p.role === 'leader')) || (q.lv - p.lv) || (q.n - p.n)); const o = s[0];
+        return { title: titleOf(w, o), n: o.role === 'leader' ? o.n : 0 };
     }
     // 參選首長的資格
     function qualified(w, a) {
@@ -53,17 +134,10 @@ const TIERS = (() => {
         const c = T.career[a.agentId] || [], d = day(w);
         return c.some(x => (x.role === 'leader' && x.lv >= T.lv - 1) || (x.role === 'council' && x.lv >= T.lv && ((x.to ?? d) - x.from) >= COUNCIL_TERM));
     }
-    function careerText(w, a) {
-        const c = (S(w).career[a?.agentId] || []).filter(x => x.role === 'leader' || ((x.to ?? day(w)) - x.from) >= 5);
-        if (!c.length) return '';
-        const seen = new Set(); const out = [];
-        for (const x of c.slice().reverse()) { const k = x.role + x.lv; if (seen.has(k)) continue; seen.add(k); out.push((x.to === null ? '' : (en() ? 'former ' : '前')) + (x.role === 'leader' ? leaderTitle(w, x.lv) : memberTitle(w, x.lv))); }
-        return out.slice(0, 3).join(en() ? ', ' : '、');
-    }
     // 角色卡／名牌上的官職標籤
     function badge(w, a) {
         if (!w || !a) return null; const T = S(w);
-        if (T.leaderId === a.agentId) return { cls: 'leader', icon: '🎖️', text: leaderTitle(w) };
+        if (T.leaderId === a.agentId) return { cls: 'leader', icon: '🎖️', text: (T.actingId === a.agentId ? (en() ? 'Acting ' : '代理') : '') + leaderTitle(w) };
         if ((w.council?.members || []).includes(a.agentId)) return { cls: 'council', icon: '🏛️', text: memberTitle(w) };
         const c = T.career[a.agentId] || []; const fl = c.filter(x => x.role === 'leader' && x.to !== null).sort((x, y) => y.lv - x.lv)[0];
         if (fl) return { cls: 'former', icon: '📜', text: (en() ? 'Former ' : '前') + leaderTitle(w, fl.lv) };
@@ -103,9 +177,12 @@ const TIERS = (() => {
     function change(w, T, nl) {
         const old = T.lv, d = day(w); T.lv = nl; T.up = 0; T.down = 0; T.since = d; T.history.push({ lv: nl, day: d }); if (T.history.length > 20) T.history.shift();
         // 首長換稱號:現任直接接任升格後的職位
-        if (T.leaderId) { close(T, T.leaderId, 'leader', d); open(T, T.leaderId, 'leader', nl, d); }
-        for (const id of T.council) { close(T, id, 'council', d); open(T, id, 'council', nl, d); }
-        try { if (w.council?._formed) { w.council._formCouncil(w); T.council = []; track(w, T); } } catch (e) {}
+        if (T.holderId === undefined) T.holderId = T.leaderId ?? null;
+        if (T.holderId) { close(T, T.holderId, 'leader', d, 'promo'); open(T, T.holderId, 'leader', nl, d, true); } // v6.84.0 升降級改稱:新稱號記成「續任」
+        if (T.actingId) { close(T, T.actingId, 'acting', d, 'promo'); open(T, T.actingId, 'acting', nl, d); }
+        for (const id of T.council) close(T, id, 'council', d, 'promo');
+        let reformed = false; try { if (w.council?._formed) { w.council._formCouncil(w); T.council = []; track(w, T); reformed = true; } } catch (e) {}
+        if (!reformed) for (const id of T.council) open(T, id, 'council', nl, d);
         const up = nl > old, L = LV[nl], Lo = LV[old];
         const p = { from: Lo.zh, to: L.zh, icon: L.icon };
         try { w.logMessageT?.('event', up ? '{icon} 鎮上人口和繁榮都夠了，正式從{from}升格為{to}！' : '{icon} 人口和繁榮掉下來，{from}降回了{to}。', p); } catch (e) {}
@@ -145,7 +222,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
+    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)
@@ -216,10 +293,59 @@ if (typeof ElectionSystem !== 'undefined') {
         if (ok.length === 1 && !opts.byElection) {
             const a = ok[0]; try { world.logMessageT('event', '🎖️ 只有{name}有資歷參選{title}，不用選舉，直接續任。', { name: a.name, title: TIERS.leaderTitle(world) }, a.name); } catch (e) {}
             try { a.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '沒有人有資格跟我競爭，我直接續任了。', {}, 7, []); } catch (e) {}
+            try { if (T.holderId === a.agentId) TIERS.addWin(world, a.agentId); } catch (e) {} // v6.84.0 直接續任也算一屆
             return;
         }
         try { world.logMessageT('event', '📢 鎮上還沒有人有足夠資歷，這一屆開放所有人參選。', {}); } catch (e) {}
         return _start.call(this, world, opts);
+    };
+}
+// ---- v6.84.0 從政履歷:開票記當選／落選、任內拍板記批准／否決與大案、AI 記得自己的官職、墓誌銘寫最高官職
+if (typeof ElectionSystem !== 'undefined') {
+    const ES = ElectionSystem.prototype; const _ar = ES._announceResults;
+    ES._announceResults = function (world, ...rest) {
+        let T = null, before = null, cands = null; const n0 = (this.electionHistory || []).length;
+        try { T = TIERS.S(world); TIERS.track(world); before = T.holderId || null; cands = new Set((this.candidates || []).map(c => c.agentId)); T._inElec = true; } catch (e) {}
+        let r;
+        try {
+            r = _ar.call(this, world, ...rest);
+            try {
+                const H = this.electionHistory || [];
+                if (T && H.length > n0) {
+                    const wid = H[H.length - 1]?.winner?.agentId || null;
+                    if (before && wid && before !== wid) { T.endHint = T.endHint || {}; T.endHint[before] = cands.has(before) ? 'lost' : 'stepdown'; }
+                    TIERS.track(world); TIERS.addWin(world, wid);
+                }
+            } catch (e) { console.warn('[Career] election', e); }
+        } finally { if (T) T._inElec = false; }
+        return r;
+    };
+}
+if (typeof ProposalSystem !== 'undefined') {
+    const PS = ProposalSystem.prototype; const _dc = PS._decide;
+    PS._decide = function (w, p, action, by, ...rest) {
+        const r = _dc.call(this, w, p, action, by, ...rest);
+        try { if (by === 'mayor' && (p.status === 'approved' || p.status === 'rejected' || p.status === 'done' || p.status === 'failed')) TIERS.onDecide(w, p, p.status !== 'rejected'); } catch (e) {}
+        return r;
+    };
+}
+if (typeof ConversationEngine !== 'undefined') {
+    const CE = ConversationEngine.prototype; const _ab = CE._agentBrief, _cp = CE._buildCharacterProfile;
+    CE._agentBrief = function (world, a, other) { const b = _ab.call(this, world, a, other); try { const s = TIERS.careerBrief(world, a); if (s) { const m = b.mem || []; b.mem = [...m.slice(0, 1), s, ...m.slice(1)]; } } catch (e) {} return b; };
+    CE._buildCharacterProfile = function (agent) { const p = _cp.call(this, agent); try { const w = this._world || (typeof window !== 'undefined' && window.rimtownApp?.world); const s = w && TIERS.careerBrief(w, agent); if (s) p.status = `${p.status}${t('；')}${s}`; } catch (e) {} return p; };
+}
+if (typeof LifecycleSystem !== 'undefined') {
+    const LS = LifecycleSystem.prototype; const _ep = LS._generateEpitaph;
+    LS._generateEpitaph = function (npc, ...rest) {
+        const s = _ep.call(this, npc, ...rest);
+        try {
+            const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || null; const o = w && TIERS.topOffice(w, npc); if (!o) return s;
+            const isEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
+            const head = isEn ? `Served ${o.n > 1 ? o.n + ' terms ' : ''}as ${o.title}` : `曾任${o.n > 1 ? `${o.n} 屆` : ''}${o.title}`;
+            const job = npc.job ? `${t('曾任')}${npc.job.title}` : '';
+            if (job && s.startsWith(job)) return head + s.slice(job.length);
+            return head + (isEn ? '. ' : '，') + s;
+        } catch (e) { return s; }
     };
 }
 // ---- 存讀檔、新城鎮清空、回來補變化

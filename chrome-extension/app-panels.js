@@ -767,6 +767,7 @@ Object.assign(RimTownApp.prototype, {
                     <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}${romHeart}</span></div>`;
                 }).join('')}</div>
             ${this._renderAgentFactions(this.selectedAgent)}
+            ${this._renderCareer(this.selectedAgent)}
             <div class="detail-section"><h3>${t('近期記憶')}</h3>
                 ${memories.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>'):
                 memories.slice(-10).reverse().map(m=>`<div class="memory-item"><span class="memory-time">${m.time}</span>${m.content}</div>`).join('')}</div></div>`;
@@ -1224,11 +1225,13 @@ Object.assign(RimTownApp.prototype, {
             <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('存檔會自動同步至雲端，在任何裝置登入即可讀取。')}</p>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
                 <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
+                <button class="trade-btn" data-action="settings-export" title="${t('把目前這個小鎮的存檔下載成一個檔案')}">💾 ${t('匯出存檔')}</button>
                 <button class="trade-btn" data-action="settings-logout" style="background:var(--negative);color:#fff">${t('登出')}</button>
             </div>`;
         } else {
             html += `<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
                 <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
+                <button class="trade-btn" data-action="settings-export" title="${t('把目前這個小鎮的存檔下載成一個檔案')}">💾 ${t('匯出存檔')}</button>
             </div>
             <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('登入後存檔會自動同步至雲端，在任何裝置都能讀取。')}</p>
             <div style="display:flex;gap:6px">
