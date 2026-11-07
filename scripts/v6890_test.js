@@ -60,7 +60,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const grave = (w.lifecycle.graveyard || []).find(g => g.name === lone.name); out.starved = !w.agents[lone.agentId] && !!grave; out.cause = grave?.cause || grave?.deathCause || '';
       const h3 = all.find(a => w.agents[a.agentId] && ![rich, buyer, kid, par, lone].includes(a)); M.hungry[h3.agentId] = 3; MARKET.hunger(w, npcs()); out.starvingThought = (h3.thoughts || []).some(x => x.kind === 'starving');
       // 8) 老闆過世,家人繼承
-      const heir = all.find(a => w.agents[a.agentId] && ![buyer, kid, par, lone, h3].includes(a) && a.age >= 16); heir._parentNames = [buyer.name, 'y'];
+      const heir = all.find(a => w.agents[a.agentId] && ![buyer, kid, par, lone, h3].includes(a) && a.age >= 16); heir._parentNames = [buyer.name, 'y']; /* v6.90 開局有家族:先清掉老闆原本的配偶與子女,只留這個繼承人 */ for (const o of Object.values(w.agents)) { if (o === buyer || o === heir) continue; if ((o._parentNames || []).includes(buyer.name)) o._parentNames = o._parentNames.filter(n => n !== buyer.name); const rr = o.relationships?.relationships?.[buyer.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; } for (const rr of Object.values(buyer.relationships?.relationships || {})) if (['married', 'dating'].includes(rr.status)) rr.status = 'ex';
       try { w.lifecycle._killNpc(w, buyer); } catch (e) { out.killErr = e.message; } out.inherit = M.owners.farm === heir.agentId;
       // 9) 公庫工程款付給承包商
       const cs = npcs().find(a => a.job?.key === 'carpenter' || a.job?.key === 'miner' || a.job?.key === 'blacksmith');
