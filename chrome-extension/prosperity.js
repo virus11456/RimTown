@@ -29,7 +29,8 @@ class ProsperityEngine {
         this.level = t('荒涼');            // 繁榮等級名稱
         this._lastUpdateDay = -1;
         this._townAgeDays = 0;         // v5.54.0 建鎮天數(早期爬坡上限用)
-        this.questBonus = 0;           // v5.84.0 任務給的持久加成(颱風夜守住 +10 等)
+        this.questBonus = 0;           // v5.84.0 事件給的加成(v6.87.0 起會慢慢消退,上限 ±20)
+        this.trialBonus = 0;           // v6.87.0 季度考驗的扣分帳(沒撐過 −10,撐過補回;不消退,最低 −20)
     }
 
     // ============================================================
@@ -40,7 +41,7 @@ class ProsperityEngine {
         let total = 0;
         for (const dim of Object.values(this.dimensions)) total += dim.value * dim.weight;
         this.questBonus = Math.max(-20, Math.min(20, this.questBonus || 0)); // v6.87.0 事件／贊助加成最多 ±20(以前會一路累積到 +88,繁榮卡在 100)
-        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0) + (this.originBonus || 0)))); // v6.85.0 originBonus:初遇時就是城鎮／城市的老底子(街道、城牆、名聲等沒模擬到的部分)
+        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0) + (this.trialBonus || 0) + (this.originBonus || 0)))); // v6.85.0 originBonus:初遇時就是城鎮／城市的老底子(街道、城牆、名聲等沒模擬到的部分)
         // v5.54.0 早期爬坡上限:繁榮度是「現狀快照」,新鎮第一晚就會反映 ~40 的底子,
         // 導致第 1 章(門檻 20)只活一天。前 5 天封頂在 天數×8(8/16/24/32/40),
         // 讓「先和村民相處」的第一章真的有 2-3 天可玩;第 6 天起完全解封。
@@ -323,6 +324,7 @@ class ProsperityEngine {
             _lastUpdateYear: this._lastUpdateYear,
             _townAgeDays: this._townAgeDays,
             questBonus: this.questBonus || 0, // v5.84.0
+            trialBonus: this.trialBonus || 0, // v6.87.0
             originBonus: this.originBonus || 0, // v6.85.0
         };
     }
@@ -340,6 +342,7 @@ class ProsperityEngine {
         this.prosperity = data.prosperity || 0;
         this.level = data.level || t('荒涼');
         this.questBonus = data.questBonus || 0; // v5.84.0
+        this.trialBonus = data.trialBonus || 0; // v6.87.0 舊檔的考驗扣分混在 questBonus 裡,會隨它慢慢消退
         this.originBonus = data.originBonus || 0; // v6.85.0
         this._lastUpdateDay = data._lastUpdateDay ?? -1;
         this._lastUpdateYear = data._lastUpdateYear ?? undefined;

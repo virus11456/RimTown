@@ -80,9 +80,7 @@ const CIVIC = (() => {
             const lv = w.housing?.lv?.[h] || 0; const r = Math.round(2 + lv * 2 + tierLv(w) + landPrice(w) / 50);
             for (const x of people) {
                 if (x === owner) continue; const fam = (x._parentNames || []).includes(owner.name) || (owner._parentNames || []).includes(x.name) || x.relationships?.relationships?.[owner.agentId]?.status === 'married'; if (fam) continue;
-                // v6.87.0 房租一週最多 8 銀幣,付完至少要留 15 銀幣過日子(以前一屋擠十人、城鎮一升級房租跟著跳,租客全被抽乾,錢都流到屋裡最有錢的人手上)
-                const amt = Math.min(r, 8, Math.floor(cash(w, x) - 15)); if (amt < 1) continue;
-                if (WALLET.pay(w, x, owner, amt)) { total += amt; if (cash(w, x) < 20) mem(w, x, '付完房租就沒剩幾個錢了。', {}, 5); }
+                if (WALLET.pay(w, x, owner, Math.min(r, Math.floor(cash(w, x))))) { total += r; if (cash(w, x) < 5) mem(w, x, '付完房租就沒剩幾個錢了。', {}, 5); }
             }
         }
         C.lastRent = total;

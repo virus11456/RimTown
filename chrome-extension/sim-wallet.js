@@ -66,9 +66,9 @@ const WALLET = (() => {
         try { election(w, W, all); } catch (e) { console.warn('[Wallet] election', e); }
         for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) delete W.bal[id]; // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
     }
-    // v6.87.0 最低工資:扣稅後至少 4.5(三餐 3＋衣服＋柴火平均約 4,再留一點),以前農夫、礦工、神職做滿一天還是越過越窮
+    // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
-    const netOf = (W, a) => Math.max(FLOOR, WAGE[a.job.key] * (1 - W.tax));
+    const netOf = (W, a) => Math.max(W.minWage || 0, WAGE[a.job.key] * (1 - W.tax));
     function payday(w, W, all) {
         const workers = all.filter(a => WAGE[a.job?.key]); const gross = workers.reduce((s, a) => s + WAGE[a.job.key], 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);

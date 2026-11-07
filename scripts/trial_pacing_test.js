@@ -12,8 +12,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   const out = await page.evaluate(async () => {
     const app = window.rimtownApp; const w = app.world; app._visitorMailboxTick(); w.paused = true; const o = {}; const fails = []; const ck = (c, m) => { if (!c) fails.push(m); };
     const tr = w.trials; const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_')).length;
-    const pop0 = npcs(); const qb0 = w.prosperity.questBonus || 0; o.pop0 = pop0;
-    const failOnce = (i) => { tr.current = { type: 'famine', seasonKey: 'T' + i, status: 'active', target: 999, startAbsDay: 0, dueDay: 15, contrib: { food: 0, herb: 0, silver: 0 } }; tr._resolve(w, true); return { pop: npcs(), qb: w.prosperity.questBonus, declined: w.multiEnding?.endingTriggered === 'decline', penalty: tr.penalty }; };
+    const pop0 = npcs(); const qb0 = (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)) || 0; o.pop0 = pop0;
+    const failOnce = (i) => { tr.current = { type: 'famine', seasonKey: 'T' + i, status: 'active', target: 999, startAbsDay: 0, dueDay: 15, contrib: { food: 0, herb: 0, silver: 0 } }; tr._resolve(w, true); return { pop: npcs(), qb: (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)), declined: w.multiEnding?.endingTriggered === 'decline', penalty: tr.penalty }; };
     const steps = []; for (let i = 1; i <= 6; i++) steps.push(failOnce(i)); o.steps = steps;
     ck(steps[0].qb === qb0 - 10 && steps[1].qb === qb0 - 20 && steps[2].qb === qb0 - 20 && steps[5].qb === qb0 - 20 && tr.penalty === -20, 'penalty floor ' + JSON.stringify(steps.map(s => s.qb)));
     ck(steps[1].declined, 'declined after 2 fails');
@@ -23,12 +23,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const extra = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && a.job?.key !== 'mayor').slice(0, Math.max(0, npcs() - 8)); extra.forEach(a => { delete w.agents[a.agentId]; }); const popAt8 = npcs();
     const s7 = failOnce(7); ck(popAt8 <= 8 ? s7.pop === popAt8 : true, 'no leavers at pop floor ' + popAt8 + '→' + s7.pop); o.popAt8 = [popAt8, s7.pop];
     // 撐過一季:補回 10 再 +5
-    const qbBefore = w.prosperity.questBonus; tr.current = { type: 'famine', seasonKey: 'P1', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; tr._resolve(w, true);
-    o.pass = { qbDelta: w.prosperity.questBonus - qbBefore, penalty: tr.penalty }; ck(o.pass.qbDelta === 15 && tr.penalty === -10, 'pass restores ' + JSON.stringify(o.pass));
-    tr.current = { type: 'famine', seasonKey: 'P2', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; const qb2 = w.prosperity.questBonus; tr._resolve(w, true);
-    o.pass2 = { qbDelta: w.prosperity.questBonus - qb2, penalty: tr.penalty, declined: w.multiEnding?.endingTriggered === 'decline' }; ck(o.pass2.qbDelta === 30 && tr.penalty === 0 && !o.pass2.declined, 'second pass clears penalty (+15) and revives (+15) ' + JSON.stringify(o.pass2));
-    tr.current = { type: 'famine', seasonKey: 'P3', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; const qb3 = w.prosperity.questBonus; tr._resolve(w, true);
-    ck(w.prosperity.questBonus - qb3 === 5, 'pass with no penalty is +5');
+    const qbBefore = (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)); tr.current = { type: 'famine', seasonKey: 'P1', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; tr._resolve(w, true);
+    o.pass = { qbDelta: (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)) - qbBefore, penalty: tr.penalty }; ck(o.pass.qbDelta === 15 && tr.penalty === -10, 'pass restores ' + JSON.stringify(o.pass));
+    tr.current = { type: 'famine', seasonKey: 'P2', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; const qb2 = (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)); tr._resolve(w, true);
+    o.pass2 = { qbDelta: (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)) - qb2, penalty: tr.penalty, declined: w.multiEnding?.endingTriggered === 'decline' }; ck(o.pass2.qbDelta === 30 && tr.penalty === 0 && !o.pass2.declined, 'second pass clears penalty (+15) and revives (+15) ' + JSON.stringify(o.pass2));
+    w.prosperity.questBonus = 0; /* v6.87.0 事件加成上限 +20,先歸零才看得出 +5 */ tr.current = { type: 'famine', seasonKey: 'P3', status: 'active', target: 1, startAbsDay: 0, dueDay: 15, contrib: { food: 5, herb: 0, silver: 0 } }; const qb3 = (w.prosperity.questBonus + (w.prosperity.trialBonus || 0)); tr._resolve(w, true);
+    ck((w.prosperity.questBonus + (w.prosperity.trialBonus || 0)) - qb3 === 5, 'pass with no penalty is +5');
     // 存讀檔
     tr.penalty = -10; const sv = JSON.parse(JSON.stringify(w.serialize())); const W = new World(); W.loadSave(sv); ck(W.trials.penalty === -10, 'penalty saved');
     o.fails = fails; return o;

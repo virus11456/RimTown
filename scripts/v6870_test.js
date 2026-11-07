@@ -1,4 +1,4 @@
-// v6.87.0 制度修正第一批:最低工資、救濟金發到人手上、公庫生活補助提案、政令真的生效(議會沒成立也會到期)、
+// v6.87.0 制度修正第一批:最低工資提案(要投票、窮人支持有錢人反對)、救濟金發到人手上、公庫生活補助提案、政令真的生效(議會沒成立也會到期)、
 // 銀行呆帳慢慢沖銷／重新開張歸零／擠兌後冷卻、過世的人的錢(含存款,先還貸款)由家人繼承、
 // 出遠門的人錢包／頭銜／店／貸款／牢期都留著、國王出巡改攝政、存檔依人口精簡(家人關係一定留)、
 // 繁榮加成最多 ±20 且慢慢消退、所有新生兒都記得爸媽(存讀檔、出遠門都保留)、訪客本機空間滿改存 IndexedDB;中英、桌機與 390px
@@ -24,7 +24,16 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       runDay();
       // 1) 最低工資
       const Wl = WALLET.S(w); const farmer = npcs().find(a => a.job?.key === 'farmer') || npcs().find(a => WALLET.WAGE[a.job?.key]);
-      out.floor = WALLET.netOf({ tax: 0.6 }, farmer) >= WALLET.FLOOR && WALLET.FLOOR >= 4.5;
+      out.noFloor = WALLET.netOf({ tax: 0.6 }, farmer) < WALLET.FLOOR; // 沒通過最低工資:照市價
+      { const ps0 = w.proposals; const d0 = ps0._abs(w); const oldTax = Wl.tax; Wl.tax = 0.6; Wl.minWage = 0; ps0.cooldown = {};
+        const c0 = (ps0._candidates(w, d0) || []).find(c => c.kind === 'minwage'); out.mwCand = !!c0;
+        if (c0) { const p0 = ps0._create(w, d0, c0); out.mwTitle = ps0.title(p0);
+          // 投票:窮人支持、有錢人反對(多次取樣看傾向)
+          const vs = npcs().filter(a => a.agentId !== p0.proposerId).slice(0, 12); let poorFor = 0, richFor = 0, n = 0;
+          for (let k = 0; k < 20; k++) for (const a of vs.slice(0, 6)) { Wl.bal[a.agentId] = 2; delete p0.votes[a.agentId]; ps0._ruleVote(w, p0, a); if (p0.votes[a.agentId] === 'for') poorFor++; Wl.bal[a.agentId] = 500; delete p0.votes[a.agentId]; ps0._ruleVote(w, p0, a); if (p0.votes[a.agentId] === 'for') richFor++; n++; }
+          out.mwVote = { poorFor, richFor, n };
+          p0.status = 'approved'; ps0._execute(w, p0, d0); out.mwSet = Wl.minWage; }
+        out.floor = WALLET.netOf(Wl, farmer) >= WALLET.FLOOR; Wl.tax = oldTax; }
       // 2) 救濟金發到人手上、公庫生活補助
       const ps = w.proposals; const day = ps._abs(w); const all = npcs();
       const poorOnes = all.slice(0, Math.ceil(all.length * 0.4)); for (const a of poorOnes) Wl.bal[a.agentId] = 1;
@@ -109,7 +118,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       return out;
     });
     const zh = lang === 'zh';
-    ok(r.floor, '最低工資：稅再高，扣稅後一天至少 4.5 銀幣', r.floor);
+    ok(r.noFloor, '沒訂最低工資時照市價（稅高就領得少）', r.noFloor);
+    ok(r.mwCand && (zh ? /最低工資/.test(r.mwTitle) : /minimum wage/i.test(r.mwTitle)), '做一天不夠過活的人一多，會有人提「訂定最低工資」', { c: r.mwCand, t: r.mwTitle });
+    ok(r.mwVote && r.mwVote.poorFor > r.mwVote.richFor + r.mwVote.n * 0.2, '投票看口袋：手頭緊的多半支持、有錢的多半反對', r.mwVote);
+    ok(r.mwSet >= 4.5 && r.floor, '最低工資通過後，扣稅後一天至少 4.5 銀幣', { m: r.mwSet, f: r.floor });
     ok(r.relief >= 20, '救濟金真的發到被救濟的人手上', r.relief);
     ok(r.stipendCand, '一堆人沒錢、公庫錢多時，會有人提「從公庫發放生活補助」', r.stipendCand);
     ok(r.stipendGain >= Math.ceil(r.stipendN * 0.8), '生活補助發給身上沒錢的人', { g: r.stipendGain, n: r.stipendN });

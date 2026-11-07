@@ -38,7 +38,7 @@ const MAYOR_WHY = {
 const VOTE_WHY = {
     value: '價值觀相合', wealth: '看重財富', work: '勤勞肯做', lazy: '懶得折騰', fun: '愛熱鬧', glutton: '貪吃', ascetic: '不愛鋪張', stoic: '不愛熱鬧', charm: '愛出風頭',
     adventure: '愛冒險', family: '顧家', shy: '怕生', care: '重視社群', kind: '心軟', greedy: '捨不得花錢', trial: '考驗當前', moodup: '政令會讓大家開心', mooddown: '政令會讓大家不開心', spend: '政令要花錢',
-    pessimist: '悲觀', optimist: '樂觀', job: '跟自己這行有關', relgood: '跟提案人交情好', relbad: '跟提案人處不來', cost: '公庫不夠', gut: '憑直覺',
+    pessimist: '悲觀', optimist: '樂觀', job: '跟自己這行有關', relgood: '跟提案人交情好', relbad: '跟提案人處不來', cost: '公庫不夠', gut: '憑直覺', needy: '自己也手頭緊', rich: '覺得不該拿公庫養人',
     feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了', growth: '想讓鎮上更興旺', oldways: '喜歡現在的樣子',
 };
 // 職業 → 偏好的建築／工廠
@@ -188,6 +188,10 @@ class ProposalSystem {
         if (p.kind === 'mediate' && p.pair) { const r0 = a.relationships?.relationships?.[p.pair[0]], r1 = a.relationships?.relationships?.[p.pair[1]]; if ((r0?.affinity || 0) > 20 || (r1?.affinity || 0) > 20) add('feud', 2); if ((r0?.affinity || 0) < -30 || (r1?.affinity || 0) < -30) add('grudge', -2); }
         if (p.kind === 'honor' && p.refKey) { const r0 = a.relationships?.relationships?.[p.refKey]; if ((r0?.affinity || 0) > 20) add('proud', 2); if ((r0?.affinity || 0) < -20) add('grudge', -3); if (this._hasTrait(a, 'jealous')) add('grudge', -1); }
         if (p.kind === 'recruit') { if (this._hasValue(a, '社群') || this._hasTrait(a, 'optimist')) add('newcomer', 2); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); }
+        if (p.kind === 'minwage' || p.kind === 'stipend' || p.kind === 'relief') { // v6.87.0 看自己口袋:手頭緊的支持,有錢的人多半覺得不該拿公庫養人
+            const b = typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 50;
+            if (b < 12) add('needy', 2.5); else if (b >= 150 && !this._hasTrait(a, 'kind')) add('rich', p.kind === 'relief' ? -1 : -2.5);
+        }
         if (p.kind === 'trial') add('trial', 2);
         if (p.kind === 'tier_up') { add('growth', 1.5); if (this._hasValue(a, '財富') || this._hasValue(a, '權力')) add('growth', 1); if (this._hasTrait(a, 'charismatic') || this._hasTrait(a, 'hardworking')) add('growth', 1); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); if (this._hasTrait(a, 'stoic') || this._hasValue(a, '自然') || this._hasValue(a, '和平')) add('oldways', -1.5); } // v6.81.0
         if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
@@ -330,7 +334,14 @@ class ProposalSystem {
         const poorList = npcs.filter(a => bal(a) < 8);
         if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && silver >= 200 + npcs.length * 6 && this._cool(day, 'stipend', 10)) {
             const per = Math.max(5, Math.min(20, Math.floor((silver * 0.35) / poorList.length))); const total = per * poorList.length;
-            out.push({ kind: 'stipend', key: 'stipend', weight: 3.5, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
+            out.push({ kind: 'stipend', key: 'stipend', weight: 1.8, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
+        }
+        // v6.87.0 最低工資是政治選擇,不是天生就有:做滿一天扣完稅還不夠過活的人一多,底層勞工會提,要投票通過才生效(錢從公庫出,有錢人多半反對)
+        if (typeof WALLET !== 'undefined' && w.wallet && !(w.wallet.minWage > 0) && this._cool(day, 'minwage', 30)) {
+            const Wt = w.wallet.tax || 0; const working = npcs.filter(a => WALLET.WAGE[a.job?.key]); const under = working.filter(a => WALLET.WAGE[a.job.key] * (1 - Wt) < WALLET.FLOOR);
+            if (working.length >= 6 && under.length >= Math.max(3, Math.ceil(working.length * 0.25))) {
+                out.push({ kind: 'minwage', key: 'minwage', weight: 1.2, jobs: ['farmer', 'miner', 'priest', 'tailor', 'guard'], pred: (a) => bal(a) < 15 || this._hasValue(a, '社群'), make: () => ({ kind: 'minwage', key: 'minwage', tk: '訂定最低工資', tp: {}, dk: '做滿一天、扣完稅還不夠吃穿的有 {n} 人。提議扣稅後每天至少領 {f} 銀幣，差額由公庫補，一年約多花 {y} 銀幣。', dp: { n: under.length, f: WALLET.FLOOR, y: Math.round(under.reduce((t2, a) => t2 + (WALLET.FLOOR - WALLET.WAGE[a.job.key] * (1 - Wt)), 0) * 60) }, cost: {}, effects: {}, category: 'welfare' }) });
+            }
         }
         if (low && silver >= 60 && this._cool(day, 'relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
         // 考驗對策
@@ -598,6 +609,12 @@ class ProposalSystem {
                     const poor = this._npcs(w).filter(a => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99) < 8); const per = p.per || 10;
                     let n = 0; for (const a of poor) { if (!w.stockpile.consume('silver', per, w.tickCount, t('生活補助'), 'proposal')) break; WALLET.add(w, a, per); a.moodModifier = (a.moodModifier || 0) + 4; a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上發了 {n} 銀幣的生活補助，總算吃得上飯了。', { n: per }, 6, []); n++; }
                     ok = n > 0; result = ok ? `${t('發給')} ${n} ${t('人')}${t('，')}${t('每人')} ${per} ${t('銀幣')}` : '沒有需要補助的人了'; break;
+                }
+                case 'minwage': { // v6.87.0
+                    if (typeof WALLET === 'undefined' || !w.wallet) { ok = false; result = '無法施行'; break; }
+                    w.wallet.minWage = WALLET.FLOOR; w.wallet.minWageDay = day; ok = true; result = `${t('最低工資')} ${WALLET.FLOOR} ${t('銀幣')}`;
+                    for (const a of this._npcs(w)) if (WALLET.WAGE[a.job?.key] && WALLET.WAGE[a.job.key] * (1 - (w.wallet.tax || 0)) < WALLET.FLOOR && Math.random() < 0.6) a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上訂了最低工資，以後做一天總算夠吃穿了。', {}, 6, []);
+                    break;
                 }
                 case 'relief': {
                     const x = w.agents[p.refKey]; w.stockpile.consume('silver', 20, w.tickCount, t('救濟金'), 'proposal');
