@@ -924,6 +924,7 @@ class ElectionSystem {
             { const rec = world.proposals?.record?.(c.agentId); if (rec) score += Math.min(12, (rec.done || 0) * 3) - Math.min(6, (rec.rejected || 0) * 1.5); } // v6.30.0 提案戰績:落實過的案子是政績,被否決的是把柄
             try { if (typeof PRESS !== 'undefined' && world.press) score += PRESS.bias(world, voter, c.agentId); } catch (e) {} // v6.63.0 讀到的報導
             try { if (typeof UNION !== 'undefined' && world.union) score += UNION.bias(world, voter, c.agentId); } catch (e) {} // v6.93.0 工會會員投領袖、不投老闆
+            try { if (typeof POWER !== 'undefined' && world.power) score += POWER.bias(world, voter, c.agentId); } catch (e) {} // v6.95.0 選戰經費、醜聞
             try { if (typeof MIND !== 'undefined' && world.mind) score += MIND.affinity(world, voter, candidate) * 3; } catch (e) {} // v6.68.0 立場相近
             score += (Math.random() - 0.3) * 10;
             if (voter.personality.traits.includes('pessimist') && c.policy === 'defense') score += 3;

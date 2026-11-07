@@ -68,6 +68,7 @@ const ASSEMBLY = (() => {
         const ps = w.proposals;
         if (!p.votes[a.agentId]) { try { ps._ruleVote(w, p, a); } catch (e) {} }
         if (p._bribe?.[a.agentId]) return { v: 'for', why: 'bribe' };
+        try { if (typeof POWER !== 'undefined' && w.power) { const sw = POWER.sway(w, a, p); if (sw <= -1.5) return { v: 'against', why: 'donor' }; if (sw >= 1.5) return { v: 'for', why: 'donor' }; } } catch (e) {} // v6.95.0 收了金主的錢
         try { const pv = (typeof POLITICS !== 'undefined') ? POLITICS.pactVote(w, p, a) : null; if (pv) return { v: pv, why: 'pact' }; } catch (e) {}
         let s = p.votes[a.agentId] === 'for' ? 1.5 : p.votes[a.agentId] === 'against' ? -1.5 : 0;
         const total = pub.f + pub.a; let pubPart = 0;
@@ -297,7 +298,7 @@ const ASSEMBLY = (() => {
         const out = []; if (r.bribes) out.push(t('在議會收過 {n} 次錢').replace('{n}', r.bribes)); if (r.bought) out.push(t('選舉時買過 {n} 張票').replace('{n}', r.bought));
         return out.join(t('、'));
     }
-    const WHY = { own: '自己的看法', public: '順著民意', pact: '私下交換條件 🕵️', bribe: '收了好處 🕵️' };
+    const WHY = { own: '自己的看法', public: '順著民意', pact: '私下交換條件 🕵️', bribe: '收了好處 🕵️', donor: '金主的意思 🕵️' };
     return { S, R, isMajor, needs, seated, councilVote, onOutcome, scanSecrets, daily, start, tally, campaign, fillFromRunners, view, recordText, truthText, wantSeats, WHY };
 })();
 
