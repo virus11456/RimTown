@@ -55,6 +55,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const kid = others[5]; kid._parentNames = [k2.name, 'x']; kid.age = 20; k2.isDead = true;
       fix(0.5, () => CROWN.daily(w)); out.heir = CROWN.king(w) === kid && w.crown.history.slice(-1)[0].how === 'heir';
       // 無子嗣 → 繼承危機 → 議會推舉
+      /* v6.90 開局有家族:先讓這位國王沒有其他子嗣、配偶,才會出現繼承危機 */ for (const o of Object.values(w.agents)) { if (o === kid) continue; if ((o._parentNames || []).includes(kid.name)) o._parentNames = o._parentNames.filter(n => n !== kid.name); const rr = o.relationships?.relationships?.[kid.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; }
       kid.isDead = true; fix(0.5, () => CROWN.daily(w)); out.crisis = !!w.crown.crisis && !CROWN.king(w) && w.crown.crisis.claimants.length >= 1;
       w.crown.crisis.until = w._absDay(); fix(0.5, () => CROWN.daily(w)); out.elected = !!CROWN.king(w) && w.crown.history.slice(-1)[0].how === 'elected';
       // 起義
