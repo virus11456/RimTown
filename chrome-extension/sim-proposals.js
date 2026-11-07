@@ -611,6 +611,7 @@ class ProposalSystem {
                     if (worked) for (const x of this._npcs(w)) x.moodModifier = (x.moodModifier || 0) + 1;
                     ok = true; result = worked ? '兩人把話說開了，關係回暖' : '飯吃了，但兩人還是有點僵'; break;
                 }
+                case 'funeral': { const r = (typeof CEREMONY !== 'undefined') ? CEREMONY.publicFuneral(w, p) : { ok: false, msg: '無法辦理' }; ok = !!r.ok; result = r.msg; break; } // v6.86.0 公費葬禮
                 case 'honor': {
                     const x = w.agents[p.refKey]; if (!x) { result = '當事人不在鎮上了'; break; }
                     w.stockpile.consume('silver', 15, w.tickCount, t('表揚儀式'), 'proposal');
