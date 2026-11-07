@@ -65,7 +65,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         const d = (w._absDay ? w._absDay() : 0); const winter = w.clock?.season === '冬季';
         WALLET.S(w).lastDay = -1; try { WALLET.daily(w); } catch (e) { out.walletErr = e.message; }
         const gain = cooks.map(c => { const own = 3 + (((d + (c.agentId.length * 7)) % 10 === 0) ? 6 : 0) + (winter ? 1.5 : 0); return Math.round((WALLET.get(w, c) - before[c.agentId] + own) * 100) / 100; });
-        out.tips = { gain, paidCooks: gain.filter(g => g > 0.2).length, max: Math.max(...gain), bizTax: Math.round(((WALLET.S(w).stats.bizTax || 0) - tax0) * 100) / 100, rate: WALLET.BIZ_TAX };
+        out.tips = { gain, paidCooks: gain.filter(g => g > 0.2).length, max: Math.max(...gain), bizTax: Math.round(((WALLET.S(w).stats.bizTax || 0) - tax0) * 100) / 100, rate: WALLET.BIZ_TAX, market: typeof MARKET !== 'undefined' };
         // 開店的進帳繳 15%
         const o = all[5]; const s1 = w.stockpile.get('silver'); const b1 = WALLET.get(w, o); WALLET.bizIncome(w, o, 100); out.shop = { got: Math.round((WALLET.get(w, o) - b1) * 10) / 10, toTown: Math.round((w.stockpile.get('silver') - s1) * 10) / 10 }; }
       // 9) 作物不標紅、AI 鎮況寫出糧倉
@@ -93,7 +93,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.exec && r.exec.status === 'done' && r.exec.lv === 1 && r.exec.wood < 200, '提案通過後才正式升格並付建材', r.exec);
       ok(r.fallback.mid === 1 && r.fallback.after === 2, '夠格 60 天都沒升格就直接升(不會卡死)', r.fallback);
       ok(r.council.after >= r.council.want && r.council.keepAway && r.council.goneOut, '議員搬走就遞補、出遠門的保留席次', r.council);
-      ok(!r.walletErr && r.tips.paidCooks >= 2 && r.tips.max <= 6 && Math.abs(r.tips.rate - 0.15) < 1e-9 && r.tips.bizTax > 0, '廚師分成平均給每位廚師、每人每天最多 6、要繳營業稅', r.tips);
+      // v6.89.0 起廚師是食堂的員工:領工資(公營時由公庫發、有老闆時由老闆發),不再從每份餐費抽成
+      if (r.tips.market) ok(!r.walletErr && r.tips.paidCooks === 3 && r.tips.max <= 6 && Math.max(...r.tips.gain) - Math.min(...r.tips.gain) < 0.05, '每位廚師都領到一樣的工資（v6.89.0 起廚師是食堂員工）', r.tips);
+      else ok(!r.walletErr && r.tips.paidCooks >= 2 && r.tips.max <= 6 && Math.abs(r.tips.rate - 0.15) < 1e-9 && r.tips.bizTax > 0, '廚師分成平均給每位廚師、每人每天最多 6、要繳營業稅', r.tips);
       ok(r.shop.got === 85 && r.shop.toTown === 15, '開店進帳 100：自己拿 85、15 繳給公庫', r.shop);
       ok(r.crop.found && r.crop.red === false && r.crop.note, '小麥少不標紅，並說明作物收成直接進糧倉', r.crop);
       ok(/糧倉 1900\/\d+（糧倉滿了）/.test(r.brief) && /小麥等作物存量少是正常的/.test(r.brief), 'AI 看到的鎮況寫出糧倉狀態', r.brief.slice(-80));

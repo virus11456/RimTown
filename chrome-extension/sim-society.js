@@ -827,6 +827,8 @@ class LifecycleSystem {
 
             // Random accident (very rare)
             deathChance += 0.001;
+            // v6.89.0 醫療:診所、醫院、澡堂、下水道、草藥醫學讓病死與意外少一些,老死只少一點
+            { const heal = world.buildings?.getEffect?.('healing_bonus', 0) || 0; if (heal > 0) deathChance /= (1 + heal * 0.4); }
 
             if (deathChance > 0 && Math.random() < deathChance) {
                 this._killNpc(world, npc);
@@ -836,7 +838,8 @@ class LifecycleSystem {
 
     _killNpc(world, npc) {
         let cause;
-        if (npc.age >= 70) cause = t('年老體衰');
+        if (npc._deathCause) cause = npc._deathCause; // v6.89.0 餓死等特定死因
+        else if (npc.age >= 70) cause = t('年老體衰');
         else if (world.events.activeEffects.disease) cause = t('突發疾病');
         else cause = pickRandom(DEATH_CAUSES.slice(1));
 

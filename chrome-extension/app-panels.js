@@ -769,6 +769,7 @@ Object.assign(RimTownApp.prototype, {
                     <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}${romHeart}</span></div>`;
                 }).join('')}</div>
             ${this._renderAgentFactions(this.selectedAgent)}
+            ${(() => { try { const wa = this.world?.agents?.[this.selectedAgent]; if (typeof MARKET === 'undefined' || !this.world?.market || !wa || wa.isPlayer) return ''; const s = MARKET.describe(this.world, wa); return s ? `<div class="detail-section market-detail"><h3>🏭 ${t('生計')}</h3><p>${this._escapeHtml ? this._escapeHtml(s) : s}</p></div>` : ''; } catch (e) { return ''; } })()}
             ${this._renderCareer(this.selectedAgent)}
             <div class="detail-section"><h3>${t('近期記憶')}</h3>
                 ${memories.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>'):
