@@ -65,6 +65,7 @@ const CEREMONY = (() => {
         let scale = known >= 6 ? 2 : 1; let paid = 0;
         const cost = scale === 2 ? 30 : 10;
         if (host && W()) { if (W().take(w, host, cost)) paid = cost; else if (scale === 2 && W().take(w, host, 10)) { scale = 1; paid = 10; } }
+        if (paid && typeof MARKET !== 'undefined' && w.market) { const pr = Object.values(w.agents).find(a => !a.isDead && a.job?.key === 'priest'); if (pr) W().add(w, pr, paid * 0.4); MARKET.sale(w, 'meal', paid * (pr ? 0.6 : 1)); } // v6.89.0 葬禮費付給神職與辦桌的食堂,不再憑空消失
         const c = { id: 'C' + (++C.n), kind: 'funeral', of: d.agentId, name: d.name, age: d.age, traits: (d.personality?.traits || []).slice(0, 3), job: d.job?.title || '',
             host: host?.agentId || null, hostName: host?.name || '', day: day(w) + 2, hour: FUN_START, end: FUN_END, loc: 'graveyard', scale, paid, status: 'planned',
             leader: wasLeader ? 1 : 0, family: fam.map(a => a.agentId), close: close.slice(0, 6).map(a => a.agentId), speech: eulogy({ traits: d.personality?.traits || [] }, 'normal') };
@@ -174,7 +175,7 @@ const CEREMONY = (() => {
                 mem(w, x, '參加了{a}和{b}的婚禮。{sp}舉杯說：「{s}」', { a: c.name, b: c.name2, sp: c.speaker || t('大家'), s: c.speech }, 6, [c.name, c.name2]);
                 rel(x, A)?.modifyAffinity?.(2); rel(x, B)?.modifyAffinity?.(2);
             }
-            const cost = [0, 10, 30, 60][c.scale] || 10; if (wal) { const half = cost / 2; wal.take(w, A, half); wal.take(w, B, half); }
+            const cost = [0, 10, 30, 60][c.scale] || 10; if (wal) { const half = cost / 2; let paid = 0; if (wal.take(w, A, half)) paid += half; if (wal.take(w, B, half)) paid += half; if (paid && typeof MARKET !== 'undefined' && w.market) MARKET.sale(w, 'meal', paid); } // v6.89.0 喜宴的錢付給食堂與農莊
             A.moodModifier = (A.moodModifier || 0) + 15; B.moodModifier = (B.moodModifier || 0) + 15;
             mem(w, A, '今天和{o}辦了婚禮，{n} 位朋友來祝福，收到 {g} 銀幣禮金。', { o: B.name, n: guests.length, g: Math.round(gifts) }, 10, [B.name]);
             mem(w, B, '今天和{o}辦了婚禮，{n} 位朋友來祝福，收到 {g} 銀幣禮金。', { o: A.name, n: guests.length, g: Math.round(gifts) }, 10, [A.name]);

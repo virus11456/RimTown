@@ -73,9 +73,13 @@ function processDailyProduction(world) {
     // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
     // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
     // v6.77.0 只有本地產得出的原料保底 40,其他保底 12(不夠就靠商隊)
+    // v6.89.0 原料不夠時是向外地買進來的,公庫要付錢(含運費約 1.5 倍);公庫沒錢就買不到。以前是免費憑空補滿
+    const IMPORT_PRICE = { wood: 3, stone: 4.5, metal: 7.5, cloth: 6, herbs: 7.5 };
     RAW_MATERIALS.forEach(r => {
-        const gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r);
-        if (gap > 0) sp.add(r, gap, world.tickCount, t('原料自動補給'));
+        let gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r);
+        if (!(gap > 0)) return;
+        if (world.observerMode) { const unit = IMPORT_PRICE[r] || 5; const afford = Math.floor(Math.max(0, sp.get('silver') - 50) / unit); gap = Math.min(gap, afford); if (gap <= 0) return; sp.consume('silver', Math.round(gap * unit * 10) / 10, world.tickCount, t('原料進口'), 'import'); sp.add(r, gap, world.tickCount, t('原料進口')); }
+        else sp.add(r, gap, world.tickCount, t('原料自動補給'));
     });
     if (!world.workPolicy) world.workPolicy = {};
     // Check which NPC jobs are covered by the industry system to avoid double production
@@ -113,7 +117,9 @@ function processDailyProduction(world) {
             }
         }
         if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0) + (world.buildings?.getEffect?.('farm_bonus',0) || 0); } // v6.43.1 進階農業／灌溉／風車等加成 // v5.93.0 大糧倉 +20%
-        if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0);
+        if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0) + (world.buildings?.getEffect?.('stone_efficiency',0) || 0); // v6.89.0 石工技術
+        if (agent.job.key === 'blacksmith') eff *= 1 + (world.buildings?.getEffect?.('smithing_bonus',0) || 0) + (world.buildings?.getEffect?.('tool_quality',0) || 0) * 0.5; // v6.89.0 風箱鍛爐、冶金
+        if (world.market?.hungry && (world.market.hungry[agent.agentId] || 0) >= 3) eff *= 0.6; // v6.89.0 餓了好幾天,做事沒力氣
         eff *= 1 + (agent.mood - 50)/500;
         eff *= 0.9 + Math.random()*0.2;
         if (typeof ECON !== 'undefined') { eff *= ECON.toolFactor(world); if (agent.job.key === 'farmer') eff *= ECON.foodMult(world, agent); } // v6.77.0 工具影響每個職業;農夫依種田／捕魚／打獵與地形換算
@@ -135,7 +141,7 @@ function processDailyProduction(world) {
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });
     const npcCount = Object.values(world.agents).filter(a => !a.isPlayer).length;
-    let mealsNeeded = 1.5*npcCount * ((typeof FLOW !== 'undefined') ? FLOW.mealFactor(world) : 1); // v6.80.0 昨天吃得好，今天比較耐餓
+    let mealsNeeded = 1.5*Math.max(0, npcCount - ((world.market && world.wallet?.hungryToday) || 0)) * ((typeof FLOW !== 'undefined') ? FLOW.mealFactor(world) : 1); // v6.89.0 付不起飯錢的人沒得吃 // v6.80.0 昨天吃得好，今天比較耐餓
     mealsNeeded *= 1 - Math.max(0, Math.min(0.3, world.news ? world.news.getModifier('food_save', 0) : 0)); // v6.87.0 糧食儲備政令
     if (typeof FLOW !== 'undefined') mealsNeeded = Math.max(0, mealsNeeded - FLOW.eatSnacks(world, mealsNeeded * 0.4)); // v6.79.0 麵包、糕點、果醬可以代替正餐
     const mealsAvailable = sp.get('meals');
@@ -147,8 +153,13 @@ function processDailyProduction(world) {
         if (sp.consume('food',deficit*2,world.tickCount,t('緊急食物'))) world.logMessage('economy',t('餐食不夠！居民正在吃生食。'));
         else { world.logMessage('economy',t('糧食短缺！居民正在挨餓！')); Object.values(world.agents).forEach(a => { a.moodModifier=(a.moodModifier||0)-10; a.needs.hunger=Math.max(0,a.needs.hunger-20); }); }
     }
+    // v6.89.0 藥草園產草藥、診所頂級的安心感、酒館劇場的娛樂(以前寫了效果但沒作用)
+    { const B = world.buildings; const herbs = B?.getEffect?.('herbs_production', 0) || 0; if (herbs > 0) sp.add('herbs', herbs, world.tickCount, t('藥草園'));
+      const mm = B?.getEffect?.('mood_modifier', 0) || 0, rec = B?.getEffect?.('recreation_bonus', 0) || 0;
+      if (mm || rec) for (const a of Object.values(world.agents)) { if (a.isPlayer || a.isDead) continue; if (mm) a.moodModifier = (a.moodModifier || 0) + mm * 0.5; if (rec && a.needs) a.needs.recreation = Math.min(100, (a.needs.recreation ?? 50) + rec * 0.5); } }
     if (world.townMap) { for (const [locId,gather] of Object.entries(NATURE_GATHERING)) { if (world.townMap.locations[locId]) { for (const [r,a] of Object.entries(gather)) sp.add(r,a*0.5*Math.max(0.5,1+(world.news?world.news.getModifier('gathering_bonus',0):0)),world.tickCount,`natural (${locId})`); } } }
-    if (typeof FLOW !== 'undefined') FLOW.wear(world, 'tools', npcCount*0.05, 'tool wear'); else sp.consume('tools',npcCount*0.05,world.tickCount,'tool wear'); // v6.80.0 鋼做的精製工具壞得慢一半
+    const toolWear = npcCount*0.05 / (1 + (world.buildings?.getEffect?.('tool_quality', 0) || 0)); // v6.89.0 好工具壞得慢
+    if (typeof FLOW !== 'undefined') FLOW.wear(world, 'tools', toolWear, 'tool wear'); else sp.consume('tools',toolWear,world.tickCount,'tool wear'); // v6.80.0 鋼做的精製工具壞得慢一半
     // v5.51.0 需求波動:天冷要衣(冬季衣物耗損翻倍)
     { const cw = npcCount*(world.clock.season==='冬季'?0.06:0.03); if (typeof FLOW !== 'undefined') FLOW.wear(world, 'clothing', cw, 'clothing wear'); else sp.consume('clothing',cw,world.tickCount,'clothing wear'); } // v6.80.0 紡織廠做的衣服耐穿一倍
     // v5.51.0 需求波動:心情低落的村民找醫生拿藥(每天最多 3 人),藥品因此有了用處
@@ -174,7 +185,7 @@ function processDailyProduction(world) {
         }
     }
     // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
-    const foodCap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
+    const foodCap = (400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0)) * (1 + (world.buildings?.getEffect?.('storage_bonus', 0) || 0)); // v6.89.0 倉庫／物流讓存糧放得更多
     const decayMod = Math.max(0, 1 + (world.buildings?.getEffect?.('food_decay', 0) || 0)) * (typeof ECON !== 'undefined' ? ECON.saltDecay(world) : 1); // v6.77.0 有鹽醃漬,腐壞減半
     const excessFood = sp.get('food') - foodCap;
     if (excessFood > 0) {
@@ -420,7 +431,9 @@ class BuildingManager {
     getEffect(key, def=0) { return this.activeEffects[key]??def; }
     // v6.43.1 效果表一律從來源重算(完成的建築＋升級等級＋完成的研究),不再逐次累加。
     // farm_bonus／build_speed 在研究與部分建築寫成倍率(1.3＝+30%)、在升級裡寫成增量(0.3＝+30%),這裡統一成增量
-    static normEffect(k, v) { if (typeof v !== 'number') return v; if ((k === 'farm_bonus' || k === 'build_speed') && v >= 1) return v - 1; return v; }
+    static normEffect(k, v) { if (typeof v !== 'number') return v; if (BuildingManager.MULT_KEYS.includes(k) && v >= 1) return v - 1; return v; }
+    // v6.89.0 這些效果在研究與建築寫成倍率(1.3)、在升級寫成增量(0.3),一律換成增量
+    static get MULT_KEYS() { return ['farm_bonus', 'build_speed', 'healing_bonus', 'xp_bonus', 'smithing_bonus', 'stone_efficiency', 'storage_bonus']; }
     recomputeEffects(world) {
         const eff = {}; const add = (k, v) => { if (typeof v !== 'number') { eff[k] = v; return; } eff[k] = (eff[k] || 0) + BuildingManager.normEffect(k, v); };
         for (const b of this.completed || []) {

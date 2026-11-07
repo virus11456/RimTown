@@ -748,7 +748,8 @@ class Agent {
         }
     }
     _gainSkillXp(world) {
-        const xp = Math.round(randInt(3,8) * (1 + (this.attr('wit') - 5) * 0.06)); // v5.26.0 智慧→技能成長快慢
+        const xpb = 1 + (world.buildings?.getEffect?.('xp_bonus', 0) || 0) + (this.job?.key === 'guard' ? (world.buildings?.getEffect?.('guard_xp_bonus', 0) || 0) : 0); // v6.89.0 學堂、講堂、軍事學院
+        const xp = Math.round(randInt(3,8) * (1 + (this.attr('wit') - 5) * 0.06) * xpb); // v5.26.0 智慧→技能成長快慢
         if (this.activity === 'working' && this.job) {
             const map = JOB_SKILL_MAP[this.job.key];
             if (map) {

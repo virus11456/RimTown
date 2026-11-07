@@ -100,6 +100,8 @@ const FLOW = (() => {
         if (c.key === 'flowers') s += 0.5 + (reserveFor(w, 'flowers') ? 0.6 : 0);
         if (c.key === 'tea') s += 0.6 + need(w, 'fine_tea');
         if (c.key === 'herbs') s += need(w, 'medicine') + 0.4;
+        // v6.89.0 糧食夠了,農夫改種賣得到錢的經濟作物(棉花、茶、葡萄、甘蔗、火龍果、金色小麥…),不再一直休耕
+        if (short === 0) s += Math.min(1.2, (c.sellPrice || 1) / 12) * (get(w, c.key) > pop * 2 ? 0.2 : 1);
         return s + (c.reqLevel || 1) * 0.05;
     }
 

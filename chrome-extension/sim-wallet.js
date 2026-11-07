@@ -61,16 +61,18 @@ const WALLET = (() => {
     // ---------- 每天 ----------
     function daily(w) {
         const W = S(w), today = day(w), all = npcs(w); if (!all.length || W.lastDay === today) return; W.lastDay = today;
-        payday(w, W, all); living(w, W, all);
+        payday(w, W, all); try { if (typeof MARKET !== 'undefined') MARKET.payroll(w, W, all); } catch (e) { console.warn('[Market] payroll', e); } living(w, W, all);
         try { social(w, W, all, today); } catch (e) { console.warn('[Wallet] social', e); }
         try { election(w, W, all); } catch (e) { console.warn('[Wallet] election', e); }
+        try { if (typeof MARKET !== 'undefined') MARKET.daily(w, W, all); } catch (e) { console.warn('[Market] daily', e); } // v6.89.0 產權、調薪、挨餓
         for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) delete W.bal[id]; // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
     }
     // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
     const netOf = (W, a) => Math.max(W.minWage || 0, WAGE[a.job.key] * (1 - W.tax));
     function payday(w, W, all) {
-        const workers = all.filter(a => WAGE[a.job?.key]); const gross = workers.reduce((s, a) => s + WAGE[a.job.key], 0); if (!gross) return;
+        // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)
+        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a))); const gross = workers.reduce((s, a) => s + WAGE[a.job.key], 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
         const ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
         if (ratio > 0) fromTown(w, Math.round(net * ratio * 10) / 10, t('發薪水'));
@@ -86,23 +88,30 @@ const WALLET = (() => {
         const cooks = all.filter(a => a.job?.key === 'cook'), tailors = all.filter(a => a.job?.key === 'tailor');
         const tipCap = 6, tips = new Map();
         const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
-        const winter = w.clock?.season === '冬季'; const d = day(w);
+        const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0;
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
-            if (take(w, a, MEAL)) { W.stats.spent += MEAL; tip(cooks, MEAL * 0.1, t('餐費'), a); toTown(w, MEAL * 0.9, t('餐費')); }
+            // v6.89.0 三餐的錢付給食堂與農莊的老闆;自己沒錢先找家人接濟,沒人幫就真的沒得吃
+            if (typeof MARKET !== 'undefined') {
+                const payer = MARKET.feed(w, a, MEAL);
+                if (payer) { W.stats.spent += MEAL; MARKET.sale(w, 'meal', MEAL); MARKET.markFed(w, a, true); }
+                else { hungryToday++; MARKET.markFed(w, a, false); a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 35)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天沒東西吃。', {}, 6); }
+            }
+            else if (take(w, a, MEAL)) { W.stats.spent += MEAL; tip(cooks, MEAL * 0.1, t('餐費'), a); toTown(w, MEAL * 0.9, t('餐費')); }
             else { a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 25)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天只吃了一點點。', {}, 5); }
             // 衣服:每人錯開,每十天一次
             if ((d + (a.agentId.length * 7)) % 10 === 0) {
-                if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); }
+                if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多)
-            const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 4 + Math.random() * 8); if (take(w, a, n)) { toTown(w, n, t('村民消費')); W.stats.spent += n; } }
+            const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 4 + Math.random() * 8); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
-                if (take(w, a, FIREWOOD)) { W.stats.spent += FIREWOOD; toTown(w, FIREWOOD, t('柴火')); }
+                if (take(w, a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }
             }
         }
+        W.hungryToday = hungryToday; // v6.89.0 今天沒錢吃飯的人數(公共倉庫的餐食只算吃得起的人)
     }
     function social(w, W, all, today) {
         const rich = all.filter(a => get(w, a) >= 120), poor = all.filter(a => get(w, a) < 6);

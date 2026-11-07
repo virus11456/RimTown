@@ -4456,3 +4456,10 @@ body.landing-open { overflow: hidden; }
 .rel-circle.rel-circle-0 { color: #fbbf24; border-color: #fbbf2455; }
 .rel-circle.rel-circle-1 { color: #f472b6; border-color: #f472b655; }
 .rel-circle.rel-circle-2 { color: #60a5fa; border-color: #60a5fa55; }
+/* v6.89.0 產業與老闆 */
+.market-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; overflow-wrap: anywhere; }
+.market-row { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 0.74rem; padding: 4px 0; border-bottom: 1px dashed var(--border); }
+.market-name { min-width: 6.5em; }
+.market-owner { font-weight: 600; }
+.market-num { color: var(--text-muted); flex-basis: 100%; overflow-wrap: anywhere; }
+.market-detail p { font-size: 0.76rem; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
