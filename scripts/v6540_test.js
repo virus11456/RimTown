@@ -40,7 +40,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       WALLET.S(w); w.wallet.lastDay = null;
       const worker = npcs.find(a => WALLET.WAGE[a.job?.key]); const before = WALLET.get(w, worker); const tr0 = w.stockpile.get('silver');
       // 一個人身無分文
-      const poor = npcs.find(a => a !== worker); w.wallet.bal[poor.agentId] = 0; poor.needs.hunger = 80; const pj = poor.job; poor.job = null; // 沒工作就沒工資
+      const poor = npcs.find(a => a !== worker); /* v6.90 開局有家族,家人會接濟:先讓他孤身一人 */ for (const o of Object.values(w.agents)) { if (o === poor) continue; if ((o._parentNames || []).includes(poor.name)) o._parentNames = o._parentNames.filter(n => n !== poor.name); const rr = o.relationships?.relationships?.[poor.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; } poor._parentNames = []; for (const rr of Object.values(poor.relationships?.relationships || {})) if (['married', 'dating'].includes(rr.status)) rr.status = 'ex'; w.wallet.bal[poor.agentId] = 0; poor.needs.hunger = 80; const pj = poor.job; poor.job = null; // 沒工作就沒工資
       WALLET.daily(w); poor.job = pj;
       const wage = WALLET.WAGE[worker.job.key] * 0.9;
       const after = WALLET.get(w, worker);
