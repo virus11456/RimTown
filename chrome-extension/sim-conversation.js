@@ -68,10 +68,13 @@ class GossipNetwork {
     }
     spreadGossip(speaker, listener, world) {
         if (!this.activeGossip.length) return null;
-        const eligible = this.activeGossip.filter(g => g.about !== listener.name);
+        // v6.88.0 八卦多半講自己圈子裡的人(隨機挑幾則,挑到認識或聽說過的人才講);傳太多手就沒人再講
+        const eligible = this.activeGossip.filter(g => g.about !== listener.name && (typeof SOCIAL === 'undefined' || (g.spreadCount || 0) < SOCIAL.GOSSIP_DIE));
         if (!eligible.length) return null;
         if (!speaker.personality.traits.includes('gossip') && Math.random() > 0.3) return null;
-        const gossip = pickRandom(eligible);
+        let gossip = null;
+        for (let k = 0; k < 4 && !gossip; k++) { const g = pickRandom(eligible); if (typeof SOCIAL === 'undefined' || SOCIAL.gossipOk(world, speaker, g)) gossip = g; }
+        if (!gossip) return null;
         gossip.spreadCount++;
         // v5.2.0/5.3.0 傳話遊戲:謠言誇張化只做一次,不重複堆疊
         if (!gossip._mutated && gossip.spreadCount >= 2 && Math.random() < 0.4) {
@@ -81,7 +84,9 @@ class GossipNetwork {
             else gossip.content = Memory.render(wrapKey, { c: gossip.content });
         }
         const gc = gossip.contentT || gossip.content; // v6.20.0 有模板就塞模板
-        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gc }, 4, [speaker.name, gossip.about]);
+        // v6.88.0 傳越多手越不可信:第 3 手起記成「輾轉聽來的」,也比較不放在心上
+        const far = gossip.spreadCount >= 3;
+        listener.memory.addT(world.tickCount, world.clock.timeStr, 'social', far ? '{speaker}告訴我：「{content}」（輾轉聽來的，不知道是真是假）' : '{speaker}告訴我：「{content}」', { speaker: speaker.name, content: gc }, Math.max(2, 4 - Math.floor(gossip.spreadCount / 2)), [speaker.name, gossip.about]);
         // v5.3.0 只有「有內容」且還算新鮮(傳不到 3 手)的八卦才進頭條,避免同一則洗版
         if (gossip.juicy && gossip.spreadCount <= 3) {
             world.logMessageT('gossip', '🗣️ {speaker}偷偷說：「{content}」', { speaker: speaker.name, content: gc }, speaker.name, listener.name);

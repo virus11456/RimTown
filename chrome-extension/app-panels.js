@@ -753,6 +753,7 @@ Object.assign(RimTownApp.prototype, {
                 })()}</p></div>`}
             <div class="detail-section"><h3>${t('技能（總計：')}${agent.skills?.total_level||0}）</h3>${this._renderSkills(agent.skills)}</div>
             <div class="detail-section"><h3>${t('人際關係（')}${sortedRels.length}）</h3>
+                ${(() => { try { const wa = this.world?.agents?.[this.selectedAgent]; if (typeof SOCIAL === 'undefined' || !wa || wa.isPlayer) return ''; const v = SOCIAL.view(this.world, wa); return `<p class="social-circles">${t('家人')} ${v.family}${t('・')}${t('內圈')} ${v.inner}${t('・')}${t('好友')} ${v.good}${t('・')}${t('朋友')} ${v.friends}${t('・')}${t('點頭之交')} ${v.acquaint}</p>`; } catch (e) { return ''; } })()}
                 ${sortedRels.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無人際關係</p>'):
                 sortedRels.map(r=>{
                     let badge = '';
@@ -763,7 +764,8 @@ Object.assign(RimTownApp.prototype, {
                     // v5.32.0 數值文字化:關係類型本身就是好感區間的語意(朋友/摯友/對手…),不再曝露原始數字
                     const romHeart = r.romantic_interest > 30 ? ' <span style="color:#f472b6">&#10084;</span>' : '';
                     const crushIcon = r.romantic_interest > 30 && !r.status ? t(' <span style="color:#f472b6;font-size:0.75rem">暗戀</span>') : '';
-                    return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}</span>
+                    let circ = ''; try { const wa = this.world?.agents?.[this.selectedAgent]; if (typeof SOCIAL !== 'undefined' && wa && !wa.isPlayer) { const k = SOCIAL.circleOf(this.world, wa, r.target_id); if (k !== null) circ = ` <span class="rel-circle rel-circle-${k}">${SOCIAL.circleName(k)}</span>`; } } catch (e) {} // v6.88.0 圈層
+                    return `<div class="relationship-item${r.status?' rel-has-status':''}"><span>${r.target_name} ${badge}${crushIcon}${circ}</span>
                     <span style="color:${r.affinity>0?'var(--positive)':r.affinity<0?'var(--negative)':'var(--text-muted)'}">${r.type}${romHeart}</span></div>`;
                 }).join('')}</div>
             ${this._renderAgentFactions(this.selectedAgent)}
