@@ -1284,7 +1284,7 @@ class SeasonTrials {
         const c = this.current; const k = (c && c.type === type && c.contrib) ? c.contrib : { food: 0, herb: 0, silver: 0 };
         if (type === 'famine') return Math.round(k.food);
         if (type === 'plague') return Math.round(k.herb);
-        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; const building = (w.buildings?.projects || []).reduce((acc, p) => acc + (p.effects?.defense_bonus || 0) * Math.min(1, (p.workDone || 0) / Math.max(1, p.workRequired || 1)), 0); return guards * 2 + Math.round((w.buildings?.getEffect?.('defense_bonus', 0) || 0) + building) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); } // v6.2.0 蓋到一半的防禦建築按進度計
+        if (type === 'bandits') { const guards = this._npcs(w).filter(a => a.job?.key === 'guard').length; const building = (w.buildings?.projects || []).reduce((acc, p) => acc + (p.effects?.defense_bonus || 0) * Math.min(1, (p.workDone || 0) / Math.max(1, p.workRequired || 1)), 0); return guards * 2 + Math.round((w.buildings?.getEffect?.('defense_bonus', 0) || 0) + (w.news?.getModifier?.('defense_bonus', 0) || 0) + building) + (this._flags(w).cityGuard ? 3 : 0) + (this._flags(w).watchtower ? 2 : 0); } // v6.2.0 蓋到一半的防禦建築按進度計
         if (type === 'pricewar') return Math.round(k.silver);
         return 0;
     }
@@ -1334,7 +1334,7 @@ class SeasonTrials {
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) + 5; });
             if (world.questSystem) world.questSystem.reputation = (world.questSystem.reputation || 0) + 10;
             const back = Math.min(10, -(this.penalty || 0)); this.penalty = (this.penalty || 0) + back; // v6.22.0 撐過一季:先補回最多 10 的考驗扣分,再 +5
-            if (world.prosperity) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5 + back; world.prosperity.recalcTotal?.(); }
+            if (world.prosperity) { world.prosperity.trialBonus = (world.prosperity.trialBonus || 0) + back; world.prosperity.questBonus = (world.prosperity.questBonus || 0) + 5; world.prosperity.recalcTotal?.(); } // v6.87.0 扣分帳另記(不消退),+5 是一時的
             const text = `${t('撐過了')}${t('「')}${t(d.title)}${t('」')}${t('的考驗！全鎮得到')}${t('「')}${t(d.perkName)}${t('」')}${t('：')}${t(d.perkDesc)}`;
             world.logMessage?.('event', `🏅 ${text}`); world.dailyNews?.collectEvent?.('event', text, 10);
             world.onTrialEvent?.('passed', `🏅 ${t('考驗通過')}${t('：')}${t(d.title)}`, `${t(d.perkName)} — ${t(d.perkDesc)}`);
@@ -1348,7 +1348,7 @@ class SeasonTrials {
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });
             const cut = Math.max(SeasonTrials.PENALTY_FLOOR - (this.penalty || 0), -10); this.penalty = (this.penalty || 0) + cut; // v6.22.0 扣分有底:累計最多 −20
-            if (world.prosperity && cut < 0) { world.prosperity.questBonus = (world.prosperity.questBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
+            if (world.prosperity && cut < 0) { world.prosperity.trialBonus = (world.prosperity.trialBonus || 0) + cut; world.prosperity.recalcTotal?.(); }
             const text = names.length
                 ? `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${names.join(t('、'))}${cut < 0 ? t('搬走了，繁榮 −10、全鎮士氣低落') : t('搬走了，全鎮士氣低落')}`
                 : `${t('沒撐過「{t}」的考驗：').replace('{t}', t(d.title))}${cut < 0 ? t('繁榮 −10、全鎮士氣低落') : t('全鎮士氣低落')}`;

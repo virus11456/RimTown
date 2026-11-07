@@ -40,7 +40,7 @@ const CIVIC = (() => {
             }
         }
         // 牢裡的人
-        for (const [id, until] of Object.entries(C.jail)) { const a = w.agents[id]; if (!a || a.isDead) { delete C.jail[id]; continue; } if (until <= d) { delete C.jail[id]; log(w, 'event', '🔓 {a}出獄了。', { a: a.name }, a.name); mem(w, a, '終於出來了，我得重新做人。', {}, 6); } else a.moodModifier = (a.moodModifier || 0) - 2; }
+        for (const [id, until] of Object.entries(C.jail)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; if (!a || a.isDead) { delete C.jail[id]; continue; } if (until <= d) { delete C.jail[id]; log(w, 'event', '🔓 {a}出獄了。', { a: a.name }, a.name); mem(w, a, '終於出來了，我得重新做人。', {}, 6); } else a.moodModifier = (a.moodModifier || 0) - 2; }
         // 貧民區
         const poor = all.filter(a => cash(w, a) < 10).length; C.poorDays = poor >= all.length * 0.3 ? (C.poorDays || 0) + 1 : 0;
         if (!C.slum && C.poorDays >= 10) { C.slum = true; log(w, 'event', '🏚️ 窮人越來越多，鎮邊形成了貧民區，治安變差了。', {}); }

@@ -126,6 +126,7 @@ class World {
             try { this.recap?.daily(this); } catch (e) { console.warn('[RimTown] recap error:', e); } // v5.98.0 季末回顧:換季那天結算上一季
             // Daily news (before economy/events so modifiers apply)
             this.news.dailyUpdate(this);
+            try { this.council?.refreshDecrees?.(this); } catch (e) { console.warn('[RimTown] decree error:', e); } // v6.87.0 政令到期與效果
             // Daily economy
             processDailyProduction(this);
             try { if (typeof ECON !== 'undefined') ECON.daily(this); } catch (e) { console.warn('[Econ] daily', e); } // v6.77.0 鹽、紙、穀物／魚／肉、飲食多樣
@@ -209,6 +210,8 @@ class World {
     // 訪客信箱(app 層負責讀寫 localStorage),玩家切到那個鎮時實體化;
     // 期滿返鄉,見聞寫進回鄉信箱,原鎮的本尊回來後收到這些記憶
     // ============================================================
+    // v6.87.0 這個人是不是出遠門中(出遠門時會暫時從 agents 拿掉;各系統的「找不到人就清掉」要先排除他)
+    isAway(id) { return !!id && (this.events?._travellingAgents || []).some(tr => tr?.agentData?.agentId === id); }
     _absDay() {
         const si = ['春季','夏季','秋季','冬季'].indexOf(this.clock.season);
         return ((this.clock.year - 1) * 4 + Math.max(0, si)) * 15 + this.clock.day;
@@ -1934,6 +1937,7 @@ class World {
     serialize() {
         // v6.43.6 記憶的時間字串能由 tick 推回來時就不存(每筆約 25～35 字,英文存檔省一成);推不回來的(舊檔、時間跳過)照存
         const nowMin = this.clock.absMinutes, T = this.tickCount, tsCache = new Map();
+        const crowdSave = typeof CROWD !== 'undefined' && CROWD.pop(this) >= CROWD.TRIM_AT; // v6.87.0 人多時,排在後面的關係只存最近一筆共同回憶
         const tsAt = (tick) => { if (typeof tick !== 'number') return null; let v = tsCache.get(tick); if (v === undefined) { v = GameClock.timeStrAtMinutes(nowMin - (T - tick) * 15); tsCache.set(tick, v); } return v; };
         const serializeAgent = (a) => ({
             id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
@@ -1946,10 +1950,10 @@ class World {
             personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
             needs: { hunger:a.needs.hunger, rest:a.needs.rest, social:a.needs.social, comfort:a.needs.comfort, recreation:a.needs.recreation, beauty:a.needs.beauty },
             skills: Object.fromEntries(Object.entries(a.skills.skills).map(([k,s])=>[k,{xp:s.xp,passion:s.passion}])),
-            relationships: Object.fromEntries((typeof CROWD !== 'undefined' ? CROWD.keepRels(this, a) : Object.entries(a.relationships.relationships)).map(([k,r])=>[k,{ // v6.55.0 人多時只存有意義的關係(最多 40 段)
+            relationships: Object.fromEntries((typeof CROWD !== 'undefined' ? CROWD.keepRels(this, a) : Object.entries(a.relationships.relationships)).map(([k,r],ri)=>[k,{ // v6.55.0 人多時只存有意義的關係(最多 40 段)
                 targetId:r.targetId, targetName:r.targetName, affinity:r.affinity || undefined, trust:r.trust || undefined, // v6.55.0 0 不存
                 romanticInterest:r.romanticInterest || undefined, interactionCount:r.interactionCount || undefined,
-                lastInteractionTick:r.lastInteractionTick || undefined, sharedMemories:r.sharedMemories.slice(-3).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
+                lastInteractionTick:r.lastInteractionTick || undefined, sharedMemories:r.sharedMemories.slice(!crowdSave || ri < 10 ? -3 : -1).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
                 // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
                 status:r.status || undefined, statusSince:r.statusSince || undefined, isCheating:r.isCheating || undefined, isFeud:r.isFeud || undefined // v6.43.6 預設值不存(讀檔補回)
             }])),
@@ -2145,7 +2149,8 @@ class World {
                 if (ad.nameEn) { agent.nameEn = ad.nameEn; if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(ad.name, ad.nameEn); } // v5.81.0
                 if (ad.look && typeof ad.look === 'object') agent.look = { ...ad.look }; // v5.89.0
                 if (ad.gender) agent.gender = ad.gender;
-                if (ad._isPlayerChild) { agent._isPlayerChild = true; agent._parentNames = ad._parentNames; }
+                if (ad._isPlayerChild) agent._isPlayerChild = true;
+                if (Array.isArray(ad._parentNames)) agent._parentNames = ad._parentNames; // v6.87.0 所有人的爸媽都要存讀
                 agent.mood = ad.mood; agent.activity = ad.activity;
                 agent.moodModifier = ad.moodModifier || 0;
                 agent.currentThought = ad.currentThought || '';
@@ -2401,7 +2406,7 @@ class World {
             if (data.npcHelp) this.npcHelp.loadFrom(data.npcHelp);
             if (data.reputationSystem) this.reputationSystem.loadFrom(data.reputationSystem);
             if (data.weather) this.weather.loadFrom(data.weather);
-            if (data.council) this.council.loadFrom(data.council);
+            if (data.council) { this.council.loadFrom(data.council); try { this.council._aggregateDecrees?.(this); } catch (e) {} }
             if (data.proposals && this.proposals) this.proposals.loadFrom(data.proposals); // v6.26.0
             if (data.autonomy && this.autonomy) this.autonomy.loadFrom(data.autonomy); // v6.37.0
             if (data.eventCards && this.eventCards) this.eventCards.loadFrom(data.eventCards); // v6.38.0

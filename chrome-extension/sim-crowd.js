@@ -10,10 +10,15 @@ const CROWD = (() => {
     const relScore = (r) => (r.status ? 1000 : 0) + (r.isFeud ? 500 : 0) + (r.isCheating ? 300 : 0) + Math.abs(r.affinity || 0) + Math.abs(r.trust || 0) * 0.5 + (r.romanticInterest || 0) + Math.min(30, r.interactionCount || 0) + ((r.sharedMemories || []).length ? 5 : 0);
     const trivial = (r) => !r.status && !r.isFeud && !r.isCheating && Math.abs(r.affinity || 0) < 5 && Math.abs(r.trust || 0) < 5 && !(r.romanticInterest > 0) && (r.interactionCount || 0) < 2 && !(r.sharedMemories || []).length;
     // 要留下的關係(依重要度排序,最多 REL_CAP 段);人少時全部留
+    // v6.87.0 人越多,每人留的關係與記憶越少(存檔 100 人以上曾到 3～4.5MB);家人一定留
+    const relCap = (n) => n < 60 ? REL_CAP : n < 100 ? 30 : 24;
+    const memCap = (n) => n < 60 ? MEM_CAP : n < 80 ? 50 : n < 110 ? 40 : 32;
+    const notableCap = (n) => n < 80 ? 120 : 80;
+    const isFam = (w, a, r) => { if ((a._parentNames || []).includes(r.targetName)) return true; const o = w.agents?.[r.targetId]; return !!(o && (o._parentNames || []).includes(a.name)); };
     function keepRels(w, a) {
         const all = Object.entries(a.relationships?.relationships || {});
-        if (pop(w) < TRIM_AT) return all;
-        return all.filter(([, r]) => !trivial(r)).sort((x, y) => relScore(y[1]) - relScore(x[1])).slice(0, REL_CAP);
+        const n = pop(w); if (n < TRIM_AT) return all;
+        return all.filter(([, r]) => !trivial(r) || isFam(w, a, r)).map(e => [e, relScore(e[1]) + (isFam(w, a, e[1]) ? 2000 : 0)]).sort((x, y) => y[1] - x[1]).slice(0, relCap(n)).map(x => x[0]);
     }
     let _nCache = null, _nKey = '';
     // 重要人物名單(每遊戲小時重算一次)
@@ -36,18 +41,18 @@ const CROWD = (() => {
     const aiCrowded = (w) => pop(w) >= AI_AT;
     // 每天:清空白關係、限關係數、限非重要人物的記憶數
     function daily(w) {
-        if (pop(w) < TRIM_AT) return;
+        const n = pop(w); if (n < TRIM_AT) return;
         const N = notable(w);
         for (const a of npcs(w)) {
             const rm = a.relationships?.relationships; if (rm) { const keep = new Set(keepRels(w, a).map(([k]) => k)); for (const k of Object.keys(rm)) if (!keep.has(k)) delete rm[k]; }
-            const m = a.memory; if (!m || N.has(a.agentId) || m.entries.length <= MEM_CAP) continue;
+            const m = a.memory; const cap = N.has(a.agentId) ? notableCap(n) : memCap(n); if (!m || m.entries.length <= cap) continue;
             // 重要的(重要度 7 以上)優先留,其餘留最近的
-            const imp = m.entries.filter(e => (e.importance || 0) >= 7).slice(-Math.floor(MEM_CAP / 2));
-            const impSet = new Set(imp); const rest = m.entries.filter(e => !impSet.has(e)).slice(-(MEM_CAP - imp.length));
+            const imp = m.entries.filter(e => (e.importance || 0) >= 7).slice(-Math.floor(cap / 2));
+            const impSet = new Set(imp); const rest = m.entries.filter(e => !impSet.has(e)).slice(-(cap - imp.length));
             const keep = new Set([...imp, ...rest]); m.entries = m.entries.filter(e => keep.has(e));
         }
     }
-    return { TRIM_AT, AI_AT, REL_CAP, MEM_CAP, pop, notable, isNotable, aiCrowded, keepRels, daily, relScore, trivial };
+    return { TRIM_AT, AI_AT, REL_CAP, MEM_CAP, relCap, memCap, notableCap, pop, notable, isNotable, aiCrowded, keepRels, daily, relScore, trivial };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

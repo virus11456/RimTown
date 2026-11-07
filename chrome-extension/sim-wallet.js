@@ -64,16 +64,19 @@ const WALLET = (() => {
         payday(w, W, all); living(w, W, all);
         try { social(w, W, all, today); } catch (e) { console.warn('[Wallet] social', e); }
         try { election(w, W, all); } catch (e) { console.warn('[Wallet] election', e); }
-        for (const id of Object.keys(W.bal)) if (!w.agents[id]) delete W.bal[id]; // 搬走或過世的人
+        for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) delete W.bal[id]; // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
     }
+    // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
+    const FLOOR = 4.5;
+    const netOf = (W, a) => Math.max(W.minWage || 0, WAGE[a.job.key] * (1 - W.tax));
     function payday(w, W, all) {
         const workers = all.filter(a => WAGE[a.job?.key]); const gross = workers.reduce((s, a) => s + WAGE[a.job.key], 0); if (!gross) return;
-        const net = gross * (1 - W.tax); const have = treasury(w);
+        const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
         const ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
         if (ratio > 0) fromTown(w, Math.round(net * ratio * 10) / 10, t('發薪水'));
-        W.stats.wages += net * ratio; W.stats.taxes += (gross - net) * ratio;
+        W.stats.wages += net * ratio; W.stats.taxes += Math.max(0, gross - net) * ratio;
         for (const a of workers) {
-            add(w, a, WAGE[a.job.key] * (1 - W.tax) * ratio);
+            add(w, a, netOf(W, a) * ratio);
             if (ratio < 1) { a.addThought?.('wage_unpaid', w); if (Math.random() < 0.4) mem(w, a, ratio > 0 ? '公庫只發得出 {p}% 的薪水，這樣怎麼過日子。' : '公庫沒錢，這個月的薪水領不到了。', { p: Math.round(ratio * 100) }, 5); }
         }
         if (ratio < 1 && Math.random() < 0.5) log(w, 'economy', '💸 公庫只剩 {n} 銀幣，薪水只發得出 {p}%。', { n: Math.round(have), p: Math.round(ratio * 100) });
@@ -204,9 +207,35 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, bizIncome, BIZ_TAX };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, bizIncome, BIZ_TAX, netOf, FLOOR };
 })();
 
+// v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
+if (typeof LifecycleSystem !== 'undefined') {
+    const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
+    LS._killNpc = function (world, npc, ...rest) {
+        let estate = 0, heirs = [];
+        try {
+            if (world.wallet && npc && !npc.isPlayer) {
+                estate = WALLET.get(world, npc);
+                // 銀行存款一起算進遺產,先還清欠銀行的錢
+                const B = world.bank, id = npc.agentId;
+                if (B && B.dep && B.dep[id] > 0) { const paid = Math.min(B.dep[id], Math.max(0, Math.floor(B.reserve || 0))); B.reserve -= paid; delete B.dep[id]; estate += paid; }
+                if (B && B.loans && B.loans[id] && estate > 0) { const L = B.loans[id]; const pay = Math.min(L.owed || 0, estate); estate -= pay; B.reserve += pay; L.owed -= pay; if (L.owed <= 0) delete B.loans[id]; }
+                heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (['married', 'dating'].includes(a.relationships?.relationships?.[npc.agentId]?.status) || (a._parentNames || []).includes(npc.name)));
+            }
+        } catch (e) {}
+        const r = _kill.call(this, world, npc, ...rest);
+        try {
+            if (estate > 0) {
+                if (world.wallet?.bal) delete world.wallet.bal[npc.agentId];
+                if (heirs.length) { const each = Math.round(estate / heirs.length * 10) / 10; for (const h of heirs) { WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
+                else world.stockpile?.add?.('silver', Math.round(estate * 10) / 10, world.tickCount, t('無人繼承的遺產'));
+            }
+        } catch (e) {}
+        return r;
+    };
+}
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;
