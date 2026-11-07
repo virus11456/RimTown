@@ -490,7 +490,48 @@ class PixelTileMap {
     // v4.5.0:屋頂依建築 hash 配色(4 色)+ 收集夜光窗戶
     _postProcessArt() { } // v6.34.0 2D 繪圖已移除;Town3D 覆寫
     _buildStaticLayer() { } // v6.34.0 2D 繪圖已移除;Town3D 覆寫
+    // v6.85.0 每個城鎮都有一塊固定的墓園:版面畫完再找一塊空地(各主題有建議位置,找不到就整張圖掃)
     generateLayout(locations, theme) {
+        this._generateLayoutCore(locations, theme);
+        try { this._placeGraveyard(); } catch (e) { console.warn('[RimTown] graveyard', e); }
+    }
+    _placeGraveyard() {
+        if (!this.grid || !this.grid.length) return;
+        const GW = 8, GH = 5, H = this.grid.length, W = this.grid[0].length;
+        const PREF = { frontier: [[50, 3], [4, 3], [14, 3]], harbor: [[56, 3], [60, 3]], mountain: [[48, 22], [4, 51], [29, 41]], forest: [[52, 3], [60, 3]], market: [[50, 3], [40, 3]] };
+        const OK = new Set([T.GRASS, T.GRASS2, T.GRASS3, T.FLOWER1, T.FLOWER2, T.BUSH, T.ROCK, T.TREE_TOP, T.TREE_TOP2, T.TREE_TRUNK]);
+        const rects = [...Object.values(this.buildingZones || {}), ...Object.values(this.natureZones || {})].map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 }));
+        if (this.coachStation) rects.push(this.coachStation);
+        // 舊存檔:避開已經蓋好／施工中的選址建築與裝飾;也避開目前的工廠地基,工廠才不會因為多了墓園而換位置
+        for (const b of (this.sitedCompleted || [])) rects.push({ x: b.siteX, y: b.siteY, w: 2, h: 2 });
+        for (const p of (this.constructionSites || [])) rects.push({ x: p.siteX, y: p.siteY, w: 2, h: 2 });
+        for (const d of (this.decorations || [])) rects.push({ x: d.x, y: d.y, w: 1, h: 1 });
+        let plots = []; try { this._factoryPlots = null; plots = (this._getFactoryPlots?.() || []).slice(0, 16); } catch (e) {}
+        const hit = (x, y, r, m) => x + GW + m > r.x && x - m < r.x + r.w && y + GH + m > r.y && y - m < r.y + r.h;
+        const fits = (x, y) => {
+            if (x < 2 || y < (this.themeKey === 'mountain' ? 8 : 3) || x + GW > W - 2 || y + GH > H - 3) return false; // 礦山鎮 0～6 列是山壁
+            for (let yy = y; yy < y + GH; yy++) for (let xx = x; xx < x + GW; xx++) if (!OK.has(this.grid[yy][xx])) return false;
+            if (rects.some(r => hit(x, y, r, 1))) return false;
+            if (plots.some(r => hit(x, y, r, 2))) return false;
+            return true;
+        };
+        let at = null;
+        for (const [x, y] of (PREF[this.themeKey] || [])) if (fits(x, y)) { at = [x, y]; break; }
+        if (!at) { outer: for (let y = 3; y < H - GH - 3; y++) for (let x = 2; x < W - GW - 2; x++) if (fits(x, y)) { at = [x, y]; break outer; } }
+        if (!at) return;
+        const [gx, gy] = at;
+        for (let yy = gy; yy < gy + GH; yy++) for (let xx = gx; xx < gx + GW; xx++) {
+            const edgeX = xx === gx || xx === gx + GW - 1, edgeY = yy === gy || yy === gy + GH - 1;
+            const gate = yy === gy + GH - 1 && (xx === gx + 3 || xx === gx + 4);
+            this.grid[yy][xx] = gate ? T.DIRT : edgeY ? T.FENCE_H : edgeX ? T.FENCE_V : ((xx + yy) % 3 ? T.GRASS3 : T.GRASS2);
+        }
+        if (gy + GH < H) for (const xx of [gx + 3, gx + 4]) { const tt = this.grid[gy + GH][xx]; if (OK.has(tt)) this.grid[gy + GH][xx] = T.DIRT; }
+        this.natureZones.graveyard = { x: gx, y: gy, w: GW, h: GH };
+        const nm = { harbor: '望海墓園', mountain: '山坡墓地', forest: '林間墓地', market: '城郊墓園' }[this.themeKey] || '墓園';
+        this.labelPositions.graveyard = { x: (gx + GW / 2) * TILE, y: gy * TILE - 4, name: nm };
+        this._factoryPlots = null; // 地基重算時把墓園算進去
+    }
+    _generateLayoutCore(locations, theme) {
         // v5.75.0 主題地圖:海風鎮走海岸版面(海面/沙灘/棧橋/燈塔),其他鎮維持內陸版面
         this.themeKey = theme || 'frontier';
         this._blockWater = this.themeKey === 'harbor';
@@ -1695,6 +1736,7 @@ class PixelTileMap {
         ];
         if (this.coachStation) rects.push(this.coachStation);
         if (this.themeKey !== 'frontier') for (const z of Object.values(this.natureZones || {})) rects.push(z); // v5.75.0 主題鎮地標不蓋房
+        else if (this.natureZones?.graveyard) rects.push(this.natureZones.graveyard); // v6.85.0 墓園不蓋房
         const blockedRect = (px, py) => rects.some(z =>
             px + HW + 1 > z.x && px - 1 < z.x + z.w && py + HH + 1 > z.y && py - 1 < z.y + z.h);
         const tilesClear = (px, py) => {
@@ -1824,6 +1866,7 @@ class PixelTileMap {
         // v5.60.1 地基也避開馬車站、玩家選址建築(施工中+完工)、裝飾——不再蓋在別人頭上
         if (this.coachStation) zones.push({ x: this.coachStation.x, y: this.coachStation.y, w: this.coachStation.w, h: this.coachStation.h });
         if (this.themeKey !== 'frontier') for (const z of Object.values(this.natureZones || {})) zones.push(z); // v5.75.0
+        else if (this.natureZones?.graveyard) zones.push(this.natureZones.graveyard); // v6.85.0 墓園不蓋工廠
         for (const p of (this.constructionSites || [])) zones.push({ x: p.siteX, y: p.siteY, w: 2, h: 2 });
         for (const b of (this.sitedCompleted || [])) zones.push({ x: b.siteX, y: b.siteY, w: 2, h: 2 });
         for (const d of (this.decorations || [])) zones.push({ x: d.x, y: d.y, w: 1, h: 1 });

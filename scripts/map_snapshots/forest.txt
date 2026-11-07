@@ -1,12 +1,12 @@
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-TTTTT.^^^^^^.^^^^^^.TTT...==^^^^^^^^.TTT..TTb.==..bTTTT.TbT.TTT.TTTTbTTT.TTT.TTT
-TTTT..######.######.TT..*.==########..TT.TT.T.==.T*TT.T..*b.TTTTTTTTT........TTT
-TTTTT.#ffff#.#ffff#.T.....==#ssffss#.T.bT.*TT.==.T.T.b...TTTTTT..b..T.^^^^^^.TTT
-TTTT..#ffff#.#ffff#.T..TT.==#ffffff#.TTTTTTTT.==.TbTTTTTTTT*TTTTT..T*.######.TTT
-TTTTT.#ffff#.#ffff#.TTTTT.==#ooffoo#.TTTTTT.T.==.T.TTTTbT.TTTTT.T.TTT.#ffff#.TTT
-TTTTT.###D##.###D##.......==#ffffff#.T.TTTT.b.==.TT.TTTT.TT..*T.b...b.#ffff#.TTT
+TTTTT.^^^^^^.^^^^^^.TTT...==^^^^^^^^.TTT..TTb.==..bT--------TTT.TTTTbTTT.TTT.TTT
+TTTT..######.######.TT..*.==########..TT.TT.T.==.T*T|......|TTTTTTTTT........TTT
+TTTTT.#ffff#.#ffff#.T.....==#ssffss#.T.bT.*TT.==.T.T|......|TTT..b..T.^^^^^^.TTT
+TTTT..#ffff#.#ffff#.T..TT.==#ffffff#.TTTTTTTT.==.TbT|......|TTTTT..T*.######.TTT
+TTTTT.#ffff#.#ffff#.TTTTT.==#ooffoo#.TTTTTT.T.==.T.T---==---TTT.T.TTT.#ffff#.TTT
+TTTTT.###D##.###D##.......==#ffffff#.T.TTTT.b.==.TT.TTT==TT..*T.b...b.#ffff#.TTT
 TTTTT.:::::::::::::=========#offffo#.TT..TTTT.==.b..T*T..*..T.TbT.T.T.#ffff#.TTT
 TTT.T.:::::::::::::.......==####D###..........==...........TT*T*T.TT..###D##.TTT
 TTTT..^^^^^^.^^^^^^..TTTT.========..^^^^^^^^^.==..*TTTTT*.TTT*T.TTT.....===..TTT
@@ -58,4 +58,4 @@ TTTbbbbT.T.TT.T...==========..T.TTTT.Tb..T....==..T.TTTTTT.bTb.T..T.bTbTTTTT.TTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-zones=26 nature=chapel,park,forest,river,hill,cave,lake coach={"x":73,"y":18,"w":5,"h":5} houses=12
+zones=26 nature=chapel,park,forest,river,hill,cave,lake,graveyard coach={"x":73,"y":18,"w":5,"h":5} houses=12

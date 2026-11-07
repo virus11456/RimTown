@@ -1,12 +1,12 @@
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TT########################==##################==##############################TT
-TT#..^^^^^^.^^^^^^........==^^^^^^^^^.........==.............................#TT
-TT#..######.######........==#########.........==..............^^^^^^.........#TT
-TT#..#ffff#.#ffff#........==#fffffff#.........==..............######.........#TT
-TT#..#ffff#.#ffff#........==#fffffff#.........==..............#ffff#.........#TT
-TT#..#ffff#.#ffff#........==#fffffff#.........==..............#ffff#.........#TT
-TT#..###D##.###D##........==#fffffff#.........==..............#ffff#.........#TT
+TT#..^^^^^^.^^^^^^........==^^^^^^^^^.........==..--------...................#TT
+TT#..######.######........==#########.........==..|......|....^^^^^^.........#TT
+TT#..#ffff#.#ffff#........==#fffffff#.........==..|......|....######.........#TT
+TT#..#ffff#.#ffff#........==#fffffff#.........==..|......|....#ffff#.........#TT
+TT#..#ffff#.#ffff#........==#fffffff#.........==..---==---....#ffff#.........#TT
+TT#..###D##.###D##........==#fffffff#.........==.....==.......#ffff#.........#TT
 TT#..:::::::::::::........==#fffffff#.........==..............###D##.........#TT
 TT#..:::::::::::::........==####D####.........==................===..........#TT
 TT#..^^^^^^.^^^^^^^^^^^^^^========...^^^^^^^^.==..^^^^^^^^......===..........#TT
@@ -58,4 +58,4 @@ TT#...............==========..................==.............................#TT
 TT########################==##################==##############################TT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
 TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT
-zones=27 nature=park,forest,river,hill,lake,meadow coach={"x":72,"y":18,"w":5,"h":5} houses=12
+zones=27 nature=park,forest,river,hill,lake,meadow,graveyard coach={"x":72,"y":18,"w":5,"h":5} houses=12

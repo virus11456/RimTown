@@ -1605,8 +1605,8 @@ class World {
     }
 
     // v5.27.0 肉鴿:隨機開局 —— 每一局抽一批全新村民 + 隨機愛恨關係網
-    _loadRandomResidents(count = 15) {
-        const usedNames = new Set();
+    _loadRandomResidents(count = 15, prefix = 'rand_', withMayor = true) { // v6.85.0 可指定 id 前綴、不指定鎮長(補人口用)
+        const usedNames = new Set(Object.values(this.agents || {}).map(a => a?.name).filter(Boolean));
         const rollName = (gender) => {
             const givens = gender === 'male' ? RANDOM_GIVEN_MALE : RANDOM_GIVEN_FEMALE;
             for (let tryN = 0; tryN < 40; tryN++) {
@@ -1622,12 +1622,13 @@ class World {
         for (let i = 0; i < count; i++) {
             const gender = Math.random() < 0.5 ? 'male' : 'female';
             const name = rollName(gender);
-            const jobKey = i === 0 ? 'mayor' : pickRandom(jobKeys); // 第一位當鎮長,其餘隨機
-            const age = i === 0 ? randInt(38, 55) : randInt(20, 52);
+            const isMayor = withMayor && i === 0;
+            const jobKey = isMayor ? 'mayor' : pickRandom(jobKeys); // 第一位當鎮長,其餘隨機
+            const age = isMayor ? randInt(38, 55) : randInt(20, 52);
             const personality = Personality.random(3);
             personality.background = pickRandom(bgPool);
             const job = new Job(jobKey);
-            const id = `rand_${i}`;
+            let id = `${prefix}${i}`; for (let k = i; this.agents?.[id]; k += count) id = `${prefix}${k + count}`;
             const agent = new Agent(id, name, age, personality, job, pickRandom(homes), gender);
             this.addAgent(agent);
             ids.push(id);

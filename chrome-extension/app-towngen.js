@@ -109,6 +109,8 @@ Object.assign(RimTownApp.prototype, {
             const nw = new World();
             nw.townTheme = c.key; nw.townName = c.name; nw.rosterMode = 'random';
             nw.reset(); nw.worldId = rimtownWorldId(); // v6.75.0 新發現的鎮屬於目前的世界
+            // v6.85.0 依城鎮卡的大小與背景發展(人口、繁榮、時代)補上這座鎮早就有的樣子
+            try { if (typeof ORIGIN !== 'undefined') ORIGIN.seed(nw, c.tier ?? c.size ?? 0, { seed: c.seed, pop: c.state?.pop, pros: c.state?.prosperity, era: c.state?.era || c.era, founded: c.founded }); } catch (e) { console.warn('[RimTown] origin', e); }
             const blob = nw.serialize();
             // v6.48.1 先清掉以前存檔失敗留下的同名空殼(城鎮列表有、卻沒有任何存檔)
             this._genDropOrphans(c);

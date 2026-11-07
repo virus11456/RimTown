@@ -924,7 +924,7 @@ class Agent {
         }
         else if (this.activity==='stargazing') this.targetLocation = pickRandom(['park','hill','meadow']);
         else if (this.activity==='night_stroll') this.targetLocation = pickRandom(['park','town_square','hill','meadow']);
-        else if (this.activity==='mourning') this.targetLocation = 'chapel';
+        else if (this.activity==='mourning') this.targetLocation = 'graveyard'; // v6.85.0 去墓園弔念(每個鎮都有固定墓園)
         else if (this.activity==='night_mischief') this.targetLocation = pickRandom(['town_square','general_store','tavern']);
         else if (this.activity==='wandering') {
             // Employed during work hours: stay near workplace

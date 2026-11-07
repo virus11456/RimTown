@@ -447,6 +447,8 @@ Object.assign(RimTownApp.prototype, {
         this.world.townName = name;
         this.world.rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted'; // v5.27.0 肉鴿隨機開局
         this.world.reset();
+        // v6.85.0 新地圖也是「初遇」一座早就存在的鎮:大多是村莊,偶爾是城鎮或城市,帶著自己的歷史
+        try { if (typeof ORIGIN !== 'undefined') { const sd = (Math.random() * 4294967296) >>> 0; ORIGIN.seed(this.world, ORIGIN.sizeFor(name, sd), { seed: sd }); } } catch (e) { console.warn('[RimTown] origin', e); }
         this.world.worldId = this._newWorldId(); // v6.75.0 新的世界:鄰鎮、道路、遠方城鎮從頭開始
         this._otherTownsAt = 0; this._neighborEnsured = {}; this._blobNameCache = {}; this._genDayKey = null; this._genCrossNewsAt = 0; this.world.otherTowns = []; this.world.crossTownNews = [];
         if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();

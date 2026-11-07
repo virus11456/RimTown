@@ -1674,11 +1674,30 @@ class Town3D extends PixelTileMap {
         }
         // 墓園(教堂旁)
         const graves = this.graveyardData || [];
-        if ((graves.length || 0) !== this._graveN) {
-            this._graveN = graves.length;
+        const gz = this.natureZones['graveyard'];
+        const gkey = (graves.length || 0) + (gz ? `@${gz.x},${gz.y}` : '');
+        if (gkey !== this._graveN) {
+            this._graveN = gkey;
             if (!this._graveGroup) { this._graveGroup = new THREE.Group(); this.scene.add(this._graveGroup); }
             this._clearGroup(this._graveGroup); this._graveLabel = null;
-            if (graves.length) {
+            if (gz) {
+                // v6.85.0 固定墓園:柵欄是地圖格子;這裡放墓碑(最近 15 座,一排 5 座)、柏樹與紀念石,沒人過世也有這塊地
+                const stone = '#7A8898', face = '#C9D2DA', old = '#8E8A80';
+                const cx0 = gz.x + 1.2, cz0 = gz.y + 1.1;
+                graves.slice(-15).forEach((g, i) => {
+                    const x = cx0 + (i % 5) * 0.95, z = cz0 + Math.floor(i / 5) * 1.0, gy = this.groundY(x, z);
+                    const col = i < Math.max(0, Math.min(graves.length, 15) - 5) ? old : stone; // 越早的墓碑顏色越舊
+                    this._box(0.4, 0.55, 0.14, col, x, gy + 0.27, z, this._graveGroup);
+                    const top = this._cyl(0.2, 0.2, 0.14, 10, col, x, gy + 0.55, z, this._graveGroup); top.rotation.x = Math.PI / 2;
+                    this._box(0.05, 0.25, 0.03, face, x, gy + 0.4, z + 0.08, this._graveGroup); this._box(0.16, 0.05, 0.03, face, x, gy + 0.46, z + 0.08, this._graveGroup);
+                });
+                const tx = gz.x + gz.w - 1.4, tz = gz.y + 1.2, tgy = this.groundY(tx, tz);
+                this._cyl(0.08, 0.1, 0.5, 6, '#5B4636', tx, tgy + 0.25, tz, this._graveGroup);
+                this._cyl(0.02, 0.42, 1.8, 7, '#2F5A3A', tx, tgy + 1.35, tz, this._graveGroup); // 柏樹
+                const mx = gz.x + gz.w - 1.4, mz = gz.y + gz.h - 1.8, mgy = this.groundY(mx, mz);
+                this._box(0.7, 0.18, 0.4, '#6E747C', mx, mgy + 0.09, mz, this._graveGroup);
+                this._box(0.5, 0.7, 0.18, '#8A9099', mx, mgy + 0.5, mz, this._graveGroup); // 紀念石
+            } else if (graves.length) {
                 const ch = this.buildingZones['chapel'] || this.natureZones['chapel'];
                 const bx = ch ? ch.x + ch.w + 1 : this.cols - 8, bz = ch ? ch.y : this.rows - 8;
                 graves.slice(-10).forEach((g, i) => {

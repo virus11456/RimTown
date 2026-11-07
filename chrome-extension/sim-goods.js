@@ -97,9 +97,9 @@ const GOODS = (() => {
 // 城鎮卡加上等級;遠方城鎮繁榮又人多時慢慢升級
 if (typeof TownGen !== 'undefined') {
     const _card = TownGen.card;
-    TownGen.card = function (seed) { const c = _card.call(this, seed); try { c.tier = c.state?.tier ?? GOODS.tierOf(seed); if (c.tier >= 2) c.pop = Math.max(c.pop || 0, c.tier === 3 ? 40 : 30); } catch (e) {} return c; };
+    TownGen.card = function (seed) { const c = _card.call(this, seed); try { c.tier = c.state?.tier ?? c.size ?? GOODS.tierOf(seed); if (c.tier >= 2) c.pop = Math.max(c.pop || 0, c.tier === 3 ? 40 : 30); } catch (e) {} return c; };
     const _cards = TownGen.cards;
-    TownGen.cards = function () { const list = _cards.call(this); for (const c of list) { try { if (c.tier === undefined) c.tier = GOODS.tierOf(c.seed); if (c.state && c.state.tier !== undefined) c.tier = c.state.tier; } catch (e) {} } return list; };
+    TownGen.cards = function () { const list = _cards.call(this); for (const c of list) { try { if (c.tier === undefined) c.tier = c.size ?? GOODS.tierOf(c.seed); if (c.state && c.state.tier !== undefined) c.tier = c.state.tier; } catch (e) {} } return list; };
     const _drift = TownGen.drift;
     TownGen.drift = function (c, d) { const r = _drift.call(this, c, d); try { const st = c?.state; if (st) { if (st.tier === undefined) st.tier = c.tier ?? GOODS.tierOf(c.seed); if (st.tier < 3 && st.prosperity > 65 && (st.pop || 0) >= 25 && Math.random() < 0.02) { st.tier++; st.news = st.news || []; st.news.push({ zh: `${c.name}升格為${TIERS?.LV?.[st.tier]?.zh || ''}了`, en: `${c.nameEn || c.name} has grown into a ${TIERS?.LV?.[st.tier]?.en || ''}`, day: d }); st.news = st.news.slice(-3); } c.tier = st.tier; } } catch (e) {} return r; };
     const _tags = TownGen.tags;
