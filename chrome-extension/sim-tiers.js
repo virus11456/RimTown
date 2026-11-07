@@ -77,7 +77,7 @@ const TIERS = (() => {
         let major = !!p.council; try { if (!major && typeof ASSEMBLY !== 'undefined') major = ASSEMBLY.isMajor(w, p); } catch (e) {}
         if (major && p.tk) { x.b = x.b || []; x.b.push({ id: p.id, tk: p.tk, tp: p.tp || {}, ok: ok ? 1 : 0 }); if (x.b.length > 4) x.b.shift(); }
     }
-    const terms = (x) => Math.max(1, (x.w || 0) + (x.init || x.cont ? 1 : 0));
+    const terms = (x) => Math.max(1, (x.w || 0) + (x.init || x.cont ? 1 : 0) + (x.pw || 0)); // pw:觀察開始前就做了幾屆(v6.85.0 初遇的城鎮)
     const SEAS = ['春季', '夏季', '秋季', '冬季'], SEAS_EN = ['Spring', 'Summer', 'Autumn', 'Winter'];
     function dateText(d) { const n = Math.max(0, (d || 1) - 1), y = Math.floor(n / 60) + 1, si = Math.floor((n % 60) / 15); return en() ? `Y${y} ${SEAS_EN[si]}` : `第${y}年${SEAS[si]}`; }
     const titleOf = (w, x) => x.role === 'council' ? memberTitle(w, x.lv) : x.role === 'acting' ? (en() ? 'Acting ' : '代理') + leaderTitle(w, x.lv) : leaderTitle(w, x.lv);
@@ -85,6 +85,8 @@ const TIERS = (() => {
     const endText = (e) => { const z = END[e] || END.ended; return en() ? z[1] : t(z[0]); };
     function leaderNote(x) {
         const w = x.w || 0;
+        if (x.pre) { const head = en() ? `${x.pw || 1} term(s) before we arrived` : `${t('觀察開始前已做了')} ${x.pw || 1} ${t('屆')}`;
+            return w ? (en() ? `${head}, then won ${w} more election(s)` : `${head}${t('，')}${t('之後又當選')} ${w} ${t('次')}`) : head; }
         if (x.init || x.cont) { const head = x.init ? (en() ? 'first in office when the town began' : t('開鎮首任')) : (en() ? 'stayed on after the town changed level' : t('小鎮升降級後續任'));
             return w ? (en() ? `${head}, then re-elected ${w} time(s)` : `${head}${t('，')}${t('之後連任')} ${w} ${t('次')}`) : head; }
         return w <= 1 ? (en() ? 'won the election' : t('選舉當選')) : (en() ? `won ${w} elections (${w} terms)` : `${t('當選')} ${w} ${t('次')}${t('（')}${w} ${t('屆')}${t('）')}`);
@@ -98,7 +100,8 @@ const TIERS = (() => {
             if (x.a || x.v) notes.push(en() ? `approved ${x.a || 0}, vetoed ${x.v || 0}` : `${t('批准')} ${x.a || 0} ${t('案')}${t('、')}${t('否決')} ${x.v || 0} ${t('案')}`);
             if (x.to !== null) notes.push(endText(x.e));
             const bills = (x.b || []).slice().reverse().map(b => { let tt = b.tk; try { tt = P ? P._fill(b.tk, b.tp) : t(b.tk); } catch (e) {} return en() ? `${b.id} "${tt}" (${b.ok ? 'passed' : 'vetoed'})` : `${b.id}${t('「')}${tt}${t('」')}${t('（')}${b.ok ? t('通過') : t('否決')}${t('）')}`; });
-            return { role: x.role, title: titleOf(w, x), period: `${dateText(x.from)} ～ ${x.to === null ? t('至今') : dateText(x.to)}`, current: x.to === null, notes, bills };
+            const from = x.pre ? t('觀察開始前') : dateText(x.from), to = x.to === null ? t('至今') : (x.pre && x.to <= 1 ? '' : dateText(x.to));
+            return { role: x.role, title: titleOf(w, x), period: to ? `${from} ～ ${to}` : from, current: x.to === null, notes, bills };
         });
     }
     // 摘要:同職位合併屆數(給 AI 與小卡)
@@ -107,7 +110,8 @@ const TIERS = (() => {
         const g = new Map(); const nowD = day(w);
         for (const x of c) { if (x.role === 'acting' && ((x.to ?? nowD) - x.from) < 2) continue; if (x.role === 'council' && x.to !== null && (x.to - x.from) < 5) continue;
             const k = x.role + x.lv; const o = g.get(k) || { role: x.role, lv: x.lv, n: 0, cur: false, last: 0, e: '' }; o.n += x.role === 'leader' ? terms(x) : 1; o.cur = o.cur || x.to === null; if (x.from >= o.last) { o.last = x.from; o.e = x.e || ''; } g.set(k, o); }
-        return [...g.values()].sort((p, q) => (q.cur - p.cur) || (q.last - p.last));
+        const rank = (o) => o.role === 'leader' ? 2 : o.role === 'acting' ? 1 : 0;
+        return [...g.values()].sort((p, q) => (q.cur - p.cur) || (rank(q) - rank(p)) || (q.last - p.last)); // 首長排在議員前面
     }
     function careerText(w, a) {
         return summary(w, a).slice(0, 3).map(o => { const ti = titleOf(w, o); const n = o.role === 'leader' && o.n > 1 ? (en() ? ` ×${o.n}` : `${t('（')}${o.n} ${t('屆')}${t('）')}`) : ''; return (o.cur ? (en() ? 'current ' : '現任') : (en() ? 'former ' : '前')) + ti + n; }).join(en() ? ', ' : '、');
@@ -341,12 +345,124 @@ if (typeof LifecycleSystem !== 'undefined') {
         try {
             const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || null; const o = w && TIERS.topOffice(w, npc); if (!o) return s;
             const isEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
-            const head = isEn ? `Served ${o.n > 1 ? o.n + ' terms ' : ''}as ${o.title}` : `曾任${o.n > 1 ? `${o.n} 屆` : ''}${o.title}`;
+            const head = isEn ? `Served ${o.n > 1 ? o.n + ' terms ' : ''}as ${o.title}` : `曾任${o.n > 1 ? ` ${o.n} 屆` : ''}${o.title}`;
             const job = npc.job ? `${t('曾任')}${npc.job.title}` : '';
             if (job && s.startsWith(job)) return head + s.slice(job.length);
             return head + (isEn ? '. ' : '，') + s;
         } catch (e) { return s; }
     };
+}
+// ---- v6.85.0 初遇的城鎮已經有自己的大小與歷史:我們是觀察者,看到的是早就存在的地方
+// seed(world, size):補人口、科技時代、繁榮、已蓋好的建築、城鎮等級、現任首長已做了幾屆、在世的前任首長、墓園裡的老墓碑
+const ORIGIN = (() => {
+    const rng = (seed) => { let a = (seed >>> 0) || 1; const f = () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t2 = Math.imul(a ^ (a >>> 15), 1 | a); t2 = (t2 + Math.imul(t2 ^ (t2 >>> 7), 61 | t2)) ^ t2; return ((t2 ^ (t2 >>> 14)) >>> 0) / 4294967296; };
+        return { f, int: (lo, hi) => lo + Math.floor(f() * (hi - lo + 1)), pick: (arr) => arr[Math.floor(f() * arr.length)], chance: (p) => f() < p }; };
+    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const SZ = () => (typeof TOWN_SIZES !== 'undefined' ? TOWN_SIZES : null);
+    function pickSize(r, weights) { const u = r.f(); let acc = 0; for (let i = 0; i < weights.length; i++) { acc += weights[i]; if (u < acc) return i; } return 0; }
+    function reachEra(w, E, r) {
+        const R = w.research; if (!R?.projects || typeof R.currentEra !== 'function') return;
+        const tree = typeof RESEARCH_TREE !== 'undefined' ? RESEARCH_TREE : {};
+        const done = (k) => R.projects[k]?.status === 'complete';
+        for (let g = 0; g < 120 && R.currentEra() < E; g++) {
+            const avail = Object.keys(R.projects).filter(k => !done(k) && (tree[k]?.era || R.projects[k]?.era || 1) < E && (tree[k]?.prerequisites || []).every(done));
+            if (!avail.length) break; const k = r.pick(avail); R.projects[k].status = 'complete'; R.projects[k].progress = R.projects[k].cost;
+        }
+        R.refreshLocks?.();
+    }
+    function prebuild(w, n, r) {
+        const B = w.buildings; if (!B || !n || typeof BUILDING_TEMPLATES === 'undefined') return 0;
+        const have = new Set([...(B.completed || []), ...(B.projects || [])].map(p => p.buildingKey || p.name));
+        const keys = Object.keys(BUILDING_TEMPLATES).filter(k => !have.has(k) && !have.has(BUILDING_TEMPLATES[k].name) && (!w.research?.isUnlocked || w.research.isUnlocked(k)));
+        let made = 0;
+        for (let i = 0; i < n && keys.length; i++) {
+            const k = keys.splice(Math.floor(r.f() * keys.length), 1)[0]; const T0 = BUILDING_TEMPLATES[k];
+            B._counter = (B._counter || 0) + 1;
+            B.completed.push({ id: `build_${B._counter}`, name: T0.name, description: T0.description, costs: T0.costs, workRequired: T0.work, workDone: T0.work, effects: T0.effects || {}, status: 'complete', buildingKey: k, level: 1, pre: 1 });
+            made++;
+        }
+        try { B.recomputeEffects?.(w); } catch (e) {}
+        return made;
+    }
+    function rollName(r, used) {
+        const S0 = typeof RANDOM_SURNAMES !== 'undefined' ? RANDOM_SURNAMES : ['陳', '林', '王'];
+        for (let i = 0; i < 40; i++) { const male = r.chance(0.5); const G = male ? (typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : ['明']) : (typeof RANDOM_GIVEN_FEMALE !== 'undefined' ? RANDOM_GIVEN_FEMALE : ['芳']);
+            const nm = r.pick(S0) + r.pick(G); if (!used.has(nm) && !(typeof RESERVED_NAMES !== 'undefined' && RESERVED_NAMES.has(nm))) { used.add(nm); return { nm, gender: male ? 'male' : 'female' }; } }
+        return { nm: r.pick(S0) + r.int(1, 99), gender: 'male' };
+    }
+    function graves(w, n, size, founded, r) {
+        const L = w.lifecycle; if (!L || !n) return 0;
+        L.graveyard = L.graveyard || [];
+        const used = new Set([...npcs(w).map(a => a.name), ...L.graveyard.map(g => g.name)]);
+        const jobs = (typeof JOB_DEFINITIONS !== 'undefined') ? Object.keys(JOB_DEFINITIONS).filter(k => k !== 'mayor') : [];
+        const causes = (typeof DEATH_CAUSES !== 'undefined') ? DEATH_CAUSES : [t('年老體衰')];
+        const lines = [t('以善良著稱'), t('勤勞一生'), t('才華洋溢'), t('深受愛戴'), t('將被永遠懷念')];
+        const leaders = Math.min(n, size + 1 + r.int(0, 1)); // 歷任首長(已過世的)
+        const rows = [];
+        for (let i = 0; i < n; i++) {
+            const { nm, gender } = rollName(r, used);
+            const ago = r.int(1, Math.max(2, founded));
+            const isLeader = i < leaders; const old = isLeader || r.chance(0.75);
+            const age = old ? r.int(58, 92) : r.int(18, 55);
+            const cause = age >= 70 ? causes[0] : r.pick(causes.slice(1, 3).length ? causes.slice(1, 3) : causes);
+            const jk = jobs.length ? r.pick(jobs) : null; const jt = jk && JOB_DEFINITIONS[jk] ? JOB_DEFINITIONS[jk].title : '';
+            let ep;
+            if (isLeader) { const lv = Math.max(0, size - (r.chance(0.4) ? 1 : 0)), n2 = r.int(1, 3); const ti = TIERS.leaderTitle(w, lv);
+                ep = `${t('曾任')}${n2 > 1 ? ` ${n2} ${t('屆')}` : ''}${ti}${t('，')}${r.pick(lines)}${t('。')}`; }
+            else ep = `${jt ? `${t('曾任')}${jt}${t('，')}` : ''}${r.pick(lines)}${t('。')}`;
+            rows.push({ name: nm, age, gender, deathCause: cause, deathTick: 0, deathTime: t('{n} 年前').replace('{n}', ago), epitaph: ep, job: jt, traits: [], pre: 1, _ago: ago });
+        }
+        rows.sort((p, q) => q._ago - p._ago).forEach(g => { delete g._ago; L.graveyard.push(g); });
+        return n;
+    }
+    // 現任首長:觀察開始前已做了幾屆;有時還有一位在世的前任首長
+    function careers(w, size, r) {
+        try {
+            TIERS.track(w); const T = TIERS.S(w); const hid = T.holderId; if (!hid) return;
+            const c = T.career[hid] || []; const x = c.find(e => e.role === 'leader' && e.to === null);
+            if (x) { delete x.init; x.pre = 1; x.pw = r.int(1, size >= 2 ? 3 : 2); }
+            if (size >= 1 && r.chance(0.55)) {
+                const ex = npcs(w).filter(a => a.agentId !== hid && a.age >= 50 && a.job?.key !== 'mayor').sort((p, q) => q.age - p.age)[0];
+                if (ex) { const cc = T.career[ex.agentId] || (T.career[ex.agentId] = []); cc.unshift({ role: 'leader', lv: Math.max(0, size - 1), from: 0, to: 0, pre: 1, pw: r.int(1, 2), w: 0, e: r.pick(['stepdown', 'lost']) }); }
+            }
+        } catch (e) {}
+    }
+    function seed(w, size, o = {}) {
+        const P = SZ()?.[size]; if (!w || !P) return null;
+        const r = rng(o.seed ?? ((Math.random() * 4294967296) >>> 0));
+        const want = Math.max(P.pop[0], Math.min(Math.ceil(P.pop[1] * 1.15), Math.round(o.pop || r.int(P.pop[0], P.pop[1]))));
+        const add = want - npcs(w).length;
+        if (add > 0 && typeof w._loadRandomResidents === 'function') { w._loadRandomResidents(add, 'o_', !npcs(w).some(a => a.job?.key === 'mayor')); for (const a of npcs(w)) if (/^o_/.test(a.agentId) && r.chance(0.18)) a.age = r.int(55, 76); }
+        reachEra(w, Math.max(P.era, o.era || 1), r);
+        try { const R = w.research, tree = typeof RESEARCH_TREE !== 'undefined' ? RESEARCH_TREE : {}; const E = R.currentEra(); // 老城鎮在目前時代也多研究了幾項,建築才蓋得出來
+            for (let i = 0; i < [0, 4, 4, 3][size]; i++) { const av = Object.keys(R.projects).filter(k => R.projects[k].status !== 'complete' && (tree[k]?.era || 1) <= E && (tree[k]?.prerequisites || []).every(q => R.projects[q]?.status === 'complete')); if (!av.length) break; const k = r.pick(av); R.projects[k].status = 'complete'; R.projects[k].progress = R.projects[k].cost; }
+            R.refreshLocks?.(); } catch (e) {}
+        if (w.prosperity) w.prosperity.originBonus = [0, 16, 20, 24][size] || 0;
+        if (w.prosperity) { w.prosperity.prosperity = Math.max(P.pros[0], Math.min(P.pros[1] + 6, Math.round(o.pros || r.int(P.pros[0], P.pros[1])))); w.prosperity._townAgeDays = 999; }
+        const n = npcs(w).length, sp = w.stockpile?.resources;
+        if (sp) { sp.food = Math.max(sp.food || 0, n * 8); sp.wood = Math.max(sp.wood || 0, 40 + size * 60); sp.stone = Math.max(sp.stone || 0, 20 + size * 50); sp.silver = Math.max(sp.silver || 0, 150 + size * 250); }
+        const built = prebuild(w, r.int(P.builds[0], P.builds[1]), r);
+        w.tierState = null; const T = TIERS.S(w); TIERS.syncTitles(w);
+        const founded = Math.max(5, o.founded || r.int(15 + size * 30, 60 + size * 70));
+        careers(w, size, r);
+        const gn = graves(w, r.int(P.graves[0], P.graves[1]), size, founded, r);
+        w.origin = { size, lv: T.lv, founded, pop: n, built, graves: gn, day: w._absDay ? w._absDay() : 1 };
+        try { w.logMessageT?.('event', '🏘️ 第一次見到{town}：一座{size}，住著 {n} 人，建立至今已 {f} 年。', { town: w.townName, size: TIERS.name(w, T.lv), n, f: founded }); } catch (e) {}
+        return w.origin;
+    }
+    // 新地圖／鄰鎮:沒有城鎮卡時依名字與權重挑大小(王都不會在這裡出現)
+    function sizeFor(name, seedNum) {
+        const r = rng(seedNum); if (/村$/.test(String(name || ''))) return 0;
+        return pickSize(r, /[城市]$/.test(String(name || '')) ? [0.3, 0.45, 0.25] : [0.68, 0.26, 0.06]);
+    }
+    const hash = (s) => { let h = 2166136261; for (const ch of String(s)) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; };
+    return { seed, sizeFor, hash, pickSize };
+})();
+if (typeof globalThis !== 'undefined') globalThis.ORIGIN = ORIGIN;
+if (typeof World !== 'undefined') {
+    const _r2 = World.prototype.reset; World.prototype.reset = function (...args) { const r = _r2.apply(this, args); this.origin = null; return r; };
+    const _s2 = World.prototype.serialize; World.prototype.serialize = function () { const d = _s2.call(this); if (d && this.origin) d.origin = this.origin; return d; };
+    const _l2 = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _l2.call(this, data); try { if (r) this.origin = data?.origin || null; } catch (e) {} return r; };
 }
 // ---- 存讀檔、新城鎮清空、回來補變化
 if (typeof World !== 'undefined') {

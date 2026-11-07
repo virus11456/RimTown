@@ -1,5 +1,5 @@
-// RimTown - Frontend App v6.84.0
-const RIMTOWN_APP_VERSION = '6.84.0';
+// RimTown - Frontend App v6.85.0
+const RIMTOWN_APP_VERSION = '6.85.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -1057,6 +1057,8 @@ class RimTownApp {
         }
         const cs = this.tileMap.coachStation;
         if (cs && tx + 2 > cs.x && tx < cs.x + cs.w && ty + 2 > cs.y && ty < cs.y + cs.h) return 2;
+        const gv = this.tileMap.natureZones?.graveyard; // v6.85.0 墓園不能蓋建築
+        if (gv && tx + 2 > gv.x && tx < gv.x + gv.w && ty + 2 > gv.y && ty < gv.y + gv.h) return 2;
         return 0;
     }
 
@@ -1827,6 +1829,8 @@ class RimTownApp {
         // v6.45.0 種子鎮用底圖的版面(海港／礦山／森林／市集／平原),屋頂配色用自己的
         const TT = (typeof TOWN_THEMES !== 'undefined') ? TOWN_THEMES[theme] : null;
         this.tileMap.roofPalette = (TT && TT.generated && Array.isArray(TT.roof)) ? TT.roof : null;
+        // v6.85.0 產圖前先告訴地圖已經蓋好的選址建築與裝飾,墓園才不會壓在舊存檔的建築上
+        try { this.tileMap.decorations = this.world?.decorations || []; this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX)); this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX)); } catch (e) {}
         this.tileMap.generateLayout(locations, typeof baseThemeOf === 'function' ? baseThemeOf(theme) : theme);
         this._mapGenerated = true;
     }
@@ -3438,7 +3442,7 @@ class RimTownApp {
             quarry: t('礦場'), town_square: t('廣場'), park: t('公園'),
             well: t('水井'), residential_north: t('北區住宅'),
             residential_south: t('南區住宅'), residential_east: t('東區住宅'),
-            exploration: t('探險中'),
+            exploration: t('探險中'), graveyard: t('墓園'),
         };
         // Try the town map for custom location names
         if (this.state?.locations?.[locId]?.name) return this.state.locations[locId].name;

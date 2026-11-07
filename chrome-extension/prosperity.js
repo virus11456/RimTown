@@ -39,7 +39,7 @@ class ProsperityEngine {
     recalcTotal() {
         let total = 0;
         for (const dim of Object.values(this.dimensions)) total += dim.value * dim.weight;
-        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0))));
+        this.prosperity = Math.round(Math.max(0, Math.min(100, total + (this.questBonus || 0) + (this.originBonus || 0)))); // v6.85.0 originBonus:初遇時就是城鎮／城市的老底子(街道、城牆、名聲等沒模擬到的部分)
         // v5.54.0 早期爬坡上限:繁榮度是「現狀快照」,新鎮第一晚就會反映 ~40 的底子,
         // 導致第 1 章(門檻 20)只活一天。前 5 天封頂在 天數×8(8/16/24/32/40),
         // 讓「先和村民相處」的第一章真的有 2-3 天可玩;第 6 天起完全解封。
@@ -320,6 +320,7 @@ class ProsperityEngine {
             _lastUpdateYear: this._lastUpdateYear,
             _townAgeDays: this._townAgeDays,
             questBonus: this.questBonus || 0, // v5.84.0
+            originBonus: this.originBonus || 0, // v6.85.0
         };
     }
 
@@ -336,6 +337,7 @@ class ProsperityEngine {
         this.prosperity = data.prosperity || 0;
         this.level = data.level || t('荒涼');
         this.questBonus = data.questBonus || 0; // v5.84.0
+        this.originBonus = data.originBonus || 0; // v6.85.0
         this._lastUpdateDay = data._lastUpdateDay ?? -1;
         this._lastUpdateYear = data._lastUpdateYear ?? undefined;
         // 舊存檔沒有這個欄位:視為老鎮(999),不套用爬坡上限,零影響

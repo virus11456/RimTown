@@ -320,6 +320,7 @@ Object.assign(RimTownApp.prototype, {
             nw.townName = townName;
             nw.rosterMode = 'scripted';
             nw.reset(); nw.worldId = rimtownWorldId();
+            try { if (typeof ORIGIN !== 'undefined') { const sd = ORIGIN.hash(rimtownWorldId() + ':' + themeKey); ORIGIN.seed(nw, ORIGIN.sizeFor(townName, sd), { seed: sd }); } } catch (e) { console.warn('[RimTown] origin', e); } // v6.85.0 鄰鎮也有自己的大小與歷史
             const blob = nw.serialize();
             const tid = this._generateTownId(townName);
             const list = this._getTownList();

@@ -7,6 +7,14 @@
 const TOWNGEN_MAX_LIVE = 10;   // (v6.76.0 起不再限制馬車可達的數量,只留給舊程式參考)
 const TOWNGEN_MAX_CARDS = 100; // 城鎮卡上限(每張約 1KB)
 
+// v6.85.0 城鎮初遇大小:村莊最常見,城鎮、城市、王都依序少見;大的多半只聽得到消息(王都一定、城市一半太遠去不了)
+// 每級:人口、繁榮、最低時代、開局已蓋好的建築數、墓園裡已有的墓碑數
+const TOWN_SIZES = [
+    { pop: [12, 28], pros: [18, 42], era: 1, builds: [0, 2], graves: [2, 5] },
+    { pop: [32, 52], pros: [52, 62], era: 1, builds: [3, 6], graves: [5, 9] },
+    { pop: [62, 76], pros: [67, 78], era: 2, builds: [7, 11], graves: [9, 14] }, // 城市上限壓在 76 人(存檔體積)
+    { pop: [100, 125], pros: [81, 90], era: 3, builds: [11, 15], graves: [13, 18] },
+];
 const TownGen = (() => {
     // 小型可重現亂數(mulberry32);同一個種子永遠同一串數字
     function rng(seed) {
@@ -131,8 +139,20 @@ const TownGen = (() => {
         else if (base === 'forest' && !c.exports.includes('paper') && c.exports[1] !== 'wood' && c.exports[1] !== 'herbs') c.exports[1] = 'paper';
         if (base !== 'harbor' && !c.exports.includes('salt') && !c.imports.includes('salt')) c.imports[1] = 'salt';
         c.imports = c.imports.filter(k => !c.exports.includes(k));
+        // v6.85.0 大小另用種子雜湊決定(不動原本的亂數序列,舊城鎮卡的名字、特色都不變);名字叫「村」一定是村莊,叫「城／市」比較可能是大城
+        const sz = sizeOf(c); c.size = sz.size; c.far = sz.far;
+        if (c.size > 0) { const P = TOWN_SIZES[c.size]; c.pop = P.pop[0] + (sz.h % (P.pop[1] - P.pop[0] + 1)); }
         return c;
     }
+    // 和 v6.65.0 城鎮卡等級(sim-goods tierOf)同一套算法,玩家看過的「城鎮／城市」標籤不變;名字叫「村」的一律算村莊
+    function sizeOf(c) {
+        let a = ((c.seed >>> 0) ^ 0x5bd1e995) >>> 0; a = (a + 0x6D2B79F5) >>> 0; let x = a; x = Math.imul(x ^ (x >>> 15), x | 1); x ^= x + Math.imul(x ^ (x >>> 7), x | 61);
+        const v = ((x ^ (x >>> 14)) >>> 0) / 4294967296; const h = Math.imul(((c.seed >>> 0) ^ 0x2c1b3c6d) >>> 0, 2654435761) >>> 0;
+        let size = v < 0.55 ? 0 : v < 0.85 ? 1 : v < 0.97 ? 2 : 3;
+        if (/村$/.test(String(c.name || ''))) size = 0;
+        return { size, far: size >= 3 || (size === 2 && ((h >>> 9) & 1) === 1), h };
+    }
+    const SIZE_NAME = [['村莊', 'Village'], ['城鎮', 'Town'], ['城市', 'City'], ['王都', 'Royal capital']];
 
     // 文字:城鎮簡介(依語言)
     function blurb(c) {
@@ -205,14 +225,16 @@ const TownGen = (() => {
     ];
     function drift(c, day) {
         if (!c) return null;
-        const st = c.state || (c.state = { pop: c.pop, prosperity: { poor: 25, modest: 45, rich: 65 }[c.wealth] || 40, era: c.era, news: [], day: day });
+        const SZ = c.state?.tier ?? c.tier ?? c.size ?? 0, PT = [null, 56, 71, 84][SZ]; // v6.85.0 大城的人口、繁榮跟著自己的級別(背景長大後跟著新級別)
+        const st = c.state || (c.state = { pop: c.pop, prosperity: PT || { poor: 25, modest: 45, rich: 65 }[c.wealth] || 40, era: Math.max(c.era || 1, SZ ? TOWN_SIZES[SZ].era : 1), news: [], day: day });
+        const popLo = SZ ? Math.floor(TOWN_SIZES[SZ].pop[0] * 0.85) : 6, popHi = SZ ? Math.ceil(TOWN_SIZES[SZ].pop[1] * 1.15) : 40;
         if (st.day >= day) return null;
         const r = rng((c.seed ^ Math.imul(day + 1, 2654435761)) >>> 0);
         let news = null;
         for (let d = st.day + 1; d <= day && d <= st.day + 30; d++) {
-            const target = { poor: 30, modest: 50, rich: 70 }[c.wealth] || 50;
+            const target = PT || { poor: 30, modest: 50, rich: 70 }[c.wealth] || 50;
             st.prosperity = Math.max(0, Math.min(100, st.prosperity + (target - st.prosperity) * 0.05 + (r.f() - 0.5) * 3));
-            if (r.chance(0.06)) { const before = st.pop; st.pop = Math.max(6, Math.min(40, st.pop + (st.prosperity > 50 ? 1 : r.chance(0.5) ? 1 : -1))); if (st.pop > before && r.chance(0.4)) news = { zh: `${c.name}人口增加到 ${st.pop} 人`, en: `${c.nameEn} has grown to ${st.pop} people` }; }
+            if (r.chance(0.06)) { const before = st.pop; st.pop = Math.max(popLo, Math.min(popHi, st.pop + (st.prosperity > 50 ? 1 : r.chance(0.5) ? 1 : -1))); if (st.pop > before && r.chance(0.4)) news = { zh: `${c.name}人口增加到 ${st.pop} 人`, en: `${c.nameEn} has grown to ${st.pop} people` }; }
             if (st.era < 3 && r.chance(c.traits.includes('scholars') ? 0.012 : 0.005)) { st.era++; const en = typeof RESEARCH_ERAS !== 'undefined' ? RESEARCH_ERAS[st.era] : null; news = { zh: zf('{n}研究出新技術，進入「{e}」時代', { n: c.name, e: en ? en.name : st.era }), en: `${c.nameEn} made a breakthrough and entered era ${st.era}` }; }
             if (!news && r.chance(0.12)) news = r.pick(NEWS)(c, r);
             if (news) { news.day = d; st.news.push(news); st.news = st.news.slice(-3); news = null; }
@@ -227,7 +249,7 @@ const TownGen = (() => {
     function _load() { try { const o = JSON.parse(localStorage.getItem(WK(KEY)) || 'null'); if (o && Array.isArray(o.list)) return o; } catch (e) {} return { v: 1, base: null, list: [], n: 0, since: 0, seenExp: 0 }; }
     function _save(o) { try { localStorage.setItem(WK(KEY), JSON.stringify(o)); } catch (e) {} }
     function registry() { return _load(); }
-    function cards() { const o = _load(); return o.list.map(e => { const c = bySeed(e.seed); c.found = e.found; c.via = e.via; c.by = e.by; c.reachable = true; c.townId = e.id || null; c.state = e.st || null; return c; }); }
+    function cards() { const o = _load(); return o.list.map(e => { const c = bySeed(e.seed); c.found = e.found; c.via = e.via; c.by = e.by; c.reachable = !c.far || !!e.id; c.townId = e.id || null; c.state = e.st || null; return c; }); }
     function liveCount(app) {
         let n = 1; try { for (const d of (typeof NEIGHBOR_TOWNS !== 'undefined' ? NEIGHBOR_TOWNS : [])) if (localStorage.getItem(WK(d.key)) === '1') n++; } catch (e) {}
         return n + _load().list.filter(e => e.r).length;
@@ -248,7 +270,7 @@ const TownGen = (() => {
         }
         o.n++;
         if (!pick) { _save(o); return null; }
-        const reachable = true; // v6.76.0 探索過的城鎮都能搭馬車去(封路時暫停),不再限制相連的數量
+        const reachable = !pick.far; // v6.76.0 探索過的城鎮都能搭馬車去;v6.85.0 太遠的大城(王都、一半的城市)只聽得到消息
         o.list.push({ seed: pick.seed, found: opts.day || 0, via: opts.via || 'rumor', by: opts.by || '', r: reachable ? 1 : 0, id: null, st: null });
         o.since = 0;
         _save(o);
@@ -278,7 +300,7 @@ const TownGen = (() => {
     function normalize() { const o = _load(); if (_capLive(o)) _save(o); }
     function registerAll() { try { for (const e of _load().list) bySeed(e.seed); } catch (e) {} }
 
-    return { normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, setStates, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
+    return { SIZE_NAME, sizeOf, normalize, card, bySeed, register, applyToWorld, cultureLine, blurb, tags, displayName, drift, discover, registry, cards, liveCount, update, setState, setStates, bump, exportCompact, mergeCompact, registerAll, similar, hash, L, TRAITS, TEMPERS };
 })();
 if (typeof globalThis !== 'undefined') globalThis.TownGen = TownGen;
 try { TownGen.registerAll(); TownGen.normalize(); } catch (e) {}
