@@ -1098,16 +1098,37 @@ class Town3D extends PixelTileMap {
     // ---------- 村民(方塊小人;v6.24 再細修) ----------
     // v6.43.0 村民:每個部位(身體／四肢／工具)各自併成一個頂點色網格 —— 一人約 6 次繪製(以前約 18 次),
     // 省下來的預算拿來加耳朵、鼻子、眉毛、嘴、衣領、腰帶扣、鞋底、袖口等細節
-    _partMesh(boxes) {
-        const unit = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
-        const up = unit.attributes.position, un = unit.attributes.normal, n = up.count;
-        const pos = new Float32Array(boxes.length * n * 3), nor = new Int8Array(boxes.length * n * 3), col = new Uint8Array(boxes.length * n * 3);
+    // v6.94.0 除了方塊也能放圓球('s')、圓柱('c')、上窄下寬的圓台('f');各自一個單位網格,依 [寬,高,深] 縮放後併成一個頂點色網格
+    _unitShape(kind) {
+        const key = 'unit_' + kind;
+        if (!this._geos[key]) {
+            let g;
+            if (kind === 'sH') g = new THREE.SphereGeometry(0.5, 12, 9);      // 頭:最顯眼,圓一點
+            else if (kind === 'sL') g = new THREE.SphereGeometry(0.5, 9, 6);
+            else if (kind === 'sS') g = new THREE.SphereGeometry(0.5, 6, 4);
+            else if (kind === 'c') g = new THREE.CylinderGeometry(0.5, 0.5, 1, 8);
+            else if (kind === 'o') g = new THREE.CylinderGeometry(0.5, 0.5, 1, 7, 1, true); // 手腳:兩端被鞋子、手掌蓋住,不用封口
+            else if (kind === 'f') g = new THREE.CylinderGeometry(0.38, 0.5, 1, 9);
+            else if (kind === 'sLo') g = new THREE.SphereGeometry(0.5, 6, 4); // 遠處簡化用
+            else if (kind === 'sSo') g = new THREE.SphereGeometry(0.5, 4, 3);
+            if (g) { g = g.toNonIndexed(); this._geos[key] = g; } // 保留圓滑法線(不重算成平面)
+            else return this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
+        }
+        return this._geos[key];
+    }
+    _partMesh(boxes, low) {
+        if (low) boxes = boxes.filter(b => Math.max(b[0], b[1], b[2]) >= 0.05); // 遠處看不到的小細節(反光、扣子)直接省略
+        const shapeOf = (b) => { const mx = Math.max(b[0], b[1], b[2]); if (b[7] === 'h') return low ? 'sLo' : 'sH'; if (b[7] === 's') return mx < 0.05 ? 'box' : mx >= 0.3 ? (low ? 'sLo' : 'sL') : (low ? 'sSo' : 'sS'); return (b[7] === 'c' || b[7] === 'f' || b[7] === 'o') ? b[7] : 'box'; };
+        let total = 0; for (const b of boxes) total += this._unitShape(shapeOf(b)).attributes.position.count;
+        const pos = new Float32Array(total * 3), nor = new Int8Array(total * 3), col = new Uint8Array(total * 3);
         const c = new THREE.Color(); let o = 0;
         for (const b of boxes) {
-            c.set(b[3]);
+            const unit = this._unitShape(shapeOf(b)); const up = unit.attributes.position, un = unit.attributes.normal, n = up.count;
+            c.set(b[3]); const sx = b[0] || 1e-3, sy = b[1] || 1e-3, sz = b[2] || 1e-3;
             for (let k = 0; k < n; k++) {
-                pos[o] = up.getX(k) * b[0] + b[4]; pos[o + 1] = up.getY(k) * b[1] + b[5]; pos[o + 2] = up.getZ(k) * b[2] + b[6];
-                nor[o] = Math.round(un.getX(k) * 127); nor[o + 1] = Math.round(un.getY(k) * 127); nor[o + 2] = Math.round(un.getZ(k) * 127);
+                pos[o] = up.getX(k) * sx + b[4]; pos[o + 1] = up.getY(k) * sy + b[5]; pos[o + 2] = up.getZ(k) * sz + b[6];
+                let nx = un.getX(k) / sx, ny = un.getY(k) / sy, nz = un.getZ(k) / sz; const L = Math.hypot(nx, ny, nz) || 1; // 非等比縮放:法線要除以縮放再正規化
+                nor[o] = Math.round(nx / L * 127); nor[o + 1] = Math.round(ny / L * 127); nor[o + 2] = Math.round(nz / L * 127);
                 col[o] = Math.round(c.r * 255); col[o + 1] = Math.round(c.g * 255); col[o + 2] = Math.round(c.b * 255); o += 3;
             }
         }
@@ -1119,6 +1140,9 @@ class Town3D extends PixelTileMap {
     // v6.55.0 人多時遠處的村民改用「整個人合成一塊」的簡化網格:一人 1 次繪製(原本約 5 次)、不投影
     _agentLod(m) {
         if (m.userData.lod) return m.userData.lod;
+        if (m.userData.lodParts) { // v6.94.0 Q 版村民:用低細分重建一個整人網格(頂點約少六成)
+            const lod = this._partMesh(m.userData.lodParts, true); lod.castShadow = false; lod.userData.isLod = true; lod.visible = false; m.add(lod); m.userData.lod = lod; return lod;
+        }
         const saved = []; for (const c of m.children) if (c.isGroup && /^(leg|arm)/.test(c.name)) { saved.push([c, c.rotation.x]); c.rotation.x = 0; }
         const p0 = m.position.clone(), r0 = m.rotation.clone(); m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); m.updateMatrixWorld(true);
         const parts = []; m.traverse(o => { if (o.isMesh && o.geometry?.attributes?.color && o.parent?.name !== 'tool' && o.visible !== false) parts.push(o); });
@@ -1163,62 +1187,71 @@ class Town3D extends PixelTileMap {
         if (ab === 'e') c.hair = mix(c.hair, '#BDBDBD', 0.75); else if (ab === 'o') c.hair = '#ECECEC';
         if (poor) { c.body = shade(mix(c.body, '#7A7366', 0.55), 0.82); c.bodyDk = shade(c.body, 0.8); c.pants = shade(mix(c.pants, '#6B6358', 0.5), 0.85); c.boots = '#4A3B2E'; }
         else if (cls >= 3) { c.body = shade(c.body, 1.08); c.bodyDk = shade(c.bodyDk, 1.05); c.boots = cls >= 4 ? '#2B1D14' : c.boots; }
-        const skinDk = shade(c.skin, 0.82), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
-        const body = [];   // [w,h,d,hex,x,y,z]
-        const B = (w, h, d, hex, x, y, z) => body.push([w, h, d, hex, x, y, z]);
-        // 軀幹、衣領、腰帶與扣環
-        B(0.46, 0.5, 0.28, c.body, 0, 0.61, 0);
-        B(0.48, 0.08, 0.3, c.bodyDk, 0, 0.4, 0);
-        B(0.1, 0.07, 0.02, poor ? '#6B5A45' : '#D9B85C', 0, 0.4, 0.155);
-        B(0.3, 0.06, 0.06, cls >= 3 && !poor ? '#F2F2F2' : bodyLt, 0, 0.85, 0.13);
-        if (poor) { B(0.13, 0.12, 0.02, mix(c.body, '#A08C6E', 0.6), 0.11, 0.66, 0.145); B(0.15, 0.11, 0.02, mix(c.body, '#5C5247', 0.6), -0.1, 0.52, -0.145); } // 補丁
-        if (cls >= 3 && !poor) { B(0.04, 0.04, 0.02, '#D9B85C', 0, 0.71, 0.145); B(0.04, 0.04, 0.02, '#D9B85C', 0, 0.59, 0.145); } // 金扣
-        if (cls >= 4 && !poor) { const cape = cls >= 5 ? '#9E1B1B' : '#5E2A84'; B(0.52, 0.66, 0.05, cape, 0, 0.55, -0.17); B(0.5, 0.05, 0.36, cape, 0, 0.87, -0.02); // 披風
-            if (cls >= 5) { B(0.54, 0.07, 0.08, '#F5F5F5', 0, 0.87, -0.16); B(0.54, 0.06, 0.07, '#F5F5F5', 0, 0.23, -0.17); } // 白毛邊
-            B(0.24, 0.03, 0.02, '#E6C350', 0, 0.82, 0.15); B(0.06, 0.07, 0.02, cls >= 5 ? '#C62828' : '#2E7D32', 0, 0.76, 0.152); } // 金項鍊與墜子
-        if (female) B(0.5, 0.16, 0.32, c.body, 0, 0.32, 0); // 裙擺
-        // 頭:臉、耳朵、眼睛、眉毛、鼻子、嘴
-        B(0.42, 0.4, 0.4, c.skin, 0, 1.08, 0);
-        B(0.06, 0.12, 0.1, skinDk, -0.23, 1.07, 0); B(0.06, 0.12, 0.1, skinDk, 0.23, 1.07, 0);
-        B(0.07, 0.07, 0.03, '#2B2118', -0.1, 1.1, 0.21); B(0.07, 0.07, 0.03, '#2B2118', 0.1, 1.1, 0.21);
-        B(0.1, 0.025, 0.02, hairDk, -0.1, 1.17, 0.21); B(0.1, 0.025, 0.02, hairDk, 0.1, 1.17, 0.21);
-        B(0.06, 0.07, 0.05, skinDk, 0, 1.03, 0.215);
-        B(0.1, 0.02, 0.02, '#8C4A3C', 0, 0.96, 0.21);
-        // 頭髮
+        const skinDk = shade(c.skin, 0.86), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
+        // v6.94.0 Q 版大頭:圓頭、大眼睛帶反光、腮紅、小嘴,小身體、圓手圓腳(球 's'、圓柱 'c'、圓台 'f')
+        const body = [];   // [w,h,d,hex,x,y,z,shape]
+        const B = (w, h, d, hex, x, y, z, sh) => body.push([w, h, d, hex, x, y, z, sh]);
+        const HY = 1.0; // 頭的中心高度
+        // 身體:圓滾滾的軀幹、腰帶、領口
+        B(0.5, 0.46, 0.38, c.body, 0, 0.5, 0, 's');
+        B(0.5, 0.06, 0.39, c.bodyDk, 0, 0.36, 0, 'o');
+        B(0.08, 0.06, 0.03, poor ? '#6B5A45' : '#D9B85C', 0, 0.36, 0.195);
+        B(0.36, 0.08, 0.3, cls >= 3 && !poor ? '#F2F2F2' : bodyLt, 0, 0.72, 0, 's');
+        if (female) B(0.54, 0.24, 0.46, c.body, 0, 0.28, 0, 'f'); // 裙擺
+        if (poor) { B(0.12, 0.11, 0.03, mix(c.body, '#A08C6E', 0.6), 0.1, 0.52, 0.175); B(0.13, 0.1, 0.03, mix(c.body, '#5C5247', 0.6), -0.09, 0.46, -0.18); } // 補丁
+        if (cls >= 3 && !poor) { B(0.045, 0.045, 0.03, '#D9B85C', 0, 0.58, 0.185, 's'); B(0.045, 0.045, 0.03, '#D9B85C', 0, 0.46, 0.19, 's'); } // 金扣
+        if (cls >= 4 && !poor) { const cape = cls >= 5 ? '#9E1B1B' : '#5E2A84'; B(0.52, 0.5, 0.05, cape, 0, 0.47, -0.2); B(0.52, 0.07, 0.38, cape, 0, 0.71, -0.01, 's'); // 披風
+            if (cls >= 5) { B(0.56, 0.06, 0.08, '#F5F5F5', 0, 0.72, -0.18); B(0.54, 0.06, 0.07, '#F5F5F5', 0, 0.23, -0.2); } // 白毛邊
+            B(0.26, 0.03, 0.04, '#E6C350', 0, 0.67, 0.165); B(0.06, 0.06, 0.04, cls >= 5 ? '#C62828' : '#2E7D32', 0, 0.62, 0.18, 's'); } // 金項鍊與墜子
+        // 頭:大圓臉、耳朵、腮紅、小嘴(眼睛另外一個網格,才能眨眼、睡覺閉眼)
+        B(0.74, 0.68, 0.66, c.skin, 0, HY, 0, 'h');
+        B(0.1, 0.14, 0.09, skinDk, -0.37, HY - 0.02, 0, 's'); B(0.1, 0.14, 0.09, skinDk, 0.37, HY - 0.02, 0, 's');
+        B(0.11, 0.055, 0.04, '#F2A0A6', -0.205, HY - 0.08, 0.255, 's'); B(0.11, 0.055, 0.04, '#F2A0A6', 0.205, HY - 0.08, 0.255, 's');
+        B(0.09, 0.035, 0.03, '#C0564B', 0, HY - 0.11, 0.298, 's');
+        // 頭髮:頭頂、後腦,依髮型加長髮、髮髻、側瀏海、蓬髮
         const hairStyle = agent.look?.hair ?? (female ? 1 : 0);
-        B(0.46, 0.14, 0.44, c.hair, 0, 1.3, 0);
-        B(0.46, 0.2, 0.1, c.hair, 0, 1.2, -0.17);
-        if (hairStyle === 1 || hairStyle === 2) B(0.4, 0.45, 0.12, c.hair, 0, 0.98, -0.22);
-        if (hairStyle === 2) B(0.12, 0.2, 0.1, hairDk, 0, 0.8, -0.24);
-        if (hairStyle === 3) B(0.46, 0.12, 0.08, c.hair, 0, 1.2, 0.18);
-        if (hairStyle === 5) B(0.52, 0.2, 0.5, c.hair, 0, 1.33, 0);
+        if (hairStyle === 5) B(0.9, 0.62, 0.84, c.hair, 0, HY + 0.28, -0.05, 's');
+        else B(0.8, 0.5, 0.74, c.hair, 0, HY + 0.2, -0.03, 's');
+        B(0.76, 0.6, 0.5, c.hair, 0, HY + 0.05, -0.13, 's');
+        if (hairStyle === 1 || hairStyle === 2) B(0.68, 0.62, 0.3, c.hair, 0, HY - 0.2, -0.22, 's');
+        if (hairStyle === 2) B(0.24, 0.24, 0.24, hairDk, 0, HY + 0.42, -0.2, 's');
+        if (hairStyle === 3) { B(0.14, 0.32, 0.16, c.hair, -0.32, HY + 0.02, 0.1, 's'); B(0.14, 0.32, 0.16, c.hair, 0.32, HY + 0.02, 0.1, 's'); }
         // 職業帽／配件
         const acc = child ? 0 : (agent.look?.acc ?? 0);
-        let minerLamp = false;
-        if (king) { B(0.46, 0.1, 0.46, '#E6C350', 0, 1.42, 0); for (const [x, z] of [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17], [0, 0.2]]) B(0.07, 0.12, 0.07, '#E6C350', x, 1.52, z); B(0.07, 0.07, 0.02, '#C62828', 0, 1.43, 0.235); } // 王冠
+        let minerLamp = false; const top = HY + 0.4;
+        if (king) { B(0.5, 0.12, 0.5, '#E6C350', 0, top + 0.03, 0, 'c'); for (const [x, z] of [[-0.18, 0], [0.18, 0], [0, -0.18], [0, 0.18], [-0.13, 0.13], [0.13, 0.13]]) B(0.07, 0.12, 0.07, '#E6C350', x, top + 0.13, z); B(0.07, 0.07, 0.03, '#C62828', 0, top + 0.03, 0.255, 's'); } // 王冠
         else if (child) { /* 小孩不戴職業帽 */ }
-        else if (acc === 1 || jobKey === 'farmer') { B(0.62, 0.05, 0.62, '#D9B36B', 0, 1.36, 0); B(0.4, 0.16, 0.4, '#D9B36B', 0, 1.45, 0); B(0.42, 0.04, 0.42, '#8C5A3C', 0, 1.39, 0); }
-        else if (jobKey === 'guard') { B(0.46, 0.16, 0.46, '#90A4AE', 0, 1.4, 0); B(0.06, 0.12, 0.06, '#C9533D', 0, 1.53, 0); }
-        else if (jobKey === 'miner') { B(0.46, 0.16, 0.46, '#D2B23D', 0, 1.4, 0); minerLamp = true; }
-        else if (jobKey === 'cook') { B(0.4, 0.26, 0.4, '#FFFFFF', 0, 1.46, 0); B(0.36, 0.3, 0.02, '#F4F4F4', 0, 0.58, 0.15); }
-        else if (jobKey === 'mayor') { B(0.4, 0.08, 0.4, '#FFD700', 0, 1.36, 0); B(0.08, 0.08, 0.02, '#E8732A', 0.12, 0.78, 0.15); }
-        else if (jobKey === 'doctor') { B(0.5, 0.06, 0.5, '#FFFFFF', 0, 1.36, 0); B(0.06, 0.18, 0.02, '#C9533D', 0.12, 0.68, 0.15); B(0.18, 0.06, 0.02, '#C9533D', 0.12, 0.68, 0.15); }
-        else if (jobKey === 'priest') B(0.3, 0.3, 0.3, '#F0E070', 0, 1.46, 0);
-        if (acc === 2) { B(0.14, 0.1, 0.03, '#2B2118', -0.1, 1.1, 0.22); B(0.14, 0.1, 0.03, '#2B2118', 0.1, 1.1, 0.22); B(0.08, 0.02, 0.02, '#2B2118', 0, 1.11, 0.22); }
-        if (acc === 3) B(0.5, 0.12, 0.34, c.accent, 0, 0.86, 0.02);
-        if (jobKey === 'blacksmith') B(0.3, 0.42, 0.04, '#5A4A3A', 0, 0.6, 0.15);
-        if (jobKey === 'trader') { B(0.2, 0.22, 0.16, '#8C5A3C', 0.34, 0.5, 0); B(0.04, 0.4, 0.02, '#5A3E2B', 0.12, 0.7, 0.15); }
-        m.add(this._partMesh(body));
-        // 四肢(各自一個網格,掛在樞紐上擺動):腿＋靴＋鞋底、手臂＋袖口＋手
-        const limb = (name, x, pivotY, boxes) => { const g = new THREE.Group(); g.position.set(x, pivotY, 0); g.name = name; g.add(this._partMesh(boxes)); m.add(g); return g; };
-        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.36, [[0.17, 0.36, 0.18, c.pants, 0, -0.18, 0], [0.2, 0.1, 0.22, c.boots, 0, -0.31, 0.01], [0.21, 0.03, 0.24, shade(c.boots, 0.6), 0, -0.36, 0.01], ...(poor && x > 0 ? [[0.1, 0.08, 0.02, mix(c.pants, '#A08C6E', 0.6), 0, -0.14, 0.095]] : [])]);
-        leg(-0.11); leg(0.11);
-        const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.83, [[0.13, 0.42, 0.14, c.body, 0, -0.21, 0], [0.145, 0.06, 0.155, c.bodyDk, 0, -0.38, 0], [0.11, 0.1, 0.12, c.skin, 0, -0.45, 0]]);
-        arm(-0.3); const armR = arm(0.3);
-        const tool = new THREE.Group(); tool.name = 'tool'; tool.visible = false; tool.position.set(0, -0.45, 0.12); armR.add(tool);
-        tool.add(this._partMesh([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
+        else if (acc === 1 || jobKey === 'farmer') { B(0.98, 0.04, 0.98, '#D9B36B', 0, top - 0.04, 0, 'c'); B(0.52, 0.18, 0.52, '#D9B36B', 0, top + 0.06, 0, 'c'); B(0.54, 0.05, 0.54, '#8C5A3C', 0, top, 0, 'c'); }
+        else if (jobKey === 'guard') { B(0.84, 0.52, 0.8, '#90A4AE', 0, HY + 0.22, -0.02, 's'); B(0.08, 0.16, 0.12, '#C9533D', 0, top + 0.1, -0.02, 's'); }
+        else if (jobKey === 'miner') { B(0.84, 0.52, 0.8, '#D2B23D', 0, HY + 0.22, -0.02, 's'); minerLamp = true; }
+        else if (jobKey === 'cook') { B(0.44, 0.3, 0.44, '#FFFFFF', 0, top + 0.12, 0, 'c'); B(0.56, 0.22, 0.56, '#FFFFFF', 0, top + 0.3, 0, 's'); B(0.32, 0.28, 0.03, '#F4F4F4', 0, 0.42, 0.19); }
+        else if (jobKey === 'mayor') { B(0.6, 0.06, 0.6, '#FFD700', 0, top - 0.02, 0, 'c'); B(0.09, 0.09, 0.04, '#E8732A', 0.11, 0.6, 0.18, 's'); }
+        else if (jobKey === 'doctor') { B(0.5, 0.1, 0.5, '#FFFFFF', 0, top + 0.02, 0, 'c'); B(0.05, 0.15, 0.03, '#C9533D', 0.1, 0.55, 0.19); B(0.15, 0.05, 0.03, '#C9533D', 0.1, 0.55, 0.19); }
+        else if (jobKey === 'priest') B(0.38, 0.22, 0.38, '#F0E070', 0, top + 0.04, 0, 's');
+        if (acc === 2) { const G = '#4A3A2E'; for (const x of [-0.13, 0.13]) { B(0.19, 0.018, 0.02, G, x, HY + 0.085, 0.322); B(0.19, 0.018, 0.02, G, x, HY - 0.11, 0.318); B(0.018, 0.2, 0.02, G, x - 0.095, HY - 0.012, 0.31); B(0.018, 0.2, 0.02, G, x + 0.095, HY - 0.012, 0.325); } B(0.06, 0.018, 0.02, G, 0, HY + 0.02, 0.33); } // 圓框眼鏡(框在眼睛外圍,不擋眼)
+        if (acc === 3) B(0.46, 0.1, 0.4, c.accent, 0, 0.7, 0, 'c'); // 圍巾
+        if (jobKey === 'blacksmith') B(0.3, 0.32, 0.03, '#5A4A3A', 0, 0.45, 0.19);
+        if (jobKey === 'trader') { B(0.2, 0.2, 0.14, '#8C5A3C', 0.3, 0.36, 0.02, 's'); B(0.04, 0.36, 0.02, '#5A3E2B', 0.1, 0.55, 0.19); }
+        m.add(this._partMesh(body)); const lodParts = body.slice(); // v6.94.0 遠處簡化網格用的零件清單(低細分重建)
+        // 眼睛(睜眼＋反光)與閉眼線各一個網格:會眨眼,睡覺時閉眼
+        const eyes = this._partMesh([[0.115, 0.15, 0.06, '#33241B', -0.13, HY - 0.015, 0.295, 's'], [0.115, 0.15, 0.06, '#33241B', 0.13, HY - 0.015, 0.295, 's'],
+            [0.045, 0.045, 0.03, '#FFFFFF', -0.103, HY + 0.025, 0.326, 's'], [0.045, 0.045, 0.03, '#FFFFFF', 0.157, HY + 0.025, 0.326, 's'], [0.022, 0.022, 0.02, '#FFFFFF', -0.145, HY - 0.04, 0.322, 's'], [0.022, 0.022, 0.02, '#FFFFFF', 0.115, HY - 0.04, 0.322, 's']]);
+        eyes.name = 'eyes'; eyes.castShadow = false; m.add(eyes); m.userData.eyes = eyes;
+        const lids = this._partMesh([[0.11, 0.022, 0.03, '#33241B', -0.13, HY - 0.035, 0.3], [0.11, 0.022, 0.03, '#33241B', 0.13, HY - 0.035, 0.3]]);
+        lids.name = 'lids'; lids.castShadow = false; lids.visible = false; m.add(lids); m.userData.lids = lids;
+        for (const b of [[0.115, 0.15, 0.06, '#33241B', -0.13, HY - 0.015, 0.295, 's'], [0.115, 0.15, 0.06, '#33241B', 0.13, HY - 0.015, 0.295, 's']]) lodParts.push(b);
+        m.userData.lodParts = lodParts;
+        m.userData.blinkPh = Math.floor(hash2(aid.length * 7, (aid.charCodeAt(0) || 1) * 13) * 200);
+        // 四肢(各自一個網格,掛在樞紐上擺動):短腿＋圓鞋、短手＋圓手
+        const limb = (name, x, pivotY, boxes) => { const g = new THREE.Group(); g.position.set(x, pivotY, 0); g.name = name; g.add(this._partMesh(boxes)); m.add(g); for (const b of boxes) lodParts.push([b[0], b[1], b[2], b[3], b[4] + x, b[5] + pivotY, b[6], b[7]]); return g; };
+        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.3, [[0.15, 0.22, 0.15, c.pants, 0, -0.11, 0, 'o'], [0.18, 0.12, 0.25, c.boots, 0, -0.24, 0.035, 's'], ...(poor && x > 0 ? [[0.08, 0.07, 0.03, mix(c.pants, '#A08C6E', 0.6), 0, -0.1, 0.075]] : [])]);
+        leg(-0.12); leg(0.12);
+        const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.66, [[0.12, 0.26, 0.12, c.body, 0, -0.12, 0, 'o'], [0.13, 0.05, 0.13, c.bodyDk, 0, -0.23, 0, 'o'], [0.13, 0.13, 0.13, c.skin, 0, -0.3, 0, 's']]);
+        arm(-0.29); const armR = arm(0.29);
+        const tool = new THREE.Group(); tool.name = 'tool'; tool.visible = false; tool.position.set(0, -0.3, 0.08); armR.add(tool);
+        tool.add(this._partMesh([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0, 'c'], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
         m.userData.tool = tool;
-        if (minerLamp) { const l = new THREE.Mesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.06); l.position.set(0, 1.4, 0.24); m.add(l); }
+        if (minerLamp) { const l = new THREE.Mesh(this._unitShape('sS'), this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.07); l.position.set(0, HY + 0.3, 0.36); m.add(l); }
         m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1)); m.userData.ab = ab; // v6.92.0 小孩、青少年個子小
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
         return m;
@@ -1262,6 +1295,7 @@ class Town3D extends PixelTileMap {
                 if (m.userData.tool) m.userData.tool.visible = farming;
                 m.userData.farming = farming;
             }
+            if (m.userData.eyes && !m.userData.far) { const shut = (sleeping && !walking) || ((this.animFrame + (m.userData.blinkPh || 0)) % 230) < 7; m.userData.eyes.visible = !shut; m.userData.lids.visible = shut; } // v6.94.0 眨眼、睡覺閉眼
             m.rotation.x = sleeping && !walking ? -Math.PI / 2 * 0.9 : 0;
             if (sleeping && !walking) m.position.y = gy + 0.32;
             if (aid === selectedAgent) {
