@@ -1223,8 +1223,16 @@ class World {
                         otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) {
                         rel.status = 'married'; rel.statusSince = this.tickCount;
                         otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
-                        this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
                         agent.addThought('married', this, other.agentId, other.name); other.addThought('married', this, agent.agentId, agent.name);
+                        // v6.86.0 決定結婚 → 訂婚期,真正的婚禮(賓客、致詞、禮金、名場面)在當天辦(sim-ceremony.js);沒有典禮模組時照舊一次辦完
+                        if (typeof CEREMONY !== 'undefined') {
+                            agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}決定結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
+                            other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}決定結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
+                            agent.moodModifier = (agent.moodModifier || 0) + 8; other.moodModifier = (other.moodModifier || 0) + 8;
+                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('要結婚了！')}`, contentT: tpl('{a}和{b}要結婚了！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+                            CEREMONY.planWedding(this, agent, other);
+                        } else {
+                        this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
                         this.logMessageT('relationship', '{agent}和{other}結婚了！全鎮舉辦了盛大的婚禮！', { agent: agent.name, other: other.name }, agent.name, other.name);
                         agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
                         other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
@@ -1237,6 +1245,7 @@ class World {
                         });
                         this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('結婚了！婚禮好浪漫！')}`, contentT: tpl('{a}和{b}結婚了！婚禮好浪漫！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
                         if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, 10, [agent.name, other.name]);
+                        }
                     }
                 }
 

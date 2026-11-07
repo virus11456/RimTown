@@ -581,10 +581,12 @@ Object.assign(RimTownApp.prototype, {
         if (loc?.description) html += `<div class="nqc-rel nqc-dim">${esc(t(loc.description))}</div>`;
         html += `<div class="nqc-mood-title">📍 ${t('現在在這裡')} <span class="lqc-count">${inside.length}</span></div>`;
         html += inside.length ? inside.slice(0, 8).map(row).join('') + (inside.length > 8 ? `<div class="nqc-rel nqc-dim">+${inside.length - 8}</div>` : '') : `<div class="nqc-rel nqc-dim">${t('這裡現在沒有人')}</div>`;
+        try { const cs = (typeof CEREMONY !== 'undefined') ? CEREMONY.at(w, baseLoc) : []; // v6.86.0 這裡最近的典禮
+            if (cs.length) html += `<div class="nqc-mood-title" style="margin-top:4px">📅 ${t('典禮')}</div>` + cs.map(c => `<div class="nqc-rel lqc-cer">${c.kind === 'funeral' ? '⚱️' : '💒'} <b>${esc(c.title)}</b> <small>${esc(c.when)}</small>${c.host ? `<div class="nqc-dim">${t('主辦')}${t('：')}${esc(t(c.host))}${c.n ? ` · ${c.n} ${t('人到場')}` : ''}</div>` : (c.n ? `<div class="nqc-dim">${c.n} ${t('人到場')}</div>` : '')}</div>`).join(''); } catch (e) {}
         if (baseLoc === 'graveyard') { // v6.85.0 墓園:安葬在這裡的人(新的在前)
             const gs = w.lifecycle?.graveyard || [];
             html += `<div class="nqc-mood-title" style="margin-top:4px">🪦 ${t('安葬在這裡')} <span class="lqc-count">${gs.length}</span></div>`;
-            html += gs.length ? gs.slice(-6).reverse().map(g => `<div class="nqc-rel lqc-grave"><b>${esc(t(g.name))}</b>${Number.isFinite(g.age) ? ` <small>${g.age}${t('歲')}</small>` : ''}${g.epitaph ? `<div class="nqc-dim">${esc(g.epitaph)}</div>` : ''}</div>`).join('') + (gs.length > 6 ? `<div class="nqc-rel nqc-dim">${t('還有 {n} 位長眠於此').replace('{n}', gs.length - 6)}</div>` : '') : `<div class="nqc-rel nqc-dim">${t('還沒有人安葬在這裡')}</div>`;
+            html += gs.length ? gs.slice(-6).reverse().map(g => `<div class="nqc-rel lqc-grave"><b>${esc(t(g.name))}</b>${Number.isFinite(g.age) ? ` <small>${g.age}${t('歲')}</small>` : ''}${g.epitaph ? `<div class="nqc-dim">${esc(g.epitaph)}</div>` : ''}${g.farewell ? `<div class="nqc-dim">⚱️ ${t('{n} 人送行').replace('{n}', g.farewell)}</div>` : ''}</div>`).join('') + (gs.length > 6 ? `<div class="nqc-rel nqc-dim">${t('還有 {n} 位長眠於此').replace('{n}', gs.length - 6)}</div>` : '') : `<div class="nqc-rel nqc-dim">${t('還沒有人安葬在這裡')}</div>`;
         }
         if (sub) { html += `<div class="nqc-mood-title" style="margin-top:4px">🏠 ${t('住戶')} <span class="lqc-count">${residents.length}</span></div>`; html += residents.length ? residents.map(row).join('') : `<div class="nqc-rel nqc-dim">${t('這間房子目前沒有住戶。')}</div>`; }
         if (bits.length) html += `<div class="nqc-mood-title" style="margin-top:4px">${t('🔗 相關')}</div>` + bits.map(b => `<div class="nqc-rel">${b}</div>`).join('');
