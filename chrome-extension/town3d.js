@@ -1188,16 +1188,26 @@ class Town3D extends PixelTileMap {
         if (poor) { c.body = shade(mix(c.body, '#7A7366', 0.55), 0.82); c.bodyDk = shade(c.body, 0.8); c.pants = shade(mix(c.pants, '#6B6358', 0.5), 0.85); c.boots = '#4A3B2E'; }
         else if (cls >= 3) { c.body = shade(c.body, 1.08); c.bodyDk = shade(c.bodyDk, 1.05); c.boots = cls >= 4 ? '#2B1D14' : c.boots; }
         const skinDk = shade(c.skin, 0.86), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
+        // v6.96.0 每個人長得不一樣:用名字當種子,穩定決定髮型、眼型、眉毛、嘴型、雀斑、鬍子、小配件、衣服花樣、身材
+        const nm = String(agent.name || aid); let hs = 2166136261; for (let i = 0; i < nm.length; i++) { hs ^= nm.charCodeAt(i); hs = (hs * 16777619) >>> 0; }
+        const R = (salt) => hash2(hs % 100003, salt * 7919 + (hs >>> 17));
+        const pick = (arr, salt) => arr[Math.floor(R(salt) * arr.length) % arr.length];
+        const adult = ab === 'a' || ab === 'e' || ab === 'o';
+        const bw = 0.9 + R(1) * 0.22; // 胖瘦
+        if (!poor && !(cls >= 3)) { c.body = shade(c.body, 0.86 + R(2) * 0.3); c.bodyDk = shade(c.body, 0.8); if (R(3) < 0.25) c.body = mix(c.body, pick(['#C94F4F', '#4F7FC9', '#5FA05A', '#C9A24F', '#8A5FC9', '#4FB0A8'], 4), 0.35); }
         // v6.94.0 Q 版大頭:圓頭、大眼睛帶反光、腮紅、小嘴,小身體、圓手圓腳(球 's'、圓柱 'c'、圓台 'f')
         const body = [];   // [w,h,d,hex,x,y,z,shape]
         const B = (w, h, d, hex, x, y, z, sh) => body.push([w, h, d, hex, x, y, z, sh]);
         const HY = 1.0; // 頭的中心高度
         // 身體:圓滾滾的軀幹、腰帶、領口
-        B(0.5, 0.46, 0.38, c.body, 0, 0.5, 0, 's');
-        B(0.5, 0.06, 0.39, c.bodyDk, 0, 0.36, 0, 'o');
+        B(0.5 * bw, 0.46, 0.38 * bw, c.body, 0, 0.5, 0, 's');
+        B(0.5 * bw, 0.06, 0.39 * bw, c.bodyDk, 0, 0.36, 0, 'o');
         B(0.08, 0.06, 0.03, poor ? '#6B5A45' : '#D9B85C', 0, 0.36, 0.195);
         B(0.36, 0.08, 0.3, cls >= 3 && !poor ? '#F2F2F2' : bodyLt, 0, 0.72, 0, 's');
-        if (female) B(0.54, 0.24, 0.46, c.body, 0, 0.28, 0, 'f'); // 裙擺
+        if (female) B(0.54 * bw, 0.24, 0.46 * bw, c.body, 0, 0.28, 0, 'f'); // 裙擺
+        { const cv = R(5); // 衣服花樣:條紋、吊帶褲
+          if (cv < 0.22) B(0.505 * bw, 0.06, 0.385 * bw, shade(c.body, 1.3), 0, 0.55, 0, 'o');
+          else if (cv < 0.36 && !female) { B(0.24, 0.2, 0.03, c.pants, 0, 0.5, 0.18 * bw); B(0.04, 0.2, 0.03, c.pants, -0.1, 0.62, 0.165 * bw); B(0.04, 0.2, 0.03, c.pants, 0.1, 0.62, 0.165 * bw); } }
         if (poor) { B(0.12, 0.11, 0.03, mix(c.body, '#A08C6E', 0.6), 0.1, 0.52, 0.175); B(0.13, 0.1, 0.03, mix(c.body, '#5C5247', 0.6), -0.09, 0.46, -0.18); } // 補丁
         if (cls >= 3 && !poor) { B(0.045, 0.045, 0.03, '#D9B85C', 0, 0.58, 0.185, 's'); B(0.045, 0.045, 0.03, '#D9B85C', 0, 0.46, 0.19, 's'); } // 金扣
         if (cls >= 4 && !poor) { const cape = cls >= 5 ? '#9E1B1B' : '#5E2A84'; B(0.52, 0.5, 0.05, cape, 0, 0.47, -0.2); B(0.52, 0.07, 0.38, cape, 0, 0.71, -0.01, 's'); // 披風
@@ -1206,13 +1216,33 @@ class Town3D extends PixelTileMap {
         // 頭:大圓臉、耳朵、腮紅、小嘴(眼睛另外一個網格,才能眨眼、睡覺閉眼)
         B(0.74, 0.68, 0.66, c.skin, 0, HY, 0, 'h');
         B(0.1, 0.14, 0.09, skinDk, -0.37, HY - 0.02, 0, 's'); B(0.1, 0.14, 0.09, skinDk, 0.37, HY - 0.02, 0, 's');
-        B(0.11, 0.055, 0.04, '#F2A0A6', -0.205, HY - 0.08, 0.255, 's'); B(0.11, 0.055, 0.04, '#F2A0A6', 0.205, HY - 0.08, 0.255, 's');
-        B(0.09, 0.035, 0.03, '#C0564B', 0, HY - 0.11, 0.298, 's');
+        const blushK = R(6); if (blushK > 0.18) { const bc = blushK > 0.75 ? '#EE8E96' : '#F2A8AE'; B(0.11, 0.055, 0.04, bc, -0.205, HY - 0.08, 0.255, 's'); B(0.11, 0.055, 0.04, bc, 0.205, HY - 0.08, 0.255, 's'); } // 腮紅深淺(有人沒有)
+        if (R(7) < 0.2) for (const sx of [-1, 1]) for (const [fx, fy] of [[0.17, -0.05], [0.21, -0.03], [0.24, -0.06]]) B(0.02, 0.02, 0.02, '#A8714E', sx * fx, HY + fy, 0.27); // 雀斑
+        const mouthT = Math.floor(R(8) * 4); // 嘴型:微笑、大笑、小圓嘴、貓嘴
+        if (mouthT === 0) B(0.09, 0.035, 0.03, '#C0564B', 0, HY - 0.11, 0.298, 's');
+        else if (mouthT === 1) B(0.13, 0.045, 0.03, '#D9645A', 0, HY - 0.115, 0.296, 's');
+        else if (mouthT === 2) B(0.05, 0.05, 0.03, '#B5483F', 0, HY - 0.115, 0.298, 's');
+        else { B(0.045, 0.035, 0.03, '#C0564B', -0.025, HY - 0.11, 0.298, 's'); B(0.045, 0.035, 0.03, '#C0564B', 0.025, HY - 0.11, 0.298, 's'); }
+        if (R(9) < 0.55) { const by = HY + 0.095 + (R(10) - 0.5) * 0.03, bt = 0.02 + R(11) * 0.02; B(0.1, bt, 0.03, hairDk, -0.13, by, 0.312, 's'); B(0.1, bt, 0.03, hairDk, 0.13, by, 0.312, 's'); } // 眉毛
+        const beard = !female && adult && R(12) < 0.3 ? (R(13) < 0.5 ? 'm' : 'b') : '';
+        if (beard === 'm') B(0.17, 0.045, 0.05, hairDk, 0, HY - 0.075, 0.31, 's'); // 八字鬍
+        if (beard === 'b') B(0.5, 0.26, 0.32, c.hair, 0, HY - 0.2, 0.12, 's'); // 圓鬍子
+        if (adult && R(14) < 0.15) { B(0.05, 0.05, 0.05, '#E6C350', -0.37, HY - 0.11, 0, 's'); B(0.05, 0.05, 0.05, '#E6C350', 0.37, HY - 0.11, 0, 's'); } // 耳環
         // 頭髮:頭頂、後腦,依髮型加長髮、髮髻、側瀏海、蓬髮
-        const hairStyle = agent.look?.hair ?? (female ? 1 : 0);
+        // 髮型:有自訂外觀用自訂的,沒有就依名字挑(男 0 短髮、3 側瀏海、4 刺蝟、6 平頭、7 油頭、5 蓬髮、11 捲髮;女 1 長髮、2 包包頭、8 雙馬尾、9 鮑伯、10 馬尾、11 捲髮;老先生可能禿頭 12)
+        let hairStyle = agent.look?.hair;
+        if (hairStyle == null) hairStyle = (!female && ab === 'o' && R(15) < 0.45) ? 12 : female ? pick([1, 1, 2, 8, 9, 10, 11, 3], 16) : pick([0, 0, 3, 4, 6, 7, 5, 11], 16);
         if (hairStyle === 5) B(0.9, 0.62, 0.84, c.hair, 0, HY + 0.28, -0.05, 's');
-        else B(0.8, 0.5, 0.74, c.hair, 0, HY + 0.2, -0.03, 's');
-        B(0.76, 0.6, 0.5, c.hair, 0, HY + 0.05, -0.13, 's');
+        else if (hairStyle === 6) B(0.76, 0.42, 0.7, c.hair, 0, HY + 0.2, -0.03, 's');
+        else if (hairStyle !== 12) B(0.8, 0.5, 0.74, c.hair, 0, HY + 0.2, -0.03, 's');
+        if (hairStyle === 12) B(0.78, 0.34, 0.46, c.hair, 0, HY - 0.02, -0.14, 's'); // 禿頭只剩後腦一圈
+        else B(0.76, 0.6, 0.5, c.hair, 0, HY + 0.05, -0.13, 's');
+        if (hairStyle === 4) for (const [x, z] of [[-0.18, 0.05], [0, 0.1], [0.18, 0.05], [-0.1, -0.12], [0.1, -0.12]]) B(0.13, 0.22, 0.13, c.hair, x, HY + 0.42, z, 's'); // 刺蝟頭
+        if (hairStyle === 7) B(0.38, 0.2, 0.24, c.hair, 0.04, HY + 0.38, 0.17, 's'); // 油頭
+        if (hairStyle === 8) for (const x of [-0.42, 0.42]) { B(0.18, 0.38, 0.18, c.hair, x, HY - 0.08, -0.06, 's'); B(0.07, 0.07, 0.07, c.accent || '#E06A8A', x * 0.9, HY + 0.1, -0.04, 's'); } // 雙馬尾
+        if (hairStyle === 9) for (const x of [-0.32, 0.32]) B(0.22, 0.42, 0.42, c.hair, x, HY - 0.02, -0.03, 's'); // 鮑伯頭
+        if (hairStyle === 10) B(0.16, 0.42, 0.16, c.hair, 0, HY + 0.02, -0.42, 's'); // 馬尾
+        if (hairStyle === 11) for (const [x, y, z] of [[-0.24, 0.3, 0.1], [0, 0.38, 0.12], [0.24, 0.3, 0.1], [-0.3, 0.16, -0.1], [0.3, 0.16, -0.1], [0, 0.34, -0.2]]) B(0.22, 0.2, 0.2, c.hair, x, HY + y, z, 's'); // 捲髮
         if (hairStyle === 1 || hairStyle === 2) B(0.68, 0.62, 0.3, c.hair, 0, HY - 0.2, -0.22, 's');
         if (hairStyle === 2) B(0.24, 0.24, 0.24, hairDk, 0, HY + 0.42, -0.2, 's');
         if (hairStyle === 3) { B(0.14, 0.32, 0.16, c.hair, -0.32, HY + 0.02, 0.1, 's'); B(0.14, 0.32, 0.16, c.hair, 0.32, HY + 0.02, 0.1, 's'); }
@@ -1228,14 +1258,25 @@ class Town3D extends PixelTileMap {
         else if (jobKey === 'mayor') { B(0.6, 0.06, 0.6, '#FFD700', 0, top - 0.02, 0, 'c'); B(0.09, 0.09, 0.04, '#E8732A', 0.11, 0.6, 0.18, 's'); }
         else if (jobKey === 'doctor') { B(0.5, 0.1, 0.5, '#FFFFFF', 0, top + 0.02, 0, 'c'); B(0.05, 0.15, 0.03, '#C9533D', 0.1, 0.55, 0.19); B(0.15, 0.05, 0.03, '#C9533D', 0.1, 0.55, 0.19); }
         else if (jobKey === 'priest') B(0.38, 0.22, 0.38, '#F0E070', 0, top + 0.04, 0, 's');
+        const jobHat = king || acc === 1 || ['farmer', 'guard', 'miner', 'cook', 'mayor', 'doctor', 'priest'].includes(jobKey);
+        if (!jobHat && !child) { const ax = R(17); // 小配件:花朵髮夾、蝴蝶結、鴨舌帽
+            if (female && ax < 0.28) { const fc = pick(['#F4A3C4', '#F6D365', '#9EC9F2', '#FFFFFF'], 18); for (const [x, y] of [[0.3, 0.27], [0.36, 0.22], [0.26, 0.2]]) B(0.08, 0.08, 0.06, fc, x, HY + y, 0.14, 's'); B(0.05, 0.05, 0.05, '#F6C04A', 0.31, HY + 0.23, 0.17, 's'); }
+            else if (ax < 0.45) { const bc = pick(['#D94F5C', '#4F7FC9', '#F2B134', '#8A5FC9'], 19); B(0.14, 0.1, 0.07, bc, -0.12, HY + 0.4, 0.06, 's'); B(0.14, 0.1, 0.07, bc, 0.06, HY + 0.4, 0.06, 's'); B(0.06, 0.06, 0.06, shade(bc, 0.8), -0.03, HY + 0.4, 0.07, 's'); }
+            else if (!female && ax < 0.6 && hairStyle !== 4 && hairStyle !== 5 && hairStyle !== 11) { const cc = pick(['#3B5998', '#B03A2E', '#2E7D32', '#5D4037'], 20); B(0.8, 0.3, 0.76, cc, 0, HY + 0.24, -0.02, 's'); B(0.36, 0.03, 0.24, shade(cc, 0.85), 0, HY + 0.24, 0.36); } }
+        else if (child && R(17) < 0.3) { const bc = pick(['#D94F5C', '#F2B134', '#4F7FC9'], 19); B(0.12, 0.09, 0.06, bc, -0.1, HY + 0.4, 0.06, 's'); B(0.12, 0.09, 0.06, bc, 0.05, HY + 0.4, 0.06, 's'); }
         if (acc === 2) { const G = '#4A3A2E'; for (const x of [-0.13, 0.13]) { B(0.19, 0.018, 0.02, G, x, HY + 0.085, 0.322); B(0.19, 0.018, 0.02, G, x, HY - 0.11, 0.318); B(0.018, 0.2, 0.02, G, x - 0.095, HY - 0.012, 0.31); B(0.018, 0.2, 0.02, G, x + 0.095, HY - 0.012, 0.325); } B(0.06, 0.018, 0.02, G, 0, HY + 0.02, 0.33); } // 圓框眼鏡(框在眼睛外圍,不擋眼)
         if (acc === 3) B(0.46, 0.1, 0.4, c.accent, 0, 0.7, 0, 'c'); // 圍巾
         if (jobKey === 'blacksmith') B(0.3, 0.32, 0.03, '#5A4A3A', 0, 0.45, 0.19);
         if (jobKey === 'trader') { B(0.2, 0.2, 0.14, '#8C5A3C', 0.3, 0.36, 0.02, 's'); B(0.04, 0.36, 0.02, '#5A3E2B', 0.1, 0.55, 0.19); }
         m.add(this._partMesh(body)); const lodParts = body.slice(); // v6.94.0 遠處簡化網格用的零件清單(低細分重建)
         // 眼睛(睜眼＋反光)與閉眼線各一個網格:會眨眼,睡覺時閉眼
-        const eyes = this._partMesh([[0.115, 0.15, 0.06, '#33241B', -0.13, HY - 0.015, 0.295, 's'], [0.115, 0.15, 0.06, '#33241B', 0.13, HY - 0.015, 0.295, 's'],
-            [0.045, 0.045, 0.03, '#FFFFFF', -0.103, HY + 0.025, 0.326, 's'], [0.045, 0.045, 0.03, '#FFFFFF', 0.157, HY + 0.025, 0.326, 's'], [0.022, 0.022, 0.02, '#FFFFFF', -0.145, HY - 0.04, 0.322, 's'], [0.022, 0.022, 0.02, '#FFFFFF', 0.115, HY - 0.04, 0.322, 's']]);
+        // 眼型:一般、大亮眼、小豆眼、睏睏眼、長睫毛;眼珠顏色也有幾種
+        const eyeT = Math.floor(R(21) * 5); const ek = eyeT === 1 ? 1.18 : eyeT === 2 ? 0.75 : 1; const eyeC = pick(['#33241B', '#33241B', '#33241B', '#2E4A7A', '#3E6B3A', '#5A3A1E'], 22);
+        const eyeParts = [[0.115 * ek, 0.15 * ek, 0.06, eyeC, -0.13, HY - 0.015, 0.295, 's'], [0.115 * ek, 0.15 * ek, 0.06, eyeC, 0.13, HY - 0.015, 0.295, 's'],
+            [0.045 * ek, 0.045 * ek, 0.03, '#FFFFFF', -0.103, HY + 0.025, 0.326, 's'], [0.045 * ek, 0.045 * ek, 0.03, '#FFFFFF', 0.157, HY + 0.025, 0.326, 's'], [0.022, 0.022, 0.02, '#FFFFFF', -0.145, HY - 0.04, 0.322, 's'], [0.022, 0.022, 0.02, '#FFFFFF', 0.115, HY - 0.04, 0.322, 's']];
+        if (eyeT === 3) for (const x of [-0.13, 0.13]) eyeParts.push([0.14, 0.06, 0.035, c.skin, x, HY + 0.045, 0.31]); // 睏睏眼:上眼皮
+        if (eyeT === 4 || (female && eyeT === 0 && R(23) < 0.5)) for (const x of [-0.13, 0.13]) eyeParts.push([0.045, 0.022, 0.02, '#2B2118', x + (x < 0 ? -0.06 : 0.06), HY + 0.045, 0.31]); // 長睫毛
+        const eyes = this._partMesh(eyeParts);
         eyes.name = 'eyes'; eyes.castShadow = false; m.add(eyes); m.userData.eyes = eyes;
         const lids = this._partMesh([[0.11, 0.022, 0.03, '#33241B', -0.13, HY - 0.035, 0.3], [0.11, 0.022, 0.03, '#33241B', 0.13, HY - 0.035, 0.3]]);
         lids.name = 'lids'; lids.castShadow = false; lids.visible = false; m.add(lids); m.userData.lids = lids;
@@ -1252,7 +1293,7 @@ class Town3D extends PixelTileMap {
         tool.add(this._partMesh([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0, 'c'], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
         m.userData.tool = tool;
         if (minerLamp) { const l = new THREE.Mesh(this._unitShape('sS'), this._mat('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.07); l.position.set(0, HY + 0.3, 0.36); m.add(l); }
-        m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1)); m.userData.ab = ab; // v6.92.0 小孩、青少年個子小
+        m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1) * (0.95 + R(24) * 0.1)); m.userData.ab = ab; // 高矮也略有不同 // v6.92.0 小孩、青少年個子小
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
         return m;
     }
