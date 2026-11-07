@@ -313,7 +313,7 @@ Object.assign(RimTownApp.prototype, {
                 const list = Object.values(projects).filter(p => (p.era || 1) === era);
                 if (!list.length) continue;
                 const done = list.filter(p => p.status === 'complete').length;
-                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', ['', '一', '二', '三', '四'][era])}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
+                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四'][era]))}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
                 for (const p of list) {
                     const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
                     const icon = { done: '✅', now: '🔬', open: '🟢', locked: '🔒' }[st];
