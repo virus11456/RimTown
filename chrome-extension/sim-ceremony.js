@@ -252,8 +252,11 @@ if (typeof ProposalSystem !== 'undefined') {
                 if (c.kind !== 'funeral' || !c.pub || c.public || c.pubAsked || !(c.status === 'planned' || (c.status === 'held' && day - (c.held || 0) <= 2))) continue;
                 if (this.items.some(p => p.kind === 'funeral' && p.refKey === c.id)) { c.pubAsked = 1; continue; }
                 const fam = new Set([...(c.family || []), ...(c.close || [])]); const seated = new Set((w.council?.members || []));
+                const pred = (a) => fam.has(a.agentId) || seated.has(a.agentId) || a.job?.key === 'priest' || (a.relationships?.relationships?.[c.of]?.affinity || 0) > 30;
+                // 沒有合適的人(家屬好友、議員、神職、跟他有交情的人)能提就不提,不會由不相干的人代提
+                if (!this._npcs(w).some(a => pred(a) && (day - (this.proposerCooldown?.[a.agentId] ?? -99)) >= 5)) continue;
                 const whyK = c.pub.why === 'leader' ? '當過首長，為鎮上做了很多事' : c.pub.why === 'council' ? '當過議員' : '人緣很好，全鎮都認識他';
-                out.push({ kind: 'funeral', key: 'funeral:' + c.id, weight: 6, jobs: ['priest'], pred: (a) => fam.has(a.agentId) || seated.has(a.agentId) || a.job?.key === 'priest', // 家屬好友、議員或神職提
+                out.push({ kind: 'funeral', key: 'funeral:' + c.id, weight: 6, jobs: ['priest'], pred, // 家屬好友、議員、神職或有交情的人提
                     make: () => ({ kind: 'funeral', key: 'funeral:' + c.id, refKey: c.id, tk: '以公費為{name}辦隆重的葬禮', tp: { name: c.name }, dk: '{name}{why}。從公庫撥 {n} 銀幣辦一場全鎮送行的葬禮，大家可以一起到墓園道別。', dp: { name: c.name, why: whyK, n: c.pub.cost }, cost: { silver: c.pub.cost }, effects: { mood_all: 1 }, category: 'social' }) });
             }
         } catch (e) {}

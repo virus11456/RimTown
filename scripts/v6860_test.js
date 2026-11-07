@@ -47,10 +47,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.lifecycle._killNpc(w, lonely); const c2 = w.ceremony.list.find(x => x.of === lonely.agentId);
       for (let i = 0; i < 96 * 4 && c2.status !== 'held'; i++) step(1); out.lonelyGuests = (c2.guests || []).length;
       // ---- 公費葬禮:現任首長過世
+      for (const f of alive().filter(a => a !== mayor).slice(0, 2)) f.relationships.getOrCreate(mayor.agentId, mayor.name).affinity = 60; // 首長的朋友
       TIERS.track(w); w.lifecycle._killNpc(w, mayor); const c3 = w.ceremony.list.find(x => x.of === mayor.agentId);
       const ps = w.proposals; const day = ps._abs(w); const cand = (ps._candidates(w, day) || []).find(x => x.kind === 'funeral');
       out.pubCand = !!cand;
-      if (cand) { const pr = ps._create(w, day, cand); out.pubTitle = pr ? ps.title(pr) : ''; out.pubProposerOk = pr ? (c3.family.concat(c3.close).includes(pr.proposerId) || (w.council?.members || []).includes(pr.proposerId) || w.agents[pr.proposerId]?.job?.key === 'priest') : false;
+      if (cand) { const pr = ps._create(w, day, cand); out.pubTitle = pr ? ps.title(pr) : ''; out.pubProposerOk = pr ? (c3.family.concat(c3.close).includes(pr.proposerId) || (w.council?.members || []).includes(pr.proposerId) || w.agents[pr.proposerId]?.job?.key === 'priest' || (w.agents[pr.proposerId]?.relationships?.relationships?.[mayor.agentId]?.affinity || 0) > 30) : false;
         w.stockpile.resources.silver = 999; if (pr) ps._decide(w, pr, 'approve', 'mayor'); out.pub = { status: pr?.status, scale: c3.scale, public: c3.public }; }
       // ---- 忌日:隔年同一天
       const before = (w.ceremony.anniv || []).length; const x = w.ceremony.anniv.find(a => a.name === d.name);
@@ -83,7 +84,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.memSpouse && r.farewell >= 5 && r.cleared === 0, '送行的人記得、墓碑記下送行人數、結束後大家回到日常', { m: r.memSpouse, f: r.farewell, c: r.cleared });
     ok(zh ? /人到場送行/.test(r.heldLog) : /came to say goodbye/.test(r.heldLog), '葬禮辦完的日誌', r.heldLog);
     ok(r.lonelyGuests >= 3, '沒什麼交情的人過世，也有首長、神職或鄰居來送', r.lonelyGuests);
-    ok(r.pubCand && r.pubProposerOk && (zh ? /公費/.test(r.pubTitle) : /public funeral/i.test(r.pubTitle)), '首長過世：家屬、議員或神職提案公費辦隆重葬禮', { c: r.pubCand, p: r.pubProposerOk, t: r.pubTitle });
+    ok(r.pubCand && r.pubProposerOk && (zh ? /公費/.test(r.pubTitle) : /public funeral/i.test(r.pubTitle)), '首長過世：家屬、議員、神職或有交情的人提案公費辦隆重葬禮', { c: r.pubCand, p: r.pubProposerOk, t: r.pubTitle });
     ok(r.pub && r.pub.scale === 3 && r.pub.public === 1, '提案通過後改成全鎮送行', r.pub);
     ok(r.anniv.n >= 2 && r.anniv.mourn && (zh ? /忌日/.test(r.anniv.log) : /anniversary/.test(r.anniv.log)), '隔年忌日家屬回墓園祭拜', r.anniv);
     ok(r.wedPlan.inDays >= 3 && r.wedPlan.inDays <= 5 && (zh ? /婚期訂在/.test(r.wedPlan.log) : /wedding is set/.test(r.wedPlan.log)), '決定結婚後訂 3～5 天後的婚期', r.wedPlan);
