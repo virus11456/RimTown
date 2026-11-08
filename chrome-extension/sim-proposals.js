@@ -791,7 +791,7 @@ class ProposalSystem {
             id: p.id, n: p.n, kind: p.kind, icon: K.icon, kindLabel: t(K.label), status: p.status, title: this.title(p), desc: this.desc(p), pitch: p.pitch || '',
             proposerId: p.proposerId, proposerName: p.proposerName, proposerJob: w.agents?.[p.proposerId]?.job?.title || '',
             forCount: f, againstCount: a, forNames: names('for'), againstNames: names('against'),
-            cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: p.result ? t(p.result).replace('{miss}', this._missText(p.short)) : '',
+            cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: (() => { const r = p.result ? t(p.result) : ''; return typeof r === 'string' && p.short ? r.replace('{miss}', this._missText(p.short)) : r; })(),
             short: p.status === 'approved' ? this._missText(this._shortfall(w, p)) : '', order: p.order ? { what: this._missText(p.order.items), days: Math.max(0, p.order.day - day), paid: p.order.paid } : null, buyShort: p.buyShort || 0, // v7.2.1
             daysLeft: p.status === 'open' ? Math.max(0, ProposalSystem.DECIDE_DAYS - (day - p.createdDay)) : p.status === 'shelved' ? Math.max(0, ProposalSystem.SHELF_DAYS - (day - (p.shelvedDay || p.createdDay))) : 0,
             waitDays: p.waitDays || 0, createdDay: p.createdDay, resolvedDay: p.resolvedDay || null,
