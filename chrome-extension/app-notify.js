@@ -1002,9 +1002,7 @@ Object.assign(RimTownApp.prototype, {
             if (data.level >= 5) this._unlockAchievement('industry_lv5');
         }
         // Town level
-        if ((ind.townLevel || 1) >= 3) this._unlockAchievement('town_lv3');
-        if ((ind.townLevel || 1) >= 5) this._unlockAchievement('town_lv5');
-        if ((ind.townLevel || 1) >= 7) this._unlockAchievement('town_lv7');
+        // v8.3.0 城鎮等級改看四級(app-achievements.js),不再看舊的產業等級
 
         // v3 Farm achievements
         const farm = this.state.farm || {};
