@@ -27,7 +27,8 @@ const WALLET = (() => {
     });
     // 每天工資(從公庫領,先扣稅);主要看職業
     const WAGE = { mayor: 7, doctor: 6.5, researcher: 6, blacksmith: 5, carpenter: 5, guard: 4.5, trader: 4.5, tailor: 4, cook: 4, miner: 4.2, farmer: 4, priest: 3.5 };
-    const MEAL = 3, CLOTHES = 6, FIREWOOD = 1.5;
+    const MEAL0 = 3, CLOTHES0 = 6, FIREWOOD0 = 1.5; // 原價(v7.0.0 實際付的錢要乘上物價指數,見 living)
+    const MEAL = MEAL0;
     // 材料折算銀幣(自己出錢 = 把材料錢付給公庫)
     const PRICE = { silver: 1, wood: 2, stone: 3, food: 1, meals: 2, metal: 5, iron: 5, tools: 6, clothing: 6, cloth: 4, medicine: 6, furniture: 8, bread: 2 };
     const costValue = (c) => Math.round(Object.entries(c || {}).reduce((s, [r, n]) => s + (PRICE[r] || 3) * (n || 0), 0));
@@ -89,6 +90,9 @@ const WALLET = (() => {
         const tipCap = 6, tips = new Map();
         const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
         const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0;
+        // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
+        const px = (k) => (typeof PRICES !== 'undefined' && w.prices ? PRICES.idx(w, k) : 1);
+        const MEAL = Math.round(MEAL0 * px('food') * 100) / 100, CLOTHES = Math.round(CLOTHES0 * px('cloth') * 100) / 100, FIREWOOD = Math.round(FIREWOOD0 * px('fuel') * 100) / 100;
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
             // v6.89.0 三餐的錢付給食堂與農莊的老闆;自己沒錢先找家人接濟,沒人幫就真的沒得吃
