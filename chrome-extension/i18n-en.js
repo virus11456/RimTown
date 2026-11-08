@@ -11470,6 +11470,7 @@
         '已被拆穿': 'exposed',
         '，退了 {n} 銀幣': ', refunded {n} silver',
         '疫情裡的人': 'People in the epidemic',
+        '還沒去過的城鎮（{n}）': 'Towns not visited yet ({n})',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();
