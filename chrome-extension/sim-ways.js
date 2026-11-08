@@ -121,7 +121,7 @@ const WAYS = (function () {
     }
     function expose(w, h) {
         const X = S(w); const a = w.agents[h.a]; h.exp = day(w); if (!a || a.isDead) return;
-        loseFace(w, a, 25); X.trust = Math.max(20, X.trust - 6); bump(X, 'hyp');
+        loseFace(w, a, 25); X.trust = Math.max(20, X.trust - (/^cal_/.test(h.k || '') ? 3 : 6)); bump(X, 'hyp'); // 疫情裡偷溜的人不少,全鎮信任只扣一半
         for (const x of adults(w)) if (x !== a && Math.random() < 0.6) addAff(x, a, -3);
         mem(w, a, '被人撞見了，這下全鎮都知道我說一套做一套。', {}, 8);
         log(w, '🤫 當初投票支持「{t}」的{a}，被人撞見{deed}。', { t: h.t, a: a.name, deed: DEED[h.k] || DEED.policy }, a.name);
@@ -301,7 +301,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const _daily = PS.daily; PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) WAYS.daily(w); } catch (e) { console.warn('[Ways] daily', e); } return r; };
     // 提案的結果:否決丟面子、失敗或成效差的嘴硬、法律通過之後說一套做一套
     const _nt = PS._notify; PS._notify = function (w, kind, p, ...rest) {
-        try { if (w.observerMode && p) { if (kind === 'rejected') WAYS.onRejected(w, p); else if (kind === 'approved') WAYS.onApproved(w, p); else if (kind === 'failed') WAYS.onBad(w, p); else if (kind === 'outcome') { const C = w.calamity; const plague = !!C?.cur?.found || (C?.hist?.[0]?.end != null && (w._absDay?.() ?? 0) - C.hist[0].end <= 10); /* v8.2.0 疫情期間鎮上的好壞都算在疫情頭上,不算提案的功過 */ if (plague) {} else if (WAYS.badOutcome(p.outcome)) WAYS.onBad(w, p); else if (WAYS.goodOutcome(p.outcome)) WAYS.onGood(w, p); } } } catch (e) { console.warn('[Ways] notify', e); }
+        try { if (w.observerMode && p) { if (kind === 'rejected') WAYS.onRejected(w, p); else if (kind === 'approved') WAYS.onApproved(w, p); else if (kind === 'failed') WAYS.onBad(w, p); else if (kind === 'outcome') { const C = w.calamity; const plague = !!C?.cur || (C?.hist?.[0]?.end != null && (w._absDay?.() ?? 0) - C.hist[0].end <= 10); /* v8.2.0 疫情期間鎮上的好壞都算在疫情頭上,不算提案的功過 */ if (plague) {} else if (WAYS.badOutcome(p.outcome)) WAYS.onBad(w, p); else if (WAYS.goodOutcome(p.outcome)) WAYS.onGood(w, p); } } } catch (e) { console.warn('[Ways] notify', e); }
         return _nt.call(this, w, kind, p, ...rest);
     };
     // 沉默期的人不提案;拉票的人下一個提案大家比較會投贊成

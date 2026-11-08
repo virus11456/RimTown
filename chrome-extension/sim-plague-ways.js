@@ -102,7 +102,7 @@ const PLAGUEWAYS = (function () {
     function caught(w, X, a, k, d, traced) {
         const p = P(X); const W = ways(); const deed = W?.DEED?.['cal_' + k] || '私下自己照樣不守'; p.caught++; if (traced) p.traced++; p.shame = d;
         const h = W ? (W.S(w).hyp || []).find(x => x.a === a.agentId && x.k === 'cal_' + k && !x.exp) : null;
-        if (h) { W.expose(w, h); const X8 = W.S(w); X8.trust = Math.min(100, X8.trust + 3); /* 疫情裡偷溜的人不少,全鎮信任只扣一半 */ if (traced) log(w, '🔍 醫生問了一圈才知道，{a}是在{deed}之後病倒的。', { a: a.name, deed }, a.name); return; } // 說一套做一套被拆穿(丟臉、全鎮信任下降)
+        if (h) { W.expose(w, h); if (traced) log(w, '🔍 醫生問了一圈才知道，{a}是在{deed}之後病倒的。', { a: a.name, deed }, a.name); return; } // 說一套做一套被拆穿(丟臉、全鎮信任下降)
         if (W) W.loseFace(w, a, traced ? 8 : 5);
         for (const o of adults(w).filter(x => x !== a && Math.random() < 0.25)) addAff(o, a, -2);
         mem(w, a, traced ? '醫生一問，大家都知道我偷溜出去才染上的。' : '{deed}被人逮個正著，好丟臉。', { deed }, 6);
@@ -235,6 +235,7 @@ const PLAGUEWAYS = (function () {
         rec.ppl = here(w).map(a => a.agentId).slice(0, 150); for (const h of (w.calamity.hist || [])) delete h.ppl; // 只有最近一場記得誰經歷過
         rec.ms = Object.keys(X.ms); rec.pw = { sneak: p.sneak, caught: p.caught, food: p.food, pan: p.pan ? (p.pan.exp > 0 ? 'fake' : 'fan') : null };
         panaceaCheck(w, X, d, true);
+        if (W) { const X8 = W.S(w); X8.hyp = (X8.hyp || []).filter(h => !(/^cal_/.test(h.k || '') && !h.exp)); } // 疫情過去,沒被抓到的偷溜大家也不追究了
         // ⑥ 怪罪與平反
         const sc = X.scape && w.agents[X.scape]; if (sc && !sc.isDead) {
             const blamers = adults(w).filter(a => a !== sc && aff(a, sc) < 0).sort((x, y) => aff(x, sc) - aff(y, sc));
