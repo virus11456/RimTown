@@ -66,6 +66,7 @@ const CEREMONY = (() => {
         const cost = scale === 2 ? 30 : 10;
         if (host && W()) { if (W().take(w, host, cost)) paid = cost; else if (scale === 2 && W().take(w, host, 10)) { scale = 1; paid = 10; } }
         if (paid && typeof MARKET !== 'undefined' && w.market) { const pr = Object.values(w.agents).find(a => !a.isDead && a.job?.key === 'priest'); if (pr) W().add(w, pr, paid * 0.4); MARKET.sale(w, 'meal', paid * (pr ? 0.6 : 1)); } // v6.89.0 葬禮費付給神職與辦桌的食堂,不再憑空消失
+        else if (paid) { try { w.stockpile.add('silver', paid, w.tickCount, t('葬禮')); } catch (e) {} } // v8.0.0 還沒有市集的小鎮:葬禮費交給鎮公所(以前會憑空消失)
         const c = { id: 'C' + (++C.n), kind: 'funeral', of: d.agentId, name: d.name, age: d.age, traits: (d.personality?.traits || []).slice(0, 3), job: d.job?.title || '',
             host: host?.agentId || null, hostName: host?.name || '', day: day(w) + 2, hour: FUN_START, end: FUN_END, loc: 'graveyard', scale, paid, status: 'planned',
             leader: wasLeader ? 1 : 0, family: fam.map(a => a.agentId), close: close.slice(0, 6).map(a => a.agentId), speech: eulogy({ traits: d.personality?.traits || [] }, 'normal') };

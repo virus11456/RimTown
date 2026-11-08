@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '7.9.0';
+const RIMTOWN_APP_VERSION = '8.0.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -1822,6 +1822,7 @@ class RimTownApp {
                     this.tileMap.dayCount = this.world?.clock?.totalDays ?? 0; // v5.23.0 月相
                 }
                 this.tileMap.weatherType = this.world?.weather?.current || 'clear'; // v5.23.0 天氣粒子
+                try { this.tileMap.smog = typeof STEAM !== 'undefined' && this.world ? STEAM.sky(this.world) : 0; this.tileMap.airship = typeof TECH !== 'undefined' && this.world ? TECH.built(this.world, 'airship_dock') : false; } catch (e) {} // v8.0.0 煤煙讓天空變暗、飛艇
                 this.tileMap.season = this.state?.clock?.season || this.world?.clock?.season || '春季'; // v5.24.0 季節色調
                 this.tileMap.explorationData = this.state.exploration || {};
                 this.tileMap.graveyardData = (this.state.lifecycle || {}).graveyard || [];

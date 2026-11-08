@@ -1053,16 +1053,18 @@ class Town3D extends PixelTileMap {
         // v6.32.0 暴風雨閃電:偶爾整片天空亮一下、光源跟著閃
         if (wt === 'storm' && !(this._flash > 0.05) && Math.random() < 0.008) this._flash = 1;
         if (this._flash > 0.01) { if (!L.white) L.white = new THREE.Color('#FFFFFF'); sky.lerp(L.white, this._flash * 0.55); this._flash *= 0.78; } else this._flash = 0;
+        // v8.0.0 煤煙:煙越濃天空越灰黃、太陽越弱(0～1,由 STEAM.sky 給)
+        const smog = clamp(this.smog || 0, 0, 1); if (smog > 0.01) { if (!L.smog) L.smog = new THREE.Color('#5E574C'); sky.lerp(L.smog, smog * 0.6); }
         this.scene.background.copy(sky); this.scene.fog.color.copy(sky);
         // v6.36.0 天氣不再靠整片霧白表現:霧天／雨天的距離霧跟晴天一樣淡,霧由低而密的灰雲、雨雪由粒子呈現
-        this.scene.fog.density = 0.005 + night * 0.002;
+        this.scene.fog.density = 0.005 + night * 0.002 + smog * 0.005;
         if (night < 1) {
             this.sun.position.set(cx + Math.cos(sunAng) * 90, Math.max(8, Math.sin(sunAng) * 90), cz + 40);
         } else {
             this.sun.position.set(cx - 40, 70, cz + 30);
         }
         this.sun.color.copy(L.sunDay).lerp(L.sunDusk, dusk * 0.8).lerp(L.sunNight, night);
-        this.sun.intensity = lerp(1.7, 0.9, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1) * (stormy ? 0.65 : 1) + (this._flash || 0) * 0.8;
+        this.sun.intensity = lerp(1.7, 0.9, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1) * (stormy ? 0.65 : 1) * (1 - smog * 0.35) + (this._flash || 0) * 0.8;
         this.hemi.color.copy(L.hemiDay).lerp(L.hemiNight, night);
         this.hemi.groundColor.copy(L.gDay).lerp(L.gNight, night);
         this.hemi.intensity = lerp(0.95, 0.88, night) + (this._flash || 0) * 1.6;
@@ -1464,6 +1466,17 @@ class Town3D extends PixelTileMap {
         }
     }
     _fxSpawn(type, p) { const f = this._fx[type]; if (f.list.length < f.cap) f.list.push(p); }
+    // v8.0.0 低多邊形飛艇:黃銅色氣囊、木頭吊艙、尾翼、螺旋槳
+    _makeAirship() {
+        const g = new THREE.Group(); const M = (c) => new THREE.MeshLambertMaterial({ color: new THREE.Color(c), flatShading: true });
+        const bag = new THREE.Mesh(new THREE.SphereGeometry(1, 10, 6), M('#C9A46A')); bag.scale.set(3.2, 1.1, 1.1); g.add(bag);
+        const band = new THREE.Mesh(new THREE.CylinderGeometry(1.12, 1.12, 0.18, 10, 1, true), M('#7A5A33')); band.rotation.z = Math.PI / 2; band.scale.set(1, 1, 1); g.add(band);
+        const cab = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.45, 0.55), M('#6B4A2B')); cab.position.set(0, -1.45, 0); g.add(cab);
+        for (const z of [-0.25, 0.25]) { const rope = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.5, 0.04), M('#3A2A1A')); rope.position.set(0, -1.05, z); g.add(rope); }
+        for (const [y, z, sx, sy, sz] of [[0.75, 0, 0.7, 0.6, 0.06], [-0.75, 0, 0.7, 0.6, 0.06], [0, 0.75, 0.7, 0.06, 0.6], [0, -0.75, 0.7, 0.06, 0.6]]) { const f = new THREE.Mesh(new THREE.BoxGeometry(sx, sy, sz), M('#8E3B2E')); f.position.set(-3, y, z); g.add(f); }
+        const prop = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.9, 0.12), M('#3A2A1A')); prop.position.set(-0.85, -1.45, 0); g.add(prop);
+        g.userData = { a: Math.random() * Math.PI * 2, prop }; g.scale.setScalar(0.9); this.scene.add(g); return g;
+    }
     // v6.32.0 天空:雲飄、鳥群繞圈(白天、沒下雨雪)、樹冠風搖的 uniform
     _updateSky(night, wt, frame) {
         const bad = wt === 'rain' || wt === 'storm' || wt === 'snow' || wt === 'blizzard';
@@ -1486,6 +1499,13 @@ class Town3D extends PixelTileMap {
                 }
             }
             this._cloudMesh.instanceMatrix.needsUpdate = true; this._cloudShadow.instanceMatrix.needsUpdate = true;
+        }
+        // v8.0.0 飛艇:蓋了飛艇碼頭,就有一艘飛艇慢慢繞著小鎮飛(暴風天停飛)
+        if (this.airship && !this._airship) this._airship = this._makeAirship();
+        if (this._airship) {
+            const s = this._airship; s.visible = !!this.airship && wt !== 'storm' && wt !== 'blizzard';
+            if (s.visible) { const u = s.userData; u.a += 0.0012; const a = u.a, r = Math.min(this.cols, this.rows) * 0.33, cx = this.cols / 2, cz = this.rows / 2;
+                s.position.set(cx + Math.cos(a) * r, 17 + Math.sin(a * 3) * 0.5, cz + Math.sin(a) * r); s.rotation.y = -Math.atan2(Math.cos(a), -Math.sin(a)); if (u.prop) u.prop.rotation.x += 0.35; }
         }
         if (this._birds) {
             const b = this._birds, u = b.userData; const show = night < 0.35 && !bad && wt !== 'fog'; b.visible = show;
