@@ -101,7 +101,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.ui = ui;
       return out;
     });
-    ok(r.power.p1 === 21 && r.power.p2 === 22.5 && r.power.cap === 100 && r.power.inf === Infinity, '神力每天 +1（小鎮興旺 +1.5），上限 100；沙盒模式無限', r.power);
+    ok((r.power.p1 - 20) >= 1.5 && (r.power.p1 - 20) <= 2.5 && Math.abs((r.power.p2 - r.power.p1) - (r.power.p1 - 20) - 0.5) < 0.15 && r.power.cap === 100 && r.power.inf === Infinity, '神力每天 +1.5（小鎮興旺再 +0.5、虔誠信徒多再加），上限 100；沙盒模式無限', r.power);
     ok(r.design.routes === 2 && r.design.syms === 4 && !/[<>]/.test(r.design.name) && [...r.design.name].length <= 12 && r.design.dear > r.design.cheap * 3 && r.design.spread[1] > r.design.spread[0] && r.design.death[1] > r.design.death[0] && r.design.stealth[1] > r.design.stealth[0], '設計：最多 2 條途徑、4 個症狀，名字過濾；越強越貴，預覽隨設計變化', r.design);
     ok(r.release.poor && r.release.ok && r.release.left < 100 && r.release.zeroE === 'E' && r.release.busy === 'active' && r.release.hidden === 'hidden', '釋放：神力不夠不行；扣神力、第一個病人潛伏、一開始只有你知道；同時只能一場', r.release);
     ok(r.spread.inf >= 2 && r.spread.found && r.spread.curve > 0, '潛伏 → 發病 → 傳給別人 → 被醫生發現', r.spread);

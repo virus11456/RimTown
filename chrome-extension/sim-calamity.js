@@ -46,7 +46,9 @@ const CALAMITY = (function () {
     function spend(w, n) { const C = S(w); if (sandbox()) return true; if (C.power < n) return false; C.power = Math.round((C.power - n) * 10) / 10; return true; }
     function powerDaily(w, C, d) {
         if (C.pDay === d) return; C.pDay = d;
-        const pros = w.prosperity?.prosperity || 0; C.power = Math.min(CAP, Math.round((C.power + 1 + (pros >= 60 ? 0.5 : 0)) * 10) / 10); // 樹大招風:越興旺累積越快
+        // v8.4.0 神力統一(打牌、託夢、工坊共用):每天 1.5,越興旺越快(樹大招風),虔誠的人越多越快(信仰就是神力,最多 +1)
+        const pros = w.prosperity?.prosperity || 0; let devout = 0; try { if (typeof FAITH !== 'undefined' && w.faith) for (const a of here(w)) if (FAITH.relOf?.(w, a) && FAITH.pietyOf(w, a) >= 60) devout++; } catch (e) {}
+        C.gain = Math.round((1.5 + (pros >= 60 ? 0.5 : 0) + Math.min(1, devout * 0.04)) * 10) / 10; C.power = Math.min(CAP, Math.round((C.power + C.gain) * 10) / 10);
     }
 
     // ---------- 病原體零件(神力成本) ----------
