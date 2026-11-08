@@ -1057,7 +1057,7 @@ class Town3D extends PixelTileMap {
         const smog = clamp(this.smog || 0, 0, 1); if (smog > 0.01) { if (!L.smog) L.smog = new THREE.Color('#5E574C'); sky.lerp(L.smog, smog * 0.6); }
         this.scene.background.copy(sky); this.scene.fog.color.copy(sky);
         // v6.36.0 天氣不再靠整片霧白表現:霧天／雨天的距離霧跟晴天一樣淡,霧由低而密的灰雲、雨雪由粒子呈現
-        this.scene.fog.density = 0.005 + night * 0.002 + smog * 0.005;
+        this.scene.fog.density = 0.005 + night * 0.002 + smog * 0.012; // 煤煙:俯瞰時也看得到一層黃灰色的霾
         if (night < 1) {
             this.sun.position.set(cx + Math.cos(sunAng) * 90, Math.max(8, Math.sin(sunAng) * 90), cz + 40);
         } else {
@@ -1065,7 +1065,7 @@ class Town3D extends PixelTileMap {
         }
         this.sun.color.copy(L.sunDay).lerp(L.sunDusk, dusk * 0.8).lerp(L.sunNight, night);
         this.sun.intensity = lerp(1.7, 0.9, night) * (wt === 'rain' || wt === 'storm' ? 0.55 : 1) * (stormy ? 0.65 : 1) * (1 - smog * 0.35) + (this._flash || 0) * 0.8;
-        this.hemi.color.copy(L.hemiDay).lerp(L.hemiNight, night);
+        this.hemi.color.copy(L.hemiDay).lerp(L.hemiNight, night); if (smog > 0.01) { if (!L.smogHemi) L.smogHemi = new THREE.Color('#8A7F6A'); this.hemi.color.lerp(L.smogHemi, smog * 0.45); }
         this.hemi.groundColor.copy(L.gDay).lerp(L.gNight, night);
         this.hemi.intensity = lerp(0.95, 0.88, night) + (this._flash || 0) * 1.6;
         // v6.32.0 太陽／月亮圓盤(月亮 18 點升、6 點落;壞天氣幾乎看不到)
