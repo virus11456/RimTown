@@ -4,7 +4,7 @@
 // 煉金要齒輪工坊；賢者之石、人造人要煉金工坊。新建築：齒輪工坊、煉金工坊、提煉廠、飛艇碼頭、浮空城區。
 // 很需要人手：高壓鍋爐、齒輪工坊、蒸汽機甲讓礦工、鐵匠、木匠的職缺變多（電子機械是變少）；工會強的小鎮比較會選它。
 // 代價是煤煙（world.tech.steam.smog，0～100）：鍋爐、工坊、提煉廠、發電廠每天排煙，煙每天散掉一點；煙越濃天空越暗（3D 畫面）、
-// 越多人咳嗽得肺病。清潔空氣法減半、濾煙塔少四成、以太引擎再減半。
+// 越多人咳嗽得肺病。走蒸汽煉金的小鎮什麼都靠鍋爐（煙 ×1.6），走電子機械的改用電（×0.8）；清潔空氣法減半、濾煙塔少三成、以太引擎再減半。
 // 社會問題跟著科技走（不看路線）：🟡 鍋爐燙傷、煤灰染黑衣服、礦工咳嗽、氣動管道送錯信、童工、煉金臭味、坐飛艇；
 // 🟠 鍋爐爆炸、黑霧一週、點金騙局、蒸汽機甲失控、人造人要名字；🔴 大黑霧（倫敦 1952 那種：冬天起霧、煙散不掉，老人和肺不好的人撐不過）。
 // 法律：清潔空氣法（煙減半、蓋東西慢一點）、工廠法（工時與童工：燙傷爆炸少一半、做工慢一點）、禁造人造人。
@@ -72,7 +72,8 @@ const STEAM = (function () {
     const SMOG_SRC = [['steam_power', 0.2, 'tech'], ['high_pressure', 0.3, 'tech'], ['steam_mech', 0.2, 'tech'], ['gear_workshop', 0.3, 'b'], ['refinery', 0.5, 'b'], ['airship_dock', 0.1, 'b'], ['power_plant', 0.3, 'b']];
     function smogAdd(w) {
         let a = 0; for (const [k, v, ty] of SMOG_SRC) if (ty === 'tech' ? done(w, k) : built(w, k)) a += v;
-        const X = S(w); let m = 1; if (X.air) m *= 0.5; if (done(w, 'smoke_filter')) m *= 0.6; if (done(w, 'aether_engine')) m *= 0.5;
+        const X = S(w); const P = TECH.pathOf(w); let m = P === 'steam' ? 1.6 : P === 'electro' ? 0.8 : 1; // 走蒸汽煉金:什麼都靠燒煤的鍋爐;走電子機械:改用電,鍋爐少
+        if (X.air) m *= 0.5; if (done(w, 'smoke_filter')) m *= 0.7; if (done(w, 'aether_engine')) m *= 0.5;
         return a * m;
     }
     const smogLv = (w) => { const v = S(w).smog; return v >= 40 ? 'black' : v >= 25 ? 'grey' : v >= 10 ? 'haze' : 'clear'; };
@@ -147,8 +148,8 @@ const STEAM = (function () {
             let sum = 0; const paid = []; for (const a of inv) { const n = Math.min(40, Math.max(8, Math.round(WALLET.get(w, a) * 0.25))); if (WALLET.pay(w, a, q, n, t('點金術投資'))) { sum += n; paid.push(a.agentId); mem(w, a, '把 {n} 銀幣交給{q}去煉銀子，說好一個月後翻倍。', { n, q: q.name }, 6); } }
             if (!paid.length) return null; S(w).scam = { q: q.agentId, v: paid, d: day(w), sum }; mem(w, q, '說自己會用煉金術把鉛變成銀子，收了一筆投資。', {}, 7);
             return { k: '🪙 {q}說自己找到把鉛變成銀子的配方，{n}一共投了 {s} 銀幣，等著一個月後翻倍。', p: { q: q.name, n: names(inv.filter(a => paid.includes(a.agentId))), s: sum }, who: [q, ...inv.filter(a => paid.includes(a.agentId))], sev: 1 }; } },
-        { id: 'mech_rampage', path: 'steam', lv: 'mid', icon: '🦾', need: (w) => done(w, 'steam_mech'), run(w) {
-            const op = pick(w, x => ['carpenter', 'miner'].includes(x.job?.key)); if (!op) return null; const v = pick(w, x => x !== op);
+        { id: 'mech_rampage', path: 'steam', lv: 'mid', icon: '🦾', need: (w) => done(w, 'steam_mech') && day(w) - (S(w).lastMech ?? -99) >= 60, run(w) { // 一陣子才一次(不要每個月都撞牆)
+            S(w).lastMech = day(w); const op = pick(w, x => ['carpenter', 'miner'].includes(x.job?.key)); if (!op) return null; const v = pick(w, x => x !== op);
             if (v && Math.random() < 0.5) TECH.addAil(w, v, { p: 'f', k: 'injury', s: 1, dmg: 8 }, '被機甲撞到');
             for (const [r, n] of [['wood', 15], ['stone', 15]]) { const have = w.stockpile?.get?.(r) || 0; const k = Math.min(have, n); if (k > 0) w.stockpile.consume(r, k, w.tickCount, t('機甲失控'), 'event'); }
             if (v) aff(v, op, -10); mem(w, op, '蒸汽機甲的煞車卡住了，我怎麼拉都拉不住。', {}, 7);
@@ -286,7 +287,7 @@ const STEAM = (function () {
         airship: { era: 5, path: 'steam', name: t('飛艇'), description: t('煉金氣體撐起的大氣囊：可以蓋飛艇碼頭，商隊和遠方的消息都來得快'), cost: 13000, prerequisites: pre('high_pressure', 'alchemy'), effects: { merchant_frequency: 0.2, discover_bonus: 0.05 }, unlocks: ['airship_dock'] },
         steam_mech: { era: 5, path: 'steam', name: t('蒸汽機甲'), description: t('兩個人操作的鋼鐵巨人：蓋房、搬石頭快很多，但很需要人手；煞車偶爾會卡'), cost: 14000, prerequisites: pre('high_pressure', 'gear_works'), effects: { build_speed: 1.15, stone_efficiency: 1.1, defense_bonus: 2 }, unlocks: [] },
         element_refining: { era: 5, path: 'steam', name: t('元素提煉'), description: t('從礦石裡提煉出純的金屬：可以蓋提煉廠（三份石頭換一份金屬）'), cost: 13500, prerequisites: pre('alchemy', 'high_pressure'), effects: { smithing_bonus: 1.15 }, unlocks: ['refinery'] },
-        smoke_filter: { era: 5, path: 'steam', name: t('濾煙塔'), description: t('煙囪頂上加一層煉金濾網：煤煙少四成'), cost: 11500, prerequisites: pre('alchemy', 'engineering'), effects: { healing_bonus: 1.05 }, unlocks: [] },
+        smoke_filter: { era: 5, path: 'steam', name: t('濾煙塔'), description: t('煙囪頂上加一層煉金濾網：煤煙少三成'), cost: 11500, prerequisites: pre('alchemy', 'engineering'), effects: { healing_bonus: 1.05 }, unlocks: [] },
         // ---- ✨ 以太(第六時代,專屬) ----
         clockwork_automaton: { era: 6, path: 'steam', name: t('發條人偶'), description: t('上緊發條就會做事的人偶：最危險的礦坑交給它，礦工和廚師的缺少一些'), cost: 22000, prerequisites: pre('difference_engine', 'steam_mech'), effects: { build_speed: 1.1, smithing_bonus: 1.1 }, unlocks: [] },
         aether_engine: { era: 6, path: 'steam', name: t('以太引擎'), description: t('不燒煤的引擎：研究和建造都快，煤煙再少一半'), cost: 24000, prerequisites: pre('element_refining', 'airship'), effects: { research_bonus: 0.08, build_speed: 1.1 }, unlocks: [] },

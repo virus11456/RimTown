@@ -61,9 +61,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       done(P.homunculus); out.jobs.farmerH = jm('farmer'); STEAM.S(w).homunban = 1; out.jobs.farmerBan = jm('farmer'); STEAM.S(w).homunban = 0; undo('homunculus');
       // 4) 煤煙:累積、散掉、法律與科技減煙、肺病
       const X = STEAM.S(w); X.smog = 0; X.lastDay = null; addB('refinery'); undo('smoke_filter'); const sm = []; for (let i = 0; i < 90; i++) { next(); STEAM.daily(w); } sm.push(Math.round(X.smog));
-      const add0 = STEAM.smogAdd(w); X.air = 1; const addAir = STEAM.smogAdd(w); done(P.smoke_filter); const addF = STEAM.smogAdd(w); X.air = 0;
+      const add0 = STEAM.smogAdd(w); w.tech.path = 'electro'; const addE = STEAM.smogAdd(w); w.tech.path = 'bio'; const addBio = STEAM.smogAdd(w); w.tech.path = 'steam'; X.air = 1; const addAir = STEAM.smogAdd(w); done(P.smoke_filter); const addF = STEAM.smogAdd(w); X.air = 0;
       for (const k of ['gear_workshop', 'refinery']) delB(k); undo('high_pressure'); undo('steam_mech'); const add1 = STEAM.smogAdd(w);
-      for (let i = 0; i < 60; i++) { next(); STEAM.daily(w); } sm.push(Math.round(X.smog)); out.smog = { sm, add0, addAir, addF, add1, lung: X.st.lung || 0 };
+      for (let i = 0; i < 60; i++) { next(); STEAM.daily(w); } sm.push(Math.round(X.smog)); out.smog = { sm, add0, addE, addBio, addAir, addF, add1, lung: X.st.lung || 0 };
       done(P.high_pressure); done(P.steam_mech); addB('gear_workshop'); addB('refinery'); undo('smoke_filter');
       // 煙很濃時肺病變多(90 天)
       X.smog = 45; const L0 = X.st.lung || 0; const S45 = X.smog; for (let i = 0; i < 200; i++) { next(); X.smog = S45; X.lastDay = null; STEAM.daily(w); } out.smog.lungHigh = (X.st.lung || 0) - L0;
@@ -124,7 +124,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.debate.made && r.debate.steam && r.debate.pick === 'steam' && r.debate.why === 'steam_hands' && /steam/.test(r.debate.item), '路線大辯論多了蒸汽煉金；礦工投蒸汽，理由是「蒸汽要人手」', r.debate);
     ok(r.jobs.miner >= 1.2 && r.jobs.smith >= 1.2 && r.jobs.farmerH < r.jobs.farmer && r.jobs.farmerBan === r.jobs.farmer, '很需要人手：礦工、鐵匠職缺變多；人造人才搶農夫的工作，禁造之後不再搶', r.jobs);
     const sm = r.smog;
-    ok(sm.sm[0] >= 30 && sm.addAir < sm.add0 * 0.55 && sm.addF < sm.addAir && sm.sm[1] < sm.sm[0] / 2, '煤煙：鍋爐、工坊、提煉廠會累積煙；清潔空氣法減半、濾煙塔再少；不再冒煙就慢慢散掉', sm);
+    ok(sm.sm[0] >= 40 && sm.add0 > sm.addBio && sm.addBio > sm.addE && sm.addAir < sm.add0 * 0.55 && sm.addF < sm.addAir && sm.sm[1] < sm.sm[0] / 2, '煤煙：鍋爐、工坊、提煉廠會累積煙（走蒸汽煉金的最多、走電子機械的最少）；清潔空氣法減半、濾煙塔再少；不再冒煙就慢慢散掉', sm);
     ok(sm.lungHigh >= 2 && sm.lungHigh > sm.lungLow, '煙很濃時，咳嗽得肺病的人變多', sm);
     const ev = r.events.fired;
     ok(Object.values(ev).filter(x => x === true).length >= 10 && !Object.values(ev).some(x => typeof x === 'string') && r.events.drift === 0 && r.events.shock, '蒸汽煉金的社會問題都會發生（燙傷、煤灰、咳嗽、送錯信、童工、臭煙、飛艇、鍋爐爆炸、黑霧、點金騙局、機甲失控、人造人要名字），銀幣守恆、村民有災後反應', r.events);

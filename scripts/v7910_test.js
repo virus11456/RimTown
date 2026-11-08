@@ -118,8 +118,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.open5.noInst && r.open5.elec && r.open5.inst, '第五時代：生技要研究院，電力不用；大家都能研究', r.open5);
     ok(r.open6.none && r.open6.el && r.open6.bio && r.open6.cost, '第六時代專屬：沒選路線都不能研究；電子機械只有火箭、基因生物只有基因編輯；基礎科技原價', r.open6);
     ok(r.debate.made && /bio/.test(r.debate.opts) && /electro/.test(r.debate.opts) /* v8.0.0 蒸汽煉金也可能在選項裡 */ && r.debate.doc === 'bio' && r.debate.rs === 'electro' && r.debate.dv === 'for' && r.debate.rv === 'for', '路線大辯論多選一：老醫生投基因生物、年輕研究員投電子機械', r.debate);
-    ok(r.debate.winner === 'bio' && r.debate.path === 'bio' && r.debate.tally.keep > 0 && r.debate.item === 3, '得票最多的路線勝出；提案卡列出每個選項的票數', r.debate);
-    ok(r.lean.electro > r.lean.bio * 1.5 && r.lean.electro < r.lean.bio * 2.6 && r.leanPer.market.electro > 240 && r.leanPer.forest.bio > 180 && r.leanPer.frontier.bio > 120, '小鎮風氣跟地形走：貿易要道多半電子機械、森林與農地偏基因生物；整體約三分之二比三分之一（蒸汽煉金上線後約 50／25／25）', { all: r.lean, per: r.leanPer });
+    ok(r.debate.winner === 'bio' && r.debate.path === 'bio' && r.debate.tally.keep > 0 && r.debate.item >= 3, '得票最多的路線勝出；提案卡列出每個選項的票數', r.debate);
+    ok(r.lean.electro > r.lean.bio * 1.5 && r.lean.electro < r.lean.bio * 2.6 && r.leanPer.market.electro > 240 && r.leanPer.forest.bio > 150 && r.leanPer.frontier.bio > 120 && r.leanPer.mountain.steam > r.leanPer.mountain.electro /* v8.0.0 森林:電子 .2／蒸汽 .2／基因 .6 */, '小鎮風氣跟地形走：貿易要道多半電子機械、森林與農地偏基因生物；整體約三分之二比三分之一（蒸汽煉金上線後約 50／25／25）', { all: r.lean, per: r.leanPer });
     ok(!r.keep.path && r.keep.wait >= 15 && !r.keep.again, '否決＝維持傳統：不強制，30 天後才再辯論', r.keep);
     ok(Object.values(r.events.fired).filter(x => x === true).length >= 7 && !Object.values(r.events.fired).some(x => typeof x === 'string') && r.events.drift === 0, '基因生物的社會問題都會發生（藥廠排污、實驗羊、基因歧視、騙子…），銀幣守恆', r.events);
     ok(r.price.drift === 0, '藥價管制：看診少付，銀幣守恆', r.price);

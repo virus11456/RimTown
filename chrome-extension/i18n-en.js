@@ -11298,7 +11298,7 @@
         '元素提煉': 'Element refining',
         '從礦石裡提煉出純的金屬：可以蓋提煉廠（三份石頭換一份金屬）': 'Extracts pure metal from ore: unlocks the refinery (three stone into one metal)',
         '濾煙塔': 'Smoke filters',
-        '煙囪頂上加一層煉金濾網：煤煙少四成': 'An alchemical filter on top of every chimney: 40% less coal smoke',
+        '煙囪頂上加一層煉金濾網：煤煙少三成': 'An alchemical filter on top of every chimney: 30% less coal smoke',
         '發條人偶': 'Clockwork automatons',
         '上緊發條就會做事的人偶：最危險的礦坑交給它，礦工和廚師的缺少一些': 'Wind them up and they work: they take the most dangerous mine shafts; fewer openings for miners and cooks',
         '以太引擎': 'Aether engine',
