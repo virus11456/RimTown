@@ -861,6 +861,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-pw { font-size: 0.9rem; }
 .rimtown-container .gh-sbx { font-size: 0.78rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; min-height: 32px; }
 .rimtown-container .gh-lab-note { font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .gh-lab-ways { display: flex; flex-direction: column; gap: 3px; font-size: 0.76rem; padding: 8px 10px; border-radius: 10px; background: var(--bg-card, #2E2A44); line-height: 1.45; overflow-wrap: anywhere; } /* v8.2.0 疫情裡的人 */
 .rimtown-container .gh-lab-form { display: flex; flex-direction: column; gap: 8px; }
 .rimtown-container .gh-lab-row { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
 .rimtown-container .gh-lab-row > span { font-weight: 700; color: var(--text-secondary); }
