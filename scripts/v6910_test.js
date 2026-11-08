@@ -50,7 +50,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       return out;
     });
     const zh = lang === 'zh';
-    ok(r.n === 84 && r.eras === '1,2,3,4,5,6,7' && r.newNodes, '科技樹 84 項（v7.4.0 生技 6、v7.5.0 神話基因 3、v7.8.0 電子機械 15＋精進改良、v7.9.0 基因生物 8＋電子機械 3）', { n: r.n, e: r.eras });
+    ok(r.n === 98 && r.eras === '1,2,3,4,5,6,7' && r.newNodes, '科技樹 98 項（v7.4.0 生技 6、v7.5.0 神話基因 3、v7.8.0 電子機械 15＋精進改良、v7.9.0 基因生物 8＋電子機械 3、v8.0.0 蒸汽煉金 14）', { n: r.n, e: r.eras });
     ok(!r.badPre.length, '每一項的前置都存在，而且不會要求後面時代的科技', r.badPre);
     ok(!r.badFx.length, '每一項效果都是遊戲裡真的有在用的效果', r.badFx);
     ok(r.sum[1] < r.sum[2] && r.sum[2] < r.sum[3] && r.sum[3] < r.sum[4] && r.total > 80000, '越後面的時代越貴，整棵樹成本大幅提高', { s: r.sum, t: r.total });
