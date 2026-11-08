@@ -805,3 +805,25 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .ms-bar span { display: block; height: 100%; }
 .ms-fear { background: #C0504D; } .ms-mid { background: #9A9A9A; } .ms-ok { background: #4F9A6B; }
 .rimtown-container .hb-tag.myth { background: rgba(176, 65, 62, 0.12); }
+/* v7.6.0 分頁列跟內容卡片分開:分頁列用帶強調色調的底色＋邊框(不再跟卡片同色),後面墊一整條跟面板同色的不透明底板(蓋住上方縫隙與兩側),捲上來的卡片不會透出來或糊在一起 */
+.rimtown-container .pp-tabs { --pp-bleed-x: 6px; background: transparent; isolation: isolate; }
+.rimtown-container .sub-tab-bar.pp-tabs { --pp-bleed-x: 18px; background: transparent; top: -6px; }
+@media (min-width: 769px) { .rimtown-container .pp-tabs { --pp-bleed-x: 10px; } .rimtown-container .sub-tab-bar.pp-tabs { --pp-bleed-x: 22px; } }
+.rimtown-container .pp-tabs::before { content: ''; position: absolute; z-index: -1; top: -10px; bottom: -8px; left: calc(-1 * var(--pp-bleed-x)); right: calc(-1 * var(--pp-bleed-x)); background: var(--bg-primary); box-shadow: 0 6px 8px -6px rgba(0, 0, 0, 0.45); pointer-events: none; }
+.rimtown-container .pp-tabs::after { content: ''; position: absolute; z-index: -1; inset: 0; border-radius: 999px; background: var(--bg-secondary); background: color-mix(in srgb, var(--accent) 14%, var(--bg-primary)); border: 1px solid var(--accent); border-color: color-mix(in srgb, var(--accent) 45%, transparent); pointer-events: none; }
+.rimtown-container .pp-tabs button.pp-tab:not(.on) { color: var(--text-primary); }
+/* v7.6.0 卡片標題列:標題放在帶強調色調的標題列裡、跟下面的內容用分隔線隔開,不再跟內文同一個底色(各分頁的卡片一起套用) */
+.rimtown-container.observer :is(.econ-section, .news-section, .weather-section, .festival-section, .quest-section, .chain-section, .travelling-section, .faction-section, .explore-section, .lifecycle-section) > :is(h3, h4):first-child {
+    margin: -10px -12px 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); border-radius: 11px 11px 0 0;
+    background: var(--bg-secondary); background: color-mix(in srgb, var(--accent) 11%, var(--bg-card)); }
+.rimtown-container.observer .econ-section .econ-section > :is(h3, h4):first-child { margin: 0 0 6px; padding: 0; border: 0; border-radius: 0; background: none; }
+.rimtown-container .pp-issues { --cpy: 8px; --cpx: 10px; }
+.rimtown-container.observer .pn-panel .pp-issues, .rimtown-container.observer .economy-panel .pp-issues { --cpy: 10px; --cpx: 12px; }
+.rimtown-container .pp-issues > .pp-h:first-child { margin: calc(-1 * var(--cpy)) calc(-1 * var(--cpx)) 8px; padding: 8px var(--cpx); border-bottom: 1px solid var(--border); border-radius: 9px 9px 0 0;
+    background: var(--bg-secondary); background: color-mix(in srgb, var(--accent) 11%, var(--bg-card)); }
+/* v7.6.0 村民詳情的各段也做成卡片＋標題列,不再直接貼在面板底色上 */
+.rimtown-container.observer #sidebar-content .detail-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin: 0 0 8px; }
+.rimtown-container.observer #sidebar-content .detail-section .detail-section { background: transparent; border: 0; padding: 0; margin: 6px 0 0; }
+.rimtown-container.observer #sidebar-content .detail-section > h3:first-child { margin: -10px -12px 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); border-radius: 11px 11px 0 0; font-size: 0.86rem;
+    background: var(--bg-secondary); background: color-mix(in srgb, var(--accent) 11%, var(--bg-card)); }
+.rimtown-container.observer #sidebar-content .detail-section .detail-section > h3:first-child { margin: 0 0 6px; padding: 0; border: 0; border-radius: 0; background: none; }
