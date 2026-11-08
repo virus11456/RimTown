@@ -475,6 +475,7 @@ Object.assign(RimTownApp.prototype, {
             } catch (e) {}
         }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
+        const B = (ic, tx) => `<span class="nqc-ic" aria-hidden="true">${ic}</span><span class="nqc-tx">${tx}</span>`; // v7.7.1 圖示在上、文字在下,手機上不會折成兩行
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
             <div class="nqc-name">${t(a.name)} <span class="nqc-job">${a.job?.title || ''}</span></div>
@@ -485,12 +486,12 @@ Object.assign(RimTownApp.prototype, {
             ${moodHtml}
             ${goalHtml}
             <div class="nqc-btns">
-                <button class="nqc-chat" data-nqc="chat">💬 ${t('交談')}</button>
-                ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>✨ ${t('助夢')}</button>` : ''}
-                ${this.tileMap?.followAgent ? `<button class="nqc-detail" data-nqc="cam">${this.tileMap.isFollowing?.(agentId) ? '🎥 ' + t('停止跟拍') : '🎥 ' + t('跟拍')}</button>` : ''}
-                ${this.world?.observerMode && typeof DREAM !== 'undefined' ? `<button class="nqc-detail" data-nqc="dream">🌙 ${t('託夢')}</button>` : ''}
-                <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? '🔕 ' + t('追蹤中') : '🔔 ' + t('追蹤')}</button>
-                <button class="nqc-detail" data-nqc="detail">📋 ${t('詳情')}</button>
+                <button class="nqc-chat" data-nqc="chat">${B('💬', t('交談'))}</button>
+                ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>${B('✨', t('助夢'))}</button>` : ''}
+                ${this.tileMap?.followAgent ? `<button class="nqc-detail" data-nqc="cam">${B('🎥', this.tileMap.isFollowing?.(agentId) ? t('停止跟拍') : t('跟拍'))}</button>` : ''}
+                ${this.world?.observerMode && typeof DREAM !== 'undefined' ? `<button class="nqc-detail" data-nqc="dream">${B('🌙', t('託夢'))}</button>` : ''}
+                <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? B('🔕', t('追蹤中')) : B('🔔', t('追蹤'))}</button>
+                <button class="nqc-detail" data-nqc="detail">${B('📋', t('詳情'))}</button>
             </div>`;
         card.onclick = (e) => {
             const act = e.target?.dataset?.nqc;

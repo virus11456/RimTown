@@ -6,12 +6,10 @@
 //   lane=background(行程/反思/背景對話)→ 付費中繼,失敗 → 退回 Groq,並對中繼累進冷卻(60s×次數,最多 5 分鐘),恢復即切回
 //   冷卻狀態存在 lambda 記憶體(每個實例各自判斷),兩邊都失敗才回 502。
 // 每日額度:訪客(依 IP)/ 登入玩家,記錄在 quota/<日期>/<key>.json(走儲存抽象層)。
-const crypto = require('crypto');
 const L = require('./_lib');
 
 // v6.42.1 沒登入的人預設不能用伺服器 AI(遊戲本來就要登入＋推薦碼;以前訪客每天 10 次,任何人都能拿來燒額度)。
-// AI_GUEST_DAILY 設成正數才開放;設 0 也真的是 0(舊寫法 parseInt('0') || 10 會變回 10)
-const GUEST_DAILY = Math.max(0, parseInt(process.env.AI_GUEST_DAILY ?? '0', 10) || 0);
+// v7.7.1 沒有訪客模式了:小鎮 AI 只給登入的帳號用(不再有 AI_GUEST_DAILY 開關)
 // v6.74.1 登入玩家不設每日上限;v6.76.6 改成預設每日 5000 次(使用者決定:防帳號被盜用時無限燒 AI 費用;實測 5x 一小時約 870 次)。
 // Vercel 設 AI_USER_DAILY 可覆蓋(填 0 = 不限)。用量照樣記在 quota/ 與 usage/ 方便統計
 const USER_DAILY = Math.max(0, parseInt(process.env.AI_USER_DAILY ?? '5000', 10) || 0); // 0 = 不限
@@ -309,14 +307,12 @@ module.exports = async (req, res) => {
     const maxTokens = Math.min(600, Math.max(1, parseInt(b.max_tokens, 10) || 300));
     const temperature = Math.min(1.5, Math.max(0, parseFloat(b.temperature) || 0.9));
 
-    // 額度身分:登入用帳號,訪客用 IP 雜湊
+    // 額度身分:登入的帳號
     const payload = L.authUser(req);
-    if (payload && await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
-    if (!payload && GUEST_DAILY <= 0) return L.err(res, 401, 'login_required', '請先登入才能使用小鎮 AI'); // v6.42.1
-    const limit = payload ? USER_DAILY : GUEST_DAILY;
-    const who = payload
-        ? 'u_' + payload.u.toLowerCase()
-        : 'g_' + crypto.createHash('sha1').update(L.clientIp(req)).digest('hex').slice(0, 16);
+    if (!payload) return L.err(res, 401, 'login_required', '請先登入才能使用小鎮 AI'); // v6.42.1;v7.7.1 一律要登入
+    if (await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
+    const limit = USER_DAILY;
+    const who = 'u_' + payload.u.toLowerCase();
     const day = new Date().toISOString().slice(0, 10);
     const quotaPath = `quota/${day}/${who}.json`;
 
@@ -326,7 +322,7 @@ module.exports = async (req, res) => {
     if (limit > 0 && q.count >= limit) {
         await bump('blocked');
         return L.err(res, 429, 'quota_exceeded',
-            payload ? '今日 AI 對話額度已用完,明天再來吧!' : '訪客今日 AI 額度已用完,註冊登入可獲得更高額度!');
+            '今日 AI 對話額度已用完,明天再來吧!');
     }
 
     // v5.66.0 智慧分流:決定嘗試順序,逐一嘗試,失敗就記冷卻換下一個

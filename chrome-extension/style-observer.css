@@ -207,7 +207,6 @@
         bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         border-radius: var(--ob-radius) var(--ob-radius) 0 0;
     }
-    .rimtown-container.observer .kairo-mode #guest-banner { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ===== v6.26.0 提案分頁 ===== */
@@ -836,3 +835,13 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .mf-in { color: #4F9A6B; } .rimtown-container .mf-out { color: #C0504D; }
 .rimtown-container .mf-net { border-bottom: 0; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; font-weight: 700; }
 .rimtown-container .mf-none { font-size: 0.74rem; }
+
+/* v7.7.1 村民快速卡:內容太多時在卡片裡捲動(以前頂端會跑到上方控制列後面),按鈕列固定在卡片底部;
+   按鈕改成圖示在上、文字在下,五顆擠一排也不會把「交談」折成兩行 */
+.npc-quick-card { max-height: calc(100% - 64px - 56px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
+.npc-quick-card .nqc-close { position: sticky; top: -6px; float: right; z-index: 2; margin: -6px -8px 0 4px; background: var(--ob-card-solid, #141e34); border-radius: 999px; }
+.npc-quick-card .nqc-btns { position: sticky; bottom: -12px; z-index: 1; gap: 6px; margin: 10px -14px -12px; padding: 8px 14px 12px; background: var(--ob-card-solid, #141e34); border-top: 1px solid var(--border); }
+.npc-quick-card .nqc-btns button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; min-width: 0; padding: 6px 2px; line-height: 1.15; font-size: 0.72rem; white-space: nowrap; overflow: hidden; }
+.npc-quick-card .nqc-btns .nqc-ic { font-size: 1.05rem; line-height: 1; }
+.npc-quick-card .nqc-btns .nqc-tx { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 768px) { .npc-quick-card { max-height: calc(100% - 152px - 56px - env(safe-area-inset-top, 0px)); } }

@@ -1,4 +1,4 @@
-// v6.42.1 沒登入的人預設不能用 /api/chat;AI_GUEST_DAILY 設正數才開放;回應絕不帶任何金鑰
+// v6.42.1 沒登入的人不能用 /api/chat(v7.7.1 起沒有訪客模式,AI_GUEST_DAILY 也開不了);回應絕不帶任何金鑰
 const path = require('path');
 const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 let user = null; const store = {};
@@ -17,10 +17,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) pass++; else { fail++; 
   user = { u: 'Tester', id: 1 }; res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi', lane: 'chat' } }, res);
   ok(res.code === 200 && res.body.reply === '你好', 'logged-in user works', res.body);
   ok(!/SECRET/.test(JSON.stringify(res.body)), 'response never contains a key', res.body);
-  user = null; process.env.AI_GUEST_DAILY = '0'; chat = load(); res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi' } }, res);
-  ok(res.code === 401, 'AI_GUEST_DAILY=0 really means 0', res.body);
-  process.env.AI_GUEST_DAILY = '3'; chat = load(); res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi' } }, res);
-  ok(res.code === 200 && res.body.remaining === 2, 'AI_GUEST_DAILY=3 opens guests', res.body);
+  user = null; process.env.AI_GUEST_DAILY = '3'; chat = load(); res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi' } }, res);
+  ok(res.code === 401, 'no guest AI even if AI_GUEST_DAILY is set (v7.7.1)', res.body);
   global.fetch = async () => ({ ok: false, status: 401, headers: { get: () => null }, json: async () => ({ error: { message: 'invalid x-api-key sk-ant-SECRET-relay' } }) });
   user = { u: 'Tester', id: 1 }; chat = load(); res = mkRes(); await chat({ method: 'POST', headers: {}, body: { prompt: 'hi', lane: 'background' } }, res);
   ok(res.code >= 400 && !/SECRET/.test(JSON.stringify(res.body)), 'upstream error text with key is not echoed', res.body);

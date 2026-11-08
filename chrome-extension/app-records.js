@@ -166,59 +166,6 @@ Object.assign(RimTownApp.prototype, {
         (container.querySelector(':scope > .economy-panel') || container).appendChild(host);
     },
 
-    // ============================================================
-    // Newspaper Tab
-    // ============================================================
-    renderNewspaper(container) {
-        if (!this.state) return;
-        const news = this.state.dailyNews || {};
-        const papers = news.newspapers || [];
-
-        let html = '<div class="economy-panel">';
-        html += `${t('<div class="econ-section"><h3>📰 AI 日報（共 ')}${papers.length}${t(' 期）</h3></div>')}`;
-
-        if (papers.length === 0) {
-            html += t('<div class="econ-section"><p class="muted-text">還沒有日報。每天結束時會自動發佈。</p></div>');
-        }
-
-        // Show latest first
-        const display = papers.slice().reverse().slice(0, 20);
-        for (let i = 0; i < display.length; i++) {
-            const paper = display[i];
-            const isExpanded = this._expandedNewspaper === paper.id;
-            const isLatest = i === 0;
-
-            html += `<div class="news-card ${isExpanded ? 'news-expanded' : ''} ${isLatest ? 'news-latest' : ''}" data-action="view-newspaper" data-val="${paper.id}">`;
-            html += `<div class="news-card-header">`;
-            html += `<div class="news-card-issue">#${paper.id}</div>`;
-            html += `<div class="news-card-meta">`;
-            html += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
-            html += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
-            html += `</div>`;
-            html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
-            html += `</div>`;
-
-            // Show headline preview when collapsed
-            if (!isExpanded && paper.content) {
-                const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
-                const preview = clipText(firstLine, 41); // v6.43.6
-                html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
-            }
-
-            if (isExpanded) {
-                html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
-            }
-            html += '</div>';
-        }
-
-        if (papers.length > 20) {
-            html += `${t('<div class="econ-section"><p class="muted-text">顯示最近 20 期（共 ')}${papers.length}${t(' 期）</p></div>')}`;
-        }
-
-        html += '</div>';
-        container.innerHTML = html;
-    },
-
     _viewNewspaper(id) {
         this._expandedNewspaper = this._expandedNewspaper === id ? null : id;
         this.renderSidebar();

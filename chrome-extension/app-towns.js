@@ -150,44 +150,37 @@ Object.assign(RimTownApp.prototype, {
         else list.push(meta);
         this._saveTownList(list);
         this._submitLeaderboard();
-        // v4.6.0 存檔配額保護:寫入失敗(localStorage 滿)時自動瘦身重試,再失敗才警告
-        // v5.69.3 重寫:舊版瘦身裁的是不存在的欄位(memories/recent_memories),等於沒瘦,登入玩家也被彈
-        // 「請註冊登入」。現在依序:清聊天封存 → 依真實欄位瘦身 → (登入者)清其他鎮的本機副本 → 仍失敗時
-        // 登入者只提示一次「本機備份空間不足,已改為只存雲端」,訪客才跳警告
+        // 存檔配額保護(v4.6.0 → v7.7.1):localStorage 寫不進去時依序:清聊天封存 → 其他鎮的本機副本搬去 IndexedDB →
+        // 這座鎮整份放 IndexedDB(不瘦身)→ IndexedDB 也不行才瘦身 → 再不行就只存雲端(見 giveUp)
         const key = 'rimtown_town_' + this.currentTownId;
         let firstStr = preStr || null;
         const tryWrite = (data) => { try { const s = firstStr || JSON.stringify(data); firstStr = null; localStorage.setItem(key, s); return true; } catch (_) { firstStr = null; return false; } };
         // v6.76.3 目前的鎮以 localStorage 為準:寫成功了才刪 IndexedDB 裡的舊副本(以前先刪,寫失敗時就一份都不剩)
         const tid = this.currentTownId;
         const dropIdbCopy = () => { if (this._idbTowns?.has(tid) && typeof RTStore !== 'undefined') { RTStore.del(tid); this._idbTowns.delete(tid); } };
+        // v7.7.1 localStorage 放不下時:整份(不瘦身)放進 IndexedDB(空間大很多);IndexedDB 也不行才瘦身,再不行就只存雲端
+        const cloudOnly = () => {
+            if (this._localQuotaNoticeShown) return; this._localQuotaNoticeShown = true;
+            console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
+            try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
+        };
+        const slimOrCloud = () => { this._slimSaveForLocal(saveData); if (tryWrite(saveData)) { console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); dropIdbCopy(); } else cloudOnly(); };
         const giveUp = () => {
-            if (this.auth?.loggedIn) {
-                if (!this._localQuotaNoticeShown) {
-                    this._localQuotaNoticeShown = true;
-                    console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
-                    try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
-                }
-            } else {
-                // v6.87.0 訪客:localStorage 滿了就把這座鎮整份放進 IndexedDB(空間大很多),真的不行才跳警告
-                const alertFull = () => this._gameAlert(t('儲存空間已滿！請到「城鎮列表」刪除舊城鎮，或登入改用雲端存檔。'), '💾');
-                if (typeof RTStore === 'undefined') return alertFull();
-                let str = null; try { str = JSON.stringify(saveData); } catch (e) { return alertFull(); }
-                RTStore.set(tid, str).then(r => {
-                    if (r === undefined) return alertFull();
-                    (this._idbTowns || (this._idbTowns = new Set())).add(tid);
-                    try { localStorage.removeItem(key); } catch (e) {} // 舊的那份比較舊,讀檔時別先讀到它
-                    if (!this._idbSaveNoticeShown) { this._idbSaveNoticeShown = true; try { this._showCornerNotice({ icon: '💾', title: t('本機空間不足'), name: '', desc: t('存檔改放瀏覽器資料庫，進度沒有遺失。') }); } catch (e) {} }
-                }).catch(alertFull);
-            }
+            if (typeof RTStore === 'undefined') return slimOrCloud();
+            let str = null; try { str = JSON.stringify(saveData); } catch (e) { return slimOrCloud(); }
+            RTStore.set(tid, str).then(r => {
+                if (r === undefined) return slimOrCloud();
+                (this._idbTowns || (this._idbTowns = new Set())).add(tid);
+                try { localStorage.removeItem(key); } catch (e) {} // 舊的那份比較舊,讀檔時別先讀到它
+                if (!this._idbSaveNoticeShown) { this._idbSaveNoticeShown = true; try { this._showCornerNotice({ icon: '💾', title: t('本機空間不足'), name: '', desc: t('存檔改放瀏覽器資料庫，進度沒有遺失。') }); } catch (e) {} }
+            }).catch(slimOrCloud);
         };
         let ok = tryWrite(saveData);
         if (!ok) {
             const removeKeys = (pred) => { let n = 0; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && pred(k)) { localStorage.removeItem(k); n++; } } return n; };
             // 1) 聊天封存(純紀錄,可重新產生)
             if (removeKeys(k => k.startsWith('rimtown_town_') && k.endsWith('_archives'))) ok = tryWrite(saveData);
-            // 2) 依真實欄位瘦身:村民記憶、全鎮日誌、對話紀錄、八卦、名場面
-            if (!ok) { this._slimSaveForLocal(saveData); ok = tryWrite(saveData); if (ok) console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); }
-            // 3) 其他城鎮的本機副本搬去 IndexedDB 讓位:確定寫進去了才從 localStorage 移掉(v6.76.3 以前沒等寫完就刪,IndexedDB 失敗時那座鎮唯一的本機存檔就沒了)
+            // 2) 其他城鎮的本機副本搬去 IndexedDB 讓位:確定寫進去了才從 localStorage 移掉(v6.76.3 以前沒等寫完就刪,IndexedDB 失敗時那座鎮唯一的本機存檔就沒了)
             if (!ok) {
                 const others = []; for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); const m = k && /^rimtown_town_(.+)$/.exec(k); if (m && k !== key && m[1] !== 'list' && !m[1].endsWith('_archives')) others.push(m[1]); }
                 if (others.length && typeof RTStore !== 'undefined') {
@@ -304,12 +297,12 @@ Object.assign(RimTownApp.prototype, {
         const icon = ({ frontier: '🏡', harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️' })[e.theme] || (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[e.theme]?.generated ? ({ harbor: '🌊', mountain: '⛏️', forest: '🌲', market: '🏛️', frontier: '🌾' })[TOWN_THEMES[e.theme].base] : '') || '🏘️';
         const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x ?? '')) : String(x ?? '');
         const tags = [];
-        if (e.source === 'local' && this.auth.loggedIn) tags.push(`📱 ${t('本機')}${e.sameNameCloud ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}`);
+        if (e.source === 'local') tags.push(`📱 ${t('本機')}${e.sameNameCloud ? `${t('（')}${t('與雲端同名')}${t('）')}` : ''}`);
         if (e.dup) tags.push(`⚠️ ${t('疑似重複：還在第 1 天')}`);
         if (e.dupNb) tags.push(`⚠️ ${t('重複的鄰鎮：馬車不會去這座，可以刪除')}`); // v6.76.0
         if (e.staleLocal) tags.push(`🗂️ ${t('舊的本機備份：雲端那座進度比較多')}`); // v6.76.7
         const date = e.at ? new Date(e.at).toLocaleString() : '';
-        const actions = (e.source === 'cloud' || !this.auth.loggedIn)
+        const actions = (e.source === 'cloud')
             ? `<button data-action="rename-town" data-val="${e.id}" title="${t('重新命名')}">✏️</button>${!e.isActive ? `<button data-action="delete-town" data-val="${e.id}" title="${t('刪除')}" class="btn-danger">🗑️</button>` : ''}`
             : (!e.isActive ? `<button data-action="delete-local-town" data-val="${e.id}" title="${t('刪除本機副本')}" class="btn-danger">🗑️</button>` : '');
         return `<div class="town-item ${e.isActive ? 'active' : ''}${e.dup ? ' town-dup' : ''}">
@@ -348,8 +341,7 @@ Object.assign(RimTownApp.prototype, {
     _renderTownList() {
         const container = document.getElementById('town-list-content');
         if (!container) return;
-        if (this.auth.loggedIn) { this._renderCloudTownList(container); return; }
-        this._renderTownSections(container, this._townEntries(null));
+        this._renderCloudTownList(container); // v7.7.1 一律登入:雲端＋本機合併列出
     },
     async _renderCloudTownList(container) {
         container.innerHTML = `<p class="muted-text">${t('載入雲端存檔...')}</p>`;
@@ -378,7 +370,7 @@ Object.assign(RimTownApp.prototype, {
             try { this._saveCurrentTown(); } catch (e) {}
             await this.saveGame();
             // v5.59.0 雲端與本地都拿出來,比日期挑「較新」的那份——
-            // 訪客時期的舊複本(Day1 存檔)不會再蓋掉真實進度(TC-02 半重置根因)
+            // 舊的本機複本(Day1 存檔)不會再蓋掉真實進度(TC-02 半重置根因)
             let cloudData = null, localData = null;
             try { cloudData = await this.auth.cloudLoad(townId); } catch (e) { console.error('[RimTown] Cloud switch town error:', e); }
             try { localData = await this._readLocalTown(townId); } catch (e) {}
@@ -406,21 +398,6 @@ Object.assign(RimTownApp.prototype, {
                 this._gameAlert?.(t('切換城鎮失敗：找不到該城鎮的存檔。'), '❌');
                 this.world.logMessage('system', t('切換城鎮失敗。'));
             }
-        } else {
-            // Not logged in — use local saves
-            this._saveCurrentTown();
-            const prevTownId = this.currentTownId;
-            if (await this._loadTownById(townId)) {
-                this._stashTown(prevTownId); // v6.76.1
-                if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
-                this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
-                this.state = this.world.getState();
-                this._generateTileMapLayout();
-                if (this.tileMap) this.tileMap.agentPositions = {};
-                const townMeta = this._getTownList().find(t => t.id === townId);
-                this._updateHeaderTownName(townMeta?.name);
-                this.render();
-            }
         }
         document.getElementById('town-modal')?.classList.add('hidden');
         this.world.paused = !!this._pausedBeforeTownModal;
@@ -445,12 +422,7 @@ Object.assign(RimTownApp.prototype, {
         this._showBusyOverlay(`🏗️ ${t('新城鎮建立中，原本的城鎮會先自動儲存…')}`);
         const prevTownId = this.currentTownId; // v6.76.3 新世界建好後把原本這座搬去 IndexedDB(localStorage 只留目前這座)
         try { await this.archiveChatHistory?.(); } catch (e) {}
-        if (this.auth.loggedIn) {
-            // When logged in, save current town to cloud before creating new one
-            if (this.currentTownId) await this.saveGame();
-        } else {
-            if (this.currentTownId) this._saveCurrentTown();
-        }
+        if (this.currentTownId) await this.saveGame(); // 先把目前這座存好(雲端＋本機)
         // (在舊鎮存檔之後才改 theme/name,避免把新名字蓋到舊存檔上)
         this.world.townTheme = 'frontier';
         this.world.townName = name;
@@ -462,12 +434,7 @@ Object.assign(RimTownApp.prototype, {
         this._otherTownsAt = 0; this._neighborEnsured = {}; this._blobNameCache = {}; this._genDayKey = null; this._genCrossNewsAt = 0; this.world.otherTowns = []; this.world.crossTownNews = [];
         if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();
         this.currentTownId = this._generateTownId(name);
-        if (this.auth.loggedIn) {
-            // Save new town to cloud immediately
-            await this.saveGame();
-        } else {
-            this._saveCurrentTown(name);
-        }
+        await this.saveGame(); // 新城鎮馬上存(雲端＋本機)
         try { await this._quotaSpill; } catch (e) {}
         if (prevTownId && prevTownId !== this.currentTownId) { try { await this._stashTown(prevTownId); } catch (e) {} }
         this.chatTarget = null; this.selectedAgent = null; this.agentColors = {};
@@ -499,18 +466,12 @@ Object.assign(RimTownApp.prototype, {
     _hideBusyOverlay() { document.getElementById('busy-overlay')?.remove(); },
     async renameTownPrompt(townId) {
         let currentName = '邊境鎮';
-        if (this.auth.loggedIn && this._cloudSaves) {
-            const cloud = this._cloudSaves.find(s => s.town_id === townId);
-            if (cloud) currentName = cloud.town_name;
-        } else {
-            const towns = this._getTownList();
-            const town = towns.find(t => t.id === townId);
-            if (town) currentName = town.name;
-        }
+        const cloud = this._cloudSaves?.find(s => s.town_id === townId), local = this._getTownList().find(tw => tw.id === townId);
+        if (cloud) currentName = cloud.town_name; else if (local) currentName = local.name;
         const newName = prompt(t('新名稱：'), currentName);
         if (newName && newName.trim()) {
-            if (this.auth.loggedIn) {
-                // When logged in, re-save to cloud with new name
+            {
+                // 雲端改名(重存一份帶新名字);本機城鎮列表也一起改,兩邊名字一致
                 try {
                     const saveData = await this.auth.cloudLoad(townId);
                     if (saveData) {
@@ -528,13 +489,8 @@ Object.assign(RimTownApp.prototype, {
                 } catch (e) {
                     console.error('[RimTown] Cloud rename error:', e);
                 }
-            } else {
-                const towns = this._getTownList();
-                const town = towns.find(t => t.id === townId);
-                if (town) {
-                    town.name = newName.trim();
-                    this._saveTownList(towns);
-                }
+                const towns = this._getTownList(); const town = towns.find(tw => tw.id === townId);
+                if (town) { town.name = newName.trim(); this._saveTownList(towns); }
             }
             if (townId === this.currentTownId) {
                 this._updateHeaderTownName(newName.trim());
@@ -544,21 +500,11 @@ Object.assign(RimTownApp.prototype, {
     },
     async deleteTownConfirm(townId) {
         if (!await this._gameConfirm(t('確定要刪除這個城鎮？所有存檔和聊天記錄都會消失。'), '🗑️')) return;
-        if (this.auth.loggedIn) {
-            // When logged in, delete from cloud
-            try {
-                await this.auth.cloudDelete(townId);
-            } catch (e) {
-                console.error('[RimTown] Cloud delete error:', e);
-            }
-        } else {
-            // Not logged in — delete from local storage
-            const list = this._getTownList().filter(t => t.id !== townId);
-            this._saveTownList(list);
-            localStorage.removeItem('rimtown_town_' + townId);
-            localStorage.removeItem('rimtown_town_' + townId + '_archives');
-            this._deleteLocalTown(townId); // v6.76.1 IndexedDB 的副本也刪
-        }
+        try { await this.auth.cloudDelete(townId); } catch (e) { console.error('[RimTown] Cloud delete error:', e); }
+        // v7.7.1 本機副本也一起刪(以前登入時只刪雲端,本機那份還在,背景同步又會把它傳回雲端)
+        this._saveTownList(this._getTownList().filter(tw => tw.id !== townId));
+        await this._deleteLocalTown(townId);
+        this._blobNameCache = {}; this._otherTownsAt = 0;
         this._renderTownList();
     },
 

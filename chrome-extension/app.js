@@ -1,5 +1,5 @@
-// RimTown - Frontend App v7.7.0
-const RIMTOWN_APP_VERSION = '7.7.0';
+// RimTown - Frontend App v7.7.1
+const RIMTOWN_APP_VERSION = '7.7.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -402,7 +402,6 @@ class RimTownApp {
         this._viewingArchive = null;
         this.currentTownId = null;
         // v2.0 — Auth + Achievements
-        this.guestMode = false;
         this.auth = new RimTownAuth();
         this._unlockedAchievements = new Set();
         this._achievementQueue = []; // Toast queue
@@ -437,7 +436,7 @@ class RimTownApp {
         // Try to load saved game
         let loaded = false;
         if (this.auth.loggedIn) {
-            // When logged in, only load from cloud — skip local saves
+            // 雲端與本機同一鎮比新舊;雲端拿不到再試本機副本
             try {
                 const saves = await this.auth.listSaves();
                 if (saves.length > 0) {
@@ -485,32 +484,6 @@ class RimTownApp {
                     // v5.62.1 沿用既有同名條目的 id(覆寫同一 slot),沒有才產新 id
                     const orphan = this._getTownList().find(tw => tw.name === '邊境鎮');
                     this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
-                }
-            }
-        } else {
-            // Not logged in — use local saves
-            const lastTownId = localStorage.getItem('rimtown_last_town');
-            if (lastTownId) {
-                loaded = await this._loadTownById(lastTownId);
-            }
-            if (!loaded) {
-                // v5.62.1 last_town 失效時先試列表裡其他有存檔的鎮(新到舊)
-                const rest = this._getTownList()
-                    .sort((a, b) => String(b.savedAt || '').localeCompare(String(a.savedAt || '')));
-                for (const tw of rest) {
-                    if (await this._loadTownById(tw.id)) { loaded = true; break; }
-                }
-            }
-            if (!loaded) {
-                const legacyLoaded = await this.tryLoadGame();
-                const orphan = this._getTownList().find(tw => tw.name === '邊境鎮');
-                if (legacyLoaded) {
-                    this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
-                    this._saveCurrentTown('邊境鎮');
-                } else {
-                    this.world.reset();
-                    this.currentTownId = orphan?.id || this._generateTownId('邊境鎮');
-                    this._saveCurrentTown('邊境鎮');
                 }
             }
         }
@@ -577,18 +550,6 @@ class RimTownApp {
         this._landingUpdateContinue();
         try { window.__rtHideLoading?.(); } catch (e) {} // v6.82.2 載入畫面收起
 
-        // Auto-show login modal if not logged in (with guest option)
-        if (!this.auth.loggedIn) {
-            const authModal = document.getElementById('auth-modal');
-            if (authModal) {
-                authModal.classList.remove('hidden');
-                // Hide close button but show guest section
-                const closeBtn = authModal.querySelector('.auth-close-btn');
-                if (closeBtn) closeBtn.style.display = 'none';
-                const guestSection = document.getElementById('auth-guest-section');
-                if (guestSection) guestSection.classList.remove('hidden');
-            }
-        }
     }
 
     // =====================================================
@@ -655,27 +616,6 @@ class RimTownApp {
         document.getElementById('auth-reset-btn')?.addEventListener('click', () => this._doResetPassword());
         document.getElementById('auth-reset-pass2')?.addEventListener('keydown', e => { if (e.key === 'Enter') this._doResetPassword(); });
 
-        // Guest mode
-        document.getElementById('auth-guest-btn')?.addEventListener('click', () => this._enterGuestMode());
-        document.getElementById('guest-register-btn')?.addEventListener('click', () => {
-            const authModal = document.getElementById('auth-modal');
-            if (authModal) {
-                authModal.classList.remove('hidden');
-                const closeBtn = authModal.querySelector('.auth-close-btn');
-                if (closeBtn) closeBtn.style.display = '';
-                // Switch to register tab
-                document.querySelectorAll('.auth-tab').forEach(_tw => {
-                    _tw.classList.toggle('active', _tw.dataset.authTab === 'register');
-                });
-                document.getElementById('auth-login-form')?.classList.add('hidden');
-                document.getElementById('auth-register-form')?.classList.remove('hidden');
-                document.getElementById('auth-guest-section')?.classList.add('hidden');
-            }
-        });
-        document.getElementById('guest-banner-close')?.addEventListener('click', () => {
-            document.getElementById('guest-banner')?.classList.add('hidden');
-            document.getElementById('rimtown-app')?.classList.remove('guest-banner-visible');
-        });
     }
 
     async _doLogin() {
@@ -687,8 +627,6 @@ class RimTownApp {
             if (errEl) errEl.textContent = t('登入中...');
             await this.auth.login(user, pass);
             if (this._landingMode === 'auth') { try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {} location.reload(); return; } // v5.68.0
-            this.guestMode = false;
-            this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
             this.world.logMessageT('system', '歡迎回來，{username}！', { username: this.auth.username });
@@ -723,25 +661,6 @@ class RimTownApp {
                 window.dispatchEvent(new Event('resize'));
             }, 100);
         }
-    }
-
-    _enterGuestMode() {
-        this.guestMode = true;
-        this._closeAuthModal();
-        // Show guest banner
-        const banner = document.getElementById('guest-banner');
-        if (banner) { banner.classList.remove('hidden'); banner.style.display = 'flex'; }
-        document.getElementById('rimtown-app')?.classList.add('guest-banner-visible');
-        // Update account button
-        this._updateAccountButton();
-        // Enable tutorial for guests
-        this.setupTutorial();
-    }
-
-    _hideGuestBanner() {
-        const banner = document.getElementById('guest-banner');
-        if (banner) { banner.classList.add('hidden'); banner.style.display = 'none'; }
-        document.getElementById('rimtown-app')?.classList.remove('guest-banner-visible');
     }
 
     // =====================================================
@@ -1297,8 +1216,6 @@ class RimTownApp {
                 try { sessionStorage.setItem('rimtown_enter_now', '1'); } catch (e) {}
                 location.reload(); return;
             }
-            this.guestMode = false;
-            this._hideGuestBanner();
             this._closeAuthModal();
             this._updateAccountButton();
             // v5.33.0 新帳號:把本機已設定的 AI 金鑰推上帳號雲端
@@ -2669,13 +2586,6 @@ class RimTownApp {
                     console.error('[RimTown] Cloud save error:', e);
                     this.world.logMessage('system', t('雲端儲存失敗。'));
                 }
-            } else {
-                // Not logged in — save locally
-                if (this.currentTownId) {
-                    this._saveCurrentTown(undefined, saveData, saveStr);
-                    try { localStorage.removeItem('rimtown_save'); } catch (e) {} // v6.76.1 舊的單一存檔槽不再重複存一份(省一半空間)
-                } else localStorage.setItem('rimtown_save', saveStr);
-                this.world.logMessage('system', t('遊戲已儲存。'));
             }
             return true;
         } catch(e) {
@@ -2683,21 +2593,6 @@ class RimTownApp {
             this.world.logMessage('system', t('儲存失敗。'));
             return false;
         }
-    }
-
-    async tryLoadGame() {
-        try {
-            const json = localStorage.getItem('rimtown_save');
-            if (!json) return false;
-            const saveData = JSON.parse(json);
-            return this.world.loadSave(saveData);
-        } catch(e) { console.error('Load failed:', e); return false; }
-    }
-
-    async deleteSave() {
-        try {
-            localStorage.removeItem('rimtown_save');
-        } catch(e) {}
     }
 
     setupAutoSave() {
@@ -2712,8 +2607,6 @@ class RimTownApp {
                 const due0 = Date.now() - (this._lastCloudSaveAt || 0) >= 300000 && this.world.tickCount !== this._lastCloudTick;
                 if (!due0) { idle(() => { try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {} }); return; } // 只存本機:等閒下來再存
                 // 要上雲端:saveGame 會順便存本機(只序列化一次),一樣等閒下來
-                idle(() => this.saveGame());
-            } else {
                 idle(() => this.saveGame());
             }
         }, 60000);
@@ -2735,8 +2628,10 @@ class RimTownApp {
                 const saveData = this.world.serialize();
                 const json = JSON.stringify(saveData);
                 if (this.auth.loggedIn && this.auth._restUrl) {
-                    // v5.63.0 關頁時也留一份本機(雲端 keepalive 請求不保證成功)
-                    try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {}
+                    // v5.63.0 關頁時也留一份本機(雲端 keepalive 請求不保證成功);v7.7.1 直接用剛序列化好的,不再序列化第二次
+                    try { if (this.currentTownId) this._saveCurrentTown(undefined, saveData, json); } catch (e) {}
+                    // v7.7.1 瀏覽器的 keepalive 請求最多 64KB,存檔幾乎都比這大,送了也會被擋;太大就不送(本機那份就是關頁時的保險)
+                    if (json.length > 60000) return;
                     const clock = saveData.clock || {};
                     const payload = JSON.stringify({
                         town_id: this.currentTownId,
@@ -2755,12 +2650,6 @@ class RimTownApp {
                         keepalive: true,
                     }).catch(() => {});
                     this._lastCloudSaveAt = Date.now(); this._lastCloudTick = this.world.tickCount;
-                } else {
-                    // Not logged in — save locally
-                    if (this.currentTownId) {
-                        this._saveCurrentTown();
-                    }
-                    localStorage.setItem('rimtown_save', json);
                 }
             } catch(e) {}
         }
@@ -2874,15 +2763,6 @@ class RimTownApp {
         URL.revokeObjectURL(url);
     }
 
-    assignAgentColor(agentId) {
-        if (agentId === 'player') return '#ffffff';
-        if (!this.agentColors[agentId]) {
-            const idx = Object.keys(this.agentColors).length % this.colorPalette.length;
-            this.agentColors[agentId] = this.colorPalette[idx];
-        }
-        return this.agentColors[agentId];
-    }
-
     // --- Player Actions ---
     playerMoveTo(locationId) {
         const player = this.world.agents['player'];
@@ -2957,73 +2837,6 @@ class RimTownApp {
     _interactNearby() {
         const near = this.tileMap?.getNearbyNPC?.();
         if (near) this.startChatWith(near.agentId);
-    }
-
-    _getAdjacentLocation(direction) {
-        if (!this.tileMap) return null;
-        const player = this.world.agents['player'];
-        if (!player) return null;
-        const currentLoc = player.currentLocation;
-
-        // Get all zone centers
-        const allZones = { ...this.tileMap.buildingZones, ...this.tileMap.natureZones };
-        const currentZone = allZones[currentLoc];
-        if (!currentZone) return null;
-
-        const cx = currentZone.x + currentZone.w / 2;
-        const cy = currentZone.y + currentZone.h / 2;
-
-        // Find the best location in the given direction
-        // Very forgiving: allow up to 120 degrees cone in the direction
-        let best = null;
-        let bestScore = Infinity;
-
-        for (const [locId, zone] of Object.entries(allZones)) {
-            if (locId === currentLoc) continue;
-            const tx = zone.x + zone.w / 2;
-            const ty = zone.y + zone.h / 2;
-            const dx = tx - cx;
-            const dy = ty - cy;
-            const dist = Math.sqrt(dx * dx + dy * dy);
-            if (dist < 0.5) continue;
-
-            // Check direction with wide cone (120 degrees = cos(60) = 0.5)
-            let valid = false;
-            switch (direction) {
-                case 'up': valid = dy < 0 && -dy / dist > 0.3; break;    // At least 30% upward
-                case 'down': valid = dy > 0 && dy / dist > 0.3; break;
-                case 'left': valid = dx < 0 && -dx / dist > 0.3; break;
-                case 'right': valid = dx > 0 && dx / dist > 0.3; break;
-            }
-            if (!valid) continue;
-
-            // Score: distance with slight alignment bonus (prefer more aligned)
-            const alignment = direction === 'up' || direction === 'down'
-                ? Math.abs(dx) / (Math.abs(dy) + 0.1)
-                : Math.abs(dy) / (Math.abs(dx) + 0.1);
-            const score = dist * (1 + alignment * 0.3);
-
-            if (score < bestScore) {
-                bestScore = score;
-                best = locId;
-            }
-        }
-
-        // If no location found in direction, try wrapping around (find ANY closest unused direction)
-        if (!best) {
-            let fallbackBest = null, fallbackDist = Infinity;
-            for (const [locId, zone] of Object.entries(allZones)) {
-                if (locId === currentLoc) continue;
-                const tx = zone.x + zone.w / 2;
-                const ty = zone.y + zone.h / 2;
-                const dist = Math.sqrt((tx-cx)**2 + (ty-cy)**2);
-                if (dist < fallbackDist) { fallbackDist = dist; fallbackBest = locId; }
-            }
-            // Only use fallback if the nearest location is reasonably close
-            if (fallbackBest && fallbackDist < 20) best = fallbackBest;
-        }
-
-        return best;
     }
 
     // v6.0.0 B14：playerSendMessage … 等方法移到 app-chat.js
@@ -3398,21 +3211,6 @@ class RimTownApp {
             ? `<div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px">📰 ${t('本鎮八卦頭條')}</div>` +
               lines.slice(0, 8).map(l => `<div style="font-size:0.74rem;padding:3px 0;color:#ffd7e6">${l}</div>`).join('')
             : `<div style="font-size:0.72rem;color:var(--text-secondary)">${t('鎮上還很平靜...讓村民多相處幾天,八卦自然就來了。')}</div>`;
-    }
-
-    // 行動版群組子分頁列(關係圖共用居民群組)
-    _renderMobileGroupTabs() {
-        if (window.innerWidth > 768) return '';
-        const main = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
-        const group = this._mobileTabGroups?.[main];
-        if (!group) return '';
-        let bar = '<div class="sub-tab-bar mobile-group-tabs">';
-        group.forEach(_tw => {
-            const active = _tw.key === this.activeTab ? ' class="active"' : '';
-            bar += `<button${active} data-action="mobile-group-tab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
-        });
-        bar += '</div>';
-        return bar;
     }
 
     // v6.0.0 B14：renderChat … 等方法移到 app-chat.js

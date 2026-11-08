@@ -267,8 +267,7 @@ Object.assign(RimTownApp.prototype, {
     // v4.0: Check for pending decisions, event choices, and NPC help requests
     _checkV4Notifications() {
         if (!this.world) return;
-        // Don't show interactive cards before login or guest mode
-        if (!this.auth?.loggedIn && !this.guestMode) return;
+        if (!this.auth?.loggedIn) return; // 登入後才顯示互動卡
 
         // Daily decision
         const dd = this.world.dailyDecision;

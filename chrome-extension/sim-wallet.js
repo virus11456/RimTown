@@ -76,10 +76,11 @@ const WALLET = (() => {
     }
     // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
-    const netOf = (W, a) => Math.max(W.minWage || 0, WAGE[a.job.key] * (1 - W.tax));
+    const wageOf = (a) => (WAGE[a.job?.key] || 0) * (a._wageMult || 1); // v7.7.1 掌櫃薪水多三成
+    const netOf = (W, a) => Math.max(W.minWage || 0, wageOf(a) * (1 - W.tax));
     function payday(w, W, all) {
         // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)
-        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a))); const gross = workers.reduce((s, a) => s + WAGE[a.job.key], 0); if (!gross) return;
+        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a))); const gross = workers.reduce((s, a) => s + wageOf(a), 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
         const ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
         if (ratio > 0) fromTown(w, Math.round(net * ratio * 10) / 10, t('發薪水'));
@@ -228,7 +229,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, bizIncome, BIZ_TAX, netOf, FLOOR };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
