@@ -50,7 +50,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       P.items = P.items.filter(p => p.status !== 'open'); DARK.reveal(w, s, ag[9]);
       const vp = P.items.find(p => p.kind === 'verdict' && p.culprit === X.agentId);
       out.verdict = { made: !!vp, pen: vp?.pen, title: vp ? P.title(vp) : '' };
-      if (vp) { ag.forEach(a => P._ruleVote(w, vp, a)); out.verdict.votes = Object.values(vp.votes).length; out.verdict.victimFor = vp.votes[Y.agentId] === 'for'; const s0 = w.stockpile.get('silver'); vp.status = 'approved'; P._execute(w, vp, d0 + 12); out.verdict.status = vp.status; out.verdict.silver = w.stockpile.get('silver') - s0; out.verdict.punished = kinds(X).includes('punished'); out.verdict.justice = kinds(Y).includes('justice'); }
+      if (vp) { ag.forEach(a => P._ruleVote(w, vp, a)); out.verdict.votes = Object.values(vp.votes).length; out.verdict.victimFor = vp.votes[Y.agentId] === 'for'; if (typeof WALLET !== 'undefined') { WALLET.S(w); w.wallet.bal[X.agentId] = Math.max(100, WALLET.get(w, X)); } /* v7.6.0 起罰款從被告錢包扣,先讓被告付得起 */ const s0 = w.stockpile.get('silver'); vp.status = 'approved'; P._execute(w, vp, d0 + 12); out.verdict.status = vp.status; out.verdict.silver = w.stockpile.get('silver') - s0; out.verdict.punished = kinds(X).includes('punished'); out.verdict.justice = kinds(Y).includes('justice'); }
       // 第三次被拆穿 → 逐出小鎮
       D.exposedCount[X.agentId] = 2; const s2 = DARK.secret(w, { kind: 'sabotage', culprit: X.agentId, victim: Y.agentId, k: '{a}偷偷破壞了{v}的工作', p: { a: X.name, v: Y.name } }); P.items = P.items.filter(p => !(p.kind === 'verdict' && p.status === 'open'));
       const R2 = Math.random; Math.random = () => 0.99; try { DARK.reveal(w, s2, ag[9]); } finally { Math.random = R2; }

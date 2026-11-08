@@ -76,6 +76,14 @@ const fake = (page) => page.route('**/api/**', r => r.fulfill({ status: 200, con
     ok(!r.guest.btn && !r.guest.banner && !r.guest.mode && r.guest.fn === 'undefined', '訪客模式拿掉了（沒有訪客按鈕、橫幅與 guestMode）', r.guest);
     ok(r.del.cloudDel === 1 && !r.del.ls && !r.del.list, '刪除城鎮：雲端與本機副本一起刪（不會被同步傳回去）', r.del);
     if (r.big) ok(r.big.pop >= 95 && r.big.lsOk && r.big.chars < 3500000 && r.big.gzChars < 4500000 && r.big.perKB < 50, '100 人的鎮：存檔放得進本機，壓縮後在雲端上傳上限內', r.big);
+    // 10) 村民快速卡(手機):頂端不被控制列蓋住、按鈕不折行、內容多時卡片內捲動且按鈕列在底部
+    if (mob) {
+      const q = await page.evaluate(async () => { const app = window.rimtownApp; const w = app.world; app.state = w.getState(); const a = Object.values(w.agents).find(x => !x.isPlayer && !x.isDead); app._showNpcCard(a.agentId); await new Promise(r => setTimeout(r, 400));
+        const c = document.getElementById('npc-quick-card'); const cr = c.getBoundingClientRect(); const hb = Math.max(...[...document.querySelectorAll('.mobile-header, .header')].map(e => e.getBoundingClientRect().bottom).filter(v => v > 0), 0);
+        const bs = [...c.querySelectorAll('.nqc-btns button')].map(b => b.getBoundingClientRect().height); const br = c.querySelector('.nqc-btns').getBoundingClientRect(); const nm = c.querySelector('.nqc-name').getBoundingClientRect();
+        return { top: Math.round(cr.top), hdr: Math.round(hb), nameTop: Math.round(nm.top), maxBtn: Math.round(Math.max(...bs)), btnsIn: br.bottom <= cr.bottom + 1, scrolls: getComputedStyle(c).overflowY }; });
+      ok(q.top >= q.hdr && q.nameTop >= q.hdr && q.maxBtn <= 56 && q.btnsIn && q.scrolls === 'auto', '手機村民卡：頂端不被控制列蓋住、按鈕不折行、按鈕列固定在底部', q);
+    }
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
     // 9) 首頁:新段落、數字、沒有訪客按鈕、手機不橫向捲動、英文沒有中文
