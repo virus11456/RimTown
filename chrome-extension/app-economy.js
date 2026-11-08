@@ -327,7 +327,7 @@ Object.assign(RimTownApp.prototype, {
                 if (!TV.path) {
                     const tl = TV.debate?.tally; const tallyTxt = tl ? Object.entries(tl.paths).map(([k, v]) => `${PD[k]?.icon || ''}${esc(PD[k]?.name || k)} ${v}`).concat([`🏡${t('維持傳統')} ${tl.keep}`]).join(' · ') : '';
                     html += `<div class="tech-desc">${TV.debate ? `🗳️ ${t('鎮上正在辯論科技路線')}${t('：')}${TV.debate.id} · ${tallyTxt}` : TV.nextDebate ? `🏡 ${t('上次辯論決定維持傳統，{n} 天後再辯論（遇到大事可能提早）').replace('{n}', TV.nextDebate)}` : TV.main3 >= TV.gate ? `🗳️ ${t('工坊時代研究到 {n}%，鎮上很快會開始辯論科技路線').replace('{n}', TV.main3)}` : `🔒 ${t('工坊時代研究到 {g}% 時，鎮上會辯論往後走哪條科技路線（現在 {n}%）').replace('{g}', TV.gate).replace('{n}', TV.main3)}`}</div>`;
-                    if (TV.lean) html += `<div class="tech-desc">🏘️ ${t('小鎮的風氣')}${t('：')}${t('比較偏向{p}').replace('{p}', `${TV.lean.icon}${esc(TV.lean.name)}`)}</div>`;
+                    if (TV.lean) html += `<div class="tech-desc">🏘️ ${t('小鎮的風氣')}${t('：')}${t('比較偏向{p}').replace('{p}', `${TV.lean.icon}${esc(TV.lean.name)}`)}${TV.lean.why ? `${t('（')}${esc(TV.lean.why)}${t('）')}` : ''}</div>`;
                     for (const x of TV.paths || []) html += `<div class="tech-desc">${x.icon} <b>${esc(x.name)}</b>${t('：')}${esc(x.short)}${t('。')}👍 ${esc(x.pro)} · 👎 ${esc(x.con)} · ${t('吸引力')} ${x.appeal >= 0 ? '+' : ''}${x.appeal}</div>`;
                     html += `<div class="tech-desc" style="color:var(--text-muted)">🚂 ${t('蒸汽煉金')}${t('：')}${t('之後的版本開放')}</div>`;
                 } else {

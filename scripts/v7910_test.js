@@ -49,7 +49,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const tl = TECH.tally(tp); out.debate.tally = tl; out.debate.winner = TECH.winnerOf(w, tp);
       tp.status = 'approved'; w.proposals._execute(w, tp, w._absDay()); out.debate.path = w.tech.path; out.debate.item = w.proposals.toItem(w, tp).options?.length;
       // 風氣:電子機械 2、基因生物 1 的權重
-      { const cnt = { electro: 0, bio: 0 }; for (let i = 0; i < 600; i++) { w.tech.lean = null; cnt[TECH.leanOf(w)]++; } out.lean = cnt; w.tech.lean = 'none'; }
+      { const cnt = { electro: 0, bio: 0 }; const B0 = ECON.baseOf; const per = {}; for (const b of ['market', 'harbor', 'mountain', 'forest', 'frontier']) { ECON.baseOf = () => b; per[b] = { electro: 0, bio: 0 }; for (let i = 0; i < 300; i++) { w.tech.lean = null; const k = TECH.leanOf(w); cnt[k]++; per[b][k]++; } } ECON.baseOf = B0; out.lean = cnt; out.leanPer = per; w.tech.lean = 'none'; }
       // 維持傳統 → 30 天後再辯論
       w.tech = null; TECH.S(w); w.proposals.items = w.proposals.items.filter(p => p.kind !== 'tech_path'); TECH.daily(w); const tp2 = w.proposals.items.find(p => p.kind === 'tech_path'); tp2.status = 'rejected'; w.tech.lastDay = null; next(); TECH.daily(w);
       const n2 = w.proposals.items.filter(p => p.kind === 'tech_path').length; for (let i = 0; i < 12; i++) { next(); w.tech.lastDay = null; TECH.daily(w); }
@@ -111,7 +111,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.open6.none && r.open6.el && r.open6.bio && r.open6.cost, '第六時代專屬：沒選路線都不能研究；電子機械只有火箭、基因生物只有基因編輯；基礎科技原價', r.open6);
     ok(r.debate.made && r.debate.opts === 'bio,electro' && r.debate.doc === 'bio' && r.debate.rs === 'electro' && r.debate.dv === 'for' && r.debate.rv === 'for', '路線大辯論多選一：老醫生投基因生物、年輕研究員投電子機械', r.debate);
     ok(r.debate.winner === 'bio' && r.debate.path === 'bio' && r.debate.tally.keep > 0 && r.debate.item === 3, '得票最多的路線勝出；提案卡列出每個選項的票數', r.debate);
-    ok(r.lean.electro > r.lean.bio * 1.6 && r.lean.electro < r.lean.bio * 2.5, '小鎮風氣：電子機械約三分之二、基因生物約三分之一（蒸汽煉金上線後 50／25／25）', r.lean);
+    ok(r.lean.electro > r.lean.bio * 1.5 && r.lean.electro < r.lean.bio * 2.6 && r.leanPer.market.electro > 240 && r.leanPer.forest.bio > 180 && r.leanPer.frontier.bio > 120, '小鎮風氣跟地形走：貿易要道多半電子機械、森林與農地偏基因生物；整體約三分之二比三分之一（蒸汽煉金上線後約 50／25／25）', { all: r.lean, per: r.leanPer });
     ok(!r.keep.path && r.keep.wait >= 15 && !r.keep.again, '否決＝維持傳統：不強制，30 天後才再辯論', r.keep);
     ok(Object.values(r.events.fired).filter(x => x === true).length >= 7 && !Object.values(r.events.fired).some(x => typeof x === 'string') && r.events.drift === 0, '基因生物的社會問題都會發生（藥廠排污、實驗羊、基因歧視、騙子…），銀幣守恆', r.events);
     ok(r.price.drift === 0, '藥價管制：看診少付，銀幣守恆', r.price);

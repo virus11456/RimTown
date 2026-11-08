@@ -6,6 +6,11 @@
     Object.assign(en, {
         // v7.9.0 基因生物路線、路線大辯論、災後反應
         '小鎮的風氣': 'Town temperament',
+        '位在貿易要道': 'on a major trade route',
+        '在海邊的港口': 'a seaside port',
+        '礦山多煤和金屬': 'mountains rich in coal and metal',
+        '森林裡藥草多': 'forests full of herbs',
+        '平原農地多': 'plenty of farmland',
         '比較偏向{p}': 'leans toward {p}',
         '戰爭': 'war',
         '生物安全法': 'Biosafety Law',

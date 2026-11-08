@@ -131,7 +131,21 @@ const TECH = (function () {
     }
     // v7.9.0 小鎮的風氣(傳統與民風):開局依權重決定比較偏向哪條路線,鎮上每個人對那條路線多一點好感;小鎮的經歷(瘟疫、核災…)還是能翻盤
     const LEAN = 1.5;
-    function leanOf(w) { const T = S(w); if (T.lean === undefined || T.lean === null) { const ks = PATH_KEYS(); const tot = ks.reduce((x, k) => x + (PATHS[k].w || 1), 0); let r = Math.random() * tot; T.lean = ks[ks.length - 1]; for (const k of ks) { r -= (PATHS[k].w || 1); if (r < 0) { T.lean = k; break; } } } return T.lean; }
+    // 風氣跟小鎮的地形底子走:貿易要道偏電子機械、礦山偏蒸汽煉金、森林與平原農地偏基因生物(五種平均約 50%／25%／25%)
+    const LEAN_BY_BASE = {
+        market: { electro: 0.9, bio: 0.1 }, harbor: { electro: 0.6, steam: 0.3, bio: 0.1 }, mountain: { electro: 0.4, steam: 0.6 },
+        forest: { electro: 0.2, steam: 0.2, bio: 0.6 }, frontier: { electro: 0.4, steam: 0.1, bio: 0.5 },
+    };
+    const BASE_WHY = { market: '位在貿易要道', harbor: '在海邊的港口', mountain: '礦山多煤和金屬', forest: '森林裡藥草多', frontier: '平原農地多' };
+    const baseOfW = (w) => { try { return typeof ECON !== 'undefined' && ECON.baseOf ? ECON.baseOf(w) : 'frontier'; } catch (e) { return 'frontier'; } };
+    function leanOf(w) {
+        const T = S(w); if (T.lean === undefined || T.lean === null) {
+            const b = baseOfW(w); const map = LEAN_BY_BASE[b] || null; const ks = PATH_KEYS(); // 還沒開放的路線(蒸汽煉金)份額照比例分給其他路線
+            const wt = (k) => map ? (map[k] || 0) : (PATHS[k].w || 1); let tot = ks.reduce((x, k) => x + wt(k), 0); if (tot <= 0) tot = 1;
+            let r = Math.random() * tot; T.lean = ks[ks.length - 1]; for (const k of ks) { r -= wt(k); if (r < 0) { T.lean = k; break; } } T.leanWhy = map ? b : null;
+        }
+        return T.lean;
+    }
     const preferPath = (w, a, P) => prefer(w, a, P) + (leanOf(w) === P ? LEAN : 0);
     function busy(w, kind) { return (w.proposals?.items || []).some(p => p.kind === kind && ['open', 'shelved', 'approved'].includes(p.status)); }
     function propose(w, kind, key, who, tk, dk, dp, cat, tp, extra) {
@@ -373,7 +387,7 @@ const TECH = (function () {
             main3: Math.round(mainRatio(R, 3) * 100), gate: Math.round(GATE * 100), debate: open ? { id: open.id, status: open.status, f: Object.values(open.votes || {}).filter(v => v === 'for').length, a: Object.values(open.votes || {}).filter(v => v === 'against').length, tally: tally(open) } : null,
             stage: { 4: Math.round(stageRatio(R, P || 'electro', 4) * 100), 5: Math.round(stageRatio(R, P || 'electro', 5) * 100), 6: Math.round(stageRatio(R, P || 'electro', 6) * 100) },
             stages: Object.fromEntries(PATH_KEYS().map(Q => [Q, { 4: Math.round(stageRatio(R, Q, 4) * 100), 5: Math.round(stageRatio(R, Q, 5) * 100), 6: Math.round(stageRatio(R, Q, 6) * 100) }])),
-            lean: T.lean && PATHS[T.lean] ? { icon: PATHS[T.lean].icon, name: t(PATHS[T.lean].name) } : null, paths: PATH_KEYS().map(Q => ({ key: Q, icon: PATHS[Q].icon, name: t(PATHS[Q].name), short: t(PATHS[Q].short), pro: t(PATHS[Q].pro), con: t(PATHS[Q].con), appeal: A[Q] })), nextDebate: T.nextDebate != null ? Math.max(0, T.nextDebate - day(w)) : null, tally: T.tally || null, bio: T.bio || null,
+            lean: T.lean && PATHS[T.lean] ? { icon: PATHS[T.lean].icon, name: t(PATHS[T.lean].name), why: T.leanWhy && BASE_WHY[T.leanWhy] ? t(BASE_WHY[T.leanWhy]) : '' } : null, paths: PATH_KEYS().map(Q => ({ key: Q, icon: PATHS[Q].icon, name: t(PATHS[Q].name), short: t(PATHS[Q].short), pro: t(PATHS[Q].pro), con: t(PATHS[Q].con), appeal: A[Q] })), nextDebate: T.nextDebate != null ? Math.max(0, T.nextDebate - day(w)) : null, tally: T.tally || null, bio: T.bio || null,
             law: !!T.law, noNuke: !!T.noNuke, nuke: nukeOn(w), risk: riskWord(w), st: T.st, inc, ref: T.ref, tier: tierOf(w), jobs: [...automatable(w)] };
     }
     function brief(w, a) {
@@ -388,7 +402,7 @@ const TECH = (function () {
         if (T.law) s += t('，有核安法'); if (T.noNuke) s += t('，已經廢核');
         return s;
     }
-    return { W: null, LEAN, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
+    return { W: null, LEAN, LEAN_BY_BASE, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
 })();
 
 // ---------- 科技樹:機械時代歸到電子機械路線,加上電力、太空時代 ----------
@@ -489,7 +503,7 @@ if (typeof World !== 'undefined') {
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () {
         const d = _ser.call(this);
-        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, lean: T.lean ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, v79: T.v79 || 0 }; }
+        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, lean: T.lean ?? null, leanWhy: T.leanWhy ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, v79: T.v79 || 0 }; }
         return d;
     };
     const _load = World.prototype.loadSave;
