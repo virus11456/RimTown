@@ -66,8 +66,10 @@ const MARKET = (() => {
     }
     // 公庫的工程款、維護費:六成付給本地承包商(依工人數分)
     function procure(w, n) {
-        if (!(n > 0)) return; const all = npcs(w); const ws = BUILD.map(([k, f]) => [k, f * (workersOf(w, k, all).length ? 1 : 0)]); const tot = ws.reduce((s, [, f]) => s + f, 0); if (!tot) return;
-        for (const [k, f] of ws) if (f) sell(w, k, n * PROCURE_SHARE * f / tot, t('公共工程款'));
+        if (!(n > 0)) return 0; const all = npcs(w); const ws = BUILD.map(([k, f]) => [k, f * (workersOf(w, k, all).length ? 1 : 0)]); const tot = ws.reduce((s, [, f]) => s + f, 0); let paid = 0;
+        if (tot) for (const [k, f] of ws) if (f) { const v = n * PROCURE_SHARE * f / tot; sell(w, k, v, t('公共工程款')); paid += v; }
+        try { if (typeof MONEY !== 'undefined' && n - paid > 0.01) MONEY.flow(w, 'works', -(n - paid)); } catch (e) {} // v7.7.0 外地包商拿走的部分
+        return paid;
     }
 
     // ---------- 發薪 ----------
@@ -195,9 +197,11 @@ const MARKET = (() => {
         return [...out];
     }
     function feed(w, a, cost) {
-        if (WALLET.take(w, a, cost)) return a;
+        const kid = (a.age ?? 30) < 16; // v7.7.0 小孩的飯錢先由家人出
+        if (!kid && WALLET.take(w, a, cost)) return a;
         const helper = family(w, a).filter(o => WALLET.get(w, o) >= cost + 3).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
-        if (helper && WALLET.take(w, helper, cost)) { if (Math.random() < 0.25) { mem(w, a, '身上沒錢，靠{h}接濟才吃上飯。', { h: helper.name }, 5); mem(w, helper, '{a}手頭緊，我幫忙出了飯錢。', { a: a.name }, 4); } return helper; }
+        if (helper && WALLET.take(w, helper, cost)) { if (!kid && Math.random() < 0.25) { mem(w, a, '身上沒錢，靠{h}接濟才吃上飯。', { h: helper.name }, 5); mem(w, helper, '{a}手頭緊，我幫忙出了飯錢。', { a: a.name }, 4); } return helper; }
+        if (kid && WALLET.take(w, a, cost)) return a;
         return null;
     }
     const isHungry = (w, a) => (S(w).hungry[a.agentId] || 0);

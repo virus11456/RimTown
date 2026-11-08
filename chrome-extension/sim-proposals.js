@@ -776,7 +776,7 @@ class ProposalSystem {
         if ((e.silver || 0) < 0 && !sp.consume('silver', -e.silver, w.tickCount, why, 'proposal')) return false;
         if ((e.wood || 0) < 0 && !sp.consume('wood', -e.wood, w.tickCount, why, 'proposal')) return false;
         if ((e.stone || 0) < 0 && !sp.consume('stone', -e.stone, w.tickCount, why, 'proposal')) return false;
-        if ((e.silver || 0) > 0) sp.add('silver', e.silver, w.tickCount, why, 'proposal');
+        if ((e.silver || 0) > 0) { if (typeof MONEY !== 'undefined') MONEY.sellSurplus(w, e.silver, why); else sp.add('silver', e.silver, w.tickCount, why, 'proposal'); } // v7.7.0 改成真的把多餘的貨賣給外地
         if (e.herbs) sp.add('herbs', e.herbs, w.tickCount, why, 'proposal');
         if (e.tools) sp.add('tools', e.tools, w.tickCount, why, 'proposal');
         if (e.mood_all) for (const a of this._npcs(w)) a.moodModifier = (a.moodModifier || 0) + e.mood_all;

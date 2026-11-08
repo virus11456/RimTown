@@ -827,3 +827,12 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container.observer #sidebar-content .detail-section > h3:first-child { margin: -10px -12px 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); border-radius: 11px 11px 0 0; font-size: 0.86rem;
     background: var(--bg-secondary); background: color-mix(in srgb, var(--accent) 11%, var(--bg-card)); }
 .rimtown-container.observer #sidebar-content .detail-section .detail-section > h3:first-child { margin: 0 0 6px; padding: 0; border: 0; border-radius: 0; background: none; }
+/* v7.7.0 錢從哪來、往哪去 */
+.rimtown-container .mf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; margin: 6px 0 4px; }
+@media (max-width: 380px) { .rimtown-container .mf-grid { grid-template-columns: 1fr; } }
+.rimtown-container .mf-h { font-size: 0.74rem; color: var(--text-secondary); margin-bottom: 2px; }
+.rimtown-container .mf-row { display: flex; justify-content: space-between; gap: 8px; font-size: 0.78rem; padding: 2px 0; border-bottom: 1px dashed var(--border); }
+.rimtown-container .mf-row b { font-variant-numeric: tabular-nums; font-weight: 600; }
+.rimtown-container .mf-in { color: #4F9A6B; } .rimtown-container .mf-out { color: #C0504D; }
+.rimtown-container .mf-net { border-bottom: 0; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; font-weight: 700; }
+.rimtown-container .mf-none { font-size: 0.74rem; }

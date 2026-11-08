@@ -113,7 +113,7 @@ Object.assign(RimTownApp.prototype, {
         }
 
 
-        if (S === 'overview') { const E = this._eventPieces(['festival', 'weather', 'mods']); html += E.festival + E.weather + E.mods + this._healthCardHtml() + (this._mythCardHtml ? this._mythCardHtml() : ''); } // v7.3.0 天氣、節慶、生效中的影響從舊「事件」分頁搬來
+        if (S === 'overview') { const E = this._eventPieces(['festival', 'weather', 'mods']); html += E.festival + E.weather + E.mods + (this._moneyCardHtml ? this._moneyCardHtml() : '') + this._healthCardHtml() + (this._mythCardHtml ? this._mythCardHtml() : ''); } // v7.3.0 天氣、節慶、生效中的影響從舊「事件」分頁搬來
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
         const icons = {salt:'🧂',paper:'📄',food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
