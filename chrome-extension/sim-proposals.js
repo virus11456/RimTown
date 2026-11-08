@@ -749,6 +749,7 @@ class ProposalSystem {
                 case 'gene_unban': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.unban(w) : ''; ok = !!result; break; } // v7.6.0
                 case 'cal_vax': case 'cal_quar': case 'cal_mask': case 'cal_close': case 'cal_lock': { result = (typeof CALAMITY !== 'undefined') ? CALAMITY.enact(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 災厄應對
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
+                case 'bio_safety': case 'bio_price': case 'bio_gmban': case 'bio_halt': { result = (typeof BIO !== 'undefined') ? BIO.setLaw(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 基因生物的法律
                 case 'tech_safety': { result = (typeof TECH !== 'undefined') ? TECH.setLaw(w) : ''; ok = !!result; break; }
                 case 'tech_unsafe': { result = (typeof TECH !== 'undefined') ? TECH.unsetLaw(w) : ''; ok = !!result; break; }
                 case 'tech_abandon': { result = (typeof TECH !== 'undefined') ? TECH.abandon(w) : ''; ok = !!result; break; }

@@ -87,7 +87,7 @@ Object.assign(RimTownApp.prototype, {
                 <div class="gh-tabs" role="tablist">
                     <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}</button>
                     <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
-                    ${typeof CALAMITY !== 'undefined' ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
+                    ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
                 </div>
                 <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
                 <button class="gh-x" data-gh="close" aria-label="${t('關閉')}">✕</button>
@@ -104,7 +104,7 @@ Object.assign(RimTownApp.prototype, {
                 <button class="gh-intro-ok" data-gh="help-ok">${t('知道了，看手牌')}</button>
             </div>`;
         if (this._ghIntroOpen()) { tray.innerHTML = html; return; } // 說明頁取代手牌,不擠在一起
-        if (this._ghTab === 'lab' && typeof CALAMITY !== 'undefined') { html += this._ghLabHtml(); tray.innerHTML = html; return; } // v7.9.0 災厄工坊
+        if (this._ghTab === 'lab' && typeof CALAMITY !== 'undefined' && CALAMITY.labOpen()) { html += this._ghLabHtml(); tray.innerHTML = html; return; } // v7.9.0 災厄工坊
         if (this._ghTab === 'track') {
             html += `<div class="gh-track">`;
             if (!d.played?.length) html += `<div class="gh-empty">📼 ${t('還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。')}</div>`;

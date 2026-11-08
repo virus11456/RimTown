@@ -32,6 +32,8 @@ const CALAMITY = (function () {
 
     // ---------- 神力 ----------
     const CAP = 100;
+    // v7.9.0 災厄工坊(神的工具)延到基因生物、蒸汽煉金都上線之後才開放;引擎照樣跑(實驗室外洩用)。測試可用 localStorage rimtown_lab=1 打開
+    const labOpen = () => { try { return localStorage.getItem('rimtown_lab') === '1'; } catch (e) { return false; } };
     const sandbox = () => { try { return localStorage.getItem('rimtown_god_sandbox') === '1'; } catch (e) { return false; } };
     function S(w) {
         if (!w.calamity || typeof w.calamity !== 'object') w.calamity = {};
@@ -106,13 +108,15 @@ const CALAMITY = (function () {
     // ---------- 釋放 ----------
     const COOL = 20; // 結束後冷卻天數
     function canRelease(w) { const C = S(w); if (C.cur) return { ok: false, why: 'active' }; const left = (C.coolTo || 0) - day(w); if (left > 0) return { ok: false, why: 'cooldown', days: left }; return { ok: true }; }
-    function release(w, spec, zeroId) {
-        const can = canRelease(w); if (!can.ok) return can; const s = norm(spec); const c = cost(s);
-        if (!spend(w, c)) return { ok: false, why: 'power', need: c };
+    // v7.9.0 opts.natural:人類自己闖的禍(實驗室外洩):不花神力、不看冷卻,只要現在沒有別的疫情
+    function release(w, spec, zeroId, opts) {
+        opts = opts || {}; const s = norm(spec); let c = 0;
+        if (opts.natural) { if (S(w).cur) return { ok: false, why: 'active' }; }
+        else { const can = canRelease(w); if (!can.ok) return can; c = cost(s); if (!spend(w, c)) return { ok: false, why: 'power', need: c }; }
         const pool = adults(w); const zero = (zeroId && w.agents[zeroId] && !w.agents[zeroId].isDead) ? w.agents[zeroId] : rnd(pool.length ? pool : here(w)); if (!zero) return { ok: false, why: 'nobody' };
         const C = S(w); const d = day(w);
-        C.cur = { kind: 'pathogen', spec: s, day: d, cost: c, st: {}, found: 0, phase: 'hidden', ms: {}, curve: [], log: [], peak: 0, boost: 0, rumors: 0, fled: 0, died: 0, inf: 0, hoard: 0, scape: null, vax: null, pop0: here(w).length };
-        C.cur.sn = w.dark?.n ?? 0; infect(w, C.cur, zero, d); C.st.released++;
+        C.cur = { kind: 'pathogen', spec: s, day: d, cost: c, st: {}, found: 0, phase: 'hidden', ms: {}, curve: [], log: [], peak: 0, boost: 0, rumors: 0, fled: 0, died: 0, inf: 0, hoard: 0, scape: null, vax: null, pop0: here(w).length, natural: opts.natural ? (opts.cause || '1') : null };
+        C.cur.sn = w.dark?.n ?? 0; infect(w, C.cur, zero, d); if (!opts.natural) C.st.released++;
         C.cur.log.push([d, 'release', t(zero.name)]);
         return { ok: true, cost: c, zero: zero.agentId };
     }
@@ -143,10 +147,10 @@ const CALAMITY = (function () {
         const nI = spreaders.length; if (!nI) return;
         const tgt = (a) => (s.target === 'none' ? 1 : isTarget(w, X, a) ? 1.8 : 0.7);
         const tryInf = (a, p) => { if (a && sus(a) && Math.random() < p * tgt(a)) infect(w, X, a, d); };
-        const quar = X.ms.quar;
+        const quar = X.ms.quar; const epi = quar && done(w, 'epidemiology'); // v7.9.0 流行病學:隔離時連同住的外人也不會被傳
         for (const a of spreaders) {
             const sick = st(a).s === 'I';
-            const fam = family(w, a).filter(x => byId[x.agentId]); const home = all.filter(x => x !== a && x.homeLocation && x.homeLocation === a.homeLocation).slice(0, 5); const house = [...new Set([...fam, ...home])];
+            const fam = family(w, a).filter(x => byId[x.agentId]); const home = (sick && epi) ? [] : all.filter(x => x !== a && x.homeLocation && x.homeLocation === a.homeLocation).slice(0, 5); const house = [...new Set([...fam, ...home])];
             const cow = (sick && quar) ? [] : all.filter(x => x !== a && x.job?.key && x.job.key === a.job?.key).slice(0, 4);
             const soc = (sick && quar) ? [] : Array.from({ length: X.ms.close ? 2 : 3 }, () => rnd(all)).filter(x => x !== a);
             if (s.route.includes('droplet')) { const m = spreadMult(w, X, 'droplet'); house.forEach(x => tryInf(x, 0.12 * m)); cow.forEach(x => tryInf(x, 0.08 * m)); soc.forEach(x => tryInf(x, 0.05 * m)); }
@@ -182,7 +186,7 @@ const CALAMITY = (function () {
         a._deathCause = X.spec.name;
         log(w, X.found ? '⚰️ {a}死於{n}。' : '⚰️ {a}病了幾天就走了，沒人知道是什麼病。', { a: a.name, n: X.spec.name }, a.name);
         try { w.lifecycle?._killNpc?.(w, a); } catch (e) {}
-        for (const f of fam) { f.addThought?.('cal_grief', w); mem(w, f, X.found ? '{n}奪走了我的家人{a}。' : '{a}病死了，我好難過。', { n: X.spec.name, a: a.name }, 9); (X.bereaved = X.bereaved || []).push(f.agentId); }
+        for (const f of fam) { f._calLoss = day(w); f.addThought?.('cal_grief', w); mem(w, f, X.found ? '{n}奪走了我的家人{a}。' : '{a}病死了，我好難過。', { n: X.spec.name, a: a.name }, 9); (X.bereaved = X.bereaved || []).push(f.agentId); }
         if (!X.found) found(w, X, day(w), true);
     }
     // 醫生看診:費用走醫療金流,有藥的話康復快、死得少
@@ -267,7 +271,7 @@ const CALAMITY = (function () {
         // ① 徵兆:還沒人知道
         if (!X.found) {
             if (nI && Math.random() < 0.35) { const a = rnd(here(w).filter(x => X.st[x.agentId]?.s === 'I')); if (a) log(w, rnd(OMEN), { a: a.name }, a.name); }
-            const thr = (here(w).some(a => a.job?.key === 'doctor') ? 2 : 4) + (s.latency === 'long' ? 1 : 0) - (visible(s) ? 1 : 0) - (s.sym.includes('rash') ? 1 : 0);
+            const thr = (here(w).some(a => a.job?.key === 'doctor') ? 2 : 4) + (s.latency === 'long' ? 1 : 0) - (visible(s) ? 1 : 0) - (s.sym.includes('rash') ? 1 : 0) - (done(w, 'epidemiology') ? 1 : 0); // v7.9.0 流行病學:早一點發現
             if (nI >= Math.max(2, thr)) found(w, X, d, false); // 至少兩個病例才看得出是傳染病(有人死了也會被發現)
             return;
         }
@@ -276,7 +280,7 @@ const CALAMITY = (function () {
         // ④ 恐慌
         const panic = nI / pop >= 0.15 || X.died >= 2;
         if (panic) {
-            if (X.phase === 'found' || X.phase === 'rumor') { X.phase = 'panic'; X.log.push([d, 'panic', '']); log(w, '😱 {n}越傳越兇，鎮上人心惶惶。', { n: s.name }); news(w, '😱 {n}擴散，鎮上陷入恐慌', { n: s.name }, 9, []); ping(w, 'panic', '😱', fill('{n}擴散，鎮上陷入恐慌', { n: s.name }), fill('{n}越傳越兇，鎮上人心惶惶。', { n: s.name })); }
+            if (X.phase === 'found' || X.phase === 'rumor') { X.phase = 'panic'; X.log.push([d, 'panic', '']); try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'epidemic', sev: X.died >= 3 || nI / pop >= 0.3 ? 3 : 2, cause: s.name, who: (X.bereaved || []).map(id => w.agents[id]).filter(Boolean) }); } catch (e) {} log(w, '😱 {n}越傳越兇，鎮上人心惶惶。', { n: s.name }); news(w, '😱 {n}擴散，鎮上陷入恐慌', { n: s.name }, 9, []); ping(w, 'panic', '😱', fill('{n}擴散，鎮上陷入恐慌', { n: s.name }), fill('{n}越傳越兇，鎮上人心惶惶。', { n: s.name })); }
             for (const a of here(w)) if (!X.st[a.agentId] || X.st[a.agentId].s === 'R') a.addThought?.('cal_fear', w);
             if (!X.ms.lock) { const ws = adults(w).map(a => wal(w, a)).sort((x, y) => y - x); const top = ws[Math.floor(ws.length / 4)] ?? 999; const rich = adults(w).filter(a => !X.st[a.agentId] && wal(w, a) >= Math.max(40, top) && Math.random() < 0.04).slice(0, 2); /* 最有錢的四分之一先逃 */ for (const a of rich) { try { if (w.leaveTown?.(a.agentId, fill('怕染上{n}，帶著家當逃走了', { n: s.name }))) { X.fled++; log(w, '🧳 {a}怕染上{n}，收拾家當逃離了小鎮。', { a: a.name, n: s.name }, a.name); } } catch (e) {} } }
             if (!X.hoard) { const med = w.stockpile?.get?.('medicine') || 0; const k = Math.round(med * 0.3); if (k > 0) w.stockpile.consume('medicine', k, w.tickCount, t('囤藥'), 'event'); X.hoard = d; const who = adults(w).sort((x, y) => wal(w, y) - wal(w, x))[0]; log(w, '💊 藥鋪的藥被搶走了三成，{a}家裡囤了一整櫃。', { a: who?.name || t('有人') }, who?.name); }
@@ -336,7 +340,7 @@ const CALAMITY = (function () {
     }
     function enact(w, kind) {
         const C = S(w); const X = C.cur; if (!X) return ''; const k = kind.replace(/^cal_/, ''); const n = X.spec.name;
-        if (k === 'vax') { const cx = X.spec.route.length + X.spec.sym.length + (X.spec.resist === 'on' ? 2 : 0) + (X.spec.latency === 'long' ? 1 : 0); let need = 300 + 70 * cx; for (const [tk, m] of [['vaccination', 0.6], ['microbiology', 0.7], ['immunology', 0.7], ['genetics', 0.8]]) if (done(w, tk)) need *= m; X.vax = { p: 0, need: Math.round(need), done: 0 }; log(w, '🔬 研究員放下手上的研究，全力研究{n}的疫苗。', { n }); X.log.push([day(w), 'vax', '']); return t('開始研究疫苗'); }
+        if (k === 'vax') { const cx = X.spec.route.length + X.spec.sym.length + (X.spec.resist === 'on' ? 2 : 0) + (X.spec.latency === 'long' ? 1 : 0); let need = 300 + 70 * cx; for (const [tk, m] of [['vaccination', 0.6], ['mass_vaccine', 0.7], ['microbiology', 0.7], ['immunology', 0.7], ['genetics', 0.8]]) if (done(w, tk)) need *= m; X.vax = { p: 0, need: Math.round(need), done: 0 }; log(w, '🔬 研究員放下手上的研究，全力研究{n}的疫苗。', { n }); X.log.push([day(w), 'vax', '']); return t('開始研究疫苗'); }
         X.ms[k] = day(w);
         if (k === 'mask') { const cl = w.stockpile?.get?.('cloth') || 0; if (cl > 0) w.stockpile.consume('cloth', Math.min(cl, 10), w.tickCount, t('做口罩'), 'event'); }
         if (k === 'close') for (const a of here(w)) a.moodModifier = (a.moodModifier || 0) - 2;
@@ -418,7 +422,8 @@ const CALAMITY = (function () {
         cand.sort((a, b) => (b.era || 1) - (a.era || 1) || Math.random() - 0.5);
         const kp = opts.keep ?? keepChance(w); const lost = []; let saved = 0;
         const lose = (p, why) => { p.status = 'locked'; p.progress = Math.round(p.cost * (0.3 + Math.random() * 0.3)); L[p.key] = { d, c: cause, why }; lost.push(p); };
-        for (const p of cand.slice(0, want)) { if (Math.random() < kp) { saved++; continue; } lose(p, 'lost'); }
+        const vault = built(w, 'seed_vault'); // v7.9.0 種子庫:農業的學問保得住
+        for (const p of cand.slice(0, want)) { if (Math.random() < kp || (vault && (p.effects?.farm_bonus || 0) > 0)) { saved++; continue; } lose(p, 'lost'); }
         // 前置失傳了,後面的也跟著做不出來
         for (let again = true; again;) { again = false; for (const p of Object.values(R.projects)) if (p.status === 'complete' && (p.era || 1) >= 3 && p.key !== 'refine' && (p.prerequisites || []).some(k => L[k] && R.projects[k]?.status !== 'complete')) { lose(p, 'chain'); again = true; } }
         if (R.current && R.projects[R.current]?.status !== 'researching') R.current = null;
@@ -454,7 +459,7 @@ const CALAMITY = (function () {
         const s = X.spec; const E = count(X, 'E'), I = count(X, 'I'), R = count(X, 'R');
         return Object.assign(base, { cur: { name: s.name, spec: s, day: X.day, days: day(w) - X.day, phase: X.phase, phaseName: t(PHASE[X.phase] || ''), found: !!X.found, E, I, R, D: X.died, fled: X.fled, inf: X.inf, peak: X.peak, ms: Object.keys(X.ms), vax: X.vax ? { pct: Math.round(X.vax.p / X.vax.need * 100), done: !!X.vax.done, shots: Object.keys(X.vx || {}).length } : null, curve: X.curve.slice(-60), log: X.log.slice(-10).reverse(), boosting: X.boost > day(w), pop: here(w).length, scape: X.scape ? t(w.agents[X.scape]?.name || '') : '' } });
     }
-    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE, regress, keepChance, dormant, dormantB, rediscover, REG_NAME };
+    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE, labOpen, regress, keepChance, dormant, dormantB, rediscover, REG_NAME };
 })();
 
 // ---------- 接上其他系統 ----------
