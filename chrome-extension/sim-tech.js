@@ -108,7 +108,7 @@ const TECH = (function () {
     const devoutA = (w, a) => { try { return typeof FAITH !== 'undefined' && w.faith && FAITH.pietyOf(w, a) >= 60; } catch (e) { return false; } };
     const mythGroup = (w, a) => { try { return typeof MYTHSOC !== 'undefined' ? MYTHSOC.groupOf(w, a) : null; } catch (e) { return null; } };
     function preferBio(w, a) {
-        let s = 0.3; const k = a.job?.key; // 人人都想活得健康一點
+        let s = 0.7; const k = a.job?.key; // 人人都想活得健康一點
         s += ({ doctor: 2, farmer: 1.2, researcher: 1, cook: 0.5, priest: -1.5 })[k] || 0;
         const st = stance(w, a); s += st === 'progressive' ? 1.5 : st === 'conservative' ? -1 : 0;
         if (famHurt(w, a)) s += 1.5; if (sickish(w, a)) s += 1;
