@@ -76,7 +76,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.save = { path: w2.tech?.path, noNuke: !!w2.tech?.noNuke, ref: w2.tech?.ref, carry: w2.research._carry, inc: (w2.tech?.inc || []).length, refName: w2.research.projects.refine.name };
       window.rimtownApp.world = w; TECH.W = w;
       // 15) AI 簡報
-      const vic = npcs().find(a => ['bereaved', 'rad', 'laid'].includes(w.tech.mk[a.agentId])); // 別的標記(被騙、燙傷…)不寫進這句 out.brief = { town: TECH.townBrief(w), agent: vic ? TECH.brief(w, vic) : 'none' };
+      const vic = npcs().find(a => ['bereaved', 'rad', 'laid'].includes(w.tech.mk[a.agentId])); /* 別的標記(被騙、燙傷…)不寫進這句 */ out.brief = { town: TECH.townBrief(w), agent: vic ? TECH.brief(w, vic) : 'none' };
       // 16) 科技分頁(建設分頁不再有研究)
       app.state = w.getState(); const mobile = window.innerWidth <= 768;
       const openTab = async (tab) => { if (mobile) app._openKairoTab(tab); else { app.activeTab = tab; app.renderSidebar(); } await new Promise(r => setTimeout(r, 300)); };

@@ -11744,7 +11744,7 @@
         '📖 神之書多了一頁：{r}{icon}「{name}」': '📖 A new page in the Book of Gods: {r}{icon} "{name}"',
         '打牌、託夢、災厄工坊共用的神力': 'Divine power shared by cards, dreams and the disaster workshop',
         '神之書': 'Book of Gods',
-        '打牌要花神力：⚪ 普通 3、🔵 稀有 6、🟡 傳說 15、🟣 禁忌 30。神力每天累積，小鎮越興旺、虔誠的人越多，累積得越快；託夢和災厄工坊也用同一份神力': 'Cards cost divine power: ⚪ common 3, 🔵 rare 6, 🟡 legendary 15, 🟣 forbidden 30. It builds up every day, faster when the town prospers and more people are devout; dreams and the disaster workshop draw on the same power',
+        '打牌花神力：⚪ 3、🔵 6、🟡 15、🟣 30；神力每天累積（小鎮興旺、虔誠的人多就更快），託夢和災厄工坊也用它': 'Cards cost divine power: ⚪ 3, 🔵 6, 🟡 15, 🟣 30. Power builds up every day (faster when the town prospers and many are devout); dreams and the disaster workshop use it too',
         '稀有、傳說、禁忌卡要小鎮發生過某些事，才會寫進「神之書」（換鎮也還在）': 'Rare, legendary and forbidden cards are written into the Book of Gods only after certain things happen in town (they stay when you change towns)',
         '今天的三張已經打完，明天再來': 'You\'ve played today\'s three cards. Come back tomorrow',
         '鎮上現在沒有這種事可以發生': 'Nothing like this can happen in town right now',

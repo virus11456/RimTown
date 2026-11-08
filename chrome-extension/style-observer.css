@@ -609,7 +609,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-issue-hint { margin-top: 4px; font-size: 0.7rem; color: var(--text-muted); }
 .rimtown-container .gh-help { min-width: 40px; min-height: 40px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: 0.95rem; font-weight: 700; cursor: pointer; }
 .rimtown-container .gh-help.on, .rimtown-container .gh-help:hover, .rimtown-container .gh-help:focus-visible { background: var(--bg-card); color: var(--text-primary); outline: none; }
-.rimtown-container .gh-intro { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.84rem; line-height: 1.6; }
+.rimtown-container .gh-intro { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.84rem; line-height: 1.6; }
 .rimtown-container .gh-intro-t { font-weight: 700; margin-bottom: 4px; }
 .rimtown-container .gh-intro p { margin: 0 0 6px; }
 .rimtown-container .gh-intro ul { margin: 0 0 8px; padding-left: 1.2em; }
