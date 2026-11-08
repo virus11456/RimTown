@@ -29,7 +29,7 @@ const CIVIC = (() => {
             const n = Math.min(Math.floor(cash(w, vic) * 0.2), 30); if (n < 5 || !WALLET.take(w, vic, n)) continue; WALLET.add(w, th, n); C.thefts++;
             const catchP = Math.min(0.85, 0.15 + guards * 0.2);
             if (Math.random() < catchP) {
-                WALLET.take(w, th, Math.min(n, cash(w, th))) && WALLET.add(w, vic, n); C.caught++;
+                { const back = Math.min(n, cash(w, th)); if (back > 0 && WALLET.take(w, th, back)) WALLET.add(w, vic, back); } C.caught++; /* v7.6.0 只還得回小偷身上還有的錢 */
                 const days = 3 + (C.thefts > 5 ? 2 : 0); C.jail[th.agentId] = d + days;
                 log(w, 'event', '👮 衛兵抓到{a}偷了{v}的 {n} 銀幣，關進牢裡 {d} 天。', { a: th.name, v: vic.name, n, d: days }, th.name);
                 mem(w, th, '我偷錢被抓了，要在牢裡待 {d} 天。', { d: days }, 8); mem(w, vic, '{a}偷了我的錢，還好衛兵抓到了。', { a: th.name }, 7);
@@ -90,7 +90,7 @@ const CIVIC = (() => {
     function grand(w, C, d) {
         const k = typeof CROWN !== 'undefined' ? CROWN.king(w) : null; if (!k || tierLv(w) < 3) return;
         if (C.feastYear !== w.clock.year && w.clock.season === '夏季' && w.clock.day === 8) {
-            C.feastYear = w.clock.year; const cost = Math.min(120, w.stockpile?.get?.('silver') || 0); if (cost) w.stockpile.consume('silver', cost, w.tickCount, t('國王壽宴'));
+            C.feastYear = w.clock.year; let cost = Math.min(120, w.stockpile?.get?.('silver') || 0); if (cost && typeof MARKET !== 'undefined' && w.market && w.stockpile.consume('silver', cost, w.tickCount, t('國王壽宴'))) { MARKET.sell(w, 'kitchen', cost * 0.6, t('國王壽宴')); MARKET.sell(w, 'farm', cost * 0.4, t('國王壽宴')); } else cost = 0; /* v7.6.0 壽宴的錢付給食堂與農莊 */
             for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + 5; if (w.crown) w.crown.legit = Math.min(100, w.crown.legit + 3);
             log(w, 'event', '🎂 國王{k}的壽宴！全城張燈結綵，花了 {n} 銀幣。', { k: k.name, n: cost }, k.name);
             try { w.dailyNews?.collectEvent?.('event', `${t('國王壽宴')}`, 9, [k.name]); } catch (e) {}

@@ -291,16 +291,25 @@ const DEPARTURE_REASONS = [
     '出發去探索荒野','離開去遠方的學院進修',
     '前往首都尋求發展','出門旅行增廣見聞',
 ]; // v6.19.0 原文 key,顯示時再翻
-// v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個叫法(阿／小／老／大＋末字，或加排行)，確保沒有兩個同名村民
-function uniqueVillagerName(world, name) {
-    const live = new Set(Object.values(world?.agents || {}).filter(a => !a.isDead).map(a => a.name));
-    for (const tr of (world?.events?._travellingAgents || [])) if (tr?.agentData?.name) live.add(tr.agentData.name); // 出遠門的人也算(回來時才不會撞名)
-    if (!live.has(name)) return name;
-    const last = String(name).slice(-1);
-    const cands = ['阿' + last, '小' + last, '老' + last, '大' + last, name + '二', name + '三', name + '四', name + '五', name + '六'];
-    for (const c of cands) if (!live.has(c)) return c;
-    for (let k = 2; k < 99; k++) if (!live.has(name + k)) return name + k;
-    return name;
+// v6.81.0 人多了名單會重複用 → v7.6.0 改成重新取一個沒人用過的真名(不再加「二」「三」或數字,也不跟墓園裡的人同名)
+// opts.gender:男女用不同的名;opts.surname:先試同姓(新生兒跟爸媽姓);opts.used:還沒進鎮的同批名字
+function uniqueVillagerName(world, name, opts = {}) {
+    const used = new Set(Object.values(world?.agents || {}).map(a => a?.name).filter(Boolean));
+    for (const tr of (world?.events?._travellingAgents || [])) if (tr?.agentData?.name) used.add(tr.agentData.name); // 出遠門的人也算(回來時才不會撞名)
+    for (const g of (world?.lifecycle?.graveyard || [])) if (g?.name) used.add(g.name); // 過世的人的名字也不重用
+    for (const n of (opts.used || [])) used.add(n);
+    if (name && !used.has(name)) return name;
+    const S0 = typeof RANDOM_SURNAMES !== 'undefined' ? RANDOM_SURNAMES : ['陳', '林', '王'];
+    const GM = typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : ['明'], GF = typeof RANDOM_GIVEN_FEMALE !== 'undefined' ? RANDOM_GIVEN_FEMALE : ['芳'];
+    const givens = opts.gender === 'female' ? GF : opts.gender === 'male' ? GM : GM.concat(GF);
+    const reserved = (n) => typeof RESERVED_NAMES !== 'undefined' && RESERVED_NAMES.has(n);
+    const enOk = (n) => { try { return typeof I18N === 'undefined' || !I18N.localizeName || I18N.localizeName(n) !== n; } catch (e) { return true; } }; // 英文版也要有名字
+    const ok = (n) => !used.has(n) && !reserved(n) && enOk(n);
+    const mix = (arr) => arr.slice().sort(() => Math.random() - 0.5);
+    for (const s of [opts.surname, String(name || '')[0]].filter((x, i, a) => x && S0.includes(x) && a.indexOf(x) === i)) for (const g of mix(givens)) if (ok(s + g)) return s + g;
+    for (let i = 0; i < 300; i++) { const n = S0[Math.floor(Math.random() * S0.length)] + givens[Math.floor(Math.random() * givens.length)]; if (ok(n)) return n; }
+    for (const s of mix(S0)) for (const g of mix(givens)) if (!used.has(s + g) && !reserved(s + g)) return s + g;
+    return name || (S0[0] + givens[0]);
 }
 if (typeof window !== 'undefined') window.uniqueVillagerName = uniqueVillagerName;
 
@@ -582,7 +591,7 @@ class EventSystem {
         if (!imm) imm = pickRandom(available);
         this._usedImmigrantNames.add(imm.name);
         // v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個名字(加上家鄉／排行),避免兩個同名村民
-        { const nm = uniqueVillagerName(world, imm.name); if (nm !== imm.name) imm = { ...imm, name: nm }; }
+        { const nm = uniqueVillagerName(world, imm.name, { gender: imm.gender }); if (nm !== imm.name) imm = { ...imm, name: nm }; }
         const id = `imm_${imm.name}_${world.tickCount}`;
         const personality = new Personality(imm.traits, imm.background);
         personality.values = shuffle([t('家庭'),t('自由'),t('知識'),t('財富'),t('權力'),t('藝術'),t('自然'),t('社群'),t('冒險'),t('和平')]).slice(0, 1+Math.floor(Math.random()*3));

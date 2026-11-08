@@ -156,8 +156,8 @@ const BANK = (() => {
     function matureBonds(w, B, d) {
         if (!B.bonds?.length) return;
         for (const bd of B.bonds.filter(x => x.due <= d)) {
-            const a = w.agents[bd.holder]; const owe = Math.round(bd.n * (1 + bd.rate)); const paid = Math.min(owe, Math.floor(B.reserve));
-            B.reserve -= paid; B.bonds = B.bonds.filter(x => x !== bd); if (!a || a.isDead) continue;
+            const a = w.agents[bd.holder]; const owe = Math.round(bd.n * (1 + bd.rate)); B.bonds = B.bonds.filter(x => x !== bd); if (!a || a.isDead) continue; // v7.6.0 持有人不在了,錢不能憑空消失
+            const paid = Math.min(owe, Math.floor(B.reserve)); B.reserve -= paid;
             WALLET.add(w, a, paid);
             if (paid >= owe) mem(w, a, '銀行債券到期，連本帶利拿回 {n} 銀幣。', { n: paid }, 5);
             else { const banker = w.agents[B.banker]; if (banker) a.relationships?.getOrCreate?.(banker.agentId, banker.name)?.modifyAffinity?.(-15); B.defaults = (B.defaults || 0) + 1; log(w, '📉 銀行付不出{a}的債券，只還了 {p}／{n} 銀幣。', { a: a.name, p: paid, n: owe }, a.name); mem(w, a, '銀行債券到期只拿回 {p} 銀幣，說好的 {n} 呢？', { p: paid, n: owe }, 7); }
@@ -252,6 +252,8 @@ const BANK = (() => {
         log(w, '💥 銀行倒閉了！存戶損失 {n} 銀幣。', { n: Math.round(lost) }, banker?.name || '');
         if (banker) { mem(w, banker, '我的銀行倒了，大家都在罵我。', {}, 10); try { DARK.bump(w, banker, 'exposed'); } catch (e) {} }
         B.history.push({ day: d, lost: Math.round(lost), banker: banker?.name || '' });
+        { const tot = totalDep(B), cashLeft = Math.floor(B.reserve || 0); if (tot > 0 && cashLeft > 0) { let paid = 0; for (const [id, v] of Object.entries(B.dep)) { const a = w.agents[id]; if (!a || a.isDead) continue; const n = Math.floor(cashLeft * v / tot); if (n > 0) { WALLET.add(w, a, n); paid += n; mem(w, a, '銀行清算，我只拿回 {n} 銀幣。', { n }, 7); } } B.reserve -= paid; B.liquidated = paid; } } // v7.6.0 清算:剩下的錢照存款比例還給存戶
+        if (B.reserve > 0 && banker && !banker.isDead) { WALLET.add(w, banker, Math.floor(B.reserve)); B.reserve -= Math.floor(B.reserve); } // 零頭歸銀行家
         B.dep = {}; B.reserve = 0; B.open = false; B.status = 'failed'; B.failDay = d; B.bad = 0; // 放款還是要還,但銀行沒了就一筆勾銷
         for (const bd of (B.bonds || [])) { const a = w.agents[bd.holder]; if (a) mem(w, a, '銀行倒了，我買的 {n} 銀幣債券變成廢紙。', { n: bd.n }, 8); }
         B.loans = {}; B.run = null; B.bonds = [];

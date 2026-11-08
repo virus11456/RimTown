@@ -486,7 +486,7 @@ const DARK = (() => {
     function act(w, s, c, v) {
         const all = npcs(w).filter(a => a !== c && a !== v); const P = w.proposals; const sp = w.stockpile;
         if (s.kind === 'frame') {
-            const silver = Math.min(25, sp?.get?.('silver') || 0); if (silver > 0) sp.consume?.('silver', silver, w.tickCount, t('不見了'));
+            const silver = Math.min(25, sp?.get?.('silver') || 0); if (silver > 0 && sp.consume?.('silver', silver, w.tickCount, t('不見了')) && typeof WALLET !== 'undefined' && w.wallet) WALLET.add(w, c, silver); /* v7.6.0 錢進了主謀的口袋 */
             for (const o of rnd(all, 4)) { rel(o, v)?.modifyAffinity?.(-6); mem(w, o, '公庫少了銀幣，聽說是{v}拿的……', { v: v.name }, 6); }
             v.addThought?.('wrongly_blamed', w); mem(w, v, '公庫少了錢，大家都說是我拿的，可是我沒有！', {}, 8);
             log(w, 'incident', '⚠️ 公庫少了 {n} 銀幣，大家都在傳是{v}拿的。🕵️（其實是{a}栽贓）', { n: silver, v: v.name, a: c.name }, v.name);

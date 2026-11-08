@@ -4,6 +4,7 @@
 (function () {
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
+        '銀行清算，我只拿回 {n} 銀幣。': 'The bank was liquidated and I only got {n} silver back.',
         '把神裔當成怪物': 'sees the god-blooded as monsters',
         '怕神裔': 'fears the god-blooded',
         '對神裔沒什麼意見': 'has no strong feelings about the god-blooded',

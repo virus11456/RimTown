@@ -21,6 +21,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const w = app.world; w.observerMode = true; const out = {}; const sp = w.stockpile; WALLET.S(w); HEALTH.S(w); const M = MYTH.S(w); const X = MYTHSOC.S(w); const R0 = Math.random;
       const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); const all = npcs(); const adults = all.filter(a => (a.age ?? 30) >= 18);
       const inTown = () => (sp.get('silver') || 0) + Object.values(w.wallet.bal).reduce((s, v) => s + (v || 0), 0);
+      const inTown2 = () => inTown() + (+w.bank?.reserve || 0) + (+w.union?.fund || 0) + (w.faith?.rels || []).reduce((s, R) => s + (+R.fund || 0), 0);
       const fix = (v, f) => { Math.random = typeof v === 'function' ? v : () => v; try { return f(); } finally { Math.random = R0; } };
       const run = (v) => fix(v, () => { X.lastDay = -1; MYTHSOC.daily(w); });
       const kinds = (a) => (a.thoughts || []).map(x => x.kind);
@@ -101,6 +102,15 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 18) 存讀檔、AI 摘要
       const data = w.serialize(); const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(data))); out.save = { att: Object.keys(w2.mythsoc?.att || {}).length, pure: !!w2.mythsoc?.grp?.pure, rights: w2.mythsoc?.rights, hunts: (w2.mythsoc?.hunts || []).length };
       out.brief = MYTHSOC.brief(w, P1); out.brief2 = MYTHSOC.brief(w, K); out.town = MYTHSOC.townBrief(w);
+      // 19) 撞名時重新取一個真名:不加數字、不加「二」,也不跟鎮上、出遠門、墓園的人同名,英文版也有名字
+      { const base = all[0].name; const ns = []; for (let i = 0; i < 60; i++) ns.push(uniqueVillagerName(w, base, { gender: i % 2 ? 'male' : 'female', used: ns }));
+        const live = new Set(Object.values(w.agents).map(a => a.name)); const kid = uniqueVillagerName(w, base, { gender: 'female', surname: '陳' });
+        out.names = { uniq: new Set(ns).size === ns.length, clean: ns.every(n => !/[0-9０-９]/.test(n) && !n.startsWith(base)), free: ns.every(n => !live.has(n)), en: ns.every(n => I18N.localizeName(n) !== n), kin: kid.startsWith('陳'), bad: ns.filter(n => /[0-9]/.test(n) || n.startsWith(base)).slice(0, 3) }; }
+      // 20) 稽核修正的守恆:銀行倒閉清算給存戶、王室慶典付給食堂、衛兵追回的贓款只還實際拿回的
+      { MARKET.S(w); const B = BANK.S(w); B.open = true; B.banker = N3.agentId; B.dep = { [N1.agentId]: 60, [N2.agentId]: 40 }; B.reserve = 50; B.bonds = []; B.loans = {}; B.history = B.history || [];
+        const t0 = inTown2(), n1 = WALLET.get(w, N1), n2 = WALLET.get(w, N2); BANK.fail(w, B, d);
+        out.liq = { n1: Math.round(WALLET.get(w, N1) - n1), n2: Math.round(WALLET.get(w, N2) - n2), drift: Math.round((inTown2() - t0) * 100) / 100, reserve: B.reserve };
+        sp.resources.silver = Math.max(500, sp.get('silver')); const t1 = inTown2(); CROWN.DECREES.festival.apply(w); out.fest = { drift: Math.round((inTown2() - t1) * 100) / 100 }; }
       app.state = w.getState(); app.selectedAgent = P1.agentId;
       return out;
     });
@@ -128,6 +138,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.days, '跑幾天沒有錯誤', r.days);
     ok(r.save.att > 3 && r.save.pure && r.save.rights === true && r.save.hunts >= 1, '神裔社會存讀檔', r.save);
     ok(/純人派|Pure Blood/.test(r.brief) && /混血|half god-blooded/.test(r.brief2) && /純人派|Pure Blood/.test(r.town), 'AI 知道自己的立場、派系、混血', { b: r.brief, b2: r.brief2, t: r.town });
+    ok(r.names.uniq && r.names.clean && r.names.free && r.names.en && r.names.kin, '撞名時重新取真名：不加數字或「二」、不重複、英文也有名字、新生兒跟爸媽姓', r.names);
+    ok(r.liq.n1 === 30 && r.liq.n2 === 20 && r.liq.drift === 0 && r.liq.reserve === 0 && r.fest.drift === 0, '銀行倒閉時剩下的準備金依存款比例還給存戶；王室慶典的錢付給食堂與農莊（守恆）', { liq: r.liq, fest: r.fest });
     await page.evaluate(() => { const app = window.rimtownApp; if (window.innerWidth <= 768) app._openKairoTab('detail'); else { app.activeTab = 'detail'; app.renderSidebar(); } }); await page.waitForTimeout(500);
     const ui1 = await page.evaluate(() => { const s = [...document.querySelectorAll('.hb-tag.myth')]; return s.length ? { txt: s.map(x => x.textContent).join(' | '), cjk: s.flatMap(x => x.textContent.match(/[一-鿿]{2,}/g) || []) } : null; });
     ok(!!ui1 && /純人派|Pure Blood/.test(ui1.txt), '村民卡顯示對神裔的看法與派系', ui1);
