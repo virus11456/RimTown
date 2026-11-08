@@ -6086,6 +6086,8 @@
         '二': 'II',
         '三': 'III',
         '四': 'IV',
+        '五': 'V',
+        '六': 'VI',
         '機械': 'Machine',
         '還沒研究到': 'Not researched yet',
         '銀行利息': 'Bank interest',

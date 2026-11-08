@@ -358,7 +358,7 @@ Object.assign(RimTownApp.prototype, {
                     html += `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${t(en.name || '')} <span>Lv.${(TV?.ref || 0)}</span></div><div class="tech-node tech-${now ? 'now' : 'open'}"><div class="tech-node-head"><span>${now ? '🔬' : '♾️'} <b>${t(p.name)}</b></span><span class="tech-cost">${now ? pct + '%' : `${p.cost} ${t('點')}`}</span></div><div class="tech-desc">${this._escapeHtml(p.description || '')}</div><div class="tech-need">${t('其他科技都研究完了才會開始研究')}</div></div></div>`;
                     continue;
                 }
-                const head = era <= 3 ? `${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五', '六'][era]))}${t('・')}${t(en.name || '')}` : `${g.bio ? '' : (P || g.e > 4 ? '⚙️ ' : '')}${t(en.name || '')}`;
+                const head = `${era >= 4 && !g.bio && (P || era > 4) ? '⚙️ ' : ''}${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五', '六'][era]))}${t('・')}${t(en.name || '')}`;
                 html += `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${head} <span>${done}/${list.length}</span></div>`;
                 if (g.lock) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${g.lock}</div>`;
                 if (era === 4 && TV && !P) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('標 ⚙️ 的是電子機械路線的科技，決定走這條路之後才能研究')}</div>`;
