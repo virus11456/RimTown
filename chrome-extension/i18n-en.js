@@ -5,6 +5,8 @@
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
         // ── v7.2.0 景氣循環、公共支出、反壟斷 ──
+        '⚖️ 鎮上從此有了反壟斷法：擁有三家以上產業的人不能再買。': '⚖️ The town now has an antitrust law: anyone who owns three or more businesses may not buy another.',
+        '反壟斷法生效中': 'antitrust law in force',
         '景氣': 'Economy',
         '衰退': 'recession',
         '公共工程': 'Public works',

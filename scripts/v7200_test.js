@@ -50,6 +50,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const t1 = inTown(), m0 = WALLET.get(w, mono); const res = CYCLE.split(w, { refKey: mono.agentId }); out.split = { res: !!res, monoNow: MARKET.ownedBy(w, mono.agentId).length, monoGain: Math.round(WALLET.get(w, mono) - m0), drift: Math.round((inTown() - t1) * 100) / 100 };
       // 沒人買得起 → 公庫收購(守恆)
       for (const k of ['farm', 'kitchen', 'textile']) w.market.owners[k] = mono.agentId; for (const id of Object.keys(w.wallet.bal)) if (id !== mono.agentId) w.wallet.bal[id] = 1; sp.resources.silver = 99999;
+      out.law = { on: !!w.cycle.law, can: (() => { const x = npcs().find(a => a !== mono); for (const k of ['forge', 'mine', 'timber']) w.market.owners[k] = x.agentId; const n = MARKET.ownedBy(w, x.agentId).length; for (const k of ['forge', 'mine', 'timber']) delete w.market.owners[k]; return n; })() };
       const t2 = inTown(); const res2 = CYCLE.split(w, { refKey: mono.agentId }); out.nat = { res: !!res2, drift: Math.round((inTown() - t2) * 100) / 100, pub: Object.values(w.market.owners).filter(x => x === mono.agentId).length };
       // 6) 銀行放款隨景氣
       const B = { reserve: 1000, loans: {}, rate: 0.08, deposits: {} }; const ln = npcs().find(a => a.job); let got = 0; const _add = WALLET.add; WALLET.add = function (ww, a, n) { if (a === ln) got = n; return _add.apply(this, arguments); };
@@ -68,6 +69,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!!r.anti && r.anti.ref, '有人擁有三家以上產業：有人提案拆分', r.anti);
     ok(r.vote.worker >= 30 && r.vote.mono === 0 && r.vote.pol <= 10, '工會會員支持拆分；壟斷者與收過他獻金的人反對', r.vote);
     ok(r.split.res && r.split.monoNow === 2 && r.split.monoGain > 0 && Math.abs(r.split.drift) <= 0.05, '拆分：最大的一家照市價賣給別人（守恆）', r.split);
+    ok(r.law.on, '第一次拆分通過後反壟斷法生效', r.law);
     ok(r.nat.res && Math.abs(r.nat.drift) <= 0.05 && r.nat.pub === 2, '沒人買得起：公庫照市價收購改公營（守恆）', r.nat);
     ok(r.bank.boom > r.bank.bust && r.bank.bust > 0, '銀行繁榮時借得多、衰退時借得少', r.bank);
     ok(r.brief && Math.abs(r.save + 0.5) < 0.001, 'AI 知道景氣；景氣存讀檔', { brief: r.brief, save: r.save });

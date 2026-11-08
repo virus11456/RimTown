@@ -385,6 +385,7 @@ const CYCLE = (() => {
         const ks = MARKET.ownedBy(w, id); if (ks.length < 2) return t('他手上已經沒有那麼多產業了');
         const all = npcs(w); const k = ks.map(k => [k, MARKET.value(w, k, all)]).sort((x, y) => y[1] - x[1])[0]; const price = Math.round(k[1]);
         const buyer = all.filter(a => a.agentId !== id && WALLET.get(w, a) >= price && MARKET.ownedBy(w, a.agentId).length < 2).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
+        if (!S(w).law) { S(w).law = true; log(w, '⚖️ 鎮上從此有了反壟斷法：擁有三家以上產業的人不能再買。', {}); }
         if (buyer && WALLET.take(w, buyer, price)) { WALLET.add(w, owner, price); w.market.owners[k[0]] = buyer.agentId; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：{o}把{s}以 {n} 銀幣賣給了{b}。', { o: owner.name, s: MARKET.name(k[0]), n: price, b: buyer.name }, owner.name); return t('{s}賣給了{b}').replace('{s}', MARKET.name(k[0])).replace('{b}', buyer.name); }
         const sp = w.stockpile; if (sp.consume('silver', price, w.tickCount, t('公庫收購產業'))) { WALLET.add(w, owner, price); delete w.market.owners[k[0]]; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：沒人買得起，公庫以 {n} 銀幣收購了{o}的{s}，改為公營。', { o: owner.name, s: MARKET.name(k[0]), n: price }, owner.name); return t('{s}由公庫收購，改為公營').replace('{s}', MARKET.name(k[0])); }
         return '';
