@@ -23,7 +23,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const kid = all.find(a => a.age <= 12) || all[1]; const kidAge = kid.age; kid.age = 9; w.classes = w.classes || { lv: {}, titles: {}, day: -1 }; w.classes.lv[kid.agentId] = 5; out.kidCls = LOOK.of(w, kid).cls; kid.age = kidAge;
       // 2) 3D 人物:依外觀建出不同網格(同一個人換外觀才重建)
       const verts = (m) => { let n = 0; m.traverse(o => { if (o.isMesh && !o.userData.isLod) n += o.geometry.attributes.position.count; }); return n; };
-      const mk = (ap, id, job) => { const aid = 'look_' + id; const m = T._agentMesh(aid, { name: '測試' + id, job: { key: job || 'farmer' }, appear: ap }, { job: job || 'farmer', gender: 'male' }); const o = { scale: m.scale.x, v: verts(m), sig: m.userData.sig, m }; return o; };
+      const mk = (ap, id, job) => { const aid = 'look_' + id; const m = T._agentMesh(aid, { name: '測試同一人', job: { key: job || 'farmer' }, appear: ap }, { job: job || 'farmer', gender: 'male' }); /* v6.96 長相依名字變化:比較外觀時用同一個名字 */ const o = { scale: m.scale.x, v: verts(m), sig: m.userData.sig, m }; return o; };
       const base = mk({ b: 'a', cls: 1, king: false, hl: false }, 'base', 'trader');
       const child = mk({ b: 'c', cls: 1, king: false, hl: false }, 'child', 'trader');
       const teen = mk({ b: 't', cls: 1, king: false, hl: false }, 'teen', 'trader');
@@ -37,9 +37,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const hairOf = (m) => { let best = null; m.traverse(o => { if (o.isMesh && !best && o.geometry.attributes.color) best = o; }); const c = best.geometry.attributes.color; const ys = best.geometry.attributes.position; let top = -1, col = null; for (let i = 0; i < ys.count; i++) if (ys.getY(i) > top) { top = ys.getY(i); col = [c.getX(i), c.getY(i), c.getZ(i)]; } return col; };
       const ho = hairOf(old.m); out.oldHair = ho; out.oldGray = Math.abs(ho[0] - ho[1]) < 0.05 && Math.abs(ho[1] - ho[2]) < 0.05 && ho[0] > 0.8;
       // 換外觀 → 重建
-      const m1 = T._agentMesh('look_base', { name: '測試base', job: { key: 'trader' }, appear: { b: 'a', cls: 1, king: false, hl: false } }, { job: 'trader', gender: 'male' });
-      const m2 = T._agentMesh('look_base', { name: '測試base', job: { key: 'trader' }, appear: { b: 'a', cls: 1, king: false, hl: false } }, { job: 'trader', gender: 'male' });
-      const m3 = T._agentMesh('look_base', { name: '測試base', job: { key: 'trader' }, appear: { b: 'a', cls: 4, king: false, hl: false } }, { job: 'trader', gender: 'male' });
+      const m1 = T._agentMesh('look_base', { name: '測試同一人', job: { key: 'trader' }, appear: { b: 'a', cls: 1, king: false, hl: false } }, { job: 'trader', gender: 'male' });
+      const m2 = T._agentMesh('look_base', { name: '測試同一人', job: { key: 'trader' }, appear: { b: 'a', cls: 1, king: false, hl: false } }, { job: 'trader', gender: 'male' });
+      const m3 = T._agentMesh('look_base', { name: '測試同一人', job: { key: 'trader' }, appear: { b: 'a', cls: 4, king: false, hl: false } }, { job: 'trader', gender: 'male' });
       out.reuse = m1 === m2; out.rebuild = m3 !== m2;
       // 遠處簡化網格(人多時)也照樣建得出來
       try { const lod = T._agentLod(king.m); out.lod = lod.geometry.attributes.position.count > 0; } catch (e) { out.lodErr = e.message; }
