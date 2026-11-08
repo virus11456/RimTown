@@ -15,7 +15,7 @@ Object.assign(RimTownApp.prototype, {
         bar.id = 'kairo-bar';
         // v6.25.0 觀察者沙盒:底部直接放四大入口 + 聊天(☰ 選單保留為設定入口)
         bar.innerHTML = `
-            <button data-kairo-tab="economy">🏙️ <span>${t('動態')}</span></button>
+            <button data-kairo-tab="economy">🏙️ <span>${t('小鎮')}</span></button>
             <button data-kairo-tab="residents">👥 <span>${t('村民')}</span></button>
             <button data-kairo-tab="proposals">📜 <span>${t('提案')}</span></button>
             <button data-kairo-tab="records">📰 <span>${t('日報')}</span></button>
@@ -45,7 +45,7 @@ Object.assign(RimTownApp.prototype, {
         menu.className = 'hidden';
         // v5.20.0 三大入口:每組進去後,卡片頂部的次級分頁列可切換組內其他分頁
         const ITEMS = [
-            ['economy', '🏙️', t('動態')], ['residents', '👥', t('村民')],
+            ['economy', '🏙️', t('小鎮')], ['residents', '👥', t('村民')],
             ['proposals', '📜', t('提案')], ['records', '📰', t('日報')], ['settings', '⚙️', t('設定')],
         ];
         menu.innerHTML = ITEMS.map(([k, ic, lb]) => `<button data-kairo-tab="${k}"><span class="km-ic">${ic}</span>${lb}</button>`).join('');
@@ -65,7 +65,7 @@ Object.assign(RimTownApp.prototype, {
         this._kairoTitles = Object.fromEntries(ITEMS.map(([k, ic, lb]) => [k, `${ic} ${lb}`]));
         Object.assign(this._kairoTitles, {
             detail: `📋 ${t('詳情')}`, relmap: `💞 ${t('關係網')}`,
-            industry: `🏭 ${t('產業')}`, records: `📋 ${t('日誌')}`,
+
         });
 
         // 事件
@@ -121,8 +121,9 @@ Object.assign(RimTownApp.prototype, {
         this.bgm?.sfx?.('click');
         document.getElementById('kairo-menu')?.classList.add('hidden');
         this._kairoCardOpen = true;
+        document.querySelectorAll('#achv-toast-host .rt-toast:not(.morning)').forEach(e => e.remove()); // v7.3.0 面板拉開時收掉蓋在上面的角落通知
         const title = document.getElementById('kairo-card-title');
-        if (title) title.textContent = this._kairoTitles?.[tab] || tab;
+        if (title) title.textContent = this._kairoTitles?.[tab] || this._kairoTitles?.[this._mobileSubToMain?.[tab]] || tab;
         this.activeTab = tab;
         this._updateTabHighlight(tab);
         this.renderSidebar();

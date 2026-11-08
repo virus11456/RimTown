@@ -2,9 +2,21 @@
 // 用 Object.assign 掛到 RimTownApp.prototype；必須在 app.js 之後、DOMContentLoaded 之前載入（index.html／sw.js 都要列）。
 'use strict';
 Object.assign(RimTownApp.prototype, {
+    // v7.3.0 日報分頁:觀察者日報(每天一期)＋AI 日報(記者寫的)＋村民對話與逐筆紀錄;編年史搬到「年表」
     renderRecords(container) {
         this.renderLog(container);
-        this._renderChronicleSection(container);
+        const E = this._eventPieces(['aidaily']);
+        if (E.aidaily) { const n = (this.state?.dailyNews?.newspapers || []).length; container.insertAdjacentHTML('beforeend', `<details class="log-fold rec-ai"${this._recAiOpen ? ' open' : ''}><summary>🗞️ ${t('AI 日報')}${t('（')}${n}${t('）')}</summary>${E.aidaily}</details>`); }
+    },
+    // v7.3.0 消息分頁:鎮上發生的事、本鎮公告、外地消息、外交、報社、探索(原本散在「事件」與「鎮況」,同一則不再出現兩次)
+    renderNews(container) {
+        if (!this.state) return;
+        const E = this._eventPieces(['happen', 'news', 'explore']);
+        const B = this._townBlocks(null, ['tidings', 'diplo', 'press']);
+        const body = [E.happen, E.news, B.tidings, B.diplo, B.press, E.explore].join('');
+        const html = `<div class="pn-panel">${body || `<div class="ob-empty"><span class="ob-empty-icon">📭</span>${t('目前沒有新消息。商隊、旅人和信差會陸續帶消息進鎮。')}</div>`}</div>`;
+        if (container._pnSig === html && container.firstElementChild?.classList?.contains('pn-panel')) return; container._pnSig = html;
+        container.innerHTML = html;
     },
 
     // ============================================================
@@ -113,14 +125,15 @@ Object.assign(RimTownApp.prototype, {
             listHtml = `<p class="muted-text" style="font-size:0.72rem">${t('載入中…')}</p>`;
             this._chronicleAll().then(all => {
                 this._chronicleKeys = all.sort((a, b) => b.key - a.key).map(d => ({ key: d.key, label: d.label, n: (d.npcs || []).length, c: (d.convos || []).length + (d.playerChats || []).length }));
-                if (this.activeTab === 'records') this.renderSidebar();
+                if (this.activeTab === 'quest') this.renderSidebar(); // v7.3.0 編年史搬到年表
             }).catch(() => { this._chronicleKeys = []; });
         } else if (!keys.length) {
             listHtml = `<p class="muted-text" style="font-size:0.72rem">${t('還沒有歸檔。每天換日時會自動把全鎮的作息、行程、足跡與對話存進資料庫。')}</p>`;
         } else {
-            listHtml = keys.slice(0, 30).map(k =>
+            const row = (k) =>
                 `<div class="memory-item" data-action="chronicle-view" data-val="${k.key}" style="cursor:pointer${this._chronicleView?.key === k.key ? ';border-left:2px solid var(--accent,#ffd700)' : ''}">📅 ${k.label} <span style="color:var(--text-muted);font-size:0.68rem">${k.n} ${t('位村民')} · ${k.c} ${t('場對話')}</span></div>`
-            ).join('');
+            ;
+            listHtml = keys.slice(0, 7).map(row).join('') + (keys.length > 7 ? `<details class="log-fold"><summary>${t('更早的 {n} 天').replace('{n}', Math.min(30, keys.length) - 7)}</summary>${keys.slice(7, 30).map(row).join('')}</details>` : ''); // v7.3.0 只先列最近一週
         }
         let viewHtml = '';
         const v = this._chronicleView;
@@ -150,7 +163,7 @@ Object.assign(RimTownApp.prototype, {
                 <button class="btn-archive-view" data-action="chronicle-clear" style="opacity:0.7">🗑️ ${t('清空')}</button>
             </div>
             ${listHtml}${viewHtml}`;
-        container.appendChild(host);
+        (container.querySelector(':scope > .economy-panel') || container).appendChild(host);
     },
 
     // ============================================================
@@ -231,10 +244,12 @@ Object.assign(RimTownApp.prototype, {
             html += '</div>';
         }
         html += '</div>';
+        { const B = this._townBlocks(null, ['legacy', 'culture', 'goods']); const E = this._eventPieces(['life']); html += B.legacy + B.culture + B.goods + E.life; } // v7.3.0 鎮史、文化、珍品、出生與墓園搬來年表
         const ps = w.proposals?.toDict?.(w);
         if (ps) html += `<div class="econ-section"><h3>🗳️ ${t('提案總覽')}</h3><p class="muted-text">${t('提出')} ${ps.stats.made} · ${t('已批准')} ${ps.stats.approved} · ${t('已否決')} ${ps.stats.rejected} · ${t('已完成')} ${ps.stats.done}${ps.stats.auto ? ` · ${t('依票數自動定案')} ${ps.stats.auto}` : ''}</p></div>`;
         html += '</div>';
         container.innerHTML = html;
+        this._renderChronicleSection(container); // v7.3.0 編年史(每天歸檔、匯出)從日報搬來
     },
     renderQuest(container) {
         if (!this.state) return;

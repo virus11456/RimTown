@@ -716,6 +716,7 @@ Object.assign(RimTownApp.prototype, {
     _autoCamEnabled() { try { return localStorage.getItem('rimtown_autocam') === '1'; } catch (e) { return false; } },
     // v6.53.0 有大視窗(季末回顧、中央卡)開著時,角落通知先排隊,關掉後再一張張出來
     _modalOpen() { if (document.getElementById('season-recap')) return true;
+        if (window.innerWidth <= 768 && this._kairoCardOpen && document.getElementById('kairo-card')?.classList.contains('hidden') === false) return true; // v7.3.0 手機面板開著時角落通知先排隊,不蓋住分頁
         if (window.innerWidth <= 768 && [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].some(c => !c.classList.contains('hidden') && c.getClientRects().length)) return true; // 手機:看村民卡時先別冒通知
         const o = document.getElementById('center-notification-overlay'); return !!(o && !o.classList.contains('hidden') && o.offsetParent !== null); },
     _flushCornerHold() {

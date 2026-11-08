@@ -48,7 +48,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const rc2 = D.rel[cap.id]; await DIPLO.decide(w, D); out.ai = D.rel[cap.id] > rc2 && D.why === '跟王室打好關係';
       w.fullAgentMode = _fa; CE.fullAgentOk = _ok; CE._askJson = _aj; w._absDay = _ad;
       D.rel[nb.id] = 75; D.status[nb.id] = 'ally'; out.brief = CE._townBrief(w);
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-diplo')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.renderNews(box); /* v7.3.0 搬到日報 › 消息 */ out.ui = box.querySelector('.pp-diplo')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.diplo?.rel?.[realm.id] === D.rel[realm.id]; w2.reset(); out.reset = !w2.diplo;
       return out;
     });
@@ -62,7 +62,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.tiding, '遠方消息（加稅王令）讓關係變差', r);
     ok(r.ai, '完整智能體模式由首長 AI 決定外交行動', r);
     ok(/盟友|Allies/.test(r.brief) && /對頭|Rivals/.test(r.brief), 'AI 知道鎮上的盟友與對頭', r.brief.slice(-160));
-    ok(/🤝/.test(r.ui), '鎮況頁有外交', r.ui.slice(0, 200));
+    ok(/🤝/.test(r.ui), '消息頁有外交', r.ui.slice(0, 200));
     ok(r.rt && r.reset, '外交存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

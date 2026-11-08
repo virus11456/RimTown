@@ -746,3 +746,38 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .career-period { color: var(--text-muted); font-size: 0.7rem; }
 .rimtown-container .career-notes { color: var(--text-secondary); }
 .rimtown-container .career-bills { color: var(--text-muted); font-size: 0.7rem; overflow-wrap: anywhere; }
+
+/* ===== v7.3.0 面板統一：其他分頁照提案分頁的樣式（膠囊子分頁＋一行說明＋圓角卡片＋同款標題） ===== */
+.rimtown-container .sub-tab-bar.pp-tabs { display: flex !important; position: sticky; top: 0; z-index: 3; gap: 4px; padding: 4px; margin: 10px 12px 6px; border: 0; border-radius: 999px; background: var(--bg-card, #2E2A44); }
+.rimtown-container .sub-tab-bar.pp-tabs button.pp-tab { flex: 1; min-width: 0; min-height: 38px; padding: 0 4px; border: 0; border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .sub-tab-bar.pp-tabs button.pp-tab.on { background: var(--accent); color: var(--ob-on-accent, #1E1B2A); }
+.rimtown-container .sub-tab-bar.pp-tabs + .pp-tabhint { margin: 0 16px 8px; }
+.rimtown-container .economy-panel, .rimtown-container .pn-panel { padding: 4px 12px 16px; }
+.rimtown-container.observer .econ-section,
+.rimtown-container.observer .news-section,
+.rimtown-container.observer .weather-section,
+.rimtown-container.observer .festival-section,
+.rimtown-container.observer .quest-section,
+.rimtown-container.observer .chain-section,
+.rimtown-container.observer .travelling-section,
+.rimtown-container.observer .faction-section,
+.rimtown-container.observer .explore-section,
+.rimtown-container.observer .lifecycle-section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin: 0 0 8px; }
+.rimtown-container.observer .econ-section .econ-section { border: 0; padding: 0; margin: 6px 0 0; background: transparent; }
+.rimtown-container.observer .econ-section h3,
+.rimtown-container.observer .news-section h4,
+.rimtown-container.observer .weather-section h4,
+.rimtown-container.observer .festival-section h4,
+.rimtown-container.observer .quest-section h4,
+.rimtown-container.observer .chain-section h4,
+.rimtown-container.observer .travelling-section h4,
+.rimtown-container.observer .faction-section h4,
+.rimtown-container.observer .explore-section h4,
+.rimtown-container.observer .lifecycle-section h4 { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.86rem; margin: 0 0 6px; padding: 0; border: 0; color: var(--text-primary); }
+.rimtown-container.observer .news-effects { margin: 0 0 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); }
+.rimtown-container.observer .news-bulletin { border-radius: 10px; }
+.rimtown-container.observer .log-fold.rec-ai > summary { font-weight: 700; }
+.rimtown-container.observer .pn-panel .pp-issues, .rimtown-container.observer .economy-panel .pp-issues { margin: 0 0 8px; padding: 10px 12px; border-radius: 12px; }
+.rimtown-container.observer .faction-section .faction-card { border: 0; border-bottom: 1px dashed var(--border); border-radius: 0; background: transparent; padding: 5px 0; margin: 0; }
+.rimtown-container.observer .faction-section .faction-card:last-child { border-bottom: 0; }
+.rimtown-container .economy-panel .economy-panel { padding: 0; }

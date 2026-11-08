@@ -68,7 +68,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 11) AI 與經濟頁
       P.inf[L.agentId] = { [boss.agentId]: 60 }; const CE = Object.create(ConversationEngine.prototype); out.briefL = (CE._agentBrief(w, L, null).mem || []).join(' | '); out.briefJ = (CE._agentBrief(w, J, null).mem || []).join(' | ');
       const save = app.world; app.state = w.getState(); const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
-      app._economySubTab = 'resources'; try { app.renderEconomy(box); } catch (e) { out.econErr = e.message; } const pm = box.querySelector('.power-meta'); out.econ = pm ? pm.textContent.replace(/\s+/g, ' ') : ''; out.econOverflow = pm ? pm.scrollWidth > pm.clientWidth + 2 : null; box.remove(); app.state = save.getState();
+      app.activeTab = 'industry'; /* v7.3.0 產業與老闆搬到小鎮 › 產業 */ try { app.renderEconomy(box); } catch (e) { out.econErr = e.message; } const pm = box.querySelector('.power-meta'); out.econ = pm ? pm.textContent.replace(/\s+/g, ' ') : ''; out.econOverflow = pm ? pm.scrollWidth > pm.clientWidth + 2 : null; box.remove(); app.state = save.getState();
       const data = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(data); out.save = !!w2.power && (w2.power.stats.exposed || 0) === (P.stats.exposed || 0);
       try { const d0 = w._absDay(); for (let i = 0; i < 96 * 8 && w._absDay() - d0 < 8; i++) { w.paused = false; w.tick(); } w.paused = true; } catch (e) { out.err = e.message; }
       return out;

@@ -41,7 +41,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.fullAgentMode = _fa; CE.fullAgentOk = _ok; CE._askJson = _aj;
       // 畫面與 AI
       out.brief = JSON.stringify(CE._agentBrief(w, saver, null)); out.chip = BANK.chip(w, saver);
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-bank')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'industry'; app.renderEconomy(box); /* v7.3.0 搬到小鎮 › 產業 */ out.ui = box.querySelector('.pp-bank')?.innerText || ''; box.remove();
       // 擠兌撐過
       const keep = JSON.parse(JSON.stringify(B)); B.reserve += 5000; BANK.startRun(w, B, D); out.run = B.status === 'run' && logHas(/擠|withdraw/i);
       for (let i = 0; i < 4; i++) { D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); } out.survived = B.status === 'ok' && B.open;
@@ -60,7 +60,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.bad, '逾期還不出來變呆帳', r);
     ok(r.aiRate, '完整智能體模式由銀行家 AI 決定利率', r);
     ok(/銀行|Bank/.test(r.brief) && /🏦/.test(r.chip), 'AI 與角色卡知道自己的存款與欠款', { b: r.brief.slice(-120), c: r.chip });
-    ok(/🏦/.test(r.ui) && /利率|rate/.test(r.ui), '鎮況頁有銀行狀況', r.ui);
+    ok(/🏦/.test(r.ui) && /利率|rate/.test(r.ui), '產業頁有銀行狀況', r.ui);
     ok(r.run && r.survived, '謠言引發擠兌，準備金夠就撐得過', r);
     ok(r.failed && r.angry, '準備金不夠就倒閉，存戶血本無歸', r);
     ok(r.rt && r.reset, '銀行存讀檔保留、新城鎮重來', r);

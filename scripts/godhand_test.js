@@ -76,8 +76,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // 事件分頁入口
     await page.evaluate(() => { const app = window.rimtownApp; app.activeTab = 'events'; app.renderSidebar?.(); });
     await page.waitForTimeout(300);
-    const entry = await page.evaluate(() => ({ entry: !!document.querySelector('.gh-entry'), oldGrid: !!document.querySelector('.ec-grid') }));
-    ok(entry.entry && !entry.oldGrid, '事件分頁改成入口按鈕(不再重複一份手牌)', entry);
+    const entry = await page.evaluate(() => ({ fab: !!document.querySelector('#gh-fab, .gh-fab, [data-action="gh-open"]'), oldGrid: !!document.querySelector('#sidebar-content .ec-grid, #kairo-card-body .ec-grid') }));
+    ok(entry.fab && !entry.oldGrid, '事件卡只在地圖上的 🃏 按鈕（v7.3.0 舊事件分頁併入消息，不再重複一份手牌）', entry);
     ok(!errs.length, `${dev} ${lang} 沒有頁面錯誤`, errs.slice(0, 3));
     await ctx.close();
   }

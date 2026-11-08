@@ -1,5 +1,5 @@
-// RimTown - Frontend App v7.2.1
-const RIMTOWN_APP_VERSION = '7.2.1';
+// RimTown - Frontend App v7.3.0
+const RIMTOWN_APP_VERSION = '7.3.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -1490,7 +1490,6 @@ class RimTownApp {
     // === Achievements Tab ===
     _showAchievementsTab() {
         // v6.43.8 走 _goTab:手機會打開面板抽屜(以前只畫在收起來的側欄裡,看起來沒反應)
-        if (this._kairoTitles && !this._kairoTitles.achievements) this._kairoTitles.achievements = `🏆 ${t('成就')}`;
         if (this._goTab) { this._goTab('achievements'); return; }
         this.activeTab = 'achievements';
         if (this._updateTabHighlight) this._updateTabHighlight('achievements');
@@ -2090,9 +2089,10 @@ class RimTownApp {
         // v5.20.0 三大入口收束:小鎮 / 居民 / 故事(+設定)。主鍵即該組的「頭」分頁。
         // v6.25.0 觀察者沙盒四大入口:動態／村民／提案／日報(設定走齒輪鈕)
         this._mobileTabGroups = {
-            economy: [ // 動態
-                { key: 'economy', label: t('小鎮'), icon: '🏙️' },
-                { key: 'events', label: t('事件'), icon: '📰' },
+            economy: [ // v7.3.0 小鎮:只剩一層子分頁(舊「事件」拆到日報與各頁)
+                { key: 'economy', label: t('概況'), icon: '🏙️' },
+                { key: 'econ-goods', label: t('物資'), icon: '📦' },
+                { key: 'econ-build', label: t('建設'), icon: '🏗️' },
                 { key: 'industry', label: t('產業'), icon: '🏭' },
             ],
             residents: [ // 村民
@@ -2103,11 +2103,17 @@ class RimTownApp {
             proposals: [ // 提案
                 { key: 'proposals', label: t('提案'), icon: '📜' },
             ],
-            records: [ // 日報
-                { key: 'records', label: t('日誌'), icon: '📋' },
-                { key: 'quest', label: t('年表'), icon: '📜' }, // v6.31.0 觀察者:旅人主線 → 小鎮年表
+            records: [ // v7.3.0 日報:日報＋AI 日報、消息(公告／外地／外交／報社)、年表(含鎮史文化與編年史)、成就
+                { key: 'records', label: t('日報'), icon: '📰' },
+                { key: 'news', label: t('消息'), icon: '📨' },
+                { key: 'quest', label: t('年表'), icon: '📜' },
                 { key: 'achievements', label: t('成就'), icon: '🏆' },
             ],
+        };
+        this._tabHints = { // v7.3.0 每個子分頁頂端一行說明(跟提案分頁一樣)
+            economy: t('繁榮度、天氣、物價與就業、大家身上的錢。'), 'econ-goods': t('倉庫裡有什麼、每天做了多少、跟商人的買賣。'), 'econ-build': t('正在蓋什麼、還能蓋什麼、研究到哪裡。'), industry: t('產業與老闆、鎮上的店、銀行、農場與工廠。'),
+            residents: t('點村民看他在做什麼、在想什麼。'), relmap: t('誰愛誰、誰恨誰，一張圖看完。'),
+            records: t('每天一期的觀察者日報；AI 記者寫的日報收在下面。'), news: t('鎮上發生的事、本鎮公告、外地傳來的消息、外交與報社。'), quest: t('每一季的回顧、鎮史、文化作品、出生與墓園、編年史。'), achievements: t('小鎮達成過的里程碑。'),
         };
         // Reverse lookup: sub-tab -> parent main tab
         this._mobileSubToMain = {};
@@ -2116,6 +2122,7 @@ class RimTownApp {
                 this._mobileSubToMain[sub.key] = main;
             }
         }
+        this._mobileSubToMain.events = 'records'; // v7.3.0 舊「事件」→ 日報的消息
         // 抽屜式細節/封存視圖歸屬「居民」組,讓對應主入口保持高亮
         this._mobileSubToMain['detail'] = 'residents';
         this._mobileSubToMain['chat-archives'] = 'residents';
@@ -2368,7 +2375,7 @@ class RimTownApp {
                     break;
                 // Industry sub-tabs
                 case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
-                case 'economy-subtab': this._economySubTab = val; this.renderSidebar(); break;
+                case 'economy-subtab': this.activeTab = ({ resources: 'econ-goods', shop: 'econ-goods', tech: 'econ-build', building: 'econ-build', factory: 'industry' })[val] || 'economy'; this.renderSidebar(); break; // v7.3.0 舊二層分頁相容
                 // v5.51.0 勞動力排班:鎮長對加工線下休工/正常/加班指令
                 case 'work-policy': {
                     const [good, mode] = (val || '').split(',');
@@ -3174,12 +3181,14 @@ class RimTownApp {
         const mainTab = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
         const group = this._mobileTabGroups?.[mainTab];
         if (group && group.length > 1 && !(isMobile && this.activeTab === 'chat')) {
-            let subBar = '<div class="sub-tab-bar mobile-group-tabs">';
+            let subBar = '<div class="sub-tab-bar mobile-group-tabs pp-tabs" role="tablist">'; // v7.3.0 跟提案分頁同一種膠囊分頁
+            const cur = this.activeTab === 'events' ? 'news' : this.activeTab;
             group.forEach(_tw => {
-                const active = this.activeTab === _tw.key ? ' class="active"' : '';
-                subBar += `<button${active} data-action="mobile-group-tab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
+                const on = cur === _tw.key;
+                subBar += `<button type="button" role="tab" aria-selected="${on}" class="pp-tab${on ? ' on active' : ''}" data-action="mobile-group-tab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
             });
             subBar += '</div>';
+            const hint = this._tabHints?.[cur]; if (hint) subBar += `<div class="pp-tabhint">${hint}</div>`;
             content.innerHTML = subBar;
             const subContent = document.createElement('div');
             content.appendChild(subContent);
@@ -3213,9 +3222,10 @@ class RimTownApp {
             case 'detail': this.renderAgentDetail(content); break;
             case 'economy': this.renderEconomy(content); break;
             case 'records': this.renderRecords(content); break;
-            case 'events': this.renderEvents(content); break;
+            case 'events': case 'news': this.renderNews(content); break; // v7.3.0
+            case 'econ-goods': case 'econ-build': this.renderEconomy(content); break;
             case 'achievements': this.renderAchievements(content); break;
-            case 'industry': this.renderIndustryAndFarm(content); break;
+            case 'industry': this.renderEconomy(content); break; // v7.3.0 產業頁併入小鎮(產業與老闆、店、銀行、產業等級、農場、工廠)
             case 'quest': this.renderQuest(content); break;
             case 'proposals': this.renderProposals(content); break; // v6.25.0 佔位,v6.26 填提案系統
             case 'settings': this.renderSettings(content); break;

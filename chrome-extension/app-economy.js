@@ -74,14 +74,14 @@ Object.assign(RimTownApp.prototype, {
     },
     renderEconomy(container) {
         if (!this.state) return;
-        if (!this._economySubTab) this._economySubTab = 'resources';
-
+        // v7.3.0 小鎮分頁只剩一層子分頁:概況／物資／建設／產業(以前「動態」裡還有第二層 資源／科技／商店／建築／工廠)
+        const S = { economy: 'overview', 'econ-goods': 'goods', 'econ-build': 'build', industry: 'industry' }[this.activeTab] || 'overview';
         let html = '<div class="economy-panel">';
-        html += this._renderPlayerCaravan(); // v5.92.0 押商隊
+        if (S === 'overview') html += this._renderPlayerCaravan(); // v5.92.0 押商隊
 
         // Prosperity summary
         const prosp = this.state.prosperity;
-        if (prosp) {
+        if (prosp && S === 'overview') {
             // v4.6.0 排行榜入口(在繁榮度摘要上方)
             if (!this._lbBtnHtml) this._lbBtnHtml = `<div style="margin:4px 0 8px"><button class="trade-btn" data-action="show-leaderboard" style="width:100%">🏆 ${t('全球繁榮排行榜')}</button></div>`;
             html += this._lbBtnHtml;
@@ -112,21 +112,8 @@ Object.assign(RimTownApp.prototype, {
             html += `</div>`;
         }
 
-        // Sub-tab navigation
-        html += '<div class="sub-tab-bar">';
-        const subTabs = [
-            { key:'resources', label:t('資源'), icon:'📦' },
-            { key:'tech', label:t('科技'), icon:'🔬' }, // v5.52.0 研究獨立入口(價值層)
-            { key:'shop', label:t('商店'), icon:'🛒' },
-            { key:'building', label:t('建築'), icon:'🏗️' },
-            { key:'factory', label:t('工廠'), icon:'🔧' },
-        ];
-        subTabs.forEach(_tw => {
-            const active = this._economySubTab === _tw.key ? ' class="active"' : '';
-            html += `<button${active} data-action="economy-subtab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
-        });
-        html += '</div>';
 
+        if (S === 'overview') { const E = this._eventPieces(['festival', 'weather', 'mods']); html += E.festival + E.weather + E.mods; } // v7.3.0 天氣、節慶、生效中的影響從舊「事件」分頁搬來
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
         const icons = {salt:'🧂',paper:'📄',food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
@@ -138,30 +125,36 @@ Object.assign(RimTownApp.prototype, {
             wheat:t('小麥'),rice:t('稻米'),corn:t('玉米'),potato:t('馬鈴薯'),cotton:t('棉花'),flowers:t('花卉'),mushroom:t('蘑菇'),sugarcane:t('甘蔗'),tea:t('茶葉'),grapes:t('葡萄'),golden_wheat:t('金色小麥'),dragon_fruit:t('火龍果'),
             bread:t('麵包'),pastry:t('糕點'),beer:t('啤酒'),wine:t('葡萄酒'),perfume:t('香水'),fine_tea:t('精品茶'),herbal_tea:t('草本茶'),sugar:t('砂糖'),jam:t('果醬'),luxury_furniture:t('高級家具')};
 
-        if (this._economySubTab === 'resources') {
-            // v6.54.0 公庫 vs 村民荷包
-            try { const ws = typeof WALLET !== 'undefined' && this.world?.wallet ? WALLET.summary(this.world) : null;
-                if (ws) html += `<div class="econ-section"><h3>👛 ${t('村民荷包')}</h3><div style="font-size:0.78rem;line-height:1.6">${t('大家身上合計')} ${ws.total} ${t('銀幣')} · ${t('最有錢')}${t('：')}${this._escapeHtml(t(ws.rich.a.name))} ${Math.round(ws.rich.n)} · ${t('最窮')}${t('：')}${this._escapeHtml(t(ws.poor.a.name))} ${Math.round(ws.poor.n)}${ws.broke ? ` · <span style="color:var(--danger,#E04848)">${t('{n} 人吃不起三餐').replace('{n}', ws.broke)}</span>` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted)">${t('公庫發薪水（先扣 {p}% 稅）；村民自己付三餐、衣服、冬天的柴。提案可以自己出錢、找朋友湊，或請公庫出。').replace('{p}', Math.round(ws.tax * 100))}</div>${ws.bizRate ? `<div style="font-size:0.7rem;color:var(--text-muted)">🏪 ${t('做生意的人（開店、廚師賣餐、裁縫賣衣）收入先繳 {p}% 營業稅，至今繳了 {n} 銀幣').replace('{p}', Math.round(ws.bizRate * 100)).replace('{n}', ws.bizTax)}</div>` : ''}</div>`; } catch (e) {}
-            // v7.0.0 物價與就業
-            try { if (typeof PRICES !== 'undefined' && this.world?.prices) { const pv = PRICES.view(this.world); const lv = typeof LABOR !== 'undefined' && this.world.labor ? LABOR.view(this.world) : null;
-                html += `<div class="econ-section price-section"><h3>📊 ${t('物價與就業')}</h3><div class="market-meta price-meta">${pv.map(x => `${x.icon} ${x.name} <b>${x.v.toFixed(2)}×</b>${x.trend > 0 ? ' ↑' : x.trend < 0 ? ' ↓' : ''}${t('（')}${x.word}${t('）')}`).join(' · ')}</div>`
-                    + (lv ? `<div class="market-meta labor-meta">💼 ${t('失業')} ${lv.unemployed} ${t('人')}${t('（')}${lv.rate}%${t('）')} · ${t('找到工作')} ${lv.stats.hired} · ${t('被裁員')} ${lv.stats.laidOff} · ${t('轉行')} ${lv.stats.switched}${lv.stats.grads ? ` · ${t('成年後第一份工作')} ${lv.stats.grads}` : ''}</div><div class="labor-jobs">${lv.jobs.map(j => `<span class="labor-job${j.filled > j.slots ? ' over' : j.filled < j.slots ? ' open' : ''}">${this._escapeHtml ? this._escapeHtml(j.title) : j.title} ${j.filled}/${j.slots}</span>`).join('')}</div>` : '')
-                    + ((typeof CYCLE !== 'undefined' && this.world.cycle) ? (() => { const cv = CYCLE.view(this.world); return `<div class="market-meta cycle-meta">${cv.c >= 0.35 ? '📈' : cv.c <= -0.35 ? '📉' : '⚖️'} ${t('景氣')} <b>${cv.word}</b> ${cv.c >= 0 ? '+' : ''}${cv.c.toFixed(2)}${cv.shock ? ` · ${this._escapeHtml ? this._escapeHtml(cv.shock) : cv.shock}` : ''} · ${t('公共工程')} ${cv.worksN} ${t('次')}${t('（')}${cv.works} ${t('銀幣')}${t('）')}${cv.mono ? ` · ⚠️ ${t('壟斷')}${t('：')}${this._escapeHtml ? this._escapeHtml(cv.mono.name) : cv.mono.name} ${cv.mono.n} ${t('家')}` : ''}${cv.split ? ` · ${t('拆分')} ${cv.split}` : ''}${this.world.cycle?.law ? ` · ${t('反壟斷法生效中')}` : ''}</div>`; })() : '')
-                    + ((typeof TRADE !== 'undefined') ? (() => { const tv = TRADE.view(this.world); return `<div class="market-meta trade-meta">🚢 ${t('近 30 天進口')} ${tv.imp} · ${t('出口')} ${tv.exp} · ${tv.bal >= 0 ? t('順差') : t('逆差')} ${Math.abs(tv.bal)} · ${t('進口關稅')} ${tv.tariff}%${tv.duty ? `${t('（')}${t('已收')} ${tv.duty}${t('）')}` : ''} · ${tv.private ? t('商行老闆做進出口') : t('公庫直接跟商人交易')}</div>`; })() : '')
-                    + `<div class="muted-text" style="font-size:0.7rem">${t('倉裡存貨越少越貴（0.6～2.5 倍），每天慢慢調整；工資不會自動跟著漲。職缺跟著人口走，人太多的行業會裁員。')}</div></div>`; } } catch (e) {}
-            // v6.89.0 產業與老闆
-            try { if (typeof MARKET !== 'undefined' && this.world?.market) { const rows = MARKET.view(this.world); const hung = Object.values(this.world.market.hungry || {}).filter(n => n >= 1).length;
-                html += `<div class="econ-section market-section"><h3>🏭 ${t('產業與老闆')}</h3><div class="market-meta">${t('貧富差距（吉尼係數）')} ${MARKET.gini(this.world)} · ${t('今天沒飯吃')} ${hung} ${t('人')}${this.world.market.deaths ? ` · ${t('餓死')} ${this.world.market.deaths}` : ''}</div>`
-                    + ((typeof ESTATE !== 'undefined' && this.world.estate) ? (() => { const e = ESTATE.view(this.world); const B = this.world.bank; return `<div class="market-meta">🏠 ${t('房屋')} ${e.units} ${t('棟')}${t('（')}${t('空屋')} ${e.vacant}${t('、')}${t('公有')} ${e.townOwned}${t('）')} · ${t('房東')} ${e.landlords} ${t('人')} · ${t('平均週租')} ${e.rent} · ${t('無家可歸')} ${e.homelessPeople} ${t('人')} · ${t('傭人')} ${e.servants} ${t('人')}${e.stats.foreclosed ? ` · ${t('被銀行收走')} ${e.stats.foreclosed}` : ''}${(this.world.market.strikes) ? ` · ${t('罷工')} ${this.world.market.strikes} ${t('次')}` : ''}${B?.bankerProfit ? ` · ${t('銀行家利潤')} ${Math.round(B.bankerProfit)}` : ''}</div>`; })() : '')
-                    + ((typeof POWER !== 'undefined' && this.world.power) ? (() => { const v = POWER.view(this.world); if (!v.gifts && !v.exposed && !v.spiked && !v.bought && !v.refused) return ''; return `<div class="market-meta power-meta">💰 ${t('政治獻金')} ${v.gifts} ${t('筆')}${t('（')}${v.donated} ${t('銀幣')}${t('）')} · ${t('拒收')} ${v.refused} · 📰 ${t('揭弊')} ${v.exposed} · ${t('新聞被壓下')} ${v.spiked}${v.fired ? ` · ${t('記者被開除')} ${v.fired}` : ''}${v.raised ? ` · ${t('報導後加薪')} ${v.raised}` : ''}${v.recalls ? ` · ${t('罷免改選')} ${v.recalls}` : ''}${v.owned.length ? ` · ${t('報社老闆')}${t('：')}${v.owned.map(x => this._escapeHtml ? this._escapeHtml(x[0] + t('（') + x[1] + t('）')) : x[0]).join(t('、'))}` : ''}</div>`; })() : '')
-                    + ((typeof UNION !== 'undefined' && this.world.union?.on) ? (() => { const u = UNION.view(this.world); return `<div class="market-meta union-meta">✊ ${this._escapeHtml ? this._escapeHtml(u.name) : u.name}${t('：')}${t('領袖')} ${this._escapeHtml ? this._escapeHtml(t(u.leader)) : t(u.leader)} · ${t('會員')} ${u.members} ${t('人')} · ${t('罷工基金')} ${u.fund} · ${t('談成加薪')} ${u.won} ${t('次')} · ${t('罷工失敗')} ${u.lost} ${t('次')}${u.fired ? ` · ${t('被開除')} ${u.fired} ${t('人')}` : ''}${u.striking ? ` · ${t('罷工中')}` : ''}</div>`; })() : '')
-                    + (rows.length ? rows.map(r => `<div class="market-row"><span class="market-name">${r.icon} ${this._escapeHtml(r.name)}</span><span class="market-owner">${r.owner ? this._escapeHtml(r.owner) : t('公營')}</span><span class="market-num">${t('{n} 人').replace('{n}', r.workers)} · ${t('工資')} ${r.pay}% · ${t('七天營收')} ${r.rev7}／${t('薪水')} ${r.cost7}</span></div>`).join('') : `<div class="muted-text" style="font-size:0.72rem">${t('還沒有人經營產業。')}</div>`) + `</div>`; } } catch (e) {}
-            // v6.37.0 上帝視角:村民自己做的事(種收、出貨、談生意、補貨)
-            const alog = (this.state.autonomy?.log || []).slice(-6).reverse();
-            html += `<div class="econ-section"><h3>👐 ${t('村民自己做的事')}</h3>
-                <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${t('農夫種收、工坊出貨、商人談生意、缺什麼去補——都不用你操心。要蓋什麼、研究什麼、買賣大宗，看「提案」。')}</div>
-                ${alog.length ? alog.map(e => `<div style="font-size:0.74rem;padding:3px 0;border-bottom:1px dashed var(--border)">${this._escapeHtml(e.text || '')}</div>`).join('') : `<div class="muted-text" style="font-size:0.72rem">${t('今天還沒有紀錄，村民通常在換日時動手。')}</div>`}
-            </div>`;
+        if (S === 'overview' || S === 'goods' || S === 'industry') {
+            if (S === 'overview') {
+                // v6.54.0 公庫 vs 村民荷包
+                try { const ws = typeof WALLET !== 'undefined' && this.world?.wallet ? WALLET.summary(this.world) : null;
+                    if (ws) html += `<div class="econ-section"><h3>👛 ${t('村民荷包')}</h3><div style="font-size:0.78rem;line-height:1.6">${t('大家身上合計')} ${ws.total} ${t('銀幣')} · ${t('最有錢')}${t('：')}${this._escapeHtml(t(ws.rich.a.name))} ${Math.round(ws.rich.n)} · ${t('最窮')}${t('：')}${this._escapeHtml(t(ws.poor.a.name))} ${Math.round(ws.poor.n)}${ws.broke ? ` · <span style="color:var(--danger,#E04848)">${t('{n} 人吃不起三餐').replace('{n}', ws.broke)}</span>` : ''}</div><div style="font-size:0.7rem;color:var(--text-muted)">${t('公庫發薪水（先扣 {p}% 稅）；村民自己付三餐、衣服、冬天的柴。提案可以自己出錢、找朋友湊，或請公庫出。').replace('{p}', Math.round(ws.tax * 100))}</div>${ws.bizRate ? `<div style="font-size:0.7rem;color:var(--text-muted)">🏪 ${t('做生意的人（開店、廚師賣餐、裁縫賣衣）收入先繳 {p}% 營業稅，至今繳了 {n} 銀幣').replace('{p}', Math.round(ws.bizRate * 100)).replace('{n}', ws.bizTax)}</div>` : ''}</div>`; } catch (e) {}
+                // v7.0.0 物價與就業
+                try { if (typeof PRICES !== 'undefined' && this.world?.prices) { const pv = PRICES.view(this.world); const lv = typeof LABOR !== 'undefined' && this.world.labor ? LABOR.view(this.world) : null;
+                    html += `<div class="econ-section price-section"><h3>📊 ${t('物價與就業')}</h3><div class="market-meta price-meta">${pv.map(x => `${x.icon} ${x.name} <b>${x.v.toFixed(2)}×</b>${x.trend > 0 ? ' ↑' : x.trend < 0 ? ' ↓' : ''}${t('（')}${x.word}${t('）')}`).join(' · ')}</div>`
+                        + (lv ? `<div class="market-meta labor-meta">💼 ${t('失業')} ${lv.unemployed} ${t('人')}${t('（')}${lv.rate}%${t('）')} · ${t('找到工作')} ${lv.stats.hired} · ${t('被裁員')} ${lv.stats.laidOff} · ${t('轉行')} ${lv.stats.switched}${lv.stats.grads ? ` · ${t('成年後第一份工作')} ${lv.stats.grads}` : ''}</div><div class="labor-jobs">${lv.jobs.map(j => `<span class="labor-job${j.filled > j.slots ? ' over' : j.filled < j.slots ? ' open' : ''}">${this._escapeHtml ? this._escapeHtml(j.title) : j.title} ${j.filled}/${j.slots}</span>`).join('')}</div>` : '')
+                        + ((typeof CYCLE !== 'undefined' && this.world.cycle) ? (() => { const cv = CYCLE.view(this.world); return `<div class="market-meta cycle-meta">${cv.c >= 0.35 ? '📈' : cv.c <= -0.35 ? '📉' : '⚖️'} ${t('景氣')} <b>${cv.word}</b> ${cv.c >= 0 ? '+' : ''}${cv.c.toFixed(2)}${cv.shock ? ` · ${this._escapeHtml ? this._escapeHtml(cv.shock) : cv.shock}` : ''} · ${t('公共工程')} ${cv.worksN} ${t('次')}${t('（')}${cv.works} ${t('銀幣')}${t('）')}${cv.mono ? ` · ⚠️ ${t('壟斷')}${t('：')}${this._escapeHtml ? this._escapeHtml(cv.mono.name) : cv.mono.name} ${cv.mono.n} ${t('家')}` : ''}${cv.split ? ` · ${t('拆分')} ${cv.split}` : ''}${this.world.cycle?.law ? ` · ${t('反壟斷法生效中')}` : ''}</div>`; })() : '')
+                        + ((typeof TRADE !== 'undefined') ? (() => { const tv = TRADE.view(this.world); return `<div class="market-meta trade-meta">🚢 ${t('近 30 天進口')} ${tv.imp} · ${t('出口')} ${tv.exp} · ${tv.bal >= 0 ? t('順差') : t('逆差')} ${Math.abs(tv.bal)} · ${t('進口關稅')} ${tv.tariff}%${tv.duty ? `${t('（')}${t('已收')} ${tv.duty}${t('）')}` : ''} · ${tv.private ? t('商行老闆做進出口') : t('公庫直接跟商人交易')}</div>`; })() : '')
+                        + `<div class="muted-text" style="font-size:0.7rem">${t('倉裡存貨越少越貴（0.6～2.5 倍），每天慢慢調整；工資不會自動跟著漲。職缺跟著人口走，人太多的行業會裁員。')}</div></div>`; } } catch (e) {}
+            }
+            if (S === 'industry') {
+                // v6.89.0 產業與老闆
+                try { if (typeof MARKET !== 'undefined' && this.world?.market) { const rows = MARKET.view(this.world); const hung = Object.values(this.world.market.hungry || {}).filter(n => n >= 1).length;
+                    html += `<div class="econ-section market-section"><h3>🏭 ${t('產業與老闆')}</h3><div class="market-meta">${t('貧富差距（吉尼係數）')} ${MARKET.gini(this.world)} · ${t('今天沒飯吃')} ${hung} ${t('人')}${this.world.market.deaths ? ` · ${t('餓死')} ${this.world.market.deaths}` : ''}</div>`
+                        + ((typeof ESTATE !== 'undefined' && this.world.estate) ? (() => { const e = ESTATE.view(this.world); const B = this.world.bank; return `<div class="market-meta">🏠 ${t('房屋')} ${e.units} ${t('棟')}${t('（')}${t('空屋')} ${e.vacant}${t('、')}${t('公有')} ${e.townOwned}${t('）')} · ${t('房東')} ${e.landlords} ${t('人')} · ${t('平均週租')} ${e.rent} · ${t('無家可歸')} ${e.homelessPeople} ${t('人')} · ${t('傭人')} ${e.servants} ${t('人')}${e.stats.foreclosed ? ` · ${t('被銀行收走')} ${e.stats.foreclosed}` : ''}${(this.world.market.strikes) ? ` · ${t('罷工')} ${this.world.market.strikes} ${t('次')}` : ''}${B?.bankerProfit ? ` · ${t('銀行家利潤')} ${Math.round(B.bankerProfit)}` : ''}</div>`; })() : '')
+                        + ((typeof POWER !== 'undefined' && this.world.power) ? (() => { const v = POWER.view(this.world); if (!v.gifts && !v.exposed && !v.spiked && !v.bought && !v.refused) return ''; return `<div class="market-meta power-meta">💰 ${t('政治獻金')} ${v.gifts} ${t('筆')}${t('（')}${v.donated} ${t('銀幣')}${t('）')} · ${t('拒收')} ${v.refused} · 📰 ${t('揭弊')} ${v.exposed} · ${t('新聞被壓下')} ${v.spiked}${v.fired ? ` · ${t('記者被開除')} ${v.fired}` : ''}${v.raised ? ` · ${t('報導後加薪')} ${v.raised}` : ''}${v.recalls ? ` · ${t('罷免改選')} ${v.recalls}` : ''}${v.owned.length ? ` · ${t('報社老闆')}${t('：')}${v.owned.map(x => this._escapeHtml ? this._escapeHtml(x[0] + t('（') + x[1] + t('）')) : x[0]).join(t('、'))}` : ''}</div>`; })() : '')
+                        + ((typeof UNION !== 'undefined' && this.world.union?.on) ? (() => { const u = UNION.view(this.world); return `<div class="market-meta union-meta">✊ ${this._escapeHtml ? this._escapeHtml(u.name) : u.name}${t('：')}${t('領袖')} ${this._escapeHtml ? this._escapeHtml(t(u.leader)) : t(u.leader)} · ${t('會員')} ${u.members} ${t('人')} · ${t('罷工基金')} ${u.fund} · ${t('談成加薪')} ${u.won} ${t('次')} · ${t('罷工失敗')} ${u.lost} ${t('次')}${u.fired ? ` · ${t('被開除')} ${u.fired} ${t('人')}` : ''}${u.striking ? ` · ${t('罷工中')}` : ''}</div>`; })() : '')
+                        + (rows.length ? rows.map(r => `<div class="market-row"><span class="market-name">${r.icon} ${this._escapeHtml(r.name)}</span><span class="market-owner">${r.owner ? this._escapeHtml(r.owner) : t('公營')}</span><span class="market-num">${t('{n} 人').replace('{n}', r.workers)} · ${t('工資')} ${r.pay}% · ${t('七天營收')} ${r.rev7}／${t('薪水')} ${r.cost7}</span></div>`).join('') : `<div class="muted-text" style="font-size:0.72rem">${t('還沒有人經營產業。')}</div>`) + `</div>`; } } catch (e) {}
+            }
+            if (S === 'overview') {
+                // v6.37.0 上帝視角:村民自己做的事(種收、出貨、談生意、補貨)
+                const alog = (this.state.autonomy?.log || []).slice(-6).reverse();
+                html += `<div class="econ-section"><h3>👐 ${t('村民自己做的事')}</h3>
+                    <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:4px">${t('農夫種收、工坊出貨、商人談生意、缺什麼去補——都不用你操心。要蓋什麼、研究什麼、買賣大宗，看「提案」。')}</div>
+                    ${alog.length ? alog.map(e => `<div style="font-size:0.74rem;padding:3px 0;border-bottom:1px dashed var(--border)">${this._escapeHtml(e.text || '')}</div>`).join('') : `<div class="muted-text" style="font-size:0.72rem">${t('今天還沒有紀錄，村民通常在換日時動手。')}</div>`}
+                </div>`;
+            }
             // v5.50.0 經濟A波:三層資源結構 —— 關鍵資源 / 加工產能(看流量) / 原料倉庫(燈號)
             const npcCount = Math.max(1, Object.keys(this.state.agents || {}).length - 1);
             // ① 關鍵資源:食物+銀幣,唯二要玩家盯的存量
@@ -171,135 +164,139 @@ Object.assign(RimTownApp.prototype, {
             const overCap = foodAmt > foodCap;
             const foodClr = foodAmt < 50 ? 'var(--negative)' : foodAmt < 200 || overCap ? '#e8b030' : 'var(--positive)';
             const silverClr = silverAmt < 50 ? 'var(--negative)' : silverAmt < 300 ? '#e8b030' : 'var(--positive)';
-            html += `<div class="econ-section"><h3>💎 ${t('關鍵資源')}</h3>
-                <div style="display:flex;gap:8px">
-                    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
-                        <div style="font-size:1.3rem">🌾</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('食物')}</div>
-                        <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}<span style="font-size:0.68rem;font-weight:normal;color:var(--text-muted)">/${foodCap}</span></div>
-                        ${overCap ? `<div style="font-size:0.62rem;color:#e8b030">⚠ ${t('超過糧倉容量，每日腐壞5%')}</div>` : ''}</div>
-                    <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
-                        <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
-                        <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>
-                </div></div>`;
-            // v6.77.0 本鎮物產:存糧是什麼(穀物／魚／肉)、誰在種田捕魚打獵、工具、鹽、紙、本鎮擅長與要靠貿易的
-            try { if (typeof ECON !== 'undefined' && this.world) {
-                const V = ECON.view(this.world); const tot = Math.max(1, V.food); const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x)) : String(x);
-                const bar = ECON.KINDS.map(k => { const pct = Math.round(V.pantry[k] / tot * 100); return pct > 0 ? `<span class="ec-kind ec-${k}" style="flex:${Math.max(4, pct)}" title="${esc(t(ECON.KIND_ZH[k]))} ${pct}%">${ECON.KIND_ICON[k]}</span>` : ''; }).join('');
-                const kinds = ECON.KINDS.map(k => `${ECON.KIND_ICON[k]} ${t(ECON.KIND_ZH[k])} ${Math.round(V.pantry[k])}`).join(' · ');
-                const roles = `${t('農夫')} ${V.roles.grain} · ${t('漁夫')} ${V.roles.fish} · ${t('獵人')} ${V.roles.meat}`;
-                const diet = V.variety == null ? '' : V.variety >= 3 ? `😋 ${t('飲食多樣，大家心情好')}` : V.variety <= 1 ? `😒 ${t('天天吃一樣的，大家吃膩了')}` : `🙂 ${t('飲食還算有變化')}`;
-                // v6.80.0 吃得好：飲食多樣／麵包糕點果醬／好酒好茶甜點，湊齊兩樣就算；隔天少吃一成正餐，連續三天心情加
-                let eatWell = ''; if (typeof FLOW !== 'undefined') { const D = FLOW.diet(this.world);
-                    eatWell = D.good ? `<div class="ec-line">🍰 ${t('昨天吃得好：今天少吃一成正餐')}${D.streak >= 3 ? `${t('（')}${t('已連續 {n} 天，大家心情變好').replace('{n}', D.streak)}${t('）')}` : ''}</div>`
-                        : `<div class="ec-line ec-muted">🍽️ ${t('吃得普通')}${t('：')}${[['variety', '飲食多樣'], ['snack', '麵包糕點果醬'], ['fine', '好酒好茶甜點']].map(([k, l]) => `${D.parts?.[k] ? '✓' : '✗'}${t(l)}`).join(' ')}${t('（')}${t('湊齊兩樣就算吃得好')}${t('）')}</div>`; }
-                const toolPct = Math.round(V.toolF * 100);
-                const toolTxt = V.toolF >= 1.05 ? `🔧 ${t('工具充裕')}${t('：')}${t('工作效率')} ${toolPct}%` : V.toolF >= 1 ? `🔧 ${t('工具夠用')}` : `🔧 ${t('工具不夠')}${t('：')}${t('工作效率')} ${toolPct}%${t('（')}${t('需要')} ${V.toolNeed}${t('）')}`;
-                const saltTxt = V.salted ? `🧂 ${t('有鹽醃漬：存糧腐壞減半')} (${Math.round(V.salt)})` : `🧂 ${V.canSalt ? t('鹽還在曬，今天不夠用') : t('缺鹽：只有靠海的鎮曬得出鹽，要靠商隊買')}`;
-                const paperTxt = V.paperShort ? `📄 ${t('缺紙：報社可能停刊、研究變慢')}` : `📄 ${t('紙')} ${Math.round(V.paper)}`;
-                const good = V.spec.good.map(x => t(x)).join(t('、')), bad = V.spec.bad.map(x => t(x)).join(t('、'));
-                html += `<div class="econ-section ec-local"><h3>🗺️ ${t('本鎮物產')}</h3>
-                    <div class="ec-bar">${bar}</div>
-                    <div class="ec-line">${kinds}</div>
-                    <div class="ec-line ec-muted">${roles}${V.canFish ? '' : ` · ${t('不靠水，不能捕魚')}`}</div>
-                    ${diet ? `<div class="ec-line">${diet}</div>` : ''}${eatWell}
-                    <div class="ec-line">${toolTxt}</div><div class="ec-line">${saltTxt}</div><div class="ec-line">${paperTxt}</div>
-                    ${good ? `<div class="ec-line">💪 ${t('本鎮擅長')}${t('：')}${esc(good)}</div>` : ''}${bad ? `<div class="ec-line ec-muted">🐪 ${t('得靠貿易')}${t('：')}${esc(bad)}</div>` : ''}
-                </div>`;
-            } } catch (e) { console.warn('[Econ] panel', e); }
-            // ② 加工產能:看今日流量(做了幾個/用掉幾個),不是純庫存
-            const PROCESSED = ['meals','tools','clothing','medicine','furniture'];
-            const flow = this._econDailyFlow(PROCESSED);
-            const demandNote = {
-                meals: `${t('每日需')} ${Math.round(npcCount * 1.5)}`,
-                tools: `${t('每日耗損')} ${(npcCount * 0.05 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'tools') : 1)).toFixed(1)}`, // v6.80.0 精製品壞得慢
-                clothing: `${t('每日耗損')} ${(npcCount * 0.03 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'clothing') : 1)).toFixed(1)}`,
-                medicine: t('生病時消耗'),
-                furniture: t('建設與新居用'),
-            };
-            // v5.51.0 經濟B波:每條加工線顯示「誰在做」+ 排班三態(休工/正常/加班)——經濟＝排人,不是囤貨
-            const GOOD_JOB = { meals:'cook', tools:'blacksmith', clothing:'tailor', medicine:'doctor', furniture:'carpenter' };
-            const workPolicy = this.world?.workPolicy || {};
-            html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗（村民自己排班）')}</span></h3>`;
-            PROCESSED.forEach(k => {
-                const f = flow[k];
-                const stock = Math.round(res[k] || 0);
-                const fineN = (typeof FLOW !== 'undefined' && this.world && FLOW.FINE_FROM[k]) ? Math.floor(FLOW.fine(this.world, k)) : 0; // v6.80.0
-                const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
-                const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
-                const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
-                const policy = workPolicy[k] || 'normal';
-                // v5.53.0 產出在午夜結算,白天顯示「預估日產」避免 +0 被誤讀成排班沒生效
-                const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
-                const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
-                const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">${t('（')}${t('午夜結算')}${t('）')}</span>`;
-                const polBtn = (mode, icon, tip) => ``;
-                html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
-                    <div style="display:flex;align-items:center;gap:6px">
-                        <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
-                        <span style="color:var(--text-muted);font-size:0.66rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${makers.length ? '👤 ' + makers.join('、') : t('（無人手）')}</span>
-                        <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}${fineN >= 1 ? `<span class="ec-fine" title="${t('工坊做的精製品，耗損只有一半')}">${t('（')}✨${t('精製')} ${fineN}${t('）')}</span>` : ''}</span>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                        <span style="flex:1;font-size:0.7rem;color:${flowClr}">${prodHtml}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
-                        ${polBtn('off', '⏸', t('休工：不生產，村民心情變好、多時間社交'))}
-                        ${polBtn('normal', '▶', t('正常排班'))}
-                        ${polBtn('extra', '⏫', t('加班：產量+50%，但村民會累、心情變差'))}
-                    </div>
-                </div>`;
-            });
-            html += '</div>';
-            // ③ 原料倉庫:收成一顆燈,細目摺疊
-            const RAWS = ['wood','stone','metal','cloth','herbs','salt','paper']; // v6.77.0 鹽、紙
-            const short = RAWS.filter(k => (res[k] || 0) < 10);
-            const tight = RAWS.filter(k => (res[k] || 0) >= 10 && (res[k] || 0) < 40);
-            const light = short.length ? '🔴' : tight.length ? '🟡' : '🟢';
-            const lightText = short.length ? `${t('短缺')}${t('：')}${short.map(k => labels[k]).join(t('、'))}`
-                : tight.length ? `${t('吃緊')}${t('：')}${tight.map(k => labels[k]).join(t('、'))}`
-                : t('原料充足，工坊無虞');
-            const detailKeys = Object.keys(res).filter(k => !PROCESSED.includes(k) && k !== 'food' && k !== 'silver' && k !== 'research_points' && Math.round(res[k]) > 0);
-            html += `<div class="econ-section"><h3>📦 ${t('原料倉庫')}</h3>
-                <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
-                <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
-                <div class="resource-grid" style="margin-top:6px">`;
-            // v6.81.0 作物收成會直接進糧倉(算在食物裡),這裡只留工坊要用的一點:不要標成短缺的紅色,免得以為鎮上缺糧
-            const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
-            detailKeys.forEach(k => {
-                const amount = res[k];
-                const cls = (amount < 10 && RAWS.includes(k)) ? 'res-low' : amount > 100 ? 'res-high' : '';
-                html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
-            });
-            html += '</div>';
-            if (detailKeys.some(k => CROPS.includes(k))) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>`;
-            html += '</details></div>';
-            // Trade
-            const trade = this.state.trade || {};
-            html += t('<div class="econ-section"><h3>交易</h3>');
-            if (trade.merchant) {
-                html += `<div class="merchant-card"><div class="merchant-name">${t(trade.merchant.name)}</div>
-                    <div class="merchant-info">${t('專長：')}${trade.merchant.specialty} | ${trade.merchant.daysRemaining}${t('天後離開')}</div>
-                    <div class="trade-offers">`;
-                trade.merchant.offers.forEach((offer, idx) => {
-                    const icon = icons[offer.resource] || '📦';
-                    const resLabel = labels[offer.resource] || offer.resource;
-                    const action = offer.isBuying ? t('賣出') : t('買入');
-                    const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
-                    html += `<div class="trade-offer ${actionCls}">
-                        <span>${icon} ${resLabel}</span>
-                        <span>×${Math.round(offer.amount)}</span>
-                        <span>${offer.price}/${t('個')}</span>
-                        
-                        </div>`;
-                });
-                html += '</div></div>';
-                const traderNames = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'trader').map(a => t(a.name));
-                html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${traderNames.length ? t('{who} 每天會去跟商人談，多的賣、缺的買。').replace('{who}', traderNames.join(t('、'))) : t('鎮上沒有商人職業的村民，鎮長或其他人會代為去談。')}</div>`;
-            } else {
-                html += t('<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>');
+            if (S === 'overview') {
+                html += `<div class="econ-section"><h3>💎 ${t('關鍵資源')}</h3>
+                    <div style="display:flex;gap:8px">
+                        <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:1.3rem">🌾</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('食物')}</div>
+                            <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}<span style="font-size:0.68rem;font-weight:normal;color:var(--text-muted)">/${foodCap}</span></div>
+                            ${overCap ? `<div style="font-size:0.62rem;color:#e8b030">⚠ ${t('超過糧倉容量，每日腐壞5%')}</div>` : ''}</div>
+                        <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
+                            <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
+                            <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>
+                    </div></div>`;
             }
-            const th = (this.world?.trade?.tradeHistory || []).slice(-3).reverse();
-            if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
-            html += '</div>';
-        } else if (this._economySubTab === 'tech') {
+            if (S === 'goods') {
+                // v6.77.0 本鎮物產:存糧是什麼(穀物／魚／肉)、誰在種田捕魚打獵、工具、鹽、紙、本鎮擅長與要靠貿易的
+                try { if (typeof ECON !== 'undefined' && this.world) {
+                    const V = ECON.view(this.world); const tot = Math.max(1, V.food); const esc = (x) => this._escapeHtml ? this._escapeHtml(String(x)) : String(x);
+                    const bar = ECON.KINDS.map(k => { const pct = Math.round(V.pantry[k] / tot * 100); return pct > 0 ? `<span class="ec-kind ec-${k}" style="flex:${Math.max(4, pct)}" title="${esc(t(ECON.KIND_ZH[k]))} ${pct}%">${ECON.KIND_ICON[k]}</span>` : ''; }).join('');
+                    const kinds = ECON.KINDS.map(k => `${ECON.KIND_ICON[k]} ${t(ECON.KIND_ZH[k])} ${Math.round(V.pantry[k])}`).join(' · ');
+                    const roles = `${t('農夫')} ${V.roles.grain} · ${t('漁夫')} ${V.roles.fish} · ${t('獵人')} ${V.roles.meat}`;
+                    const diet = V.variety == null ? '' : V.variety >= 3 ? `😋 ${t('飲食多樣，大家心情好')}` : V.variety <= 1 ? `😒 ${t('天天吃一樣的，大家吃膩了')}` : `🙂 ${t('飲食還算有變化')}`;
+                    // v6.80.0 吃得好：飲食多樣／麵包糕點果醬／好酒好茶甜點，湊齊兩樣就算；隔天少吃一成正餐，連續三天心情加
+                    let eatWell = ''; if (typeof FLOW !== 'undefined') { const D = FLOW.diet(this.world);
+                        eatWell = D.good ? `<div class="ec-line">🍰 ${t('昨天吃得好：今天少吃一成正餐')}${D.streak >= 3 ? `${t('（')}${t('已連續 {n} 天，大家心情變好').replace('{n}', D.streak)}${t('）')}` : ''}</div>`
+                            : `<div class="ec-line ec-muted">🍽️ ${t('吃得普通')}${t('：')}${[['variety', '飲食多樣'], ['snack', '麵包糕點果醬'], ['fine', '好酒好茶甜點']].map(([k, l]) => `${D.parts?.[k] ? '✓' : '✗'}${t(l)}`).join(' ')}${t('（')}${t('湊齊兩樣就算吃得好')}${t('）')}</div>`; }
+                    const toolPct = Math.round(V.toolF * 100);
+                    const toolTxt = V.toolF >= 1.05 ? `🔧 ${t('工具充裕')}${t('：')}${t('工作效率')} ${toolPct}%` : V.toolF >= 1 ? `🔧 ${t('工具夠用')}` : `🔧 ${t('工具不夠')}${t('：')}${t('工作效率')} ${toolPct}%${t('（')}${t('需要')} ${V.toolNeed}${t('）')}`;
+                    const saltTxt = V.salted ? `🧂 ${t('有鹽醃漬：存糧腐壞減半')} (${Math.round(V.salt)})` : `🧂 ${V.canSalt ? t('鹽還在曬，今天不夠用') : t('缺鹽：只有靠海的鎮曬得出鹽，要靠商隊買')}`;
+                    const paperTxt = V.paperShort ? `📄 ${t('缺紙：報社可能停刊、研究變慢')}` : `📄 ${t('紙')} ${Math.round(V.paper)}`;
+                    const good = V.spec.good.map(x => t(x)).join(t('、')), bad = V.spec.bad.map(x => t(x)).join(t('、'));
+                    html += `<div class="econ-section ec-local"><h3>🗺️ ${t('本鎮物產')}</h3>
+                        <div class="ec-bar">${bar}</div>
+                        <div class="ec-line">${kinds}</div>
+                        <div class="ec-line ec-muted">${roles}${V.canFish ? '' : ` · ${t('不靠水，不能捕魚')}`}</div>
+                        ${diet ? `<div class="ec-line">${diet}</div>` : ''}${eatWell}
+                        <div class="ec-line">${toolTxt}</div><div class="ec-line">${saltTxt}</div><div class="ec-line">${paperTxt}</div>
+                        ${good ? `<div class="ec-line">💪 ${t('本鎮擅長')}${t('：')}${esc(good)}</div>` : ''}${bad ? `<div class="ec-line ec-muted">🐪 ${t('得靠貿易')}${t('：')}${esc(bad)}</div>` : ''}
+                    </div>`;
+                } } catch (e) { console.warn('[Econ] panel', e); }
+                // ② 加工產能:看今日流量(做了幾個/用掉幾個),不是純庫存
+                const PROCESSED = ['meals','tools','clothing','medicine','furniture'];
+                const flow = this._econDailyFlow(PROCESSED);
+                const demandNote = {
+                    meals: `${t('每日需')} ${Math.round(npcCount * 1.5)}`,
+                    tools: `${t('每日耗損')} ${(npcCount * 0.05 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'tools') : 1)).toFixed(1)}`, // v6.80.0 精製品壞得慢
+                    clothing: `${t('每日耗損')} ${(npcCount * 0.03 * (typeof FLOW !== 'undefined' && this.world ? FLOW.wearRate(this.world, 'clothing') : 1)).toFixed(1)}`,
+                    medicine: t('生病時消耗'),
+                    furniture: t('建設與新居用'),
+                };
+                // v5.51.0 經濟B波:每條加工線顯示「誰在做」+ 排班三態(休工/正常/加班)——經濟＝排人,不是囤貨
+                const GOOD_JOB = { meals:'cook', tools:'blacksmith', clothing:'tailor', medicine:'doctor', furniture:'carpenter' };
+                const workPolicy = this.world?.workPolicy || {};
+                html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗（村民自己排班）')}</span></h3>`;
+                PROCESSED.forEach(k => {
+                    const f = flow[k];
+                    const stock = Math.round(res[k] || 0);
+                    const fineN = (typeof FLOW !== 'undefined' && this.world && FLOW.FINE_FROM[k]) ? Math.floor(FLOW.fine(this.world, k)) : 0; // v6.80.0
+                    const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
+                    const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
+                    const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
+                    const policy = workPolicy[k] || 'normal';
+                    // v5.53.0 產出在午夜結算,白天顯示「預估日產」避免 +0 被誤讀成排班沒生效
+                    const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
+                    const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
+                    const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">${t('（')}${t('午夜結算')}${t('）')}</span>`;
+                    const polBtn = (mode, icon, tip) => ``;
+                    html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
+                        <div style="display:flex;align-items:center;gap:6px">
+                            <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
+                            <span style="color:var(--text-muted);font-size:0.66rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${makers.length ? '👤 ' + makers.join('、') : t('（無人手）')}</span>
+                            <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}${fineN >= 1 ? `<span class="ec-fine" title="${t('工坊做的精製品，耗損只有一半')}">${t('（')}✨${t('精製')} ${fineN}${t('）')}</span>` : ''}</span>
+                        </div>
+                        <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
+                            <span style="flex:1;font-size:0.7rem;color:${flowClr}">${prodHtml}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
+                            ${polBtn('off', '⏸', t('休工：不生產，村民心情變好、多時間社交'))}
+                            ${polBtn('normal', '▶', t('正常排班'))}
+                            ${polBtn('extra', '⏫', t('加班：產量+50%，但村民會累、心情變差'))}
+                        </div>
+                    </div>`;
+                });
+                html += '</div>';
+                // ③ 原料倉庫:收成一顆燈,細目摺疊
+                const RAWS = ['wood','stone','metal','cloth','herbs','salt','paper']; // v6.77.0 鹽、紙
+                const short = RAWS.filter(k => (res[k] || 0) < 10);
+                const tight = RAWS.filter(k => (res[k] || 0) >= 10 && (res[k] || 0) < 40);
+                const light = short.length ? '🔴' : tight.length ? '🟡' : '🟢';
+                const lightText = short.length ? `${t('短缺')}${t('：')}${short.map(k => labels[k]).join(t('、'))}`
+                    : tight.length ? `${t('吃緊')}${t('：')}${tight.map(k => labels[k]).join(t('、'))}`
+                    : t('原料充足，工坊無虞');
+                const detailKeys = Object.keys(res).filter(k => !PROCESSED.includes(k) && k !== 'food' && k !== 'silver' && k !== 'research_points' && Math.round(res[k]) > 0);
+                html += `<div class="econ-section"><h3>📦 ${t('原料倉庫')}</h3>
+                    <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
+                    <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
+                    <div class="resource-grid" style="margin-top:6px">`;
+                // v6.81.0 作物收成會直接進糧倉(算在食物裡),這裡只留工坊要用的一點:不要標成短缺的紅色,免得以為鎮上缺糧
+                const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
+                detailKeys.forEach(k => {
+                    const amount = res[k];
+                    const cls = (amount < 10 && RAWS.includes(k)) ? 'res-low' : amount > 100 ? 'res-high' : '';
+                    html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
+                });
+                html += '</div>';
+                if (detailKeys.some(k => CROPS.includes(k))) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>`;
+                html += '</details></div>';
+                // Trade
+                const trade = this.state.trade || {};
+                html += `<div class="econ-section"><h3>🤝 ${t('交易')}</h3>`;
+                if (trade.merchant) {
+                    html += `<div class="merchant-card"><div class="merchant-name">${t(trade.merchant.name)}</div>
+                        <div class="merchant-info">${t('專長：')}${({ general: t('雜貨'), metals: t('金屬'), medicine: t('藥材'), textiles: t('布料'), exotic: t('異國貨') })[trade.merchant.specialty] || t(trade.merchant.specialty || '')} | ${trade.merchant.daysRemaining}${t('天後離開')}</div>
+                        <div class="trade-offers">`;
+                    trade.merchant.offers.forEach((offer, idx) => {
+                        const icon = icons[offer.resource] || '📦';
+                        const resLabel = labels[offer.resource] || offer.resource;
+                        const action = offer.isBuying ? t('賣出') : t('買入');
+                        const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
+                        html += `<div class="trade-offer ${actionCls}">
+                            <span>${icon} ${resLabel}</span>
+                            <span>×${Math.round(offer.amount)}</span>
+                            <span>${offer.price}/${t('個')}</span>
+                        
+                            </div>`;
+                    });
+                    html += '</div></div>';
+                    const traderNames = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'trader').map(a => t(a.name));
+                    html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${traderNames.length ? t('{who} 每天會去跟商人談，多的賣、缺的買。').replace('{who}', traderNames.join(t('、'))) : t('鎮上沒有商人職業的村民，鎮長或其他人會代為去談。')}</div>`;
+                } else {
+                    html += t('<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>');
+                }
+                const th = (this.world?.trade?.tradeHistory || []).slice(-3).reverse();
+                if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
+                html += '</div>';
+            }
+        } if (S === 'build') {
             // v5.52.0 研究獨立入口;v6.40.0 三個時代的科技樹:每個節點看狀態、前置、解鎖什麼
             const research = this.state.research || {};
             const projects = research.projects || {};
@@ -352,7 +349,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="tech-era"><div class="tech-era-head">✨ ${t('發明名人堂')} <span>${(IS.inventions || []).length}</span></div>` + (inv.length ? inv.map(v => `<div class="tech-desc">${t('「')}${t('{name}式{thing}').replace('{name}', t(v.by)).replace('{thing}', t(v.thing))}${t('」')}${v.tech && projects[v.tech] ? ` · ${t('推進了')}${t(projects[v.tech].name)}` : ''}${v.disputedBy ? ` · 😤 ${t('{who}說是他先想到的').replace('{who}', t(v.disputedBy))}` : ''}</div>`).join('') : `<div class="tech-desc" style="color:var(--text-muted)">${t('還沒有人靈光一閃。有創意、勤快的村民工作時偶爾會想出新東西。')}</div>`) + '</div>';
             }
             html += '</div>';
-        } else if (this._economySubTab === 'shop') {
+        } if (S === 'goods') {
             // v4.0: Shop system — card grid layout
             html += t('<div class="econ-section"><h3>🛒 商店</h3>');
             const silverAmount = Math.round(res['silver'] || 0);
@@ -380,7 +377,7 @@ Object.assign(RimTownApp.prototype, {
                 html += '</div>';
             }
             html += '</div>';
-        } else if (this._economySubTab === 'building') {
+        } if (S === 'build') {
             // Buildings
             const buildings = this.state.buildings || {};
             html += t('<div class="econ-section"><h3>建築</h3>');
@@ -450,7 +447,7 @@ Object.assign(RimTownApp.prototype, {
                 }
                 html += '</div>';
             }
-        } else if (this._economySubTab === 'factory') {
+        } if (S === 'industry') {
             // Factory (merged from old factory tab)
             const proc = this.state.processing || {};
             const factories = proc.builtFactories || {};
@@ -531,6 +528,7 @@ Object.assign(RimTownApp.prototype, {
                 html += '</div>';
             }
         }
+        if (S === 'industry') { const B = this._townBlocks(null, ['biz', 'bank']); html += B.biz + B.bank; const tmp = document.createElement('div'); this.renderIndustryAndFarm(tmp); html += tmp.innerHTML; } // v7.3.0 店、銀行(原在鎮況)、產業等級與農場(原本獨立的「產業」頁)
         html += '</div>';
         container.innerHTML = html;
     },
@@ -623,20 +621,8 @@ Object.assign(RimTownApp.prototype, {
         const farm = this.state.farm || {};
         const plots = farm.plots || [];
         // Sub-tab state
-        if (!this._industrySubTab) this._industrySubTab = 'overview';
-        let html = '<div class="economy-panel">';
-        // Sub-tab navigation
-        html += '<div class="sub-tab-bar">';
-        const subTabs = [
-            { key:'overview', label:t('總覽'), icon:'🏘️' },
-            { key:'farm', label:t('農場'), icon:'🌾' },
-        ];
-        subTabs.forEach(_tw => {
-            const active = this._industrySubTab === _tw.key ? ' class="active"' : '';
-            html += `<button${active} data-action="industry-subtab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
-        });
-        html += '</div>';
-        if (this._industrySubTab === 'overview') {
+        let html = '<div class="economy-panel">'; // v7.3.0 總覽與農場不再分兩頁
+        {
             // Town level
             html += `${t('<div class="econ-section"><h3>🏘️ 小鎮等級：')}${ind.townLevelName || t('荒村')} (Lv${ind.townLevel || 1})</h3>`;
             html += `${t('<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：')}${ind.maxIndustries || 1}${t(' | 已開啟：')}${Object.keys(ind.industries || {}).length}</div></div>`;
@@ -692,7 +678,7 @@ Object.assign(RimTownApp.prototype, {
                 });
                 html += '</div>';
             }
-        } else if (this._industrySubTab === 'farm') {
+        } if ((this.state.farm?.plots || []).length || this.state.industry?.industries?.agriculture) {
             // Farm sub-tab content
             const stateIcons = { empty:'🟫', tilled:'🟤', growing:'🌱', ready:'✅', withered:'🥀' };
             const stateLabels = { empty:t('空地'), tilled:t('已翻土'), growing:t('生長中'), ready:t('可收穫'), withered:t('枯萎') };
@@ -751,73 +737,6 @@ Object.assign(RimTownApp.prototype, {
         container.innerHTML = html;
     },
 
-    renderIndustry(container) {
-        if (!this.state) return;
-        const ind = this.state.industry || {};
-        let html = '<div class="economy-panel">';
-        html += `${t('<div class="econ-section"><h3>🏘️ 小鎮等級：')}${ind.townLevelName || t('荒村')} (Lv${ind.townLevel || 1})</h3>`;
-        html += `${t('<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：')}${ind.maxIndustries || 1}${t(' | 已開啟：')}${Object.keys(ind.industries || {}).length}</div></div>`;
-
-        // Needs initial industry choice
-        if (ind.needsIndustryChoice) {
-            html += t('<div class="econ-section"><h3>第一個產業（等村民提案）</h3>');
-            const available = this.world.industry.getAvailableIndustries(this.world);
-            available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-
-        // Active industries
-        if (ind.industries && Object.keys(ind.industries).length > 0) {
-            html += t('<div class="econ-section"><h3>產業列表</h3>');
-            for (const [key, data] of Object.entries(ind.industries)) {
-                const def = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES[key] : null;
-                const lvDef = def?.levels?.find(l => l.lv === data.level);
-                const nextLv = def?.levels?.find(l => l.lv === data.level + 1);
-                html += `<div class="build-card"><div><strong>${def?.icon || '?'} ${def?.name || key} Lv${data.level}</strong>`;
-                if (lvDef) html += `<br><span style="font-size:0.75rem">${lvDef.bonus || lvDef.name}</span>`;
-                html += `${t('<br><span style="font-size:0.75rem;color:var(--text-secondary)">工人：')}${Array.isArray(data.workers) ? data.workers.length : data.workers}/${lvDef?.workers || '?'}</span>`;
-                if (data.dailyOutput && Object.keys(data.dailyOutput).length) {
-                    const outputStr = Object.entries(data.dailyOutput).map(([r,a]) => `${this._resName(r)}×${Math.round(a*10)/10}`).join(' ');
-                    html += `<br><span style="font-size:0.7rem;color:var(--accent-gold)">📦 ${outputStr}</span>`;
-                }
-                html += '</div>';
-                if (nextLv) {
-                    const costStr = Object.entries(nextLv.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
-                    html += `<div>
-                        <div style="font-size:0.75rem;color:var(--text-secondary)">${costStr}</div></div>`;
-                }
-                html += '</div>';
-            }
-            html += '</div>';
-        }
-
-        // Pending unlock
-        if (ind._pendingUnlock) {
-            html += t('<div class="econ-section"><h3>可開啟新產業（等村民提案）</h3>');
-            const available = this.world.industry.getAvailableIndustries(this.world);
-            available.forEach(i => {
-                html += `<div class="build-card"><div><strong>${i.icon} ${t(i.name)}</strong><br><span style="font-size:0.75rem">${i.desc}</span></div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-
-        // Synergies
-        if (ind.activeSynergies && ind.activeSynergies.length > 0) {
-            html += t('<div class="econ-section"><h3>產業加成</h3>');
-            ind.activeSynergies.forEach(s => {
-                html += `<div style="font-size:0.8rem;margin:4px 0">${s.icon} ${t(s.name)}</div>`;
-            });
-            html += '</div>';
-        }
-
-        html += '</div>';
-        container.innerHTML = html;
-    },
-
     _chooseIndustry(key) {
         const result = this.world.industry.chooseIndustry(key, this.world);
         if (!result.ok) { this._gameAlert(result.error, '⚠️'); return; }
@@ -834,74 +753,6 @@ Object.assign(RimTownApp.prototype, {
     // ============================================================
     // Farm Tab
     // ============================================================
-    renderFarm(container) {
-        if (!this.state) return;
-        const farm = this.state.farm || {};
-        const plots = farm.plots || [];
-        const stateIcons = { empty:'🟫', tilled:'🟤', growing:'🌱', ready:'✅', withered:'🥀' };
-        const stateLabels = { empty:t('空地'), tilled:t('已翻土'), growing:t('生長中'), ready:t('可收穫'), withered:t('枯萎') };
-
-        let html = '<div class="economy-panel">';
-        html += `${t('<div class="econ-section"><h3>🌾 農場（')}${plots.length}/${farm.maxPlots || 0}${t(' 塊田）</h3></div>')}`;
-
-        if (plots.length === 0) {
-            html += t('<div class="econ-section"><p class="muted-text">需要先開啟農業產業才能使用農場。</p></div>');
-        }
-
-        // Plots
-        for (const plot of plots) {
-            const crop = plot.crop ? (typeof CROPS !== 'undefined' ? CROPS[plot.crop] : null) : null;
-            html += `<div class="build-card"><div>`;
-            html += `<strong>${stateIcons[plot.state] || '?'}${t(' 田地 #')}${plot.id}</strong> — ${stateLabels[plot.state] || plot.state}`;
-            if (crop && plot.state === 'growing') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' | 進度：')}${Math.round(plot.growthProgress)}${t('% | 水分：')}${Math.round(plot.waterLevel)}%</span>`;
-                if (plot.fertilized) html += ' 🧪';
-            } else if (crop && plot.state === 'ready') {
-                html += `<br><span style="font-size:0.75rem">${crop.icon} ${t(crop.name)}${t(' — 可收穫！</span>')}`;
-            }
-            html += '</div><div>';
-            if (plot.state === 'empty') {
-                html += `${t('')}`;
-            } else if (plot.state === 'tilled') {
-                // Show crop selection
-                const farmInd = this.world.industry?.industries?.farming;
-                const farmLevel = farmInd?.level || 1;
-                const crops = this.world.farm.getAvailableCrops(farmLevel);
-                const seasonCrops = crops.filter(c => c.seasons.includes(this.world.clock.season));
-                if (seasonCrops.length > 0) {
-                    html += '<div style="font-size:0.7rem">';
-                    seasonCrops.forEach(c => {
-                        html += ``;
-                    });
-                    html += '</div>';
-                } else {
-                    html += t('<span style="font-size:0.7rem;color:var(--text-secondary)">本季無可種作物</span>');
-                }
-            } else if (plot.state === 'growing') {
-                html += `${t('')}`;
-                if (!plot.fertilized) html += `${t('')}`;
-            } else if (plot.state === 'ready') {
-                html += `${t('')}`;
-            } else if (plot.state === 'withered') {
-                html += `${t('')}`;
-            }
-            html += '</div></div>';
-        }
-
-        // Recent harvests
-        const log = farm.harvestLog || [];
-        if (log.length > 0) {
-            html += t('<div class="econ-section"><h3>收穫紀錄</h3>');
-            log.slice(-5).reverse().forEach(h => {
-                html += `<div style="font-size:0.75rem;margin:2px 0">${h.cropName} x${h.amount}${t('（')}${h.quality}${t('）')}— ${h.season}${t(' 第')}${h.day}${t('天</div>')}`;
-            });
-            html += '</div>';
-        }
-
-        html += '</div>';
-        container.innerHTML = html;
-    },
-
     _tillPlot(plotId) {
         const r = this.world.farm.tillPlot(plotId);
         if (!r.ok) { this._gameAlert(r.error || t('無法翻土'), '⚠️'); return; }
@@ -935,109 +786,6 @@ Object.assign(RimTownApp.prototype, {
     // ============================================================
     // Factory Tab
     // ============================================================
-    renderFactory(container) {
-        if (!this.state) return;
-        const proc = this.state.processing || {};
-        const factories = proc.builtFactories || {};
-
-        let html = '<div class="economy-panel">';
-        html += t('<div class="econ-section"><h3>🏭 工廠加工</h3></div>');
-
-        // Built factories
-        for (const [key, factory] of Object.entries(factories)) {
-            const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
-            if (!def) continue;
-            html += `<div class="econ-section"><h3>${def.icon} ${t(def.name)}`;
-            if (factory.status === 'building') {
-                html += `${t(' (建造中 ')}${Math.round(factory.buildProgress / factory.buildRequired * 100)}%)`;
-            }
-            html += '</h3>';
-
-            if (factory.status === 'active') {
-                // Recipe selection
-                html += t('<div style="margin:4px 0"><strong>配方：</strong>');
-                def.recipes.forEach(r => {
-                    const active = factory.recipe === r.id ? ' style="background:var(--accent-gold);color:#000"' : '';
-                    html += ``;
-                });
-                html += '</div>';
-
-                // Workers
-                html += `${t('<div style="margin:4px 0;font-size:0.8rem"><strong>工人：</strong>')}${factory.workers.length}/${def.workerSlots}${factory.workers.length < def.workerSlots ? ` <span style="color:var(--text-muted);font-size:0.68rem">${t('（村民明早會自動上工）')}</span>` : ''}`;
-                factory.workers.forEach(wId => {
-                    const a = this.state.agents[wId];
-                    html += ` <span style="color:var(--accent-gold)">${a?.name || wId}</span>`;
-                });
-                if (factory.workers.length < def.workerSlots) {
-                    // Show assignable NPCs
-                    const available = Object.entries(this.state.agents).filter(([id, a]) =>
-                        id !== 'player' && !factory.workers.includes(id) &&
-                        (!a.status_text || a.status_text === 'normal')
-                    );
-                    if (available.length > 0) {
-                        html += '<br>';
-                        available.slice(0, 5).forEach(([id, a]) => {
-                            html += ``;
-                        });
-                    }
-                }
-                html += '</div>';
-
-                // Production progress
-                if (factory.recipe) {
-                    const recipe = def.recipes.find(r => r.id === factory.recipe);
-                    if (recipe) {
-                        const pct = Math.round(factory.productionProgress / recipe.time * 100);
-                        html += `${t('<div style="font-size:0.75rem;margin:4px 0">生產進度：')}${pct}%</div>`;
-                    }
-                }
-
-                // Warehouse
-                const wh = factory.warehouse || {};
-                if (Object.keys(wh).length > 0) {
-                    html += t('<div style="margin:4px 0;font-size:0.8rem"><strong>倉庫：</strong>');
-                    for (const [res, amt] of Object.entries(wh)) {
-                        html += `<span style="margin-right:8px">${res}: ${amt}`;
-                        html += ` ${t('')}`;
-                        html += ` ${t('')}`;
-                        html += '</span>';
-                    }
-                    html += '</div>';
-                }
-            }
-            html += '</div>';
-        }
-
-        // Available to build
-        const available = this.world.processing.getAvailableFactories(this.world);
-        if (available.length > 0) {
-            html += t('<div class="econ-section"><h3>可建造工廠（等村民提案）</h3>');
-            available.forEach(f => {
-                const costStr = Object.entries(f.cost).map(([r,a]) => `${this._resName(r)}×${a}`).join(' ');
-                const canBuild = f.canAfford ? '' : ' disabled';
-                html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
-                    <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-
-        // Active orders
-        const orders = (proc.orders || []).filter(o => o.status === 'active');
-        if (orders.length > 0) {
-            html += t('<div class="econ-section"><h3>📋 訂單（有貨時村民自己交）</h3>');
-            orders.forEach(o => {
-                html += `<div class="build-card"><div><strong>${o.description}</strong>
-                    <br><span style="font-size:0.7rem">${t('獎勵：')}${o.reward}${t('銀幣 | 剩餘')}${o.daysLeft}${t('天')}</span></div>
-                    </div>`;
-            });
-            html += '</div>';
-        }
-
-        html += '</div>';
-        container.innerHTML = html;
-    },
-
     _buildFactory(key) {
         const r = this.world.processing.buildFactory(key, this.world);
         if (!r.ok) { this._gameAlert(r.error || t('無法建造'), '⚠️'); return; }

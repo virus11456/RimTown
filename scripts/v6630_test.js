@@ -54,7 +54,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); out.banned = R.papers.some(P => P.banned) && logHas(/查禁|banned/);
       D++; fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); out.underground = R.papers.some(P => P.underground);
       w._absDay = _ad;
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-press')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.renderNews(box); /* v7.3.0 搬到日報 › 消息 */ out.ui = box.querySelector('.pp-press')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.press?.papers?.length === R.papers.length; w2.reset(); out.reset = !w2.press;
       return out;
     });
@@ -68,7 +68,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(/讀到|read in/.test(r.brief) && r.readerMem, 'AI 投票看得到最近讀到的報導', r.brief.slice(-200));
     ok(r.capital, '王都有皇家官報', r);
     ok(r.banned && r.underground, '民心低落時國王查禁批評的報社，轉成地下報紙', r);
-    ok(/📰/.test(r.ui) && /可信度|credibility/.test(r.ui), '鎮況頁有報社一覽', r.ui.slice(0, 300));
+    ok(/📰/.test(r.ui) && /可信度|credibility/.test(r.ui), '消息頁有報社一覽', r.ui.slice(0, 300));
     ok(r.rt && r.reset, '報社存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

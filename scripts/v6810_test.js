@@ -70,7 +70,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         const o = all[5]; const s1 = w.stockpile.get('silver'); const b1 = WALLET.get(w, o); WALLET.bizIncome(w, o, 100); out.shop = { got: Math.round((WALLET.get(w, o) - b1) * 10) / 10, toTown: Math.round((w.stockpile.get('silver') - s1) * 10) / 10 }; }
       // 9) 作物不標紅、AI 鎮況寫出糧倉
       w.stockpile.resources.wheat = 5; w.stockpile.resources.food = 1900;
-      app.state = w.getState(); app.activeTab = 'economy'; app._economySubTab = 'resources'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
+      app.state = w.getState(); app.activeTab = 'econ-goods'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
       const items = [...document.querySelectorAll('.resource-item')]; const wheat = items.find(el => /小麥|Wheat/i.test(el.textContent));
       out.crop = { found: !!wheat, red: wheat ? wheat.classList.contains('res-low') : null, note: /田裡收成的作物會直接存進糧倉|Harvested crops go straight into the granary/.test(document.getElementById('rimtown-app')?.textContent || document.body.textContent) };
       out.brief = w.conversationEngine?._townBrief ? w.conversationEngine._townBrief(w) : '';

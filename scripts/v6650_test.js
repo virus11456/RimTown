@@ -40,7 +40,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const p1 = b ? FAITH.pietyOf(w, b) : 0; const big = F.rels.slice().sort((x, y) => FAITH.believers(w, y).length - FAITH.believers(w, x).length)[0];
       G.offers = [{ key: 'relic', from: '王都', lv: 3, price: 320, day: w._absDay() }]; fix(0.01, () => { G.lastDay = null; GOODS.daily(w); });
       out.relic = big.relic === 'relic' && logHas(/聖物|relic/);
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-goods')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'quest'; app._renderTownChronicle(box); /* v7.3.0 搬到日報 › 年表 */ out.ui = box.querySelector('.pp-goods')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.goods?.town?.length === G.town.length; w2.reset(); out.reset = !w2.goods;
       return out;
     });
@@ -51,7 +51,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.owned && /收藏|Collects/.test(r.chip) && r.prestige, '有錢人買藝術品撐場面，算士紳', r);
     ok(r.landmark, '公庫買下的珍品擺在廣場當地標，全鎮心情變好', r);
     ok(r.relic, '聖物獻給信徒最多的宗教', r);
-    ok(/🏺/.test(r.ui), '鎮況頁有珍品', r.ui);
+    ok(/🏺/.test(r.ui), '年表頁有珍品', r.ui);
     ok(r.rt && r.reset, '珍品存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
