@@ -277,7 +277,7 @@ const TRADE = (() => {
     function setTariff(w, rate) { const X = S(w); const old = X.tariff || 0; X.tariff = Math.max(0, Math.min(0.5, rate)); X.setDay = day(w); return X.tariff > 0 ? t('進口關稅從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(X.tariff * 100)) : t('進口關稅取消了'); }
     function view(w) { const X = S(w), d = day(w); const r30 = X.hist.filter(h => h[0] >= d - 30); const imp = Math.round(r30.filter(h => h[1] === 1).reduce((s, h) => s + h[4], 0)), exp = Math.round(r30.filter(h => h[1] === 0).reduce((s, h) => s + h[4], 0)); return { tariff: Math.round((X.tariff || 0) * 100), imp, exp, bal: exp - imp, duty: Math.round(X.duty), private: !!owner(w) }; }
     function brief(w) { if (!w.tradeX) return ''; const v = view(w); return `${t('關稅')} ${v.tariff}%${t('；')}${t('近 30 天進口')} ${v.imp}${t('、')}${t('出口')} ${v.exp} ${t('銀幣')}`; }
-    return { S, GROUP, localPrice, privateTrade, recordPublic, adjustOffers, proposal, vote, setTariff, view, brief, tariff };
+    return { S, rec, GROUP, localPrice, privateTrade, recordPublic, adjustOffers, proposal, vote, setTariff, view, brief, tariff };
 })();
 if (typeof VillagerAutonomy !== 'undefined' && VillagerAutonomy.prototype._merchant) {
     const _m = VillagerAutonomy.prototype._merchant;
@@ -381,14 +381,14 @@ const CYCLE = (() => {
         return { v: s > 0 ? 'for' : 'against', why: (w.power?.inf?.[a.agentId] || {})[id] ? 'donor' : w.union?.members?.[a.agentId] ? 'union' : cash < 50 ? 'needy' : 'boss' };
     }
     function split(w, p) {
-        if (typeof MARKET === 'undefined' || !w.market || typeof WALLET === 'undefined') return ''; const id = p.refKey; const owner = w.agents[id]; if (!owner) return '';
+        if (typeof MARKET === 'undefined' || !w.market || typeof WALLET === 'undefined') return ''; const id = p.refKey; const owner = w.agents[id]; if (!owner || owner.isDead) return t('他已經不在鎮上了');
         const ks = MARKET.ownedBy(w, id); if (ks.length < 2) return t('他手上已經沒有那麼多產業了');
         const all = npcs(w); const k = ks.map(k => [k, MARKET.value(w, k, all)]).sort((x, y) => y[1] - x[1])[0]; const price = Math.round(k[1]);
         const buyer = all.filter(a => a.agentId !== id && WALLET.get(w, a) >= price && MARKET.ownedBy(w, a.agentId).length < 2).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
         if (!S(w).law) { S(w).law = true; log(w, '⚖️ 鎮上從此有了反壟斷法：擁有三家以上產業的人不能再買。', {}); }
         if (buyer && WALLET.take(w, buyer, price)) { WALLET.add(w, owner, price); w.market.owners[k[0]] = buyer.agentId; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：{o}把{s}以 {n} 銀幣賣給了{b}。', { o: owner.name, s: MARKET.name(k[0]), n: price, b: buyer.name }, owner.name); return t('{s}賣給了{b}').replace('{s}', MARKET.name(k[0])).replace('{b}', buyer.name); }
         const sp = w.stockpile; if (sp.consume('silver', price, w.tickCount, t('公庫收購產業'))) { WALLET.add(w, owner, price); delete w.market.owners[k[0]]; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：沒人買得起，公庫以 {n} 銀幣收購了{o}的{s}，改為公營。', { o: owner.name, s: MARKET.name(k[0]), n: price }, owner.name); return t('{s}由公庫收購，改為公營').replace('{s}', MARKET.name(k[0])); }
-        return '';
+        return t('沒人買得起，公庫也買不起，只好作罷');
     }
     function view(w) { const C = S(w); return { c: C.c, word: word(C.c), shock: C.shock ? t(C.shock.k) : '', works: C.works || 0, worksN: C.worksN || 0, split: C.split || 0, mono: (() => { const m = monopolist(w); return m ? { name: t(w.agents[m.id]?.name || ''), n: m.n } : null; })() }; }
     function brief(w) { if (!w.cycle) return ''; const v = view(w); return `${t('景氣')}${t('：')}${v.word}${v.shock ? `${t('（')}${v.shock}${t('）')}` : ''}`; }

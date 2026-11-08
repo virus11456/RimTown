@@ -87,7 +87,49 @@ class ProposalSystem {
     pending() { return this.items.filter(p => p.status === 'open' || p.status === 'shelved'); }
     byId(id) { return this.items.find(p => p.id === id) || null; }
     _cost(p) { return p.cost || {}; }
-    _affordable(w, p) { const c = this._cost(p); return Object.entries(c).every(([r, n]) => (w.stockpile?.get?.(r) || 0) >= n); }
+    // v7.2.1 已批准的提案先保留材料:較早批准的優先,後面的要扣掉前面保留的才算夠
+    _approvedQueue() { return this.items.filter(x => x.status === 'approved').sort((a, b) => (a.approvedDay || 0) - (b.approvedDay || 0) || (a.n || 0) - (b.n || 0)); }
+    _reservedBefore(p) { const R = {}; for (const x of this._approvedQueue()) { if (x === p) break; for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; } return R; }
+    _reserveAll(w) { const R = {}; for (const x of this._approvedQueue()) for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; if (w.stockpile) w.stockpile.reserved = R; return R; }
+    _shortfall(w, p) { const R = this._reservedBefore(p), out = {}; for (const [r, n] of Object.entries(this._cost(p))) { const lack = n + (R[r] || 0) - (w.stockpile?.get?.(r) || 0); if (lack > 0) out[r] = Math.ceil(lack); } return out; }
+    _affordable(w, p) { return !Object.keys(this._shortfall(w, p)).length; }
+    // v7.2.1 拿得到的材料:庫存夠、或外地買得到(有行情);研究點這類買不到
+    _obtainable(w, cost) { return Object.entries(cost || {}).every(([r, n]) => r === 'silver' || (w.stockpile?.get?.(r) || 0) >= n || (typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r] != null)); }
+    _missText(m) { const L = (r) => (typeof ECON_RES_LABEL === 'function' ? ECON_RES_LABEL(r) : t({ wood: '木材', stone: '石材', metal: '金屬', brick: '磚塊', cloth: '布料', tools: '工具', plank: '木板', silver: '銀幣', food: '食物', herbs: '草藥', paper: '紙', steel: '鋼鐵', marble: '大理石', hardwood: '硬木', furniture: '家具', medicine: '藥品', clothing: '衣物', meals: '餐食' }[r] || r)); return Object.entries(m || {}).map(([r, n]) => `${L(r)} ${Math.ceil(n)}`).join(t('、')); }
+    // v7.2.1 等材料的時候公庫自己去買:商人在鎮上而且有賣 → 照商人開價;沒有 → 向外地訂貨(貴六成,2～3 天到)。付出去的銀幣流出鎮外
+    _procure(w, p, day) {
+        const sp = w.stockpile; if (!sp || p.order) return;
+        const short = this._shortfall(w, p); delete short.silver;
+        const keys = Object.keys(short).filter(r => typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r] != null); if (!keys.length) return;
+        const m = w.trade?.merchant; const plan = []; let total = 0; const BURN = { wood: 1, food: 1, meals: 1, cloth: 1, herbs: 1 };
+        for (const r of keys) {
+            let need = short[r];
+            const o = m?.offers?.find(x => !x.isBuying && x.resource === r && x.amount >= 1);
+            if (o) { const q = Math.min(need, Math.floor(o.amount)); if (q > 0) { plan.push({ r, q, price: o.price, o }); total += q * o.price; need -= q; } }
+            if (need > 0) { if (BURN[r]) need = Math.ceil(need * 1.25) + 3; const price = Math.round(BASE_PRICES[r] * 1.6 * 10) / 10; plan.push({ r, q: need, price, out: true }); total += need * price; } // 木材、糧食這種每天會被用掉的多訂一點
+        }
+        total = Math.ceil(total);
+        const pop = this._npcs(w).length; const R = this._reservedBefore(p);
+        const budget = sp.get('silver') - (this._cost(p).silver || 0) - (R.silver || 0) - pop * 3; // 留一點給工資
+        if (total > budget) { p.buyShort = total; return; }
+        delete p.buyShort;
+        const before = (m?.offers || []).map(o => o.amount); const why = `${t('提案')}${t('：')}${this.title(p)}`;
+        const now = plan.filter(x => !x.out), later = plan.filter(x => x.out);
+        if (now.length) { const cost = Math.ceil(now.reduce((s, x) => s + x.q * x.price, 0)); sp.consume('silver', cost, w.tickCount, why, 'proposal'); for (const x of now) { sp.add(x.r, x.q, w.tickCount, why, 'proposal'); x.o.amount -= x.q; } m.offers = m.offers.filter(o => o.amount > 0.5);
+            try { if (typeof TRADE !== 'undefined') TRADE.recordPublic(w, before); } catch (e) {}
+            w.logMessageT?.('trade', '🛒 {id}「{title}」缺材料，公庫向{m}買了{what}（{n} 銀幣）', { id: p.id, title: this.title(p), m: m.name, what: this._missText(Object.fromEntries(now.map(x => [x.r, x.q]))), n: cost }); }
+        if (later.length) { const cost = Math.ceil(later.reduce((s, x) => s + x.q * x.price, 0)); const days = 2 + (Math.random() < 0.5 ? 1 : 0); sp.consume('silver', cost, w.tickCount, why, 'proposal');
+            p.order = { day: day + days, items: Object.fromEntries(later.map(x => [x.r, x.q])), paid: cost };
+            w.logMessageT?.('trade', '📦 {id}「{title}」缺{what}，公庫向外地訂貨（{n} 銀幣，{d} 天後到）', { id: p.id, title: this.title(p), what: this._missText(p.order.items), n: cost, d: days }); }
+    }
+    _deliver(w, p, day) {
+        const o = p.order; if (!o || day < o.day) return;
+        const why = `${t('外地訂貨到了')}${t('：')}${this.title(p)}`;
+        for (const [r, n] of Object.entries(o.items || {})) w.stockpile.add(r, n, w.tickCount, why, 'proposal');
+        try { if (typeof TRADE !== 'undefined' && TRADE.rec) { const q = Object.values(o.items).reduce((a, b) => a + b, 0) || 1; for (const [r, n] of Object.entries(o.items)) TRADE.rec(w, 'imp', r, n, o.paid * n / q); } } catch (e) {} // 記進進口統計
+        w.logMessageT?.('trade', '📦 {id}「{title}」訂的{what}到了', { id: p.id, title: this.title(p), what: this._missText(o.items) });
+        delete p.order;
+    }
     // v6.30.0 戰績
     _tr(aid) { return this.track[aid] || (this.track[aid] = { made: 0, approved: 0, rejected: 0, done: 0 }); }
     record(aid) { return this.track[aid] || { made: 0, approved: 0, rejected: 0, done: 0 }; }
@@ -118,7 +160,9 @@ class ProposalSystem {
         const day = this._abs(w);
         if (this._lastDay === day) return;
         this._lastDay = day;
+        this._reserveAll(w);
         try { this._advance(w, day); } catch (e) { console.warn('[Proposals] advance', e); }
+        this._reserveAll(w);
         try { if (typeof FREEPROP !== 'undefined') FREEPROP.daily(w, this); } catch (e) { console.warn('[Proposals] free daily', e); } // v6.47.0 自由提案的連續效果
         try { this._vote(w); } catch (e) { console.warn('[Proposals] vote', e); }
         try { this._generate(w, day); } catch (e) { console.warn('[Proposals] generate', e); }
@@ -276,6 +320,7 @@ class ProposalSystem {
         for (const [key, tm] of Object.entries(BT)) {
             if (built.has(key) || builtNames.has(tm.name) || !this._cool(day, 'build:' + key)) continue;
             if (w.research?.isUnlocked && !w.research.isUnlocked(key)) continue; // v6.40.0 還沒研究到的建築不會被提
+            if (!this._obtainable(w, tm.costs)) continue; // v7.2.1 材料拿不到就不提
             const jobs = Object.entries(PROPOSAL_JOB_BUILDINGS).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             let weight = 1;
             if (key === 'granary' && food < 120) weight += 2; if (key === 'farm_irrigation' && food < 150) weight += 1.5;
@@ -579,12 +624,21 @@ class ProposalSystem {
     // ---------- 執行 ----------
     _execute(w, p, day) {
         if (p.status !== 'approved') return;
+        this._deliver(w, p, day);
+        if (!this._affordable(w, p)) this._procure(w, p, day);
         if (!this._affordable(w, p)) {
             p.waitDays = (p.waitDays || 0) + 1;
-            if (p.waitDays > ProposalSystem.WAIT_DAYS) { p.status = 'failed'; p.resolvedDay = day; p.result = '等了一週公庫還是不夠，提案作罷'; this.stats.failed++; this._notify(w, 'failed', p); }
+            if (p.waitDays > ProposalSystem.WAIT_DAYS && !(p.order && p.order.day <= day + 3 && p.waitDays <= ProposalSystem.WAIT_DAYS + 5)) { // 外地的貨快到了就多等幾天
+                const miss = this._shortfall(w, p); p.short = miss; p.status = 'failed'; p.resolvedDay = day;
+                p.result = p.order ? '等了一週，外地訂的貨還沒到，提案作罷' : p.buyShort ? '等了一週還缺{miss}，公庫的錢也不夠買，提案作罷' : '等了一週還缺{miss}，提案作罷';
+                delete p.order; this.stats.failed++; this._reserveAll(w);
+                w.logMessageT?.('council', '⚠️ {id}「{title}」{result}', { id: p.id, title: this.title(p), result: t(p.result).replace('{miss}', this._missText(miss)) });
+                this._notify(w, 'failed', p);
+            }
             return;
         }
         let ok = false, result = '';
+        const sp0 = w.stockpile, keepR = sp0?.reserved; if (sp0) sp0.reserved = this._reservedBefore(p); // 自己保留的材料自己可以用
         try {
             switch (p.kind) {
                 case 'build': { const proj = w.buildings?.startProject?.(p.refKey, w, null); ok = !!proj; result = ok ? '動工了，村民正在蓋' : '沒辦法動工（已經有同名建築）'; break; }
@@ -682,7 +736,7 @@ class ProposalSystem {
                     ok = !!nw; result = nw ? `${nw.name}${t('看到告示搬來了')}` : '告示貼了，暫時沒人來'; break;
                 }
                 // ---------- v6.37.0 ----------
-                case 'research': { ok = !!w.research?.startResearch?.(p.refKey); result = ok ? '學者們開始研究了' : '這項已經在研究或研究過了'; break; }
+                case 'research': { const st = w.research?.projects?.[p.refKey]?.status; if (st === 'researching') { ok = true; result = '學者們已經在研究這一項了'; break; } ok = !!w.research?.startResearch?.(p.refKey); result = ok ? '學者們開始研究了' : st === 'complete' ? '這項已經研究出來了' : '這項已經在研究或研究過了'; break; } // v7.2.1 學者先自己挑了同一項就算達成
                 case 'market': {
                     const r = p.side === 'buy' ? w.shop?.buy?.(p.refKey, p.qty, w) : w.shop?.sell?.(p.refKey, p.qty, w);
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
@@ -695,7 +749,8 @@ class ProposalSystem {
                 case 'industry_up': { const r = w.industry?.upgradeIndustry?.(p.refKey, w); ok = !!r?.ok; result = ok ? '產業升級了' : (r?.error || '沒辦法升級'); break; }
             }
         } catch (e) { console.warn('[Proposals] execute', e); ok = false; result = '執行時出了問題'; }
-        p.status = ok ? 'done' : 'failed'; p.resolvedDay = day; p.result = result;
+        if (sp0) sp0.reserved = keepR;
+        p.status = ok ? 'done' : 'failed'; p.resolvedDay = day; p.result = result; this._reserveAll(w);
         if (ok) { this.stats.done++; this._tr(p.proposerId).done++; p.snap = this._snapshot(w, day); const a = w.agents[p.proposerId]; if (a) { a.moodModifier = (a.moodModifier || 0) + 3; } if (w.questSystem) w.questSystem.reputation = (w.questSystem.reputation || 0) + 2; }
         else this.stats.failed++;
         w.logMessageT?.('council', '{icon} {id}「{title}」{result}', { icon: ok ? '🏁' : '⚠️', id: p.id, title: this.title(p), result });
@@ -736,7 +791,8 @@ class ProposalSystem {
             id: p.id, n: p.n, kind: p.kind, icon: K.icon, kindLabel: t(K.label), status: p.status, title: this.title(p), desc: this.desc(p), pitch: p.pitch || '',
             proposerId: p.proposerId, proposerName: p.proposerName, proposerJob: w.agents?.[p.proposerId]?.job?.title || '',
             forCount: f, againstCount: a, forNames: names('for'), againstNames: names('against'),
-            cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: p.result ? t(p.result) : '',
+            cost: this._cost(p), affordable: this._affordable(w, p), decidedBy: p.decidedBy, result: p.result ? t(p.result).replace('{miss}', this._missText(p.short)) : '',
+            short: p.status === 'approved' ? this._missText(this._shortfall(w, p)) : '', order: p.order ? { what: this._missText(p.order.items), days: Math.max(0, p.order.day - day), paid: p.order.paid } : null, buyShort: p.buyShort || 0, // v7.2.1
             daysLeft: p.status === 'open' ? Math.max(0, ProposalSystem.DECIDE_DAYS - (day - p.createdDay)) : p.status === 'shelved' ? Math.max(0, ProposalSystem.SHELF_DAYS - (day - (p.shelvedDay || p.createdDay))) : 0,
             waitDays: p.waitDays || 0, createdDay: p.createdDay, resolvedDay: p.resolvedDay || null,
             forWhy: this._whyTop(p, 'for', w), againstWhy: this._whyTop(p, 'against', w), // v6.30.0 投票理由(前兩名)

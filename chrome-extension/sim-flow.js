@@ -67,7 +67,7 @@ const FLOW = (() => {
     const KEEP = { hardwood: 0, plank: 15, marble: 0, brick: 20, steel: 10, luxury_furniture: 0 };
     const spare = (w, r) => Math.max(0, get(w, r) - (KEEP[r] || 0));
     function effective(w, r) { let v = get(w, r); for (const [s, k] of (SUB[r] || [])) v += spare(w, s) * k; return v; }
-    function lack(w, mat) { const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = effective(w, r); if (h < n) out[r] = Math.ceil(n - h); } return out; }
+    function lack(w, mat) { const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = effective(w, r) - (w.stockpile?.reserved?.[r] || 0); if (h < n) out[r] = Math.ceil(n - h); } return out; }
     function canPay(w, mat) { return !Object.keys(lack(w, mat)).length; }
     function pay(w, mat, reason) {
         if (!mat || !canPay(w, mat)) return false;

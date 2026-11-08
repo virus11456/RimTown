@@ -4,6 +4,22 @@
 (function () {
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
+        // ── v7.2.1 提案材料採買 ──
+        '已向外地訂購{what}，{n} 天後到': 'Ordered {what} from out of town; arrives in {n} days',
+        '還缺{miss}': 'Still short: {miss}',
+        '公庫的錢不夠買': 'the treasury can\'t afford to buy it',
+        '他已經不在鎮上了': 'they no longer live in town',
+        '沒人買得起，公庫也買不起，只好作罷': 'Nobody could afford it, not even the treasury, so it was dropped',
+        '外地訂貨到了': 'Out-of-town order arrived',
+        '等了一週還缺{miss}，提案作罷': 'Waited a week and still short of {miss}; proposal dropped',
+        '等了一週還缺{miss}，公庫的錢也不夠買，提案作罷': 'Waited a week and still short of {miss}, with no money to buy it; proposal dropped',
+        '等了一週，外地訂的貨還沒到，提案作罷': 'Waited a week and the out-of-town order never came; proposal dropped',
+        '🛒 {id}「{title}」缺材料，公庫向{m}買了{what}（{n} 銀幣）': '🛒 {id} "{title}" was short of materials; the treasury bought {what} from {m} ({n} silver)',
+        '📦 {id}「{title}」缺{what}，公庫向外地訂貨（{n} 銀幣，{d} 天後到）': '📦 {id} "{title}" was short of {what}; the treasury ordered from out of town ({n} silver, arriving in {d} days)',
+        '📦 {id}「{title}」訂的{what}到了': '📦 The {what} ordered for {id} "{title}" has arrived',
+        '⚠️ {id}「{title}」{result}': '⚠️ {id} "{title}": {result}',
+        '學者們已經在研究這一項了': 'The scholars are already researching it',
+        '這項已經研究出來了': 'This has already been researched',
         // ── v7.2.0 景氣循環、公共支出、反壟斷 ──
         '⚖️ 鎮上從此有了反壟斷法：擁有三家以上產業的人不能再買。': '⚖️ The town now has an antitrust law: anyone who owns three or more businesses may not buy another.',
         '反壟斷法生效中': 'antitrust law in force',
