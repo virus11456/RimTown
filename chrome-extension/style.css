@@ -4513,6 +4513,11 @@ body.landing-open { overflow: hidden; }
 .rel-circle.rel-circle-0 { color: #fbbf24; border-color: #fbbf2455; }
 .rel-circle.rel-circle-1 { color: #f472b6; border-color: #f472b655; }
 .rel-circle.rel-circle-2 { color: #60a5fa; border-color: #60a5fa55; }
+/* v7.0.0 物價與就業 */
+.labor-jobs { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 6px; }
+.labor-job { font-size: 0.66rem; padding: 1px 6px; border-radius: 8px; border: 1px solid var(--border, #ffffff22); color: var(--text-muted); white-space: nowrap; }
+.labor-job.over { color: #f59e0b; border-color: #f59e0b66; }
+.labor-job.open { color: #34d399; border-color: #34d39966; }
 /* v6.89.0 產業與老闆 */
 .market-meta { font-size: 0.72rem; color: var(--text-muted); margin-bottom: 6px; overflow-wrap: anywhere; }
 .market-row { display: flex; flex-wrap: wrap; gap: 2px 8px; font-size: 0.74rem; padding: 4px 0; border-bottom: 1px dashed var(--border); }

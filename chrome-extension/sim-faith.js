@@ -94,9 +94,26 @@ const FAITH = (() => {
     const tierLv = (w) => (typeof TIERS !== 'undefined' ? TIERS.level(w) : 0);
     const placeOf = (w, R) => SK[R.sk].place[Math.max(0, Math.min(3, tierLv(w)))];
     const believers = (w, R) => npcs(w).filter(a => w.faith.of[a.agentId]?.rel === R.id);
+    // v7.0.0 宗教財務:捐獻進基金(若已課稅,15% 交公庫);基金付維護、辦節日、濟貧,太多就蓋場所
+    const TAX_RATE = 0.15;
+    function give(w, F, R, n) { const tax = F.tax ? Math.round(n * TAX_RATE * 100) / 100 : 0; if (tax > 0) { w.stockpile?.add?.('silver', tax, w.tickCount, t('宗教捐獻稅')); F.taxPaid = Math.round(((F.taxPaid || 0) + tax) * 100) / 100; } R.fund = Math.round(((R.fund || 0) + n - tax) * 100) / 100; R.got = Math.round(((R.got || 0) + n) * 100) / 100; }
+    const payLocal = (w, k, n, why) => { if (!(n > 0)) return; if (typeof MARKET !== 'undefined' && w.market && MARKET.sell) MARKET.sell(w, k, n, why); else w.stockpile?.add?.('silver', n, w.tickCount, why); };
+    function spend(w, F, R, bs, d) {
+        if (!(typeof WALLET !== 'undefined' && w.wallet)) return; const take = (n) => { n = Math.min(R.fund || 0, Math.round(n * 100) / 100); if (n <= 0) return 0; R.fund = Math.round((R.fund - n) * 100) / 100; return n; };
+        // 場所維護:每天 0.3 ＋ 每位信徒 0.03(付給木作坊)
+        const up = take(0.3 + bs.length * 0.03); if (up) { payLocal(w, 'timber', up, t('宗教場所維護')); R.upkeep = Math.round(((R.upkeep || 0) + up) * 100) / 100; }
+        // 節日辦桌(付給食堂與農莊)
+        const season = ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock?.season);
+        if (season === R.festSeason && w.clock?.day === R.festDay && R._feastDay !== d) { R._feastDay = d; const n = take(Math.min((R.fund || 0) * 0.4, bs.length * 1.5)); if (n) { if (typeof MARKET !== 'undefined' && w.market && MARKET.sale) MARKET.sale(w, 'meal', n); else w.stockpile?.add?.('silver', n, w.tickCount, t('節日辦桌')); R.feasts = Math.round(((R.feasts || 0) + n) * 100) / 100; } }
+        // 基金太多:超過(100 ＋ 每位信徒 8)的部分,每天拿一成出來,一半修建場所(付給木作坊與礦場)、一半救濟鎮上最窮的人
+        const cap = 100 + bs.length * 8; if ((R.fund || 0) > cap) { const n = take(((R.fund || 0) - cap) * 0.1); if (n) { payLocal(w, 'timber', n * 0.3, t('修建宗教場所')); payLocal(w, 'mine', n * 0.2, t('修建宗教場所'));
+            const poor = npcs(w).filter(a => money(w, a) < 15).sort((x, y) => money(w, x) - money(w, y)).slice(0, 3); const each = poor.length ? n * 0.5 / poor.length : 0;
+            if (each > 0) for (const p of poor) { WALLET.add(w, p, Math.round(each * 100) / 100); } else payLocal(w, 'timber', n * 0.5, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
+    }
     function daily(w) {
         const F = S(w), d = day(w); if (F.lastDay === d) return; F.lastDay = d;
         const all = npcs(w);
+        try { if (d % 5 === 2) taxProposal(w, F, d); } catch (e) {}
         // 禮拜與捐獻
         for (const a of all) {
             const f = F.of[a.agentId]; const R = relOf(w, a); if (!R || !f) continue;
@@ -104,15 +121,22 @@ const FAITH = (() => {
             const cash = money(w, a);
             if (typeof WALLET !== 'undefined' && w.wallet && cash > 20) {
                 const rate = R.sk === 'sheng' && d % 7 === 0 ? 0.05 : (f.piety >= 60 && Math.random() < 0.15 ? 0.02 : 0); // 聖堂型每七天什一(簡化為 5%)
-                const n = Math.floor(cash * rate); if (n >= 1 && WALLET.take(w, a, n)) R.fund = (R.fund || 0) + n;
+                const n = Math.floor(cash * rate); if (n >= 1 && WALLET.take(w, a, n)) give(w, F, R, n);
+                // v7.0.0 有錢的虔誠信徒偶爾大筆捐獻:神職與同信仰的人對他更有好感(捐錢換聲望)
+                else if (cash >= 150 && f.piety >= 50 && Math.random() < 0.03) { const big = Math.min(40, Math.floor(cash * 0.08)); if (big >= 5 && WALLET.take(w, a, big)) { give(w, F, R, big); R.big = (R.big || 0) + 1;
+                    for (const o of believers(w, R)) if (o !== a && (o.job?.key === 'priest' || Math.random() < 0.3)) o.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(o.job?.key === 'priest' ? 6 : 2);
+                    log(w, '🙏 {a}捐了 {n} 銀幣給{r}。', { a: a.name, n: big, r: R.name[0] }, a.name); mem(w, a, '我捐了 {n} 銀幣給{r}，大家看我的眼神都不一樣了。', { n: big, r: R.name[0] }, 5); } }
             }
         }
         for (const R of F.rels) {
             const bs = believers(w, R);
+            // v7.0.0 教團基金要花:場所維護付給木作坊、節日辦桌付給食堂、太多就蓋場所與濟貧(錢回到鎮上,不會憑空消失)
+            spend(w, F, R, bs, d);
             // 濟貧:禪修型、聖堂型用教團基金救濟最窮的信徒與鄰人
-            if ((R.sk === 'chan' || R.sk === 'sheng') && R.fund >= 10 && typeof WALLET !== 'undefined' && w.wallet) {
-                const poor = all.filter(a => money(w, a) < 8).sort((x, y) => money(w, x) - money(w, y)).slice(0, 2);
-                for (const p of poor) { const n = Math.min(8, Math.floor(R.fund / 2)); if (n < 1) break; R.fund -= n; WALLET.add(w, p, n); p.moodModifier = (p.moodModifier || 0) + 3; mem(w, p, '{r}接濟了我 {n} 銀幣。', { r: R.name[0], n }, 5); }
+            if (R.fund >= 10 && typeof WALLET !== 'undefined' && w.wallet) { // v7.0.0 每個宗教都濟貧:禪修、聖堂救全鎮最窮的兩人,其他宗教照顧最窮的一位自己信徒
+                const wide = R.sk === 'chan' || R.sk === 'sheng';
+                const poor = (wide ? all : bs).filter(a => money(w, a) < 8).sort((x, y) => money(w, x) - money(w, y)).slice(0, wide ? 2 : 1);
+                for (const p of poor) { const n = Math.min(wide ? 8 : 3, Math.floor(R.fund / 2)); if (n < 1) break; R.fund -= n; WALLET.add(w, p, n); R.relief = (R.relief || 0) + n; p.moodModifier = (p.moodModifier || 0) + 3; mem(w, p, '{r}接濟了我 {n} 銀幣。', { r: R.name[0], n }, 5); }
             }
             // 祖靈型:同信仰的家人更親
             if (R.sk === 'zu') for (const a of bs) for (const pn of a._parentNames || []) { const p = bs.find(o => o.name === pn); if (p) { a.relationships.getOrCreate(p.agentId, p.name).modifyAffinity(0.3); } }
@@ -194,17 +218,42 @@ const FAITH = (() => {
         }
         return answered;
     }
+    // v7.0.0 宗教課稅:預設免稅;公庫吃緊、教團基金又很多時,不信教或看重財富的人提案「宗教捐獻課 15% 稅」;課了之後神職會提案取消
+    function taxProposal(w, F, d) {
+        const P = w.proposals; if (!P?._createWith || !w.wallet || d - (F.lastTaxProp || -99) < 30) return;
+        if ((P.items || []).some(p => (p.kind === 'faith_tax' || p.kind === 'faith_untax') && ['open', 'shelved', 'approved'].includes(p.status))) return;
+        const funds = F.rels.reduce((s, R) => s + (R.fund || 0), 0), tr = w.stockpile?.get?.('silver') || 0, all = npcs(w);
+        let kind = null, who = null;
+        if (!F.tax && funds >= 100 && (tr < 250 || nonBelievers(w) >= all.length * 0.3 || funds > tr * 0.4)) { kind = 'faith_tax'; who = all.filter(a => !F.of[a.agentId]?.rel || has(a, 'greedy')).sort((x, y) => (y.job?.key === 'mayor' ? 1 : 0) - (x.job?.key === 'mayor' ? 1 : 0))[0]; }
+        else if (F.tax && d - (F.taxDay || 0) >= 30) { kind = 'faith_untax'; who = all.find(a => a.job?.key === 'priest' && F.of[a.agentId]?.rel) || all.filter(a => pietyOf(w, a) >= 70)[0]; }
+        if (!kind || !who) return; F.lastTaxProp = d;
+        const cand = { kind, key: kind + ':' + d, jobs: [], make: () => kind === 'faith_tax'
+            ? { kind, key: kind + ':' + d, tk: '宗教捐獻課稅 {n}%', tp: { n: Math.round(TAX_RATE * 100) }, dk: '{who}說各教團存了 {f} 銀幣卻一毛稅都不繳，公庫只剩 {s}。提議捐給宗教的錢抽 {n}% 進公庫。', dp: { who: who.name, f: Math.round(funds), s: Math.round(tr), n: Math.round(TAX_RATE * 100) }, cost: {}, category: 'economy' }
+            : { kind, key: kind + ':' + d, tk: '取消宗教捐獻稅', tp: {}, dk: '{who}說信徒的奉獻是給神的，不該被公庫抽成，提議取消宗教捐獻稅。', dp: { who: who.name }, cost: {}, category: 'economy' } };
+        return P._createWith(w, d, cand, who);
+    }
+    // 投票:虔誠的信徒反對課稅、支持取消;不信教的人與看重財富的人相反;公庫越窮越多人贊成課稅
+    function taxVote(w, p, a) {
+        const F = S(w), rel = F.of[a.agentId]?.rel, pi = rel ? pietyOf(w, a) : 0; const tr = w.stockpile?.get?.('silver') || 0;
+        let s = rel ? -(pi / 25) : 1.5; if (has(a, 'greedy')) s += 0.8; if (tr < 60) s += 0.8; if (a.job?.key === 'priest') s -= 3; s += (Math.random() - 0.5) * 1.5;
+        if (p.kind === 'faith_untax') s = -s;
+        return { v: s > 0 ? 'for' : 'against', why: rel && pi >= 40 ? 'faith' : 'purse' };
+    }
+    function setTax(w, on) { const F = S(w); F.tax = !!on; F.taxDay = day(w); return on ? tplf('宗教捐獻開始抽 {n}% 稅', { n: Math.round(TAX_RATE * 100) }) : t('宗教捐獻稅取消了'); }
+    const tplf = (k, p) => t(k).replace(/\{(\w+)\}/g, (m, x) => p[x] ?? m);
     function brief(w, a) { const R = relOf(w, a); if (!R) return a && w.faith ? t('信仰：沒有信仰') : ''; const p = pietyOf(w, a); return `${t('信仰')}${t('：')}${N(R.name)}${t('（')}${N([SK[R.sk].zh, SK[R.sk].en])}${t('，')}${t('虔誠')} ${p}/100${t('）')}`; }
     function townBrief(w) { const F = w.faith; if (!F) return ''; return `${t('宗教')}${t('：')}${F.rels.map(R => `${N(R.name)}${t('（')}${believers(w, R).length}${t('人')}${t('）')}`).join(t('、'))}`; }
     function chip(w, a) { const R = relOf(w, a); if (!R) return w.faith ? `🚫 ${t('沒有信仰')}` : ''; const p = pietyOf(w, a); return `${SK[R.sk].icon} ${N(R.name)} · ${t(p >= 70 ? '虔誠' : p >= 40 ? '一般' : '淡薄')}`; }
     function view(w) {
         const F = S(w);
-        return F.rels.map(R => ({ id: R.id, icon: SK[R.sk].icon, name: N(R.name), sk: N([SK[R.sk].zh, SK[R.sk].en]), deity: N(R.deity), book: N(R.book), fest: N(R.fest), festWhen: `${t(['春季', '夏季', '秋季', '冬季'][R.festSeason])} ${t('第')} ${R.festDay} ${t('天')}`, place: N(placeOf(w, R)), pre: (R.pre || []).map(N), color: R.color, n: believers(w, R).length, fund: Math.round(R.fund || 0) }))
+        return F.rels.map(R => ({ id: R.id, icon: SK[R.sk].icon, name: N(R.name), sk: N([SK[R.sk].zh, SK[R.sk].en]), deity: N(R.deity), book: N(R.book), fest: N(R.fest), festWhen: `${t(['春季', '夏季', '秋季', '冬季'][R.festSeason])} ${t('第')} ${R.festDay} ${t('天')}`, place: N(placeOf(w, R)), pre: (R.pre || []).map(N), color: R.color, n: believers(w, R).length, fund: Math.round(R.fund || 0), spent: Math.round((R.upkeep || 0) + (R.feasts || 0) + (R.relief || 0) + (R.built || 0)) }))
             .concat([]);
     }
     const nonBelievers = (w) => npcs(w).filter(a => !S(w).of[a.agentId]?.rel).length;
-    return { S, SK, KEYS, daily, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers };
+    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers };
 })();
+if (typeof PROPOSAL_KINDS !== 'undefined') { PROPOSAL_KINDS.faith_tax = { icon: '⛪', label: '宗教稅' }; PROPOSAL_KINDS.faith_untax = { icon: '⛪', label: '宗教稅' }; }
+if (typeof VOTE_WHY !== 'undefined') { VOTE_WHY.faith = VOTE_WHY.faith || '信仰的立場'; VOTE_WHY.purse = VOTE_WHY.purse || '看自己的荷包'; }
 if (typeof EventCardSystem !== 'undefined') {
     const _play = EventCardSystem.prototype.play;
     EventCardSystem.prototype.play = function (w, id, ...rest) { const r = _play.call(this, w, id, ...rest); try { if (r && r.ok !== false && w.observerMode) FAITH.onCard(w, this.card(id)); } catch (e) { console.warn('[Faith] card', e); } return r; };
@@ -212,6 +261,8 @@ if (typeof EventCardSystem !== 'undefined') {
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) FAITH.daily(w); } catch (e) { console.warn('[Faith] daily', e); } return r; };
+    const _rv = PS._ruleVote; // v7.0.0 宗教課稅提案的投票
+    PS._ruleVote = function (w, p, a, ...rest) { if ((p.kind === 'faith_tax' || p.kind === 'faith_untax') && w.faith) { const r = FAITH.taxVote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
 }
 // 微服出巡的神明:越虔誠越容易察覺旅人不是凡人
 if (typeof TRAVELER !== 'undefined') {
