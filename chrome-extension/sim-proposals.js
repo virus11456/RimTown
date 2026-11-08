@@ -751,6 +751,7 @@ class ProposalSystem {
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
                 case 'bio_safety': case 'bio_price': case 'bio_gmban': case 'bio_halt': { result = (typeof BIO !== 'undefined') ? BIO.setLaw(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 基因生物的法律
                 case 'steam_air': case 'steam_factory': case 'steam_homun': { result = (typeof STEAM !== 'undefined') ? STEAM.setLaw(w, p.kind) : ''; ok = !!result; break; } // v8.0.0 蒸汽煉金的法律
+                case 'ways_forum': { result = (typeof WAYS !== 'undefined') ? WAYS.forum(w) : ''; ok = !!result; break; } // v8.1.0 鄰里茶會
                 case 'tech_safety': { result = (typeof TECH !== 'undefined') ? TECH.setLaw(w) : ''; ok = !!result; break; }
                 case 'tech_unsafe': { result = (typeof TECH !== 'undefined') ? TECH.unsetLaw(w) : ''; ok = !!result; break; }
                 case 'tech_abandon': { result = (typeof TECH !== 'undefined') ? TECH.abandon(w) : ''; ok = !!result; break; }
