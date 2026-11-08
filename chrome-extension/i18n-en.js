@@ -6,6 +6,14 @@
     Object.assign(en, {
         // v7.9.0 基因生物路線、路線大辯論、災後反應
         '小鎮的風氣': 'Town temperament',
+        '{icon} {a}{say}': '{icon} {a}: {say}',
+        '小鎮剛發生': 'The town has just been hit by',
+        '。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：': '. What will each of these villagers do? Decide from each person\'s personality and situation; they don\'t all have to act the same, and carrying on as usual is fine. Options: ',
+        '，或 none。': ', or none.',
+        '；家人受害了': '; their family was hurt',
+        '；大家在怪他': '; people are blaming them',
+        '；身邊的人在做：': '; people close to them are doing: ',
+        '只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]': 'Reply with a JSON array only: [{"i":number,"r":"option","line":"one thing this person says (under 15 words)"}]',
         '位在貿易要道': 'on a major trade route',
         '在海邊的港口': 'a seaside port',
         '礦山多煤和金屬': 'mountains rich in coal and metal',

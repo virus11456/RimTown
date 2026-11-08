@@ -8,7 +8,7 @@
 //   門檻模型（Granovetter）：搶商店要看身邊已經有多少人在搶——老實人的門檻高、走投無路的人門檻是零，於是一兩個人帶頭就可能一發不可收拾；
 //   旁觀者效應：已經有很多人在幫忙時，個人出手的意願下降；
 //   抗議人數夠多才會變成廣場上的集會，並把相關的提案提早推上議程（廢核、停止人體實驗、藥價管制）。
-// 完整智能體模式：重要人物由 AI 依自己的個性、處境、朋友的行為決定反應並說一句話（每天最多兩人，失敗就用規則版）。
+// 完整智能體模式：出大事那天，壓力最大的 8 個人整批交給 AI 決定反應並各說一句話（一天一次請求；AI 沒回應就照規則）。
 // 金流守恆：搶的是商店老闆錢櫃裡的錢（衛兵抓到就還回去、關幾天）；囤貨付錢給老闆；互助是自己的錢給別人。存在 world.crisis。
 'use strict';
 
@@ -159,22 +159,29 @@ const AFTERMATH = (() => {
             const fam = family(w, a).filter(f => !f.isDead); for (const f of fam) { aff(a, f, 4); aff(f, a, 4); f.moodModifier = (f.moodModifier || 0) + 2; } if (!fam.length) return false;
         } else done = false;
         if (!done) return false;
+        if (line && ['protest', 'pray', 'comfort'].includes(r)) log(w, '{icon} {a}{say}', { icon: R[r].icon, a: a.name, say }, a.name); // AI 給的台詞:這幾種反應平常沒寫進日誌
         cr.n[r] = (cr.n[r] || 0) + 1; C.st[r] = (C.st[r] || 0) + 1; C.did[a.agentId] = [d, r, cr.id];
         C.stress[a.agentId] = Math.max(0, (C.stress[a.agentId] || 0) - (r === 'pray' || r === 'comfort' || r === 'help' ? 25 : 12));
         return true;
     }
 
-    // ---------- AI:重要人物自己決定(每天最多兩人) ----------
-    function askAI(w, a, cr) {
-        const ce = w.conversationEngine; if (!ce?._askJson || !ce.fullAgentOk?.(w)) return false;
-        const C = S(w); const d = day(w); if (C.aiDay !== d) { C.aiDay = d; C.aiN = 0; } if (C.aiN >= 2) return false;
-        try { if (typeof CROWD !== 'undefined' && CROWD.isNotable && !CROWD.isNotable(w, a)) return false; } catch (e) {}
-        C.aiN++;
-        const friends = Object.entries(C.did).filter(([id, x]) => d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => `${t(w.agents[id].name)}${t('：')}${t(R[x[1]]?.name || '')}`).slice(0, 5).join(t('、')) || t('沒有');
+    // ---------- AI:出大事那天,壓力最大的 8 個人整批交給 AI 決定(一天一次請求;AI 沒回應就照規則) ----------
+    const BATCH = 8;
+    function batchAI(w, cr, d) {
+        const ce = w.conversationEngine; const C = S(w); if (!ce?._askJson || !ce.fullAgentOk?.(w) || C.aiDay === d) return new Set(); C.aiDay = d;
+        const pool = here(w).filter(a => !jailed(w, a) && (C.stress[a.agentId] || 0) >= 15 && !(C.did[a.agentId] && d - C.did[a.agentId][0] < 2)).sort((x, y) => (C.stress[y.agentId] || 0) - (C.stress[x.agentId] || 0)).slice(0, BATCH);
+        if (!pool.length) return new Set();
         const opts = Object.entries(R).map(([k, v]) => `${k}=${t(v.name)}`).join(', ');
-        const prompt = `${t('你是小鎮村民')}${t(a.name)}${t('（')}${t(a.job?.title || '')}${t('；性格：')}${(a.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('；身上有')} ${Math.round(cash(w, a))} ${t('銀幣')}${t('）')}${t('。鎮上剛發生')}${t(cr.cause)}${cr.vic.includes(a.agentId) ? t('，你的家人受害了') : ''}${t('。你身邊的人在做：')}${friends}${t('。照你的個性和處境，你現在會怎麼做？從這些選一個：')}${opts}${t('，或 none（照常過日子）。只回 JSON：{"r":"選項","line":"你說的一句話（20 字內）"}')}`;
-        ce._askJson(prompt, 90).then(j => { const r = j?.r; if (!w.agents[a.agentId] || a.isDead) return; if (r && R[r]) act(w, a, r, cr, String(j.line || '').replace(/[<>]/g, '').slice(0, 30)); }).catch(() => {});
-        return true;
+        const rows = pool.map((a, i) => { const friends = Object.entries(C.did).filter(([id, x]) => d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => `${t(w.agents[id].name)}${t('：')}${t(R[x[1]]?.name || '')}`).slice(0, 3).join(t('、')) || t('沒有');
+            return `${i + 1}. ${t(a.name)}${t('（')}${t(a.job?.title || '')}${t('，')}${a.age ?? 30}${t('歲')}${t('；性格：')}${(a.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('；身上有')} ${Math.round(cash(w, a))} ${t('銀幣')}${cr.vic.includes(a.agentId) ? t('；家人受害了') : ''}${cr.blame === a.agentId ? t('；大家在怪他') : ''}${t('；身邊的人在做：')}${friends}${t('）')}`; }).join('\n');
+        const prompt = `${t('小鎮剛發生')}${t(cr.cause)}${t('。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：')}${opts}${t('，或 none。')}\n${rows}\n${t('只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]')}`;
+        const ids = new Set(pool.map(a => a.agentId)); C.aiPend = { d, ids: [...ids] }; C.st.ai = (C.st.ai || 0) + 1;
+        ce._askJson(prompt, 80 + pool.length * 60).then(j => {
+            const arr = Array.isArray(j) ? j : (Array.isArray(j?.list) ? j.list : []); C.aiPend = null; let n = 0;
+            for (const x of arr) { const a = pool[(x?.i | 0) - 1]; const r = x?.r; if (!a || !w.agents[a.agentId] || a.isDead) continue; if (r && R[r]) { if (act(w, a, r, cr, String(x.line || '').replace(/[<>]/g, '').slice(0, 30))) n++; } else if (r === 'none') C.did[a.agentId] = [day(w), 'none', cr.id]; }
+            C.st.aiActs = (C.st.aiActs || 0) + n;
+        }).catch(() => { C.aiPend = null; });
+        return ids;
     }
 
     // ---------- 每天 ----------
@@ -186,18 +193,19 @@ const AFTERMATH = (() => {
         for (const cr of ended) { const top = Object.entries(cr.n).filter(([k, v]) => v > 0 && R[k]).sort((x, y) => y[1] - x[1]).slice(0, 4); C.hist.unshift({ cause: cr.cause, kind: cr.kind, d: cr.d, end: d, sev: cr.sev, n: cr.n }); C.hist = C.hist.slice(0, 10); if (top.length) log(w, '📊 {c}過後，鎮上的人各自怎麼面對：{list}。', { c: cr.cause, list: top.map(([k, v]) => `${R[k].icon}${t(R[k].name)} ${v}`).join(t('、')) }); }
         C.cur = live; if (!live.length) return;
         const cr = live.slice().sort((x, y) => y.sev - x.sev)[0];
+        const byAI = batchAI(w, cr, d); // 交給 AI 的人今天不用規則決定
         for (const a of here(w).sort(() => Math.random() - 0.5)) {
+            if (byAI.has(a.agentId)) continue;
             if (jailed(w, a)) continue; const s = C.stress[a.agentId] || 0; if (s <= 0) continue;
             const last = C.did[a.agentId]; if (last && d - last[0] < 2) continue;
             if (Math.random() > Math.min(0.85, s / 110)) continue;
-            if (askAI(w, a, cr)) continue;
             const r = decide(w, a, cr, d); if (r !== 'none') act(w, a, r, cr);
         }
         const lootN = cr.n.loot || 0; if (lootN >= 3 && !cr.riot) { cr.riot = 1; log(w, '🔥 {c}之後秩序大亂，已經有 {n} 家店被搶，衛兵忙得焦頭爛額。', { c: cr.cause, n: lootN }); news(w, '🔥 {c}之後，鎮上爆發搶劫潮', { c: cr.cause }, 9, []); }
     }
     function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: x.cause, sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5), st: C.st, R }; }
     function brief(w, a) { const x = S(w).did[a.agentId]; if (!x || day(w) - x[0] > 6) return ''; return fill('剛發生大事，我選擇了{r}', { r: R[x[1]]?.name || '' }); }
-    return { S, R, CAUSE, shock, scores, decide, act, social, lootThr, daily, view, brief };
+    return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {
