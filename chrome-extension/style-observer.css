@@ -207,7 +207,6 @@
         bottom: calc(56px + env(safe-area-inset-bottom, 0px)) !important;
         border-radius: var(--ob-radius) var(--ob-radius) 0 0;
     }
-    .rimtown-container.observer .kairo-mode #guest-banner { bottom: calc(82px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* ===== v6.26.0 提案分頁 ===== */

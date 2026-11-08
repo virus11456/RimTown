@@ -6,8 +6,7 @@ Object.assign(RimTownApp.prototype, {
         const overlay = document.getElementById('tutorial-overlay');
         if (!overlay) return;
         if (localStorage.getItem('rimtown_tutorial_done')) return;
-        // Don't show tutorial before login or guest mode
-        if (!this.auth?.loggedIn && !this.guestMode) return;
+        if (!this.auth?.loggedIn) return; // 登入後才顯示教學
         overlay.classList.remove('hidden');
         this._tutorialStep = 0;
         this._tutorialTotalSteps = 6; // v5.97.0 加「每天要做的事」
@@ -270,9 +269,6 @@ Object.assign(RimTownApp.prototype, {
         if (this.auth.loggedIn) {
             btn.textContent = this.auth.username;
             btn.className = 'btn-account logged-in';
-        } else if (this.guestMode) {
-            btn.textContent = t('訪客');
-            btn.className = 'btn-account guest-mode';
         } else {
             btn.textContent = t('帳號');
             btn.className = 'btn-account';
@@ -322,7 +318,7 @@ Object.assign(RimTownApp.prototype, {
         // v6.98.0 首頁改版:主視覺換成 3D 方塊村民(landing-3d.js,跟遊戲同一套長相);各玩法改成一段一段的介紹(左文右「遊戲裡你會看到」),截圖只留沒有 WebGL 時的備援
         const L = I18N.getLang() === 'en' ? 'en' : 'zh';
         const X = (zh, en) => (L === 'en' ? en : zh);
-        const stats = [['48', X('項科技', 'technologies')], ['4', X('個時代', 'eras')], ['4', X('級城鎮', 'town tiers')], ['30', X('張事件卡', 'event cards')], ['6', X('級社會階層', 'social classes')], ['12', X('種髮型', 'hairstyles')]];
+        const stats = [['57', X('項科技', 'technologies')], ['6', X('個時代', 'eras')], ['4', X('級城鎮', 'town tiers')], ['30', X('張事件卡', 'event cards')], ['8', X('種神話基因', 'mythic genes')], ['6', X('級社會階層', 'social classes')]]; // v7.7.1 科技數與時代跟著第五、六時代更新
         const howto = [
             ['🏘️', X('開一個世界', 'Start a world'), X('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場。', 'Every game is its own world, starting from Frontier Town. The neighbors, roads and far-off towns belong to that game alone.')],
             ['👀', X('在天上看', 'Watch from above'), X('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。觀察者日報整理昨天的大小事。', 'Tap a villager and the camera follows them: what they think, who they like, who they owe. The observer\'s daily sums up yesterday.')],
@@ -339,6 +335,14 @@ Object.assign(RimTownApp.prototype, {
                     [X('戀愛、婚禮與葬禮', 'Love, weddings and funerals'), X('告白、訂婚、辦婚宴收禮金，前任可能來鬧場；有人過世，家屬辦葬禮、念悼詞，每年還有人去掃墓。', 'Confessions, engagements, wedding feasts and gifts, an ex who shows up uninvited; when someone dies the family holds a funeral, gives a eulogy, and people visit the grave each year.')],
                     [X('陰暗面', 'The dark side'), X('講壞話、說謊、栽贓、搶功都會發生，被拆穿就要道歉，不被原諒就報復。真相頁只有你看得到。', 'Badmouthing, lies, framing and stealing credit all happen; when caught they apologize, and if not forgiven they take revenge. Only you can see the truth page.')]],
               log: [['08:15', X('林美玲把烤好的麵包分給隔壁的小豆子。', 'Lin Meiling shares fresh bread with little Doudou next door.')], ['12:40', X('王大偉還記得去年冬天被借錢不還的事，對劉阿福冷冷的。', 'Wang Dawei still remembers the unpaid loan from last winter and gives Liu Afu the cold shoulder.')], ['19:20', X('陳婉君在廣場向黃淑芬告白，旁邊的人都在起鬨。', 'Chen Wanjun confesses to Huang Shufen in the square while the crowd cheers.')]] },
+            { id: 'health', ic: '🩺', c: '#5ec2e6', k: X('身體與醫療', 'Health and medicine'), new: '7.4',
+              h: X('會生病、會受傷，看病要花錢', 'People get sick and hurt — and care costs money'),
+              lead: X('每個人有眼、手、腳、心、肺五個部位：眼睛不好研究得慢，手受傷做事慢，腳不好走得慢，心肺差的人活不久、睡不好。老化、職業病、打架、工傷和傳染病都會讓人生病受傷。看診、吃藥、動手術、器官移植都要錢：自己付、家人付、跟銀行借、工會互助，或是村民提案用公費補助。',
+                  'Everyone has five body parts — eyes, hands, legs, heart and lungs. Poor eyes slow research, hurt hands slow work, bad legs slow walking, and a weak heart or lungs means a shorter life and poor sleep. Ageing, occupational illness, fights, workplace accidents and epidemics all take their toll. Check-ups, medicine, surgery and transplants cost money: paid by the patient, the family, a bank loan, the union fund, or public aid if the villagers vote for it.'),
+              pts: [[X('眼鏡、拐杖、義肢', 'Glasses, canes, prosthetics'), X('治不好的部位可以補救一部分；殘疾會影響找工作，有些老闆就是不雇。', 'What cannot be cured can be partly made up for; disabilities make finding work harder, and some bosses simply will not hire.')],
+                    [X('等候名單與插隊', 'Waiting lists and queue-jumping'), X('器官要等有人捐；有錢人會塞錢插隊，被發現就是醜聞。', 'Organs wait for donors; the rich slip money to jump the queue, and it is a scandal when it comes out.')],
+                    [X('第五時代：生技', 'Fifth era: biotech'), X('城市研究完機械時代、蓋了研究院，就能研究器官移植、疫苗與基因工程。', 'Once a city finishes the machine era and builds an institute, it can research transplants, vaccines and genetic engineering.')]],
+              log: [['09:10', X('礦工老陳咳了一整個月，醫生說是礦坑的粉塵傷了肺。', 'Old Chen the miner has coughed for a month; the doctor says the mine dust has damaged his lungs.')], ['13:30', X('王大偉跟人打了一架，手骨折了，這週沒辦法上工。', 'Wang Dawei got into a fight and broke his hand; he cannot work this week.')], ['16:00', X('心臟移植等候名單：富商塞了 200 銀幣，排到了最前面。', 'Heart transplant list: a rich merchant slips 200 silver and jumps to the front.')]] },
             { id: 'politics', ic: '🏛️', c: '#7fb3f5', k: X('政治', 'Politics'),
               h: X('提案、投票、選舉，全是村民自己來', 'Proposals, votes, elections — all by the villagers'),
               lead: X('想蓋穀倉、調稅率、訂最低工資，都是村民自己提案、全鎮投票，首長拍板並說出理由。大事要議會表決，首長否決可以被三分之二推翻；每年改選，有辯論和從政履歷。長成王都之後還有國王、王令、政變和起義。',
@@ -347,14 +351,15 @@ Object.assign(RimTownApp.prototype, {
                     [X('議會與否決', 'Council and veto'), X('城鎮越大議會越大；議員每年春天改選，出缺由落選者遞補。', 'Bigger towns have bigger councils; seats are re-elected each spring and vacancies go to the runners-up.')],
                     [X('罷免與下台', 'Recall and resignation'), X('醜聞累積、民怨夠大就提前改選；被罷免的人兩個月內不能再參選。', 'Enough scandal and anger triggers an early election; a recalled leader cannot run again for two months.')]],
               log: [['10:00', X('L12「蓋第二座穀倉」通過：14 票贊成、5 票反對。', 'L12 "Build a second granary" passes: 14 for, 5 against.')], ['10:05', X('鎮長：「去年冬天差點斷糧，這筆錢該花。」', 'Mayor: "We almost ran out of food last winter. This is money well spent."')], ['16:30', X('議會以 4 比 1 推翻了鎮長對最低工資案的否決。', 'The council overturns the mayor\'s veto on the minimum wage, 4 to 1.')]] },
-            { id: 'money', ic: '💰', c: '#f2c14e', k: X('經濟與階級', 'Money and class'), new: '7.2',
+            { id: 'money', ic: '💰', c: '#f2c14e', k: X('經濟與階級', 'Money and class'), new: '7.7',
               h: X('錢會流動，也會往有錢人那邊流', 'Money moves — and it moves toward the rich'),
-              lead: X('每個村民都有自己的錢包：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。產業有老闆，老闆發薪也會壓薪；房子有房東，租不起就被趕出去睡廣場。存款有利息、放款收利息，銀行也會擠兌。這是一個不會特別保護窮人的小鎮。',
-                  'Every villager has a wallet: they earn wages, pay taxes, buy their own meals, clothes and firewood, and go hungry or cold when they can\'t. Businesses have owners who pay wages and squeeze them; houses have landlords, and those who can\'t pay rent end up sleeping in the square. Savings earn interest, loans charge it, and banks can suffer runs. This town does not go out of its way to protect the poor.'),
+              lead: X('每個村民都有自己的錢包：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。產業有老闆，老闆發薪也會壓薪；房子有房東，租不起就被趕出去睡廣場。存款有利息、放款收利息，銀行也會擠兌。每一塊錢都講得出是誰付的，從外地進來的錢一定是賣了東西換來的。這是一個不會特別保護窮人的小鎮。',
+                  'Every villager has a wallet: they earn wages, pay taxes, buy their own meals, clothes and firewood, and go hungry or cold when they can\'t. Businesses have owners who pay wages and squeeze them; houses have landlords, and those who can\'t pay rent end up sleeping in the square. Savings earn interest, loans charge it, and banks can suffer runs. Every coin can be traced to whoever paid it, and money from outside only comes in when something is sold. This town does not go out of its way to protect the poor.'),
               pts: [[X('物價與失業', 'Prices and unemployment'), X('倉裡存貨少，糧、衣、柴就漲價，工資卻不會跟著漲；職缺跟著人口走，人太多的行業會裁員，找不到工作就沒有收入。', 'When stores run low, food, clothes and firewood get pricier while wages stay put; job openings follow the population, crowded trades lay people off, and no job means no income.')],
                     [X('房東與房客', 'Landlords and tenants'), X('房租照收入與地段算，欠租三週會被驅逐；公有房舍給沒地方住的人。', 'Rent depends on wages and location; three weeks behind and you are evicted. Public housing goes to people with nowhere to live.')],
+                    [X('錢從哪來、往哪去', 'Where the money comes from'), X('商行把多的貨運去外地賣：東家收營收、發薪水，掌櫃管店、薪水多三成，夥計跑外地。小鎮概況每月列出外地流入與流出。', 'Trading houses carry surplus goods away to sell: the owner takes the revenue and pays wages, the manager runs the shop for 30% more pay, and clerks make the trips. The town overview lists money in and out each month.')],
                     [X('景氣與壟斷', 'Booms, busts and monopolies'), X('景氣有好有壞，衰退時裁員、公庫多撥公共工程；有人獨占三家以上產業，會被提案拆分。', 'The economy booms and busts; in a recession jobs are cut and the treasury spends more on public works; anyone who owns three or more businesses may be forced to sell one.')]],
-              log: [['07:00', X('劉阿福這個月欠了三週房租，被房東趕了出來。', 'Liu Afu is three weeks behind on rent and gets evicted.')], ['12:00', X('麵包店老闆把工資壓到每天 3 銀幣。', 'The bakery owner cuts wages to 3 silver a day.')], ['18:10', X('📈 糧價漲到原本的 1.6 倍，磨坊工人說快吃不起了。', '📈 Food prices hit 1.6× normal; the mill workers say they can barely eat.')]] },
+              log: [['07:00', X('劉阿福這個月欠了三週房租，被房東趕了出來。', 'Liu Afu is three weeks behind on rent and gets evicted.')], ['12:00', X('麵包店老闆把工資壓到每天 3 銀幣。', 'The bakery owner cuts wages to 3 silver a day.')], ['15:40', X('🐪 夥計周明把 20 份餘糧運到外地賣了 26 銀幣，加價的 6 銀幣進了東家的口袋。', '🐪 Clerk Zhou Ming carries 20 surplus food to another town and sells it for 26 silver; the 6-silver markup goes to the owner.')], ['18:10', X('📈 糧價漲到原本的 1.6 倍，磨坊工人說快吃不起了。', '📈 Food prices hit 1.6× normal; the mill workers say they can barely eat.')]] },
             { id: 'union', ic: '✊', c: '#e5736b', k: X('工會', 'Unions'), new: '6.93',
               h: X('被壓榨的人會組織起來', 'The squeezed get organized'),
               lead: X('小鎮升格成城市以後，私人產業裡覺得被壓榨的工人一多，就有人出來組工會：收會費、存罷工基金、跟老闆談加薪。談不攏就罷工，老闆可能讓步、找工賊、開除帶頭的人，或私下收買工會領袖。帶領五人以上工會的領袖可以出來選舉。',
@@ -371,14 +376,22 @@ Object.assign(RimTownApp.prototype, {
                     [X('報導有後果', 'Stories have consequences'), X('憤怒、扣票、罷免、加薪、救濟提案、銀行提款，都可能因為一篇報導發生。', 'Outrage, lost votes, recalls, raises, relief proposals and bank withdrawals can all follow one article.')],
                     [X('收編與骨氣', 'Captured papers, stubborn reporters'), X('被收購的報社會壓新聞；有骨氣的記者照登，然後被開除。', 'A bought paper buries stories; a principled reporter runs them anyway and gets fired.')]],
               log: [['06:30', X('《邊境日報》：鎮長收下鐵匠鋪老闆 80 銀幣獻金。', 'Frontier Daily: Mayor accepted 80 silver from the smithy owner.')], ['11:00', X('讀者氣炸了，三位議員提議罷免。', 'Readers are furious; three councillors call for a recall.')], ['20:00', X('鐵匠鋪老闆出 120 銀幣買下報社。', 'The smithy owner buys the paper for 120 silver.')]] },
-            { id: 'growth', ic: '🔬', c: '#6fcf97', k: X('科技與成長', 'Technology and growth'), new: '6.91',
+            { id: 'growth', ic: '🔬', c: '#6fcf97', k: X('科技與成長', 'Technology and growth'),
               h: X('從村莊長成王都，要花好幾年', 'From village to capital takes years'),
-              lead: X('科技分成拓荒、手工、工坊、機械四個時代，共 48 項，整棵樹要好幾年才研究得完。新技術在村民之間傳開，分出保守派和革新派；房子從木屋翻修成磚樓。人口、繁榮和時代都夠了，村莊才升格成城鎮、城市、王都；掉下來也會降級。',
-                  'Technology spans four eras — Frontier, Craft, Workshop and Machine — with 48 techs that take years to finish. New ideas spread from person to person and split the town into conservatives and reformers; houses get rebuilt from timber to brick. With enough people, prosperity and progress a village becomes a town, a city, a capital — and can fall back down.'),
-              pts: [[X('四個時代', 'Four eras'), X('蒸汽動力、疫苗、鐵路、現代金融都在第四時代。', 'Steam power, vaccines, railways and modern finance arrive in the fourth era.')],
+              lead: X('科技分成拓荒、手工、工坊、機械、生技、神話基因六個時代，共 57 項，整棵樹要好幾年才研究得完。新技術在村民之間傳開，分出保守派和革新派；房子從木屋翻修成磚樓。人口、繁榮和時代都夠了，村莊才升格成城鎮、城市、王都；掉下來也會降級。',
+                  'Technology spans six eras — Frontier, Craft, Workshop, Machine, Biotech and Mythic Genes — with 57 techs that take years to finish. New ideas spread from person to person and split the town into conservatives and reformers; houses get rebuilt from timber to brick. With enough people, prosperity and progress a village becomes a town, a city, a capital — and can fall back down.'),
+              pts: [[X('六個時代', 'Six eras'), X('蒸汽動力、鐵路、現代金融在第四時代；器官移植在第五時代；神話基因要到第六時代。', 'Steam power, railways and modern finance arrive in the fourth era, transplants in the fifth, and mythic genes only in the sixth.')],
                     [X('保守與革新', 'Old ways and new'), X('失業的人會抗議新機器，選舉時也分成兩派。', 'People put out of work protest new machines, and elections split along the same line.')],
                     [X('四級城鎮', 'Four town tiers'), X('村莊 → 城鎮 → 城市 → 王都，議會和官職跟著變大。', 'Village → town → city → capital; the council and offices grow with it.')]],
               log: [['14:00', X('研究完成：輪作。農田收成提高了。', 'Research complete: crop rotation. Harvests improve.')], ['14:20', X('老農夫：「祖先那套也沒餓死誰。」', 'Old farmer: "The old ways never starved anyone."')], ['17:45', X('邊境鎮升格為城市！議會擴大到 7 席。', 'Frontier Town becomes a city! The council grows to 7 seats.')]] },
+            { id: 'myth', ic: '🧬', c: '#d98be0', k: X('神話基因', 'Mythic genes'), new: '7.6',
+              h: X('有錢人把神的血編進身體裡', 'The rich edit the blood of gods into their bodies'),
+              lead: X('第六時代、王都和基因實驗室都到了，有錢人就能花大錢編入八種神話基因：月狼之血、夜之血、雷神之血、智慧女神之瞳、太陽神之血、冥王之血、不死鳥之血、巨人之血。能力很強，副作用也很真實：滿月變狼人、白天虛弱要吸血、雷雨天失控。被禁了就轉進地下診所，孩子還會遺傳。',
+                  'With the sixth era, a capital and a gene lab, the rich can pay a fortune for one of eight mythic genes: the blood of the moon wolf, of the night, of the thunder god, the eye of the wisdom goddess, the blood of the sun god, of the king of the dead, of the phoenix and of the giants. The powers are real, and so are the side effects: turning into a wolf at full moon, weakness by day and a thirst for blood, rages in thunderstorms. Ban it and it moves to back-alley clinics; children inherit it.'),
+              pts: [[X('純人派與神裔會', 'Pure Blood and the god-blooded'), X('每個人對神裔有自己的看法，出事、報紙、朋友都會改變；兩派投票、選舉一起行動。', 'Everyone has their own view of the god-blooded, shaped by incidents, the papers and friends; each side votes and campaigns as a bloc.')],
+                    [X('獵人與冤案', 'Hunts and wrongful accusations'), X('獵人隊連夜搜捕常抓錯人；冤案揭曉後，帶頭的人會被提案審判。', 'Night hunts often seize the wrong person; once the truth comes out, the ringleader may be put on trial.')],
+                    [X('宗教與平權', 'Faith and equal rights'), X('宗教認定基因是褻瀆或神選；被逐出教門的神裔會創立新神教，神裔會也會提案平權令。', 'Faiths call the genes blasphemy or a divine choice; the excommunicated found new faiths, and the god-blooded push for an equal rights act.')]],
+              log: [['00:30', X('🌕 滿月夜，守衛隊長變成了狼人，咬傷了巡夜的人。', '🌕 Full moon: the guard captain turns into a wolf and bites the night watchman.')], ['07:00', X('《邊境日報》：純人派說神裔是怪物，要求驅逐。', 'Frontier Daily: Pure Blood calls the god-blooded monsters and demands expulsion.')], ['21:15', X('獵人隊抓錯了人，被冤枉的鐵匠今天放了出來。', 'The hunters got the wrong man; the wrongly accused blacksmith is released today.')]] },
             { id: 'culture', ic: '⛪', c: '#9aa7ff', k: X('信仰與文化', 'Faith and culture'),
               h: X('每座鎮都有自己的神、節日和傳言', 'Every town has its own gods, festivals and rumors'),
               lead: X('宗教是隨機生成的：名字、神、經典、節日都不一樣。信徒禮拜、捐獻，教團濟貧，也會分裂出異端、跟新科技起衝突。消息會晚到、會走樣，越傳越離譜；藝術作品、吟遊詩人的歌和鎮史一起留下來。',
@@ -415,7 +428,7 @@ Object.assign(RimTownApp.prototype, {
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         const roadmap = [
-            [X('最近上線', 'Recently added'), '#34d399', [X('v7.7 錢從哪來、往哪去：商人真的出口、不再憑空產錢', 'v7.7 where the money comes from: traders really export, no more silver from thin air'), X('v7.6 神裔社會：純人派、獵人隊冤案、新神教、平權令', 'v7.6 the god-blooded in society: Pure Blood faction, wrongful hunts, new faiths, an equal rights act'), X('v7.5 神話基因：狼人、吸血鬼與神的血', 'v7.5 mythic genes: werewolves, vampires and the blood of gods'), X('v7.4 身體與醫療：生病受傷、手術移植、生技時代', 'v7.4 health and medicine: illness, injury, surgery, transplants and a biotech era'), X('v7.3 介面整合：分頁樣式統一、新聞不再重複', 'v7.3 tidier panels: one consistent style, no duplicated news'), X('v7.2 景氣循環、公共支出、反壟斷', 'v7.2 business cycles, public spending and antitrust'), X('v7.1 貿易與關稅', 'v7.1 trade and tariffs'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining')]],
+            [X('最近上線', 'Recently added'), '#34d399', [X('v7.7.1 商行分東家、掌櫃、夥計；大城鎮存檔不再擠爆', 'v7.7.1 trading houses with owners, managers and clerks; big towns no longer overflow local storage'), X('v7.7 錢從哪來、往哪去：商人真的出口、不再憑空產錢', 'v7.7 where the money comes from: traders really export, no more silver from thin air'), X('v7.6 神裔社會：純人派、獵人隊冤案、新神教、平權令', 'v7.6 the god-blooded in society: Pure Blood faction, wrongful hunts, new faiths, an equal rights act'), X('v7.5 神話基因：狼人、吸血鬼與神的血', 'v7.5 mythic genes: werewolves, vampires and the blood of gods'), X('v7.4 身體與醫療：生病受傷、手術移植、生技時代', 'v7.4 health and medicine: illness, injury, surgery, transplants and a biotech era'), X('v7.3 介面整合：分頁樣式統一、新聞不再重複', 'v7.3 tidier panels: one consistent style, no duplicated news'), X('v7.2 景氣循環、公共支出、反壟斷', 'v7.2 business cycles, public spending and antitrust'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining')]],
             [X('構想中', 'Planned'), '#f2c14e', [X('鎮與鎮之間的貨幣與匯率', 'Currencies and exchange between towns'), X('股份與合夥經營產業', 'Shares and partnerships in businesses')]],
             [X('構想', 'Ideas'), '#60a5fa', [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')]],
         ];
@@ -483,7 +496,7 @@ Object.assign(RimTownApp.prototype, {
                         <span class="lp-kicker">${X('瀏覽器 3D・AI 小鎮沙盒', 'Browser 3D · AI town sandbox')}</span>
                         <h1 class="lp-title">${X('邊境鎮', 'RimTown')}<span>${L === 'en' ? 'Frontier Town' : 'RimTown'}</span></h1>
                         <p class="lp-tagline">${X('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。', 'A 3D town where AI villagers live their own lives. You watch from above and nudge it now and then.')}</p>
-                        <p class="lp-lead">${X('他們自己工作、戀愛、吵架、提案、投票、做生意、組工會、收獻金、上報紙；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。', 'They work, fall in love, argue, propose, vote, run businesses, form unions, take donations and make the papers. The town may grow from a village into a capital, or fall apart after one famine. No script, no ending.')}</p>
+                        <p class="lp-lead">${X('他們自己工作、戀愛、吵架、提案、投票、做生意、組工會、收獻金、上報紙，也會生病、看醫生，甚至花大錢把神話基因編進身體裡；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。', 'They work, fall in love, argue, propose, vote, run businesses, form unions, take donations and make the papers; they also fall ill, see doctors, and some even pay a fortune to have mythic genes edited into their bodies. The town may grow from a village into a capital, or fall apart after one famine. No script, no ending.')}</p>
                         <div class="landing-cta">${cta}</div>
                         <ul class="lp-badges">${[['🖥️', X('免安裝', 'No install')], ['📱', X('手機也能玩', 'Works on phones')], ['☁️', X('雲端存檔', 'Cloud saves')], ['🌐', X('中文／English', '中文／English')]].map(b => `<li><span aria-hidden="true">${b[0]}</span>${b[1]}</li>`).join('')}</ul>
                         <div class="landing-version">v${esc(ver)}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
@@ -776,14 +789,13 @@ Object.assign(RimTownApp.prototype, {
         // 手機:進遊戲後重算地圖尺寸
         setTimeout(() => { if (this.tileMap) this.tileMap._needsResize = true; try { window.dispatchEvent(new Event('resize')); } catch (e) {} }, 100);
     },
-    // 開啟帳號視窗到指定分頁(首頁用):不顯示訪客試玩
+    // 開啟帳號視窗到指定分頁(首頁用)
     _openAuth(tab) {
         const modal = document.getElementById('auth-modal');
         if (!modal) return;
         modal.classList.remove('hidden');
         const closeBtn = modal.querySelector('.auth-close-btn');
         if (closeBtn) closeBtn.style.display = '';
-        document.getElementById('auth-guest-section')?.classList.add('hidden');
         document.querySelectorAll('.auth-tab').forEach(_tw => _tw.classList.toggle('active', _tw.dataset.authTab === tab));
         document.getElementById('auth-login-form')?.classList.toggle('hidden', tab !== 'login');
         document.getElementById('auth-register-form')?.classList.toggle('hidden', tab !== 'register');

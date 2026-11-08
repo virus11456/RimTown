@@ -4,6 +4,7 @@
 // - 議會、提案、舊事件「加銀幣」的效果改成真的把多餘的貨賣給外地(沒有多的貨就賣不到錢)
 // - 錢從哪來、往哪去月報:外地流入(出口、來訪商人、移民帶來的積蓄、探險)與流出(進口原料與奢侈品、外地包商工程款、向外地訂貨、搬走的人帶走),其餘算「其他」
 // - 外地搬來的人跟鎮上的人同名:保留本名,前面加出生地(例如「河谷・林雅婷」);出生地不會變,再搬幾次也只會有一個前綴
+// - v7.7.1 商行的人分三種:東家(老闆,出錢、收營收、發薪水)、掌櫃(東家請來管店的,一家一位,薪水多三成)、夥計(其他受雇的商人,跑外地賣貨)
 'use strict';
 const MONEY = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
@@ -64,8 +65,25 @@ const MONEY = (() => {
     function prefixed(w, base, bp) { const name = `${short(bp)}・${base}`; try { if (typeof I18N !== 'undefined' && I18N.registerName) I18N.registerName(name, `${I18N.localizeName ? I18N.localizeName(base) : base} of ${t(bp)}`); } catch (e) {} if (w) { w.namePrefix = w.namePrefix || {}; w.namePrefix[name] = { base, bp }; } return name; }
     function originTown(w) { const T = (w.otherTowns || []).map(x => x?.name).filter(Boolean); return T.length ? T[Math.floor(Math.random() * T.length)] : ''; }
     function reRegister(w) { for (const [name, v] of Object.entries(w?.namePrefix || {})) { try { if (typeof I18N !== 'undefined') I18N.registerName(name, `${I18N.localizeName ? I18N.localizeName(v.base) : v.base} of ${t(v.bp)}`); } catch (e) {} } }
+    // ---------- v7.7.1 商行:東家／掌櫃／夥計 ----------
+    const ROLE = { owner: '東家', mgr: '掌櫃', clerk: '夥計' }, MGR_PAY = 1.3;
+    const skillOf = (a) => { try { return a.skills?.get?.('社交')?.level || 0; } catch (e) { return 0; } };
+    function tradeRoles(w) {
+        if (typeof MARKET === 'undefined' || !w?.market) return; const M = S(w);
+        const owner = MARKET.ownerOf(w, 'trade'); const ws = npcs(w).filter(a => a.job?.key === 'trader');
+        const staff = ws.filter(a => a.agentId !== owner);
+        // 掌櫃:原本的掌櫃還在就留著(不會天天換人),不在了才從受雇的商人裡挑手腕最好的;只有一個人時他就是掌櫃(公營商行由他顧店)
+        let mgr = staff.find(a => a.agentId === M.mgr) || null;
+        if (!mgr && staff.length) mgr = staff.slice().sort((x, y) => skillOf(y) - skillOf(x) || (y.age || 0) - (x.age || 0))[0];
+        M.mgr = mgr ? mgr.agentId : null;
+        for (const a of ws) {
+            const r = a.agentId === owner ? 'owner' : a === mgr ? 'mgr' : 'clerk';
+            a.tradeRole = r; a.job.title = t(ROLE[r]); if (r === 'mgr') a._wageMult = MGR_PAY; else delete a._wageMult;
+        }
+        for (const a of npcs(w)) if (a.job?.key !== 'trader' && (a.tradeRole || a._wageMult)) { delete a.tradeRole; delete a._wageMult; }
+    }
     // ---------- 每天 ----------
-    function daily(w) { if (!w.observerMode) return; const M = S(w), d = day(w); if (M.lastDaily === d) return; M.lastDaily = d; try { exportDaily(w); } catch (e) { console.warn('[Money] export', e); } close(w); }
+    function daily(w) { if (!w.observerMode) return; const M = S(w), d = day(w); if (M.lastDaily === d) return; M.lastDaily = d; try { tradeRoles(w); } catch (e) { console.warn('[Money] roles', e); } try { exportDaily(w); } catch (e) { console.warn('[Money] export', e); } close(w); }
     function view(w, n = 30) {
         const M = S(w), d = day(w); const sum = {}; for (const [k, D] of Object.entries(M.days)) if (+k > d - n) for (const [c, v] of Object.entries(D)) sum[c] = r2((sum[c] || 0) + v);
         // 每一類照實際正負放到流入或流出(例如來訪商人那個月鎮上買得比賣得多,就算流出)
@@ -74,7 +92,7 @@ const MONEY = (() => {
         return { days: Math.min(n, M.hist.length), ins, outs, other: sum.other || 0, net, total: T, pop, per: pop ? Math.round(T / pop) : 0, perOld: old && old[2] ? Math.round(old[1] / old[2]) : null, label: (c) => CAT[c] || c, st: M.st };
     }
     function townBrief(w) { if (!w.money) return ''; const v = view(w); if (v.days < 7) return ''; return t('近 {n} 天鎮上的錢{dir} {m} 銀幣').replace('{n}', v.days).replace('{dir}', v.net >= 0 ? t('多了') : t('少了')).replace('{m}', Math.abs(Math.round(v.net))); }
-    return { S, total, flow, track, close, sellSurplus, surplusList, floors, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, CAT, IN, OUT, MARKUP, BUDGET };
+    return { S, total, flow, track, close, sellSurplus, surplusList, floors, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, CAT, IN, OUT, MARKUP, BUDGET };
 })();
 
 // ---------- 接上其他系統 ----------
@@ -101,7 +119,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.money = null; this.namePrefix = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d) { if (this.money) { const M = this.money; d.money = { days: M.days, hist: M.hist, st: M.st, lastT: M.lastT, lastClose: M.lastClose, pend: M.pend || 0 }; } if (this.namePrefix) d.namePrefix = this.namePrefix; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d) { if (this.money) { const M = this.money; d.money = { days: M.days, hist: M.hist, st: M.st, lastT: M.lastT, lastClose: M.lastClose, pend: M.pend || 0, mgr: M.mgr || null }; } if (this.namePrefix) d.namePrefix = this.namePrefix; } return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.money = (data?.money && typeof data.money === 'object') ? data.money : null; this.namePrefix = (data?.namePrefix && typeof data.namePrefix === 'object') ? data.namePrefix : null; MONEY.reRegister(this); } } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.money = (data?.money && typeof data.money === 'object') ? data.money : null; this.namePrefix = (data?.namePrefix && typeof data.namePrefix === 'object') ? data.namePrefix : null; MONEY.reRegister(this); MONEY.tradeRoles(this); } } catch (e) {} return r; };
 }

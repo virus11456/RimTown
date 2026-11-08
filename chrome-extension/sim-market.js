@@ -80,7 +80,7 @@ const MARKET = (() => {
             if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
             const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
             const rate = payRate(w, k);
-            const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
+            const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
             const ratio = have >= total ? 1 : Math.max(0, have / total);
             if (ratio > 0) takeId(w, id, total * ratio);

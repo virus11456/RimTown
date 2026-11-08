@@ -1617,42 +1617,6 @@ body.rimtown-page .wp-block-post-title {
 .modal.hidden { display: none; }
 .hidden { display: none !important; }
 
-/* ===== Guest Banner ===== */
-#guest-banner {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 50;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 4px 12px;
-    background: var(--bg-secondary);
-    border-bottom: 1px solid var(--border);
-    font-size: 0.75rem;
-    color: var(--text-secondary);
-}
-#guest-banner.hidden { display: none !important; }
-#guest-register-btn {
-    padding: 2px 10px;
-    border: 1px solid var(--accent);
-    border-radius: 3px;
-    background: transparent;
-    color: var(--accent);
-    cursor: pointer;
-    font-size: 0.7rem;
-}
-#guest-banner-close {
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font-size: 0.9rem;
-    padding: 0 4px;
-}
-
 /* Mobile-only elements: hidden on desktop, shown only at ≤768px */
 .mobile-header {
     display: none !important;
@@ -3181,24 +3145,6 @@ body.rimtown-page .wp-block-post-title {
         width: 100%;
     }
 
-    /* Guest banner: move to bottom, above tab bar */
-    #guest-banner {
-        position: fixed;
-        top: auto;
-        bottom: 52px;
-        left: 0;
-        right: 0;
-        z-index: 51;
-        padding: 3px 8px;
-        font-size: 0.65rem;
-        gap: 4px;
-        border-top: 1px solid var(--border);
-        border-bottom: 1px solid var(--border);
-    }
-    #guest-banner span { white-space: nowrap; }
-    #guest-register-btn { font-size: 0.6rem; padding: 1px 8px; }
-    /* 訪客橫幅顯示時,側欄內容底部留空避免被蓋住 */
-    .rimtown-container.guest-banner-visible .rt-sidebar-content { padding-bottom: 30px; }
     /* 手機版:教學提示卡移到 mobile-header 下方 */
     .quest-guidance { top: 92px; }
     /* Hide overflow tabs on mobile (accessed via mobile group sub-tabs) */
@@ -3918,14 +3864,11 @@ body.rimtown-page .wp-block-post-title {
     font-size: 0.68rem;
     margin-left: 4px;
 }
-/* 訪客橫幅顯示時,header 下移不被壓住(桌面) */
-.rimtown-container.guest-banner-visible .header { margin-top: 25px; }
 
 /* 手機:標題不換行、header 元素不擠壓 */
 @media (max-width: 768px) {
     .mobile-title { white-space: nowrap; flex-shrink: 0; }
     .mobile-clock { white-space: nowrap; }
-    .rimtown-container.guest-banner-visible .header { margin-top: 0; }
 }
 
 /* 手機 header 列:壓縮字級與間距,確保 ☰ 不被擠出畫面 */
@@ -4088,8 +4031,6 @@ body.rimtown-page .wp-block-post-title {
     #kairo-card-body .rt-sidebar-content { height: 100%; overflow-y: auto; }
     @keyframes kairoPop { from { transform: scale(0.96); opacity: 0; } to { transform: none; opacity: 1; } }
 
-    /* 訪客橫幅在開羅列上方 */
-    .kairo-mode #guest-banner { bottom: calc(52px + env(safe-area-inset-bottom, 0px)); }
 }
 
 /* 開羅模式下,目標提示卡置於浮動卡/選單之下 */
@@ -4116,8 +4057,6 @@ body.rimtown-page .wp-block-post-title {
         backdrop-filter: blur(3px);
     }
     #kairo-status span { white-space: nowrap; }
-    /* 訪客橫幅移到狀態帶上方 */
-    .kairo-mode #guest-banner { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
     /* 按壓回饋 */
     #kairo-menu button:active, #kairo-bar button:active, #kairo-card-back:active {
         transform: scale(0.96);
@@ -4129,11 +4068,7 @@ body.rimtown-page .wp-block-post-title {
     .npc-quick-card { bottom: 152px !important; }
 }
 
-/* v4.6.0 修:開羅聊天面板開啟時,訪客橫幅移到面板上方不擋輸入列 */
 @media (max-width: 768px) {
-    .kairo-mode .rt-sidebar.chat-open ~ #guest-banner,
-    .kairo-mode:has(.rt-sidebar.chat-open) #guest-banner { display: none !important; }
-
     /* v5.35.4 鍵盤開啟時(聊天輸入框聚焦):隱藏底部狀態帶與選單列,避免蓋住輸入框 */
     body.rt-kb-open #kairo-bar,
     body.rt-kb-open #kairo-status { display: none !important; }

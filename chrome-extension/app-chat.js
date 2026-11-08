@@ -981,7 +981,6 @@ Object.assign(RimTownApp.prototype, {
         setTimeout(() => { div.remove(); }, 5000);
     },
     _scrollChatToBottom() { requestAnimationFrame(() => { const el = document.getElementById('chat-messages'); if(el) el.scrollTop=el.scrollHeight; }); },
-    _appendChatBubble(type, text) { const el = document.getElementById('chat-messages'); if(!el) return; const div=document.createElement('div'); div.className=`chat-bubble chat-${type}`; div.innerHTML=`<div class="chat-text">${this._escapeHtml(text)}</div>`; el.appendChild(div); el.scrollTop=el.scrollHeight; },
 
     _updateChatBadge() {
         const count = this._chatUnread ? this._chatUnread.size : 0;

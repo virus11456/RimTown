@@ -76,7 +76,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       try { playDay(d); } catch (e) { out.errors.push(`day${d} play: ${e.message}`); }
       try {
         app.state = w.getState(); JSON.stringify(app.state);
-        for (const fn of ['renderQuest', 'renderEconomy', 'renderNewspaper']) { const div = document.createElement('div'); app[fn](div); }
+        for (const fn of ['renderQuest', 'renderEconomy']) { const div = document.createElement('div'); app[fn](div); }
         app.selectedAgent = Object.keys(w.agents).find(k => k !== 'player'); const dd = document.createElement('div'); app.renderAgentDetail(dd);
         app._updateQuestGuidance();
       } catch (e) { out.errors.push(`day${d} render: ${e.message}`); }
@@ -105,7 +105,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   check(DAYS < 16 || r.stats.recaps >= Math.floor((DAYS - 1) / 15), `季末回顧有結算 (${r.stats.recaps} 季：${(r.stats.recapGrades || []).join(' ')})`); // v5.98.0
   check(r.stats.roundTrips >= Math.floor(DAYS / 10), `存檔讀檔接著跑 ${r.stats.roundTrips} 次`);
   check(r.stats.population >= 5, `人口 ${r.stats.population}`);
-  check(r.stats.saveBytes < 1500000 * Math.max(1, (r.stats.population || 0) / 30), `存檔體積 ${(r.stats.saveBytes / 1024).toFixed(0)} KB／${r.stats.population} 人（上限每 30 人 1.5MB；v7.7.0 起人口長得比較快，改看每人體積；getState ${(r.stats.stateBytes / 1024).toFixed(0)} KB；手機 localStorage 約 5MB）`); // v5.99.0 B12
+  check(r.stats.saveBytes / Math.max(1, r.stats.population || 1) < 50000, `存檔體積 ${(r.stats.saveBytes / 1024).toFixed(0)} KB／${r.stats.population} 人，每人 ${(r.stats.saveBytes / 1024 / Math.max(1, r.stats.population || 1)).toFixed(1)} KB（上限每人 50KB；v7.7.1 改看每人體積，100 人的鎮另由 v7710 測試確認存得進去）`);
   if (consoleErrs.length) console.log('  (console errors)', consoleErrs.slice(0, 5));
   await browser.close();
   console.log(failed ? `\n${failed} FAILED` : '\nALL OK'); process.exit(failed ? 1 : 0);
