@@ -38,7 +38,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (let i = 0; i < 12 && !X.found; i++) { day++; setDay(day); CALAMITY.daily(w); if (X.found && foundDay == null) foundDay = i; }
       for (let i = 0; i < 3; i++) { day++; setDay(day); CALAMITY.daily(w); } out.spread = { inf: X.inf, found: !!X.found, foundIn: foundDay, phase: X.phase, I: CALAMITY.count(X, 'I'), curve: X.curve.length };
       // 5) 被發現後有人提案:研究對策、隔離;投票:家人在生病的反對隔離、商人反對封城
-      for (const a of adults().slice(1, 4)) if (!X.st[a.agentId]) X.st[a.agentId] = { s: 'I', d: day, on: day, end: day + 30 }; // 讓疫情撐到後面的步驟
+      for (const a of adults().slice(1, 4)) if (X.st[a.agentId]?.s !== 'I') X.st[a.agentId] = { s: 'I', d: day, on: day, end: day + 30 }; X.quiet = 0; // 讓疫情撐到後面的步驟
       day++; setDay(day); CALAMITY.daily(w); const kinds = w.proposals.items.filter(p => /^cal_/.test(p.kind)).map(p => p.kind);
       const sick = adults().find(a => X.st[a.agentId]?.s === 'I'); const fam = sick ? (MONEY.familyOf(w, sick)[0] || sick) : adults()[1];
       if (!X.st[fam.agentId] || fam === sick) { X.st[fam.agentId] = { s: 'I', d: day, on: day, end: day + 5 }; }
@@ -46,6 +46,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const tr = adults().find(a => a.job?.key === 'trader') || adults()[2]; const keepJ = tr.job; tr.job = new Job('trader');
       const vq = fix(0.5, () => CALAMITY.vote(w, qp, fam)), vl = fix(0.5, () => CALAMITY.vote(w, lp, tr)); tr.job = keepJ;
       out.props = { vax: kinds.includes('cal_vax'), quar: kinds.includes('cal_quar'), vq: vq.v + ':' + vq.why, vl: vl.v + ':' + vl.why };
+      if (C.cur !== X) { out.endedEarly = true; C.cur = X; }
       // 6) 通過:隔離、封城(商人進不來)、研究疫苗(平常的研究暫停)
       CALAMITY.enact(w, 'cal_quar'); CALAMITY.enact(w, 'cal_lock'); w.trade.merchant = null; w.trade._spawnMerchant(w); const blocked = !w.trade.merchant;
       const R = w.research; const cur = R.current || (R.getAvailable()[0] && (R.startResearch(R.getAvailable()[0].key), R.current)); const pr0 = R.projects[cur]?.progress || 0;
@@ -70,8 +71,26 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const x of Object.values(X.st)) if (x.s === 'E' || x.s === 'I') x.s = 'R';
       day++; setDay(day); CALAMITY.daily(w); day++; setDay(day); CALAMITY.daily(w);
       const h = C.hist[0]; out.end = { over: !C.cur, name: h?.name, survived: h?.survived, how: h?.how, cool: CALAMITY.canRelease(w).why, inf: h?.inf };
+      // 13) 怪病特性:最多 2 個、加成本;謊言病冒煙→爆炸、戀愛、失憶、換性格與復原、守財、長眠被家人叫醒、怒火吵架、藏不住話說出秘密
+      const nq = CALAMITY.norm({ quirk: ['liar', 'love', 'rage'] }); const qc = CALAMITY.cost({ route: ['contact'], sym: ['rash'], quirk: ['liar'] }) - CALAMITY.cost({ route: ['contact'], sym: ['rash'] });
+      C.coolTo = 0; C.cur = null; C.power = 100; const rq = CALAMITY.release(w, { name: 'Q', route: ['contact'], sym: ['rash'], quirk: ['liar', 'love'], latency: 'short', length: 'long' }); const Y = C.cur; const Q = CALAMITY._q;
+      const pool = adults().filter(a => (a.personality?.traits || []).some(k => ['kind', 'shy', 'lazy', 'hardworking', 'optimist', 'pessimist'].includes(k)));
+      const liar = adults()[3], lover = adults()[4], amn = adults()[5], flipA = pool.find(a => ![liar, lover, amn].includes(a)) || adults()[6], miser = adults()[7], sleeper = adults()[8];
+      const mk = (a) => { Y.st[a.agentId] = { s: 'I', d: day, on: day, end: day + 20 }; return Y.st[a.agentId]; };
+      mk(liar); Q.strike(w, Y, liar, day); const smoke = !!w.agents[liar.agentId] && Y.st[liar.agentId].lies === 1; Q.strike(w, Y, liar, day); const boom = !w.agents[liar.agentId] && Y.boom === 1;
+      const xl = mk(lover); Q.onset(w, Y, lover, xl, day); const lv = xl.lv && (lover.relationships.relationships[xl.lv]?.romanticInterest || 0) >= 70;
+      Y.spec.quirk = ['amnesia', 'flip']; const rel0 = Object.values(amn.relationships.relationships).filter(r => r.status !== 'married').map(r => Math.abs(r.affinity || 0)).reduce((a, b) => a + b, 0); const xa = mk(amn); Q.onset(w, Y, amn, xa, day); const rel1 = Object.values(amn.relationships.relationships).filter(r => r.status !== 'married').map(r => Math.abs(r.affinity || 0)).reduce((a, b) => a + b, 0);
+      const tr0 = (flipA.personality.traits || []).join(','); const xf = mk(flipA); Q.onset(w, Y, flipA, xf, day); const tr1 = flipA.personality.traits.join(','); Q.end(w, Y, flipA, xf); const tr2 = flipA.personality.traits.join(',');
+      Y.spec.quirk = ['miser', 'sleep']; const xm = mk(miser); Q.onset(w, Y, miser, xm, day); const greedyOn = miser.personality.traits.includes('greedy'); Q.end(w, Y, miser, xm); const greedyOff = !miser.personality.traits.includes('greedy');
+      const xs = mk(sleeper); const wm = HEALTH.workMult(w, sleeper); { const f = adults().find(a => a !== sleeper && !Y.st[a.agentId] && !w.isAway?.(a.agentId)); f.homeLocation = sleeper.homeLocation; sleeper.relationships.getOrCreate(f.agentId, f.name).status = 'married'; f.relationships.getOrCreate(sleeper.agentId, sleeper.name).status = 'married'; }
+      fix(0.1, () => Q.daily(w, Y, day)); const woke = xs.end <= day;
+      Y.spec.quirk = ['rage', 'blurt']; const ra = adults().find(a => !Y.st[a.agentId] && !a.isDead); const xr = mk(ra); const end0 = xr.end;
+      const sc = DARK.secret(w, { kind: 'cover', culprit: ra.agentId, victim: null, k: '{a}偷吃了倉庫的食物', p: { a: ra.name } });
+      fix(0.05, () => Q.daily(w, Y, day)); const raged = xr.end > end0; const blurted = sc.found;
+      out.quirk = { max: nq.quirk.length, cost: qc, rel: rq.ok, smoke, boom, love: !!lv, amnesia: rel1 <= rel0 * 0.5 + 1, flip: tr1 !== tr0 && tr2 === tr0, miser: greedyOn && greedyOff, sleepWork: Math.round(wm * 100) / 100, woke, raged, blurted };
+      C.cur = null;
       w._absDay = realDay;
-      // 13) 工坊介面:設計 → 釋放 → 疫情面板
+      // 14) 工坊介面:設計 → 釋放 → 疫情面板
       C.coolTo = 0; C.power = 100; app._ghLab = null; app._ghTab = 'lab'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
       const tray = document.getElementById('gh-tray'); const ui = { form: !!tray.querySelector('#gh-lab-name'), chips: tray.querySelectorAll('.gh-chip').length, bars: tray.querySelectorAll('.gh-bar').length };
       tray.querySelector('[data-gh="lab-multi"][data-g="sym"][data-v="fever"]')?.click(); await new Promise(r => setTimeout(r, 50)); ui.picked = app._ghLab.sym.includes('fever');
@@ -94,6 +113,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok((r.save.name === '灰咳病' || r.save.name === 'Grey Cough') && r.save.st >= 2 && r.save.power === 35, '疫情進行中存讀檔，狀態都在', r.save);
     ok(r.floor.alive === 5 && r.floor.died === 0, '鎮上只剩五個人時，剩下的人自然免疫（不會滅村）', r.floor);
     ok(r.end.over && r.end.survived === true && r.end.how === 'cure' && r.end.cool === 'cooldown', '疫情結束：記下靠疫苗撐過、進入冷卻', r.end);
+    ok(r.quirk.max === 2 && r.quirk.cost === 14 && r.quirk.rel && r.quirk.smoke && r.quirk.boom && r.quirk.love && r.quirk.amnesia && r.quirk.flip && r.quirk.miser && r.quirk.sleepWork < 0.1 && r.quirk.woke && r.quirk.raged && r.quirk.blurted, '怪病特性：謊言病冒煙再爆炸、戀愛病愛上別人、失憶、換性格（病好變回來）、守財、長眠（家人叫醒）、怒火吵架、藏不住話說出秘密', r.quirk);
     ok(r.ui.form && r.ui.chips > 20 && r.ui.bars === 4 && r.ui.picked && r.ui.released && r.ui.dash && r.ui.boostBtn && !r.ui.undef && !r.ui.overflow, '工坊介面：選零件、取名、釋放後變成疫情面板（推一把按鈕），沒有破版', r.ui);
     if (lang === 'en') ok(!r.ui.cjk.length, '英文工坊沒有中文', r.ui.cjk);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

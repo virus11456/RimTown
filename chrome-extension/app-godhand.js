@@ -150,7 +150,7 @@ Object.assign(RimTownApp.prototype, {
     },
 
     // ---------- v7.9.0 災厄工坊:設計病原體、釋放、看疫情 ----------
-    _ghLabSpec() { if (!this._ghLab) this._ghLab = { name: '', route: ['droplet'], sym: ['cough'], latency: 'mid', speed: 'mid', length: 'mid', lethal: 'low', resist: 'off', climate: 'none', target: 'none' }; return this._ghLab; },
+    _ghLabSpec() { if (!this._ghLab) this._ghLab = { name: '', route: ['droplet'], sym: ['cough'], quirk: [], latency: 'mid', speed: 'mid', length: 'mid', lethal: 'low', resist: 'off', climate: 'none', target: 'none' }; return this._ghLab; },
     _ghLabHtml() {
         const w = this.world; const V = CALAMITY.view(w); const esc = (x) => this._escapeHtml(String(x ?? '')); const P = V.parts;
         const pw = V.sandbox ? '∞' : `${V.power}/${V.cap}`;
@@ -166,8 +166,8 @@ Object.assign(RimTownApp.prototype, {
             if (c.vax) h += `<div class="gh-vax">💉 ${c.vax.done ? t('疫苗研究出來了，已經 {n} 人打了疫苗').replace('{n}', c.vax.shots) : t('疫苗研究中')} <div class="progress-bar"><div class="progress-fill" style="width:${c.vax.pct}%"></div></div></div>`;
             const MS = { quar: '🏠 ' + t('病人隔離'), mask: '😷 ' + t('戴口罩'), close: '🚪 ' + t('酒館市集關閉'), lock: '🚧 ' + t('封城') };
             if (c.ms.length) h += `<div class="gh-ms">${c.ms.map(k => `<span>${MS[k] || k}</span>`).join('')}</div>`;
-            h += `<div class="gh-spec">${sp.route.map(k => P.route[k].icon + ' ' + t(P.route[k].name)).join(' · ')} ｜ ${sp.sym.map(k => P.sym[k].icon + ' ' + t(P.sym[k].name)).join(' · ')}</div>`;
-            const LG = { release: '🧪 在{x}身上釋放', found: '🩺 被發現了', rumor: '🗣️ 流言：「{x}」', panic: '😱 鎮上陷入恐慌', fading: '🌤️ 開始退燒', vax: '🔬 開始研究疫苗', vaxdone: '💉 疫苗問世', quar: '🏠 病人隔離', mask: '😷 口罩令', close: '🚪 酒館市集關閉', lock: '🚧 封城', boost: '😈 你推了一把' };
+            h += `<div class="gh-spec">${sp.route.map(k => P.route[k].icon + ' ' + t(P.route[k].name)).join(' · ')} ｜ ${sp.sym.map(k => P.sym[k].icon + ' ' + t(P.sym[k].name)).join(' · ')}${(sp.quirk || []).length ? ' ｜ ' + sp.quirk.map(k => P.quirk[k].icon + ' ' + t(P.quirk[k].name)).join(' · ') : ''}</div>`;
+            const LG = { release: '🧪 在{x}身上釋放', found: '🩺 被發現了', rumor: '🗣️ 流言：「{x}」', panic: '😱 鎮上陷入恐慌', fading: '🌤️ 開始退燒', vax: '🔬 開始研究疫苗', vaxdone: '💉 疫苗問世', quar: '🏠 病人隔離', mask: '😷 口罩令', close: '🚪 酒館市集關閉', lock: '🚧 封城', boost: '😈 你推了一把', boom: '💥 {x}說謊爆炸', smoke: '💨 {x}說謊冒煙', confess: '😰 {x}怕爆炸全招了', blurt: '🗣️ {x}說溜了秘密' };
             h += `<div class="gh-lab-log">${c.log.map(l => `<div><span class="gh-when">${t('第 {d} 天').replace('{d}', l[0] - c.day + 1)}</span> ${esc(t(LG[l[1]] || l[1]).replace('{x}', l[2] || ''))}</div>`).join('')}</div>`;
             if (c.scape) h += `<div class="gh-lab-note">🎯 ${t('鎮上有人把矛頭指向{a}').replace('{a}', esc(c.scape))}</div>`;
             const canB = !c.boosting && (V.sandbox || V.power >= V.boostCost);
@@ -176,9 +176,9 @@ Object.assign(RimTownApp.prototype, {
         }
         const S = this._ghLabSpec(); const pv = CALAMITY.preview(S);
         const chip = (g, k, d, on, multi) => `<button class="gh-chip${on ? ' on' : ''}" data-gh="${multi ? 'lab-multi' : 'lab-opt'}" data-g="${g}" data-v="${k}" aria-pressed="${on}" title="${esc(t(d.desc || ''))}">${d.icon ? d.icon + ' ' : ''}${esc(t(d.name))}<small>${d.cost ? '+' + d.cost : ''}</small></button>`;
-        const LBL = { route: '傳播途徑（選 1～2）', sym: '症狀（最多 4 個）', latency: '潛伏期', speed: '爆發速度', length: '持續時間', lethal: '致死率', resist: '抗藥性', climate: '季節', target: '偏好族群' };
+        const LBL = { route: '傳播途徑（選 1～2）', sym: '症狀（最多 4 個）', quirk: '怪病特性（最多 2 個，可不選）', latency: '潛伏期', speed: '爆發速度', length: '持續時間', lethal: '致死率', resist: '抗藥性', climate: '季節', target: '偏好族群' };
         h += `<div class="gh-lab-form"><label class="gh-lab-row"><span>${t('名稱')}</span><input id="gh-lab-name" maxlength="12" value="${esc(S.name)}" placeholder="${t('例如：灰咳病')}"></label>`;
-        for (const g of ['route', 'sym']) h += `<div class="gh-lab-row"><span>${t(LBL[g])}</span><div class="gh-chips">${Object.entries(P[g]).map(([k, d]) => chip(g, k, d, S[g].includes(k), true)).join('')}</div></div>`;
+        for (const g of ['route', 'sym', 'quirk']) h += `<div class="gh-lab-row"><span>${t(LBL[g])}</span><div class="gh-chips">${Object.entries(P[g]).map(([k, d]) => chip(g, k, d, S[g].includes(k), true)).join('')}</div></div>`;
         for (const g of V.single) h += `<div class="gh-lab-row"><span>${t(LBL[g])}</span><div class="gh-chips">${Object.entries(P[g]).map(([k, d]) => chip(g, k, Object.assign({}, d, { name: d.name, desc: d.desc }), S[g] === k, false)).join('')}</div></div>`;
         const bar = (n, v) => `<div class="gh-bar"><span>${t(n)}</span><div class="progress-bar"><div class="progress-fill" style="width:${v}%"></div></div><b>${v}</b></div>`;
         h += `<div class="gh-pv">${bar('傳染力', pv.spread)}${bar('嚴重度', pv.sev)}${bar('致死率', pv.death)}${bar('隱蔽度', pv.stealth)}</div>`;
@@ -191,7 +191,7 @@ Object.assign(RimTownApp.prototype, {
     },
     _ghLabClick(k, v, b) {
         const w = this.world; const S = this._ghLabSpec(); const g = b.dataset.g;
-        if (k === 'lab-multi') { const arr = S[g]; const i = arr.indexOf(v); const max = g === 'route' ? 2 : 4; if (i >= 0) { if (arr.length > 1) arr.splice(i, 1); } else { if (arr.length >= max) arr.shift(); arr.push(v); } }
+        if (k === 'lab-multi') { const arr = S[g] || (S[g] = []); const i = arr.indexOf(v); const max = g === 'route' ? 2 : g === 'quirk' ? 2 : 4; if (i >= 0) { if (arr.length > 1 || g === 'quirk') arr.splice(i, 1); } else { if (arr.length >= max) arr.shift(); arr.push(v); } }
         else if (k === 'lab-opt') S[g] = v;
         else if (k === 'lab-release') { const r = CALAMITY.release(w, S, this._ghLabZero || null); if (r.ok) { try { this._showCornerNotice?.({ icon: '🧪', title: t('災厄已經釋放'), name: '', desc: t('一開始只有你知道。等村民自己發現、自己應對。') }); } catch (e) {} try { this.state = w.getState(); } catch (e) {} } }
         else if (k === 'lab-boost') CALAMITY.boost(w);

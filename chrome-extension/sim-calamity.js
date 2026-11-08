@@ -70,6 +70,16 @@ const CALAMITY = (function () {
         lethal: { low: { name: '低', desc: '約 2%', cost: 0, p: 0.02 }, mid: { name: '中', desc: '約 10%', cost: 10, p: 0.1 }, high: { name: '高', desc: '約 25%', cost: 25, p: 0.25 } },
         resist: { off: { name: '沒有', desc: '藥有效', cost: 0 }, on: { name: '有', desc: '看醫生吃藥效果變差', cost: 10 } },
         climate: { none: { name: '不挑', desc: '四季一樣', cost: 0 }, cold: { name: '耐寒', desc: '冬天更猖狂', cost: 6 }, heat: { name: '耐熱', desc: '夏天更猖狂', cost: 6 } },
+        quirk: { // 怪病特性(最多 2):接到村民原本的行為(說謊、秘密、戀愛、吵架、記憶、花錢、睡眠、性格)
+            liar: { icon: '💥', name: '謊言病', desc: '一說謊身上就冒煙，第二次說謊就爆炸', cost: 14 },
+            blurt: { icon: '🗣️', name: '藏不住話', desc: '守不住秘密，會把知道的事說出來', cost: 10 },
+            love: { icon: '💞', name: '戀愛病', desc: '會愛上下一個遇到的人，也會傳給對方', cost: 8 },
+            rage: { icon: '💢', name: '怒火病', desc: '動不動就吵架，吵架會傳染、越吵病越久', cost: 10 },
+            amnesia: { icon: '🔁', name: '失憶病', desc: '忘掉最近的人際關係，仇人變陌生人', cost: 12 },
+            miser: { icon: '💰', name: '守財病', desc: '只存錢不花錢，經手錢幣的人容易被傳染', cost: 8 },
+            sleep: { icon: '😴', name: '長眠病', desc: '一睡好幾天，家人來探望才會醒', cost: 10 },
+            flip: { icon: '🪞', name: '換性格病', desc: '性格反轉（善良變刻薄），病好了才變回來', cost: 10 },
+        },
         target: { none: { name: '不挑', desc: '人人都會中', cost: 0 }, elder: { name: '老人', desc: '老人特別容易中、容易死', cost: 4 }, child: { name: '小孩', desc: '小孩特別容易中', cost: 4 }, poor: { name: '窮人', desc: '窮人區傳得特別快', cost: 5 }, rich: { name: '富人', desc: '富貴病，宴席傳染', cost: 5 } },
     };
     const SINGLE = ['latency', 'speed', 'length', 'lethal', 'resist', 'climate', 'target'];
@@ -78,15 +88,16 @@ const CALAMITY = (function () {
         const s = spec || {}; const out = { name: String(s.name || '').replace(/[<>{}"'`\\]/g, '').trim().slice(0, 12) || t('無名怪病') };
         out.route = [...new Set((s.route || []).filter(k => P.route[k]))].slice(0, 2); if (!out.route.length) out.route = ['droplet'];
         out.sym = [...new Set((s.sym || []).filter(k => P.sym[k]))].slice(0, 4); if (!out.sym.length) out.sym = ['cough'];
+        out.quirk = [...new Set((s.quirk || []).filter(k => P.quirk[k]))].slice(0, 2);
         for (const k of SINGLE) out[k] = P[k][s[k]] ? s[k] : Object.keys(P[k])[k === 'speed' || k === 'latency' || k === 'length' ? 1 : 0];
         return out;
     }
-    function cost(spec) { const s = norm(spec); let c = BASE_COST; for (const r of s.route) c += P.route[r].cost; for (const y of s.sym) c += P.sym[y].cost; for (const k of SINGLE) c += P[k][s[k]].cost; return c; }
+    function cost(spec) { const s = norm(spec); let c = BASE_COST; for (const r of s.route) c += P.route[r].cost; for (const y of s.sym) c += P.sym[y].cost; for (const q of s.quirk) c += P.quirk[q].cost; for (const k of SINGLE) c += P[k][s[k]].cost; return c; }
     const visible = (s) => s.sym.some(y => y === 'rash' || y === 'blind' || y === 'fever');
     function preview(spec) {
         const s = norm(spec); const RW = { droplet: 1, water: 0.9, insect: 0.8, contact: 0.6, animal: 0.5 };
         const spread = Math.min(100, Math.round(s.route.reduce((x, r) => x + RW[r], 0) * 45 * P.speed[s.speed].m * (s.sym.includes('cough') ? 1.2 : 1)));
-        const sev = Math.min(100, Math.round(s.sym.reduce((x, y) => x + ({ cough: 10, fever: 18, rash: 6, blind: 22, joint: 14, heart: 28, delirium: 18, sleepy: 8 })[y], 0) * (s.length === 'long' ? 1.3 : s.length === 'short' ? 0.8 : 1)));
+        const sev = Math.min(100, Math.round((s.sym.reduce((x, y) => x + ({ cough: 10, fever: 18, rash: 6, blind: 22, joint: 14, heart: 28, delirium: 18, sleepy: 8 })[y], 0) + s.quirk.length * 12) * (s.length === 'long' ? 1.3 : s.length === 'short' ? 0.8 : 1)));
         const death = Math.min(100, Math.round((P.lethal[s.lethal].p + (s.sym.includes('heart') ? 0.08 : 0)) * 280));
         const stealth = Math.max(0, Math.min(100, ({ short: 15, mid: 40, long: 75 })[s.latency] + (visible(s) ? -20 : 15)));
         return { spread, sev, death, stealth, cost: cost(s) };
@@ -101,7 +112,7 @@ const CALAMITY = (function () {
         const pool = adults(w); const zero = (zeroId && w.agents[zeroId] && !w.agents[zeroId].isDead) ? w.agents[zeroId] : rnd(pool.length ? pool : here(w)); if (!zero) return { ok: false, why: 'nobody' };
         const C = S(w); const d = day(w);
         C.cur = { kind: 'pathogen', spec: s, day: d, cost: c, st: {}, found: 0, phase: 'hidden', ms: {}, curve: [], log: [], peak: 0, boost: 0, rumors: 0, fled: 0, died: 0, inf: 0, hoard: 0, scape: null, vax: null };
-        infect(w, C.cur, zero, d); C.st.released++;
+        C.cur.sn = w.dark?.n ?? 0; infect(w, C.cur, zero, d); C.st.released++;
         C.cur.log.push([d, 'release', t(zero.name)]);
         return { ok: true, cost: c, zero: zero.agentId };
     }
@@ -142,6 +153,8 @@ const CALAMITY = (function () {
             if (s.route.includes('contact')) { const m = spreadMult(w, X, 'contact'); house.forEach(x => tryInf(x, 0.15 * m)); cow.forEach(x => tryInf(x, 0.06 * m)); }
             if (s.target === 'rich' && !X.ms.close && Math.random() < 0.3) all.filter(x => wal(w, x) > 200).slice(0, 3).forEach(x => tryInf(x, 0.08)); // 富貴病:宴席
         }
+        if (s.quirk.includes('miser')) { const handlers = all.filter(x => ['trader', 'cook'].includes(x.job?.key)); for (const a of spreaders) for (const h of handlers) tryInf(h, 0.06); } // 守財病:經手錢幣的人
+        if (s.quirk.includes('love')) for (const a of spreaders) { const tg = X.st[a.agentId]?.lv && byId[X.st[a.agentId].lv]; if (tg) tryInf(tg, 0.25); } // 戀愛病:傳給愛上的人
         const frac = Math.min(1, nI / n * 8);
         if (s.route.includes('water')) { const m = spreadMult(w, X, 'water'); for (const a of all) tryInf(a, 0.015 * frac * m); }
         if (s.route.includes('animal')) { const m = spreadMult(w, X, 'animal'); const pets = new Set((w.pets?.list || []).map(p => p.owner).filter(Boolean)); for (const a of all) tryInf(a, (pets.has(a.agentId) || a.job?.key === 'farmer' ? 0.03 : 0.005) * frac * m); }
@@ -150,8 +163,8 @@ const CALAMITY = (function () {
     function progressDaily(w, X, d) {
         const s = X.spec; const alive = npcs(w).length;
         for (const [id, x] of Object.entries(X.st)) {
-            const a = w.agents[id]; if (!a || a.isDead) { if (x.s === 'E' || x.s === 'I') x.s = 'R'; continue; }
-            if (x.s === 'E' && d >= x.on) { x.s = 'I'; a.addThought?.('cal_sick', w); mem(w, a, X.found ? '我染上了{n}，渾身不舒服。' : '我這幾天身體很不對勁，不知道怎麼了。', { n: s.name }, 6); }
+            const a = w.agents[id]; if (!a || a.isDead) { if (x.s === 'E' || x.s === 'I') { x.s = 'R'; if (a) try { quirkEnd(w, X, a, x); } catch (e) {} } continue; }
+            if (x.s === 'E' && d >= x.on) { x.s = 'I'; a.addThought?.('cal_sick', w); mem(w, a, X.found ? '我染上了{n}，渾身不舒服。' : '我這幾天身體很不對勁，不知道怎麼了。', { n: s.name }, 6); try { quirkOnset(w, X, a, x, d); } catch (e) { console.warn('[Calamity] quirk', e); } }
             if (x.s !== 'I') continue;
             for (const y of s.sym) { const Y = P.sym[y]; if (Y.part && typeof HEALTH !== 'undefined') { HEALTH.hurt(w, a, Y.part, Y.dmg); if (y === 'joint') HEALTH.hurt(w, a, 'f', 1); } }
             if (d < x.end - (x.tr ? 1 : 0)) continue;
@@ -159,6 +172,7 @@ const CALAMITY = (function () {
             const age = a.age ?? 30; let p = P.lethal[s.lethal].p + (s.sym.includes('heart') ? 0.08 : 0);
             p *= (age >= 60 ? 2 : age < 12 ? 1.4 : 1) * (x.tr ? (s.resist === 'on' ? 0.75 : 0.5) : 1) * (isTarget(w, X, a) ? 1.3 : 1);
             if (alive <= 5) p = 0; // 最後幾個人自然免疫
+            try { quirkEnd(w, X, a, x); } catch (e) {}
             if (Math.random() < p) { x.s = 'D'; X.died++; S(w).st.died++; die(w, X, a); }
             else { x.s = 'R'; a.addThought?.('cured', w); mem(w, a, X.found ? '我撐過了{n}，總算好起來了。' : '病了一場，總算好起來了。', { n: s.name }, 6); }
         }
@@ -181,6 +195,56 @@ const CALAMITY = (function () {
             w.stockpile?.consume?.('medicine', 1, w.tickCount, t('看病'), 'medical'); X.st[a.agentId].tr = 1;
             if (!X.st[doc.agentId] && Math.random() < (X.ms.mask ? 0.02 : 0.04)) infect(w, X, doc, d); // 醫生被傳染
         }
+    }
+
+    // ---------- 怪病特性 ----------
+    const FLIP = { kind: 'abrasive', abrasive: 'kind', shy: 'charismatic', charismatic: 'shy', hardworking: 'lazy', lazy: 'hardworking', optimist: 'pessimist', pessimist: 'optimist', glutton: 'ascetic', ascetic: 'glutton', stoic: 'neurotic', neurotic: 'stoic', early_bird: 'night_owl', night_owl: 'early_bird' };
+    const hasQ = (X, q) => (X.spec.quirk || []).includes(q);
+    const honest = (a) => { try { return typeof DARK !== 'undefined' && DARK.honesty ? DARK.honesty(a) : 1.5; } catch (e) { return 1.5; } };
+    function quirkOnset(w, X, a, x, d) {
+        const s = X.spec;
+        if (hasQ(X, 'love')) { const tg = rnd(adults(w).filter(o => o !== a && !family(w, a).includes(o))); if (tg) { x.lv = tg.agentId; const r = a.relationships?.getOrCreate?.(tg.agentId, tg.name); r?.modifyRomantic?.(70); r?.modifyAffinity?.(25); mem(w, a, '我突然滿腦子都是{b}，好想見到對方。', { b: tg.name }, 7); const sp = a.relationships?.getSpouse?.(); const spA = sp && w.agents[sp.targetId]; if (spA && spA !== tg) { aff(spA, a, -15); mem(w, spA, '{a}最近魂不守舍，一直往{b}那裡跑。', { a: a.name, b: tg.name }, 7); } log(w, '💞 {a}突然瘋狂愛上了{b}。', { a: a.name, b: tg.name }, a.name); } }
+        if (hasQ(X, 'amnesia')) { let n = 0; for (const r of Object.values(a.relationships?.relationships || {})) { if (r.status === 'married') continue; r.affinity = Math.round((r.affinity || 0) * 0.3); r.trust = Math.round((r.trust || 0) * 0.3); n++; } x.amn = 1; mem(w, a, '我好像忘了很多人、很多事，大家看起來都好陌生。', {}, 8); if (n) log(w, '🔁 {a}醒來之後認不得好多人，連以前的仇人也忘了。', { a: a.name }, a.name); }
+        if (hasQ(X, 'flip')) { const tr = a.personality?.traits; if (Array.isArray(tr) && tr.some(k => FLIP[k])) { x.tr0 = tr.slice(); a.personality.traits = tr.map(k => FLIP[k] || k); log(w, '🪞 {a}像變了一個人，平常的個性全反了過來。', { a: a.name }, a.name); } }
+        if (hasQ(X, 'miser')) { const tr = a.personality?.traits; if (Array.isArray(tr) && !tr.includes('greedy')) { tr.push('greedy'); x.mg = 1; } mem(w, a, '錢一定要存起來，一分都不能花。', {}, 6); }
+        if (hasQ(X, 'sleep')) log(w, '😴 {a}睡著之後就叫不醒了。', { a: a.name }, a.name);
+    }
+    function quirkEnd(w, X, a, x) {
+        if (x.tr0) { a.personality.traits = x.tr0; delete x.tr0; }
+        if (x.mg) { const tr = a.personality?.traits; if (Array.isArray(tr)) { const i = tr.indexOf('greedy'); if (i >= 0) tr.splice(i, 1); } delete x.mg; }
+    }
+    function explode(w, X, a, d) {
+        const near = here(w).filter(o => o !== a && (o.currentLocation === a.currentLocation || Math.random() < 0.1)).slice(0, 2);
+        for (const o of near) { try { HEALTH?.hurt?.(w, o, 'h', 15); } catch (e) {} mem(w, o, '{a}說了謊之後當場爆炸，我被波及受了傷。', { a: a.name }, 8); }
+        X.st[a.agentId].s = 'D'; X.died++; S(w).st.died++; X.boom = (X.boom || 0) + 1;
+        log(w, '💥 {a}又說了謊——砰！當場爆炸了。{n}', { a: a.name, n: near.length ? fill('{b}被波及受傷。', { b: names(near) }) : '' }, a.name); news(w, '💥 {a}說謊爆炸，全鎮嚇壞了', { a: a.name }, 10, [a.name]);
+        X.log.push([d, 'boom', t(a.name)]); a._deathCause = fill('{n}（說謊爆炸）', { n: X.spec.name });
+        const fam = family(w, a).filter(f => !f.isDead); try { w.lifecycle?._killNpc?.(w, a); } catch (e) {}
+        for (const f of fam) { f.addThought?.('cal_grief', w); (X.bereaved = X.bereaved || []).push(f.agentId); }
+        for (const o of here(w)) if (o !== a && !near.includes(o)) mem(w, o, '{a}一說謊就爆炸了，我以後什麼謊都不敢說。', { a: a.name }, 7);
+        ping(w, 'boom', '💥', fill('{a}說謊爆炸', { a: a.name }), fill('{a}又說了謊——砰！當場爆炸了。', { a: a.name }));
+    }
+    function strike(w, X, a, d) {
+        const x = X.st[a.agentId]; x.lies = (x.lies || 0) + 1;
+        if (x.lies >= 2 && npcs(w).length > 5) return explode(w, X, a, d);
+        try { HEALTH?.hurt?.(w, a, 'c', 10); } catch (e) {} a.moodModifier = (a.moodModifier || 0) - 8;
+        log(w, '💨 {a}說了謊，身上立刻冒出白煙，旁邊的人嚇得退開。', { a: a.name }, a.name); mem(w, a, '我一說謊身上就冒煙……再說一次會怎樣？', {}, 8); X.log.push([d, 'smoke', t(a.name)]);
+    }
+    const SMALL_LIES = ['🤥 {b}問{a}是不是偷吃了東西，{a}說「沒有啊」——', '🤥 {a}跟{b}說「我身體很好，一點事都沒有」——', '🤥 {a}跟{b}誇口自己以前多風光——'];
+    function quirkDaily(w, X, d) {
+        const s = X.spec; if (!(s.quirk || []).length) return; const D = w.dark; const sick = here(w).filter(a => X.st[a.agentId]?.s === 'I');
+        if (hasQ(X, 'liar')) {
+            if (D && Array.isArray(D.secrets)) { const n0 = X.sn ?? D.n; for (const sc of D.secrets) { const k = +String(sc.id).slice(1); if (k > n0 && X.st[sc.culprit]?.s === 'I') { const a = w.agents[sc.culprit]; if (a && !a.isDead) strike(w, X, a, d); } } X.sn = D.n; }
+            const scared = (X.boom || 0) > 0 ? 0.5 : 1; // 有人爆炸過,大家更不敢說謊
+            for (const a of sick) { if (a.isDead || X.st[a.agentId]?.s !== 'I') continue; const hn = honest(a); const pl = (hn <= 1 ? 0.12 : hn < 2 ? 0.05 : 0.01) * scared; if (Math.random() < pl) { const o = rnd(here(w).filter(y => y !== a)); log(w, rnd(SMALL_LIES), { a: a.name, b: o?.name || t('鄰居') }, a.name); strike(w, X, a, d); } }
+            for (const a of sick) { if (a.isDead || X.st[a.agentId]?.s !== 'I') continue; const mine = (D?.secrets || []).filter(sc => !sc.found && sc.stage !== 'off' && sc.culprit === a.agentId && sc.kind !== 'white'); if (!mine.length || Math.random() > 0.2) continue;
+                const asker = rnd(adults(w).filter(o => o !== a)); if (!asker) continue;
+                if (honest(a) >= 2 || hasT(a, 'pessimist')) { try { DARK.reveal(w, mine[0], asker); } catch (e) {} log(w, '😰 {b}當面逼問，{a}怕說謊會爆炸，只好全招了。', { a: a.name, b: asker.name }, a.name); X.log.push([d, 'confess', t(a.name)]); }
+                else { log(w, '🤥 {b}當面逼問，{a}硬是說了謊……', { a: a.name, b: asker.name }, a.name); strike(w, X, a, d); } }
+        }
+        if (hasQ(X, 'blurt')) for (const a of sick) { if (Math.random() > 0.35 || !D) continue; const pool = (D.secrets || []).filter(sc => !sc.found && sc.stage !== 'off' && sc.kind !== 'white'); const mine = pool.filter(sc => sc.culprit === a.agentId); const sc = mine[0] || (Math.random() < 0.5 ? rnd(pool) : null); if (!sc) continue; log(w, '🗣️ {a}燒得迷迷糊糊，忍不住把秘密說溜了嘴。', { a: a.name }, a.name); try { DARK.reveal(w, sc, a); } catch (e) {} X.log.push([d, 'blurt', t(a.name)]); }
+        if (hasQ(X, 'rage')) for (const a of sick) { if (Math.random() > 0.18) continue; const o = rnd(here(w).filter(y => y !== a)); if (!o) continue; aff(a, o, -8); aff(o, a, -8); const x = X.st[a.agentId]; if ((x.rg || 0) < 4) { x.end++; x.rg = (x.rg || 0) + 1; } log(w, '💢 {a}為了一點小事跟{b}大吵一架。', { a: a.name, b: o.name }, a.name); if (!X.st[o.agentId] && !X.vx?.[o.agentId] && Math.random() < 0.35) infect(w, X, o, d); }
+        if (hasQ(X, 'sleep')) for (const a of sick) { const x = X.st[a.agentId]; const fam = family(w, a).filter(f => !f.isDead && here(w).includes(f) && X.st[f.agentId]?.s !== 'I'); if (fam.length && Math.random() < 0.4) { x.end = Math.min(x.end, d); x.woke = 1; mem(w, a, '{b}一直守在床邊叫我，我終於醒了。', { b: fam[0].name }, 8); log(w, '🌅 {b}守在床邊一直叫，長眠的{a}終於醒了。', { a: a.name, b: fam[0].name }, a.name); } else if (!fam.length && d >= x.end - 1 && (x.ext || 0) < 3) { x.end += 2; x.ext = (x.ext || 0) + 1; } }
     }
 
     // ---------- 劇情階段 ----------
@@ -239,6 +303,7 @@ const CALAMITY = (function () {
     function endCheck(w, X, d) {
         const active = Object.values(X.st).some(x => x.s === 'E' || x.s === 'I'); if (active) { X.quiet = 0; return false; }
         X.quiet = (X.quiet || 0) + 1; if (X.quiet < 2) return false;
+        for (const [id, x] of Object.entries(X.st)) { const a = w.agents[id]; if (a) try { quirkEnd(w, X, a, x); } catch (e) {} } // 換性格、守財的人一律變回來
         const C = S(w); const s = X.spec; const rec = { name: s.name, day: X.day, end: d, inf: X.inf, died: X.died, fled: X.fled, peak: X.peak, vax: !!X.vax?.done, found: X.found ? X.found - X.day : null, cost: X.cost, survived: npcs(w).length > 0, how: X.vax?.done ? 'cure' : 'endure' }; // 撐過災難:研發出對策成功,或鎮上還有人活著
         C.hist.unshift(rec); C.hist = C.hist.slice(0, 8); C.cur = null; C.coolTo = d + COOL;
         const k = X.died ? '🕯️ {n}終於過去了：{i} 人染病、{d} 人死去、{f} 人逃走。鎮上為死者辦了追思會。' : '🌈 {n}終於過去了：{i} 人染病，沒有人死。';
@@ -304,19 +369,19 @@ const CALAMITY = (function () {
     function daily(w) {
         const C = S(w); const d = day(w); powerDaily(w, C, d);
         const X = C.cur; if (!X || X.lastDay === d) return; X.lastDay = d;
-        if (X.kind === 'pathogen') { spreadDaily(w, X, d); progressDaily(w, X, d); treatDaily(w, X, d); }
+        if (X.kind === 'pathogen') { spreadDaily(w, X, d); quirkDaily(w, X, d); progressDaily(w, X, d); treatDaily(w, X, d); }
         storyDaily(w, X, d); measuresDaily(w, X, d); vaxDaily(w, X, d);
         endCheck(w, X, d); ping(w, 'day');
     }
 
     // ---------- 給身體系統、AI、介面 ----------
     const stOf = (w, a) => w?.calamity?.cur?.st?.[a?.agentId] || null;
-    function workMult(w, a) { const X = w?.calamity?.cur; const x = X?.st?.[a.agentId]; if (!x || x.s !== 'I') return 1; let m = 1; if (X.spec.sym.includes('fever')) m *= 0.3; if (X.spec.sym.includes('sleepy')) m *= 0.8; if (X.ms.quar) m *= 0.5; return m; }
+    function workMult(w, a) { const X = w?.calamity?.cur; const x = X?.st?.[a.agentId]; if (!x || x.s !== 'I') return 1; let m = 1; if (X.spec.sym.includes('fever')) m *= 0.3; if (X.spec.sym.includes('sleepy')) m *= 0.8; if (X.ms.quar) m *= 0.5; if ((X.spec.quirk || []).includes('sleep')) m *= 0.05; return m; }
     function sleepMult(w, a) { const X = w?.calamity?.cur; const x = X?.st?.[a.agentId]; return x?.s === 'I' && X.spec.sym.includes('sleepy') ? 0.6 : 1; }
     function brief(w, a) {
         const C = w?.calamity; if (!C) return ''; const X = C.cur; const x = X?.st?.[a.agentId];
         if (X && (X.bereaved || []).includes(a.agentId)) return fill(X.found ? '{n}奪走了我的家人' : '我的家人病死了', { n: X.spec.name });
-        if (x?.s === 'I') return X.found ? fill('我得了{n}，渾身不舒服', { n: X.spec.name }) : t('我這幾天身體很不對勁');
+        if (x?.s === 'I') { const q = X.spec.quirk || []; const extra = q.includes('liar') ? t('，一說謊身上就會冒煙，不敢亂說話') : q.includes('amnesia') ? t('，很多人和事都想不起來') : q.includes('love') && x.lv ? fill('，滿腦子都是{b}', { b: w.agents[x.lv]?.name || '' }) : q.includes('miser') ? t('，捨不得花任何一分錢') : ''; return (X.found ? fill('我得了{n}，渾身不舒服', { n: X.spec.name }) : t('我這幾天身體很不對勁')) + extra; }
         if (x?.s === 'R' && X.found) return fill('我得過{n}，撐過來了', { n: X.spec.name });
         if (X?.scape === a.agentId) return fill('大家在背後說{n}是我帶來的', { n: X.spec.name });
         return '';
@@ -335,7 +400,7 @@ const CALAMITY = (function () {
         const s = X.spec; const E = count(X, 'E'), I = count(X, 'I'), R = count(X, 'R');
         return Object.assign(base, { cur: { name: s.name, spec: s, day: X.day, days: day(w) - X.day, phase: X.phase, phaseName: t(PHASE[X.phase] || ''), found: !!X.found, E, I, R, D: X.died, fled: X.fled, inf: X.inf, peak: X.peak, ms: Object.keys(X.ms), vax: X.vax ? { pct: Math.round(X.vax.p / X.vax.need * 100), done: !!X.vax.done, shots: Object.keys(X.vx || {}).length } : null, curve: X.curve.slice(-60), log: X.log.slice(-10).reverse(), boosting: X.boost > day(w), pop: here(w).length, scape: X.scape ? t(w.agents[X.scape]?.name || '') : '' } });
     }
-    return { W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE };
+    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE };
 })();
 
 // ---------- 接上其他系統 ----------
