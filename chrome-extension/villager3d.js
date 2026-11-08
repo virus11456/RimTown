@@ -71,6 +71,8 @@ const VILLAGER3D = (() => {
         if (ab === 'e') c.hair = mix(c.hair, '#BDBDBD', 0.75); else if (ab === 'o') c.hair = '#ECECEC';
         if (poor) { c.body = shade(mix(c.body, '#7A7366', 0.55), 0.82); c.bodyDk = shade(c.body, 0.8); c.pants = shade(mix(c.pants, '#6B6358', 0.5), 0.85); c.boots = '#4A3B2E'; }
         else if (cls >= 3) { c.body = shade(c.body, 1.08); c.bodyDk = shade(c.bodyDk, 1.05); c.boots = cls >= 4 ? '#2B1D14' : c.boots; }
+        const gn = ap?.gn || ''; // v7.5.0 神話基因的外觀
+        if (gn === 'night') c.skin = '#E8E2EC'; else if (gn === 'wolf') c.hair = '#77797C'; else if (gn === 'sun') c.hair = '#E8B13A'; else if (gn === 'hades') { c.body = '#2E2A3A'; c.bodyDk = '#221F2B'; } else if (gn === 'giant') c.skin = shade(c.skin, 0.92);
         const skinDk = shade(c.skin, 0.86), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
         // v6.96.0 每個人長得不一樣:用名字當種子,穩定決定髮型、眼型、眉毛、嘴型、雀斑、鬍子、小配件、衣服花樣、身材
         const nm = String(agent.name || aid); let hs = 2166136261; for (let i = 0; i < nm.length; i++) { hs ^= nm.charCodeAt(i); hs = (hs * 16777619) >>> 0; }
@@ -160,10 +162,16 @@ const VILLAGER3D = (() => {
         if (acc === 3) B(0.48, 0.1, 0.34, c.accent, 0, 0.85, 0.01); // 圍巾
         if (jobKey === 'blacksmith') B(0.3, 0.36, 0.03, '#5A4A3A', 0, 0.62, zf + 0.01);
         if (jobKey === 'trader') { B(0.18, 0.2, 0.14, '#8C5A3C', 0.32, 0.52, 0); B(0.04, 0.38, 0.02, '#5A3E2B', 0.12, 0.7, zf + 0.01); }
+        if (gn === 'wolf') { B(0.12, 0.17, 0.08, hairDk, -0.17, T + 0.07, -0.02); B(0.12, 0.17, 0.08, hairDk, 0.17, T + 0.07, -0.02); } // 狼耳
+        else if (gn === 'thunder') { B(0.07, 0.2, 0.05, '#FFE14D', 0.3, T + 0.12, 0); B(0.07, 0.1, 0.05, '#FFE14D', 0.34, T - 0.02, 0); } // 電光
+        else if (gn === 'phoenix') { B(0.12, 0.14, 0.12, '#FF7A1A', 0, T + 0.09, 0); B(0.07, 0.1, 0.07, '#FFD24D', 0, T + 0.19, 0); } // 頭頂火焰
+        else if (gn === 'owl') { B(0.5, 0.05, 0.02, '#D9A520', 0, HY + 0.17, F + 0.01); } // 金色額飾
+        else if (gn === 'sun') { B(0.56, 0.04, 0.56, '#FFD24D', 0, T + 0.12, 0); } // 光環
+        else if (gn === 'night') { B(0.04, 0.05, 0.02, '#FFFFFF', -0.05, HY - 0.12, F + 0.01); B(0.04, 0.05, 0.02, '#FFFFFF', 0.05, HY - 0.12, F + 0.01); } // 尖牙
         m.add(P(body)); const lodParts = body.slice(); // 遠處簡化網格用的零件清單
         // 眼睛(睜眼＋反光)與閉眼線各一個網格:會眨眼,睡覺時閉眼
         // 眼型:一般、大亮眼、小豆眼、睏睏眼、長睫毛;眼珠顏色也有幾種
-        const eyeT = Math.floor(R(21) * 5); const ek = eyeT === 1 ? 1.2 : eyeT === 2 ? 0.72 : 1; const eyeC = pick(['#33241B', '#33241B', '#33241B', '#2E4A7A', '#3E6B3A', '#5A3A1E'], 22);
+        const eyeT = Math.floor(R(21) * 5); const ek = eyeT === 1 ? 1.2 : eyeT === 2 ? 0.72 : 1; const eyeC = gn === 'night' ? '#B3202A' : gn === 'owl' ? '#D9A520' : gn === 'wolf' ? '#C9A227' : pick(['#33241B', '#33241B', '#33241B', '#2E4A7A', '#3E6B3A', '#5A3A1E'], 22);
         const EY = HY - 0.01, ew = 0.075 * ek, eh = 0.1 * ek;
         const eyeParts = [];
         for (const x of [-0.11, 0.11]) { eyeParts.push([ew, eh, 0.02, eyeC, x, EY, F + 0.006]); eyeParts.push([0.028 * ek, 0.028 * ek, 0.02, '#FFFFFF', x + ew * 0.22, EY + eh * 0.22, F + 0.014]); if (eyeT !== 2) eyeParts.push([0.014, 0.014, 0.02, '#FFFFFF', x - ew * 0.25, EY - eh * 0.28, F + 0.013]); }
@@ -187,7 +195,7 @@ const VILLAGER3D = (() => {
         tool.add(P([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));
         m.userData.tool = tool;
         if (minerLamp) { const l = new THREE.Mesh(BOX(), MAT('#FFE9A8', { emissive: new THREE.Color('#FFD27A'), emissiveIntensity: 0.6 })); l.scale.set(0.12, 0.1, 0.06); l.position.set(0, T + 0.06, 0.28); m.add(l); }
-        m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1) * (0.95 + R(24) * 0.1)); m.userData.ab = ab; // 高矮也略有不同;小孩、青少年個子小
+        m.scale.setScalar(1.3 * (child ? 0.68 : ab === 't' ? 0.88 : 1) * (0.95 + R(24) * 0.1) * (gn === 'giant' ? 1.3 : 1)); m.userData.ab = ab; // 高矮也略有不同;小孩、青少年個子小
         return m;
     }
     return { build, variedColors, partMesh, shadeHex, hash2 };
