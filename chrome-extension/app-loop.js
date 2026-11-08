@@ -351,6 +351,7 @@ Object.assign(RimTownApp.prototype, {
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
         w.onEventCard = (kind, e, npc, text) => this._onEventCard(kind, e, npc, text); // v6.38.0 事件卡
+        w.onCalamity = (kind, x) => { try { if (kind !== 'day' && x) this._showCornerNotice({ icon: x.icon, title: x.title, name: '', desc: x.desc }); this._ghRefresh?.(); } catch (err) {} }; // v7.9.0 災厄工坊
         w.fullAgentMode = this._fullAgentOn?.() || false; // v6.39.0 完整智能體模式
         w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0

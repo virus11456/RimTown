@@ -747,6 +747,7 @@ class ProposalSystem {
                 case 'myth_exile': { result = (typeof MYTH !== 'undefined') ? MYTH.exile(w, p) : ''; ok = !!result; break; } // v7.5.0
                 case 'gene_rights': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.rights(w) : ''; ok = !!result; break; } // v7.6.0
                 case 'gene_unban': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.unban(w) : ''; ok = !!result; break; } // v7.6.0
+                case 'cal_vax': case 'cal_quar': case 'cal_mask': case 'cal_close': case 'cal_lock': { result = (typeof CALAMITY !== 'undefined') ? CALAMITY.enact(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 災厄應對
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
                 case 'tech_safety': { result = (typeof TECH !== 'undefined') ? TECH.setLaw(w) : ''; ok = !!result; break; }
                 case 'tech_unsafe': { result = (typeof TECH !== 'undefined') ? TECH.unsetLaw(w) : ''; ok = !!result; break; }
