@@ -305,9 +305,9 @@ const HEALTH = (() => {
     HEALTH.canBuild = (w, key) => key !== 'institute' || tierOk(w);
     if (typeof ResearchManager !== 'undefined') {
         const RM = ResearchManager.prototype; const _ga = RM.getAvailable;
-        RM.getAvailable = function () { const out = _ga.call(this); const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || HEALTH.W; if (!w || HEALTH.bioOpen(w)) return out; return out.filter(p => (p.era || 1) < 5); };
+        RM.getAvailable = function () { const out = _ga.call(this); const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || HEALTH.W; if (!w || HEALTH.bioOpen(w)) return out; return out.filter(p => (p.era || 1) < 5 || (p.era || 1) >= 7 || !!RESEARCH_TREE[p.key]?.path); }; // v7.8.0 路線科技有自己的門檻
         const _sr = RM.startResearch;
-        RM.startResearch = function (key) { const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || HEALTH.W; if (this.projects[key]?.era >= 5 && w && !HEALTH.bioOpen(w)) return false; return _sr.call(this, key); };
+        RM.startResearch = function (key) { const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || HEALTH.W; const pe = this.projects[key]?.era || 1; if (pe >= 5 && pe < 7 && !RESEARCH_TREE[key]?.path && w && !HEALTH.bioOpen(w)) return false; return _sr.call(this, key); };
     }
 })();
 

@@ -75,7 +75,7 @@ Object.assign(RimTownApp.prototype, {
     renderEconomy(container) {
         if (!this.state) return;
         // v7.3.0 小鎮分頁只剩一層子分頁:概況／物資／建設／產業(以前「動態」裡還有第二層 資源／科技／商店／建築／工廠)
-        const S = { economy: 'overview', 'econ-goods': 'goods', 'econ-build': 'build', industry: 'industry' }[this.activeTab] || 'overview';
+        const S = { economy: 'overview', 'econ-goods': 'goods', 'econ-build': 'build', 'econ-tech': 'tech', industry: 'industry' }[this.activeTab] || 'overview';
         let html = '<div class="economy-panel">';
         if (S === 'overview') html += this._renderPlayerCaravan(); // v5.92.0 押商隊
 
@@ -296,15 +296,18 @@ Object.assign(RimTownApp.prototype, {
                 if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
                 html += '</div>';
             }
-        } if (S === 'build') {
-            // v5.52.0 研究獨立入口;v6.40.0 三個時代的科技樹:每個節點看狀態、前置、解鎖什麼
+        } if (S === 'tech') {
+            // v5.52.0 研究獨立入口;v6.40.0 三個時代的科技樹;v7.8.0 獨立成「科技」分頁:科技路線、路線時代、路線帶來的問題
             const research = this.state.research || {};
             const projects = research.projects || {};
             const currentKey = research.current_research;
+            const TV = research.tech || null; const TX = typeof TECH !== 'undefined' ? TECH : null;
             const ERAS = (typeof RESEARCH_ERAS !== 'undefined') ? RESEARCH_ERAS : { 1: { name: '拓荒', icon: '🪓' }, 2: { name: '手工', icon: '🔨' }, 3: { name: '工坊', icon: '⚙️' } };
+            const eraN = (e, P) => (TX && this.world) ? TX.eraName(this.world, e, P) : (ERAS[e] || { name: '', icon: '' });
             const BT = (typeof BUILDING_TEMPLATES !== 'undefined') ? BUILDING_TEMPLATES : {}; const FT = (typeof FACTORIES !== 'undefined') ? FACTORIES : {};
             const unlockName = (u) => u.startsWith('factory:') ? (FT[u.slice(8)] ? `${FT[u.slice(8)].icon} ${t(FT[u.slice(8)].name)}` : u) : (BT[u] ? `🏗️ ${t(BT[u].name)}` : u);
-            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)} · ${t('現在的時代')}${t('：')}${ERAS[research.era || 1]?.icon || ''} ${t(ERAS[research.era || 1]?.name || '')}</span></h3>`;
+            const curEra = eraN(research.era || 1);
+            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)} · ${t('現在的時代')}${t('：')}${curEra.icon || ''} ${t(curEra.name || '')}</span></h3>`;
             if (currentKey && projects[currentKey]) {
                 const cur = projects[currentKey];
                 const pct = Math.round((cur.progress / cur.cost) * 100);
@@ -313,22 +316,61 @@ Object.assign(RimTownApp.prototype, {
                     <span class="progress-text">${pct}%</span></div>`;
             }
             const scholars = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'researcher').map(a => t(a.name));
-            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究，等村民提「研究」提案（三天沒人提，學者會自己挑）') : ''}</div>`;
+            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究：研究員做的進度先存著，等村民提「研究」提案（兩天沒人提，學者會自己挑最早時代的）') : ''}</div>`;
             html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。')}</div>`;
-            for (const era of [1, 2, 3, 4]) {
-                const list = Object.values(projects).filter(p => (p.era || 1) === era);
+            // ---- v7.8.0 科技路線 ----
+            if (TV) {
+                const esc = (x) => this._escapeHtml(String(x ?? ''));
+                html += `<div class="tech-era tech-path"><div class="tech-era-head">🧭 ${t('科技路線')}${TV.path ? ` <span>${TV.icon} ${esc(TV.pathName)}</span>` : ''}</div>`;
+                if (!TV.path) {
+                    html += `<div class="tech-desc">${TV.debate ? `🗳️ ${t('鎮上正在辯論要不要走「{name}」路線').replace('{name}', t('電子機械'))}${t('：')}${TV.debate.id} · ${t('贊成')} ${TV.debate.f} · ${t('反對')} ${TV.debate.a}` : TV.main3 >= TV.gate ? `🗳️ ${t('工坊時代研究到 {n}%，鎮上很快會開始辯論科技路線').replace('{n}', TV.main3)}` : `🔒 ${t('工坊時代研究到 {g}% 時，鎮上會辯論往後走哪條科技路線（現在 {n}%）').replace('{g}', TV.gate).replace('{n}', TV.main3)}`}${TV.tries ? ` · ${t('被否決過 {n} 次').replace('{n}', TV.tries)}` : ''}</div>`;
+                    html += `<div class="tech-desc" style="color:var(--text-muted)">⚙️ ${t('電子機械')}${t('：')}${t('工廠、電力、核能，最後飛向太空')}${t('。')}${t('生產力最高：機器替人做粗活，研究越來越快')}${t('；')}${t('機器會搶走工作，核電一出事就是大災')}${t('。')}</div>`;
+                    html += `<div class="tech-desc" style="color:var(--text-muted)">🧬 ${t('基因生物')}${t('、')}🚂 ${t('蒸汽龐克')}${t('：')}${t('之後的版本開放')}</div>`;
+                } else {
+                    html += `<div class="tech-desc">${esc(TV.short)}${t('。')}${TV.since != null ? ` ${t('第 {d} 天決定').replace('{d}', TV.since)}` : ''}${TV.yes || TV.no ? ` · ${t('贊成')} ${TV.yes} · ${t('反對')} ${TV.no}` : ''}</div>`;
+                    html += `<div class="tech-desc">👍 ${esc(TV.pro)} · 👎 ${esc(TV.con)}</div>`;
+                    const stg = [4, 5, 6].map(e => { const en = eraN(e, TV.path); return `${en.icon} ${t(en.name)} ${TV.stage[e]}%`; }).join(' → ');
+                    html += `<div class="tech-desc">${stg}</div>`;
+                    const rk = TV.risk ? { low: t('低'), mid: t('中'), high: t('高') }[TV.risk] : null;
+                    html += `<div class="tech-desc">☢️ ${TV.noNuke ? t('已經廢核') : TV.nuke ? `${t('核災風險')}${t('：')}<b class="tech-risk-${TV.risk}">${rk}</b>${TV.law ? ` · 📋 ${t('有核安法')}` : ` · ${t('沒有核安法')}`}` : t('還沒有核電廠')}</div>`;
+                    if (TV.jobs?.length) html += `<div class="tech-desc">🤖 ${t('機器搶走的職缺')}${t('：')}${TV.jobs.map(k => t(JOB_DEFINITIONS?.[k]?.title || k)).join(t('、'))}</div>`;
+                    const st = TV.st || {};
+                    html += `<div class="tech-desc" style="color:var(--text-muted)">🟡 ${t('小事')} ${st.minor || 0} · 🟠 ${t('中事')} ${st.mid || 0} · 🔴 ${t('大災')} ${st.big || 0}${st.laid ? ` · ${t('被機器裁員')} ${st.laid}` : ''}${st.died ? ` · ${t('罹難')} ${st.died}` : ''}${st.left ? ` · ${t('搬走')} ${st.left}` : ''}</div>`;
+                }
+                html += '</div>';
+            }
+            const P = TV?.path || null;
+            const groups = [
+                { e: 1, f: p => (p.era || 1) === 1 }, { e: 2, f: p => (p.era || 1) === 2 }, { e: 3, f: p => (p.era || 1) === 3 },
+                { e: 4, f: p => (p.era || 1) === 4, en: eraN(4, P) },
+                { e: 5, f: p => p.era === 5 && p.path === 'electro', en: eraN(5, 'electro'), lock: TV && (!P || TV.stage[4] < TV.gate || TV.tier < 2) ? t('電力時代要：先決定走電子機械路線、機械時代研究到 75%、城鎮升到城市') : '' },
+                { e: 6, f: p => p.era === 6 && p.path === 'electro', en: eraN(6, 'electro'), lock: TV && (!P || TV.stage[5] < TV.gate || TV.tier < 3) ? t('太空時代要：電力時代研究到 75%、城鎮升到王都') : '' },
+                { e: 5, f: p => p.era === 5 && !p.path, en: ERAS[5], bio: 5 }, { e: 6, f: p => p.era === 6 && !p.path, en: ERAS[6], bio: 6 },
+                { e: 7, f: p => p.era === 7, en: ERAS[7] },
+            ];
+            for (const g of groups) {
+                const list = Object.values(projects).filter(g.f);
                 if (!list.length) continue;
+                const era = g.e; const en = g.en || ERAS[era] || {};
                 const done = list.filter(p => p.status === 'complete').length;
-                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五', '六'][era]))}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
-                if (era === 6 && typeof MYTH !== 'undefined' && this.world && !MYTH.eraOpen(this.world)) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('神話基因研究要：生技全部研究完、城鎮升到王都；之後還要蓋基因實驗室')}</div>`; // v7.5.0
-                if (era === 5 && typeof HEALTH !== 'undefined' && this.world && !HEALTH.bioOpen(this.world)) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('生技研究要：機械時代全部研究完、城鎮升到城市、蓋好研究院')}</div>`; // v7.4.0
+                if (era === 7) { // 精進改良:只顯示一張
+                    const p = list[0]; const now = p.key === currentKey; const pct = p.cost ? Math.min(100, Math.round((p.progress || 0) / p.cost * 100)) : 0;
+                    html += `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${t(en.name || '')} <span>Lv.${(TV?.ref || 0)}</span></div><div class="tech-node tech-${now ? 'now' : 'open'}"><div class="tech-node-head"><span>${now ? '🔬' : '♾️'} <b>${t(p.name)}</b></span><span class="tech-cost">${now ? pct + '%' : `${p.cost} ${t('點')}`}</span></div><div class="tech-desc">${this._escapeHtml(p.description || '')}</div><div class="tech-need">${t('其他科技都研究完了才會開始研究')}</div></div></div>`;
+                    continue;
+                }
+                const head = `${era >= 4 && !g.bio && (P || era > 4) ? '⚙️ ' : ''}${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五', '六'][era]))}${t('・')}${t(en.name || '')}`;
+                html += `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${head} <span>${done}/${list.length}</span></div>`;
+                if (g.lock) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${g.lock}</div>`;
+                if (era === 4 && TV && !P) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('標 ⚙️ 的是電子機械路線的科技，決定走這條路之後才能研究')}</div>`;
+                if (g.bio === 6 && typeof MYTH !== 'undefined' && this.world && !MYTH.eraOpen(this.world)) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('神話基因研究要：生技全部研究完、城鎮升到王都；之後還要蓋基因實驗室')}</div>`; // v7.5.0
+                if (g.bio === 5 && typeof HEALTH !== 'undefined' && this.world && !HEALTH.bioOpen(this.world)) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('生技研究要：機械時代全部研究完、城鎮升到城市、蓋好研究院')}</div>`; // v7.4.0
                 for (const p of list) {
                     const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
                     const icon = { done: '✅', now: '🔬', open: '🟢', locked: '🔒' }[st];
                     const pct = p.cost ? Math.min(100, Math.round((p.progress || 0) / p.cost * 100)) : 0;
                     const need = (p.prerequisites || []).filter(k => projects[k]?.status !== 'complete').map(k => t(projects[k]?.name || k));
                     html += `<div class="tech-node tech-${st}">
-                        <div class="tech-node-head"><span>${icon} <b>${t(p.name)}</b></span><span class="tech-cost">${st === 'done' ? t('已完成') : st === 'now' ? `${pct}%` : `${p.cost} ${t('點')}`}</span></div>
+                        <div class="tech-node-head"><span>${icon} ${p.path && era === 4 ? '⚙️' : ''}<b>${t(p.name)}</b></span><span class="tech-cost">${st === 'done' ? t('已完成') : st === 'now' ? `${pct}%` : `${p.cost} ${t('點')}`}</span></div>
                         <div class="tech-desc">${this._escapeHtml(p.description || '')}</div>
                         ${(p.unlocks || []).length ? `<div class="tech-unlocks">${t('解鎖')}${t('：')}${p.unlocks.map(unlockName).join(t('、'))}</div>` : ''}
                         ${st === 'locked' && need.length ? `<div class="tech-need">${t('需要先研究')}${t('：')}${need.join(t('、'))}</div>` : ''}
@@ -337,6 +379,11 @@ Object.assign(RimTownApp.prototype, {
                     </div>`;
                 }
                 html += '</div>';
+            }
+            // v7.8.0 路線帶來的問題(最近)
+            if (TV?.inc?.length) {
+                const LV = { minor: '🟡', mid: '🟠', big: '🔴' }; const EVN = { injury: '機器夾傷', blackout: '停電', oldhand: '老師傅跟不上', waste: '工坊廢水', radio: '收音機吵架', alarm: '核電廠警報', layoff: '自動化裁員', smash: '砸機器', leak: '輻射外洩', watch: 'AI 監控爭議', meltdown: '核災' };
+                html += `<div class="tech-era"><div class="tech-era-head">⚠️ ${t('新技術帶來的問題')}</div>` + TV.inc.map(x => `<div class="tech-desc">${LV[x.lv] || ''} ${x.icon} ${t(EVN[x.id] || x.id)} · ${x.ago ? t('{n} 天前').replace('{n}', x.ago) : t('今天')}</div>`).join('') + '</div>';
             }
             // v6.46.0 革新派／保守派、發明名人堂
             const IS = this.world?.ideaSystem;

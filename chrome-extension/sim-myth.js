@@ -65,7 +65,7 @@ const MYTH = (() => {
         M.g[a.agentId] = { k: g, d: day(w), bite: day(w) }; M.st.edits++; if (under) M.st.under++;
         mem(w, a, '我把{g}編進了自己的身體。{good}，但{bad}。', { g: t(G.name), good: t(G.good), bad: t(G.bad) }, 9);
         log(w, under ? '🕳️ {a}在地下診所編入了{g}。' : '🧬 {a}在基因實驗室編入了{g}，成了神裔。', { a: a.name, g: `${G.icon}${t(G.name)}` }, a.name);
-        if (under && Math.random() < 0.3 && Wl) { const fine = Math.min(200, Wl.get(w, a)); if (fine > 0 && Wl.take(w, a, fine)) { sp?.add?.('silver', fine, w.tickCount, t('非法基因編輯罰款'), 'myth'); M.st.fined++; log(w, '👮 {a}去地下診所編基因被抓，罰了 {n} 銀幣。', { a: a.name, n: Math.round(fine) }, a.name); } }
+        if (under && Math.random() < 0.3 && Wl) { if (typeof MONEY !== 'undefined' && MONEY.fine) { MONEY.fine(w, a, 200, t('非法基因編輯罰款')); M.st.fined++; log(w, '👮 {a}去地下診所編基因被抓，罰了 {n} 銀幣。', { a: a.name, n: 200 }, a.name); } else { const fine = Math.min(200, Wl.get(w, a)); if (fine > 0 && Wl.take(w, a, fine)) { sp?.add?.('silver', fine, w.tickCount, t('非法基因編輯罰款'), 'myth'); M.st.fined++; log(w, '👮 {a}去地下診所編基因被抓，罰了 {n} 銀幣。', { a: a.name, n: Math.round(fine) }, a.name); } } } // v7.7.2 罰 200,付不出的記成欠款
         return 'ok';
     }
     // ---------- 副作用與出事 ----------
@@ -142,7 +142,8 @@ const MYTH = (() => {
     if (typeof HEALTH !== 'undefined') { const _cb = HEALTH.canBuild; HEALTH.canBuild = (w, key) => (key === 'gene_lab' ? tier3(w) : (_cb ? _cb(w, key) : true)); }
     if (typeof ResearchManager !== 'undefined') {
         const RM = ResearchManager.prototype; const _ga = RM.getAvailable; const W = () => (typeof window !== 'undefined' && window.rimtownApp?.world) || MYTH.W;
-        const ok = (w, p) => { const e = p.era || 1; if (e < 6 || !w) return true; if (!MYTH.eraOpen(w)) return false; return p.key === 'gene_editing' || MYTH.labOpen(w); };
+        const ok = (w, p) => { const e = p.era || 1; if (e < 6 || e >= 7 || !w || RESEARCH_TREE[p.key]?.path) return true; // v7.8.0 路線科技有自己的門檻
+            if (!MYTH.eraOpen(w)) return false; return p.key === 'gene_editing' || MYTH.labOpen(w); };
         RM.getAvailable = function () { const out = _ga.call(this); const w = W(); return out.filter(p => ok(w, p)); };
         const _sr = RM.startResearch; RM.startResearch = function (key) { const p = this.projects[key]; const w = W(); if (p && !ok(w, p)) return false; return _sr.call(this, key); };
     }

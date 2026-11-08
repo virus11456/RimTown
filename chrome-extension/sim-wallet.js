@@ -80,7 +80,8 @@ const WALLET = (() => {
     const netOf = (W, a) => Math.max(W.minWage || 0, wageOf(a) * (1 - W.tax));
     function payday(w, W, all) {
         // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)
-        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a))); const gross = workers.reduce((s, a) => s + wageOf(a), 0); if (!gross) return;
+        const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人那幾天沒有工資
+        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a)) && !(jail && jail.has(a.agentId))); const gross = workers.reduce((s, a) => s + wageOf(a), 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
         const ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
         if (ratio > 0) fromTown(w, Math.round(net * ratio * 10) / 10, t('發薪水'));

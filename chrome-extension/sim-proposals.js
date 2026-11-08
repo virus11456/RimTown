@@ -455,7 +455,7 @@ class ProposalSystem {
             for (const pr of (w.research.getAvailable?.() || [])) {
                 if (!this._cool(day, 'research:' + pr.key, 6)) continue;
                 const jobs = ['researcher', ...(REL[pr.key] || [])];
-                let weight = 1.2 + (3 - (pr.era || 1)) * 0.3; if (pr.key === 'agriculture' && food < 150) weight += 1; // v6.40.0 低時代先 if (pr.key === 'medicine_research' && npcs.some(x => x.isSick || (x.health ?? 100) < 50)) weight += 1; if (pr.key === 'fortification' && w.trials?.current?.type === 'bandits') weight += 1;
+                let weight = (1.2 + (3 - Math.min(pr.era || 1, 6)) * 0.3) * ((typeof TECH !== 'undefined' && TECH.pickWeight) ? TECH.pickWeight(w, pr) : 1); if (weight <= 0.05) weight = 0.05; if (pr.key === 'agriculture' && food < 150) weight += 1; // v6.40.0 低時代先 if (pr.key === 'medicine_research' && npcs.some(x => x.isSick || (x.health ?? 100) < 50)) weight += 1; if (pr.key === 'fortification' && w.trials?.current?.type === 'bandits') weight += 1;
                 out.push({ kind: 'research', key: 'research:' + pr.key, weight, jobs, make: (a) => ({ kind: 'research', key: 'research:' + pr.key, refKey: pr.key, tk: '研究「{name}」', tp: { name: pr.name }, dk: '{who}覺得鎮上該把{name}研究出來：{desc}（要累積 {cost} 點研究進度）。', dp: { who: a.name, name: pr.name, desc: pr.description, cost: pr.cost }, cost: {}, category: 'culture', jobBias: jobs }) });
             }
         }
@@ -747,6 +747,10 @@ class ProposalSystem {
                 case 'myth_exile': { result = (typeof MYTH !== 'undefined') ? MYTH.exile(w, p) : ''; ok = !!result; break; } // v7.5.0
                 case 'gene_rights': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.rights(w) : ''; ok = !!result; break; } // v7.6.0
                 case 'gene_unban': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.unban(w) : ''; ok = !!result; break; } // v7.6.0
+                case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
+                case 'tech_safety': { result = (typeof TECH !== 'undefined') ? TECH.setLaw(w) : ''; ok = !!result; break; }
+                case 'tech_unsafe': { result = (typeof TECH !== 'undefined') ? TECH.unsetLaw(w) : ''; ok = !!result; break; }
+                case 'tech_abandon': { result = (typeof TECH !== 'undefined') ? TECH.abandon(w) : ''; ok = !!result; break; }
                 case 'medaid': { result = (typeof HEALTH !== 'undefined') ? HEALTH.setAid(w) : ''; ok = !!result; break; } // v7.4.0 公費醫療補助
                 case 'tariff': { result = (typeof TRADE !== 'undefined') ? TRADE.setTariff(w, p.newRate || 0) : ''; ok = !!result; break; } // v7.1.0 關稅
                 case 'faith_tax': case 'faith_untax': { result = (typeof FAITH !== 'undefined' && FAITH.setTax) ? FAITH.setTax(w, p.kind === 'faith_tax') : ''; ok = !!result; break; } // v7.0.0 宗教捐獻課稅／取消

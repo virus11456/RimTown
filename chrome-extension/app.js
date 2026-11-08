@@ -1,5 +1,5 @@
-// RimTown - Frontend App v7.7.1
-const RIMTOWN_APP_VERSION = '7.7.1';
+// RimTown - Frontend App v7.8.0
+const RIMTOWN_APP_VERSION = '7.8.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2010,6 +2010,7 @@ class RimTownApp {
                 { key: 'economy', label: t('概況'), icon: '🏙️' },
                 { key: 'econ-goods', label: t('物資'), icon: '📦' },
                 { key: 'econ-build', label: t('建設'), icon: '🏗️' },
+                { key: 'econ-tech', label: t('科技'), icon: '🔬' }, // v7.8.0 研究從建設分出來
                 { key: 'industry', label: t('產業'), icon: '🏭' },
             ],
             residents: [ // 村民
@@ -2028,7 +2029,7 @@ class RimTownApp {
             ],
         };
         this._tabHints = { // v7.3.0 每個子分頁頂端一行說明(跟提案分頁一樣)
-            economy: t('繁榮度、天氣、物價與就業、大家身上的錢。'), 'econ-goods': t('倉庫裡有什麼、每天做了多少、跟商人的買賣。'), 'econ-build': t('正在蓋什麼、還能蓋什麼、研究到哪裡。'), industry: t('產業與老闆、鎮上的店、銀行、農場與工廠。'),
+            economy: t('繁榮度、天氣、物價與就業、大家身上的錢。'), 'econ-goods': t('倉庫裡有什麼、每天做了多少、跟商人的買賣。'), 'econ-build': t('正在蓋什麼、還能蓋什麼。'), 'econ-tech': t('研究到哪裡、走哪條科技路線、新技術帶來的問題。'), industry: t('產業與老闆、鎮上的店、銀行、農場與工廠。'),
             residents: t('點村民看他在做什麼、在想什麼。'), relmap: t('誰愛誰、誰恨誰，一張圖看完。'),
             records: t('每天一期的觀察者日報；AI 記者寫的日報收在下面。'), news: t('鎮上發生的事、本鎮公告、外地傳來的消息、外交與報社。'), quest: t('每一季的回顧、鎮史、文化作品、出生與墓園、編年史。'), achievements: t('小鎮達成過的里程碑。'),
         };
@@ -2292,7 +2293,7 @@ class RimTownApp {
                     break;
                 // Industry sub-tabs
                 case 'industry-subtab': this._industrySubTab = val; this.renderSidebar(); break;
-                case 'economy-subtab': this.activeTab = ({ resources: 'econ-goods', shop: 'econ-goods', tech: 'econ-build', building: 'econ-build', factory: 'industry' })[val] || 'economy'; this.renderSidebar(); break; // v7.3.0 舊二層分頁相容
+                case 'economy-subtab': this.activeTab = ({ resources: 'econ-goods', shop: 'econ-goods', tech: 'econ-tech', building: 'econ-build', factory: 'industry' })[val] || 'economy'; this.renderSidebar(); break; // v7.3.0 舊二層分頁相容
                 // v5.51.0 勞動力排班:鎮長對加工線下休工/正常/加班指令
                 case 'work-policy': {
                     const [good, mode] = (val || '').split(',');
@@ -2994,11 +2995,11 @@ class RimTownApp {
         const mainTab = this._mobileSubToMain?.[this.activeTab] || this.activeTab;
         const group = this._mobileTabGroups?.[mainTab];
         if (group && group.length > 1 && !(isMobile && this.activeTab === 'chat')) {
-            let subBar = '<div class="sub-tab-bar mobile-group-tabs pp-tabs" role="tablist">'; // v7.3.0 跟提案分頁同一種膠囊分頁
+            let subBar = `<div class="sub-tab-bar mobile-group-tabs pp-tabs${group.length >= 5 && (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? ' many' : ''}" role="tablist">`; // v7.8.0 五個子分頁時,英文窄螢幕沒選中的只顯示圖示(中文兩個字放得下) // v7.3.0 跟提案分頁同一種膠囊分頁
             const cur = this.activeTab === 'events' ? 'news' : this.activeTab;
             group.forEach(_tw => {
                 const on = cur === _tw.key;
-                subBar += `<button type="button" role="tab" aria-selected="${on}" class="pp-tab${on ? ' on active' : ''}" data-action="mobile-group-tab" data-val="${_tw.key}">${_tw.icon} ${_tw.label}</button>`;
+                subBar += `<button type="button" role="tab" aria-selected="${on}" class="pp-tab${on ? ' on active' : ''}" data-action="mobile-group-tab" data-val="${_tw.key}" title="${_tw.label}" aria-label="${_tw.label}">${_tw.icon} <span class="pp-tl">${_tw.label}</span></button>`;
             });
             subBar += '</div>';
             const hint = this._tabHints?.[cur]; if (hint) subBar += `<div class="pp-tabhint">${hint}</div>`;
@@ -3036,7 +3037,7 @@ class RimTownApp {
             case 'economy': this.renderEconomy(content); break;
             case 'records': this.renderRecords(content); break;
             case 'events': case 'news': this.renderNews(content); break; // v7.3.0
-            case 'econ-goods': case 'econ-build': this.renderEconomy(content); break;
+            case 'econ-goods': case 'econ-build': case 'econ-tech': this.renderEconomy(content); break;
             case 'achievements': this.renderAchievements(content); break;
             case 'industry': this.renderEconomy(content); break; // v7.3.0 產業頁併入小鎮(產業與老闆、店、銀行、產業等級、農場、工廠)
             case 'quest': this.renderQuest(content); break;

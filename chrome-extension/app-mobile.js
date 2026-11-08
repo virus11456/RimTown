@@ -396,6 +396,7 @@ Object.assign(RimTownApp.prototype, {
             if (ag && typeof BIZ !== 'undefined' && this.world.biz) { const zc = BIZ.chip(this.world, ag); if (zc) chips.push(zc); } // v6.70.0 開店
             if (ag && typeof MIND !== 'undefined' && this.world.mind) { const A = this.world.mind.amb?.[ag.agentId]; if (A) chips.push(`${t('心願')}${t('：')}${MIND.ambText(this.world, A)}`); const dy = MIND.lastDiary(this.world, ag); if (dy) chips.push(`📔 ${dy.length > 40 ? dy.slice(0, 40) + '…' : dy}`); } // v6.68.0 心願與日記
             if (ag && typeof CIVIC !== 'undefined' && this.world.civic) { const cc = CIVIC.chip(this.world, ag); if (cc) chips.push(cc); } // v6.67.0 坐牢
+            if (ag && typeof MONEY !== 'undefined' && MONEY.fineChip) { const fc = MONEY.fineChip(this.world, ag); if (fc) chips.push(fc); } // v7.7.2 欠罰款／服勞役
             if (ag && typeof GOODS !== 'undefined' && this.world.goods) { const gc = GOODS.chip(this.world, ag); if (gc) chips.push(gc); } // v6.65.0 收藏
             if (ag && typeof BANK !== 'undefined' && this.world.bank) { const bc = BANK.chip(this.world, ag); if (bc) chips.push(bc); } // v6.64.0 銀行
             if (ag && typeof FAITH !== 'undefined' && this.world.faith) { const fc = FAITH.chip(this.world, ag); if (fc) chips.push(fc); } // v6.60.0 信仰

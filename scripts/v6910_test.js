@@ -44,13 +44,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 6) 科技頁畫出第四時代
       for (const p of Object.values(R.projects)) { p.status = p.era <= 2 ? 'complete' : 'locked'; p.progress = p.status === 'complete' ? p.cost : 0; } R.refreshLocks(); w.buildings.recomputeEffects(w);
       const save = app.world; app.state = w.getState(); const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
-      app.activeTab = 'econ-build'; try { app.renderEconomy(box); } catch (e) { out.techErr = e.message; } const eras = [...box.querySelectorAll('.tech-era-head')].map(x => x.textContent.replace(/\s+/g, ' ').trim()).filter(x => /時代|Era /.test(x)); out.techEras = eras; out.techOverflow = box.scrollWidth > box.clientWidth + 2; out.techHasSteam = /蒸汽動力|Steam Power/.test(box.textContent); box.remove(); app.state = save.getState();
+      app.activeTab = 'econ-tech'; try { app.renderEconomy(box); } catch (e) { out.techErr = e.message; } const eras = [...box.querySelectorAll('.tech-era-head')].map(x => x.textContent.replace(/\s+/g, ' ').trim()).filter(x => /時代|Era /.test(x)); out.techEras = eras; out.techOverflow = box.scrollWidth > box.clientWidth + 2; out.techHasSteam = /蒸汽動力|Steam Power/.test(box.textContent); box.remove(); app.state = save.getState();
       // 7) 跑幾天沒錯
       try { const d0 = w._absDay(); for (let i = 0; i < 96 * 3 && w._absDay() - d0 < 3; i++) { w.paused = false; w.tick(); } w.paused = true; } catch (e) { out.err = e.message; }
       return out;
     });
     const zh = lang === 'zh';
-    ok(r.n === 57 && r.eras === '1,2,3,4,5,6' && r.newNodes, '科技樹分成六個時代、57 項（v7.4.0 生技 6 項、v7.5.0 神話基因 3 項）', { n: r.n, e: r.eras });
+    ok(r.n === 73 && r.eras === '1,2,3,4,5,6,7' && r.newNodes, '科技樹 73 項（v7.4.0 生技 6、v7.5.0 神話基因 3、v7.8.0 電子機械 15＋精進改良）', { n: r.n, e: r.eras });
     ok(!r.badPre.length, '每一項的前置都存在，而且不會要求後面時代的科技', r.badPre);
     ok(!r.badFx.length, '每一項效果都是遊戲裡真的有在用的效果', r.badFx);
     ok(r.sum[1] < r.sum[2] && r.sum[2] < r.sum[3] && r.sum[3] < r.sum[4] && r.total > 80000, '越後面的時代越貴，整棵樹成本大幅提高', { s: r.sum, t: r.total });
@@ -60,7 +60,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.era4 === 4, '前三個時代研究過半就進入第四時代「機械」', r.era4);
     ok(r.fx[1] > r.fx[0] && r.fx[3] > r.fx[2], '機械時代的科技完成後效果真的生效（機械農耕、疫苗）', r.fx);
     ok(r.oldSave.cost === RESEARCH_COST_AGRI && r.oldSave.prog === 30 && r.oldSave.steam, '舊檔讀進來：成本用新版、進度保留、新科技補上', r.oldSave);
-    ok(!r.techErr && r.techEras.length === 4 && (zh ? /第 四 時代|第四時代/.test(r.techEras[3]) : /Era IV/.test(r.techEras[3])) && r.techHasSteam, '科技頁畫出四個時代', { e: r.techEras, err: r.techErr });
+    ok(!r.techErr && r.techEras.length >= 4 && (zh ? /第 四 時代|第四時代/.test(r.techEras[3]) : /Era IV/.test(r.techEras[3])) && r.techHasSteam, '科技頁畫出四個時代', { e: r.techEras, err: r.techErr });
     ok(r.techOverflow === false, '科技頁在這個寬度不會橫向溢出', r.techOverflow);
     ok(!r.err, '跑幾天沒有錯誤', r.err);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

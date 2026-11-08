@@ -152,7 +152,7 @@ const DARK = (() => {
         const c = w.agents[p.culprit], v = w.agents[p.victim]; if (!c) return fill('{a}已經不在鎮上了', { a: '' });
         c.addThought?.('punished', w); if (v) { v.addThought?.('justice', w); mem(w, v, '全鎮替我討回了公道。', {}, 6); }
         mem(w, c, '全鎮投票處置了我：{pen}。', { pen: t(PEN[p.pen]) }, 8);
-        if (p.pen === 'fine') { { const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null; const n = Wl ? Math.min(30, Math.max(0, Wl.get(w, c))) : 0; if (n > 0 && Wl.take(w, c, n)) w.stockpile?.add?.('silver', n, w.tickCount, t('罰款')); } /* v7.6.0 罰款從被告錢包出(原本憑空多出 30 銀幣) */ if (v) { rel(v, c)?.modifyAffinity?.(5); mem(w, v, '{a}當眾向我道歉了。', { a: c.name }, 6); } S(w).wrongs = S(w).wrongs.filter(x => !(x.by === c.agentId && x.to === v?.agentId)); }
+        if (p.pen === 'fine') { if (typeof MONEY !== 'undefined' && MONEY.fine) MONEY.fine(w, c, 30, t('罰款')); else { const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null; const n = Wl ? Math.min(30, Math.max(0, Wl.get(w, c))) : 0; if (n > 0 && Wl.take(w, c, n)) w.stockpile?.add?.('silver', n, w.tickCount, t('罰款')); } /* v7.6.0 罰款從被告錢包出;v7.7.2 付不出的記成欠款,從工資分期扣 */ if (v) { rel(v, c)?.modifyAffinity?.(5); mem(w, v, '{a}當眾向我道歉了。', { a: c.name }, 6); } S(w).wrongs = S(w).wrongs.filter(x => !(x.by === c.agentId && x.to === v?.agentId)); }
         else if (p.pen === 'labor') { const D = S(w); D.labor = (D.labor || []).concat([{ id: c.agentId, until: day(w) + 7 }]); }
         else if (p.pen === 'exile') { w.leaveTown?.(c.agentId, t('被全鎮投票逐出小鎮')); }
         log(w, 'council', '⚖️ 判決執行：{a}，{pen}。', { a: c.name, pen: t(PEN[p.pen]) }, c.name);

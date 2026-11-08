@@ -27,7 +27,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const cjk = (s) => (s.match(/[一-鿿]{2,}/g) || []);
     // 1) 小鎮:一層子分頁、膠囊樣式、說明、概況有天氣與繁榮度
     await open('economy'); let b = await body();
-    ok(b.tabs.length === 4 && b.bars === 1 && b.hint && b.radius === '12px', '小鎮只剩一層子分頁（概況／物資／建設／產業），跟提案分頁同款膠囊＋說明＋圓角卡片', { tabs: b.tabs, bars: b.bars, hint: b.hint, r: b.radius });
+    ok(b.tabs.length === 5 && b.bars === 1 && b.hint && b.radius === '12px', '小鎮只剩一層子分頁（概況／物資／建設／科技／產業；v7.8.0 科技從建設分出來），跟提案分頁同款膠囊＋說明＋圓角卡片', { tabs: b.tabs, bars: b.bars, hint: b.hint, r: b.radius });
     ok(/weather-section/.test(b.html) && /econ-section/.test(b.html), '概況有天氣（從舊事件分頁搬來）與繁榮度', null);
     if (lang === 'en') ok(!cjk(b.tabs.join(' ') + b.hint).length, '英文子分頁與說明沒有中文', b.tabs);
     await open('econ-goods'); b = await body(); ok(b.on.includes(lang === 'en' ? 'Goods' : '物資') && /原料倉庫|Raw materials|📦/.test(b.text), '物資頁：倉庫、加工、交易、商店', b.on);
