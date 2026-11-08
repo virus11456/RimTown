@@ -111,7 +111,7 @@ const CALAMITY = (function () {
         if (!spend(w, c)) return { ok: false, why: 'power', need: c };
         const pool = adults(w); const zero = (zeroId && w.agents[zeroId] && !w.agents[zeroId].isDead) ? w.agents[zeroId] : rnd(pool.length ? pool : here(w)); if (!zero) return { ok: false, why: 'nobody' };
         const C = S(w); const d = day(w);
-        C.cur = { kind: 'pathogen', spec: s, day: d, cost: c, st: {}, found: 0, phase: 'hidden', ms: {}, curve: [], log: [], peak: 0, boost: 0, rumors: 0, fled: 0, died: 0, inf: 0, hoard: 0, scape: null, vax: null };
+        C.cur = { kind: 'pathogen', spec: s, day: d, cost: c, st: {}, found: 0, phase: 'hidden', ms: {}, curve: [], log: [], peak: 0, boost: 0, rumors: 0, fled: 0, died: 0, inf: 0, hoard: 0, scape: null, vax: null, pop0: here(w).length };
         C.cur.sn = w.dark?.n ?? 0; infect(w, C.cur, zero, d); C.st.released++;
         C.cur.log.push([d, 'release', t(zero.name)]);
         return { ok: true, cost: c, zero: zero.agentId };
@@ -310,7 +310,9 @@ const CALAMITY = (function () {
         log(w, k, { n: s.name, i: X.inf, d: X.died, f: X.fled }); news(w, k, { n: s.name, i: X.inf, d: X.died, f: X.fled }, 9, []); ping(w, 'end', X.died ? '🕯️' : '🌈', fill('{n}過去了', { n: s.name }), fill(k, { n: s.name, i: X.inf, d: X.died, f: X.fled }));
         for (const a of here(w)) mem(w, a, X.died ? '{n}帶走了 {d} 條人命，我們撐過來了，但不會忘記。' : '{n}過去了，大家總算鬆了一口氣。', { n: s.name, d: X.died }, 7);
         if (X.ms.lock || X.ms.close || X.ms.mask || X.ms.quar) log(w, '📋 疫情過去，封城、關店、口罩、隔離這些規定都解除了。', {});
-        try { w.chronicle?.add?.(w, fill('{n}流行：{i} 人染病、{d} 人死去', { n: s.name, i: X.inf, d: X.died })); } catch (e) {}
+        // 大災之後的文明倒退:死的人、逃的人佔原本人口多少決定摧毀程度;疫苗做出來了最多輕度
+        const p0 = Math.max(1, X.pop0 || (npcs(w).length + X.died + X.fled)); const sc = Math.round(X.died / p0 * 200 + X.fled / p0 * 80);
+        if (sc >= 15) { const rg = regress(w, s.name, sc, { countered: !!X.vax?.done }); if (rg) rec.reg = { tier: rg.tier, lost: rg.lost.length, saved: rg.saved }; }
         return true;
     }
 
@@ -393,14 +395,66 @@ const CALAMITY = (function () {
         return s;
     }
     const PHASE = { hidden: '潛伏中（只有你知道）', found: '剛被發現', rumor: '流言四起', panic: '恐慌', fading: '退燒中' };
+    // ---------- 大災之後的文明倒退(所有世界級災厄共用) ----------
+    // 摧毀分數 0~100 → 輕度(<20)、中度(20~45)、重度(45~70)、毀滅(≥70);第一、二時代的基本功不會失傳;人類的對策成功了最多輕度。
+    // 文書房、印刷坊、學堂、研究院、活下來的研究員、文字與印刷術讓每一項有機會保住;失傳的科技留下殘卷(三到六成進度),
+    // 靠它開的建築停擺到重新研究出來為止。重新研究出來會寫進日誌與史書。
+    const REG_TIER = [[70, 'catastrophic', 0.55], [45, 'heavy', 0.32], [20, 'moderate', 0.15], [0, 'light', 0.06]];
+    const REG_NAME = { light: '輕度', moderate: '中度', heavy: '重度', catastrophic: '毀滅性' };
+    const KEEP_BLD = [['archive', 0.1], ['press', 0.12], ['school', 0.08], ['institute', 0.12]];
+    function keepChance(w) {
+        let p = 0.05; for (const [k, v] of KEEP_BLD) if (built(w, k)) p += v;
+        if (done(w, 'writing')) p += 0.05; if (done(w, 'printing')) p += 0.08;
+        p += Math.min(0.15, here(w).filter(a => a.job?.key === 'researcher').length * 0.03);
+        return Math.min(0.75, p);
+    }
+    const lostOf = (w) => { const C = S(w); C.lost = C.lost || {}; return C.lost; };
+    function regress(w, cause, score, opts) {
+        const R = w.research; if (!R?.projects) return null; opts = opts || {};
+        let sc = Math.max(0, Math.min(100, Math.round(score || 0))); if (opts.countered) sc = Math.min(sc, 19);
+        const [, tier, frac] = REG_TIER.find(([m]) => sc >= m); const L = lostOf(w); const d = day(w); const C = S(w);
+        const cand = Object.values(R.projects).filter(p => p.status === 'complete' && (p.era || 1) >= 3 && p.key !== 'refine' && (!opts.only || opts.only.includes(p.key)));
+        const want = Math.min(cand.length, Math.floor(cand.length * frac + (tier === 'light' ? Math.random() * 0.9 : 0.5)));
+        cand.sort((a, b) => (b.era || 1) - (a.era || 1) || Math.random() - 0.5);
+        const kp = opts.keep ?? keepChance(w); const lost = []; let saved = 0;
+        const lose = (p, why) => { p.status = 'locked'; p.progress = Math.round(p.cost * (0.3 + Math.random() * 0.3)); L[p.key] = { d, c: cause, why }; lost.push(p); };
+        for (const p of cand.slice(0, want)) { if (Math.random() < kp) { saved++; continue; } lose(p, 'lost'); }
+        // 前置失傳了,後面的也跟著做不出來
+        for (let again = true; again;) { again = false; for (const p of Object.values(R.projects)) if (p.status === 'complete' && (p.era || 1) >= 3 && p.key !== 'refine' && (p.prerequisites || []).some(k => L[k] && R.projects[k]?.status !== 'complete')) { lose(p, 'chain'); again = true; } }
+        if (R.current && R.projects[R.current]?.status !== 'researching') R.current = null;
+        try { R.refreshLocks?.(); } catch (e) {} try { w.buildings?.recomputeEffects?.(w); } catch (e) {}
+        const rec = { c: cause, d, sc, tier, lost: lost.map(p => p.key), saved, kp: Math.round(kp * 100) };
+        C.regs = [rec].concat(C.regs || []).slice(0, 8);
+        const nm = lost.slice(0, 5).map(p => t(p.name)).join(t('、')) + (lost.length > 5 ? fill('等 {n} 項', { n: lost.length }) : '');
+        if (lost.length) {
+            const k = '📜 {c}之後，文明倒退（{t}）：{list}失傳了，只剩下殘卷。'; const pp = { c: cause, t: REG_NAME[tier], list: nm };
+            log(w, k, pp); news(w, k, pp, 9, []); ping(w, 'regress', '📜', t('文明倒退'), fill(k, pp));
+            const dead = dormant(w); if (dead.length) log(w, '🏚️ 沒有人懂得怎麼操作，{list}停擺了。', { list: dead.slice(0, 5).map(b => t(b.name)).join(t('、')) });
+            for (const a of here(w).filter(a => a.job?.key === 'researcher')) mem(w, a, '{c}之後，好多學問都失傳了，只剩下殘缺的手稿。', { c: cause }, 7);
+        } else if (saved) log(w, '📚 {c}之後，靠著留下來的書和學者，鎮上的學問一項都沒有失傳。', { c: cause });
+        return rec;
+    }
+    // 靠失傳科技開的建築:解鎖它的科技都還沒重新研究出來 → 停擺(效果不算)
+    function dormantB(w, b) {
+        const L = w?.calamity?.lost; if (!L) return false; const k = b.buildingKey || b.key; const by = (typeof RESEARCH_UNLOCKED_BY !== 'undefined' && RESEARCH_UNLOCKED_BY[k]) || [];
+        return by.length > 0 && by.some(x => L[x]) && !by.some(x => w.research?.projects?.[x]?.status === 'complete');
+    }
+    const dormant = (w) => (w.buildings?.completed || []).filter(b => dormantB(w, b));
+    // 每天看看有沒有失傳的科技重新研究出來
+    function rediscover(w) {
+        const L = w?.calamity?.lost; if (!L) return; const C = S(w);
+        for (const [k, x] of Object.entries(L)) { const p = w.research?.projects?.[k]; if (!p) { delete L[k]; continue; } if (p.status !== 'complete') continue;
+            delete L[k]; C.redisc = (C.redisc || 0) + 1; const pp = { p: t(p.name), c: x.c, n: Math.max(0, day(w) - x.d) };
+            log(w, '📜 失傳的「{p}」重新研究出來了！（{n} 天前在{c}中失傳）', pp); news(w, '📜 失傳的「{p}」重新研究出來了！（{n} 天前在{c}中失傳）', pp, 7, []); }
+    }
     function view(w) {
         const C = S(w); const X = C.cur; const sb = sandbox(); const can = canRelease(w);
-        const base = { power: sb ? null : Math.floor(C.power), cap: CAP, sandbox: sb, can, cool: Math.max(0, (C.coolTo || 0) - day(w)), hist: C.hist.slice(0, 5), parts: P, single: SINGLE, base: BASE_COST, boostCost: 15 };
+        const base = { power: sb ? null : Math.floor(C.power), cap: CAP, sandbox: sb, can, cool: Math.max(0, (C.coolTo || 0) - day(w)), hist: C.hist.slice(0, 5), regs: (C.regs || []).slice(0, 5), lost: Object.keys(C.lost || {}), redisc: C.redisc || 0, parts: P, single: SINGLE, base: BASE_COST, boostCost: 15 };
         if (!X) return base;
         const s = X.spec; const E = count(X, 'E'), I = count(X, 'I'), R = count(X, 'R');
         return Object.assign(base, { cur: { name: s.name, spec: s, day: X.day, days: day(w) - X.day, phase: X.phase, phaseName: t(PHASE[X.phase] || ''), found: !!X.found, E, I, R, D: X.died, fled: X.fled, inf: X.inf, peak: X.peak, ms: Object.keys(X.ms), vax: X.vax ? { pct: Math.round(X.vax.p / X.vax.need * 100), done: !!X.vax.done, shots: Object.keys(X.vx || {}).length } : null, curve: X.curve.slice(-60), log: X.log.slice(-10).reverse(), boosting: X.boost > day(w), pop: here(w).length, scape: X.scape ? t(w.agents[X.scape]?.name || '') : '' } });
     }
-    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE };
+    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE, regress, keepChance, dormant, dormantB, rediscover, REG_NAME };
 })();
 
 // ---------- 接上其他系統 ----------
@@ -411,7 +465,12 @@ if (typeof HEALTH !== 'undefined') {
 // 疫苗研究期間,研究員的研究點都拿去研究疫苗(平常的研究暫停)
 if (typeof ResearchManager !== 'undefined') {
     const RM = ResearchManager.prototype; const _du = RM.dailyUpdate;
-    RM.dailyUpdate = function (world) { const V = world?.calamity?.cur?.vax; if (V && !V.done) return; return _du.call(this, world); };
+    RM.dailyUpdate = function (world) { const V = world?.calamity?.cur?.vax; if (V && !V.done) return; const r = _du.call(this, world); try { CALAMITY.rediscover(world); } catch (e) {} return r; };
+}
+// 文明倒退:靠失傳科技開的建築停擺,效果先不算
+if (typeof BuildingManager !== 'undefined') {
+    const BM = BuildingManager.prototype; const _rc = BM.recomputeEffects;
+    BM.recomputeEffects = function (world) { const L = world?.calamity?.lost; if (!L || !Object.keys(L).length) return _rc.call(this, world); const all = this.completed; this.completed = (all || []).filter(b => !CALAMITY.dormantB(world, b)); try { return _rc.call(this, world); } finally { this.completed = all; } };
 }
 // 封城:商人、商隊、移民都進不來(快滅村時照舊補人)
 const CAL_LOCKED = (w) => !!w?.calamity?.cur?.ms?.lock;
@@ -443,8 +502,8 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.calamity = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.calamity) { const C = this.calamity; d.calamity = { power: C.power, pDay: C.pDay ?? null, hist: C.hist, st: C.st, coolTo: C.coolTo || 0, cur: C.cur || null }; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.calamity) { const C = this.calamity; d.calamity = { power: C.power, pDay: C.pDay ?? null, hist: C.hist, st: C.st, coolTo: C.coolTo || 0, cur: C.cur || null, lost: C.lost || {}, regs: C.regs || [], redisc: C.redisc || 0 }; } return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.calamity = (data?.calamity && typeof data.calamity === 'object') ? data.calamity : null; } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.calamity = (data?.calamity && typeof data.calamity === 'object') ? data.calamity : null; if (this.calamity?.lost && Object.keys(this.calamity.lost).length) this.buildings?.recomputeEffects?.(this); } } catch (e) {} return r; };
 }
 if (typeof window !== 'undefined') window.CALAMITY = CALAMITY;

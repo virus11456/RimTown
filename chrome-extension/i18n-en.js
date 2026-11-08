@@ -4,6 +4,26 @@
 (function () {
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
+        // v7.9.0 文明倒退
+        '失傳的科技': 'Lost knowledge',
+        '大災之後學問失傳了，只剩殘卷：保留三到六成的進度，重新研究會快一些。': 'Knowledge was lost in the catastrophe. Only fragments remain: they keep 30–60% of the progress, so re-researching is faster.',
+        '停擺的建築': 'Idle buildings',
+        '（重新研究出來才會恢復）': ' (back once the knowledge is rediscovered)',
+        '殘卷': 'Fragments',
+        '在{c}之後失傳，留下 {n}% 的進度': 'lost after {c}; {n}% of the progress survives',
+        '文明倒退': 'Civilization setback',
+        '失傳 {n} 項': '{n} techs lost',
+        '沒有失傳': 'nothing lost',
+        '等 {n} 項': ' and more ({n} in all)',
+        '輕度': 'light',
+        '中度': 'moderate',
+        '重度': 'heavy',
+        '毀滅性': 'catastrophic',
+        '📜 {c}之後，文明倒退（{t}）：{list}失傳了，只剩下殘卷。': '📜 After {c}, civilization slipped back ({t}): {list} were lost, leaving only fragments.',
+        '🏚️ 沒有人懂得怎麼操作，{list}停擺了。': '🏚️ Nobody knows how to run them anymore: {list} stand idle.',
+        '{c}之後，好多學問都失傳了，只剩下殘缺的手稿。': 'After {c}, so much knowledge was lost. Only torn manuscripts are left.',
+        '📚 {c}之後，靠著留下來的書和學者，鎮上的學問一項都沒有失傳。': '📚 After {c}, thanks to the surviving books and scholars, the town lost none of its knowledge.',
+        '📜 失傳的「{p}」重新研究出來了！（{n} 天前在{c}中失傳）': '📜 The lost "{p}" has been rediscovered! (lost {n} days ago in {c})',
         // v7.9.0 怪病特性
         '謊言病': 'Liar\'s fever',
         '一說謊身上就冒煙，第二次說謊就爆炸': 'lying makes you smoke; lie a second time and you explode',

@@ -228,7 +228,7 @@ const TECH = (function () {
         { id: 'meltdown', lv: 'big', icon: '☢️', need: (w) => nukeOn(w), run(w) { return meltdown(w); } },
     ];
     function meltdown(w) {
-        const T = S(w); const d = day(w); const all = adults(w); if (all.length < 4) return null;
+        const T = S(w); const d = day(w); const all = adults(w); if (all.length < 4) return null; const pop0 = npcs(w).length;
         // 死亡:在核電廠附近工作的人先
         const nD = 1 + Math.floor(Math.random() * 3); const dead = pickN(w, nD, x => ['miner', 'blacksmith', 'researcher', 'carpenter'].includes(x.job?.key)); while (dead.length < nD) { const x = pick(w, y => !dead.includes(y)); if (!x) break; dead.push(x); }
         const fam = new Set(); for (const a of dead) { for (const f of (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : [])) fam.add(f); }
@@ -247,6 +247,8 @@ const TECH = (function () {
         for (const a of leave) { try { if (w.leaveTown?.(a.agentId, t('核災之後不敢住了'))) T.st.left++; } catch (e) {} }
         // 當初反對核安法的人被怪罪
         for (const f of fam) for (const id of (T.lawNo || [])) { const o = w.agents[id]; if (o && !o.isDead && o !== f) aff(f, o, -15); }
+        // 大災之後的文明倒退(核電廠毀了算十五分,死的、走的佔人口越多越嚴重)
+        try { if (typeof CALAMITY !== 'undefined' && CALAMITY.regress) CALAMITY.regress(w, t('核災'), 15 + (dead.length / Math.max(1, pop0)) * 200 + (leave.length / Math.max(1, pop0)) * 80); } catch (e) {}
         T.lastBig = d; T.risk = 1; T.pendAbandon = Math.random() < 0.75 ? d + 1 + Math.floor(Math.random() * 3) : null;
         return { k: '☢️ 核災！核電廠爆炸，{dead}罹難，{s}人得了輻射病，{l}人連夜搬離小鎮。', p: { dead: names(dead), s: sick.length, l: leave.length }, who: dead, imp: 10 };
     }

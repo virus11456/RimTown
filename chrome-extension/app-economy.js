@@ -339,6 +339,16 @@ Object.assign(RimTownApp.prototype, {
                 }
                 html += '</div>';
             }
+            // ---- v7.9.0 大災之後的文明倒退:失傳的科技(殘卷)、停擺的建築 ----
+            const LOST = this.world?.calamity?.lost || {};
+            if (Object.keys(LOST).length && typeof CALAMITY !== 'undefined') {
+                const esc = (x) => this._escapeHtml(String(x ?? '')); const dorm = CALAMITY.dormant(this.world);
+                html += `<div class="tech-era tech-lost"><div class="tech-era-head">📜 ${t('失傳的科技')} <span>${Object.keys(LOST).length}</span></div>`;
+                html += `<div class="tech-desc">${Object.keys(LOST).map(k => esc(t(projects[k]?.name || k))).join(t('、'))}</div>`;
+                html += `<div class="tech-desc" style="color:var(--text-muted)">${t('大災之後學問失傳了，只剩殘卷：保留三到六成的進度，重新研究會快一些。')}</div>`;
+                if (dorm.length) html += `<div class="tech-desc">🏚️ ${t('停擺的建築')}${t('：')}${dorm.map(b => esc(t(b.name))).join(t('、'))}${t('（重新研究出來才會恢復）')}</div>`;
+                html += '</div>';
+            }
             const P = TV?.path || null;
             const groups = [
                 { e: 1, f: p => (p.era || 1) === 1 }, { e: 2, f: p => (p.era || 1) === 2 }, { e: 3, f: p => (p.era || 1) === 3 },
@@ -373,6 +383,7 @@ Object.assign(RimTownApp.prototype, {
                         <div class="tech-node-head"><span>${icon} ${p.path && era === 4 ? '⚙️' : ''}<b>${t(p.name)}</b></span><span class="tech-cost">${st === 'done' ? t('已完成') : st === 'now' ? `${pct}%` : `${p.cost} ${t('點')}`}</span></div>
                         <div class="tech-desc">${this._escapeHtml(p.description || '')}</div>
                         ${(p.unlocks || []).length ? `<div class="tech-unlocks">${t('解鎖')}${t('：')}${p.unlocks.map(unlockName).join(t('、'))}</div>` : ''}
+                        ${LOST[p.key] ? `<div class="tech-need tech-scroll">📜 ${t('殘卷')}${t('：')}${t('在{c}之後失傳，留下 {n}% 的進度').replace('{c}', this._escapeHtml(t(LOST[p.key].c || ''))).replace('{n}', pct)}</div>` : ''}
                         ${st === 'locked' && need.length ? `<div class="tech-need">${t('需要先研究')}${t('：')}${need.join(t('、'))}</div>` : ''}
                         ${(() => { const sm = st === 'done' && this.world?.ideaSystem?.summary?.(this.world, p.key); if (!sm) return ''; const und = Math.max(0, sm.total - sm.adopt - sm.resist); const pa = sm.total ? Math.round(sm.adopt / sm.total * 100) : 0, pr = sm.total ? Math.round(sm.resist / sm.total * 100) : 0; return `<div class="tech-idea">💡 ${t(sm.idea)}<div class="idea-bar"><span class="idea-a" style="width:${pa}%"></span><span class="idea-r" style="width:${pr}%"></span></div><div class="idea-legend">${t('接受')} ${sm.adopt} · ${t('反對')} ${sm.resist} · ${t('還沒聽說')} ${und}</div></div>`; })()}
                         ${st === 'now' ? `<div class="progress-bar" style="height:4px;margin-top:4px"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>` : ''}
