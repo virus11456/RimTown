@@ -113,6 +113,7 @@ const HEALTH = (() => {
     // ---------- 付錢:自己 → 家人 → 工會互助 → 銀行借 → 公費補助(提案通過才有) ----------
     function family(w, a) { const out = new Set(); const R = a.relationships?.relationships || {}; for (const id in R) { const r = R[id]; const o = w.agents[id]; if (o && !o.isDead && (r.status === 'married' || r.status === 'dating')) out.add(o); } for (const o of npcs(w)) if (o !== a && ((a._parentNames || []).includes(o.name) || (o._parentNames || []).includes(a.name))) out.add(o); return [...out]; }
     function pay(w, a, cost, why, doctor) {
+        if (w?.tech?.bio?.price) cost = Math.round(cost * 0.75 * 10) / 10; // v7.9.0 藥價管制:打七五折
         const Wl = WL(); const sp = w.stockpile; if (!Wl || cost <= 0) return { ok: true, by: [] };
         let need = cost; const got = []; // 每一筆是誰出的,湊不齊就原路退回
         const take = (who, n, kind) => { n = Math.min(n, Math.floor(Wl.get(w, who) * 100) / 100); if (n > 0.009 && Wl.take(w, who, n)) { need = Math.round((need - n) * 100) / 100; got.push({ kind, who, n }); return n; } return 0; };

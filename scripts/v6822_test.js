@@ -39,7 +39,7 @@ const init = ({ lang, jwt, enter }) => {
       // 捲出畫面暫停
       const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 400)); const h = document.querySelector('.lp-hero'); return { off: h.classList.contains('lp-off'), state: getComputedStyle(document.querySelector('.lp-sky-l')).animationPlayState }; });
       ok(off.off && off.state === 'paused', '主視覺捲出畫面就暫停動畫', off);
-      await page.waitForTimeout(1500);
+      await page.waitForFunction(() => typeof RIMTOWN_CHANGELOG !== 'undefined' && document.querySelectorAll('#landing-log .landing-log-item').length >= 5, null, { timeout: 10000 }).catch(() => {}); // 更新紀錄 640KB,忙的時候要多等一下
       const log = await page.evaluate(() => ({ items: document.querySelectorAll('#landing-log .landing-log-item').length, loaded: typeof RIMTOWN_CHANGELOG !== 'undefined' }));
       ok(log.loaded && log.items >= 5, '捲到更新紀錄附近才載入並顯示', log);
       // 繪製量:動畫跑著時幾乎不重畫

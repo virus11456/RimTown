@@ -28,6 +28,11 @@ const TIERS = (() => {
     const era = (w) => { try { return w.research?.currentEra?.() || 1; } catch (e) { return 1; } };
     // 目前條件最高能到哪一級
     function met(w) { const p = npcs(w).length, pr = pros(w), e = era(w); let lv = 0; for (let i = 1; i < LV.length; i++) { const L = LV[i]; if (p >= L.pop && pr >= L.pros && e >= L.era) lv = i; else break; } return lv; }
+    // v7.9.0 城鎮跟科技軟綁定:升城市要第四時代研究四分之一、升王都要第五時代研究四分之一(只擋升級,不會因此降級)
+    function techCap(w) { const P = Object.values(w.research?.projects || {}); const r = (e) => { const L = P.filter(p => (p.era || 1) === e && p.key !== 'refine' && !(typeof TECH !== 'undefined' && TECH.exclusive?.(p.key))); return L.length ? L.filter(p => p.status === 'complete').length / L.length : 1; }; return r(5) >= 0.25 ? 3 : r(4) >= 0.25 ? 2 : 1; }
+    // 降級看寬鬆一點的門檻(人口八五折、繁榮度少 8),避免在門檻邊緣忽上忽下
+    function metLoose(w) { const p = npcs(w).length / 0.85, pr = pros(w) + 8, e = era(w); let lv = 0; for (let i = 1; i < LV.length; i++) { const L = LV[i]; if (p >= L.pop && pr >= L.pros && e >= L.era) lv = i; else break; } return lv; }
+    const GRACE = 60; // 剛升格的 60 天內不會降級
     const level = (w) => (w && w.tierState ? w.tierState.lv : 0);
     const info = (w) => LV[level(w)];
     const leaderTitle = (w, lv) => { const L = LV[lv ?? level(w)]; return en() ? L.leaderEn : L.leader; };
@@ -152,7 +157,9 @@ const TIERS = (() => {
     // ---------- 每天 ----------
     function daily(w) {
         const T = S(w); track(w, T); syncTitles(w);
-        const target = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w), d = day(w);
+        let target = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w); const d = day(w);
+        if (target > T.lv) { const cap = techCap(w); if (cap < target) { target = Math.max(T.lv, cap); if (target === T.lv && (!T.techWait || d - T.techWait >= 20)) { T.techWait = d; try { w.logMessageT?.('event', '🔬 人口和繁榮度都夠升格了，但科技還跟不上：要先把{e}時代研究到四分之一。', { e: cap < 2 ? '第四' : '第五' }); } catch (e) {} } } }
+        else if (target < T.lv) { const loose = metLoose(w); if (loose >= T.lv || d - (T.since ?? -999) < GRACE) target = T.lv; }
         if (target > T.lv) { T.up++; T.down = 0; if (T.up >= UP_DAYS) {
             T.up = UP_DAYS;
             // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
@@ -226,7 +233,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
+    return { LV, S, syncTitles, met, techCap, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)

@@ -26,7 +26,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.badge = k1 && TIERS.badge(w, k1)?.cls; out.royal = k1 && CLASS.level(w, k1) === 5; out.notMayor = k1 && !TIERS.qualified(w, k1);
       out.brief = CE._townBrief(w); out.dyn = !!w.crown.dynasty;
       // 王令(規則)
-      w.crown.lastDecree = -99; const nd0 = w.crown.decrees.length; fix(0.5, () => CROWN.daily(w)); await new Promise(r => setTimeout(r, 300)); out.ruleDecree = w.crown.decrees.length === nd0 + 1;
+      w.crown.lastDecree = -99; const nd0 = w.crown.decrees.length; const fa0 = w.fullAgentMode; w.fullAgentMode = false; fix(0.5, () => CROWN.daily(w)); w.fullAgentMode = fa0; /* 規則版王令:先關掉完整智能體模式(預設開著,AI 冷卻狀態會讓它時走 AI、時走規則) */ await new Promise(r => setTimeout(r, 300)); out.ruleDecree = w.crown.decrees.length === nd0 + 1;
       // 王令(AI)
       const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; let asked = '';
       CE._askJson = async (p) => { asked = p; return { key: 'tax_down', text: '減輕百姓負擔' }; }; const tax0 = w.wallet.tax;

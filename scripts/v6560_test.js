@@ -77,7 +77,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(/🏘️/.test(ui.tier) && /🏙️/.test(ui.tier) && /60/.test(ui.tier), '鎮況頁顯示目前等級與升格為城市還差什麼', ui.tier.slice(0, 200));
 
     // 降級:繁榮掉到 10,連續 10 天
-    const down = await page.evaluate(() => { const w = window.rimtownApp.world; w.prosperity.prosperity = 10; const lv = []; for (let i = 0; i < 10; i++) { TIERS.daily(w); w.prosperity.prosperity = 10; lv.push(TIERS.level(w)); } return lv; });
+    const down = await page.evaluate(() => { const w = window.rimtownApp.world; TIERS.S(w).since = w._absDay() - TIERS.GRACE - 1; /* v7.9.0 剛升格 60 天內不降級:這裡當作寬限期已過 */ w.prosperity.prosperity = 10; const lv = []; for (let i = 0; i < 10; i++) { TIERS.daily(w); w.prosperity.prosperity = 10; lv.push(TIERS.level(w)); } return lv; });
     ok(down.slice(0, 9).every(x => x === 1) && down[9] === 0, '連續 10 天跌破才降級', down);
 
     // 存讀檔、補變化、新城鎮清空

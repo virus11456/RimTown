@@ -48,7 +48,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         out.tierCand = !!tc; out.tierText = tc ? tc.make(npcs()[0]).dk : '';
         if (tc) { const p = { ...tc.make(npcs()[0]), status: 'approved', votes: {}, id: 'Ltest', proposerId: npcs()[0].agentId }; PS.items.push(p); PS._execute(w, p, w._absDay()); out.exec = { status: p.status, result: p.result, lv: T2.lv, wood: Math.round(w.stockpile.get('wood')) }; }
         // 60 天保底
-        TIERS.met = () => 2; T2.up = 0; T2.readySince = null; w.stockpile.resources.metal = 500; w.stockpile.resources.wood = 500; w.stockpile.resources.stone = 500; w.stockpile.resources.furniture = 50;
+        TIERS.met = () => 2; { const L4 = Object.values(w.research?.projects || {}).filter(p => (p.era || 1) === 4); L4.slice(0, Math.ceil(L4.length * 0.4)).forEach(p => { p.status = 'complete'; }); } /* v7.9.0 升城市要第四時代研究到 1/4:這裡只測 60 天保底 */ T2.up = 0; T2.readySince = null; w.stockpile.resources.metal = 500; w.stockpile.resources.wood = 500; w.stockpile.resources.stone = 500; w.stockpile.resources.furniture = 50;
         const d0 = w._absDay(); const _ad = w._absDay.bind(w); let off = 0; w._absDay = () => _ad() + off;
         for (let i = 0; i < 5; i++) { off = i; TIERS.daily(w); } const mid = T2.lv; off = 70; TIERS.daily(w); out.fallback = { mid, after: T2.lv }; w._absDay = _ad;
       } finally { TIERS.met = _met; }

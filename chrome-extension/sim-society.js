@@ -815,9 +815,10 @@ class LifecycleSystem {
             let deathChance = 0;
 
             // Age-based mortality
-            if (npc.age >= 80) deathChance = 0.08;
-            else if (npc.age >= 70) deathChance = 0.03;
-            else if (npc.age >= 60) deathChance = 0.01;
+            const ageEff = npc.age - (world.research?.projects?.life_extension?.status === 'complete' ? 15 : 0); // v7.9.0 延壽療法:老死晚十五歲
+            if (ageEff >= 80) deathChance = 0.08;
+            else if (ageEff >= 70) deathChance = 0.03;
+            else if (ageEff >= 60) deathChance = 0.01;
 
             // Mood modifier: very miserable people are more susceptible
             if (npc.mood < -50) deathChance += 0.01;

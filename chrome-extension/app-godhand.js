@@ -22,6 +22,7 @@ Object.assign(RimTownApp.prototype, {
             const tray = document.createElement('div');
             tray.id = 'gh-tray'; tray.className = 'gh-tray'; tray.setAttribute('role', 'dialog'); tray.setAttribute('aria-label', t('事件卡')); tray.hidden = true;
             tray.addEventListener('click', (e) => this._ghClick(e));
+            tray.addEventListener('input', (e) => this._ghLabInput(e)); tray.addEventListener('change', (e) => this._ghLabInput(e)); // v7.9.0 災厄工坊的輸入框、選單
             host.appendChild(tray);
             document.addEventListener('keydown', (e) => this._ghKey(e));
             window.addEventListener('resize', () => { this._ghFab(); if (this._ghOpen) this._ghPlace(); });
@@ -86,6 +87,7 @@ Object.assign(RimTownApp.prototype, {
                 <div class="gh-tabs" role="tablist">
                     <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}</button>
                     <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
+                    ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
                 </div>
                 <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
                 <button class="gh-x" data-gh="close" aria-label="${t('關閉')}">✕</button>
@@ -102,6 +104,7 @@ Object.assign(RimTownApp.prototype, {
                 <button class="gh-intro-ok" data-gh="help-ok">${t('知道了，看手牌')}</button>
             </div>`;
         if (this._ghIntroOpen()) { tray.innerHTML = html; return; } // 說明頁取代手牌,不擠在一起
+        if (this._ghTab === 'lab' && typeof CALAMITY !== 'undefined' && CALAMITY.labOpen()) { html += this._ghLabHtml(); tray.innerHTML = html; return; } // v7.9.0 災厄工坊
         if (this._ghTab === 'track') {
             html += `<div class="gh-track">`;
             if (!d.played?.length) html += `<div class="gh-empty">📼 ${t('還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。')}</div>`;
@@ -145,6 +148,61 @@ Object.assign(RimTownApp.prototype, {
         html += `</div>`;
         tray.innerHTML = html;
     },
+
+    // ---------- v7.9.0 災厄工坊:設計病原體、釋放、看疫情 ----------
+    _ghLabSpec() { if (!this._ghLab) this._ghLab = { name: '', route: ['droplet'], sym: ['cough'], quirk: [], latency: 'mid', speed: 'mid', length: 'mid', lethal: 'low', resist: 'off', climate: 'none', target: 'none' }; return this._ghLab; },
+    _ghLabHtml() {
+        const w = this.world; const V = CALAMITY.view(w); const esc = (x) => this._escapeHtml(String(x ?? '')); const P = V.parts;
+        const pw = V.sandbox ? '∞' : `${V.power}/${V.cap}`;
+        let h = `<div class="gh-lab"><div class="gh-lab-top"><span class="gh-pw">🔮 ${t('神力')} <b>${pw}</b></span><label class="gh-sbx"><input type="checkbox" id="gh-lab-sbx" ${V.sandbox ? 'checked' : ''}> ${t('沙盒模式（神力無限）')}</label></div>`;
+        h += `<div class="gh-lab-note">${t('你只能讓災厄更糟，不能阻止它。神力每天累積 1 點（小鎮越興旺越快），最多 100。')}</div>`;
+        if (V.cur) {
+            const c = V.cur; const sp = c.spec;
+            h += `<div class="gh-lab-cur"><div class="gh-lab-h"><span>🦠 <b>${esc(c.name)}</b></span><span class="gh-ph gh-ph-${c.phase}">${esc(c.phaseName)}</span><span class="gh-when">${t('第 {d} 天').replace('{d}', c.days + 1)}</span></div>`;
+            h += `<div class="gh-lab-n"><span title="${t('只有你看得到')}">🕶️ ${t('潛伏')} <b>${c.E}</b></span><span>🤒 ${t('發病')} <b>${c.I}</b></span><span>💪 ${t('康復')} <b>${c.R}</b></span><span>⚰️ ${t('死亡')} <b>${c.D}</b></span>${c.fled ? `<span>🧳 ${t('逃走')} <b>${c.fled}</b></span>` : ''}<span>👥 ${t('鎮上')} ${c.pop}</span></div>`;
+            // 曲線:發病(紅)、潛伏(橘虛線)、死亡累計(灰)
+            const cv = c.curve; if (cv.length > 1) { const mx = Math.max(4, ...cv.map(x => Math.max(x[1], x[4], x[2]))); const W = 300, H = 70; const pt = (i, v) => `${(i / (cv.length - 1) * W).toFixed(1)},${(H - v / mx * (H - 4) - 2).toFixed(1)}`; const line = (j) => cv.map((x, i) => pt(i, x[j])).join(' ');
+                h += `<svg class="gh-chart" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" role="img" aria-label="${t('疫情曲線')}"><polyline points="${line(4)}" class="ln-e"/><polyline points="${line(2)}" class="ln-d"/><polyline points="${line(1)}" class="ln-i"/></svg><div class="gh-legend"><span class="lg-i">${t('發病')}</span><span class="lg-e">${t('潛伏（只有你看得到）')}</span><span class="lg-d">${t('死亡累計')}</span></div>`; }
+            if (c.vax) h += `<div class="gh-vax">💉 ${c.vax.done ? t('疫苗研究出來了，已經 {n} 人打了疫苗').replace('{n}', c.vax.shots) : t('疫苗研究中')} <div class="progress-bar"><div class="progress-fill" style="width:${c.vax.pct}%"></div></div></div>`;
+            const MS = { quar: '🏠 ' + t('病人隔離'), mask: '😷 ' + t('戴口罩'), close: '🚪 ' + t('酒館市集關閉'), lock: '🚧 ' + t('封城') };
+            if (c.ms.length) h += `<div class="gh-ms">${c.ms.map(k => `<span>${MS[k] || k}</span>`).join('')}</div>`;
+            h += `<div class="gh-spec">${sp.route.map(k => P.route[k].icon + ' ' + t(P.route[k].name)).join(' · ')} ｜ ${sp.sym.map(k => P.sym[k].icon + ' ' + t(P.sym[k].name)).join(' · ')}${(sp.quirk || []).length ? ' ｜ ' + sp.quirk.map(k => P.quirk[k].icon + ' ' + t(P.quirk[k].name)).join(' · ') : ''}</div>`;
+            const LG = { release: '🧪 在{x}身上釋放', found: '🩺 被發現了', rumor: '🗣️ 流言：「{x}」', panic: '😱 鎮上陷入恐慌', fading: '🌤️ 開始退燒', vax: '🔬 開始研究疫苗', vaxdone: '💉 疫苗問世', quar: '🏠 病人隔離', mask: '😷 口罩令', close: '🚪 酒館市集關閉', lock: '🚧 封城', boost: '😈 你推了一把', boom: '💥 {x}說謊爆炸', smoke: '💨 {x}說謊冒煙', confess: '😰 {x}怕爆炸全招了', blurt: '🗣️ {x}說溜了秘密' };
+            h += `<div class="gh-lab-log">${c.log.map(l => `<div><span class="gh-when">${t('第 {d} 天').replace('{d}', l[0] - c.day + 1)}</span> ${esc(t(LG[l[1]] || l[1]).replace('{x}', l[2] || ''))}</div>`).join('')}</div>`;
+            if (c.scape) h += `<div class="gh-lab-note">🎯 ${t('鎮上有人把矛頭指向{a}').replace('{a}', esc(c.scape))}</div>`;
+            const canB = !c.boosting && (V.sandbox || V.power >= V.boostCost);
+            h += `<button class="gh-play gh-boost" data-gh="lab-boost" ${canB ? '' : 'disabled aria-disabled="true"'}>😈 ${c.boosting ? t('正在加速擴散') : t('推一把（{n} 神力）：三天內傳得更快').replace('{n}', V.boostCost)}</button></div>`;
+            h += '</div>'; return h;
+        }
+        const S = this._ghLabSpec(); const pv = CALAMITY.preview(S);
+        const chip = (g, k, d, on, multi) => `<button class="gh-chip${on ? ' on' : ''}" data-gh="${multi ? 'lab-multi' : 'lab-opt'}" data-g="${g}" data-v="${k}" aria-pressed="${on}" title="${esc(t(d.desc || ''))}">${d.icon ? d.icon + ' ' : ''}${esc(t(d.name))}<small>${d.cost ? '+' + d.cost : ''}</small></button>`;
+        const LBL = { route: '傳播途徑（選 1～2）', sym: '症狀（最多 4 個）', quirk: '怪病特性（最多 2 個，可不選）', latency: '潛伏期', speed: '爆發速度', length: '持續時間', lethal: '致死率', resist: '抗藥性', climate: '季節', target: '偏好族群' };
+        h += `<div class="gh-lab-form"><label class="gh-lab-row"><span>${t('名稱')}</span><input id="gh-lab-name" maxlength="12" value="${esc(S.name)}" placeholder="${t('例如：灰咳病')}"></label>`;
+        for (const g of ['route', 'sym', 'quirk']) h += `<div class="gh-lab-row"><span>${t(LBL[g])}</span><div class="gh-chips">${Object.entries(P[g]).map(([k, d]) => chip(g, k, d, S[g].includes(k), true)).join('')}</div></div>`;
+        for (const g of V.single) h += `<div class="gh-lab-row"><span>${t(LBL[g])}</span><div class="gh-chips">${Object.entries(P[g]).map(([k, d]) => chip(g, k, Object.assign({}, d, { name: d.name, desc: d.desc }), S[g] === k, false)).join('')}</div></div>`;
+        const bar = (n, v) => `<div class="gh-bar"><span>${t(n)}</span><div class="progress-bar"><div class="progress-fill" style="width:${v}%"></div></div><b>${v}</b></div>`;
+        h += `<div class="gh-pv">${bar('傳染力', pv.spread)}${bar('嚴重度', pv.sev)}${bar('致死率', pv.death)}${bar('隱蔽度', pv.stealth)}</div>`;
+        const people = Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18).sort((a, b) => String(a.name).localeCompare(String(b.name)));
+        h += `<label class="gh-lab-row"><span>${t('第一個病人')}</span><select id="gh-lab-zero"><option value="">🎲 ${t('隨機')}</option>${people.map(a => `<option value="${esc(a.agentId)}" ${this._ghLabZero === a.agentId ? 'selected' : ''}>${esc(t(a.name))}${a.job?.title ? '・' + esc(t(a.job.title)) : ''}</option>`).join('')}</select></label>`;
+        const enough = V.sandbox || V.power >= pv.cost; const why = !V.can.ok ? (V.can.why === 'cooldown' ? t('上一場災厄剛結束，還要 {n} 天才能再放').replace('{n}', V.can.days) : '') : !enough ? t('神力不夠（要 {n}）').replace('{n}', pv.cost) : '';
+        h += `<button class="gh-play" data-gh="lab-release" ${V.can.ok && enough ? '' : 'disabled aria-disabled="true"'}>🧪 ${t('釋放（{n} 神力）').replace('{n}', pv.cost)}</button>${why ? `<div class="gh-d-note">${esc(why)}</div>` : ''}</div>`;
+        if (V.hist.length) h += `<div class="gh-lab-hist"><div class="gh-lab-h">📜 ${t('過去的災厄')}</div>${V.hist.map(x => `<div>🦠 <b>${esc(x.name)}</b> · ${t('{i} 人染病、{d} 人死去').replace('{i}', x.inf).replace('{d}', x.died)}${x.fled ? ' · ' + t('{n} 人逃走').replace('{n}', x.fled) : ''} · ${t('{n} 天').replace('{n}', x.end - x.day)} · ${x.survived === false ? '💀 ' + t('全滅') : x.how === 'cure' ? '💉 ' + t('靠疫苗撐過') : '🛡️ ' + t('硬撐過來')}${x.reg ? ` · 📜 ${t('文明倒退')}${t('（')}${t(CALAMITY.REG_NAME[x.reg.tier] || '')}${t('）')}${x.reg.lost ? t('失傳 {n} 項').replace('{n}', x.reg.lost) : t('沒有失傳')}` : ''}</div>`).join('')}</div>`;
+        h += '</div>'; return h;
+    },
+    _ghLabClick(k, v, b) {
+        const w = this.world; const S = this._ghLabSpec(); const g = b.dataset.g;
+        if (k === 'lab-multi') { const arr = S[g] || (S[g] = []); const i = arr.indexOf(v); const max = g === 'route' ? 2 : g === 'quirk' ? 2 : 4; if (i >= 0) { if (arr.length > 1 || g === 'quirk') arr.splice(i, 1); } else { if (arr.length >= max) arr.shift(); arr.push(v); } }
+        else if (k === 'lab-opt') S[g] = v;
+        else if (k === 'lab-release') { const r = CALAMITY.release(w, S, this._ghLabZero || null); if (r.ok) { try { this._showCornerNotice?.({ icon: '🧪', title: t('災厄已經釋放'), name: '', desc: t('一開始只有你知道。等村民自己發現、自己應對。') }); } catch (e) {} try { this.state = w.getState(); } catch (e) {} } }
+        else if (k === 'lab-boost') CALAMITY.boost(w);
+        this._ghRender(); this._ghFab();
+    },
+    _ghLabInput(e) {
+        const el = e.target; if (!el) return;
+        if (el.id === 'gh-lab-name') { this._ghLabSpec().name = el.value; return; } // 打字時不重畫,免得游標跳走
+        if (el.id === 'gh-lab-zero') { this._ghLabZero = el.value || null; return; }
+        if (el.id === 'gh-lab-sbx' && e.type === 'change') { try { localStorage.setItem('rimtown_god_sandbox', el.checked ? '1' : '0'); } catch (er) {} this._ghRender(); }
+    },
     _ghIntroOpen() { if (this._ghIntro != null) return this._ghIntro; try { return localStorage.getItem('rimtown_gh_intro') !== '1'; } catch (e) { return true; } },
     _ghIntroSeen() { try { localStorage.setItem('rimtown_gh_intro', '1'); } catch (e) {} },
     _ghScrollSel() { const el = document.querySelector('#gh-tray .gh-card.sel'); if (el) el.scrollIntoView({ block: 'nearest', inline: 'center', behavior: 'smooth' }); },
@@ -158,6 +216,7 @@ Object.assign(RimTownApp.prototype, {
         if (k === 'filter') { this._ghFilter = v; this._ghRender(); this._ghScrollSel(); return; }
         if (k === 'sel') { this._ghSel = v; this._ghRender(); document.querySelector('#gh-tray .gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); return; }
         if (k === 'play') return this._ghPlay(v);
+        if (k && k.startsWith('lab-')) return this._ghLabClick(k, v, b);
         if (k === 'random') { const d = this._ghData(); const h = (d?.hand || []).filter(c => c.left <= 0 && !c.dailyFull); if (h.length) this._ghPlay(h[Math.floor(Math.random() * h.length)].id); return; }
         if (k === 'agent') { this._ghHide(); try { this.selectedAgent = v; this._goLook?.({ agentId: v }); this.renderSidebar?.(); } catch (err) {} }
     },

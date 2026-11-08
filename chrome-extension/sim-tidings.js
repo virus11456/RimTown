@@ -105,7 +105,7 @@ const TIDINGS = (() => {
             if (Math.random() > (p.kind === 'town' ? 0.1 : 0.07)) continue;
             const pool = EV[p.kind] || EV.town; const e = pool[Math.floor(Math.random() * pool.length)];
             if (e.up && p.lv >= 3) continue;
-            const lag = e.ch === 'courier' ? Math.ceil(p.dist * 0.6) : p.dist + rnd(0, 2);
+            let lag = e.ch === 'courier' ? Math.ceil(p.dist * 0.6) : p.dist + rnd(0, 2); if (w.research?.projects?.space_station?.status === 'complete') lag = Math.ceil(lag / 2); // v7.9.0 太空站:消息快一倍
             T.inbox.push({ pid: p.id, k: e.k, ch: e.ch, m: e.m, up: !!e.up, made: d, arrive: d + lag });
         }
         // 消息到了

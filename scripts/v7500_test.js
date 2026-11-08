@@ -22,7 +22,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const inTown = () => (sp.get('silver') || 0) + Object.values(w.wallet.bal).reduce((s, v) => s + (v || 0), 0);
       const P = w.research.projects; const set = (a, n) => { w.wallet.bal[a.agentId] = n; };
       // 1) 門檻:第六時代要王都;神話基因譜還要基因實驗室;基因實驗室只有王都能蓋
-      for (const p of Object.values(P)) if (p.era <= 5) p.status = 'complete'; w.research.refreshLocks();
+      for (const p of Object.values(P)) if (p.era <= 5) p.status = 'complete'; TECH.choose(w, 'bio', null, true); w.research.refreshLocks(); /* v7.9.0 第六時代是基因生物專屬 */
       w.buildings.completed.push({ buildingKey: 'institute', name: BUILDING_TEMPLATES.institute.name, level: 1 });
       TIERS.level = () => 2; const av2 = w.research.getAvailable().map(p => p.key); const cb2 = HEALTH.canBuild(w, 'gene_lab');
       TIERS.level = () => 3; const av3 = w.research.getAvailable().map(p => p.key); const cb3 = HEALTH.canBuild(w, 'gene_lab');
