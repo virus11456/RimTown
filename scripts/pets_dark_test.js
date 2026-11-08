@@ -113,7 +113,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // ---------- 同行搶生意 ----------
     const biz = await page.evaluate(() => {
       const w = window.rimtownApp.world; const ag = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
-      const a = ag[12], b = ag[13]; a.job = { ...(b.job || {}), key: 'trader', title: '商人' }; b.job = { ...(b.job || {}), key: 'trader', title: '商人' }; a.personality.traits = ['jealous']; b.personality.traits = ['jealous'];
+      const a = ag[12], b = ag[13]; a.job = new Job('trader'); b.job = new Job('trader'); a.personality.traits = ['jealous']; b.personality.traits = ['jealous'];
       const before = DARK.grudge(w, a, b).s; const R = Math.random; Math.random = () => 0.01; try { DARK.daily(w); } finally { Math.random = R; }
       const th = [...(a.thoughts || []), ...(b.thoughts || [])].map(x => x.kind);
       return { why: DARK.grudge(w, a, b).why, before, th };
@@ -126,7 +126,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const R = Math.random; const seq = (arr) => { let i = 0; Math.random = () => arr[Math.min(i++, arr.length - 1)]; };
       const th = () => ag.flatMap(a => (a.thoughts || []).map(x => x.kind));
       // 買賣糾紛(roll < 0.35)
-      ag[15].job = { ...(ag[15].job || {}), key: 'trader', title: '商人' };
+      ag[15].job = new Job('trader');
       const shop = () => (w.messageLog || []).filter(m => String(m.k || '').startsWith('🛒')).length; const before = shop();
       seq([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1]); try { DARK.daily(w); } finally { Math.random = R; }
       const cheated = shop() > before && th().includes('cheated');
