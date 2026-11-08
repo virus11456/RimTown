@@ -32,12 +32,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.locked = { before: !avail().some(k => elec(4).includes(k)) };
       // 3) 工坊時代 75%:鎮上提「走電子機械路線」
       main(3).forEach(complete); R.refreshLocks(); R.current = null; w.tech = null; TECH.daily(w);
-      const tp = P.items.find(p => p.kind === 'tech_path'); out.debate = { made: !!tp, title: tp ? P.title(tp) : '', opts: tp?.opts || [], open: avail().some(k => elec(4).includes(k)) }; /* v7.9.0 基礎科技不用選路線就能研究;辯論是多選一 */
+      const tp = P.items.find(p => p.kind === 'tech_path'); if (w.tech) w.tech.lean = 'none'; out.debate = { made: !!tp, title: tp ? P.title(tp) : '', opts: tp?.opts || [], open: avail().some(k => elec(4).includes(k)) }; /* v7.9.0 基礎科技不用選路線就能研究;辯論是多選一 */
       // 4) 投票:研究員多半贊成、保守的裁縫反對
       const rs = adults().find(a => a.job?.key === 'researcher') || adults()[0]; const tl = adults().find(a => a !== rs) ; const keep = { j: tl.job, s: tl.techStance };
       tl.job = new Job('tailor'); tl.techStance = 'conservative'; rs.techStance = 'progressive';
       const vr = fix(0.5, () => TECH.voteRule(w, tp, rs)), vt = fix(0.5, () => TECH.voteRule(w, tp, tl)); tl.job = keep.j; tl.techStance = keep.s;
-      out.vote = { rs: vr.v, tl: vt.v, whyT: vt.why };
+      out.vote = { rs: vr.v, rsPick: tp.pick?.[rs.agentId] || tp.refKey, tl: vt.v, tlPick: vt.v === 'for' ? (tp.pick?.[tl.agentId] || '') : '', whyT: vt.why };
       // 5) 否決三次照樣上路
       { const q = P.items.filter(p => p.kind === 'tech_path').pop(); q.status = 'rejected'; w.tech.lastProp = -99; w.tech.lastDay = null; TECH.daily(w); }
       const n1 = P.items.filter(p => p.kind === 'tech_path').length; w.tech.lastDay = null; TECH.daily(w);
@@ -88,7 +88,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     });
     ok(r.tree.e4 === 6 && r.tree.e5 === 10 && r.tree.e6 === 6 && r.tree.shared4 === 5 && r.tree.bldg && r.tree.refine, '科技樹：機械 6、電力 10（v7.9.0 微電子、精密製造、機器人、核融合移下來）、太空 6 項（專屬：火箭、核子武器、衛星、太空站、量子電腦、AI），共同近代 5 項，三種新建築，精進改良', r.tree);
     ok(r.locked.before && r.debate.made && r.debate.open && r.debate.opts.length >= 2 && /電子機械|Electro/.test(r.debate.title), '工坊時代 75% 才辯論路線（多選一：電子機械、基因生物、維持傳統）；機械科技不用選路線就能研究', { l: r.locked, d: r.debate });
-    ok(r.vote.rs === 'for' && r.vote.tl === 'against' && r.vote.whyT === 'path_job', '投票：研究員贊成，怕被機器搶飯碗的裁縫反對', r.vote);
+    ok(r.vote.rs === 'for' && r.vote.rsPick === 'electro' && (r.vote.tl === 'against' || r.vote.tlPick === 'bio'), '投票：研究員投電子機械；怕被機器搶飯碗的裁縫不會投電子機械（反對或改投基因生物）', r.vote);
     ok(!r.forced.path && r.forced.tries === 1 && r.forced.wait >= 25 && !r.forced.again && r.forced.open >= 1, '否決就是維持傳統：30 天後再辯論，不會強制上路', r.forced);
     ok(r.chosen.status === 'done' && r.chosen.path === 'electro' && r.chosen.yes === 2 && r.chosen.no === 1 && r.chosen.era5 && r.chosen.era6 && r.chosen.era5 !== r.chosen.era6, '提案通過就決定路線、記下贊成反對；時代名稱依路線', r.chosen);
     ok(r.gate5.tier1 && r.gate5.tier2, '電力時代：機械 75% 而且要城市', r.gate5);

@@ -35,14 +35,14 @@ const TECH = (function () {
     // ---------- 路線 ----------
     const PATHS = {
         electro: {
-            icon: '⚙️', name: '電子機械', short: '工廠、電力、核能，最後飛向太空',
+            icon: '⚙️', name: '電子機械', short: '工廠、電力、核能，最後飛向太空', w: 2, // 風氣權重:電子機械 2、基因生物 1、蒸汽煉金 1(約 50%／25%／25%)
             pro: '生產力最高：機器替人做粗活，研究越來越快',
             con: '機器會搶走工作，核電一出事就是大災',
             stages: { 4: { name: '機械', icon: '🏭' }, 5: { name: '電力', icon: '⚡' }, 6: { name: '太空', icon: '🚀' } },
         },
         // v7.9.0 基因生物(科技、事件、法律在 sim-bio.js)
         bio: {
-            icon: '🧬', name: '基因生物', short: '育種、醫藥、生命工程',
+            icon: '🧬', name: '基因生物', short: '育種、醫藥、生命工程', w: 1,
             pro: '人比較健康長壽、糧食大增產，醫生和農夫最吃香',
             con: '貧富差距變成基因差距、跟信仰衝突，實驗室可能外洩',
             stages: { 4: { name: '育種', icon: '🌾' }, 5: { name: '生技', icon: '💉' }, 6: { name: '基因', icon: '🧬' } },
@@ -129,6 +129,10 @@ const TECH = (function () {
         const age = a.age ?? 30; if (age >= 55) s -= 1; else if (age < 30) s += 0.5;
         return s;
     }
+    // v7.9.0 小鎮的風氣(傳統與民風):開局依權重決定比較偏向哪條路線,鎮上每個人對那條路線多一點好感;小鎮的經歷(瘟疫、核災…)還是能翻盤
+    const LEAN = 1.5;
+    function leanOf(w) { const T = S(w); if (T.lean === undefined || T.lean === null) { const ks = PATH_KEYS(); const tot = ks.reduce((x, k) => x + (PATHS[k].w || 1), 0); let r = Math.random() * tot; T.lean = ks[ks.length - 1]; for (const k of ks) { r -= (PATHS[k].w || 1); if (r < 0) { T.lean = k; break; } } } return T.lean; }
+    const preferPath = (w, a, P) => prefer(w, a, P) + (leanOf(w) === P ? LEAN : 0);
     function busy(w, kind) { return (w.proposals?.items || []).some(p => p.kind === kind && ['open', 'shelved', 'approved'].includes(p.status)); }
     function propose(w, kind, key, who, tk, dk, dp, cat, tp, extra) {
         const P = w.proposals; if (!P?._createWith || !who) return null;
@@ -140,7 +144,7 @@ const TECH = (function () {
     const builtAny = (w, ks) => ks.filter(k => built(w, k)).length;
     function appeal(w, P) {
         const ad = adults(w); if (!ad.length) return 0;
-        let s = ad.reduce((t2, a) => t2 + prefer(w, a, P), 0) / ad.length;
+        let s = ad.reduce((t2, a) => t2 + preferPath(w, a, P), 0) / ad.length;
         const share = (f) => ad.filter(f).length / ad.length;
         if (P === 'electro') {
             if (share(a => a.job?.key === 'researcher') >= 0.08) s += 0.3; if ((w.prosperity?.prosperity || 0) >= 60) s += 0.3;
@@ -156,7 +160,7 @@ const TECH = (function () {
     }
     const appeals = (w) => Object.fromEntries(PATH_KEYS().map(P => [P, appeal(w, P)]));
     // 這張提案的選項裡,這個村民最想走哪條(都不想走就是維持傳統)
-    function bestOpt(w, a, opts) { let best = null, bs = -99; for (const P of opts || []) { const v = prefer(w, a, P); if (v > bs) { bs = v; best = P; } } return { P: best, s: bs }; }
+    function bestOpt(w, a, opts) { let best = null, bs = -99; for (const P of opts || []) { const v = preferPath(w, a, P); if (v > bs) { bs = v; best = P; } } return { P: best, s: bs }; }
     function tally(p) { const out = {}; for (const P of (p.opts || [p.refKey])) out[P] = 0; let keep = 0; for (const [id, v] of Object.entries(p.votes || {})) { if (v === 'for') { const P = p.pick?.[id] || p.refKey; if (P in out) out[P]++; } else keep++; } return { paths: out, keep }; }
     function pathDaily(w, T, d) {
         if (T.path) return;
@@ -170,7 +174,7 @@ const TECH = (function () {
         if (T.nextDebate != null && d < T.nextDebate) { const jump = T.app0 && PATH_KEYS().some(P => (A[P] || 0) - (T.app0[P] || 0) >= 0.8); if (!(jump && d - (T.lastProp ?? -99) >= 10)) return; }
         if (d - (T.lastProp ?? -99) < 8) return;
         const ranked = PATH_KEYS().sort((x, y) => A[y] - A[x]); const opts = ranked.filter((P, i) => i === 0 || A[P] >= -0.5);
-        const top = ranked[0]; const who = adults(w).map(a => [a, prefer(w, a, top) + (a.job?.key === 'researcher' ? 0.5 : 0)]).sort((x, y) => y[1] - x[1])[0]?.[0]; if (!who) return; T.lastProp = d;
+        const top = ranked[0]; const who = adults(w).map(a => [a, preferPath(w, a, top) + (a.job?.key === 'researcher' ? 0.5 : 0)]).sort((x, y) => y[1] - x[1])[0]?.[0]; if (!who) return; T.lastProp = d;
         const list = opts.map(P => `${PATHS[P].icon}${t(PATHS[P].name)}`).join(t('、'));
         const Pd = PATHS[top];
         const p = propose(w, 'tech_path', top, who, '科技路線大辯論：{list}，還是維持傳統？', T.tries ? '{who}又提了一次：小鎮該決定往後的路了。{who}最想走{name}——{short}。每個人投給自己想走的路線；都不想走就投反對，維持傳統。' : '{who}說工坊時代快研究完了，該決定小鎮往後的路。{who}最想走{name}——{short}。選項有：{list}。每個人投給自己想走的路線；都不想走就投反對，維持傳統。', { name: Pd.name, short: Pd.short, list }, 'economy', { list }, { opts, pick: {}, app: A });
@@ -190,7 +194,7 @@ const TECH = (function () {
         if (!silent) {
             const k = '{icon} 小鎮決定走「{name}」路線：{short}。';
             log(w, k, { icon: Pd.icon, name: Pd.name, short: Pd.short }); news(w, k, { icon: Pd.icon, name: Pd.name, short: Pd.short }, 9, []);
-            for (const a of npcs(w)) { const s = prefer(w, a, P); const mine = prop?.pick?.[a.agentId]; mem(w, a, s > 0 ? '小鎮決定走{name}路線，我覺得這是對的。' : mine && mine !== P ? '小鎮決定走{name}路線，不是我投的那條，有點不甘心。' : '小鎮決定走{name}路線，我擔心以後的日子會變。', { name: Pd.name }, 6); }
+            for (const a of npcs(w)) { const s = preferPath(w, a, P); const mine = prop?.pick?.[a.agentId]; mem(w, a, s > 0 ? '小鎮決定走{name}路線，我覺得這是對的。' : mine && mine !== P ? '小鎮決定走{name}路線，不是我投的那條，有點不甘心。' : '小鎮決定走{name}路線，我擔心以後的日子會變。', { name: Pd.name }, 6); }
         }
         return t('小鎮走上{name}路線').replace('{name}', t(Pd.name));
     }
@@ -369,7 +373,7 @@ const TECH = (function () {
             main3: Math.round(mainRatio(R, 3) * 100), gate: Math.round(GATE * 100), debate: open ? { id: open.id, status: open.status, f: Object.values(open.votes || {}).filter(v => v === 'for').length, a: Object.values(open.votes || {}).filter(v => v === 'against').length, tally: tally(open) } : null,
             stage: { 4: Math.round(stageRatio(R, P || 'electro', 4) * 100), 5: Math.round(stageRatio(R, P || 'electro', 5) * 100), 6: Math.round(stageRatio(R, P || 'electro', 6) * 100) },
             stages: Object.fromEntries(PATH_KEYS().map(Q => [Q, { 4: Math.round(stageRatio(R, Q, 4) * 100), 5: Math.round(stageRatio(R, Q, 5) * 100), 6: Math.round(stageRatio(R, Q, 6) * 100) }])),
-            paths: PATH_KEYS().map(Q => ({ key: Q, icon: PATHS[Q].icon, name: t(PATHS[Q].name), short: t(PATHS[Q].short), pro: t(PATHS[Q].pro), con: t(PATHS[Q].con), appeal: A[Q] })), nextDebate: T.nextDebate != null ? Math.max(0, T.nextDebate - day(w)) : null, tally: T.tally || null, bio: T.bio || null,
+            lean: T.lean && PATHS[T.lean] ? { icon: PATHS[T.lean].icon, name: t(PATHS[T.lean].name) } : null, paths: PATH_KEYS().map(Q => ({ key: Q, icon: PATHS[Q].icon, name: t(PATHS[Q].name), short: t(PATHS[Q].short), pro: t(PATHS[Q].pro), con: t(PATHS[Q].con), appeal: A[Q] })), nextDebate: T.nextDebate != null ? Math.max(0, T.nextDebate - day(w)) : null, tally: T.tally || null, bio: T.bio || null,
             law: !!T.law, noNuke: !!T.noNuke, nuke: nukeOn(w), risk: riskWord(w), st: T.st, inc, ref: T.ref, tier: tierOf(w), jobs: [...automatable(w)] };
     }
     function brief(w, a) {
@@ -384,7 +388,7 @@ const TECH = (function () {
         if (T.law) s += t('，有核安法'); if (T.noNuke) s += t('，已經廢核');
         return s;
     }
-    return { W: null, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
+    return { W: null, LEAN, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
 })();
 
 // ---------- 科技樹:機械時代歸到電子機械路線,加上電力、太空時代 ----------
@@ -485,7 +489,7 @@ if (typeof World !== 'undefined') {
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () {
         const d = _ser.call(this);
-        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, v79: T.v79 || 0 }; }
+        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, lean: T.lean ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, v79: T.v79 || 0 }; }
         return d;
     };
     const _load = World.prototype.loadSave;

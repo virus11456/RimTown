@@ -32,7 +32,7 @@ const AFTERMATH = (() => {
     const owner = (w, a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
     const jailed = (w, a) => !!(w.civic?.jail?.[a?.agentId] > day(w));
     const leader = (w, a) => { if (hasT(a, 'charismatic')) return true; try { return typeof DARK !== 'undefined' && (DARK.reputation(w, a)?.score ?? 0) >= 60; } catch (e) { return false; } };
-    const CAUSE = { meltdown: '核災', leak: '輻射外洩', layoff: '機器裁員', smash: '砸機器', watch: 'AI 監控', caste: '基因階級衝突', black_clinic: '黑市改造出事', price_storm: '藥價暴漲', superbug: '抗藥性病菌', lableak: '實驗室外洩', epidemic: '疫情' };
+    const CAUSE = { meltdown: '核災', leak: '輻射外洩', layoff: '機器裁員', smash: '砸機器', watch: 'AI 監控', caste: '基因階級衝突', black_clinic: '黑市改造出事', price_storm: '藥價暴漲', superbug: '抗藥性病菌', lableak: '實驗室外洩', epidemic: '疫情', war: '戰爭' };
     const R = {
         loot: { icon: '🛒', name: '搶商店' }, hoard: { icon: '🧺', name: '囤貨' }, flee: { icon: '🏃', name: '逃難' }, help: { icon: '🤝', name: '互助' }, blame: { icon: '👉', name: '怪罪' },
         rumor: { icon: '🗣️', name: '傳謠言' }, protest: { icon: '📢', name: '抗議' }, pray: { icon: '🙏', name: '禱告' }, volunteer: { icon: '🩺', name: '自願幫忙' }, comfort: { icon: '🫂', name: '陪家人' },
@@ -67,13 +67,13 @@ const AFTERMATH = (() => {
         return { share: close ? did / close : 0, fac, lead, n: did };
     }
     // 門檻模型:身邊已經在搶的比例要超過自己的門檻(走投無路的人門檻是零)
-    function lootThr(w, a) { const h = honesty(a); const desperate = cash(w, a) < 5 && (w.stockpile?.get?.('food') || 0) < here(w).length * 2; if (desperate) return 0; return h < 2.5 ? 0.05 : h > 3.5 ? 0.6 : 0.3; }
+    function lootThr(w, a, cr) { const h = honesty(a); const desperate = cash(w, a) < 5 && (w.stockpile?.get?.('food') || 0) < here(w).length * 2; if (desperate) return 0; const base = h < 2.5 ? 0.05 : h > 3.5 ? 0.6 : 0.3; return (cr?.sev >= 3) ? base * 0.5 : base; } // 大災之後門檻減半
 
     function scores(w, a, cr, d) {
         const c = cash(w, a), poor = c < 15, rich = c >= 80; const fv = cr.vic.includes(a.agentId); const kids = family(w, a).some(f => (f.age ?? 30) < 14);
-        const guards = here(w).filter(x => x.job?.key === 'guard').length; const sev = cr.sev;
+        const guards = here(w).filter(x => x.job?.key === 'guard' && !jailed(w, x)).length; const sev = cr.sev; const chaos = sev >= 3 ? 1 : 0; // 大災(核災、外洩、戰爭)之後秩序崩壞
         const out = {
-            loot: (poor ? 2 : c < 40 ? 0 : -1.5) + (honesty(a) < 2.5 ? 1.5 : honesty(a) > 3.5 ? -2 : 0) + (hasT(a, 'lazy') || hasT(a, 'jealous') || hasT(a, 'abrasive') ? 0.5 : 0) + sev * 0.4 - 1.6 - (guards > 2 ? 0.8 : 0),
+            loot: (poor ? 2 : c < 40 ? (chaos ? 0.8 : 0) : c < 80 ? (chaos ? -0.3 : -1.5) : -1.5) + (honesty(a) < 2.5 ? 1.5 : honesty(a) > 3.5 ? -2 : 0) + (hasT(a, 'lazy') || hasT(a, 'jealous') || hasT(a, 'abrasive') || hasT(a, 'glutton') ? 0.5 : 0) + sev * 0.4 + chaos * 0.8 - 1.6 - Math.min(1.2, guards * 0.3) * (chaos ? 0.5 : 1), // 大災之後連手頭普通的人也會趁亂拿;衛兵越多越壓得住(亂起來效果減半)
             hoard: (rich ? 1.5 : c >= 40 ? 0.9 : -3) + (hasT(a, 'pessimist') || hasT(a, 'neurotic') ? 0.8 : 0) + (hasT(a, 'greedy') || hasT(a, 'glutton') ? 0.8 : 0) + sev * 0.3 - 1.1 + (fv ? 0.3 : 0),
             flee: sev >= 3 ? (rich ? 1.2 : c >= 50 ? 0 : -2) + (kids ? 0.8 : 0) + (hasT(a, 'pessimist') ? 0.5 : 0) - 1.6 : -9,
             help: (hasT(a, 'kind') ? 1.2 : 0) + (hasT(a, 'ascetic') || hasT(a, 'optimist') ? 0.3 : 0) + (c >= 15 ? 0.3 : -2) + (hasV(a, '家庭') ? 0.3 : 0) + (cr.vic.some(id => { const b = w.agents[id]; const q = b && circle(w, a, b); return q != null && q <= 1; }) ? 0.9 : 0) - (hasT(a, 'greedy') ? 1 : 0) - 1.0 - 0.12 * (cr.n.help || 0),
@@ -87,7 +87,7 @@ const AFTERMATH = (() => {
         };
         if (cr.blame === a.agentId) { out.blame = -9; out.protest -= 3; out.comfort += 0.5; out.flee += 0.6; } // 被大家怪罪的人:不會帶頭抗議,反而想躲
         out.blame -= 0.35 * (cr.n.blame || 0); out.rumor -= 0.25 * (cr.n.rumor || 0); // 同一件事講到大家都聽過了,再講的人就少了
-        for (const r of Object.keys(R)) { const s = social(w, a, r, d); out[r] += (r === 'blame' || r === 'rumor' ? 1.2 : 2) * s.share + 1 * s.fac + 0.8 * s.lead; if (r === 'volunteer') out[r] -= 0.15 * (cr.n.volunteer || 0); /* 旁觀者效應 */ if (r === 'loot' && s.share < lootThr(w, a) && !(cr.n.loot || 0) && lootThr(w, a) > 0) out[r] -= 3; else if (r === 'loot' && s.share < lootThr(w, a)) out[r] -= 1.5; }
+        for (const r of Object.keys(R)) { const s = social(w, a, r, d); out[r] += (r === 'blame' || r === 'rumor' ? 1.2 : 2) * s.share + 1 * s.fac + 0.8 * s.lead; if (r === 'volunteer') out[r] -= 0.15 * (cr.n.volunteer || 0); /* 旁觀者效應 */ if (r === 'loot') { const th = lootThr(w, a, cr); if (s.share < th && !(cr.n.loot || 0) && th > 0) out[r] -= chaos ? 1.5 : 3; else if (s.share < th) out[r] -= chaos ? 0.7 : 1.5; } }
         return out;
     }
     function decide(w, a, cr, d) { const sc = scores(w, a, cr, d); let best = 'none', bs = -99; for (const [r, v] of Object.entries(sc)) { const x = v + (Math.random() - 0.5) * 1.2; if (x > bs) { bs = x; best = r; } } return best; }
@@ -110,7 +110,7 @@ const AFTERMATH = (() => {
             }
             if (!shop || typeof WALLET === 'undefined') return false;
             const n = Math.min(25, Math.max(4, Math.floor(cash(w, shop) * 0.2))); if (!WALLET.take(w, shop, n)) return false; WALLET.add(w, a, n);
-            const guards = ad.filter(x => x.job?.key === 'guard').length; const caught = Math.random() < Math.min(0.7, (0.15 + guards * 0.2) * 0.6); // 一片混亂,衛兵顧不過來
+            const guards = ad.filter(x => x.job?.key === 'guard').length; const caught = Math.random() < Math.min(0.7, (0.15 + guards * 0.2) * (cr.sev >= 3 ? 0.4 : 0.6)); // 一片混亂,衛兵顧不過來(大災之後更顧不過來)
             if (caught) { const back = Math.min(n, cash(w, a)); if (back > 0 && WALLET.take(w, a, back)) WALLET.add(w, shop, back); if (w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 3; } aff(shop, a, -25); try { DARK.bump(w, a, 'exposed'); } catch (e) {}
                 log(w, '🛒 {c}的混亂中，{a}衝進{s}的店裡搶錢，當場被衛兵抓住，關進牢裡。{say}', { c: cr.cause, a: a.name, s: shop.name, say }, a.name); mem(w, a, '{c}那時候我昏了頭，去搶了{s}的店，被抓了。', { c: cr.cause, s: shop.name }, 8); }
             else { aff(shop, a, -5); mem(w, shop, '{c}那幾天，店裡的錢櫃被搶了 {n} 銀幣。', { c: cr.cause, n }, 8); mem(w, a, '{c}那時候大家都在搶，我也拿了{s}店裡的 {n} 銀幣。', { c: cr.cause, s: shop.name, n }, 8);

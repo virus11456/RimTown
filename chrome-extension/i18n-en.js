@@ -5,6 +5,9 @@
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
         // v7.9.0 基因生物路線、路線大辯論、災後反應
+        '小鎮的風氣': 'Town temperament',
+        '比較偏向{p}': 'leans toward {p}',
+        '戰爭': 'war',
         '生物安全法': 'Biosafety Law',
         '藥價管制': 'Drug Price Controls',
         '禁止基因作物': 'GM Crop Ban',
