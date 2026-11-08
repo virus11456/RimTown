@@ -900,3 +900,13 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-lab-log { font-size: 0.76rem; display: flex; flex-direction: column; gap: 2px; max-height: 140px; overflow-y: auto; }
 .rimtown-container .gh-lab-hist { font-size: 0.76rem; display: flex; flex-direction: column; gap: 3px; border-top: 1px solid var(--border, rgba(128,128,128,.25)); padding-top: 6px; }
 @media (max-width: 480px) { .rimtown-container .gh-pv { grid-template-columns: 1fr; } }
+/* v8.3.0 成就大改版:分類計數、沒拿到的也看得到目標、舊時代紀念折疊 */
+.rimtown-container .ach-category h4 { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.rimtown-container .ach-cat-n { font-size: 0.72rem; font-weight: 600; color: var(--text-muted); letter-spacing: 0; }
+.rimtown-container .ach-card.locked { opacity: 0.62; }
+.rimtown-container .ach-card .ach-info { min-width: 0; overflow-wrap: anywhere; }
+.rimtown-container .ach-legacy > summary { list-style: none; cursor: pointer; min-height: 44px; display: flex; align-items: center; }
+.rimtown-container .ach-legacy > summary::-webkit-details-marker { display: none; }
+.rimtown-container .ach-legacy > summary h4 { flex: 1; margin-bottom: 0; }
+.rimtown-container .ach-legacy[open] > summary h4 { margin-bottom: 6px; }
+.rimtown-container .ach-note { font-size: 0.74rem; color: var(--text-muted); margin: 2px 0 8px; }
