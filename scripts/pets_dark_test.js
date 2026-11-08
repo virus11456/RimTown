@@ -19,7 +19,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp, w = app.world; const S = PETS.ensure(w);
       const owned = S.list.filter(p => p.owner), strays = S.list.filter(p => !p.owner && p.sp !== 'chicken'), hens = S.list.filter(p => p.sp === 'chicken');
       const o = w.agents[owned[0].owner]; const food0 = w.stockpile.get('food');
-      PETS.daily(w);
+      { const _r = Math.random; Math.random = () => 0.5; try { PETS.daily(w); } finally { Math.random = _r; } } /* 固定亂數:別讓寵物剛好在這天走失(1%) */
       const th = (o.thoughts || []).map(x => x.kind); const eggs = w.stockpile.get('food') - food0;
       const brief = w.conversationEngine._agentBrief(w, o).mem.join(' | ');
       const prof = w.conversationEngine._buildCharacterProfile(o).status;
