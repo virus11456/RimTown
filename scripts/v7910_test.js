@@ -112,7 +112,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.keep.path && r.keep.wait >= 15 && !r.keep.again, '否決＝維持傳統：不強制，30 天後才再辯論', r.keep);
     ok(Object.values(r.events.fired).filter(x => x === true).length >= 7 && !Object.values(r.events.fired).some(x => typeof x === 'string') && r.events.drift === 0, '基因生物的社會問題都會發生（藥廠排污、實驗羊、基因歧視、騙子…），銀幣守恆', r.events);
     ok(r.price.drift === 0, '藥價管制：看診少付，銀幣守恆', r.price);
-    ok(r.laws.props === 'bio_halt,bio_price,bio_safety' && r.laws.vHalt === 'for' && r.laws.rHalt === 'against' && r.laws.halt && r.laws.safe, '法律：生物安全法、藥價管制、停止人體實驗會被提出；受害者支持停止實驗、研究員反對；第六時代停擺；外洩機率降到三分之一', r.laws);
+    ok(['bio_halt', 'bio_price', 'bio_safety'].every(k => r.laws.props.split(',').includes(k)) && r.laws.vHalt === 'for' && r.laws.rHalt === 'against' && r.laws.halt && r.laws.safe, '法律：生物安全法、藥價管制、停止人體實驗會被提出；受害者支持停止實驗、研究員反對；第六時代停擺；外洩機率降到三分之一', r.laws);
     ok(r.leak.ok && r.leak.natural && r.leak.power && r.leak.shock, '實驗室外洩：自動跑一場疫情、不花神力，村民開始反應', r.leak);
     ok(r.group.peer > r.group.base + 1 && r.group.thrH >= 0.5 && r.group.vol1 < r.group.vol0, '群體動力學：好朋友都去抗議自己也更想去；老實人的搶劫門檻高；已經很多人幫忙時出手意願下降', r.group);
     ok(r.group.drift === 0 && r.group.acts > 3 && r.group.hist >= 1 && r.group.pend, '災後反應金流守恆、會有人反應、結束後有總結；抗議三人以上把廢核提早推上議程', r.group);

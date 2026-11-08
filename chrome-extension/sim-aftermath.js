@@ -80,7 +80,7 @@ const AFTERMATH = (() => {
             blame: (hasT(a, 'abrasive') ? 1 : 0) + (hasT(a, 'jealous') ? 0.8 : 0) + (hasT(a, 'pessimist') ? 0.5 : 0) + (fv ? 1 : 0) + (cr.blame ? 0.8 : 0) - 0.7,
             rumor: (hasT(a, 'gossip') ? 1.5 : 0) + (honesty(a) < 2.5 ? 0.5 : 0) + (hasT(a, 'neurotic') ? 0.5 : 0) - 0.8,
             protest: (hasT(a, 'charismatic') ? 0.8 : 0) + (a.techStance === 'progressive' ? 0.4 : 0) + (fv ? 1.2 : 0) + (hasT(a, 'abrasive') ? 0.3 : 0) + (['meltdown', 'lableak', 'price_storm', 'layoff', 'watch'].includes(cr.kind) ? 0.4 : -0.6) - 0.8,
-            pray: devout(w, a) ? 1.5 : -2,
+            pray: devout(w, a) ? (sev >= 2 || fv ? 1.5 : 0.4) - 0.2 * (cr.n.pray || 0) : -2, // 嚴重或家人受害才會大量禱告;人越多越不稀奇
             volunteer: (a.job?.key === 'doctor' ? 2 : a.job?.key === 'guard' ? 1 : 0) + (hasT(a, 'kind') ? 0.8 : 0) - 0.6,
             comfort: fv ? 1.5 : -1,
             none: 0.8,

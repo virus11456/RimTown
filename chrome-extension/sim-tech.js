@@ -88,11 +88,11 @@ const TECH = (function () {
     // 學者自己挑:最早的時代、自己路線優先(以前完全隨機,工坊時代都開始了還有拓荒的沒研究)
     function autoPick(R, w) {
         const av = R.getAvailable(); if (!av.length) return null; const P = pathOf(w);
-        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 6 : 0) + Math.random() * 3; // 自己路線的先研究
+        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 25 : 0) + Math.random() * 3; // 選了路線:先把自己路線研究完,別條路線的基礎科技排後面
         return av.slice().sort((a, b) => score(a) - score(b))[0];
     }
     // 提案權重:別條路線的少提、早期的多提
-    function pickWeight(w, p) { const P = pathOf(w); if (p.key === REFINE) return 0.4; if (pathsOf(p.key).length && P && !onPath(p.key, P)) return 0.6; return 1; }
+    function pickWeight(w, p) { const P = pathOf(w); if (p.key === REFINE) return 0.4; if (pathsOf(p.key).length && P && !onPath(p.key, P)) return 0.3; return 1; }
     // 核安法:電子機械的高階研究慢一成;生物安全法:基因生物的高階研究慢一成
     function speedOf(w, p) { const T = w?.tech; if (!T || !p || (p.era || 1) < 5) return 1; let m = 1; if (T.law && onPath(p.key, 'electro')) m *= 0.9; if (T.bio?.law && onPath(p.key, 'bio')) m *= 0.9; return m; }
 
@@ -108,14 +108,14 @@ const TECH = (function () {
     const devoutA = (w, a) => { try { return typeof FAITH !== 'undefined' && w.faith && FAITH.pietyOf(w, a) >= 60; } catch (e) { return false; } };
     const mythGroup = (w, a) => { try { return typeof MYTHSOC !== 'undefined' ? MYTHSOC.groupOf(w, a) : null; } catch (e) { return null; } };
     function preferBio(w, a) {
-        let s = 0; const k = a.job?.key;
-        s += ({ doctor: 2, farmer: 1, researcher: 1, cook: 0.3, priest: -2 })[k] || 0;
-        const st = stance(w, a); s += st === 'progressive' ? 1 : st === 'conservative' ? -1.5 : 0;
+        let s = 0.3; const k = a.job?.key; // 人人都想活得健康一點
+        s += ({ doctor: 2, farmer: 1.2, researcher: 1, cook: 0.5, priest: -1.5 })[k] || 0;
+        const st = stance(w, a); s += st === 'progressive' ? 1.5 : st === 'conservative' ? -1 : 0;
         if (famHurt(w, a)) s += 1.5; if (sickish(w, a)) s += 1;
-        if (hasV(a, '健康')) s += 1; if (hasV(a, '家庭')) s += 1; if (hasV(a, '傳統')) s -= 1; if (hasV(a, '自然')) s -= 0.5;
-        if (devoutA(w, a)) s -= 1.5; const g = mythGroup(w, a); if (g === 'pure') s -= 2.5; else if (g === 'guild') s += 2;
-        if (hasT(a, 'kind')) s += 0.3; if (hasT(a, 'pessimist')) s -= 0.3;
-        const age = a.age ?? 30; if (age >= 55) s += 1; // 想活久一點(跟電子機械相反)
+        if (hasV(a, '健康')) s += 1; if (hasV(a, '家庭')) s += 1; if (hasV(a, '傳統')) s -= 0.8; if (hasV(a, '自然')) s -= 0.5;
+        if (devoutA(w, a)) s -= 0.8; const g = mythGroup(w, a); if (g === 'pure') s -= 2.5; else if (g === 'guild') s += 2; // 信徒在乎健康,衝突主要在改造生命
+        if (hasT(a, 'kind')) s += 0.5; if (hasT(a, 'pessimist')) s -= 0.3;
+        const age = a.age ?? 30; if (age >= 55) s += 1.2; else if (age >= 45) s += 0.6; // 想活久一點(跟電子機械相反)
         return s;
     }
     function prefer(w, a, P) {
@@ -123,7 +123,7 @@ const TECH = (function () {
         if (P !== 'electro') return 0;
         let s = 0; const k = a.job?.key;
         s += ({ researcher: 2, blacksmith: 1.5, trader: 1, carpenter: 0.5, miner: 0.5, guard: 0.5, mayor: 0.5, tailor: -1.2, priest: -1, farmer: -0.3 })[k] || 0;
-        const st = stance(w, a); s += st === 'progressive' ? 2 : st === 'conservative' ? -2.5 : 0;
+        const st = stance(w, a); s += st === 'progressive' ? 1.6 : st === 'conservative' ? -2.5 : 0;
         if (hasV(a, '知識')) s += 1; if (hasV(a, '財富')) s += 1; if (hasV(a, '冒險')) s += 0.5; if (hasV(a, '自然')) s -= 1.5; if (hasV(a, '傳統')) s -= 1;
         if (hasT(a, 'optimist')) s += 0.5; if (hasT(a, 'pessimist')) s -= 0.5; if (hasT(a, 'hardworking') || hasT(a, 'lazy')) s += 0.4; if (hasT(a, 'ascetic')) s -= 0.5;
         const age = a.age ?? 30; if (age >= 55) s -= 1; else if (age < 30) s += 0.5;
@@ -150,7 +150,7 @@ const TECH = (function () {
             s += 0.25 * builtAny(w, ['clinic', 'hospital', 'institute']);
             if (share(a => sickish(w, a)) >= 0.15) s += 0.5;
             const food = w.stockpile?.get?.('food') || 0; if (food < ad.length * 3) s += 0.5;
-            if (share(a => a.job?.key === 'farmer') >= 0.25) s += 0.3; if (share(a => (a.age ?? 30) >= 55) >= 0.25) s += 0.3;
+            if (share(a => a.job?.key === 'farmer') >= 0.2) s += 0.3; if (share(a => (a.age ?? 30) >= 50) >= 0.15) s += 0.3;
         }
         return Math.round(s * 100) / 100;
     }
@@ -332,7 +332,7 @@ const TECH = (function () {
     }
     function incidents(w) {
         const T = S(w); // v7.9.0 社會問題跟著科技走(有核電廠就可能核災),不看走哪條路線
-        const pool = (lv) => EVENTS.filter(e => e.lv === lv && e.need(w));
+        const d = day(w); const pool = (lv) => EVENTS.filter(e => e.lv === lv && e.need(w) && !T.inc.some(x => x[2] === e.id && d - x[0] < 15)); // 同一件事 15 天內不重複
         if (Math.random() < bigChance(w)) { const b = pool('big').filter(e => !e.own); if (b.length) { fire(w, rnd(b)); return; } }
         for (const e of pool('big').filter(e => e.own)) if (Math.random() < e.own(w)) { fire(w, e); return; }
         if (Math.random() < RATE.mid) { const m = pool('mid'); if (m.length && fire(w, rnd(m))) return; }

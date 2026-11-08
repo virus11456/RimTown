@@ -186,7 +186,7 @@
         '量子電腦': 'Quantum Computer',
         '一秒算完一百年的題目：AI 的大腦': 'Solves a century of problems in a second: the brain of AI',
         '維持傳統': 'Keep tradition',
-        '🔬 人口和繁榮度都夠升格了，但科技還跟不上：要先把{e}時代研究過半。': '🔬 Population and prosperity are enough to level up, but technology hasn\'t caught up: the {e} era must be over half researched first.',
+        '🔬 人口和繁榮度都夠升格了，但科技還跟不上：要先把{e}時代研究到四分之一。': '🔬 Population and prosperity are enough to level up, but technology hasn\'t caught up: the {e} era must be a quarter researched first.',
         '第四': 'fourth',
         '第五': 'fifth',
         '每條路線的第四、五時代大家都能研究；第六時代只有走那條路線的小鎮才能研究。': 'Anyone can research the fourth and fifth eras of every path; only towns on that path can research its sixth era.',
