@@ -157,30 +157,8 @@ const LOCATION_BUILDING = {
     residential_east: 'house',
 };
 
-// Agent sprite colors by job — chibi style palette
-// {body, bodyDk, accent, hair, hairDk, hairLt, pants, boots, skin}
-// v5.89.0 村民自訂外觀選項(agent.look = { skin, hair, hairColor, shirt, acc };沒設定就照名字雜湊的預設)
-const LOOK_SKINS = ['#fce4c8', '#f6ddbe', '#eecca4', '#e0bc98', '#cda074', '#b88458'];
-const LOOK_HAIR_COLORS = ['#241812', '#3f2810', '#5a3a1a', '#754824', '#9a6a2a', '#c8a860', '#8c8c92', '#33263f', '#6a2a1a'];
-const LOOK_SHIRTS = ['#c62828', '#ef6c00', '#f9a825', '#2e7d32', '#00838f', '#1565c0', '#6a1b9a', '#eceff1'];
-function lookSig(look) { return look ? `${look.skin ?? ''}.${look.hair ?? ''}.${look.hairColor ?? ''}.${look.shirt ?? ''}.${look.acc ?? ''}` : ''; }
+// v6.98.0 村民自訂外觀常數(LOOK_SKINS／LOOK_HAIR_COLORS／LOOK_SHIRTS／lookSig)與職業配色 JOB_COLORS 搬到 villager3d.js(必須比本檔早載入)
 
-const JOB_COLORS = {
-    mayor:     { body:'#c83040', bodyDk:'#a02030', accent:'#ffd700', hair:'#4a3530', hairDk:'#352520', hairLt:'#6a5550', pants:'#b89060', boots:'#6b4226', skin:'#fce4c8' },
-    doctor:    { body:'#e8e8f0', bodyDk:'#c8c8d8', accent:'#e53935', hair:'#5a3a1a', hairDk:'#3a2510', hairLt:'#7a5a3a', pants:'#ddd', boots:'#a88a8a', skin:'#fce4c8' },
-    blacksmith:{ body:'#607080', bodyDk:'#485868', accent:'#a08060', hair:'#222', hairDk:'#111', hairLt:'#444', pants:'#555', boots:'#4a3020', skin:'#f0d8b8' },
-    cook:      { body:'#e88030', bodyDk:'#c06820', accent:'#fff', hair:'#4a2a0a', hairDk:'#301808', hairLt:'#6a4a2a', pants:'#f0e0c0', boots:'#8b6e4e', skin:'#fce4c8' },
-    farmer:    { body:'#6a9a40', bodyDk:'#508030', accent:'#d4b896', hair:'#6b4226', hairDk:'#4a2e18', hairLt:'#8b6246', pants:'#8b7355', boots:'#6b4226', skin:'#f0d8b8' },
-    trader:    { body:'#8030a0', bodyDk:'#602080', accent:'#ffd54f', hair:'#1a1a2a', hairDk:'#0a0a18', hairLt:'#3a3a5a', pants:'#555', boots:'#4a3a2a', skin:'#fce4c8' },
-    guard:     { body:'#3a5060', bodyDk:'#283848', accent:'#90a4ae', hair:'#222', hairDk:'#111', hairLt:'#444', pants:'#3a4a58', boots:'#2a2a2a', skin:'#f0d8b8' },
-    researcher:{ body:'#2868b8', bodyDk:'#1848a0', accent:'#90caf9', hair:'#4a3a2a', hairDk:'#302818', hairLt:'#6a5a4a', pants:'#556080', boots:'#4a4050', skin:'#fce4c8' },
-    miner:     { body:'#6a5040', bodyDk:'#504030', accent:'#ffd54f', hair:'#333', hairDk:'#1a1a1a', hairLt:'#555', pants:'#5a4a3a', boots:'#3a2a1a', skin:'#f0d8b8' },
-    priest:    { body:'#f0e070', bodyDk:'#d0c050', accent:'#fff', hair:'#5a3a1a', hairDk:'#3a2510', hairLt:'#7a5a3a', pants:'#e0d0a0', boots:'#a08858', skin:'#fce4c8' },
-    carpenter: { body:'#907060', bodyDk:'#706050', accent:'#c09070', hair:'#4a2a0a', hairDk:'#301808', hairLt:'#6a4a2a', pants:'#686058', boots:'#4a3828', skin:'#f0d8b8' },
-    tailor:    { body:'#d06080', bodyDk:'#b04868', accent:'#ffb6c1', hair:'#1a1a2a', hairDk:'#0a0a18', hairLt:'#3a3a5a', pants:'#c0a0a0', boots:'#8a6a6a', skin:'#fce4c8' },
-    player:    { body:'#00b8d0', bodyDk:'#0098b0', accent:'#b0f0ff', hair:'#e0e8f0', hairDk:'#b0b8c0', hairLt:'#fff', pants:'#4a7080', boots:'#3a5060', skin:'#fce4c8' },
-    default:   { body:'#8090a0', bodyDk:'#607080', accent:'#b0c0d0', hair:'#555', hairDk:'#333', hairLt:'#777', pants:'#686868', boots:'#484848', skin:'#f0d8b8' },
-};
 
 class PixelTileMap {
     constructor(canvas) {

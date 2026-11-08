@@ -30,10 +30,11 @@ const init = ({ lang, jwt, enter }) => {
     {
       const { ctx, page, errs, urls } = await mk({});
       await page.goto(BASE, { waitUntil: 'load' }); await page.waitForTimeout(1500);
-      const r = await page.evaluate(() => ({ landing: !!document.querySelector('#landing:not(.hidden) .lp-hero'), world: !!window.rimtownApp, scripts: document.scripts.length, anims: document.getAnimations().map(a => a.effect?.target?.tagName?.toLowerCase()), regBtn: !!document.getElementById('landing-register') }));
-      const heavy = urls.filter(u => /three\.min\.js|simulation\.js|town3d\.js|sim-conversation\.js|changelog\.js/.test(u)).map(u => u.split('/').pop().split('?')[0]);
+      const r = await page.evaluate(() => ({ landing: !!document.querySelector('#landing:not(.hidden) .lp-hero'), world: !!window.rimtownApp, scripts: document.scripts.length, anims: document.getAnimations().filter(a => typeof CSSAnimation === 'undefined' || a instanceof CSSAnimation).map(a => a.effect?.target?.tagName?.toLowerCase()), regBtn: !!document.getElementById('landing-register') }));
+      const heavy = urls.filter(u => /simulation\.js|town3d\.js|tilemap\.js|sim-conversation\.js|changelog\.js/.test(u)).map(u => u.split('/').pop().split('?')[0]);
+      const lazy3d = await page.evaluate(() => { const nav = performance.getEntriesByType('navigation')[0]; const th = performance.getEntriesByType('resource').find(e => /three\.min\.js/.test(e.name)); return !th || th.startTime >= nav.domContentLoadedEventEnd; }); // v6.98.0 首頁主視覺的 3D 村民:three.js 等畫面出來後才載
       ok(r.landing && r.regBtn && !r.world, '首頁顯示介紹與註冊／登入，沒有建立遊戲世界', r);
-      ok(!heavy.length && r.scripts <= 12, '首頁沒有下載 3D、模擬或更新紀錄', { heavy, scripts: r.scripts });
+      ok(!heavy.length && lazy3d && r.scripts <= 14, '首頁沒有下載遊戲地圖、模擬或更新紀錄；3D 主視覺的 three.js 畫面出來後才載', { heavy, lazy3d, scripts: r.scripts });
       ok(r.anims.length > 0 && r.anims.every(t => t === 'svg'), '星空動畫只動整層圖層（不是 SVG 裡的每顆星）', r.anims);
       // 捲出畫面暫停
       const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 400)); const h = document.querySelector('.lp-hero'); return { off: h.classList.contains('lp-off'), state: getComputedStyle(document.querySelector('.lp-sky-l')).animationPlayState }; });

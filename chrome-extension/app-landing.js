@@ -319,61 +319,105 @@ Object.assign(RimTownApp.prototype, {
                <button class="landing-btn secondary" id="landing-logout">${t('登出')}</button>`
             : `<button class="landing-btn primary" id="landing-register">✨ ${t('註冊')}</button>
                <button class="landing-btn secondary" id="landing-login">🔑 ${t('登入')}</button>`;
-        // v6.79.0 首頁重新設計:主視覺(手繪夜景＋實際遊戲畫面)、數字、怎麼玩、小鎮的一天、特色、畫面一覽、成長路線、AI、常見問題
+        // v6.98.0 首頁改版:主視覺換成 3D 方塊村民(landing-3d.js,跟遊戲同一套長相);各玩法改成一段一段的介紹(左文右「遊戲裡你會看到」),截圖只留沒有 WebGL 時的備援
         const L = I18N.getLang() === 'en' ? 'en' : 'zh';
-        const shot = (k) => `img/landing/${k}-${L}.jpg`;
-        const stats = [['30', t('張事件卡')], ['28', t('項研究')], ['33', t('種建築')], ['4', t('級城鎮')], ['6', t('種宗教骨架')], ['500', t('條記憶／每人')]];
+        const X = (zh, en) => (L === 'en' ? en : zh);
+        const stats = [['48', X('項科技', 'technologies')], ['4', X('個時代', 'eras')], ['4', X('級城鎮', 'town tiers')], ['30', X('張事件卡', 'event cards')], ['6', X('級社會階層', 'social classes')], ['12', X('種髮型', 'hairstyles')]];
         const howto = [
-            ['🏘️', t('開一個世界'), t('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場，跟其他存檔互不影響。'), t('例：開新遊戲 → 新的邊境鎮、新的鄰居、新的地圖')],
-            ['👀', t('在天上看'), t('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。提案頁看大家想做什麼，觀察者日報看昨天發生了什麼。'), t('例：點鐵匠 → 看到他暗戀麵包師、還欠酒館三天的帳')],
-            ['🃏', t('偶爾推一把'), t('你能做的事很少：每天最多打 2 張事件卡（天災、人禍、機運、人際共 30 張），託夢給某位村民，或化身路過的旅人跟人聊天。'), t('例：打出「旱災」→ 農夫提案開水圳 → 全鎮投票')],
-            ['📜', t('看小鎮怎麼回應'), t('「反應追蹤」記下每個人的反應、提了什麼案、七天後小鎮變成什麼樣；每一季寫成一章鎮史。沒有結局，可以一直玩下去。'), t('例：七天後糧價回穩，提案的農夫在下次選舉多拿了票')],
+            ['🏘️', X('開一個世界', 'Start a world'), X('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場。', 'Every game is its own world, starting from Frontier Town. The neighbors, roads and far-off towns belong to that game alone.')],
+            ['👀', X('在天上看', 'Watch from above'), X('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。觀察者日報整理昨天的大小事。', 'Tap a villager and the camera follows them: what they think, who they like, who they owe. The observer\'s daily sums up yesterday.')],
+            ['🃏', X('偶爾推一把', 'Nudge, rarely'), X('每天最多打 2 張事件卡、託夢給某位村民，或化身路過的旅人跟人聊天。其他全由村民自己決定。', 'Play up to 2 event cards a day, send someone a dream, or chat as a passing traveler. Everything else is up to the villagers.')],
+            ['📜', X('看小鎮怎麼回應', 'See how the town reacts'), X('每個人的反應、提案和七天後的變化都記下來，每一季寫成一章鎮史。沒有結局，可以一直玩下去。', 'Reactions, proposals and how things look a week later are all recorded; each season becomes a chapter of town history. There is no ending.')],
         ];
-        const day = [
-            ['06:00', '🌅', t('天亮開工'), t('農夫依地形去種田、捕魚或打獵，鐵匠打工具，木匠造紙做家具。')],
-            ['10:00', '🏛️', t('提案與投票'), t('有人提議蓋穀倉、有人想調稅率；全鎮投票，村長拍板並說出理由。')],
-            ['12:30', '🍲', t('酒館八卦'), t('午飯時間最熱鬧：誰暗戀誰、誰欠錢不還，消息一傳十、十傳百，越傳越走樣。')],
-            ['15:00', '🐎', t('商隊進城'), t('海港帶來魚和鹽、林間村帶來木材和紙，缺什麼就靠貿易補。')],
-            ['19:00', '💞', t('約會與吵架'), t('有人在廣場告白，有人當眾對嗆；派系在角落密謀下一次選舉。')],
-            ['23:00', '🗞️', t('觀察者日報'), t('一天的八卦與大小事整理成一份報紙，隔天早上讀。')],
-        ];
-        const features = [
-            ['🧠', '#f28c4a', t('像真人的村民'), t('每個人有個性、記憶、六項需求和自己的心事。他們聊天、八卦、交朋友、戀愛結婚，也會講壞話、說謊、設局；做錯事會道歉，不被原諒就報復。你在天上看得到真相。'), [t('記憶與反思'), t('戀愛與婚姻'), t('謊言與陰謀')]],
-            ['🗳️', '#7fb3f5', t('自己治理小鎮'), t('提案全是村民自己想的，全鎮投票，鎮長拍板並說明理由。每年秋天改選，有辯論、議會、法庭；長成王都後還有國王、王令、政變與起義。'), [t('提案與投票'), t('選舉與議會'), t('國王與政變')]],
-            ['🌾', '#6fcf97', t('各鎮物產與貿易'), t('食物分穀物、魚、肉，產多少看地形，不靠水就捕不了魚。只有靠海的鎮曬得出鹽，木匠把木頭做成紙給報社和研究用。工具好不好影響每個人的效率，翻修房子、城鎮升格都要木材和石材，缺的就得靠商隊。'), [t('地形決定物產'), t('商隊貿易'), t('建材與工具')]],
-            ['💰', '#f2c14e', t('錢包、生意與銀行'), t('村民各有自己的銀幣：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。會借錢欠債、請客接濟、買票，也會創業開店；銀行放貸、遇上擠兌、發債紓困。'), [t('個人錢包'), t('創業開店'), t('擠兌與紓困')]],
-            ['⛪', '#c39bd3', t('信仰、報紙與文化'), t('每座鎮有隨機生成的宗教、節日、分裂與異端；立場不同的報社在選舉時表態、揭弊；還有藝術作品、吟遊詩人的歌謠，和越傳越離譜的謠言。'), [t('宗教與節日'), t('報社與輿論'), t('藝術與謠言')]],
-            ['🗺️', '#5fc4b8', t('一整個世界'), t('城鎮分村莊、城鎮、城市、王都四級。搭馬車去探索過的城鎮，大雪、坍方、盜匪會封路；外地消息會晚到、會走樣；鎮與鎮之間有外交、聯姻和貿易戰。'), [t('四級城鎮'), t('馬車與路況'), t('外交與聯姻')]],
-            ['🔬', '#e5736b', t('科技與觀念'), t('三個時代、28 項研究、33 種建築。新技術在村民之間傳開，分出保守派和革新派，左右選舉；發明家會留下冠名的發明。'), [t('三個時代'), t('保守與革新'), t('冠名發明')]],
-            ['🧊', '#9aa7ff', t('3D 小鎮'), t('three.js 低多邊形畫面：日夜、四季、雨雪雷暴、燈籠串燈、螢火蟲；房子從木屋翻修成磚樓。不用安裝，手機也能玩。'), [t('日夜四季'), t('天氣與夜景'), t('手機可玩')]],
-        ];
-        const gallery = [
-            ['paper', t('觀察者日報'), t('每天的八卦與大小事整理成一份報紙，可以翻前幾期。')],
-            ['proposals', t('提案與投票'), t('村民自己提案，票數、投票理由和村長裁決都看得到。')],
-            ['villager', t('村民資訊卡'), t('點一下就知道他在做什麼、為什麼、心裡在想什麼。')],
-            ['economy', t('本鎮物產'), t('這座鎮擅長產什麼、缺什麼、要靠商隊買什麼。')],
+        // 每一段:錨點、圖示、顏色、小標、標題、導言、重點(標題＋說明)、遊戲裡會看到的紀錄、新功能版本
+        const bands = [
+            { id: 'people', ic: '🧑‍🤝‍🧑', c: '#f28c4a', k: X('村民', 'Villagers'), new: '6.97',
+              h: X('每個人都不一樣，也都記得', 'Everyone is different, and everyone remembers'),
+              lead: X('村民有個性、需求、記憶和自己的心事。他們聊天、八卦、交朋友、戀愛結婚，也會說謊、設局、記仇。長相跟著名字走：髮型、眼睛、鬍子、衣服、胖瘦高矮每人不同；小孩個子小、老人頭髮花白、窮人衣服打補丁。',
+                  'Villagers have personalities, needs, memories and private worries. They chat, gossip, make friends, fall in love and marry; they also lie, scheme and hold grudges. Looks follow their name: hair, eyes, beards, clothes and build differ from person to person; children are small, elders go grey, the poor wear patched clothes.'),
+              pts: [[X('記得誰對他好', 'Who was kind to them'), X('每人 500 條記憶。記仇比記恩久，太久沒來往的人會慢慢淡忘，最多只顧得上一百五十個人。', '500 memories each. Grudges last longer than favors; people they never see slowly fade, and nobody keeps track of more than about 150 others.')],
+                    [X('戀愛、婚禮與葬禮', 'Love, weddings and funerals'), X('告白、訂婚、辦婚宴收禮金，前任可能來鬧場；有人過世，家屬辦葬禮、念悼詞，每年還有人去掃墓。', 'Confessions, engagements, wedding feasts and gifts, an ex who shows up uninvited; when someone dies the family holds a funeral, gives a eulogy, and people visit the grave each year.')],
+                    [X('陰暗面', 'The dark side'), X('講壞話、說謊、栽贓、搶功都會發生，被拆穿就要道歉，不被原諒就報復。真相頁只有你看得到。', 'Badmouthing, lies, framing and stealing credit all happen; when caught they apologize, and if not forgiven they take revenge. Only you can see the truth page.')]],
+              log: [['08:15', X('林美玲把烤好的麵包分給隔壁的小豆子。', 'Lin Meiling shares fresh bread with little Doudou next door.')], ['12:40', X('王大偉還記得去年冬天被借錢不還的事，對劉阿福冷冷的。', 'Wang Dawei still remembers the unpaid loan from last winter and gives Liu Afu the cold shoulder.')], ['19:20', X('陳婉君在廣場向黃淑芬告白，旁邊的人都在起鬨。', 'Chen Wanjun confesses to Huang Shufen in the square while the crowd cheers.')]] },
+            { id: 'politics', ic: '🏛️', c: '#7fb3f5', k: X('政治', 'Politics'),
+              h: X('提案、投票、選舉，全是村民自己來', 'Proposals, votes, elections — all by the villagers'),
+              lead: X('想蓋穀倉、調稅率、訂最低工資，都是村民自己提案、全鎮投票，首長拍板並說出理由。大事要議會表決，首長否決可以被三分之二推翻；每年改選，有辯論和從政履歷。長成王都之後還有國王、王令、政變和起義。',
+                  'Granaries, tax rates, a minimum wage: villagers propose, the town votes, and the leader decides and explains why. Big decisions go to the council, which can overturn a veto with two thirds; there are yearly elections with debates and political careers. Grow into a capital and there is a king, royal decrees, coups and uprisings.'),
+              pts: [[X('L 編號提案', 'Numbered proposals'), X('每個提案都有編號、提案人、票數與每個人的投票理由，執行之後還追蹤成效。', 'Each proposal has a number, a proposer, a vote count and every voter\'s reason, and its results are tracked after it passes.')],
+                    [X('議會與否決', 'Council and veto'), X('城鎮越大議會越大；議員每年春天改選，出缺由落選者遞補。', 'Bigger towns have bigger councils; seats are re-elected each spring and vacancies go to the runners-up.')],
+                    [X('罷免與下台', 'Recall and resignation'), X('醜聞累積、民怨夠大就提前改選；被罷免的人兩個月內不能再參選。', 'Enough scandal and anger triggers an early election; a recalled leader cannot run again for two months.')]],
+              log: [['10:00', X('L12「蓋第二座穀倉」通過：14 票贊成、5 票反對。', 'L12 "Build a second granary" passes: 14 for, 5 against.')], ['10:05', X('鎮長：「去年冬天差點斷糧，這筆錢該花。」', 'Mayor: "We almost ran out of food last winter. This is money well spent."')], ['16:30', X('議會以 4 比 1 推翻了鎮長對最低工資案的否決。', 'The council overturns the mayor\'s veto on the minimum wage, 4 to 1.')]] },
+            { id: 'money', ic: '💰', c: '#f2c14e', k: X('經濟與階級', 'Money and class'), new: '6.90',
+              h: X('錢會流動，也會往有錢人那邊流', 'Money moves — and it moves toward the rich'),
+              lead: X('每個村民都有自己的錢包：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。產業有老闆，老闆發薪也會壓薪；房子有房東，租不起就被趕出去睡廣場。存款有利息、放款收利息，銀行也會擠兌。這是一個不會特別保護窮人的小鎮。',
+                  'Every villager has a wallet: they earn wages, pay taxes, buy their own meals, clothes and firewood, and go hungry or cold when they can\'t. Businesses have owners who pay wages and squeeze them; houses have landlords, and those who can\'t pay rent end up sleeping in the square. Savings earn interest, loans charge it, and banks can suffer runs. This town does not go out of its way to protect the poor.'),
+              pts: [[X('產權與雇傭', 'Property and wages'), X('私人產業由老闆發薪，生意差就裁員或倒閉，賣給更有錢的人。', 'Private businesses pay their own workers; when trade is bad they cut jobs or go under and get sold to someone richer.')],
+                    [X('房東與房客', 'Landlords and tenants'), X('房租照收入與地段算，欠租三週會被驅逐；公有房舍給沒地方住的人。', 'Rent depends on wages and location; three weeks behind and you are evicted. Public housing goes to people with nowhere to live.')],
+                    [X('六級社會階層', 'Six social classes'), X('從底層到王族；相差兩階不隨便聊天，有錢人可以買爵位。', 'From the poorest to royalty; people two classes apart rarely chat, and the rich can buy a title.')]],
+              log: [['07:00', X('劉阿福這個月欠了三週房租，被房東趕了出來。', 'Liu Afu is three weeks behind on rent and gets evicted.')], ['12:00', X('麵包店老闆把工資壓到每天 3 銀幣。', 'The bakery owner cuts wages to 3 silver a day.')], ['18:10', X('銀行存款利息入帳：存最多的人一天多了 4 銀幣。', 'Interest is paid: the biggest saver earns 4 more silver today.')]] },
+            { id: 'union', ic: '✊', c: '#e5736b', k: X('工會', 'Unions'), new: '6.93',
+              h: X('被壓榨的人會組織起來', 'The squeezed get organized'),
+              lead: X('小鎮升格成城市以後，私人產業裡覺得被壓榨的工人一多，就有人出來組工會：收會費、存罷工基金、跟老闆談加薪。談不攏就罷工，老闆可能讓步、找工賊、開除帶頭的人，或私下收買工會領袖。帶領五人以上工會的領袖可以出來選舉。',
+                  'Once the town becomes a city and enough private-sector workers feel squeezed, someone starts a union: dues, a strike fund, wage talks with the bosses. If talks fail they strike, and the boss may give in, hire scabs, fire the organizers or quietly bribe the union leader. A leader with five or more members can run for office.'),
+              pts: [[X('集體談判', 'Collective bargaining'), X('老闆看利潤、個性和手上的現金決定要不要讓步。', 'Bosses weigh profit, temperament and cash on hand before giving in.')],
+                    [X('罷工與工賊', 'Strikes and scabs'), X('罷工期間工會發補貼，基金見底就撐不下去。', 'The union pays strike pay; when the fund runs dry the strike collapses.')],
+                    [X('收買與曝光', 'Bribes and exposure'), X('領袖收了老闆的錢，被發現就會被會員趕下台。', 'A leader who takes the boss\'s money gets thrown out once members find out.')]],
+              log: [['09:00', X('磨坊工會要求每天加 1 銀幣，老闆拒絕。', 'The mill union asks for 1 more silver a day; the owner refuses.')], ['09:30', X('七名會員開始罷工，工會每天發 2 銀幣補貼。', 'Seven members walk out; the union pays 2 silver a day in strike pay.')], ['15:00', X('第四天，老闆讓步了。', 'On day four, the owner gives in.')]] },
+            { id: 'power', ic: '📰', c: '#c39bd3', k: X('金權與第四權', 'Money and the press'), new: '6.95',
+              h: X('有錢人買影響力，報社負責揭穿', 'The rich buy influence; the press digs it up'),
+              lead: X('老闆和有錢人會捐政治獻金，正直的人拒收，收了錢的首長和議員就偏向金主。報社每天從真實發生的事裡找新聞：壓薪、驅逐潮、銀行呆帳、私下收錢。報導會讓讀者生氣、讓醜聞扣票、逼老闆加薪，甚至引發罷免；財團也可能直接買下報社，把新聞壓下來。',
+                  'Owners and the wealthy make political donations; honest officials refuse, and those who accept lean toward their donors. The papers dig stories out of what really happens: wage cuts, waves of evictions, bad bank loans, money changing hands. A story can anger readers, cost votes, force a pay raise or even trigger a recall — and a rich owner might simply buy the paper and kill the story.'),
+              pts: [[X('獻金與拒收', 'Donations and refusals'), X('誰收了誰的錢記在真相頁；收錢的人投票時會想到金主。', 'Who took money from whom is on the truth page, and it shows in their votes.')],
+                    [X('報導有後果', 'Stories have consequences'), X('憤怒、扣票、罷免、加薪、救濟提案、銀行提款，都可能因為一篇報導發生。', 'Outrage, lost votes, recalls, raises, relief proposals and bank withdrawals can all follow one article.')],
+                    [X('收編與骨氣', 'Captured papers, stubborn reporters'), X('被收購的報社會壓新聞；有骨氣的記者照登，然後被開除。', 'A bought paper buries stories; a principled reporter runs them anyway and gets fired.')]],
+              log: [['06:30', X('《邊境日報》：鎮長收下鐵匠鋪老闆 80 銀幣獻金。', 'Frontier Daily: Mayor accepted 80 silver from the smithy owner.')], ['11:00', X('讀者氣炸了，三位議員提議罷免。', 'Readers are furious; three councillors call for a recall.')], ['20:00', X('鐵匠鋪老闆出 120 銀幣買下報社。', 'The smithy owner buys the paper for 120 silver.')]] },
+            { id: 'growth', ic: '🔬', c: '#6fcf97', k: X('科技與成長', 'Technology and growth'), new: '6.91',
+              h: X('從村莊長成王都，要花好幾年', 'From village to capital takes years'),
+              lead: X('科技分成拓荒、手工、工坊、機械四個時代，共 48 項，整棵樹要好幾年才研究得完。新技術在村民之間傳開，分出保守派和革新派；房子從木屋翻修成磚樓。人口、繁榮和時代都夠了，村莊才升格成城鎮、城市、王都；掉下來也會降級。',
+                  'Technology spans four eras — Frontier, Craft, Workshop and Machine — with 48 techs that take years to finish. New ideas spread from person to person and split the town into conservatives and reformers; houses get rebuilt from timber to brick. With enough people, prosperity and progress a village becomes a town, a city, a capital — and can fall back down.'),
+              pts: [[X('四個時代', 'Four eras'), X('蒸汽動力、疫苗、鐵路、現代金融都在第四時代。', 'Steam power, vaccines, railways and modern finance arrive in the fourth era.')],
+                    [X('保守與革新', 'Old ways and new'), X('失業的人會抗議新機器，選舉時也分成兩派。', 'People put out of work protest new machines, and elections split along the same line.')],
+                    [X('四級城鎮', 'Four town tiers'), X('村莊 → 城鎮 → 城市 → 王都，議會和官職跟著變大。', 'Village → town → city → capital; the council and offices grow with it.')]],
+              log: [['14:00', X('研究完成：輪作。農田收成提高了。', 'Research complete: crop rotation. Harvests improve.')], ['14:20', X('老農夫：「祖先那套也沒餓死誰。」', 'Old farmer: "The old ways never starved anyone."')], ['17:45', X('邊境鎮升格為城市！議會擴大到 7 席。', 'Frontier Town becomes a city! The council grows to 7 seats.')]] },
+            { id: 'culture', ic: '⛪', c: '#9aa7ff', k: X('信仰與文化', 'Faith and culture'),
+              h: X('每座鎮都有自己的神、節日和傳言', 'Every town has its own gods, festivals and rumors'),
+              lead: X('宗教是隨機生成的：名字、神、經典、節日都不一樣。信徒禮拜、捐獻，教團濟貧，也會分裂出異端、跟新科技起衝突。消息會晚到、會走樣，越傳越離譜；藝術作品、吟遊詩人的歌和鎮史一起留下來。',
+                  'Religions are generated at random: names, gods, scriptures and festivals all differ. Believers worship and give, the faith helps the poor, and it can split into heresies or clash with new technology. News arrives late and gets distorted; art, bards\' songs and the town chronicle remain.'),
+              pts: [[X('六種宗教骨架', 'Six kinds of faith'), X('有的收什一、有的濟貧、有的敬重首長，信徒行為跟著不同。', 'Some tithe, some feed the poor, some revere the leader, and believers act accordingly.')],
+                    [X('謠言會走樣', 'Rumors drift'), X('第二手開始有機會被誇大，有些八卦一開始就是假的。', 'From the second telling a story may be exaggerated, and some gossip was false from the start.')],
+                    [X('鎮史', 'Town chronicle'), X('每一季寫成一章，記下誰當選、誰過世、發生過什麼大事。', 'Each season becomes a chapter: who was elected, who died, what happened.')]],
+              log: [['06:00', X('張老伯帶著信徒在聖堂做晨禱。', 'Old Zhang leads the faithful in morning prayer.')], ['13:10', X('傳言：「聽說北邊的城鎮鬧饑荒，已經餓死好幾個人。」', 'Rumor: "They say the northern town has a famine and people are dying."')], ['21:00', X('吟遊詩人唱起去年那場大雪的歌。', 'A bard sings about last year\'s great snow.')]] },
+            { id: 'world', ic: '🗺️', c: '#5fc4b8', k: X('世界', 'The world'),
+              h: X('小鎮外面還有一整個世界', 'There is a whole world outside town'),
+              lead: X('每座鎮依地形擅長不同的東西：靠海才曬得出鹽、捕得到魚，森林邊的鎮木材多。缺什麼就靠商隊；搭馬車可以去其他城鎮，大雪、坍方、盜匪會封路。鎮與鎮之間有外交、聯姻和貿易戰。',
+                  'Each town is good at different things depending on its land: only coastal towns make salt and catch fish, forest towns have timber. Whatever is missing comes by caravan; carriages travel between towns, and snow, landslides and bandits close the roads. Towns trade, marry into each other and fight trade wars.'),
+              pts: [[X('地形決定物產', 'Land shapes the economy'), X('穀物、魚、肉、鹽、紙、工具、建材，各鎮產量不同。', 'Grain, fish, meat, salt, paper, tools and building materials vary from town to town.')],
+                    [X('馬車與路況', 'Carriages and roads'), X('出遠門的人會離開地圖，回來時帶著外地的消息。', 'Travelers leave the map and come back with news from elsewhere.')],
+                    [X('外交', 'Diplomacy'), X('結盟、聯姻、關係惡化，都會影響貿易。', 'Alliances, marriages and feuds all affect trade.')]],
+              log: [['15:00', X('海港的商隊到了，帶來魚和鹽。', 'A caravan from the harbor arrives with fish and salt.')], ['15:30', X('大雪封路，往山城的馬車停駛三天。', 'Heavy snow closes the road; carriages to the mountain town stop for three days.')], ['18:00', X('鄰鎮派人來談聯姻。', 'The neighboring town sends envoys to discuss a marriage.')]] },
         ];
         const tiers = [
-            ['🏡', t('村莊'), t('村長＋長老會 3 席'), t('一切的開始：二十幾個人、一間鎮公所。')],
-            ['🏘️', t('城鎮'), t('人口 30＋繁榮 50＋第一時代'), t('鎮長與 5 席鎮議會，銀行與報社陸續出現。')],
-            ['🏙️', t('城市'), t('人口 60＋繁榮 65＋第二時代'), t('市長與 7 席市議會，石板路、旗幟、更多移民。')],
-            ['🏰', t('王都'), t('人口 100＋繁榮 80＋第三時代'), t('國王加冕、王令與政變，9 席王都議會。')],
+            ['🏡', X('村莊', 'Village'), X('村長＋長老會 3 席', 'Chief + 3-seat elders'), X('一切的開始：二十幾個人、一間鎮公所。', 'Where it starts: twenty-some people and a hall.')],
+            ['🏘️', X('城鎮', 'Town'), X('人口 30＋繁榮 50＋第一時代', 'Pop 30 + prosperity 50 + era 1'), X('鎮長與 5 席鎮議會，銀行與報社陸續出現。', 'A mayor and 5-seat council; banks and papers appear.')],
+            ['🏙️', X('城市', 'City'), X('人口 60＋繁榮 65＋第二時代', 'Pop 60 + prosperity 65 + era 2'), X('市長與 7 席市議會，工會開始出現。', 'A city mayor and 7-seat council; unions form.')],
+            ['🏰', X('王都', 'Capital'), X('人口 100＋繁榮 80＋第三時代', 'Pop 100 + prosperity 80 + era 3'), X('國王加冕、王令與政變，9 席王都議會。', 'A crowned king, decrees and coups; 9-seat council.')],
         ];
         const aiNotes = [
-            ['🤖', t('完整智能體模式（預設開啟）'), t('村民要不要提案、怎麼投票、鎮長怎麼裁決，都交給 AI 依各自的記憶、性格和交情推理，並說出理由。')],
-            ['🔑', t('內建 AI，不用填金鑰'), t('所有玩家都用小鎮內建的 AI：先用 Claude，Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。每個帳號每天有使用上限；金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。')],
+            ['🤖', X('完整智能體模式（預設開啟）', 'Full agent mode (on by default)'), X('村民要不要提案、怎麼投票、鎮長怎麼裁決，都交給 AI 依各自的記憶、性格和交情推理，並說出理由。', 'Whether to propose, how to vote and how the leader rules are all reasoned by AI from each villager\'s memories, personality and relationships, with reasons given.')],
+            ['🔑', X('內建 AI，不用填金鑰', 'Built-in AI, no key needed'), X('所有玩家都用小鎮內建的 AI：先用 Claude，Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。每個帳號每天有使用上限；金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。', 'Everyone uses the town\'s built-in AI: Claude first, GPT only if Claude is unavailable, and Groq as a last resort. Each account has a daily limit; keys live only on the server, never in the page source or saves.')],
         ];
         const faq = [
-            [t('要下載或安裝嗎？'), t('不用。打開網頁就能玩，電腦、平板、手機都可以。')],
-            [t('我可以控制村民嗎？'), t('不行，這是觀察型遊戲。你能做的是打事件卡、託夢、化身旅人聊天，其他全由村民自己決定。')],
-            [t('存檔會不會不見？'), t('登入後存檔會自動同步到雲端，換裝置登入就能接著玩；本機也會留一份備份。')],
-            [t('為什麼要邀請碼？'), t('小鎮的 AI 由伺服器負擔，目前用邀請制控制人數。')],
-            [t('AI 會不會亂講話？'), t('村民只能根據自己的記憶、性格和鎮上真的發生的事說話；伺服器也會擋掉不像村民的回覆。')],
-            [t('有英文版嗎？'), t('有。右上角切換中文／English，村民對話、日報、介面都會換。')],
+            [X('要下載或安裝嗎？', 'Do I need to install anything?'), X('不用。打開網頁就能玩，電腦、平板、手機都可以。', 'No. It runs in the browser on computers, tablets and phones.')],
+            [X('我可以控制村民嗎？', 'Can I control the villagers?'), X('不行，這是觀察型遊戲。你能做的是打事件卡、託夢、化身旅人聊天，其他全由村民自己決定。', 'No, this is an observation game. You can play event cards, send dreams or chat as a traveler; the rest is up to them.')],
+            [X('存檔會不會不見？', 'Will my save disappear?'), X('登入後存檔會自動同步到雲端，換裝置登入就能接著玩；本機也會留一份備份。', 'Once logged in, saves sync to the cloud so you can continue on another device; a local backup is kept too.')],
+            [X('為什麼要邀請碼？', 'Why an invite code?'), X('小鎮的 AI 由伺服器負擔，目前用邀請制控制人數。', 'The server pays for the town\'s AI, so sign-ups are invite-only for now.')],
+            [X('AI 會不會亂講話？', 'Will the AI say random things?'), X('村民只能根據自己的記憶、性格和鎮上真的發生的事說話；伺服器也會擋掉不像村民的回覆。', 'Villagers speak only from their own memories, personality and what really happened in town; the server also filters replies that don\'t sound like a villager.')],
+            [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         const roadmap = [
-            [t('已上線'), '#34d399', [t('村民全自主、事件卡、完整智能體模式'), t('四級城鎮、世界地圖與馬車'), t('各鎮物產與貿易（穀物、魚、肉、鹽、紙、工具、建材）'), t('宗教、報社、銀行、國王')]],
-            [t('構想'), '#60a5fa', [t('學校與工會'), t('自由輸入一句話當事件'), t('玩家之間互訪城鎮'), t('手機 App 版')]],
+            [X('最近上線', 'Recently added'), '#34d399', [X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining'), X('政治獻金、報社揭弊與罷免', 'Political donations, investigative papers and recalls'), X('房東、房租、驅逐與銀行利息', 'Landlords, rent, evictions and bank interest')]],
+            [X('v7.0 製作中', 'v7.0 in progress'), '#f2c14e', [X('浮動物價（有上下限）', 'Floating prices (with limits)'), X('貿易與關稅', 'Trade and tariffs'), X('信用、景氣循環與壟斷', 'Credit, business cycles and monopolies')]],
+            [X('構想', 'Ideas'), '#60a5fa', [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')]],
         ];
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
         const sky = (() => {
@@ -407,7 +451,7 @@ Object.assign(RimTownApp.prototype, {
             this._changelogLoading = true;
             const sc = document.createElement('script');
             sc.src = 'changelog.js?v=' + encodeURIComponent(RIMTOWN_APP_VERSION);
-            sc.onload = () => { if (this._landingActive) { try { this._renderLanding(); } catch (e) {} } };
+            sc.onload = () => { if (!this._landingActive) return; try { if (!this._lpFillLog?.()) this._renderLanding(); } catch (e) {} }; // v6.98.0 只更新更新紀錄那一塊(整頁重畫會把 3D 主視覺和捲動位置都重來)
             document.head.appendChild(sc);
         };
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
@@ -415,6 +459,20 @@ Object.assign(RimTownApp.prototype, {
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
                 <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
         const sec = (id, kicker, title, body, extra = '') => `<section class="landing-section lp-sec${extra}" id="${id}"><div class="lp-sec-head"><span class="lp-kicker">${kicker}</span><h2>${title}</h2></div>${body}</section>`;
+        const band = (b, i) => `<section class="lp-band${i % 2 ? ' lp-band-flip' : ''}" id="lp-${b.id}" style="--c:${b.c}" aria-labelledby="lp-${b.id}-h">
+            <div class="lp-band-in">
+                <div class="lp-band-copy">
+                    <span class="lp-kicker"><span aria-hidden="true">${b.ic}</span> ${b.k}${b.new ? ` <em class="lp-new">${X('新', 'New')} v${b.new}</em>` : ''}</span>
+                    <h2 id="lp-${b.id}-h">${b.h}</h2>
+                    <p class="lp-band-lead">${b.lead}</p>
+                    <dl class="lp-points">${b.pts.map(p => `<div><dt>${p[0]}</dt><dd>${p[1]}</dd></div>`).join('')}</dl>
+                </div>
+                <aside class="lp-scene" aria-label="${X('遊戲裡你會看到', 'What you\'ll see in the game')}">
+                    <div class="lp-scene-head">${X('遊戲裡你會看到', 'What you\'ll see in the game')}</div>
+                    <ol>${b.log.map(l => `<li><time>${l[0]}</time><span>${l[1]}</span></li>`).join('')}</ol>
+                </aside>
+            </div>
+        </section>`;
         el.innerHTML = `<div class="lp">
             <header class="lp-hero">${sky}
                 <div class="landing-lang" role="group" aria-label="Language">
@@ -422,38 +480,43 @@ Object.assign(RimTownApp.prototype, {
                 </div>
                 <div class="lp-hero-grid landing-inner">
                     <div class="lp-hero-copy">
-                        <span class="lp-kicker">${t('瀏覽器 3D・AI 小鎮沙盒')}</span>
-                        <h1 class="lp-title">${t('邊境鎮')}<span>RimTown</span></h1>
-                        <p class="lp-tagline">${t('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。')}</p>
-                        <p class="lp-lead">${t('每位村民都有個性、記憶、錢包和心事。他們自己工作、戀愛、吵架、提案、投票、選鎮長、做生意、蓋房子；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。')}</p>
+                        <span class="lp-kicker">${X('瀏覽器 3D・AI 小鎮沙盒', 'Browser 3D · AI town sandbox')}</span>
+                        <h1 class="lp-title">${X('邊境鎮', 'RimTown')}<span>${L === 'en' ? 'Frontier Town' : 'RimTown'}</span></h1>
+                        <p class="lp-tagline">${X('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。', 'A 3D town where AI villagers live their own lives. You watch from above and nudge it now and then.')}</p>
+                        <p class="lp-lead">${X('他們自己工作、戀愛、吵架、提案、投票、做生意、組工會、收獻金、上報紙；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。', 'They work, fall in love, argue, propose, vote, run businesses, form unions, take donations and make the papers. The town may grow from a village into a capital, or fall apart after one famine. No script, no ending.')}</p>
                         <div class="landing-cta">${cta}</div>
-                        <ul class="lp-badges">${[['🖥️', t('免安裝')], ['📱', t('手機也能玩')], ['☁️', t('雲端存檔')], ['🌐', t('中文／English')]].map(b => `<li><span aria-hidden="true">${b[0]}</span>${b[1]}</li>`).join('')}</ul>
+                        <ul class="lp-badges">${[['🖥️', X('免安裝', 'No install')], ['📱', X('手機也能玩', 'Works on phones')], ['☁️', X('雲端存檔', 'Cloud saves')], ['🌐', X('中文／English', '中文／English')]].map(b => `<li><span aria-hidden="true">${b[0]}</span>${b[1]}</li>`).join('')}</ul>
                         <div class="landing-version">v${esc(ver)}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
                     </div>
-                    <figure class="lp-frame lp-hero-shot"><div class="lp-frame-bar" aria-hidden="true"><i></i><i></i><i></i><span>rimtown.cc</span></div><img src="${shot('proposals')}" width="1280" height="760" alt="${t('遊戲畫面：3D 小鎮與村民提案')}" fetchpriority="high"></figure>
+                    <div class="lp-stage" id="lp-stage" role="img" aria-label="${X('3D 方塊村民在小草島上聊天', '3D blocky villagers chatting on a small grassy island')}"><div class="lp-stage-ph" aria-hidden="true"></div></div>
                 </div>
             </header>
             <div class="landing-inner">
-                <ul class="lp-stats" aria-label="${t('遊戲規模')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
-                ${sec('landing-howto', t('第一步'), t('怎麼玩'), `<ol class="lp-steps landing-steps">${howto.map((s, i) => `<li class="lp-step landing-step"><div class="lp-step-num" aria-hidden="true">${i + 1}</div><div class="lp-step-ic" aria-hidden="true">${s[0]}</div><h3>${s[1]}</h3><p>${s[2]}</p><p class="lp-eg">${s[3]}</p></li>`).join('')}</ol>`)}
-                ${sec('landing-day', t('一天的樣子'), t('小鎮的一天'), `<ol class="lp-day">${day.map(d => `<li><time>${d[0]}</time><span class="lp-day-ic" aria-hidden="true">${d[1]}</span><div><h3>${d[2]}</h3><p>${d[3]}</p></div></li>`).join('')}</ol>`)}
-                ${sec('landing-features', t('沒有劇本'), t('小鎮裡會自己長出什麼'), `<div class="lp-feats landing-cards">${features.map(f => `<article class="lp-feat landing-card" style="--c:${f[1]}"><div class="lp-feat-ic" aria-hidden="true">${f[0]}</div><h3>${f[2]}</h3><p>${f[3]}</p><ul class="lp-tags">${f[4].map(x => `<li>${x}</li>`).join('')}</ul></article>`).join('')}</div>`)}
-                ${sec('landing-gallery', t('實際畫面'), t('畫面一覽'), `<div class="lp-gallery">${gallery.map(g => `<figure class="lp-frame"><img src="${shot(g[0])}" width="1280" height="760" loading="lazy" decoding="async" alt="${esc(g[1])}"><figcaption><b>${g[1]}</b>${g[2]}</figcaption></figure>`).join('')}</div>`)}
-                ${sec('landing-tiers', t('成長路線'), t('從村莊到王都'), `<ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${t('人口、繁榮或時代掉下來，城鎮也會降級。')}</p>`)}
-                ${sec('landing-ai', t('AI 怎麼運作'), t('AI 與金鑰'), `<div class="lp-ai landing-cards landing-ai">${aiNotes.map(f => `<div class="landing-card"><div class="ic" aria-hidden="true">${f[0]}</div><h3>${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div><div class="lp-flow" aria-label="${t('AI 備援順序')}"><span class="lp-flow-chip on">Claude</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">GPT</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">Groq</span><span class="lp-flow-note">${t('前一個不能用才換下一個')}</span></div>`)}
-                ${sec('landing-faq', t('常見問題'), t('你可能想問'), `<div class="lp-faq">${faq.map(q => `<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`)}
+                <ul class="lp-stats" aria-label="${X('遊戲規模', 'Game scale')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
+                ${sec('landing-howto', X('你是觀察者', 'You are the observer'), X('怎麼玩', 'How to play'), `<ol class="lp-steps landing-steps">${howto.map((s, i) => `<li class="lp-step landing-step"><span class="lp-step-num" aria-hidden="true">${i + 1}</span><h3><span aria-hidden="true">${s[0]}</span> ${s[1]}</h3><p>${s[2]}</p></li>`).join('')}</ol>`)}
+                <nav class="lp-toc" aria-label="${X('玩法目錄', 'Features')}"><span class="lp-toc-k">${X('小鎮裡會發生什麼', 'What happens in town')}</span>${bands.map(b => `<a href="#lp-${b.id}" data-lp-jump="lp-${b.id}"><span aria-hidden="true">${b.ic}</span>${b.k}</a>`).join('')}</nav>
+            </div>
+            <div id="landing-features" class="lp-bands">${bands.map(band).join('')}</div>
+            <div class="landing-inner">
+                ${sec('landing-tiers', X('成長路線', 'Growth'), X('從村莊到王都', 'From village to capital'), `<ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${X('人口、繁榮或時代掉下來，城鎮也會降級。', 'If population, prosperity or era drops, the town is demoted.')}</p>`)}
+                ${sec('landing-ai', X('AI 怎麼運作', 'How the AI works'), X('AI 與金鑰', 'AI and keys'), `<div class="lp-ai landing-ai">${aiNotes.map(f => `<div class="landing-card lp-ai-note"><h3><span aria-hidden="true">${f[0]}</span> ${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div><div class="lp-flow" aria-label="${X('AI 備援順序', 'AI fallback order')}"><span class="lp-flow-chip on">Claude</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">GPT</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">Groq</span><span class="lp-flow-note">${X('前一個不能用才換下一個', 'Each is used only if the one before is unavailable')}</span></div>`)}
                 ${this._renderBrainSection()}
-                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('一直在更新')}</span><h2>${t('更新紀錄')}</h2></div>
+                ${sec('landing-faq', X('常見問題', 'FAQ'), X('你可能想問', 'You might be wondering'), `<div class="lp-faq">${faq.map(q => `<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`)}
+                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${X('一直在更新', 'Always updating')}</span><h2>${X('更新紀錄', 'Changelog')}</h2></div>
                     <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${typeof RIMTOWN_CHANGELOG === 'undefined' ? t('載入中…') : t('尚無紀錄')}</div>`}</div>
                     ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
                 </section>
-                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${t('接下來')}</span><h2>${t('即將實現')}</h2></div>
+                <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${X('接下來', 'Next')}</span><h2>${X('路線圖', 'Roadmap')}</h2></div>
                     <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
                 </section>
-                <section class="lp-final"><h2>${t('去看看你的小鎮今天發生了什麼')}</h2><p>${t('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。')}</p><div class="landing-cta">${loggedIn ? `<button class="landing-btn primary" data-lp-go="continue">▶ ${t('繼續遊戲')}</button>` : `<button class="landing-btn primary" data-lp-go="register">✨ ${t('註冊')}</button><button class="landing-btn secondary" data-lp-go="login">🔑 ${t('登入')}</button>`}</div></section>
-                <footer class="landing-footer">${t('邊境鎮 RimTown')} · v${esc(ver)}</footer>
+                <section class="lp-final"><h2>${X('去看看你的小鎮今天發生了什麼', 'Go see what happened in your town today')}</h2><p>${X('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。', 'Sign-up needs an invite code. Saves sync to the cloud, so you can continue on any device.')}</p><div class="landing-cta">${loggedIn ? `<button class="landing-btn primary" data-lp-go="continue">▶ ${t('繼續遊戲')}</button>` : `<button class="landing-btn primary" data-lp-go="register">✨ ${t('註冊')}</button><button class="landing-btn secondary" data-lp-go="login">🔑 ${t('登入')}</button>`}</div></section>
+                <footer class="landing-footer">${X('邊境鎮 RimTown', 'RimTown')} · v${esc(ver)}</footer>
             </div>
         </div>`;
+        // v6.98.0 3D 方塊村民(閒置時才載 three.js;沒有 WebGL 改放一張實際畫面)
+        try { if (typeof LANDING3D !== 'undefined') LANDING3D.mount(el.querySelector('#lp-stage')); } catch (e) {}
+        // 目錄跳段:在 #landing 這個捲動容器裡平滑捲過去
+        el.querySelectorAll('[data-lp-jump]').forEach(a => a.addEventListener('click', (ev) => { const tg = el.querySelector('#' + a.dataset.lpJump); if (!tg) return; ev.preventDefault(); tg.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }));
         this._wireBrainDemo(el);
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
             const box = el.querySelector('#landing-log');
@@ -480,6 +543,20 @@ Object.assign(RimTownApp.prototype, {
             ev.currentTarget.textContent = expanded ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`;
         });
         this._landingUpdateContinue();
+    },
+    // v6.98.0 更新紀錄載完只重畫那一塊
+    _lpFillLog() {
+        const el = document.getElementById('landing'); const box = el?.querySelector('#landing-log'); if (!box) return false;
+        const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
+        const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
+        box.innerHTML = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
+                <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
+                <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('') || `<div class="landing-log-item">${t('尚無紀錄')}</div>`;
+        if (log.length > 5 && !el.querySelector('#landing-log-more')) {
+            const b = document.createElement('button'); b.className = 'landing-more'; b.id = 'landing-log-more'; b.textContent = `${t('顯示全部')} (${log.length})`; box.after(b);
+            b.addEventListener('click', () => { const ex = box.classList.toggle('expanded'); b.textContent = ex ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`; });
+        }
+        return true;
     },
     // ============================================================
     // v5.69.0 首頁「村民的大腦」:村民怎麼社交——感知/挑人/八卦/對話/效果/記憶/反思/計畫
@@ -667,6 +744,7 @@ Object.assign(RimTownApp.prototype, {
         try { window.scrollTo(0, 0); } catch (e) {}
     },
     _hideLanding() {
+        try { if (typeof LANDING3D !== 'undefined') LANDING3D.unmount(); } catch (e) {}
         const el = document.getElementById('landing');
         if (!el) return;
         el.classList.add('fade-out');
