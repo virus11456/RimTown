@@ -551,6 +551,8 @@ Object.assign(RimTownApp.prototype, {
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
             const box = el.querySelector('#landing-log');
             if (box && 'IntersectionObserver' in window) { try { this._lpLogObs?.disconnect(); this._lpLogObs = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { this._lpLogObs.disconnect(); loadLog(); } }, { root: el, rootMargin: '900px 0px' }); this._lpLogObs.observe(box); } catch (e) { loadLog(); } } else loadLog();
+            // v7.9.0 保險:有時(英文手機版重畫之後)觀察器沒觸發,捲到接近底部也載
+            if (!el._logScroll) { el._logScroll = true; el.addEventListener('scroll', () => { if (typeof RIMTOWN_CHANGELOG === 'undefined' && el.scrollTop + el.clientHeight > el.scrollHeight - 2500) loadLog(); }, { passive: true }); }
         }
         // v6.82.2 主視覺捲出畫面就暫停星星與窗燈動畫
         try { this._lpHeroObs?.disconnect(); const hero = el.querySelector('.lp-hero'); if (hero && 'IntersectionObserver' in window) { this._lpHeroObs = new IntersectionObserver(es => es.forEach(e => hero.classList.toggle('lp-off', !e.isIntersecting))); this._lpHeroObs.observe(hero); } } catch (e) {}
