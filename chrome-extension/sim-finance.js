@@ -147,7 +147,11 @@ if (typeof ProposalSystem !== 'undefined') {
     if (_cands) PS._candidates = function (w, day, ...rest) {
         const out = _cands.call(this, w, day, ...rest);
         try { const hot = w.prices ? Math.max(PRICES.idx(w, 'food'), PRICES.idx(w, 'fuel')) : 1; const u = w.labor ? LABOR.unemployed(w).length : 0;
-            const k = 1 + Math.max(0, hot - 1.2) * 2 + Math.min(1.5, u * 0.15);
+            // 公庫存很多、窮人又多:大家會要求把錢拿出來用(補助、救濟提案變多;要不要發還是投票決定)
+            const all = Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead); const silver = w.stockpile?.get?.('silver') || 0;
+            const poor = typeof WALLET !== 'undefined' && w.wallet ? all.filter(a => WALLET.get(w, a) < 8).length : 0;
+            const hoard = all.length && poor >= all.length * 0.1 ? Math.min(3, Math.max(0, silver / (all.length * 30) - 1)) : 0;
+            const k = 1 + Math.max(0, hot - 1.2) * 2 + Math.min(1.5, u * 0.15) + hoard;
             if (k > 1) for (const c of out || []) if (c.kind === 'relief' || c.kind === 'stipend' || c.kind === 'minwage') c.weight = (c.weight || 1) * k; } catch (e) {}
         return out;
     };
