@@ -32,22 +32,22 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.locked = { before: !avail().some(k => elec(4).includes(k)) };
       // 3) 工坊時代 75%:鎮上提「走電子機械路線」
       main(3).forEach(complete); R.refreshLocks(); R.current = null; w.tech = null; TECH.daily(w);
-      const tp = P.items.find(p => p.kind === 'tech_path'); out.debate = { made: !!tp, title: tp ? P.title(tp) : '', still: !avail().some(k => elec(4).includes(k)) };
+      const tp = P.items.find(p => p.kind === 'tech_path'); out.debate = { made: !!tp, title: tp ? P.title(tp) : '', opts: tp?.opts || [], open: avail().some(k => elec(4).includes(k)) }; /* v7.9.0 基礎科技不用選路線就能研究;辯論是多選一 */
       // 4) 投票:研究員多半贊成、保守的裁縫反對
       const rs = adults().find(a => a.job?.key === 'researcher') || adults()[0]; const tl = adults().find(a => a !== rs) ; const keep = { j: tl.job, s: tl.techStance };
       tl.job = new Job('tailor'); tl.techStance = 'conservative'; rs.techStance = 'progressive';
       const vr = fix(0.5, () => TECH.voteRule(w, tp, rs)), vt = fix(0.5, () => TECH.voteRule(w, tp, tl)); tl.job = keep.j; tl.techStance = keep.s;
       out.vote = { rs: vr.v, tl: vt.v, whyT: vt.why };
       // 5) 否決三次照樣上路
-      for (let i = 0; i < 3; i++) { const q = P.items.filter(p => p.kind === 'tech_path').pop(); q.status = 'rejected'; w.tech.lastProp = -99; w.tech.lastDay = null; TECH.daily(w); }
-      w.tech.lastDay = null; TECH.daily(w);
-      out.forced = { path: w.tech.path, tries: w.tech.tries, open: avail().filter(k => elec(4).includes(k)).length };
+      { const q = P.items.filter(p => p.kind === 'tech_path').pop(); q.status = 'rejected'; w.tech.lastProp = -99; w.tech.lastDay = null; TECH.daily(w); }
+      const n1 = P.items.filter(p => p.kind === 'tech_path').length; w.tech.lastDay = null; TECH.daily(w);
+      out.forced = { path: w.tech.path, tries: w.tech.tries, wait: w.tech.nextDebate - w._absDay(), again: P.items.filter(p => p.kind === 'tech_path').length > n1, open: avail().filter(k => elec(4).includes(k)).length }; /* v7.9.0 否決=維持傳統,30 天後再辯論,不再強制 */
       // 6) 正常通過的路線:提案執行
       w.tech = null; TECH.S(w); const q2 = P._createWith(w, w._absDay(), { kind: 'tech_path', key: 'tp:x', jobs: [], make: () => ({ kind: 'tech_path', key: 'tp:x', refKey: 'electro', tk: '小鎮走「{name}」路線', tp: { name: '電子機械' }, dk: 'x', dp: {}, cost: {}, category: 'economy', jobBias: [] }) }, rs);
       q2.votes = { a: 'for', b: 'for', c: 'against' }; q2.status = 'approved'; P._execute(w, q2, w._absDay()); out.chosen = { status: q2.status, path: w.tech.path, yes: w.tech.yes, no: w.tech.no, era4: TECH.eraName(w, 4).name, era5: TECH.eraName(w, 5).name, era6: TECH.eraName(w, 6).name };
       // 7) 門檻:電力要機械 75%＋城市;太空要電力 75%＋王都
       main(4).forEach(complete); tierTo(1); elec(4).forEach(complete); R.refreshLocks(); out.gate5 = { tier1: !avail().includes('electricity') }; tierTo(2); R.refreshLocks(); out.gate5.tier2 = avail().includes('electricity');
-      elec(5).slice(0, 3).forEach(complete); R.refreshLocks(); tierTo(3); out.gate6 = { half: !avail().some(k => elec(6).includes(k)) }; elec(5).forEach(complete); R.refreshLocks(); tierTo(2); out.gate6.tier2 = !avail().some(k => elec(6).includes(k)); tierTo(3); out.gate6.tier3 = avail().includes('microelectronics'); out.gate6.era = R.currentEra();
+      elec(5).slice(0, 3).forEach(complete); R.refreshLocks(); tierTo(3); out.gate6 = { half: !avail().some(k => elec(6).includes(k)) }; elec(5).forEach(complete); R.refreshLocks(); tierTo(2); out.gate6.tier2 = !avail().some(k => elec(6).includes(k)); tierTo(3); out.gate6.tier3 = avail().includes('rocketry'); out.gate6.era = R.currentEra();
       // 8) 研究點不空等:沒在研究時研究員的進度先存著;學者先挑最早的時代
       reset('telegraph'); reset('radio'); R.refreshLocks(); R.current = null; R._carry = 0; R._idle = 0; w.stockpile.resources.research_points = 0;
       fix(0.99, () => R.dailyUpdate(w)); out.carry = { stored: Math.round(R._carry), none: !R.current };
@@ -61,7 +61,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.jobs = { tailor: TECH.jobMult(w, 'tailor'), farmer: TECH.jobMult(w, 'farmer'), guard: TECH.jobMult(w, 'guard') };
       // 11) 三級社會問題:每一種都能發生(建一座核電廠)
       w.buildings.completed.push({ name: BUILDING_TEMPLATES.nuclear_plant.name, buildingKey: 'nuclear_plant', effects: { ...BUILDING_TEMPLATES.nuclear_plant.effects } }); w.buildings.recomputeEffects(w);
-      const T0 = MONEY.total(w); const fired = {}; for (const ev of TECH.EVENTS) { if (ev.lv === 'big') continue; fired[ev.id] = !!(ev.need(w) && TECH.fire(w, ev)); }
+      for (const a of adults()) WALLET.get(w, a); const T0 = MONEY.total(w); const fired = {}; for (const ev of TECH.EVENTS) { if (ev.lv === 'big' || ev.path === 'bio') continue; fired[ev.id] = !!(ev.need(w) && TECH.fire(w, ev)); }
       out.events = { fired, drift: Math.round((MONEY.total(w) - T0) * 100) / 100, laid: Object.values(w.tech.mk).filter(x => x === 'laid').length, risk: Math.round(w.tech.risk * 100) / 100 };
       // 12) 核安法:徵兆多了有人提,通過後大災機率降到三分之一
       w.tech.lastDay = null; w.tech.lastLaw = -99; w.tech.risk = 2; TECH.daily(w); const lawP = P.items.find(p => p.kind === 'tech_safety'); w.tech.lastBig = -999; const b0 = TECH.bigChance(w); TECH.setLaw(w); const b1 = TECH.bigChance(w);
@@ -86,14 +86,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.ui = { buildNoResearch: !/研究點|Research points/.test(buildTxt), hasPath: /科技路線|Tech path/.test(txt), hasPower: /電力|Electric/.test(txt), hasInc: /核災|meltdown/i.test(txt), undef: /undefined|NaN|\{[a-z]+\}/.test(txt), cjk: (txt.match(/[一-鿿]+/g) || []).slice(0, 5), overflow: document.documentElement.scrollWidth > window.innerWidth + 1, tab: !!document.querySelector('[data-tab="econ-tech"], [data-subtab="econ-tech"], [data-key="econ-tech"]') || /科技|Tech/.test(document.body.innerText) };
       return out;
     });
-    ok(r.tree.e4 === 6 && r.tree.e5 === 6 && r.tree.e6 === 7 && r.tree.shared4 === 5 && r.tree.bldg && r.tree.refine, '科技樹：機械 6、電力 6、太空 7 項，共同近代 5 項，三種新建築，精進改良', r.tree);
-    ok(r.locked.before && r.debate.made && r.debate.still && /電子機械|Electro/.test(r.debate.title), '工坊時代 75% 才辯論路線；決定前機械科技鎖著', { l: r.locked, d: r.debate });
+    ok(r.tree.e4 === 6 && r.tree.e5 === 10 && r.tree.e6 === 6 && r.tree.shared4 === 5 && r.tree.bldg && r.tree.refine, '科技樹：機械 6、電力 10（v7.9.0 微電子、精密製造、機器人、核融合移下來）、太空 6 項（專屬：火箭、核子武器、衛星、太空站、量子電腦、AI），共同近代 5 項，三種新建築，精進改良', r.tree);
+    ok(r.locked.before && r.debate.made && r.debate.open && r.debate.opts.length >= 2 && /電子機械|Electro/.test(r.debate.title), '工坊時代 75% 才辯論路線（多選一：電子機械、基因生物、維持傳統）；機械科技不用選路線就能研究', { l: r.locked, d: r.debate });
     ok(r.vote.rs === 'for' && r.vote.tl === 'against' && r.vote.whyT === 'path_job', '投票：研究員贊成，怕被機器搶飯碗的裁縫反對', r.vote);
-    ok(r.forced.path === 'electro' && r.forced.tries >= 3 && r.forced.open >= 1, '否決三次之後照樣上路，機械科技開放', r.forced);
+    ok(!r.forced.path && r.forced.tries === 1 && r.forced.wait >= 25 && !r.forced.again && r.forced.open >= 1, '否決就是維持傳統：30 天後再辯論，不會強制上路', r.forced);
     ok(r.chosen.status === 'done' && r.chosen.path === 'electro' && r.chosen.yes === 2 && r.chosen.no === 1 && r.chosen.era5 && r.chosen.era6 && r.chosen.era5 !== r.chosen.era6, '提案通過就決定路線、記下贊成反對；時代名稱依路線', r.chosen);
     ok(r.gate5.tier1 && r.gate5.tier2, '電力時代：機械 75% 而且要城市', r.gate5);
     ok(r.gate6.half && r.gate6.tier2 && r.gate6.tier3 && r.gate6.era === 6, '太空時代：電力 75% 而且要王都', r.gate6);
-    ok(r.carry.stored > 0 && r.carry.none && r.carry.picked && r.carry.pickedEra === 5 && r.carry.applied, '研究點不空等（先存著、開始研究時補上）；學者先挑最早的時代', r.carry);
+    ok(r.carry.stored > 0 && r.carry.none && r.carry.picked && r.carry.pickedEra <= 5 && r.carry.applied, '研究點不空等（先存著、開始研究時補上）；學者先挑最早的時代', r.carry);
     ok(r.refine.onlyLeft && r.refine.lv === 1 && r.refine.again && r.refine.cost > 20000 && r.refine.fx >= 0.019, '精進改良：其他都研究完才開放，一級一級研究、效果累加', r.refine);
     ok(r.jobs.tailor < 1 && r.jobs.farmer < 1 && r.jobs.guard === 1 && r.jobs.farmer >= 0.5, '機器搶工作：生產線與機器人讓裁縫、農夫職缺變少（守衛不受影響）', r.jobs);
     ok(Object.values(r.events.fired).filter(Boolean).length >= 8 && r.events.fired.layoff && r.events.fired.leak && r.events.drift === 0 && r.events.risk > 1, '小事與中事都會發生（裁員、輻射外洩、砸機器…），不動銀幣，徵兆讓大災風險升高', r.events);

@@ -66,7 +66,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const k of Object.keys(P)) if (P[k].era === 4) P[k].status = 'complete'; w.research.refreshLocks();
       const T = TIERS.S ? TIERS.S(w) : null; const lv0 = TIERS.level; TIERS.level = () => 1;
       out.bio = { exists: ['microbiology', 'antibiotics', 'immunology', 'prosthetics', 'genetics', 'regen_medicine'].every(k => P[k]?.era === 5), era: !!RESEARCH_ERAS[5], gatedSmall: !w.research.getAvailable().some(p => p.era === 5), canBuildSmall: HEALTH.canBuild(w, 'institute') };
-      TIERS.level = () => 2; out.bio.canBuildCity = HEALTH.canBuild(w, 'institute'); out.bio.gatedNoInst = !w.research.getAvailable().some(p => p.era === 5);
+      TIERS.level = () => 2; out.bio.canBuildCity = HEALTH.canBuild(w, 'institute'); out.bio.gatedNoInst = !w.research.getAvailable().some(p => p.era === 5 && TECH.onPath(p.key, 'bio')); for (const k of Object.keys(P)) if (P[k].era === 4) P[k].status = 'complete'; /* v7.9.0 生技屬於基因生物路線(育種時代研究完才開) */
       w.buildings.completed.push({ buildingKey: 'institute', name: BUILDING_TEMPLATES.institute.name, level: 1 }); w.buildings.activeEffects = w.buildings.activeEffects || {}; w.buildings.activeEffects.research_cap = (w.buildings.activeEffects.research_cap || 0) + 40;
       out.bio.open = w.research.getAvailable().some(p => p.key === 'microbiology'); out.bio.cap = w.buildings.getEffect('research_cap', 0); TIERS.level = lv0;
       // 9) 存讀檔

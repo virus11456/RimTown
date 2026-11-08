@@ -20,7 +20,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {};
       const out = {}; const w = app.world; const R = w.research; const T = RESEARCH_TREE;
       // 1) 樹的結構:四個時代、48 項、前置存在且不跨到後面的時代、效果都是有在用的鍵
-      const USED = ['farm_bonus', 'smithing_bonus', 'healing_bonus', 'defense_bonus', 'trade_bonus', 'build_speed', 'beauty_bonus', 'research_bonus', 'recreation_bonus', 'storage_bonus', 'stone_efficiency', 'xp_bonus', 'discover_bonus', 'culture_bonus', 'merchant_frequency'];
+      const USED = ['farm_bonus', 'smithing_bonus', 'healing_bonus', 'defense_bonus', 'trade_bonus', 'build_speed', 'beauty_bonus', 'research_bonus', 'recreation_bonus', 'storage_bonus', 'stone_efficiency', 'xp_bonus', 'discover_bonus', 'culture_bonus', 'merchant_frequency', 'food_decay', 'drought_resistance'];
       out.n = Object.keys(T).length; out.eras = [...new Set(Object.values(T).map(d => d.era))].sort().join(','); out.badPre = []; out.badFx = [];
       const sum = {}; for (const [k, d] of Object.entries(T)) { sum[d.era] = (sum[d.era] || 0) + d.cost; for (const p of d.prerequisites) if (!T[p] || T[p].era > d.era) out.badPre.push(k + '<' + p); for (const e of Object.keys(d.effects || {})) if (!USED.includes(e)) out.badFx.push(k + ':' + e); }
       out.sum = sum; out.total = Object.values(sum).reduce((a, b) => a + b, 0); out.newNodes = ['animal_husbandry', 'crop_rotation', 'guilds', 'steam_power', 'vaccination', 'railways'].every(k => T[k]);
@@ -50,7 +50,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       return out;
     });
     const zh = lang === 'zh';
-    ok(r.n === 73 && r.eras === '1,2,3,4,5,6,7' && r.newNodes, '科技樹 73 項（v7.4.0 生技 6、v7.5.0 神話基因 3、v7.8.0 電子機械 15＋精進改良）', { n: r.n, e: r.eras });
+    ok(r.n === 84 && r.eras === '1,2,3,4,5,6,7' && r.newNodes, '科技樹 84 項（v7.4.0 生技 6、v7.5.0 神話基因 3、v7.8.0 電子機械 15＋精進改良、v7.9.0 基因生物 8＋電子機械 3）', { n: r.n, e: r.eras });
     ok(!r.badPre.length, '每一項的前置都存在，而且不會要求後面時代的科技', r.badPre);
     ok(!r.badFx.length, '每一項效果都是遊戲裡真的有在用的效果', r.badFx);
     ok(r.sum[1] < r.sum[2] && r.sum[2] < r.sum[3] && r.sum[3] < r.sum[4] && r.total > 80000, '越後面的時代越貴，整棵樹成本大幅提高', { s: r.sum, t: r.total });

@@ -467,6 +467,9 @@ if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { path_fit: '這條
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) TECH.daily(w); } catch (e) { console.warn('[Tech] daily', e); } return r; };
+    // v7.9.0 路線大辯論:提案卡顯示每個選項的票數
+    const _ti = PS.toItem;
+    PS.toItem = function (w, p, ...rest) { const it = _ti.call(this, w, p, ...rest); try { if (p.kind === 'tech_path' && p.opts) { const tl = TECH.tally(p); it.options = Object.entries(tl.paths).map(([k, n]) => ({ key: k, icon: TECH.PATHS[k]?.icon || '', name: t(TECH.PATHS[k]?.name || k), n })).concat([{ key: 'keep', icon: '🏡', name: t('維持傳統'), n: tl.keep }]); } } catch (e) {} return it; };
     const _rv = PS._ruleVote;
     PS._ruleVote = function (w, p, a, ...rest) { if (['tech_path', 'tech_safety', 'tech_unsafe', 'tech_abandon'].includes(p.kind)) { const r = TECH.voteRule(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
 }

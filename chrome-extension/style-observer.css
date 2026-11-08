@@ -245,6 +245,12 @@
 .rimtown-container .pp-votes { display: flex; align-items: center; gap: 8px; font-size: 0.74rem; margin: 4px 0; }
 .rimtown-container .pp-votes i { flex: 1; height: 6px; border-radius: 3px; background: rgba(229,115,107,0.35); overflow: hidden; display: block; }
 .rimtown-container .pp-votes i b { display: block; height: 100%; background: var(--positive); }
+/* v7.9.0 路線大辯論:多選一的票數 */
+.rimtown-container .pp-opts { display: flex; flex-direction: column; gap: 3px; margin: 2px 0 6px; }
+.rimtown-container .pp-opt { display: grid; grid-template-columns: minmax(6.5em, auto) 1fr 2em; align-items: center; gap: 6px; font-size: 0.72rem; }
+.rimtown-container .pp-opt i { height: 5px; border-radius: 3px; background: rgba(255,255,255,0.08); overflow: hidden; display: block; }
+.rimtown-container .pp-opt i b { display: block; height: 100%; background: var(--accent, #f0a35e); }
+.rimtown-container .pp-opt em { font-style: normal; text-align: right; color: var(--text-secondary); }
 .rimtown-container .pp-for { color: var(--positive); } .rimtown-container .pp-against { color: var(--negative); }
 .rimtown-container .pp-deadline { font-size: 0.7rem; color: var(--text-muted); margin: 4px 0 8px; }
 .rimtown-container .pp-result { font-size: 0.76rem; color: var(--text-secondary); margin-top: 4px; }
