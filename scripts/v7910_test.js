@@ -49,7 +49,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const tl = TECH.tally(tp); out.debate.tally = tl; out.debate.winner = TECH.winnerOf(w, tp);
       tp.status = 'approved'; w.proposals._execute(w, tp, w._absDay()); out.debate.path = w.tech.path; out.debate.item = w.proposals.toItem(w, tp).options?.length;
       // 風氣:電子機械 2、基因生物 1 的權重
-      { const cnt = { electro: 0, bio: 0 }; const B0 = ECON.baseOf; const per = {}; for (const b of ['market', 'harbor', 'mountain', 'forest', 'frontier']) { ECON.baseOf = () => b; per[b] = { electro: 0, bio: 0 }; for (let i = 0; i < 300; i++) { w.tech.lean = null; const k = TECH.leanOf(w); cnt[k]++; per[b][k]++; } } ECON.baseOf = B0; out.lean = cnt; out.leanPer = per; w.tech.lean = 'none'; }
+      { const cnt = { electro: 0, bio: 0, steam: 0 }; const B0 = ECON.baseOf; const per = {}; for (const b of ['market', 'harbor', 'mountain', 'forest', 'frontier']) { ECON.baseOf = () => b; per[b] = { electro: 0, bio: 0, steam: 0 }; for (let i = 0; i < 300; i++) { w.tech.lean = null; const k = TECH.leanOf(w); cnt[k]++; per[b][k]++; } } ECON.baseOf = B0; out.lean = cnt; out.leanPer = per; w.tech.lean = 'none'; }
       // 維持傳統 → 30 天後再辯論
       w.tech = null; TECH.S(w); w.proposals.items = w.proposals.items.filter(p => p.kind !== 'tech_path'); TECH.daily(w); const tp2 = w.proposals.items.find(p => p.kind === 'tech_path'); tp2.status = 'rejected'; w.tech.lastDay = null; next(); TECH.daily(w);
       const n2 = w.proposals.items.filter(p => p.kind === 'tech_path').length; for (let i = 0; i < 12; i++) { next(); w.tech.lastDay = null; TECH.daily(w); }
@@ -117,9 +117,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.open4.bio >= 2 && r.open4.el && !r.open4.path, '還沒選路線，兩條路線的第四時代都能研究', r.open4);
     ok(r.open5.noInst && r.open5.elec && r.open5.inst, '第五時代：生技要研究院，電力不用；大家都能研究', r.open5);
     ok(r.open6.none && r.open6.el && r.open6.bio && r.open6.cost, '第六時代專屬：沒選路線都不能研究；電子機械只有火箭、基因生物只有基因編輯；基礎科技原價', r.open6);
-    ok(r.debate.made && r.debate.opts === 'bio,electro' && r.debate.doc === 'bio' && r.debate.rs === 'electro' && r.debate.dv === 'for' && r.debate.rv === 'for', '路線大辯論多選一：老醫生投基因生物、年輕研究員投電子機械', r.debate);
-    ok(r.debate.winner === 'bio' && r.debate.path === 'bio' && r.debate.tally.keep > 0 && r.debate.item === 3, '得票最多的路線勝出；提案卡列出每個選項的票數', r.debate);
-    ok(r.lean.electro > r.lean.bio * 1.5 && r.lean.electro < r.lean.bio * 2.6 && r.leanPer.market.electro > 240 && r.leanPer.forest.bio > 180 && r.leanPer.frontier.bio > 120, '小鎮風氣跟地形走：貿易要道多半電子機械、森林與農地偏基因生物；整體約三分之二比三分之一（蒸汽煉金上線後約 50／25／25）', { all: r.lean, per: r.leanPer });
+    ok(r.debate.made && /bio/.test(r.debate.opts) && /electro/.test(r.debate.opts) /* v8.0.0 蒸汽煉金也可能在選項裡 */ && r.debate.doc === 'bio' && r.debate.rs === 'electro' && r.debate.dv === 'for' && r.debate.rv === 'for', '路線大辯論多選一：老醫生投基因生物、年輕研究員投電子機械', r.debate);
+    ok(r.debate.winner === 'bio' && r.debate.path === 'bio' && r.debate.tally.keep > 0 && r.debate.item >= 3, '得票最多的路線勝出；提案卡列出每個選項的票數', r.debate);
+    ok(r.lean.electro > r.lean.bio * 1.5 && r.lean.electro < r.lean.bio * 2.6 && r.leanPer.market.electro > 240 && r.leanPer.forest.bio > 150 && r.leanPer.frontier.bio > 120 && r.leanPer.mountain.steam > r.leanPer.mountain.electro /* v8.0.0 森林:電子 .2／蒸汽 .2／基因 .6 */, '小鎮風氣跟地形走：貿易要道多半電子機械、森林與農地偏基因生物；整體約三分之二比三分之一（蒸汽煉金上線後約 50／25／25）', { all: r.lean, per: r.leanPer });
     ok(!r.keep.path && r.keep.wait >= 15 && !r.keep.again, '否決＝維持傳統：不強制，30 天後才再辯論', r.keep);
     ok(Object.values(r.events.fired).filter(x => x === true).length >= 7 && !Object.values(r.events.fired).some(x => typeof x === 'string') && r.events.drift === 0, '基因生物的社會問題都會發生（藥廠排污、實驗羊、基因歧視、騙子…），銀幣守恆', r.events);
     ok(r.price.drift === 0, '藥價管制：看診少付，銀幣守恆', r.price);
@@ -130,7 +130,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.ai.calls === 1 && r.ai.rows >= 3 && r.ai.rows <= 8 && r.ai.acts >= 2 && r.ai.said && r.ai.fallback > 0, '完整智能體模式：出大事那天壓力最大的人整批交給 AI（一次請求、最多 8 人、照 AI 的選擇和台詞反應）；AI 沒回應就照規則', r.ai);
     ok(r.tier.lvA === 1 && r.tier.lvB === 2 && r.tier.lvC === 2, '城鎮跟科技軟綁定：科技不夠不能升城市；剛升格的 60 天內不降級', r.tier);
     ok(!r.old.path && r.old.kept === 'electro' && r.old.bio === 5, '舊存檔：v7.8 自動判定的電子機械空出來讓大家辯論；投票選的保留；基因生物的法律存得住', r.old);
-    ok(r.ui.paths && r.ui.excl && !r.ui.lab && r.ui.opts >= 1 && r.ui.optRows === 3 && !r.ui.undef && !r.ui.overflow, '介面：科技分頁兩條路線、專屬標示；提案卡多選一；災厄工坊分頁先隱藏', r.ui);
+    ok(r.ui.paths && r.ui.excl && !r.ui.lab && r.ui.opts >= 1 && r.ui.optRows >= 3 && !r.ui.undef && !r.ui.overflow, '介面：科技分頁兩條路線、專屬標示；提案卡多選一；災厄工坊分頁先隱藏', r.ui);
     if (lang === 'en') ok(!r.ui.cjk.length, '英文沒有中文', r.ui.cjk);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

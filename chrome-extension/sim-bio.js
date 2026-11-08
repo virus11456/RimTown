@@ -162,8 +162,8 @@ const BIO = (function () {
     for (const k of ['microbiology', 'antibiotics', 'immunology', 'prosthetics', 'genetics', 'regen_medicine']) if (T[k]) T[k].path = 'bio';
     for (const k of ['gene_editing', 'myth_genome', 'gene_stabilizer']) if (T[k]) T[k].path = 'bio';
     if (T.microbiology) T.microbiology.prerequisites = ['pharmacology', 'epidemiology']; // 以前要整個第四時代(含電子機械的機械科技)
-    const has = (k) => !!T[k]; const pre = (...ks) => ks.filter(has);
-    Object.assign(T, {
+    const has = (k) => !!T[k]; const pre = (...ks) => ks; // v8.0.0 先照寫的保留,整批加進去之後才濾掉不存在的(以前同一批裡互相依賴的前置會被濾掉)
+    const ADD = {
         // ---- 🌾 育種(第四時代) ----
         selective_breeding: { era: 4, path: 'bio', name: t('選種育種'), description: t('一代一代挑最好的種子和牲口：作物、牲畜產量 +15%；可以蓋育種場'), cost: 5200, prerequisites: pre('crop_rotation', 'animal_husbandry'), effects: { farm_bonus: 1.15 }, unlocks: ['breeding_farm'] },
         pharmacology: { era: 4, path: 'bio', name: t('藥理學'), description: t('知道藥為什麼有效：藥效 +15%；可以蓋藥廠'), cost: 5600, prerequisites: pre('herbalism', 'chemistry'), effects: { healing_bonus: 1.15 }, unlocks: ['pharma_works'] },
@@ -175,7 +175,8 @@ const BIO = (function () {
         // ---- 🧬 基因(第六時代,專屬) ----
         life_extension: { era: 6, path: 'bio', name: t('延壽療法'), description: t('修補老化的細胞：老死的年紀晚十五歲，老人還能做事；但人口變老、遺產晚交'), cost: 21000, prerequisites: pre('regen_medicine', 'gene_editing'), effects: { healing_bonus: 1.1 }, unlocks: [] },
         synthetic_life: { era: 6, path: 'bio', name: t('合成生命'), description: t('從零寫出一個生命：生產力達到頂點……但有人說，自然開始不聽話了'), cost: 26000, prerequisites: pre('gene_stabilizer', 'life_extension'), effects: { farm_bonus: 1.1, research_bonus: 0.1, healing_bonus: 1.1 }, unlocks: [] },
-    });
+    };
+    Object.assign(T, ADD); for (const k of Object.keys(ADD)) T[k].prerequisites = T[k].prerequisites.filter(has);
     if (typeof RESEARCH_UNLOCKED_BY !== 'undefined') { RESEARCH_UNLOCKED_BY.breeding_farm = ['selective_breeding']; RESEARCH_UNLOCKED_BY.pharma_works = ['pharmacology']; RESEARCH_UNLOCKED_BY.seed_vault = ['gm_crops']; }
     if (typeof BUILDING_TEMPLATES !== 'undefined') Object.assign(BUILDING_TEMPLATES, {
         breeding_farm: { name: t('育種場'), description: t('挑種、配種的地方，田裡收成更好'), costs: { wood: 40, stone: 20, silver: 250 }, work: 35, effects: { farm_bonus: 0.1 } },

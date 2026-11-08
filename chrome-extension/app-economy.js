@@ -329,7 +329,6 @@ Object.assign(RimTownApp.prototype, {
                     html += `<div class="tech-desc">${TV.debate ? `🗳️ ${t('鎮上正在辯論科技路線')}${t('：')}${TV.debate.id} · ${tallyTxt}` : TV.nextDebate ? `🏡 ${t('上次辯論決定維持傳統，{n} 天後再辯論（遇到大事可能提早）').replace('{n}', TV.nextDebate)}` : TV.main3 >= TV.gate ? `🗳️ ${t('工坊時代研究到 {n}%，鎮上很快會開始辯論科技路線').replace('{n}', TV.main3)}` : `🔒 ${t('工坊時代研究到 {g}% 時，鎮上會辯論往後走哪條科技路線（現在 {n}%）').replace('{g}', TV.gate).replace('{n}', TV.main3)}`}</div>`;
                     if (TV.lean) html += `<div class="tech-desc">🏘️ ${t('小鎮的風氣')}${t('：')}${t('比較偏向{p}').replace('{p}', `${TV.lean.icon}${esc(TV.lean.name)}`)}${TV.lean.why ? `${t('（')}${esc(TV.lean.why)}${t('）')}` : ''}</div>`;
                     for (const x of TV.paths || []) html += `<div class="tech-desc">${x.icon} <b>${esc(x.name)}</b>${t('：')}${esc(x.short)}${t('。')}👍 ${esc(x.pro)} · 👎 ${esc(x.con)} · ${t('吸引力')} ${x.appeal >= 0 ? '+' : ''}${x.appeal}</div>`;
-                    html += `<div class="tech-desc" style="color:var(--text-muted)">🚂 ${t('蒸汽煉金')}${t('：')}${t('之後的版本開放')}</div>`;
                 } else {
                     const tl = TV.tally ? Object.entries(TV.tally).map(([k, v]) => `${PD[k]?.icon || ''}${esc(PD[k]?.name || k)} ${v}`).join(' · ') : '';
                     html += `<div class="tech-desc">${esc(TV.short)}${t('。')}${TV.since != null ? ` ${t('第 {d} 天決定').replace('{d}', TV.since)}` : ''}${tl ? ` · ${tl} · 🏡${t('維持傳統')} ${TV.no || 0}` : ''}</div>`;
@@ -341,6 +340,11 @@ Object.assign(RimTownApp.prototype, {
                 if (TV.nuke || TV.noNuke || TV.law) { const rk = TV.risk ? { low: t('低'), mid: t('中'), high: t('高') }[TV.risk] : null; html += `<div class="tech-desc">☢️ ${TV.noNuke ? t('已經廢核') : TV.nuke ? `${t('核災風險')}${t('：')}<b class="tech-risk-${TV.risk}">${rk}</b>${TV.law ? ` · 📋 ${t('有核安法')}` : ` · ${t('沒有核安法')}`}` : t('還沒有核電廠')}</div>`; }
                 if (TV.jobs?.length) html += `<div class="tech-desc">🤖 ${t('機器搶走的職缺')}${t('：')}${TV.jobs.map(k => t(JOB_DEFINITIONS?.[k]?.title || k)).join(t('、'))}</div>`;
                 const B = TV.bio; if (B && (B.law || B.price || B.gmban || B.halt || B.st?.leak)) html += `<div class="tech-desc">🧬 ${[B.law ? `📋 ${t('生物安全法')}` : '', B.price ? `💊 ${t('藥價管制')}` : '', B.gmban ? `🌾 ${t('禁止基因作物')}` : '', B.halt ? `✋ ${t('停止人體實驗')}` : '', B.st?.leak ? `☣️ ${t('實驗室外洩')} ${B.st.leak}` : ''].filter(Boolean).join(' · ')}</div>`;
+                // v8.0.0 蒸汽煉金:煤煙(跟路線無關:有鍋爐、工坊就會冒煙)與法律
+                const SX = TV.steam; if (SX && (SX.smog >= 3 || SX.air || SX.factory || SX.homunban)) {
+                    const L = [SX.smog >= 3 ? `🏭 ${t('煤煙')} <b class="tech-risk-${SX.lv === 'black' ? 'high' : SX.lv === 'grey' ? 'mid' : 'low'}">${SX.smog}</b>${t('（')}${esc(SX.word)}${t('）')}` : '', SX.air ? `🌫️ ${t('清潔空氣法')}` : '', SX.factory ? `🏭 ${t('工廠法')}` : '', SX.homunban ? `🧪 ${t('禁造人造人')}` : '', SX.st?.great ? `🌑 ${t('大黑霧')} ${SX.st.great}` : '', SX.stone ? `🔮 ${t('賢者之石只能把石頭變成鋼，變不出銀幣')}` : ''].filter(Boolean);
+                    html += `<div class="tech-desc">${L.join(' · ')}</div>`;
+                }
                 const st = TV.st || {};
                 if ((st.minor || 0) + (st.mid || 0) + (st.big || 0) > 0) html += `<div class="tech-desc" style="color:var(--text-muted)">🟡 ${t('小事')} ${st.minor || 0} · 🟠 ${t('中事')} ${st.mid || 0} · 🔴 ${t('大災')} ${st.big || 0}${st.laid ? ` · ${t('被機器裁員')} ${st.laid}` : ''}${st.died ? ` · ${t('罹難')} ${st.died}` : ''}${st.left ? ` · ${t('搬走')} ${st.left}` : ''}</div>`;
                 html += '</div>';
@@ -364,8 +368,8 @@ Object.assign(RimTownApp.prototype, {
             for (const k of PK) {
                 const st = TV.stages?.[k] || {}; const nm = PI[k]?.name || k; const ic = PI[k]?.icon || '';
                 groups.push({ e: 4, f: p => (p.era || 1) === 4 && onP(p, k), en: eraN(4, k), pk: k, lock: TV.main3 < TV.gate ? t('{p}的第四時代要：工坊時代研究到 75%').replace('{p}', `${ic}${nm}`) : '' });
-                groups.push({ e: 5, f: p => p.era === 5 && onP(p, k), en: eraN(5, k), pk: k, lock: (st[4] || 0) < TV.gate || TV.tier < 2 ? t('{p}的第五時代要：第四時代研究到 75%、城鎮升到城市').replace('{p}', `${ic}${nm}`) + (k === 'bio' ? t('、蓋好研究院') : '') : '' });
-                groups.push({ e: 6, f: p => p.era === 6 && onP(p, k), en: eraN(6, k), pk: k, excl: 1, lock: P !== k ? t('專屬：只有走{p}路線的小鎮才能研究').replace('{p}', `${ic}${nm}`) : ((st[5] || 0) < TV.gate || TV.tier < 3) ? t('第六時代要：第五時代研究到 75%、城鎮升到王都') + (k === 'bio' ? t('；神話基因還要蓋基因實驗室') : '') : '' });
+                groups.push({ e: 5, f: p => p.era === 5 && onP(p, k), en: eraN(5, k), pk: k, lock: (st[4] || 0) < TV.gate || TV.tier < 2 ? t('{p}的第五時代要：第四時代研究到 75%、城鎮升到城市').replace('{p}', `${ic}${nm}`) + (k === 'bio' ? t('、蓋好研究院') : k === 'steam' ? t('、蓋好齒輪工坊') : '') : '' });
+                groups.push({ e: 6, f: p => p.era === 6 && onP(p, k), en: eraN(6, k), pk: k, excl: 1, lock: P !== k ? t('專屬：只有走{p}路線的小鎮才能研究').replace('{p}', `${ic}${nm}`) : ((st[5] || 0) < TV.gate || TV.tier < 3) ? t('第六時代要：第五時代研究到 75%、城鎮升到王都') + (k === 'bio' ? t('；神話基因還要蓋基因實驗室') : k === 'steam' ? t('；賢者之石、人造人還要蓋煉金工坊') : '') : '' });
             }
             groups.push({ e: 7, f: p => p.era === 7, en: ERAS[7] });
             for (const g of groups) {

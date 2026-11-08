@@ -1,4 +1,4 @@
-// RimTown - sim-tech.js：v7.8.0 科技路線（⚙️ 電子機械）；v7.9.0 加上 🧬 基因生物（sim-bio.js）、路線大辯論（多選一）
+// RimTown - sim-tech.js：v7.8.0 科技路線（⚙️ 電子機械）；v7.9.0 加上 🧬 基因生物（sim-bio.js）、路線大辯論（多選一）；v8.0.0 加上 🚂 蒸汽煉金（sim-steam.js）
 // v7.9.0 規則：每條路線分三個時代（第四～六時代）。第四、五時代是「基礎」——不管有沒有選路線、選哪條，大家都能用原價研究；
 // 第六時代才是路線「專屬」，只有走那條路線的小鎮能研究。主線工坊時代研究到 75% 時開「路線大辯論」：所有路線＋維持傳統一起投票（多選一）。
 // 電子機械：機械 → 電力（核分裂、微電子、精密製造、機器人、核融合）→ 太空（專屬：火箭、核子武器、衛星、太空站、量子電腦、AI 全智能體）。
@@ -47,8 +47,17 @@ const TECH = (function () {
             con: '貧富差距變成基因差距、跟信仰衝突，實驗室可能外洩',
             stages: { 4: { name: '育種', icon: '🌾' }, 5: { name: '生技', icon: '💉' }, 6: { name: '基因', icon: '🧬' } },
         },
+        // v8.0.0 蒸汽煉金(科技、事件、法律在 sim-steam.js)
+        steam: {
+            icon: '🚂', name: '蒸汽煉金', short: '鍋爐、齒輪、飛艇與煉金術', w: 1,
+            pro: '很需要人手，工作不會被機器搶走；飛艇把遠方拉近',
+            con: '煤煙把天空燻黑、礦工和鐵匠咳個不停，鍋爐一炸就是人命',
+            stages: { 4: { name: '蒸汽', icon: '🚂' }, 5: { name: '煉金', icon: '⚗️' }, 6: { name: '以太', icon: '✨' } },
+        },
     };
     const PATH_KEYS = () => Object.keys(PATHS);
+    // v8.0.0 各路線模組自己掛上:村民傾向、小鎮吸引力、投票理由、職缺倍率
+    const PREFER = {}, APPEAL = {}, WHY_FOR = {}, WHY_NO = [], JOBX = [];
     const REFINE = 'refine';
     const pathsOf = (key) => { const d = (typeof RESEARCH_TREE !== 'undefined') ? RESEARCH_TREE[key] : null; const p = d?.path; return !p ? [] : Array.isArray(p) ? p : [p]; };
     const onPath = (key, P) => pathsOf(key).includes(P);
@@ -98,7 +107,7 @@ const TECH = (function () {
 
     // ---------- 機器搶工作:職缺倍率 ----------
     const AUTO = { mechanized_farming: { farmer: 0.9 }, assembly_line: { tailor: 0.8, blacksmith: 0.85, carpenter: 0.9 }, robotics: { farmer: 0.9, miner: 0.9, cook: 0.9 }, ai_agent: { trader: 0.85 } };
-    function jobMult(w, k) { let m = 1; for (const [tk, map] of Object.entries(AUTO)) if (map[k] && done(w, tk)) m *= map[k]; return Math.max(0.5, m); }
+    function jobMult(w, k) { let m = 1; for (const [tk, map] of Object.entries(AUTO)) if (map[k] && done(w, tk)) m *= map[k]; for (const f of JOBX) { try { m *= f(w, k) || 1; } catch (e) {} } return Math.min(1.4, Math.max(0.5, m)); } // v8.0.0 蒸汽煉金很需要人手:職缺可以變多
     const automatable = (w) => { const out = new Set(); for (const [tk, map] of Object.entries(AUTO)) if (done(w, tk)) for (const k of Object.keys(map)) out.add(k); return out; };
 
     // ---------- 路線投票 ----------
@@ -120,6 +129,7 @@ const TECH = (function () {
     }
     function prefer(w, a, P) {
         if (P === 'bio') return preferBio(w, a);
+        if (PREFER[P]) { try { return PREFER[P](w, a); } catch (e) { return 0; } }
         if (P !== 'electro') return 0;
         let s = 0; const k = a.job?.key;
         s += ({ researcher: 2, blacksmith: 1.5, trader: 1, carpenter: 0.5, miner: 0.5, guard: 0.5, mayor: 0.5, tailor: -1.2, priest: -1, farmer: -0.3 })[k] || 0;
@@ -140,7 +150,7 @@ const TECH = (function () {
     const baseOfW = (w) => { try { return typeof ECON !== 'undefined' && ECON.baseOf ? ECON.baseOf(w) : 'frontier'; } catch (e) { return 'frontier'; } };
     function leanOf(w) {
         const T = S(w); if (T.lean === undefined || T.lean === null) {
-            const b = baseOfW(w); const map = LEAN_BY_BASE[b] || null; const ks = PATH_KEYS(); // 還沒開放的路線(蒸汽煉金)份額照比例分給其他路線
+            const b = baseOfW(w); const map = LEAN_BY_BASE[b] || null; const ks = PATH_KEYS(); // 沒有載入的路線,份額照比例分給其他路線
             const wt = (k) => map ? (map[k] || 0) : (PATHS[k].w || 1); let tot = ks.reduce((x, k) => x + wt(k), 0); if (tot <= 0) tot = 1;
             let r = Math.random() * tot; T.lean = ks[ks.length - 1]; for (const k of ks) { r -= wt(k); if (r < 0) { T.lean = k; break; } } T.leanWhy = map ? b : null;
         }
@@ -170,6 +180,7 @@ const TECH = (function () {
             const food = w.stockpile?.get?.('food') || 0; if (food < ad.length * 3) s += 0.5;
             if (share(a => a.job?.key === 'farmer') >= 0.2) s += 0.3; if (share(a => (a.age ?? 30) >= 50) >= 0.15) s += 0.3;
         }
+        if (APPEAL[P]) { try { s += APPEAL[P](w, ad, share) || 0; } catch (e) {} }
         return Math.round(s * 100) / 100;
     }
     const appeals = (w) => Object.fromEntries(PATH_KEYS().map(P => [P, appeal(w, P)]));
@@ -217,8 +228,9 @@ const TECH = (function () {
         if (p.kind === 'tech_path') {
             const b = p.opts ? bestOpt(w, a, p.opts) : { P: p.refKey, s: prefer(w, a, p.refKey) }; s = b.s + (Math.random() - 0.5); const k = a.job?.key;
             if (s > 0 && p.opts) (p.pick || (p.pick = {}))[a.agentId] = b.P;
-            why = s > 0 ? (b.P === 'bio' ? (famHurt(w, a) ? 'bio_family' : ({ doctor: 'path_fit', farmer: 'path_fit', researcher: 'path_fit' }[k] || 'bio_life')) : ({ researcher: 'path_fit', blacksmith: 'path_fit', trader: 'path_fit' }[k] || 'growth'))
-                : (devoutA(w, a) && (p.opts || []).includes('bio') ? 'bio_god' : automatable(w).has(k) || k === 'tailor' ? 'path_job' : stance(w, a) === 'conservative' ? 'oldways' : 'path_fear');
+            let no = null; for (const f of WHY_NO) { try { no = no || f(w, a, p.opts || [p.refKey]); } catch (e) {} }
+            why = s > 0 ? (WHY_FOR[b.P] ? WHY_FOR[b.P](w, a) : b.P === 'bio' ? (famHurt(w, a) ? 'bio_family' : ({ doctor: 'path_fit', farmer: 'path_fit', researcher: 'path_fit' }[k] || 'bio_life')) : ({ researcher: 'path_fit', blacksmith: 'path_fit', trader: 'path_fit' }[k] || 'growth'))
+                : (devoutA(w, a) && (p.opts || []).includes('bio') ? 'bio_god' : no ? no : automatable(w).has(k) || k === 'tailor' ? 'path_job' : stance(w, a) === 'conservative' ? 'oldways' : 'path_fear');
         }
         else if (p.kind === 'tech_safety' || p.kind === 'tech_abandon') {
             const T = S(w); const hurt = T.mk[a.agentId]; const fam = hurt === 'bereaved' || hurt === 'rad';
@@ -395,14 +407,15 @@ const TECH = (function () {
         const m = T.mk?.[a.agentId]; if (m === 'bereaved') return t('核災奪走了我的家人'); if (m === 'rad') return t('我吸過核電廠外洩的輻射，到現在還在咳'); if (m === 'laid') return t('我的工作被機器取代了');
         return '';
     }
+    const BIG_TXT = { meltdown: '不久前出過核災', lableak: '不久前實驗室外洩' }; // v8.0.0 各路線大災的一句話(sim-steam.js 加上大黑霧)
     function townBrief(w) {
-        const T = w.tech; if (!T?.path) { const n = w.tech?.inc?.find?.(x => x[1] === 'big' && day(w) - x[0] <= 60); return n ? (n[2] === 'lableak' ? t('不久前實驗室外洩') : t('不久前出過核災')) : ''; } const Pd = PATHS[T.path]; const R = w.research; const era = R?.currentEra?.() || 4; const en = eraName(w, era, T.path);
+        const T = w.tech; if (!T?.path) { const n = w.tech?.inc?.find?.(x => x[1] === 'big' && day(w) - x[0] <= 60); return n ? t(BIG_TXT[n[2]] || '不久前出過核災') : ''; } const Pd = PATHS[T.path]; const R = w.research; const era = R?.currentEra?.() || 4; const en = eraName(w, era, T.path);
         let s = t('小鎮走{name}路線，現在是「{era}」時代').replace('{name}', t(Pd.name)).replace('{era}', t(en.name));
-        const big = T.inc.find(x => x[1] === 'big' && day(w) - x[0] <= 60); if (big) s += big[2] === 'lableak' ? t('，不久前實驗室外洩') : t('，不久前出過核災');
+        const big = T.inc.find(x => x[1] === 'big' && day(w) - x[0] <= 60); if (big) s += t('，') + t(BIG_TXT[big[2]] || '不久前出過核災');
         if (T.law) s += t('，有核安法'); if (T.noNuke) s += t('，已經廢核');
         return s;
     }
-    return { W: null, LEAN, LEAN_BY_BASE, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
+    return { W: null, PREFER, APPEAL, WHY_FOR, WHY_NO, JOBX, AUTO, BIG_TXT, LEAN, LEAN_BY_BASE, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
 })();
 
 // ---------- 科技樹:機械時代歸到電子機械路線,加上電力、太空時代 ----------
@@ -503,7 +516,7 @@ if (typeof World !== 'undefined') {
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () {
         const d = _ser.call(this);
-        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, lean: T.lean ?? null, leanWhy: T.leanWhy ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, v79: T.v79 || 0 }; }
+        if (d && this.tech) { const T = this.tech; d.tech = { path: T.path || null, since: T.since ?? null, yes: T.yes || 0, no: T.no || 0, tries: T.tries || 0, lastProp: T.lastProp ?? null, risk: T.risk ?? 1, law: T.law || 0, lastLaw: T.lastLaw ?? null, lastUnsafe: T.lastUnsafe ?? null, noNuke: T.noNuke || 0, pendAbandon: T.pendAbandon ?? null, lastBig: T.lastBig ?? null, inc: T.inc, st: T.st, mk: T.mk, ref: T.ref || 0, lawNo: T.lawNo || [], carry: this.research?._carry || 0, nextDebate: T.nextDebate ?? null, lean: T.lean ?? null, leanWhy: T.leanWhy ?? null, app0: T.app0 || null, tally: T.tally || null, bio: T.bio || null, steam: T.steam || null, v79: T.v79 || 0, v80: T.v80 || 0 }; }
         return d;
     };
     const _load = World.prototype.loadSave;
@@ -511,7 +524,9 @@ if (typeof World !== 'undefined') {
         const r = _load.call(this, data);
         try { if (r) { this.tech = (data?.tech && typeof data.tech === 'object') ? data.tech : null; TECH.W = this; const T = TECH.S(this);
             // v7.9.0 v7.8 時因為研究過機械時代就被自動判定走電子機械(沒投過票)、也還沒研究專屬科技的小鎮:路線重新空出來,讓大家辯論
-            if (T.path && !T.yes && !T.no && !T.tries && !T.v79 && !Object.values(this.research?.projects || {}).some(p => TECH.exclusive(p.key) && TECH.onPath(p.key, T.path) && (p.status === 'complete' || p.status === 'researching'))) { T.path = null; T.since = null; } T.v79 = 1; if (this.research) { this.research._carry = T.carry || 0; const rp = this.research.projects[TECH.REFINE]; if (rp && T.ref) rp.name = t('精進改良') + ' Lv.' + (T.ref + 1); if (rp && rp.status === 'complete') rp.status = 'available'; this.research.refreshLocks?.(); } TECH.recost(this); this.buildings?.recomputeEffects?.(this); } } catch (e) { console.warn('[Tech] load', e); }
+            if (T.path && !T.yes && !T.no && !T.tries && !T.v79 && !Object.values(this.research?.projects || {}).some(p => TECH.exclusive(p.key) && TECH.onPath(p.key, T.path) && (p.status === 'complete' || p.status === 'researching'))) { T.path = null; T.since = null; } T.v79 = 1;
+            // v8.0.0 還沒選路線的小鎮:風氣是在蒸汽煉金開放前抽的,重新照地形抽一次(三條路線)
+            if (!T.v80) { if (!T.path && TECH.PATHS.steam) { T.lean = null; T.leanWhy = null; } T.v80 = 1; } if (this.research) { this.research._carry = T.carry || 0; const rp = this.research.projects[TECH.REFINE]; if (rp && T.ref) rp.name = t('精進改良') + ' Lv.' + (T.ref + 1); if (rp && rp.status === 'complete') rp.status = 'available'; this.research.refreshLocks?.(); } TECH.recost(this); this.buildings?.recomputeEffects?.(this); } } catch (e) { console.warn('[Tech] load', e); }
         return r;
     };
 }

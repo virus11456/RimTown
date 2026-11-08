@@ -32,6 +32,7 @@ const AFTERMATH = (() => {
     const owner = (w, a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
     const jailed = (w, a) => !!(w.civic?.jail?.[a?.agentId] > day(w));
     const leader = (w, a) => { if (hasT(a, 'charismatic')) return true; try { return typeof DARK !== 'undefined' && (DARK.reputation(w, a)?.score ?? 0) >= 60; } catch (e) { return false; } };
+    const WORK_ACC = ['boiler_burst', 'mech_rampage', 'layoff']; // 工安意外與裁員
     const CAUSE = { meltdown: '核災', leak: '輻射外洩', layoff: '機器裁員', smash: '砸機器', watch: 'AI 監控', caste: '基因階級衝突', black_clinic: '黑市改造出事', price_storm: '藥價暴漲', superbug: '抗藥性病菌', lableak: '實驗室外洩', epidemic: '疫情', war: '戰爭' };
     const R = {
         loot: { icon: '🛒', name: '搶商店' }, hoard: { icon: '🧺', name: '囤貨' }, flee: { icon: '🏃', name: '逃難' }, help: { icon: '🤝', name: '互助' }, blame: { icon: '👉', name: '怪罪' },
@@ -77,10 +78,10 @@ const AFTERMATH = (() => {
             hoard: (rich ? 1.5 : c >= 40 ? 0.9 : -3) + (hasT(a, 'pessimist') || hasT(a, 'neurotic') ? 0.8 : 0) + (hasT(a, 'greedy') || hasT(a, 'glutton') ? 0.8 : 0) + sev * 0.3 - 1.1 + (fv ? 0.3 : 0),
             flee: sev >= 3 ? (rich ? 1.2 : c >= 50 ? 0 : -2) + (kids ? 0.8 : 0) + (hasT(a, 'pessimist') ? 0.5 : 0) - 1.6 : -9,
             help: (hasT(a, 'kind') ? 1.2 : 0) + (hasT(a, 'ascetic') || hasT(a, 'optimist') ? 0.3 : 0) + (c >= 15 ? 0.3 : -2) + (hasV(a, '家庭') ? 0.3 : 0) + (cr.vic.some(id => { const b = w.agents[id]; const q = b && circle(w, a, b); return q != null && q <= 1; }) ? 0.9 : 0) - (hasT(a, 'greedy') ? 1 : 0) - 1.0 - 0.12 * (cr.n.help || 0),
-            blame: (hasT(a, 'abrasive') ? 1 : 0) + (hasT(a, 'jealous') ? 0.8 : 0) + (hasT(a, 'pessimist') ? 0.5 : 0) + (fv ? 1 : 0) + (cr.blame ? 0.8 : 0) - 0.7,
+            blame: (hasT(a, 'abrasive') ? 1 : 0) + (hasT(a, 'jealous') ? 0.8 : 0) + (hasT(a, 'pessimist') ? 0.5 : 0) + (fv ? 1 : 0) + (cr.blame ? 0.8 : 0) + (WORK_ACC.includes(cr.kind) && cr.blame ? 0.5 : 0) - 0.7,
             rumor: (hasT(a, 'gossip') ? 1.5 : 0) + (honesty(a) < 2.5 ? 0.5 : 0) + (hasT(a, 'neurotic') ? 0.5 : 0) - 0.8,
-            protest: (hasT(a, 'charismatic') ? 0.8 : 0) + (a.techStance === 'progressive' ? 0.4 : 0) + (fv ? 1.2 : 0) + (hasT(a, 'abrasive') ? 0.3 : 0) + (['meltdown', 'lableak', 'price_storm', 'layoff', 'watch'].includes(cr.kind) ? 0.4 : -0.6) - 0.8,
-            pray: devout(w, a) ? (sev >= 2 || fv ? 1.5 : 0.4) - 0.2 * (cr.n.pray || 0) : -2, // 嚴重或家人受害才會大量禱告;人越多越不稀奇
+            protest: (hasT(a, 'charismatic') ? 0.8 : 0) + (a.techStance === 'progressive' ? 0.4 : 0) + (fv ? 1.2 : 0) + (hasT(a, 'abrasive') ? 0.3 : 0) + (['meltdown', 'lableak', 'price_storm', 'layoff', 'watch', 'boiler_burst', 'smog_week', 'great_smog'].includes(cr.kind) ? 0.4 : -0.6) - 0.8,
+            pray: devout(w, a) ? (sev >= 2 || fv ? 1.5 : 0.4) - 0.2 * (cr.n.pray || 0) - (WORK_ACC.includes(cr.kind) && !fv ? 0.5 : 0) : -2, // v8.0.0 工安意外:家屬以外的人比較少禱告、比較會怪老闆 // 嚴重或家人受害才會大量禱告;人越多越不稀奇
             volunteer: (a.job?.key === 'doctor' ? 2 : a.job?.key === 'guard' ? 1 : 0) + (hasT(a, 'kind') ? 0.8 : 0) - 0.6,
             comfort: fv ? 1.5 : -1,
             none: 0.8,
@@ -146,7 +147,7 @@ const AFTERMATH = (() => {
             mem(w, a, '{c}之後，我跟大家一起上街，要鎮公所給個交代。', { c: cr.cause }, 6);
             if ((cr.n.protest || 0) + 1 === 3) { // 夠多人才變成集會,把相關提案提早推上議程
                 log(w, '📢 {c}之後，鎮民聚在廣場抗議，要鎮公所給個交代。帶頭的是{a}。', { c: cr.cause, a: a.name }, a.name); news(w, '📢 {c}之後，鎮民上街抗議', { c: cr.cause }, 8, [a.name]);
-                const T = w.tech; if (T) { if (cr.kind === 'meltdown' || cr.kind === 'leak') T.pendAbandon = d; if (T.bio && cr.kind === 'lableak') T.bio.pendHalt = d; if (T.bio && cr.kind === 'price_storm') T.bio.pendPrice = d; }
+                const T = w.tech; if (T) { if (cr.kind === 'meltdown' || cr.kind === 'leak') T.pendAbandon = d; if (T.bio && cr.kind === 'lableak') T.bio.pendHalt = d; if (T.bio && cr.kind === 'price_storm') T.bio.pendPrice = d; if (T.steam && cr.kind === 'boiler_burst' && !T.steam.factory) T.steam.pendFactory = d; if (T.steam && (cr.kind === 'smog_week' || cr.kind === 'great_smog') && !T.steam.air) T.steam.pendAir = d; } // v8.0.0 鍋爐爆炸→工廠法、黑霧→清潔空氣法
                 for (const x of ad) { const q = x.job?.key === 'mayor'; if (q) x.moodModifier = (x.moodModifier || 0) - 4; }
             }
         } else if (r === 'pray') {

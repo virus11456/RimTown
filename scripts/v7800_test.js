@@ -24,7 +24,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const complete = (k) => { const p = R.projects[k]; p.status = 'complete'; p.progress = p.cost; }; const reset = (k) => { const p = R.projects[k]; p.status = 'locked'; p.progress = 0; };
       const avail = () => R.getAvailable().map(p => p.key); const tierTo = (n) => { TIERS.S?.(w); w.tierState.lv = n; };
       const main = (e) => Object.values(R.projects).filter(p => (p.era || 1) === e && !p.path && p.key !== 'refine').map(p => p.key);
-      const elec = (e) => Object.values(R.projects).filter(p => p.era === e && p.path === 'electro').map(p => p.key);
+      const elec = (e) => Object.values(R.projects).filter(p => p.era === e && TECH.onPath(p.key, 'electro')).map(p => p.key); /* v8.0.0 蒸汽動力兩條路線共用(path 是陣列) */
       // 1) 科技樹:機械歸到電子機械,電力 6 項、太空 7 項,三種新建築
       out.tree = { e4: elec(4).length, e5: elec(5).length, e6: elec(6).length, shared4: main(4).length, bldg: ['power_plant', 'nuclear_plant', 'launch_site'].every(k => BUILDING_TEMPLATES[k]), refine: !!R.projects.refine };
       // 2) 還沒決定路線:工坊時代就算研究完,機械科技也鎖著
@@ -88,7 +88,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     });
     ok(r.tree.e4 === 6 && r.tree.e5 === 10 && r.tree.e6 === 6 && r.tree.shared4 === 5 && r.tree.bldg && r.tree.refine, '科技樹：機械 6、電力 10（v7.9.0 微電子、精密製造、機器人、核融合移下來）、太空 6 項（專屬：火箭、核子武器、衛星、太空站、量子電腦、AI），共同近代 5 項，三種新建築，精進改良', r.tree);
     ok(r.locked.before && r.debate.made && r.debate.open && r.debate.opts.length >= 2 && /電子機械|Electro/.test(r.debate.title), '工坊時代 75% 才辯論路線（多選一：電子機械、基因生物、維持傳統）；機械科技不用選路線就能研究', { l: r.locked, d: r.debate });
-    ok(r.vote.rs === 'for' && r.vote.rsPick === 'electro' && (r.vote.tl === 'against' || r.vote.tlPick === 'bio'), '投票：研究員投電子機械；怕被機器搶飯碗的裁縫不會投電子機械（反對或改投基因生物）', r.vote);
+    ok(r.vote.rs === 'for' && r.vote.rsPick === 'electro' && (r.vote.tl === 'against' || (r.vote.tlPick && r.vote.tlPick !== 'electro')), '投票：研究員投電子機械；怕被機器搶飯碗的裁縫不會投電子機械（反對或改投別條路線）', r.vote);
     ok(!r.forced.path && r.forced.tries === 1 && r.forced.wait >= 25 && !r.forced.again && r.forced.open >= 1, '否決就是維持傳統：30 天後再辯論，不會強制上路', r.forced);
     ok(r.chosen.status === 'done' && r.chosen.path === 'electro' && r.chosen.yes === 2 && r.chosen.no === 1 && r.chosen.era5 && r.chosen.era6 && r.chosen.era5 !== r.chosen.era6, '提案通過就決定路線、記下贊成反對；時代名稱依路線', r.chosen);
     ok(r.gate5.tier1 && r.gate5.tier2, '電力時代：機械 75% 而且要城市', r.gate5);
