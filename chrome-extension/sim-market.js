@@ -78,7 +78,8 @@ const MARKET = (() => {
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id];
             if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
-            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
+            const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人沒工資
+            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
             const rate = payRate(w, k);
             const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
