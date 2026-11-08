@@ -321,6 +321,7 @@ class ProposalSystem {
             if (built.has(key) || builtNames.has(tm.name) || !this._cool(day, 'build:' + key)) continue;
             if (w.research?.isUnlocked && !w.research.isUnlocked(key)) continue; // v6.40.0 還沒研究到的建築不會被提
             if (!this._obtainable(w, tm.costs)) continue; // v7.2.1 材料拿不到就不提
+            if (typeof HEALTH !== 'undefined' && HEALTH.canBuild && !HEALTH.canBuild(w, key)) continue; // v7.4.0 研究院要城市以上
             const jobs = Object.entries(PROPOSAL_JOB_BUILDINGS).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             let weight = 1;
             if (key === 'granary' && food < 120) weight += 2; if (key === 'farm_irrigation' && food < 150) weight += 1.5;
@@ -742,6 +743,7 @@ class ProposalSystem {
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
                 }
                 case 'antitrust': { result = (typeof CYCLE !== 'undefined') ? CYCLE.split(w, p) : ''; ok = !!result; break; } // v7.2.0 反壟斷
+                case 'medaid': { result = (typeof HEALTH !== 'undefined') ? HEALTH.setAid(w) : ''; ok = !!result; break; } // v7.4.0 公費醫療補助
                 case 'tariff': { result = (typeof TRADE !== 'undefined') ? TRADE.setTariff(w, p.newRate || 0) : ''; ok = !!result; break; } // v7.1.0 關稅
                 case 'faith_tax': case 'faith_untax': { result = (typeof FAITH !== 'undefined' && FAITH.setTax) ? FAITH.setTax(w, p.kind === 'faith_tax') : ''; ok = !!result; break; } // v7.0.0 宗教捐獻課稅／取消
                 case 'upgrade': { const r = w.buildings?.startUpgrade?.(p.refKey, w); ok = !!r; result = ok ? '工匠開始升級了' : '沒辦法升級（正在升級或已到頂）'; break; }

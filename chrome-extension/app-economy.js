@@ -113,7 +113,7 @@ Object.assign(RimTownApp.prototype, {
         }
 
 
-        if (S === 'overview') { const E = this._eventPieces(['festival', 'weather', 'mods']); html += E.festival + E.weather + E.mods; } // v7.3.0 天氣、節慶、生效中的影響從舊「事件」分頁搬來
+        if (S === 'overview') { const E = this._eventPieces(['festival', 'weather', 'mods']); html += E.festival + E.weather + E.mods + this._healthCardHtml(); } // v7.3.0 天氣、節慶、生效中的影響從舊「事件」分頁搬來
         const sp = this.state.stockpile || {};
         const res = sp.resources || {};
         const icons = {salt:'🧂',paper:'📄',food:'🌾',wood:'🪵',stone:'🪨',metal:'⚙️',cloth:'🧵',herbs:'🌿',silver:'💰',meals:'🍲',tools:'🔧',clothing:'👕',medicine:'💊',furniture:'🪑',research_points:'📚',
@@ -319,7 +319,8 @@ Object.assign(RimTownApp.prototype, {
                 const list = Object.values(projects).filter(p => (p.era || 1) === era);
                 if (!list.length) continue;
                 const done = list.filter(p => p.status === 'complete').length;
-                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四'][era]))}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
+                html += `<div class="tech-era"><div class="tech-era-head">${ERAS[era]?.icon || ''} ${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五'][era]))}${t('・')}${t(ERAS[era]?.name || '')} <span>${done}/${list.length}</span></div>`;
+                if (era >= 5 && typeof HEALTH !== 'undefined' && this.world && !HEALTH.bioOpen(this.world)) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${t('生技研究要：機械時代全部研究完、城鎮升到城市、蓋好研究院')}</div>`; // v7.4.0
                 for (const p of list) {
                     const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
                     const icon = { done: '✅', now: '🔬', open: '🟢', locked: '🔒' }[st];

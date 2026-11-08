@@ -830,6 +830,7 @@ class LifecycleSystem {
             // v6.89.0 醫療:診所、醫院、澡堂、下水道、草藥醫學讓病死與意外少一些,老死只少一點
             { const heal = world.buildings?.getEffect?.('healing_bonus', 0) || 0; if (heal > 0) deathChance /= (1 + heal * 0.4); }
 
+            if (typeof HEALTH !== 'undefined' && world.health) deathChance *= HEALTH.deathMult(world, npc); // v7.4.0 心臟不好壽命短
             if (deathChance > 0 && Math.random() < deathChance) {
                 this._killNpc(world, npc);
             }

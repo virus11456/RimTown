@@ -2424,7 +2424,7 @@ class PixelTileMap {
                     }
                 } else if (dist > 1) {
                     // Walk toward current waypoint at constant speed
-                    const step = Math.min(WALK_SPEED, dist);
+                    const step = Math.min(WALK_SPEED * (typeof HEALTH !== 'undefined' ? HEALTH.speed(aid) : 1), dist); // v7.4.0 腳不好走得慢
                     let newX = pos.x + (dx / dist) * step;
                     let newY = pos.y + (dy / dist) * step;
                     // Wall collision avoidance fallback (shouldn't happen with A* but just in case)

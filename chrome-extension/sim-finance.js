@@ -88,7 +88,7 @@ const LABOR = (() => {
     const wage = (k) => (typeof WALLET !== 'undefined' && WALLET.WAGE?.[k]) || 4;
     function setJob(w, a, k) { if (typeof Job === 'undefined' || typeof JOB_DEFINITIONS === 'undefined' || !JOB_DEFINITIONS[k]) return false; a.job = new Job(k); return true; }
     // 一位沒工作的人挑最適合的職缺(擅長＋興趣＋工資)
-    function bestOpening(a, open) { let best = null, bs = -1e9; for (const [k, n] of Object.entries(open)) { if (n <= 0) continue; const s = skillOf(a, k) + wage(k) * 0.6 + Math.random() * 2; if (s > bs) { bs = s; best = k; } } return best; }
+    function bestOpening(a, open) { let best = null, bs = -1e9; for (const [k, n] of Object.entries(open)) { if (n <= 0) continue; const s = skillOf(a, k) + wage(k) * 0.6 + Math.random() * 2 + (typeof HEALTH !== 'undefined' ? (HEALTH.jobFit(a, k) - 1) * 6 : 0); if (s > bs) { bs = s; best = k; } } return best; }
     function weekly(w) {
         const L = S(w), d = day(w), wk = Math.floor(d / 7); if (L.lastWeek === wk) return; L.lastWeek = wk;
         const all = npcs(w).filter(a => !(w.isAway?.(a.agentId))); const sl = slots(w, all); let fl = filled(all);
@@ -96,7 +96,7 @@ const LABOR = (() => {
         let cut = 0;
         for (const k of Object.keys(RATIO).sort((x, y) => ((fl[y] || 0) - sl[y]) - ((fl[x] || 0) - sl[x]))) {
             if (cut >= 2) break; const n = fl[k] || 0; if (n <= sl[k] + 1 || n <= sl[k] * 1.2) continue;
-            const pool = all.filter(a => a.job?.key === k && !isBoss(w, a) && w.union?.leader !== a.agentId).sort((x, y) => skillOf(x, k) - skillOf(y, k));
+            const fit = (a) => (typeof HEALTH !== 'undefined' ? HEALTH.jobFit(a, k) : 1); const pool = all.filter(a => a.job?.key === k && !isBoss(w, a) && w.union?.leader !== a.agentId).sort((x, y) => skillOf(x, k) * fit(x) - skillOf(y, k) * fit(y)); // v7.4.0 身體不適合的先被裁
             const a = pool[0]; if (!a) continue; a.job = null; L.jobless[a.agentId] = d; L.stats.laidOff++; cut++; fl[k] = n - 1;
             a.addThought?.('laid_off', w); mem(w, a, '{j}的人太多了，我被裁掉了，得重新找工作。', { j: t(jt(k)) }, 7);
             log(w, '📉 {j}的人手過剩，{a}被裁員了。', { j: t(jt(k)), a: a.name }, a.name);
