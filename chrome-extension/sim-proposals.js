@@ -687,6 +687,7 @@ class ProposalSystem {
                     const r = p.side === 'buy' ? w.shop?.buy?.(p.refKey, p.qty, w) : w.shop?.sell?.(p.refKey, p.qty, w);
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
                 }
+                case 'tariff': { result = (typeof TRADE !== 'undefined') ? TRADE.setTariff(w, p.newRate || 0) : ''; ok = !!result; break; } // v7.1.0 關稅
                 case 'faith_tax': case 'faith_untax': { result = (typeof FAITH !== 'undefined' && FAITH.setTax) ? FAITH.setTax(w, p.kind === 'faith_tax') : ''; ok = !!result; break; } // v7.0.0 宗教捐獻課稅／取消
                 case 'upgrade': { const r = w.buildings?.startUpgrade?.(p.refKey, w); ok = !!r; result = ok ? '工匠開始升級了' : '沒辦法升級（正在升級或已到頂）'; break; }
                 case 'tier_up': { const r = (typeof TIERS !== 'undefined') ? TIERS.promote?.(w) : null; ok = !!r?.ok; result = ok ? '正式升格了' : (r?.error || '沒辦法升格'); break; } // v6.81.0

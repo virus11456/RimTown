@@ -4,6 +4,28 @@
 (function () {
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
+        // ── v7.1.0 貿易與關稅 ──
+        '近 30 天進口': 'Imports (30 days)',
+        '出口': 'exports',
+        '順差': 'surplus',
+        '逆差': 'deficit',
+        '進口關稅': 'Import tariff',
+        '已收': 'collected',
+        '商行老闆做進出口': 'the trading house owner handles trade',
+        '公庫直接跟商人交易': 'the treasury trades with merchants directly',
+        '進口': 'Imported',
+        '商行進口': 'Trading house import',
+        '向商行買進口貨': 'Bought imports from the trading house',
+        '商行出口': 'Trading house export',
+        '賣貨給商行': 'Sold goods to the trading house',
+        '🚢 {a}的商行跟{m}做了生意：{d}（賺了 {p} 銀幣）。': '🚢 {a}\'s trading house did business with {m}: {d} (profit {p} silver).',
+        '進口貨課 {n}% 關稅': 'Put a {n}% tariff on imports',
+        '{who}說外地便宜的貨一直進來，本地做的賣不出好價錢。提議進口貨課 {n}% 關稅，保護鎮上的生計。': '{who} says cheap goods keep pouring in and local work can\'t fetch a fair price. They propose a {n}% tariff on imports to protect local livelihoods.',
+        '取消進口關稅': 'Repeal the import tariff',
+        '{who}說東西越來越貴，關稅讓外地貨進不來，苦的是大家。提議取消進口關稅。': '{who} says prices keep climbing and the tariff keeps outside goods away, hurting everyone. They propose repealing the import tariff.',
+        '進口關稅從 {a}% 調成 {n}%': 'Import tariff changed from {a}% to {n}%',
+        '進口關稅取消了': 'The import tariff was repealed',
+        '關稅': 'Tariff',
         // ── v7.0.0 浮動物價、就業市場、宗教財務 ──
         '糧價': 'Food prices',
         '衣價': 'Clothing prices',
