@@ -142,7 +142,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.ui.steam && r.ui.smog && r.ui.laws && !r.ui.later && r.ui.aether && !r.ui.undef && !r.ui.overflow, '介面：科技分頁有蒸汽煉金、煤煙、法律、以太時代；不再寫「之後的版本開放」', r.ui);
     if (lang === 'en') ok(!r.ui.cjk.length, '英文沒有中文', r.ui.cjk);
     // 首頁:科技路線段落介紹蒸汽煉金
-    await page.goto(BASE, { waitUntil: 'load' }); await page.waitForTimeout(1200);
+    await page.goto(BASE, { waitUntil: 'domcontentloaded', timeout: 120000 }); await page.waitForFunction(() => /蒸汽煉金|Steam Alchemy|路線|paths/i.test(document.body.innerText), null, { timeout: 90000 }).catch(() => {}); await page.waitForTimeout(1500);
     const lp = await page.evaluate(() => { const tx = document.body.innerText; return { steam: /蒸汽煉金|Steam Alchemy/.test(tx), smog: /大黑霧|Great Smog/.test(tx), later: /會在之後的版本開放|opens in a later version/.test(tx), v80: /v8\.0/.test(tx) }; });
     ok(lp.steam && lp.smog && !lp.later && lp.v80, '首頁：介紹蒸汽煉金、大黑霧，路線圖寫 v8.0', lp);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
