@@ -53,7 +53,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 7) 外地包商的工程款記進月報
       M.pend = 0; const paid = MARKET.procure(w, 100); out.works = { paid: Math.round(paid * 10) / 10, flow: Math.round(M.pend * 10) / 10 };
       // 8) 月報總帳:跑幾天,每天的流入流出＋其他 = 總數變化
-      MONEY.close(w); const allSum = () => Object.values(M.days).reduce((s, D) => s + Object.values(D).reduce((x, v) => x + v, 0), 0); const T0 = T(), S0 = allSum(), d0 = w._absDay(); let err = null; w.paused = false; try { for (let i = 0; i < 96 * 6; i++) w.tick(); } catch (e) { err = String(e); } w.paused = true; MONEY.close(w);
+      M.lastClose = null; MONEY.close(w); const allSum = () => Object.values(M.days).reduce((s, D) => s + Object.values(D).reduce((x, v) => x + v, 0), 0); const T0 = T(), S0 = allSum(), d0 = w._absDay(); let err = null; w.paused = false; try { for (let i = 0; i < 96 * 6; i++) w.tick(); } catch (e) { err = String(e); } w.paused = true; M.lastClose = null; MONEY.close(w); // 強制結帳(當天可能已經結過一次,之後的變化還沒入帳)
       const sum = allSum() - S0;
       const view = MONEY.view(w); out.ledger = { err, diff: Math.round((T() - T0 - sum) * 100) / 100, days: view.days, cats: view.ins.length + view.outs.length, net: view.net };
       // 9) 外地同名:出生地・本名;同一個出生地也撞名就重新取名;搬到沒人同名的鎮就用本名
