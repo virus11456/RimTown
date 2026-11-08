@@ -166,8 +166,9 @@ Object.assign(RimTownApp.prototype, {
             if (c.vax) h += `<div class="gh-vax">💉 ${c.vax.done ? t('疫苗研究出來了，已經 {n} 人打了疫苗').replace('{n}', c.vax.shots) : t('疫苗研究中')} <div class="progress-bar"><div class="progress-fill" style="width:${c.vax.pct}%"></div></div></div>`;
             const MS = { quar: '🏠 ' + t('病人隔離'), mask: '😷 ' + t('戴口罩'), close: '🚪 ' + t('酒館市集關閉'), lock: '🚧 ' + t('封城') };
             if (c.ms.length) h += `<div class="gh-ms">${c.ms.map(k => `<span>${MS[k] || k}</span>`).join('')}</div>`;
+            h += this._ghLabWays(V.ways, esc); // v8.2.0 疫情裡的人情世故
             h += `<div class="gh-spec">${sp.route.map(k => P.route[k].icon + ' ' + t(P.route[k].name)).join(' · ')} ｜ ${sp.sym.map(k => P.sym[k].icon + ' ' + t(P.sym[k].name)).join(' · ')}${(sp.quirk || []).length ? ' ｜ ' + sp.quirk.map(k => P.quirk[k].icon + ' ' + t(P.quirk[k].name)).join(' · ') : ''}</div>`;
-            const LG = { release: '🧪 在{x}身上釋放', found: '🩺 被發現了', rumor: '🗣️ 流言：「{x}」', panic: '😱 鎮上陷入恐慌', fading: '🌤️ 開始退燒', vax: '🔬 開始研究疫苗', vaxdone: '💉 疫苗問世', quar: '🏠 病人隔離', mask: '😷 口罩令', close: '🚪 酒館市集關閉', lock: '🚧 封城', boost: '😈 你推了一把', boom: '💥 {x}說謊爆炸', smoke: '💨 {x}說謊冒煙', confess: '😰 {x}怕爆炸全招了', blurt: '🗣️ {x}說溜了秘密' };
+            const LG = { release: '🧪 在{x}身上釋放', found: '🩺 被發現了', rumor: '🗣️ 流言：「{x}」', panic: '😱 鎮上陷入恐慌', fading: '🌤️ 開始退燒', vax: '🔬 開始研究疫苗', vaxdone: '💉 疫苗問世', quar: '🏠 病人隔離', mask: '😷 口罩令', close: '🚪 酒館市集關閉', lock: '🚧 封城', reopen: '🍻 酒館市集重新開門', boost: '😈 你推了一把', boom: '💥 {x}說謊爆炸', smoke: '💨 {x}說謊冒煙', confess: '😰 {x}怕爆炸全招了', blurt: '🗣️ {x}說溜了秘密' };
             h += `<div class="gh-lab-log">${c.log.map(l => `<div><span class="gh-when">${t('第 {d} 天').replace('{d}', l[0] - c.day + 1)}</span> ${esc(t(LG[l[1]] || l[1]).replace('{x}', l[2] || ''))}</div>`).join('')}</div>`;
             if (c.scape) h += `<div class="gh-lab-note">🎯 ${t('鎮上有人把矛頭指向{a}').replace('{a}', esc(c.scape))}</div>`;
             const canB = !c.boosting && (V.sandbox || V.power >= V.boostCost);
@@ -186,8 +187,22 @@ Object.assign(RimTownApp.prototype, {
         h += `<label class="gh-lab-row"><span>${t('第一個病人')}</span><select id="gh-lab-zero"><option value="">🎲 ${t('隨機')}</option>${people.map(a => `<option value="${esc(a.agentId)}" ${this._ghLabZero === a.agentId ? 'selected' : ''}>${esc(t(a.name))}${a.job?.title ? '・' + esc(t(a.job.title)) : ''}</option>`).join('')}</select></label>`;
         const enough = V.sandbox || V.power >= pv.cost; const why = !V.can.ok ? (V.can.why === 'cooldown' ? t('上一場災厄剛結束，還要 {n} 天才能再放').replace('{n}', V.can.days) : '') : !enough ? t('神力不夠（要 {n}）').replace('{n}', pv.cost) : '';
         h += `<button class="gh-play" data-gh="lab-release" ${V.can.ok && enough ? '' : 'disabled aria-disabled="true"'}>🧪 ${t('釋放（{n} 神力）').replace('{n}', pv.cost)}</button>${why ? `<div class="gh-d-note">${esc(why)}</div>` : ''}</div>`;
+        const L = V.ways?.lesson; if (L && (L.L > 0 || L.calm)) h += `<div class="gh-lab-note gh-lesson">📖 ${L.L > 0 ? esc(t('鎮上還記得{n}（{d} 人死去，{a} 天前）：下一場會更早發現、更早防疫，經歷過的人也更願意配合。').replace('{n}', t(L.name)).replace('{d}', L.died).replace('{a}', L.ago)) : esc(t('上次{n}沒死人，大家覺得「也沒怎樣」，下一場可能輕忽。').replace('{n}', t(L.name)))}</div>`; // v8.2.0 集體記憶
         if (V.hist.length) h += `<div class="gh-lab-hist"><div class="gh-lab-h">📜 ${t('過去的災厄')}</div>${V.hist.map(x => `<div>🦠 <b>${esc(x.name)}</b> · ${t('{i} 人染病、{d} 人死去').replace('{i}', x.inf).replace('{d}', x.died)}${x.fled ? ' · ' + t('{n} 人逃走').replace('{n}', x.fled) : ''} · ${t('{n} 天').replace('{n}', x.end - x.day)} · ${x.survived === false ? '💀 ' + t('全滅') : x.how === 'cure' ? '💉 ' + t('靠疫苗撐過') : '🛡️ ' + t('硬撐過來')}${x.reg ? ` · 📜 ${t('文明倒退')}${t('（')}${t(CALAMITY.REG_NAME[x.reg.tier] || '')}${t('）')}${x.reg.lost ? t('失傳 {n} 項').replace('{n}', x.reg.lost) : t('沒有失傳')}` : ''}</div>`).join('')}</div>`;
         h += '</div>'; return h;
+    },
+    // v8.2.0 疫情裡的人:偷溜、被抓、送飯、待在家、萬靈藥、防疫疲乏
+    _ghLabWays(W, esc) {
+        const c = W?.cur; if (!c) return '';
+        const it = [];
+        if (c.fatigue >= 1.5) it.push(`😮‍💨 ${t('規定實施太久，大家越來越撐不住（疲乏 ×{n}）').replace('{n}', c.fatigue)}`);
+        if (c.sneak) it.push(`🤫 ${t('偷溜 {n} 次，被抓 {k} 次').replace('{n}', c.sneak).replace('{k}', c.caught)}${c.traced ? t('（{n} 次是病倒後醫生問出來的）').replace('{n}', c.traced) : ''}`);
+        if (c.sneakers?.length) it.push(`🎭 ${t('投贊成又偷偷不守：{a}').replace('{a}', c.sneakers.map(x => esc(t(x))).join(t('、')))}`);
+        if (c.food) it.push(`🍲 ${t('鄰居朋友送飯 {n} 次（病人欠下人情）').replace('{n}', c.food)}`);
+        if (c.stay) it.push(`🏠 ${t('{n} 個人怕被傳染待在家，連常去的地方都不去了').replace('{n}', c.stay)}`);
+        if (c.admit || c.stub) it.push(`😤 ${t('防疫被否決後又死了人：{a} 人認錯、{b} 人嘴硬').replace('{a}', c.admit).replace('{b}', c.stub)}`);
+        if (c.pan) it.push(`🧴 ${esc(t('{s}賣「{x}」給 {n} 個人，收了 {m} 銀幣').replace('{s}', t(c.pan.seller)).replace('{x}', t(c.pan.name)).replace('{n}', c.pan.n).replace('{m}', c.pan.sum))}${c.pan.exp ? ' · ' + t('已被拆穿') + (c.pan.back ? t('，退了 {n} 銀幣').replace('{n}', c.pan.back) : '') : ''}`);
+        return it.length ? `<div class="gh-lab-ways"><div class="gh-lab-h">👥 ${t('疫情裡的人')}</div>${it.map(x => `<div>${x}</div>`).join('')}</div>` : '';
     },
     _ghLabClick(k, v, b) {
         const w = this.world; const S = this._ghLabSpec(); const g = b.dataset.g;

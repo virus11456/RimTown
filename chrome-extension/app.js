@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '8.1.0';
+const RIMTOWN_APP_VERSION = '8.2.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -1639,19 +1639,23 @@ class RimTownApp {
         ov.id = 'coach-dialog';
         ov.style.cssText = 'position:fixed;inset:0;background:rgba(6,10,24,0.72);z-index:9999;display:flex;align-items:center;justify-content:center';
         const card = document.createElement('div');
-        card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%;font-family:inherit'; // v6.44.2 標題以前沒設顏色,掛在 body 下變成預設黑字
+        card.style.cssText = 'background:var(--bg-secondary);color:var(--text-primary);border:1px solid var(--border);border-radius:14px;padding:18px;max-width:330px;width:86%;font-family:inherit;display:flex;flex-direction:column;max-height:calc(100vh - 32px);max-height:calc(100dvh - 32px);box-sizing:border-box';  /* v8.2.0 城鎮多了清單太長:卡片限高、只捲清單 */ // v6.44.2 標題以前沒設顏色,掛在 body 下變成預設黑字
         let inner = `<div style="font-weight:bold;font-size:1rem;margin-bottom:6px;display:flex;align-items:center;gap:8px">${this._coachPixelSvg(1)}<span>${t('馬車站')}</span></div>`;
         if (!towns.length) {
             inner += `<div style="font-size:0.8rem;color:var(--text-secondary);line-height:1.6">${t('車伕靠在車轅上打盹：「往海風鎮的沿海道路還封著呢——聽說鎮子發展起來，就會組修路隊把路打通。急的話，先跟商隊買點那邊的魚乾解解饞吧。」')}</div>`;
         } else {
             inner += `<div style="font-size:0.78rem;color:var(--text-secondary);margin-bottom:8px">${t('車伕拍拍車板：「要去哪兒？路上得顛個兩天。」')}</div>`;
+            let list = '', later = ''; // v8.2.0 去過的城鎮在前面;還沒去過的收成一組
             towns.forEach((twn, i) => {
                 // v6.44.2 目的地用顯示名(舊存檔的鄰鎮可能存成英文 Seabreeze Harbor,中文介面要顯示海風鎮)
                 const shown = this._townDisplayName ? this._townDisplayName(twn.name, (typeof themeKeyOfTownName === 'function' && themeKeyOfTownName(twn.name)) || this._guessTheme?.(twn.name)) : twn.name;
                 const closed = this._roadInfo?.(twn.name); // v6.76.0 封路中
-                if (closed) { inner += `<button class="trade-btn coach-closed" disabled style="width:100%;margin:3px 0;padding:9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;opacity:0.55;cursor:not-allowed"><span>🚧 ${esc(shown)}</span><small style="font-size:0.72rem">${esc(closed.text)}</small></button>`; return; }
-                inner += `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}${twn.firstVisit ? `<small style="opacity:.7;margin-left:4px">${t('（初次造訪）')}</small>` : ''}</span></button>`;
+                if (closed) { const h = `<button class="trade-btn coach-closed" disabled style="width:100%;margin:3px 0;padding:9px;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:inherit;opacity:0.55;cursor:not-allowed"><span>🚧 ${esc(shown)}</span><small style="font-size:0.72rem">${esc(closed.text)}</small></button>`; if (twn.firstVisit) later += h; else list += h; return; }
+                const gb = `<button class="trade-btn coach-go" data-idx="${i}" style="width:100%;margin:3px 0;padding:9px;display:flex;align-items:center;justify-content:center;gap:7px;font-family:inherit">${this._coachPixelSvg(0.75)}<span>${t('前往').trim()} ${esc(shown)}${twn.firstVisit ? `<small style="opacity:.7;margin-left:4px">${t('（初次造訪）')}</small>` : ''}</span></button>`;
+                if (twn.firstVisit) later += gb; else list += gb;
             });
+            const nLater = towns.filter(x => x.firstVisit).length;
+            inner += `<div class="coach-list" style="flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px">${list}${later ? (list ? `<details class="coach-later" style="margin-top:6px"><summary style="cursor:pointer;padding:10px 4px;min-height:44px;box-sizing:border-box;display:flex;align-items:center;font-size:0.82rem;color:var(--text-secondary)">🧭 ${t('還沒去過的城鎮（{n}）').replace('{n}', nLater)}</summary>${later}</details>` : later) : ''}</div>`;
         }
         if (towns.length && !this.world?.observerMode) inner += `<button class="trade-btn coach-caravan" style="width:100%;margin-top:8px;padding:9px;font-family:inherit">🐪 ${t('押商隊')}${this.world?.playerCaravan?.active ? `${t('（')}${t('在路上')}${t('）')}` : ''}</button>`; // v5.92.0
         inner += `<button class="trade-btn coach-close" style="width:100%;margin-top:8px;padding:8px;opacity:0.8;font-family:inherit">${t('下次再說')}</button>`;

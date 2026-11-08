@@ -33,7 +33,9 @@ const CALAMITY = (function () {
     // ---------- 神力 ----------
     const CAP = 100;
     // v7.9.0 災厄工坊(神的工具)延到基因生物、蒸汽煉金都上線之後才開放;引擎照樣跑(實驗室外洩用)。測試可用 localStorage rimtown_lab=1 打開
-    const labOpen = () => { try { return localStorage.getItem('rimtown_lab') === '1'; } catch (e) { return false; } };
+    const labOpen = () => true; // v8.2.0 災厄工坊正式開放
+    // v8.2.0 掛勾:疫情裡的人情世故(sim-plague-ways.js)接在這裡
+    const H = { reg: null, mult: null, sus: null, brk: null, mask: null, thr: null, lesson: null, vote: null, daily: null, pre: null, die: [], end: [] };
     const sandbox = () => { try { return localStorage.getItem('rimtown_god_sandbox') === '1'; } catch (e) { return false; } };
     function S(w) {
         if (!w.calamity || typeof w.calamity !== 'object') w.calamity = {};
@@ -132,12 +134,13 @@ const CALAMITY = (function () {
     function spreadMult(w, X, route) {
         const s = X.spec; let m = P.speed[s.speed].m * (s.sym.includes('cough') && (route === 'droplet' || route === 'contact') ? 1.2 : 1);
         const se = season(w); if (s.climate === 'cold') m *= se === 'winter' ? 1.5 : se === 'summer' ? 0.6 : 1; else if (s.climate === 'heat') m *= se === 'summer' ? 1.5 : se === 'winter' ? 0.6 : 1; else if (route === 'droplet' && se === 'winter') m *= 1.1;
-        if (route === 'droplet' && X.ms.mask) m *= 0.5;
+        if (route === 'droplet' && X.ms.mask) m *= H.mask ? H.mask(w, X) : 0.5; // v8.2.0 戴久了會鬆懈
         if ((route === 'droplet' || route === 'contact') && done(w, 'sanitation')) m *= 0.85;
         if (route === 'water') m *= (built(w, 'sewers') ? 0.4 : 1) * (built(w, 'bathhouse') ? 0.8 : 1) * (done(w, 'sanitation') ? 0.6 : 1) * (X.ms.close ? 0.6 : 1);
         if (route === 'insect') m *= se === 'summer' ? 1.6 : se === 'winter' ? 0.15 : 0.8;
         if (X.boost > day(w)) m *= 1.5;
         if (X.pray) m *= 1.2;
+        if (H.mult) m *= H.mult(w, X, route); // v8.2.0 煤煙
         return m;
     }
     function spreadDaily(w, X, d) {
@@ -146,15 +149,17 @@ const CALAMITY = (function () {
         const spreaders = all.filter(a => { const x = st(a); return x && (x.s === 'I' || (x.s === 'E' && s.latency === 'long' && d >= x.on - 2)); });
         const nI = spreaders.length; if (!nI) return;
         const tgt = (a) => (s.target === 'none' ? 1 : isTarget(w, X, a) ? 1.8 : 0.7);
-        const tryInf = (a, p) => { if (a && sus(a) && Math.random() < p * tgt(a)) infect(w, X, a, d); };
+        const sm = (a) => (H.sus ? H.sus(w, X, a) : 1); const brk = (a) => !!(H.brk && H.brk(w, X, a)); // v8.2.0 肺不好的人、偷溜的人比較容易染上
+        const tryInf = (a, p) => { if (a && sus(a) && Math.random() < p * tgt(a) * sm(a)) infect(w, X, a, d); };
         const quar = X.ms.quar; const epi = quar && done(w, 'epidemiology'); // v7.9.0 流行病學:隔離時連同住的外人也不會被傳
         for (const a of spreaders) {
             const sick = st(a).s === 'I';
             const fam = family(w, a).filter(x => byId[x.agentId]); const home = (sick && epi) ? [] : all.filter(x => x !== a && x.homeLocation && x.homeLocation === a.homeLocation).slice(0, 5); const house = [...new Set([...fam, ...home])];
-            const cow = (sick && quar) ? [] : all.filter(x => x !== a && x.job?.key && x.job.key === a.job?.key).slice(0, 4);
-            const soc = (sick && quar) ? [] : Array.from({ length: X.ms.close ? 2 : 3 }, () => rnd(all)).filter(x => x !== a);
-            if (s.route.includes('droplet')) { const m = spreadMult(w, X, 'droplet'); house.forEach(x => tryInf(x, 0.12 * m)); cow.forEach(x => tryInf(x, 0.08 * m)); soc.forEach(x => tryInf(x, 0.05 * m)); }
-            if (s.route.includes('contact')) { const m = spreadMult(w, X, 'contact'); house.forEach(x => tryInf(x, 0.15 * m)); cow.forEach(x => tryInf(x, 0.06 * m)); }
+            const cow = (sick && quar && !brk(a)) ? [] : all.filter(x => x !== a && x.job?.key && x.job.key === a.job?.key).slice(0, 4);
+            const soc = (sick && quar && !brk(a)) ? [] : Array.from({ length: X.ms.close ? 2 : 3 }, () => rnd(all)).filter(x => x !== a);
+            const reg = H.reg ? H.reg(w, X, a, sick) : []; // v8.2.0 每天固定在同一個地方碰面的人
+            if (s.route.includes('droplet')) { const m = spreadMult(w, X, 'droplet'); house.forEach(x => tryInf(x, 0.12 * m)); cow.forEach(x => tryInf(x, 0.08 * m)); soc.forEach(x => tryInf(x, 0.05 * m)); reg.forEach(x => tryInf(x, 0.06 * m)); }
+            if (s.route.includes('contact')) { const m = spreadMult(w, X, 'contact'); house.forEach(x => tryInf(x, 0.15 * m)); cow.forEach(x => tryInf(x, 0.06 * m)); reg.forEach(x => tryInf(x, 0.03 * m)); }
             if (s.target === 'rich' && !X.ms.close && Math.random() < 0.3) all.filter(x => wal(w, x) > 200).slice(0, 3).forEach(x => tryInf(x, 0.08)); // 富貴病:宴席
         }
         if (s.quirk.includes('miser')) { const handlers = all.filter(x => ['trader', 'cook'].includes(x.job?.key)); for (const a of spreaders) for (const h of handlers) tryInf(h, 0.06); } // 守財病:經手錢幣的人
@@ -187,6 +192,7 @@ const CALAMITY = (function () {
         log(w, X.found ? '⚰️ {a}死於{n}。' : '⚰️ {a}病了幾天就走了，沒人知道是什麼病。', { a: a.name, n: X.spec.name }, a.name);
         try { w.lifecycle?._killNpc?.(w, a); } catch (e) {}
         for (const f of fam) { f._calLoss = day(w); f.addThought?.('cal_grief', w); mem(w, f, X.found ? '{n}奪走了我的家人{a}。' : '{a}病死了，我好難過。', { n: X.spec.name, a: a.name }, 9); (X.bereaved = X.bereaved || []).push(f.agentId); }
+        for (const f of H.die) try { f(w, X, a); } catch (e) { console.warn('[Calamity] die hook', e); }
         if (!X.found) found(w, X, day(w), true);
     }
     // 醫生看診:費用走醫療金流,有藥的話康復快、死得少
@@ -271,7 +277,7 @@ const CALAMITY = (function () {
         // ① 徵兆:還沒人知道
         if (!X.found) {
             if (nI && Math.random() < 0.35) { const a = rnd(here(w).filter(x => X.st[x.agentId]?.s === 'I')); if (a) log(w, rnd(OMEN), { a: a.name }, a.name); }
-            const thr = (here(w).some(a => a.job?.key === 'doctor') ? 2 : 4) + (s.latency === 'long' ? 1 : 0) - (visible(s) ? 1 : 0) - (s.sym.includes('rash') ? 1 : 0) - (done(w, 'epidemiology') ? 1 : 0); // v7.9.0 流行病學:早一點發現
+            const thr = (here(w).some(a => a.job?.key === 'doctor') ? 2 : 4) + (s.latency === 'long' ? 1 : 0) - (visible(s) ? 1 : 0) - (s.sym.includes('rash') ? 1 : 0) - (done(w, 'epidemiology') ? 1 : 0) - (H.thr ? H.thr(w, X) : 0); // v8.2.0 上次疫情的教訓也會早一點發現;v7.9.0 流行病學:早一點發現
             if (nI >= Math.max(2, thr)) found(w, X, d, false); // 至少兩個病例才看得出是傳染病(有人死了也會被發現)
             return;
         }
@@ -309,6 +315,7 @@ const CALAMITY = (function () {
         X.quiet = (X.quiet || 0) + 1; if (X.quiet < 2) return false;
         for (const [id, x] of Object.entries(X.st)) { const a = w.agents[id]; if (a) try { quirkEnd(w, X, a, x); } catch (e) {} } // 換性格、守財的人一律變回來
         const C = S(w); const s = X.spec; const rec = { name: s.name, day: X.day, end: d, inf: X.inf, died: X.died, fled: X.fled, peak: X.peak, vax: !!X.vax?.done, found: X.found ? X.found - X.day : null, cost: X.cost, survived: npcs(w).length > 0, how: X.vax?.done ? 'cure' : 'endure' }; // 撐過災難:研發出對策成功,或鎮上還有人活著
+        for (const f of H.end) try { f(w, X, rec); } catch (e) { console.warn('[Calamity] end hook', e); }
         C.hist.unshift(rec); C.hist = C.hist.slice(0, 8); C.cur = null; C.coolTo = d + COOL;
         const k = X.died ? '🕯️ {n}終於過去了：{i} 人染病、{d} 人死去、{f} 人逃走。鎮上為死者辦了追思會。' : '🌈 {n}終於過去了：{i} 人染病，沒有人死。';
         log(w, k, { n: s.name, i: X.inf, d: X.died, f: X.fled }); news(w, k, { n: s.name, i: X.inf, d: X.died, f: X.fled }, 9, []); ping(w, 'end', X.died ? '🕯️' : '🌈', fill('{n}過去了', { n: s.name }), fill(k, { n: s.name, i: X.inf, d: X.died, f: X.fled }));
@@ -332,15 +339,19 @@ const CALAMITY = (function () {
         if (!X.found) return; const s = X.spec; const nI = count(X, 'I'), pop = here(w).length || 1; const ms = X.ms; X.asked = X.asked || {};
         const ask = (k, cond, who, tk, dk, cat) => { if (ms[k] || X.asked[k] && d - X.asked[k] < 6 || !cond || busy(w, 'cal_' + k)) return; if (propose(w, 'cal_' + k, who, tk, dk, { n: s.name }, cat)) X.asked[k] = d; };
         const doctor = here(w).find(a => a.job?.key === 'doctor'); const res = here(w).find(a => a.job?.key === 'researcher');
+        const f = H.lesson ? H.lesson(w, X) : 1; const n2 = Math.max(1, Math.round(2 * f)); // v8.2.0 吃過虧的小鎮會早一點開始防疫
         ask('vax', !X.vax, res || doctor || pickBy(w, a => hasV(a, '知識') ? 2 : 0), '研究{n}的對策', '{who}說要想辦法對付{n}：研究員先停下手上的研究，全力研究疫苗和治法。', 'culture');
-        ask('quar', nI >= 2, doctor || pickBy(w, a => hasT(a, 'pessimist') ? 2 : 0), '隔離{n}的病人', '{who}提議把得了{n}的人留在家裡，不准出門上工，家人送飯就好。', 'welfare');
-        ask('mask', s.route.includes('droplet') && nI >= 2, doctor || pickBy(w, a => a.job?.key === 'tailor' ? 2 : 0), '出門戴口罩', '{who}說{n}靠飛沫傳，提議大家出門都戴口罩，裁縫用庫存的布趕工。', 'welfare');
-        ask('close', nI / pop >= 0.1, doctor || pickBy(w, a => a.job?.key === 'mayor' ? 2 : 0), '暫時關閉酒館與市集', '{who}說人擠人的地方最容易傳{n}，提議酒館和市集先關，等疫情過去再開。', 'welfare');
-        ask('lock', nI / pop >= 0.15, pickBy(w, a => (a.job?.key === 'guard' ? 2 : 0) + (a.job?.key === 'mayor' ? 1.5 : 0)), '封城：不准進出', '{who}提議封城：商隊、外人不准進來，鎮上的人也不准出去，免得{n}越傳越廣。', 'defense');
+        ask('quar', nI >= n2, doctor || pickBy(w, a => hasT(a, 'pessimist') ? 2 : 0), '隔離{n}的病人', '{who}提議把得了{n}的人留在家裡，不准出門上工，家人送飯就好。', 'welfare');
+        ask('mask', s.route.includes('droplet') && nI >= n2, doctor || pickBy(w, a => a.job?.key === 'tailor' ? 2 : 0), '出門戴口罩', '{who}說{n}靠飛沫傳，提議大家出門都戴口罩，裁縫用庫存的布趕工。', 'welfare');
+        ask('close', nI / pop >= 0.1 * f, doctor || pickBy(w, a => a.job?.key === 'mayor' ? 2 : 0), '暫時關閉酒館與市集', '{who}說人擠人的地方最容易傳{n}，提議酒館和市集先關，等疫情過去再開。', 'welfare');
+        ask('lock', nI / pop >= 0.15 * f, pickBy(w, a => (a.job?.key === 'guard' ? 2 : 0) + (a.job?.key === 'mayor' ? 1.5 : 0)), '封城：不准進出', '{who}提議封城：商隊、外人不准進來，鎮上的人也不准出去，免得{n}越傳越廣。', 'defense');
+        // v8.2.0 關太久了:做生意的人提議先重開
+        const lastDeath = X.pw?.fear ?? X.day; if (ms.close && d - ms.close >= 20 && nI <= 1 && d - lastDeath >= 10 && !busy(w, 'cal_reopen') && !(X.asked.reopen && d - X.asked.reopen < 8)) { const who = pickBy(w, a => (a.job?.key === 'cook' ? 2 : 0) + (a.job?.key === 'trader' ? 2 : 0) + (owner(w, a) ? 2.5 : 0)); if (propose(w, 'cal_reopen', who, '重開酒館與市集', '{who}說酒館和市集已經關了 {k} 天，這幾天幾乎沒有新病人，再不開大家都撐不下去了，提議先重開。', { n: s.name, k: d - ms.close }, 'economy')) X.asked.reopen = d; }
     }
     function enact(w, kind) {
         const C = S(w); const X = C.cur; if (!X) return ''; const k = kind.replace(/^cal_/, ''); const n = X.spec.name;
         if (k === 'vax') { const cx = X.spec.route.length + X.spec.sym.length + (X.spec.resist === 'on' ? 2 : 0) + (X.spec.latency === 'long' ? 1 : 0); let need = 300 + 70 * cx; for (const [tk, m] of [['vaccination', 0.6], ['mass_vaccine', 0.7], ['microbiology', 0.7], ['immunology', 0.7], ['genetics', 0.8]]) if (done(w, tk)) need *= m; X.vax = { p: 0, need: Math.round(need), done: 0 }; log(w, '🔬 研究員放下手上的研究，全力研究{n}的疫苗。', { n }); X.log.push([day(w), 'vax', '']); return t('開始研究疫苗'); }
+        if (k === 'reopen') { if (!X.ms.close) return ''; delete X.ms.close; for (const a of here(w)) a.moodModifier = (a.moodModifier || 0) + 2; X.log.push([day(w), 'reopen', '']); log(w, '🍻 酒館和市集重新開門了，第一天就擠滿了人。', {}); return t('酒館與市集重新開門'); }
         X.ms[k] = day(w);
         if (k === 'mask') { const cl = w.stockpile?.get?.('cloth') || 0; if (cl > 0) w.stockpile.consume('cloth', Math.min(cl, 10), w.tickCount, t('做口罩'), 'event'); }
         if (k === 'close') for (const a of here(w)) a.moodModifier = (a.moodModifier || 0) - 2;
@@ -366,17 +377,19 @@ const CALAMITY = (function () {
         if (k === 'close') { if (a.job?.key === 'cook' || a.job?.key === 'trader' || owner(w, a)) { s -= 2.5; why = 'cal_business'; } if (hasT(a, 'glutton')) s -= 0.5; }
         if (k === 'lock') { s -= 0.6; if (a.job?.key === 'trader' || owner(w, a)) { s -= 2.5; why = 'cal_business'; } if (hasV(a, '自由')) { s -= 1.5; why = 'cal_freedom'; } }
         if (k === 'mask') { s += 0.5; if (hasT(a, 'lazy')) s -= 1; if (hasV(a, '自由')) { s -= 1; why = 'cal_freedom'; } }
+        if (k === 'reopen') { s = 0.2 - (a.job?.key === 'doctor' ? 2 : 0) - (X && day(w) - (X.pw?.fear ?? -99) < 10 ? 1.5 : 0) - (hasT(a, 'pessimist') ? 1 : 0); why = 'cal_fear'; if (a.job?.key === 'cook' || a.job?.key === 'trader' || owner(w, a)) { s += 3; why = 'cal_business'; } if (hasT(a, 'glutton') || hasT(a, 'charismatic')) s += 0.8; s += Math.random() - 0.5; return s > 0 ? { v: 'for', why: why === 'cal_fear' ? 'cal_tired' : why } : { v: 'against', why: 'cal_fear' }; }
+        if (H.vote && X) { const r = H.vote(w, X, a, k); if (r) { s += r.s; if (r.why && Math.abs(r.s) >= 0.5) why = r.why; } } // v8.2.0 上次疫情的記憶、防疫疲乏
         if (k === 'vax') { s += 1; if (a.job?.key === 'researcher') s += 1; if (devout(w, a) && Math.random() < 0.4) { s -= 2.5; why = 'faith'; } }
         s += Math.random() - 0.5;
-        return s > 0 ? { v: 'for', why: 'cal_fear' } : { v: 'against', why: why === 'cal_fear' ? 'gut' : why }; // 理由跟票的方向一致
+        return s > 0 ? { v: 'for', why: why === 'cal_lesson' ? why : 'cal_fear' } : { v: 'against', why: why === 'cal_fear' || why === 'cal_lesson' ? 'gut' : why }; // 理由跟票的方向一致
     }
 
     // ---------- 每天 ----------
     function daily(w) {
         const C = S(w); const d = day(w); powerDaily(w, C, d);
         const X = C.cur; if (!X || X.lastDay === d) return; X.lastDay = d;
-        if (X.kind === 'pathogen') { spreadDaily(w, X, d); quirkDaily(w, X, d); progressDaily(w, X, d); treatDaily(w, X, d); }
-        storyDaily(w, X, d); measuresDaily(w, X, d); vaxDaily(w, X, d);
+        if (X.kind === 'pathogen') { if (H.pre) try { H.pre(w, X, d); } catch (e) { console.warn('[Calamity] pre hook', e); } spreadDaily(w, X, d); quirkDaily(w, X, d); progressDaily(w, X, d); treatDaily(w, X, d); }
+        storyDaily(w, X, d); measuresDaily(w, X, d); vaxDaily(w, X, d); if (H.daily) try { H.daily(w, X, d); } catch (e) { console.warn('[Calamity] daily hook', e); }
         endCheck(w, X, d); ping(w, 'day');
     }
 
@@ -459,7 +472,7 @@ const CALAMITY = (function () {
         const s = X.spec; const E = count(X, 'E'), I = count(X, 'I'), R = count(X, 'R');
         return Object.assign(base, { cur: { name: s.name, spec: s, day: X.day, days: day(w) - X.day, phase: X.phase, phaseName: t(PHASE[X.phase] || ''), found: !!X.found, E, I, R, D: X.died, fled: X.fled, inf: X.inf, peak: X.peak, ms: Object.keys(X.ms), vax: X.vax ? { pct: Math.round(X.vax.p / X.vax.need * 100), done: !!X.vax.done, shots: Object.keys(X.vx || {}).length } : null, curve: X.curve.slice(-60), log: X.log.slice(-10).reverse(), boosting: X.boost > day(w), pop: here(w).length, scape: X.scape ? t(w.agents[X.scape]?.name || '') : '' } });
     }
-    return { _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE, labOpen, regress, keepChance, dormant, dormantB, rediscover, REG_NAME };
+    return { H, here, adults, propose, _q: { strike, onset: quirkOnset, end: quirkEnd, daily: quirkDaily }, W: null, CAP, P, SINGLE, BASE_COST, S, power, spend, sandbox, norm, cost, preview, canRelease, release, boost, daily, enact, vote, workMult, sleepMult, brief, townBrief, view, stOf, count, found, infect, COOL, PHASE, labOpen, regress, keepChance, dormant, dormantB, rediscover, REG_NAME };
 })();
 
 // ---------- 接上其他系統 ----------
@@ -490,7 +503,7 @@ if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, {
     cal_vax: { icon: '💉', label: '研究疫苗' }, cal_quar: { icon: '🏠', label: '隔離病人' }, cal_mask: { icon: '😷', label: '口罩令' }, cal_close: { icon: '🚪', label: '關閉酒館市集' }, cal_lock: { icon: '🚧', label: '封城' },
 });
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { cal_fear: '怕被傳染', cal_family: '家人正在生病', cal_business: '生意會做不下去', cal_freedom: '不想被管', faith: '信仰的關係' });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { cal_fear: '怕被傳染', cal_family: '家人正在生病', cal_business: '生意會做不下去', cal_freedom: '不想被管', faith: '信仰的關係', cal_lesson: '上次的疫情還記得', cal_tired: '關太久了，撐不下去', cal_calm: '上次也沒怎樣' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) CALAMITY.daily(w); } catch (e) { console.warn('[Calamity] daily', e); } return r; };
@@ -507,7 +520,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.calamity = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.calamity) { const C = this.calamity; d.calamity = { power: C.power, pDay: C.pDay ?? null, hist: C.hist, st: C.st, coolTo: C.coolTo || 0, cur: C.cur || null, lost: C.lost || {}, regs: C.regs || [], redisc: C.redisc || 0 }; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.calamity) { const C = this.calamity; d.calamity = { power: C.power, pDay: C.pDay ?? null, hist: C.hist, st: C.st, coolTo: C.coolTo || 0, cur: C.cur || null, lost: C.lost || {}, regs: C.regs || [], redisc: C.redisc || 0, burned: C.burned || [], sold: C.sold || [] }; } return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.calamity = (data?.calamity && typeof data.calamity === 'object') ? data.calamity : null; if (this.calamity?.lost && Object.keys(this.calamity.lost).length) this.buildings?.recomputeEffects?.(this); } } catch (e) {} return r; };
 }

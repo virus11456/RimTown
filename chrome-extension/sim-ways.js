@@ -108,10 +108,10 @@ const WAYS = (function () {
     function onGood(w, p) { const X = S(w); const pr = w.agents[p.proposerId]; if (pr) setFace(w, pr, faceOf(w, pr) + 5); X.trust = Math.min(100, X.trust + 1); if (X.lobby[p.proposerId]) { delete X.lobby[p.proposerId]; if (pr) setFace(w, pr, faceOf(w, pr) + 15); } }
 
     // ================= 🤫 說一套做一套 =================
-    const DEED = { steam_air: '自家工坊偷偷燒最便宜的黑煤', steam_factory: '讓學徒做到半夜', steam_homun: '偷偷叫人造人到自家田裡幹活', bio_gmban: '在市集偷買便宜的基因糧食', bio_safety: '把樣本帶回家沒上鎖', bio_price: '私下把藥加價賣給有錢人', tech_safety: '叫工人跳過核電廠的停機檢查', policy: '私下自己照樣不守' };
+    const DEED = { steam_air: '自家工坊偷偷燒最便宜的黑煤', steam_factory: '讓學徒做到半夜', steam_homun: '偷偷叫人造人到自家田裡幹活', bio_gmban: '在市集偷買便宜的基因糧食', bio_safety: '把樣本帶回家沒上鎖', bio_price: '私下把藥加價賣給有錢人', tech_safety: '叫工人跳過核電廠的停機檢查', cal_close: '趁酒館關門時從後門溜進去喝酒', cal_mask: '一出家門就把口罩拉到下巴', cal_quar: '發著燒還偷偷溜出門', cal_lock: '封城期間偷偷出城去進貨', policy: '私下自己照樣不守' };
     function onApproved(w, p) {
         const X = S(w); if (p._lobby && X.lobby[p.proposerId]) { delete X.lobby[p.proposerId]; const pr = w.agents[p.proposerId]; if (pr) { setFace(w, pr, faceOf(w, pr) + 20); mem(w, pr, '私下一個一個去拜託，這次終於通過了。', {}, 7); } }
-        if (!DEED[p.kind]) return;
+        if (!DEED[p.kind] || /^cal_/.test(p.kind)) return; // 疫情規定的陽奉陰違由 sim-plague-ways.js 看真的偷溜才算
         const owner = (a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
         const pool = Object.entries(p.votes || {}).filter(([, v]) => v === 'for').map(([id]) => w.agents[id]).filter(a => a && !a.isDead && (hasT(a, 'greedy') || hasT(a, 'lazy') || owner(a)));
         if (!pool.length || Math.random() > (p.kind === 'policy' ? 0.12 : 0.4)) return; const a = rnd(pool); // 一般政令比較少人陽奉陰違;真的有限制的法律才常見
@@ -121,7 +121,7 @@ const WAYS = (function () {
     }
     function expose(w, h) {
         const X = S(w); const a = w.agents[h.a]; h.exp = day(w); if (!a || a.isDead) return;
-        loseFace(w, a, 25); X.trust = Math.max(20, X.trust - 6); bump(X, 'hyp');
+        loseFace(w, a, 25); X.trust = Math.max(20, X.trust - (/^cal_/.test(h.k || '') ? 3 : 6)); bump(X, 'hyp'); // 疫情裡偷溜的人不少,全鎮信任只扣一半
         for (const x of adults(w)) if (x !== a && Math.random() < 0.6) addAff(x, a, -3);
         mem(w, a, '被人撞見了，這下全鎮都知道我說一套做一套。', {}, 8);
         log(w, '🤫 當初投票支持「{t}」的{a}，被人撞見{deed}。', { t: h.t, a: a.name, deed: DEED[h.k] || DEED.policy }, a.name);
@@ -181,7 +181,8 @@ const WAYS = (function () {
         const spot = devout ? 'chapel' : old(a) ? rnd(['town_square', 'park', 'park']) : hasT(a, 'charismatic') || hasT(a, 'glutton') ? 'tavern' : a.job?.key === 'trader' ? 'market' : rnd(SPOTS);
         r = X.rt[a.agentId] = { s: spot, t: old(a) || hasT(a, 'early_bird') || a.isEarlyBird ? 'am' : rnd(['am', 'pm']) }; return r;
     }
-    const absent = (w, a) => { if (w.isAway?.(a.agentId)) return true; try { return typeof HEALTH !== 'undefined' && w.health && (HEALTH.ails(w, a) || []).some(x => x.s >= 2); } catch (e) { return false; } };
+    const ABSENT = []; // v8.2.0 其他系統可以說「這個人今天不出門」(例如怕被傳染待在家)
+    const absent = (w, a) => { if (w.isAway?.(a.agentId)) return true; for (const f of ABSENT) try { if (f(w, a)) return true; } catch (e) {} try { return typeof HEALTH !== 'undefined' && w.health && (HEALTH.ails(w, a) || []).some(x => x.s >= 2); } catch (e) { return false; } };
     function routines(w) {
         const X = S(w); const groups = {}; let checked = 0;
         for (const a of adults(w).concat(npcs(w).filter(x => w.isAway?.(x.agentId)))) { const r = routineOf(w, a); const g = r.s + ':' + r.t; (groups[g] || (groups[g] = [])).push(a); }
@@ -290,7 +291,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });
@@ -300,7 +301,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const _daily = PS.daily; PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) WAYS.daily(w); } catch (e) { console.warn('[Ways] daily', e); } return r; };
     // 提案的結果:否決丟面子、失敗或成效差的嘴硬、法律通過之後說一套做一套
     const _nt = PS._notify; PS._notify = function (w, kind, p, ...rest) {
-        try { if (w.observerMode && p) { if (kind === 'rejected') WAYS.onRejected(w, p); else if (kind === 'approved') WAYS.onApproved(w, p); else if (kind === 'failed') WAYS.onBad(w, p); else if (kind === 'outcome') { if (WAYS.badOutcome(p.outcome)) WAYS.onBad(w, p); else if (WAYS.goodOutcome(p.outcome)) WAYS.onGood(w, p); } } } catch (e) { console.warn('[Ways] notify', e); }
+        try { if (w.observerMode && p) { if (kind === 'rejected') WAYS.onRejected(w, p); else if (kind === 'approved') WAYS.onApproved(w, p); else if (kind === 'failed') WAYS.onBad(w, p); else if (kind === 'outcome') { const C = w.calamity; const plague = !!C?.cur || (C?.hist?.[0]?.end != null && (w._absDay?.() ?? 0) - C.hist[0].end <= 10); /* v8.2.0 疫情期間鎮上的好壞都算在疫情頭上,不算提案的功過 */ if (plague) {} else if (WAYS.badOutcome(p.outcome)) WAYS.onBad(w, p); else if (WAYS.goodOutcome(p.outcome)) WAYS.onGood(w, p); } } } catch (e) { console.warn('[Ways] notify', e); }
         return _nt.call(this, w, kind, p, ...rest);
     };
     // 沉默期的人不提案;拉票的人下一個提案大家比較會投贊成

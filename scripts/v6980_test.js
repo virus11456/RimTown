@@ -32,7 +32,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       ok(!order.inHtml && order.after === true, 'three.js 不在首頁 HTML 裡，畫面出來後才載（不拖慢首屏）', order);
       ok(r.live && r.v3 && r.jc, '主視覺是 3D 方塊村民（跟遊戲同一套 villager3d.js）', { live: r.live, v3: r.v3 });
       ok(r.bubbles.length >= 1 && r.bubbles.every(b => lang === 'en' ? !/[一-鿿]/.test(b) : /[一-鿿]/.test(b)), '村民頭上會冒出對應語言的對話泡泡', r.bubbles);
-      ok(r.bands.length === 13 /* v8.1.0 加人情世故 */ && r.bands.every(b => b.h2 && b.lead > 60 && b.pts >= 3 && b.pts <= 4 && b.log >= 3 && b.log <= 4), '12 段玩法介紹(v7.9.0 加科技路線、災厄工坊)：各有標題、導言、3～4 個重點、3～4 筆遊戲紀錄', r.bands);
+      ok(r.bands.length === 14 /* v8.1.0 加人情世故；v8.2.0 災厄工坊開放 */ && r.bands.every(b => b.h2 && b.lead > 60 && b.pts >= 3 && b.pts <= 4 && b.log >= 3 && b.log <= 4), '12 段玩法介紹(v7.9.0 加科技路線、災厄工坊)：各有標題、導言、3～4 個重點、3～4 筆遊戲紀錄', r.bands);
       ok(r.cards === 0, '玩法不是卡片牆', r.cards);
       ok(r.toc.length === r.bands.length && r.toc.every((h, i) => h === '#' + r.bands[i].id), '目錄連到每一段', r.toc);
       ok(r.news >= 4, '新功能標上版本', r.news);

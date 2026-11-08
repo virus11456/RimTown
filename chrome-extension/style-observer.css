@@ -400,6 +400,15 @@
 .rimtown-container .tech-era { margin-top: 10px; }
 .rimtown-container .tech-era-head { display: flex; justify-content: space-between; font-weight: 800; font-size: 0.84rem; margin-bottom: 6px; color: var(--text-primary); }
 .rimtown-container .tech-era-head span { color: var(--text-muted); font-weight: 600; font-size: 0.74rem; }
+/* v8.2.0 研究完的時代折疊 */
+.rimtown-container .tech-era-fold > summary { list-style: none; cursor: pointer; align-items: center; gap: 8px; padding: 10px 12px; min-height: 44px; box-sizing: border-box; border-radius: 10px; background: var(--bg-card, #2E2A44); margin-bottom: 0; }
+.rimtown-container .tech-era-fold > summary::-webkit-details-marker { display: none; }
+.rimtown-container .tech-era-fold > summary .tech-era-name { color: var(--text-secondary); font-weight: 700; font-size: 0.84rem; min-width: 0; }
+.rimtown-container .tech-era-fold > summary .tech-fold-ic { display: inline-block; font-style: normal; margin-left: 4px; transition: transform .15s ease; }
+.rimtown-container .tech-era-fold[open] > summary { margin-bottom: 6px; }
+.rimtown-container .tech-era-fold[open] > summary .tech-fold-ic { transform: rotate(90deg); }
+.rimtown-container .tech-era-fold > summary:focus-visible { outline: 2px solid var(--accent, #f0883e); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .rimtown-container .tech-era-fold > summary .tech-fold-ic { transition: none; } }
 @media (max-width: 480px) { .rimtown-container .sub-tab-bar.pp-tabs.many button.pp-tab:not(.on) { flex: 0 0 auto; padding: 0 10px; } .rimtown-container .sub-tab-bar.pp-tabs.many button.pp-tab:not(.on) .pp-tl { display: none; } .rimtown-container .sub-tab-bar.pp-tabs.many button.pp-tab.on { flex: 1 1 auto; } }
 .rimtown-container .tech-path { border: 1px solid var(--border-color, rgba(128,128,128,.3)); border-radius: 10px; padding: 8px 10px; }
 .rimtown-container .tech-path .tech-desc { margin-bottom: 3px; }
@@ -861,6 +870,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-pw { font-size: 0.9rem; }
 .rimtown-container .gh-sbx { font-size: 0.78rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 4px; min-height: 32px; }
 .rimtown-container .gh-lab-note { font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .gh-lab-ways { display: flex; flex-direction: column; gap: 3px; font-size: 0.76rem; padding: 8px 10px; border-radius: 10px; background: var(--bg-card, #2E2A44); line-height: 1.45; overflow-wrap: anywhere; } /* v8.2.0 疫情裡的人 */
 .rimtown-container .gh-lab-form { display: flex; flex-direction: column; gap: 8px; }
 .rimtown-container .gh-lab-row { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; }
 .rimtown-container .gh-lab-row > span { font-weight: 700; color: var(--text-secondary); }

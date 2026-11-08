@@ -747,7 +747,7 @@ class ProposalSystem {
                 case 'myth_exile': { result = (typeof MYTH !== 'undefined') ? MYTH.exile(w, p) : ''; ok = !!result; break; } // v7.5.0
                 case 'gene_rights': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.rights(w) : ''; ok = !!result; break; } // v7.6.0
                 case 'gene_unban': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.unban(w) : ''; ok = !!result; break; } // v7.6.0
-                case 'cal_vax': case 'cal_quar': case 'cal_mask': case 'cal_close': case 'cal_lock': { result = (typeof CALAMITY !== 'undefined') ? CALAMITY.enact(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 災厄應對
+                case 'cal_vax': case 'cal_quar': case 'cal_mask': case 'cal_close': case 'cal_lock': case 'cal_reopen': { result = (typeof CALAMITY !== 'undefined') ? CALAMITY.enact(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 災厄應對
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
                 case 'bio_safety': case 'bio_price': case 'bio_gmban': case 'bio_halt': { result = (typeof BIO !== 'undefined') ? BIO.setLaw(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 基因生物的法律
                 case 'steam_air': case 'steam_factory': case 'steam_homun': { result = (typeof STEAM !== 'undefined') ? STEAM.setLaw(w, p.kind) : ''; ok = !!result; break; } // v8.0.0 蒸汽煉金的法律
