@@ -781,3 +781,17 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container.observer .faction-section .faction-card { border: 0; border-bottom: 1px dashed var(--border); border-radius: 0; background: transparent; padding: 5px 0; margin: 0; }
 .rimtown-container.observer .faction-section .faction-card:last-child { border-bottom: 0; }
 .rimtown-container .economy-panel .economy-panel { padding: 0; }
+
+/* ===== v7.4.0 身體與醫療 ===== */
+.rimtown-container .hb-row { display: grid; grid-template-columns: 72px 1fr 52px; align-items: center; gap: 6px; font-size: 0.76rem; margin: 3px 0; }
+.rimtown-container .hb-row i { display: block; height: 6px; border-radius: 3px; background: rgba(127,127,127,.25); overflow: hidden; }
+.rimtown-container .hb-row i b { display: block; height: 100%; border-radius: 3px; }
+.rimtown-container .hb-row em { font-style: normal; text-align: right; color: var(--text-secondary); }
+.rimtown-container .hb-row em small { margin-left: 2px; color: var(--text-muted); font-size: 0.66rem; }
+.rimtown-container .hb-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.rimtown-container .hb-tag { font: inherit; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-primary); }
+.rimtown-container button.hb-tag { cursor: pointer; }
+.rimtown-container .hb-tag.sev2 { border-color: rgba(232,176,48,.6); }
+.rimtown-container .hb-tag.sev3 { border-color: rgba(233,90,90,.7); }
+.rimtown-container .hb-tag.aid { border-color: rgba(111,207,151,.5); }
+.rimtown-container .hb-note { margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }

@@ -122,6 +122,7 @@ function processDailyProduction(world) {
         if (agent.job.key === 'blacksmith') eff *= 1 + (world.buildings?.getEffect?.('smithing_bonus',0) || 0) + (world.buildings?.getEffect?.('tool_quality',0) || 0) * 0.5; // v6.89.0 風箱鍛爐、冶金
         if (world.market?.hungry && (world.market.hungry[agent.agentId] || 0) >= 3) eff *= 0.6; // v6.89.0 餓了好幾天,做事沒力氣
         eff *= 1 + (agent.mood - 50)/500;
+        if (typeof HEALTH !== 'undefined' && world.health) eff *= HEALTH.workMult(world, agent); // v7.4.0 手腳眼不好、病倒了做得少
         eff *= 0.9 + Math.random()*0.2;
         if (typeof ECON !== 'undefined') { eff *= ECON.toolFactor(world); if (agent.job.key === 'farmer') eff *= ECON.foodMult(world, agent); } // v6.77.0 工具影響每個職業;農夫依種田／捕魚／打獵與地形換算
         // v6.79.0 需求導向:鎮上這樣東西夠了就放慢(材料也照比例少用),不再無限堆
@@ -620,7 +621,7 @@ class ResearchManager {
              const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
         if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
-        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40); // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
+        const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40+(world.buildings?.getEffect?.('research_cap',0)||0)); // v7.4.0 研究院每天多用 40 // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         if(pts+bonus<=0) return;
         const p=this.projects[this.current]; if(!p||p.status!=='researching') return;

@@ -770,6 +770,7 @@ Object.assign(RimTownApp.prototype, {
                 }).join('')}</div>
             ${this._renderAgentFactions(this.selectedAgent)}
             ${(() => { try { const wa = this.world?.agents?.[this.selectedAgent]; if (!wa || wa.isPlayer) return ''; const s = [typeof MARKET !== 'undefined' && this.world?.market ? MARKET.describe(this.world, wa) : '', typeof ESTATE !== 'undefined' && this.world?.estate ? ESTATE.describe(this.world, wa) : '', typeof UNION !== 'undefined' && this.world?.union?.on ? UNION.describe(this.world, wa) : ''].filter(Boolean).join(t('；')); return s ? `<div class="detail-section market-detail"><h3>🏭 ${t('生計')}</h3><p>${this._escapeHtml ? this._escapeHtml(s) : s}</p></div>` : ''; } catch (e) { return ''; } })()}
+            ${this._renderBody(this.selectedAgent)}
             ${this._renderCareer(this.selectedAgent)}
             <div class="detail-section"><h3>${t('近期記憶')}</h3>
                 ${memories.length===0?t('<p style="font-size:0.7rem;color:var(--text-muted)">尚無記憶</p>'):
@@ -1803,6 +1804,31 @@ Object.assign(RimTownApp.prototype, {
         for (const d of dec) h += `<div class="pp-tier-line">📋 ${esc(t(d.title))}</div>`;
         if (p) h += `<div class="pp-tier-line">🗳️ ${esc(p.title)} <small>${esc(t(p.proposerName || ''))} · 👍 ${p.forCount} · 👎 ${p.againstCount} · ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</small></div>`;
         if (log.length) h += `<div class="pp-issue-hint">${t('近期決議')}${t('：')}${log.map(x => `${x.passed ? '✅' : '❌'} ${esc(x.title)}(${x.forVotes}:${x.againstVotes})`).join(' ')}</div>`;
+        return h + '</div>';
+    },
+    // v7.4.0 村民卡:五個部位、病痛、輔具、排隊移植
+    _renderBody(aid) {
+        const w = this.world, a = w?.agents?.[aid]; if (!a || a.isPlayer || typeof HEALTH === 'undefined' || !w.health) return '';
+        const v = HEALTH.agentView(w, a); const sevW = ['', t('輕'), t('中'), t('重')];
+        const AIDN = { glasses: '👓 ' + t('眼鏡'), crutch: '🦯 ' + t('拐杖'), arm: '🦾 ' + t('義手'), leg: '🦿 ' + t('義腿'), heart: '❤️‍🔥 ' + t('人工心臟'), lung: '🫁 ' + t('人工肺') };
+        const bar = (x) => { const c = x.eff >= 70 ? 'var(--positive)' : x.eff >= 40 ? 'var(--warning, #e8b030)' : 'var(--negative)'; return `<div class="hb-row"><span>${HEALTH.PI[x.p]} ${t(HEALTH.PN[x.p])}</span><i><b style="width:${x.eff}%;background:${c}"></b></i><em>${x.eff}${x.eff !== x.v ? `<small>(${x.v})</small>` : ''}</em></div>`; };
+        let h = `<div class="detail-section body-section"><h3>🩺 ${t('身體')}</h3>${v.parts.map(bar).join('')}`;
+        if (v.ails.length) h += `<div class="hb-tags">${v.ails.map(x => `<span class="hb-tag sev${x.s}">${HEALTH.PI[x.p]} ${t(HEALTH.PN[x.p])}${t(HEALTH.KN[x.k])}・${sevW[x.s]}</span>`).join('')}</div>`;
+        if (v.aids.length) h += `<div class="hb-tags">${v.aids.map(k => `<span class="hb-tag aid">${AIDN[k] || k}</span>`).join('')}</div>`;
+        if (v.queued) h += `<div class="hb-note">⏳ ${t('排隊等移植中')}</div>`;
+        return h + '</div>';
+    },
+    // v7.4.0 小鎮概況的健康卡
+    _healthCardHtml() {
+        const w = this.world; if (!w || typeof HEALTH === 'undefined' || !w.observerMode) return '';
+        const v = HEALTH.view(w); const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const RN = { ok: '✅ ' + t('手術成功'), part: '🟡 ' + t('部分恢復'), fail: '❌ ' + t('手術失敗'), died: '⚰️ ' + t('過世'), tx: '🫀 ' + t('移植成功'), reject: '😞 ' + t('排斥') };
+        let h = `<div class="econ-section health-section"><h3>🩺 ${t('健康')}${v.patients.length ? ` <span class="pp-count">${v.patients.length}</span>` : ''}${v.flu ? ` <small>🤧 ${t('風寒流行中')}</small>` : ''}</h3>`;
+        h += `<div class="market-meta">${t('病人')} ${v.patients.length} · ${t('身體有殘疾')} ${v.disabled} · ${t('等移植')} ${v.queue.length} · ${t('可用器官')} ${v.bank}${v.avgLife ? ` · ${t('近來過世平均')} ${v.avgLife} ${t('歲')}` : ''}</div>`;
+        h += `<div class="market-meta">${t('看診')} ${v.st.treat || 0} · ${t('手術')} ${v.st.ops || 0}${t('（')}${t('成功')} ${v.st.ok || 0} / ${t('失敗')} ${v.st.fail || 0} / ${t('死亡')} ${v.st.died || 0}${t('）')} · ${t('移植')} ${v.st.tx || 0} · ${t('打架')} ${v.st.fights || 0}</div>`;
+        h += `<div class="market-meta">${v.surgery ? '🏥 ' + t('醫院可以開刀') : '⛔ ' + t('還不能開刀（要醫院＋外科醫學）')} · ${v.tx.organ ? t('心肺也能移植') : v.tx.limb ? t('眼手腳可以移植') : t('還不能移植')} · ${v.medaid ? '🏛️ ' + t('公費醫療補助中') : t('沒有公費醫療')}${v.st.bribes ? ` · 💰 ${t('插隊紅包')} ${v.st.bribes}` : ''}</div>`;
+        if (v.patients.length) h += `<div class="hb-tags">${v.patients.slice(0, 8).map(p => `<button type="button" class="hb-tag sev${Math.max(...p.ails.map(x => x.s))}" data-action="select-agent" data-val="${esc(p.id)}">${esc(p.name)} ${p.ails.map(x => HEALTH.PI[x.p]).join('')}</button>`).join('')}</div>`;
+        if (v.log.length) h += `<div class="muted-text" style="font-size:0.72rem;margin-top:4px">${v.log.map(x => `${RN[x[2]] || x[2]} ${esc(t(x[1]))}${t('（')}${t(HEALTH.PN[x[3]] || '')}${t('）')}`).join(' · ')}</div>`;
         return h + '</div>';
     },
 });

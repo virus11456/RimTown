@@ -653,6 +653,7 @@ class Agent {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
+        if (this.activity === 'sleeping' && world.health && typeof HEALTH !== 'undefined') this.needs.rest = Math.max(0, this.needs.rest - 8 * (1 - HEALTH.sleepMult(world, this))); // v7.4.0 肺不好睡不好
         // Decay moodModifier toward 0
         if (this.moodModifier > 0) this.moodModifier = Math.max(0, this.moodModifier - 0.5);
         else if (this.moodModifier < 0) this.moodModifier = Math.min(0, this.moodModifier + 0.5);
