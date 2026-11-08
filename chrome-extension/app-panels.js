@@ -813,6 +813,208 @@ Object.assign(RimTownApp.prototype, {
     // SETTINGS TAB (consolidated AI + Account + Game settings)
     // =====================================================
     // v6.26.0 提案分頁:待決定／擱置中／進行中／已定案
+    // v7.3.0 鎮況的各區塊拆開,提案／小鎮／日報各取所需(同一份資料只在一個地方出現)
+    _townBlocks(d, want) {
+        const W = (k) => !want || want.includes(k);
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        d = d || this.state?.proposals || { issues: [], traditions: [], landmarks: [], stats: { made: 0, approved: 0, rejected: 0, done: 0 } };
+        const B = { tier: '', legacy: '', dream: '', culture: '', politics: '', mind: '', civic: '', goods: '', biz: '', bank: '', press: '', diplo: '', tidings: '', faith: '', issues: '', cliques: '', lore: '', stats: '' };
+        if (!this.world) return B;
+        if (W('tier')) {
+            // v6.56.0 城鎮等級與升格進度
+            try {
+                if (this.world && typeof TIERS !== 'undefined') {
+                    const I = TIERS.info(this.world), pg = TIERS.progress(this.world); const L = TIERS.LV;
+                    const bar = (v, m) => `<span class="pp-tier-req${v >= m ? ' ok' : ''}">${v}/${m}</span>`;
+                    B.tier += `<div class="pp-issues pp-tier"><h4 class="pp-h">${I.icon} ${esc(TIERS.name(this.world))} <span class="pp-tier-steps">${L.map((x, i) => `<i class="${i <= TIERS.level(this.world) ? 'on' : ''}" title="${esc(t(x.zh))}">${x.icon}</i>`).join('')}</span></h4>`;
+                    B.tier += `<div class="pp-tier-line">${t('首長')}${t('：')}${esc(TIERS.leaderTitle(this.world))} · ${t('議會')}${t('：')}${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}</div>`;
+                    { // v6.81.0 寫出現任議員(點名字開村民卡);沒坐滿就寫還空幾席
+                        const ms = (this.world.council?.members || []).map(id => this.world.agents[id]).filter(Boolean);
+                        const btn = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
+                        const empty = Math.max(0, TIERS.seats(this.world) - ms.length);
+                        B.tier += `<div class="pp-tier-line">🏛️ ${esc(t(I.member))}${t('：')}${ms.length ? ms.map(btn).join(t('、')) : t('還沒成立')}${ms.length && empty ? `${t('（')}${t('空 {n} 席').replace('{n}', empty)}${t('）')}` : ''}</div>`;
+                    }
+                    { // v6.78.1 現任首長是誰(人不在鎮上時寫出代理人);點名字開村民卡
+                        const E = this.world.election, title = esc(TIERS.leaderTitle(this.world));
+                        const holder = E?._officeHolder?.(this.world), acting = E?.acting && this.world.agents[E.acting.agentId], cur = E?.currentMayor?.(this.world);
+                        const who = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
+                        let line;
+                        if (holder && cur === holder) line = who(holder);
+                        else if (holder && acting && cur === acting) line = `${who(holder)}${t('（')}${E.acting.reason === 'explore' ? t('出去探險') : t('出遠門')}${t('，')}${who(acting)}${t('代理')}${t('）')}`;
+                        else if (!holder && acting && cur === acting) line = `${t('從缺')}${t('（')}${who(acting)}${t('代理')}${t('）')}`;
+                        else line = t('從缺');
+                        B.tier += `<div class="pp-tier-line">👤 ${t('現任{title}').split('{title}').join(title)}${t('：')}${line}</div>`;
+                    }
+                    if (pg) B.tier += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
+                    if (pg && pg.mat) { const lk = pg.matLack || {}; B.tier += `<div class="pp-tier-line">🏗️ ${t('擴建鎮公所要用')}${t('：')}${Object.entries(pg.mat).map(([r, n]) => `<span class="pp-tier-req${lk[r] ? '' : ' ok'}">${esc(this._resName ? this._resName(r) : r)} ${n}</span>`).join(' ')}${Object.keys(lk).length ? '' : ` · ${t('建材已備齊')}`}</div>`; } // v6.77.0
+                    else B.tier += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
+                    try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); B.tier += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
+                    try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
+                        const DN = (k) => { const D = CROWN.DECREES[k]; return D ? `${D.icon} ${esc(t(D.zh))}` : ''; };
+                        B.tier += `<div class="pp-crown">`;
+                        if (V.republic) B.tier += `<div class="pp-tier-line">🏳️ ${t('王都已推翻王室，改為共和')}</div>`;
+                        else if (V.king) B.tier += `<div class="pp-tier-line">👑 ${t('國王')}${t('：')}<b>${esc(V.king)}</b> · ${esc(V.dynasty)} · ${t('民心')} <span class="pp-legit${V.legit < 35 ? ' low' : ''}">${V.legit}/100</span></div>`;
+                        if (V.crisis) B.tier += `<div class="pp-tier-line">⚔️ ${t('王位空懸，繼承危機中')}${t('：')}${esc(V.crisis.join(t('、')))}</div>`;
+                        if (V.decrees.length) B.tier += `<div class="pp-tier-line">📜 ${t('最近的王令')}${t('：')}${V.decrees.map(x => `${DN(x.key)}${x.text ? ' ' + t('「') + esc(x.text) + t('」') : ''}`).join(' · ')}</div>`;
+                        B.tier += `</div>`; } } catch (e) {}
+                    B.tier += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
+                }
+            } catch (e) {}
+        }
+        if (W('legacy')) {
+            // v6.73.0 鎮史:史書、傳說、家族、世仇
+            try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length) {
+                B.legacy += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
+                for (const c of V.chapters) B.legacy += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
+                if (V.legends.length) B.legacy += `<div class="pp-tier-line">🏛️ ${t('傳說人物')}${t('：')}${V.legends.map(l => `${esc(l.name)}${t('（')}${esc(l.role)}${t('）')}${l.statue ? ' 🗽' : ''}`).join(t('、'))}</div>`;
+                if (V.families.length) B.legacy += `<div class="pp-tier-line">🏠 ${t('家族')}${t('：')}${V.families.map(f => `${esc(f.name)} ×${f.n} ${t('「')}${esc(f.motto)}${t('」')}`).join(' · ')}</div>`;
+                if (V.feuds.length) B.legacy += `<div class="pp-tier-line">⚔️ ${t('世仇')}${t('：')}${V.feuds.map(esc).join(' · ')}</div>`;
+                B.legacy += `</div>`; } } } catch (e) {}
+        }
+        if (W('dream')) {
+            // v6.72.0 託夢與預言
+            try { if (typeof DREAM !== 'undefined' && this.world.dream !== undefined) { const V = DREAM.view(this.world); const E = this.world.election; const plot = this.world.crown?.plot;
+                const canE = E?.active && (E.candidates || []).length >= 2, canC = !!plot;
+                if (V.dreams.length || canE || canC || V.acc.hits + V.acc.misses) {
+                    B.dream += `<div class="pp-issues pp-dream"><h4 class="pp-h">🔮 ${t('託夢與預言')}${V.acc.pct !== null ? ` <small>${t('準確率')} ${V.acc.pct}%${t('（')}${V.acc.hits}/${V.acc.hits + V.acc.misses}${t('）')}</small>` : ''}</h4>`;
+                    for (const d2 of V.dreams) B.dream += `<div class="pp-tier-line">🌙 ${esc(d2.to)}${t('：')}${t('「')}${esc(d2.text)}${t('」')}${d2.meaning ? ` → ${esc(d2.meaning)}` : ''}${d2.wrong ? ` <small>${t('（誤解了）')}</small>` : ''}</div>`;
+                    const open = V.acc.open;
+                    if (canE && !open.some(b => b.kind === 'election')) B.dream += `<div class="pp-tier-line">${t('押注誰會當選')}${t('：')}${E.candidates.map(c => `<button class="pp-more" data-action="dream-bet" data-val="election|${c.agentId}">${esc(t(c.name))}</button>`).join(' ')}</div>`;
+                    if (canC && !open.some(b => b.kind === 'coup')) B.dream += `<div class="pp-tier-line">${t('政變會成功嗎')}${t('：')}<button class="pp-more" data-action="dream-bet" data-val="coup|success">${t('會')}</button> <button class="pp-more" data-action="dream-bet" data-val="coup|fail">${t('不會')}</button></div>`;
+                    for (const b of open) B.dream += `<div class="pp-issue-hint">${t('已押注')}${t('：')}${b.kind === 'election' ? esc(t(this.world.agents[b.pick]?.name || '')) : t(b.pick === 'success' ? '政變成功' : '政變失敗')}</div>`;
+                    B.dream += `</div>`; } } } catch (e) {}
+        }
+        if (W('culture')) {
+            // v6.71.0 文化
+            try { if (typeof CULTURE !== 'undefined' && this.world.culture) { const V = CULTURE.view(this.world); if (V.works.length || V.songs.length || V.oracles.length) {
+                B.culture += `<div class="pp-issues pp-culture"><h4 class="pp-h">🎭 ${t('文化')}</h4>`;
+                for (const x of V.works) B.culture += `<div class="pp-tier-line">${x.icon} ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)} · ${t('評價')} ${x.q}${x.legend ? ' · 🌟 ' + t('傳世傑作') : ''}</small></div>`;
+                for (const x of V.songs) B.culture += `<div class="pp-tier-line">🎶 ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)}${x.lyric ? ' · ' + t('「') + esc(x.lyric) + t('」') : ''}</small></div>`;
+                for (const x of V.oracles) B.culture += `<div class="pp-tier-line">🔮 ${esc(x.by)}${t('：')}${t('「')}${esc(x.text)}${t('」')}</div>`;
+                B.culture += `</div>`; } } } catch (e) {}
+        }
+        if (W('politics')) {
+            // v6.69.0 政壇:辯論、議會人情、法庭
+            try { if (typeof POLITICS !== 'undefined' && this.world.politics) { const V = POLITICS.view(this.world); if (V.debates.length || V.trials.length || V.pacts || V.betrayals) {
+                B.politics += `<div class="pp-issues pp-politics"><h4 class="pp-h">🏛️ ${t('政壇')}</h4>`;
+                for (const d of V.debates) { B.politics += `<div class="pp-tier-line">🎤 ${t('最近的辯論')}${t('：')}${t('{a}表現最好').replace('{a}', esc(d.winner))}</div>`; for (const l of d.lines) B.politics += `<div class="pp-tid-item">${esc(l)}</div>`; }
+                if (V.pacts || V.betrayals) B.politics += `<div class="pp-tier-line">🤝 ${t('議會私下的人情')} ${V.pacts} · 🔄 ${t('倒戈')} ${V.betrayals}</div>`;
+                for (const x of V.trials) B.politics += `<div class="pp-tier-line">⚖️ ${t('控方')} ${esc(x.pro)} · ${t('辯方')} ${esc(x.def)} · ${t('法官')} ${esc(x.judge)}</div>`;
+                if (V.appeals) B.politics += `<div class="pp-tier-line">🔍 ${t('翻案')} ${V.appeals}</div>`;
+                B.politics += `</div>`; } } } catch (e) {}
+        }
+        if (W('mind')) {
+            // v6.68.0 民意
+            try { if (typeof MIND !== 'undefined' && this.world.mind) { const V = MIND.poll(this.world);
+                B.mind += `<div class="pp-issues pp-mind"><h4 class="pp-h">🗣️ ${t('民意')}</h4>`;
+                for (const x of V) { const pct = Math.round((x.avg + 2) / 4 * 100); B.mind += `<div class="pp-op-row"><span>${esc(x.name)}</span><span class="pp-op-bar"><i style="left:${pct}%"></i></span><small>${t('支持')} ${x.pro} · ${t('反對')} ${x.con}</small></div>`; }
+                B.mind += `</div>`; } } catch (e) {}
+        }
+        if (W('civic')) {
+            // v6.67.0 治安與民生
+            try { if (typeof CIVIC !== 'undefined' && this.world.civic) { const V = CIVIC.view(this.world);
+                B.civic += `<div class="pp-issues pp-civic"><h4 class="pp-h">👮 ${t('治安與民生')}${V.slum ? ` <small>🏚️ ${t('貧民區')}</small>` : ''}</h4>`;
+                B.civic += `<div class="pp-tier-line">${t('衛兵')} ${V.guards} · ${t('竊案')} ${V.thefts}${t('（')}${t('破案')} ${V.caught}${t('）')}${V.jailed.length ? ` · ⛓️ ${V.jailed.map(esc).join(t('、'))}` : ''}</div>`;
+                B.civic += `<div class="pp-tier-line">${t('稅率')} ${V.tax}% · ${t('地價')} ${V.land} · ${t('上週房租')} ${V.rent}</div></div>`; } } catch (e) {}
+        }
+        if (W('goods')) {
+            // v6.65.0 珍品
+            try { if (typeof GOODS !== 'undefined' && this.world.goods) { const V = GOODS.view(this.world); if (V.town.length || V.offers.length || V.collectors.length) {
+                B.goods += `<div class="pp-issues pp-goods"><h4 class="pp-h">🏺 ${t('珍品')}</h4>`;
+                if (V.town.length) B.goods += `<div class="pp-tier-line">${t('公庫收藏')}${t('：')}${V.town.map(x => `${x.icon} ${esc(x.name)} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+                if (V.offers.length) B.goods += `<div class="pp-tier-line">${t('商人帶來的珍品')}${t('：')}${V.offers.map(x => `${x.icon} ${esc(x.name)} ${x.price} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
+                if (V.collectors.length) B.goods += `<div class="pp-tier-line">${t('收藏家')}${t('：')}${V.collectors.map(x => `${esc(x.name)} ×${x.n}`).join(' · ')}</div>`;
+                B.goods += `</div>`; } } } catch (e) {}
+        }
+        if (W('biz')) {
+            // v6.70.0 商店
+            try { if (typeof BIZ !== 'undefined' && this.world.biz) { const V = BIZ.view(this.world); if (V.shops.length || V.closed.length) {
+                B.biz += `<div class="pp-issues pp-biz"><h4 class="pp-h">🏪 ${t('鎮上的店')} <span class="pp-count">${V.shops.length}</span></h4>`;
+                for (const s2 of V.shops) B.biz += `<div class="pp-tier-line">${s2.icon} <b>${esc(s2.name)}</b> <small>${esc(s2.type)} · ${t('老闆')}${t('：')}${esc(s2.owner)}${s2.partner ? ' · ' + t('合夥人') + t('：') + esc(s2.partner) : ''} · ${t('定價')} ${s2.price} · ${t('累計盈虧')} ${s2.profit}</small></div>`;
+                if (V.closed.length) B.biz += `<div class="pp-issue-hint">${t('倒閉的店')}${t('：')}${V.closed.map(c => esc(c.name)).join(t('、'))}</div>`;
+                B.biz += `</div>`; } } } catch (e) {}
+        }
+        if (W('bank')) {
+            // v6.64.0 銀行
+            try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
+                const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
+                B.bank += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
+                if (V.open) B.bank += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
+                else if (V.failed) B.bank += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
+                else B.bank += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
+                // v6.74.0 債券、紓困、鎮公所背債
+                if (V.pending) B.bank += `<div class="pp-issue-hint">⏳ ${t('銀行暫停營業，等鎮長決定要不要紓困')}</div>`;
+                if (V.bonds) B.bank += `<div class="pp-tier-line">📜 ${t('流通中的債券')} ${V.bonds} ${t('銀幣')}${t('（')}${V.bondHolders} ${t('人')} · ${t('利息')} ${V.bondRate}%${t('）')}${V.defaults ? ` · ${t('違約')} ${V.defaults}` : ''}</div>`;
+                if (V.bail) B.bank += `<div class="pp-tier-line">${V.bail.yes ? '🛟' : '🚫'} ${esc((V.bail.yes ? t('{m}決定紓困（{n} 銀幣）') : t('{m}拒絕紓困')).replace('{m}', V.bail.by).replace('{n}', V.bail.n))}${V.bail.why ? ` <small>${t('「')}${esc(V.bail.why)}${t('」')}</small>` : ''}</div>`;
+                if (V.debt) B.bank += `<div class="pp-tier-line">🏛️ ${t('鎮公所紓困債')} ${V.debt.owed} ${t('銀幣')}${t('（')}${t('已還')} ${V.debt.paid}${V.debt.late ? ` · ⚠️ ${t('逾期 {n} 天').replace('{n}', V.debt.late)}` : ''}${t('）')}</div>`;
+                else if (V.debtDone) B.bank += `<div class="pp-issue-hint">🎉 ${t('紓困債已還清（共 {n} 銀幣）').replace('{n}', V.debtDone.paid)}</div>`;
+                B.bank += `</div>`; } } catch (e) {}
+        }
+        if (W('press')) {
+            // v6.63.0 報社
+            try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);
+                B.press += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
+                for (const P of V) B.press += `<div class="pp-press-row${P.banned && !P.underground ? ' banned' : ''}"><b>${P.icon} ${esc(P.name)}</b> <small>${esc(P.stance)} · ${t('讀者')} ${P.readers} · ${t('可信度')} ${P.cred}${P.journo ? ' · ' + t('記者') + t('：') + esc(P.journo) : ''}${P.banned ? ' · ' + (P.underground ? t('地下報紙') : t('被查禁')) : ''}</small>${P.last ? `<div class="pp-tier-line">${t('「')}${esc(P.last)}${t('」')}</div>` : ''}</div>`;
+                B.press += `</div>`; } } catch (e) {}
+        }
+        if (W('diplo')) {
+            // v6.66.0 外交
+            try { if (typeof DIPLO !== 'undefined' && this.world.diplo) { const V = DIPLO.view(this.world); if (V.places.length) {
+                B.diplo += `<div class="pp-issues pp-diplo"><h4 class="pp-h">🤝 ${t('外交')}</h4><div class="pp-tid-places">`;
+                for (const p of V.places) B.diplo += `<span class="pp-tid-place pp-dip${p.rel >= 40 ? ' good' : p.rel <= -30 ? ' bad' : ''}">${p.icon} ${esc(p.name)} <b>${p.rel > 0 ? '+' : ''}${p.rel}</b> <small>${esc(p.status)}${p.wed ? ' · 💍 ' + esc(p.wed) : ''}</small></span>`;
+                B.diplo += `</div>`; for (const x of V.log) B.diplo += `<div class="pp-tid-item">${esc(x)}</div>`;
+                if (V.why) B.diplo += `<div class="pp-issue-hint">${t('首長的想法')}${t('：')}${esc(V.why)}</div>`;
+                B.diplo += `</div>`; } } } catch (e) {}
+        }
+        if (W('tidings')) {
+            // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
+            try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
+                B.tidings += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;
+                B.tidings += `<div class="pp-tid-places">${V.places.map(p => `<span class="pp-tid-place" title="${esc(p.lvName)}">${p.icon} ${esc(p.name)} <small>${p.last === null ? t('還沒有消息') : t('{n} 天前').replace('{n}', p.last)}${p.by ? ' · ' + esc(p.by) : ''}</small></span>`).join('')}</div>`;
+                for (const x of V.items.filter((y, i, a) => a.findIndex(z => z.text === y.text) === i)) B.tidings += `<div class="pp-tid-item${x.rumor ? ' rumor' : ''}">${x.via} ${esc(x.text)} <small>${x.rumor ? t('傳聞') : t('可靠')} · ${t('路上走了 {n} 天').replace('{n}', x.lag)} · ${t('{n} 人知道').replace('{n}', x.knowers)}</small></div>`;
+                if (!V.items.length) B.tidings += `<div class="pp-issue-hint">${t('遠方的消息要等商隊、旅人或信差帶進鎮。')}</div>`;
+                B.tidings += `</div>`; } } catch (e) {}
+        }
+        if (W('faith')) {
+            // v6.60.0 宗教一覽
+            try { if (typeof FAITH !== 'undefined' && this.world.faith) { const V = FAITH.view(this.world); const nb = FAITH.nonBelievers(this.world);
+                B.faith += `<div class="pp-issues pp-faith"><h4 class="pp-h">🛕 ${t('宗教')} <span class="pp-count">${V.length}</span></h4>`;
+                for (const R of V) B.faith += `<div class="pp-faith-row" style="border-left-color:${R.color}"><b>${R.icon} ${esc(R.name)}</b> <small>${esc(R.sk)} · ${t('信徒')} ${R.n} · ${esc(R.place)}${R.head ? ' · ' + esc(R.head) : ''}${R.founder ? ' · ' + t('創立者') + t('：') + esc(R.founder) : ''}</small><div class="pp-tier-line">${t('主神')}${t('：')}${esc(R.deity)} · ${t('經典')}${t('：')}${esc(R.book)} · ${t('節日')}${t('：')}${esc(R.fest)}${t('（')}${esc(R.festWhen)}${t('）')}</div><div class="pp-tier-line">${t('戒律')}${t('：')}${R.pre.map(esc).join(t('；'))} · ${t('奉獻基金')} ${R.fund}${R.spent ? ` · ${t('維護、辦桌、濟貧共花')} ${R.spent}` : ''}</div></div>`;
+                { const F = this.world.faith; B.faith += `<div class="pp-issue-hint">${t('沒有信仰的人')}${t('：')}${nb} · ${F.tax ? t('宗教捐獻抽 {n}% 稅').replace('{n}', Math.round((FAITH.TAX_RATE || 0.15) * 100)) + (F.taxPaid ? `${t('（')}${t('已繳')} ${Math.round(F.taxPaid)}${t('）')}` : '') : t('宗教免稅')}</div></div>`; } } } catch (e) {}
+        }
+        if (W('issues')) {
+            // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
+            if ((d.issues || []).length) {
+                B.issues += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
+                for (const x of d.issues) B.issues += `<div class="pp-issue sev${x.sev}${x.by ? ' on' : ''}${!x.by && x.idle >= 3 ? ' late' : ''}">${x.sev >= 3 ? '🔴' : x.sev === 2 ? '🟠' : '🟡'} <span>${esc(x.text)}<small>${esc(x.status || t('（剛發生）'))}</small></span></div>`;
+                B.issues += `<div class="pp-issue-hint">${t('村民會餓、會冷、會抱怨；有人提出對策前，拖越久影響越大。')}</div></div>`;
+            }
+        }
+        if (W('cliques')) {
+            // v6.52.0 小團體與恩怨連載(大家都看得到)
+            try {
+                const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
+                if (dv && ((dv.cliques || []).length || (dv.feuds || []).length)) {
+                    B.cliques += `<div class="pp-issues"><h4 class="pp-h">🫂 ${t('小團體與恩怨')}</h4>`;
+                    for (const c of dv.cliques) B.cliques += `<div class="pp-issue">🫂 <span>${esc(c.name)}${t('：')}${esc(c.members.map(n => t(n)).join(t('、')))}${c.against.length ? `<small>${esc(t('跟{v}不對盤').replace('{v}', c.against.map(n => t(n)).join(t('、'))))}</small>` : ''}</span></div>`;
+                    for (const f of dv.feuds) B.cliques += `<div class="pp-issue">⚔️ <span>${esc(f.names.map(n => t(n)).join(' vs '))}<small>${esc(t('恩怨連載第 {n} 回').replace('{n}', f.n))}</small></span></div>`;
+                    B.cliques += `</div>`;
+                }
+            } catch (e) {}
+        }
+        if (W('lore') || W('stats')) {
+            // v6.47.0 村民提案留下的傳統與地標
+            if ((d.traditions || []).length || (d.landmarks || []).length) {
+                B.lore += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
+                for (const x of (d.traditions || []).slice().reverse()) B.lore += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+                for (const x of (d.landmarks || []).slice().reverse()) B.lore += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+                B.lore += `</div>`;
+            }
+            B.stats += `<h4 class="pp-h">📊 ${t('提案統計')}</h4><div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
+        }
+        return B;
+    },
+
     renderProposals(container) {
         const d = this.state?.proposals;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -880,164 +1082,8 @@ Object.assign(RimTownApp.prototype, {
             P += `<h4 class="pp-h">📚 ${t('已定案')} <span class="pp-count">${d.history.length}</span></h4>`; hist.forEach(p => { P += card(p, 'view'); });
             if (d.history.length > HN) P += `<button type="button" class="pp-more" data-pp-more="1">${showAll ? t('收起，只看最近 {n} 件').replace('{n}', HN) : t('顯示更早的 {n} 件').replace('{n}', d.history.length - HN)}</button>`;
         }
-        // v6.56.0 城鎮等級與升格進度
-        try {
-            if (this.world && typeof TIERS !== 'undefined') {
-                const I = TIERS.info(this.world), pg = TIERS.progress(this.world); const L = TIERS.LV;
-                const bar = (v, m) => `<span class="pp-tier-req${v >= m ? ' ok' : ''}">${v}/${m}</span>`;
-                T += `<div class="pp-issues pp-tier"><h4 class="pp-h">${I.icon} ${esc(TIERS.name(this.world))} <span class="pp-tier-steps">${L.map((x, i) => `<i class="${i <= TIERS.level(this.world) ? 'on' : ''}" title="${esc(t(x.zh))}">${x.icon}</i>`).join('')}</span></h4>`;
-                T += `<div class="pp-tier-line">${t('首長')}${t('：')}${esc(TIERS.leaderTitle(this.world))} · ${t('議會')}${t('：')}${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}</div>`;
-                { // v6.81.0 寫出現任議員(點名字開村民卡);沒坐滿就寫還空幾席
-                    const ms = (this.world.council?.members || []).map(id => this.world.agents[id]).filter(Boolean);
-                    const btn = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
-                    const empty = Math.max(0, TIERS.seats(this.world) - ms.length);
-                    T += `<div class="pp-tier-line">🏛️ ${esc(t(I.member))}${t('：')}${ms.length ? ms.map(btn).join(t('、')) : t('還沒成立')}${ms.length && empty ? `${t('（')}${t('空 {n} 席').replace('{n}', empty)}${t('）')}` : ''}</div>`;
-                }
-                { // v6.78.1 現任首長是誰(人不在鎮上時寫出代理人);點名字開村民卡
-                    const E = this.world.election, title = esc(TIERS.leaderTitle(this.world));
-                    const holder = E?._officeHolder?.(this.world), acting = E?.acting && this.world.agents[E.acting.agentId], cur = E?.currentMayor?.(this.world);
-                    const who = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
-                    let line;
-                    if (holder && cur === holder) line = who(holder);
-                    else if (holder && acting && cur === acting) line = `${who(holder)}${t('（')}${E.acting.reason === 'explore' ? t('出去探險') : t('出遠門')}${t('，')}${who(acting)}${t('代理')}${t('）')}`;
-                    else if (!holder && acting && cur === acting) line = `${t('從缺')}${t('（')}${who(acting)}${t('代理')}${t('）')}`;
-                    else line = t('從缺');
-                    T += `<div class="pp-tier-line">👤 ${t('現任{title}').split('{title}').join(title)}${t('：')}${line}</div>`;
-                }
-                if (pg) T += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
-                if (pg && pg.mat) { const lk = pg.matLack || {}; T += `<div class="pp-tier-line">🏗️ ${t('擴建鎮公所要用')}${t('：')}${Object.entries(pg.mat).map(([r, n]) => `<span class="pp-tier-req${lk[r] ? '' : ' ok'}">${esc(this._resName ? this._resName(r) : r)} ${n}</span>`).join(' ')}${Object.keys(lk).length ? '' : ` · ${t('建材已備齊')}`}</div>`; } // v6.77.0
-                else T += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
-                try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); T += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
-                try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
-                    const DN = (k) => { const D = CROWN.DECREES[k]; return D ? `${D.icon} ${esc(t(D.zh))}` : ''; };
-                    T += `<div class="pp-crown">`;
-                    if (V.republic) T += `<div class="pp-tier-line">🏳️ ${t('王都已推翻王室，改為共和')}</div>`;
-                    else if (V.king) T += `<div class="pp-tier-line">👑 ${t('國王')}${t('：')}<b>${esc(V.king)}</b> · ${esc(V.dynasty)} · ${t('民心')} <span class="pp-legit${V.legit < 35 ? ' low' : ''}">${V.legit}/100</span></div>`;
-                    if (V.crisis) T += `<div class="pp-tier-line">⚔️ ${t('王位空懸，繼承危機中')}${t('：')}${esc(V.crisis.join(t('、')))}</div>`;
-                    if (V.decrees.length) T += `<div class="pp-tier-line">📜 ${t('最近的王令')}${t('：')}${V.decrees.map(x => `${DN(x.key)}${x.text ? ' ' + t('「') + esc(x.text) + t('」') : ''}`).join(' · ')}</div>`;
-                    T += `</div>`; } } catch (e) {}
-                T += `<div class="pp-issue-hint">${t('城鎮以上，要當過下一級的首長，或在本級議會當過一季議員，才能參選首長。')}</div></div>`;
-            }
-        } catch (e) {}
-        // v6.73.0 鎮史:史書、傳說、家族、世仇
-        try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length) {
-            T += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
-            for (const c of V.chapters) T += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
-            if (V.legends.length) T += `<div class="pp-tier-line">🏛️ ${t('傳說人物')}${t('：')}${V.legends.map(l => `${esc(l.name)}${t('（')}${esc(l.role)}${t('）')}${l.statue ? ' 🗽' : ''}`).join(t('、'))}</div>`;
-            if (V.families.length) T += `<div class="pp-tier-line">🏠 ${t('家族')}${t('：')}${V.families.map(f => `${esc(f.name)} ×${f.n} ${t('「')}${esc(f.motto)}${t('」')}`).join(' · ')}</div>`;
-            if (V.feuds.length) T += `<div class="pp-tier-line">⚔️ ${t('世仇')}${t('：')}${V.feuds.map(esc).join(' · ')}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.72.0 託夢與預言
-        try { if (typeof DREAM !== 'undefined' && this.world.dream !== undefined) { const V = DREAM.view(this.world); const E = this.world.election; const plot = this.world.crown?.plot;
-            const canE = E?.active && (E.candidates || []).length >= 2, canC = !!plot;
-            if (V.dreams.length || canE || canC || V.acc.hits + V.acc.misses) {
-                T += `<div class="pp-issues pp-dream"><h4 class="pp-h">🔮 ${t('託夢與預言')}${V.acc.pct !== null ? ` <small>${t('準確率')} ${V.acc.pct}%${t('（')}${V.acc.hits}/${V.acc.hits + V.acc.misses}${t('）')}</small>` : ''}</h4>`;
-                for (const d2 of V.dreams) T += `<div class="pp-tier-line">🌙 ${esc(d2.to)}${t('：')}${t('「')}${esc(d2.text)}${t('」')}${d2.meaning ? ` → ${esc(d2.meaning)}` : ''}${d2.wrong ? ` <small>${t('（誤解了）')}</small>` : ''}</div>`;
-                const open = V.acc.open;
-                if (canE && !open.some(b => b.kind === 'election')) T += `<div class="pp-tier-line">${t('押注誰會當選')}${t('：')}${E.candidates.map(c => `<button class="pp-more" data-action="dream-bet" data-val="election|${c.agentId}">${esc(t(c.name))}</button>`).join(' ')}</div>`;
-                if (canC && !open.some(b => b.kind === 'coup')) T += `<div class="pp-tier-line">${t('政變會成功嗎')}${t('：')}<button class="pp-more" data-action="dream-bet" data-val="coup|success">${t('會')}</button> <button class="pp-more" data-action="dream-bet" data-val="coup|fail">${t('不會')}</button></div>`;
-                for (const b of open) T += `<div class="pp-issue-hint">${t('已押注')}${t('：')}${b.kind === 'election' ? esc(t(this.world.agents[b.pick]?.name || '')) : t(b.pick === 'success' ? '政變成功' : '政變失敗')}</div>`;
-                T += `</div>`; } } } catch (e) {}
-        // v6.71.0 文化
-        try { if (typeof CULTURE !== 'undefined' && this.world.culture) { const V = CULTURE.view(this.world); if (V.works.length || V.songs.length || V.oracles.length) {
-            T += `<div class="pp-issues pp-culture"><h4 class="pp-h">🎭 ${t('文化')}</h4>`;
-            for (const x of V.works) T += `<div class="pp-tier-line">${x.icon} ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)} · ${t('評價')} ${x.q}${x.legend ? ' · 🌟 ' + t('傳世傑作') : ''}</small></div>`;
-            for (const x of V.songs) T += `<div class="pp-tier-line">🎶 ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)}${x.lyric ? ' · ' + t('「') + esc(x.lyric) + t('」') : ''}</small></div>`;
-            for (const x of V.oracles) T += `<div class="pp-tier-line">🔮 ${esc(x.by)}${t('：')}${t('「')}${esc(x.text)}${t('」')}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.69.0 政壇:辯論、議會人情、法庭
-        try { if (typeof POLITICS !== 'undefined' && this.world.politics) { const V = POLITICS.view(this.world); if (V.debates.length || V.trials.length || V.pacts || V.betrayals) {
-            T += `<div class="pp-issues pp-politics"><h4 class="pp-h">🏛️ ${t('政壇')}</h4>`;
-            for (const d of V.debates) { T += `<div class="pp-tier-line">🎤 ${t('最近的辯論')}${t('：')}${t('{a}表現最好').replace('{a}', esc(d.winner))}</div>`; for (const l of d.lines) T += `<div class="pp-tid-item">${esc(l)}</div>`; }
-            if (V.pacts || V.betrayals) T += `<div class="pp-tier-line">🤝 ${t('議會私下的人情')} ${V.pacts} · 🔄 ${t('倒戈')} ${V.betrayals}</div>`;
-            for (const x of V.trials) T += `<div class="pp-tier-line">⚖️ ${t('控方')} ${esc(x.pro)} · ${t('辯方')} ${esc(x.def)} · ${t('法官')} ${esc(x.judge)}</div>`;
-            if (V.appeals) T += `<div class="pp-tier-line">🔍 ${t('翻案')} ${V.appeals}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.68.0 民意
-        try { if (typeof MIND !== 'undefined' && this.world.mind) { const V = MIND.poll(this.world);
-            T += `<div class="pp-issues pp-mind"><h4 class="pp-h">🗣️ ${t('民意')}</h4>`;
-            for (const x of V) { const pct = Math.round((x.avg + 2) / 4 * 100); T += `<div class="pp-op-row"><span>${esc(x.name)}</span><span class="pp-op-bar"><i style="left:${pct}%"></i></span><small>${t('支持')} ${x.pro} · ${t('反對')} ${x.con}</small></div>`; }
-            T += `</div>`; } } catch (e) {}
-        // v6.67.0 治安與民生
-        try { if (typeof CIVIC !== 'undefined' && this.world.civic) { const V = CIVIC.view(this.world);
-            T += `<div class="pp-issues pp-civic"><h4 class="pp-h">👮 ${t('治安與民生')}${V.slum ? ` <small>🏚️ ${t('貧民區')}</small>` : ''}</h4>`;
-            T += `<div class="pp-tier-line">${t('衛兵')} ${V.guards} · ${t('竊案')} ${V.thefts}${t('（')}${t('破案')} ${V.caught}${t('）')}${V.jailed.length ? ` · ⛓️ ${V.jailed.map(esc).join(t('、'))}` : ''}</div>`;
-            T += `<div class="pp-tier-line">${t('稅率')} ${V.tax}% · ${t('地價')} ${V.land} · ${t('上週房租')} ${V.rent}</div></div>`; } } catch (e) {}
-        // v6.65.0 珍品
-        try { if (typeof GOODS !== 'undefined' && this.world.goods) { const V = GOODS.view(this.world); if (V.town.length || V.offers.length || V.collectors.length) {
-            T += `<div class="pp-issues pp-goods"><h4 class="pp-h">🏺 ${t('珍品')}</h4>`;
-            if (V.town.length) T += `<div class="pp-tier-line">${t('公庫收藏')}${t('：')}${V.town.map(x => `${x.icon} ${esc(x.name)} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
-            if (V.offers.length) T += `<div class="pp-tier-line">${t('商人帶來的珍品')}${t('：')}${V.offers.map(x => `${x.icon} ${esc(x.name)} ${x.price} <small>${esc(x.from)}</small>`).join(' · ')}</div>`;
-            if (V.collectors.length) T += `<div class="pp-tier-line">${t('收藏家')}${t('：')}${V.collectors.map(x => `${esc(x.name)} ×${x.n}`).join(' · ')}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.70.0 商店
-        try { if (typeof BIZ !== 'undefined' && this.world.biz) { const V = BIZ.view(this.world); if (V.shops.length || V.closed.length) {
-            T += `<div class="pp-issues pp-biz"><h4 class="pp-h">🏪 ${t('鎮上的店')} <span class="pp-count">${V.shops.length}</span></h4>`;
-            for (const s2 of V.shops) T += `<div class="pp-tier-line">${s2.icon} <b>${esc(s2.name)}</b> <small>${esc(s2.type)} · ${t('老闆')}${t('：')}${esc(s2.owner)}${s2.partner ? ' · ' + t('合夥人') + t('：') + esc(s2.partner) : ''} · ${t('定價')} ${s2.price} · ${t('累計盈虧')} ${s2.profit}</small></div>`;
-            if (V.closed.length) T += `<div class="pp-issue-hint">${t('倒閉的店')}${t('：')}${V.closed.map(c => esc(c.name)).join(t('、'))}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.64.0 銀行
-        try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
-            const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
-            T += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
-            if (V.open) T += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
-            else if (V.failed) T += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
-            else T += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
-            // v6.74.0 債券、紓困、鎮公所背債
-            if (V.pending) T += `<div class="pp-issue-hint">⏳ ${t('銀行暫停營業，等鎮長決定要不要紓困')}</div>`;
-            if (V.bonds) T += `<div class="pp-tier-line">📜 ${t('流通中的債券')} ${V.bonds} ${t('銀幣')}${t('（')}${V.bondHolders} ${t('人')} · ${t('利息')} ${V.bondRate}%${t('）')}${V.defaults ? ` · ${t('違約')} ${V.defaults}` : ''}</div>`;
-            if (V.bail) T += `<div class="pp-tier-line">${V.bail.yes ? '🛟' : '🚫'} ${esc((V.bail.yes ? t('{m}決定紓困（{n} 銀幣）') : t('{m}拒絕紓困')).replace('{m}', V.bail.by).replace('{n}', V.bail.n))}${V.bail.why ? ` <small>${t('「')}${esc(V.bail.why)}${t('」')}</small>` : ''}</div>`;
-            if (V.debt) T += `<div class="pp-tier-line">🏛️ ${t('鎮公所紓困債')} ${V.debt.owed} ${t('銀幣')}${t('（')}${t('已還')} ${V.debt.paid}${V.debt.late ? ` · ⚠️ ${t('逾期 {n} 天').replace('{n}', V.debt.late)}` : ''}${t('）')}</div>`;
-            else if (V.debtDone) T += `<div class="pp-issue-hint">🎉 ${t('紓困債已還清（共 {n} 銀幣）').replace('{n}', V.debtDone.paid)}</div>`;
-            T += `</div>`; } } catch (e) {}
-        // v6.63.0 報社
-        try { if (typeof PRESS !== 'undefined' && this.world.press) { const V = PRESS.view(this.world);
-            T += `<div class="pp-issues pp-press"><h4 class="pp-h">📰 ${t('報社')} <span class="pp-count">${V.length}</span></h4>`;
-            for (const P of V) T += `<div class="pp-press-row${P.banned && !P.underground ? ' banned' : ''}"><b>${P.icon} ${esc(P.name)}</b> <small>${esc(P.stance)} · ${t('讀者')} ${P.readers} · ${t('可信度')} ${P.cred}${P.journo ? ' · ' + t('記者') + t('：') + esc(P.journo) : ''}${P.banned ? ' · ' + (P.underground ? t('地下報紙') : t('被查禁')) : ''}</small>${P.last ? `<div class="pp-tier-line">${t('「')}${esc(P.last)}${t('」')}</div>` : ''}</div>`;
-            T += `</div>`; } } catch (e) {}
-        // v6.66.0 外交
-        try { if (typeof DIPLO !== 'undefined' && this.world.diplo) { const V = DIPLO.view(this.world); if (V.places.length) {
-            T += `<div class="pp-issues pp-diplo"><h4 class="pp-h">🤝 ${t('外交')}</h4><div class="pp-tid-places">`;
-            for (const p of V.places) T += `<span class="pp-tid-place pp-dip${p.rel >= 40 ? ' good' : p.rel <= -30 ? ' bad' : ''}">${p.icon} ${esc(p.name)} <b>${p.rel > 0 ? '+' : ''}${p.rel}</b> <small>${esc(p.status)}${p.wed ? ' · 💍 ' + esc(p.wed) : ''}</small></span>`;
-            T += `</div>`; for (const x of V.log) T += `<div class="pp-tid-item">${esc(x)}</div>`;
-            if (V.why) T += `<div class="pp-issue-hint">${t('首長的想法')}${t('：')}${esc(V.why)}</div>`;
-            T += `</div>`; } } } catch (e) {}
-        // v6.62.0 外地消息:遠方地點、上次消息幾天前、誰帶回來;最近的消息與可信度
-        try { if (typeof TIDINGS !== 'undefined' && this.world.tidings) { const V = TIDINGS.view(this.world);
-            T += `<div class="pp-issues pp-tidings"><h4 class="pp-h">📨 ${t('外地消息')} <span class="pp-count">${V.places.length}</span></h4>`;
-            T += `<div class="pp-tid-places">${V.places.map(p => `<span class="pp-tid-place" title="${esc(p.lvName)}">${p.icon} ${esc(p.name)} <small>${p.last === null ? t('還沒有消息') : t('{n} 天前').replace('{n}', p.last)}${p.by ? ' · ' + esc(p.by) : ''}</small></span>`).join('')}</div>`;
-            for (const x of V.items) T += `<div class="pp-tid-item${x.rumor ? ' rumor' : ''}">${x.via} ${esc(x.text)} <small>${x.rumor ? t('傳聞') : t('可靠')} · ${t('路上走了 {n} 天').replace('{n}', x.lag)} · ${t('{n} 人知道').replace('{n}', x.knowers)}</small></div>`;
-            if (!V.items.length) T += `<div class="pp-issue-hint">${t('遠方的消息要等商隊、旅人或信差帶進鎮。')}</div>`;
-            T += `</div>`; } } catch (e) {}
-        // v6.60.0 宗教一覽
-        try { if (typeof FAITH !== 'undefined' && this.world.faith) { const V = FAITH.view(this.world); const nb = FAITH.nonBelievers(this.world);
-            T += `<div class="pp-issues pp-faith"><h4 class="pp-h">🛕 ${t('宗教')} <span class="pp-count">${V.length}</span></h4>`;
-            for (const R of V) T += `<div class="pp-faith-row" style="border-left-color:${R.color}"><b>${R.icon} ${esc(R.name)}</b> <small>${esc(R.sk)} · ${t('信徒')} ${R.n} · ${esc(R.place)}${R.head ? ' · ' + esc(R.head) : ''}${R.founder ? ' · ' + t('創立者') + t('：') + esc(R.founder) : ''}</small><div class="pp-tier-line">${t('主神')}${t('：')}${esc(R.deity)} · ${t('經典')}${t('：')}${esc(R.book)} · ${t('節日')}${t('：')}${esc(R.fest)}${t('（')}${esc(R.festWhen)}${t('）')}</div><div class="pp-tier-line">${t('戒律')}${t('：')}${R.pre.map(esc).join(t('；'))} · ${t('奉獻基金')} ${R.fund}${R.spent ? ` · ${t('維護、辦桌、濟貧共花')} ${R.spent}` : ''}</div></div>`;
-            { const F = this.world.faith; T += `<div class="pp-issue-hint">${t('沒有信仰的人')}${t('：')}${nb} · ${F.tax ? t('宗教捐獻抽 {n}% 稅').replace('{n}', Math.round((FAITH.TAX_RATE || 0.15) * 100)) + (F.taxPaid ? `${t('（')}${t('已繳')} ${Math.round(F.taxPaid)}${t('）')}` : '') : t('宗教免稅')}</div></div>`; } } } catch (e) {}
-        // v6.50.0 鎮上急事:村民正受影響,拖著沒人管會抱怨、吵架、搬走
-        if ((d.issues || []).length) {
-            T += `<div class="pp-issues"><h4 class="pp-h">⚠️ ${t('鎮上急事')} <span class="pp-count">${d.issues.length}</span></h4>`;
-            for (const x of d.issues) T += `<div class="pp-issue sev${x.sev}${x.by ? ' on' : ''}${!x.by && x.idle >= 3 ? ' late' : ''}">${x.sev >= 3 ? '🔴' : x.sev === 2 ? '🟠' : '🟡'} <span>${esc(x.text)}<small>${esc(x.status || t('（剛發生）'))}</small></span></div>`;
-            T += `<div class="pp-issue-hint">${t('村民會餓、會冷、會抱怨；有人提出對策前，拖越久影響越大。')}</div></div>`;
-        }
-        // v6.52.0 小團體與恩怨連載(大家都看得到)
-        try {
-            const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
-            if (dv && ((dv.cliques || []).length || (dv.feuds || []).length)) {
-                T += `<div class="pp-issues"><h4 class="pp-h">🫂 ${t('小團體與恩怨')}</h4>`;
-                for (const c of dv.cliques) T += `<div class="pp-issue">🫂 <span>${esc(c.name)}${t('：')}${esc(c.members.map(n => t(n)).join(t('、')))}${c.against.length ? `<small>${esc(t('跟{v}不對盤').replace('{v}', c.against.map(n => t(n)).join(t('、'))))}</small>` : ''}</span></div>`;
-                for (const f of dv.feuds) T += `<div class="pp-issue">⚔️ <span>${esc(f.names.map(n => t(n)).join(' vs '))}<small>${esc(t('恩怨連載第 {n} 回').replace('{n}', f.n))}</small></span></div>`;
-                T += `</div>`;
-            }
-        } catch (e) {}
-        // v6.47.0 村民提案留下的傳統與地標
-        if ((d.traditions || []).length || (d.landmarks || []).length) {
-            T += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
-            for (const x of (d.traditions || []).slice().reverse()) T += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
-            for (const x of (d.landmarks || []).slice().reverse()) T += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
-            T += `</div>`;
-        }
-        T += `<h4 class="pp-h">📊 ${t('提案統計')}</h4><div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
+        const B = this._townBlocks(d, ['issues', 'tier', 'politics', 'mind', 'civic', 'faith', 'cliques', 'dream', 'lore', 'stats']);
+        T = [B.issues, B.tier, this._councilHtml(), B.politics, B.mind, B.civic, B.faith, B.cliques, this._eventPieces(['factions']).factions, B.dream, B.lore, B.stats].join(''); // v7.3.0 急事放最上面;鎮史文化珍品→日報年表、外交報社外地消息→日報消息、店與銀行→小鎮產業
         // v6.51.0 只有你知道的真相:還沒被拆穿的謊言、陰謀,還沒解開的誤會
         try {
             const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
@@ -1439,426 +1485,324 @@ Object.assign(RimTownApp.prototype, {
         return html + '</div>';
     },
 
-    renderEvents(container) {
-        if (!this.state) return;
-        let html = '';
-        // v6.48.0 事件卡搬到地圖上的 🃏 按鈕(獨立抽屜);這裡只留入口
-        if (this.state?.eventCards) html += `<div class="gh-entry"><div><b>🃏 ${t('事件卡')}</b><span>${t('事件卡搬到地圖右下角的 🃏 按鈕了（桌機按 E）。')}</span></div><button class="gh-entry-btn" data-action="gh-open">${t('打開事件卡')}</button></div>`;
+    // v7.3.0 舊「事件」分頁拆成各區塊:天氣與節慶→小鎮、新聞與事件→日報消息、AI 日報→日報、出生與墓園→年表、派系→鎮況;選舉與議會已在提案分頁
+    _eventPieces(want) {
+        const W = (k) => !want || want.includes(k);
+        const E = { mods: '', weather: '', news: '', aidaily: '', happen: '', festival: '', factions: '', explore: '', life: '' };
+        if (!this.state) return E;
+        if (W('weather')) {
+            // --- Weather Panel ---
+            const weather = this.state.weather;
+            if (weather) {
+                E.weather += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
+                E.weather += `<h4>${weather.icon} ${t('天氣')}${t('：')}${t(weather.name)}</h4>`;
+                E.weather += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
+                E.weather += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
+                E.weather += `<span>🌡️ ${weather.temperature}°C</span>`;
+                E.weather += `<span>💧 ${t('濕度')} ${weather.humidity}%</span>`;
+                E.weather += `<span>💨 ${t('風速')} ${weather.windSpeed}</span>`;
+                E.weather += `</div>`;
+                // Farm & mood modifiers
+                const farmPct = Math.round(weather.farmModifier * 100);
+                const moodVal = weather.moodModifier;
+                E.weather += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:4px 0">`;
+                E.weather += `<span style="color:${farmPct >= 0 ? 'var(--positive)' : 'var(--negative)'}">🌾 ${t('農業')} ${farmPct >= 0 ? '+' : ''}${farmPct}%</span>`;
+                E.weather += `<span style="color:${moodVal >= 0 ? 'var(--positive)' : 'var(--negative)'}">😊 ${t('心情')} ${moodVal >= 0 ? '+' : ''}${moodVal}</span>`;
+                E.weather += `</div>`;
+                // Forecast
+                if (weather.forecast?.length) {
+                    E.weather += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
+                    E.weather += `<span>${t('預報')}${t('：')}</span>`;
+                    weather.forecast.forEach(f => { E.weather += `<span title="${t(f.name)}">${f.icon}</span>`; });
+                    E.weather += `</div>`;
+                }
+                // Disaster warning
+                if (weather.disasterWarning) {
+                    E.weather += `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);border-radius:4px;font-size:0.75rem">`;
+                    E.weather += `⚠️ ${t('災害預警')}${t('：')}${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
+                    if (weather.disasterWarning.daysUntil > 0) E.weather += ` (${weather.disasterWarning.daysUntil} ${t('天後')})`;
+                    E.weather += `</div>`;
+                }
+                // Active disaster
+                if (weather.activeDisaster) {
+                    E.weather += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
+                    E.weather += `🚨 ${t(weather.activeDisaster.name)}${t('（')}${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}${t('）')}`;
+                    E.weather += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
+                    E.weather += `</div>`;
+                }
+                E.weather += '</div>';
+            }
 
-        // --- Election ---
-        const election = this.state.election;
-        if (election && election.active) {
-            html += '<div class="election-section">';
-            if (election.phase === 'campaign') {
-                html += t('<h4>📢 鎮長選舉 — 競選期間</h4>');
-                html += `${t('<div class="election-info">剩餘 ')}${election.campaignDaysLeft}${t(' 天競選期</div>')}`;
-                election.candidates.forEach(c => {
-                    html += `<div class="election-candidate" data-action="select-agent" data-val="${c.agentId}">
-                        <div class="candidate-header">
-                            <span class="candidate-name">${c.agentId === 'player' ? '👑 ' : ''}${t(c.name)}${c.agentId === 'player' ? t('（你）') : ''}</span>
-                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
+        }
+        if (W('news')) {
+            // --- News Bulletins --- v7.3.0 只列本鎮的(外地的走「外地消息」,不重複);中文不再露出英文副標、undefined、REMOTE
+            const news = this.state.news || {};
+            const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
+            const bulletins = (news.bulletins || []).filter(b => b.category !== 'remote');
+            if (bulletins.length) {
+                E.news += `<div class="news-section"><h4>📢 ${t('本鎮公告')} <span class="pp-count">${bulletins.length}</span></h4><div class="news-ticker">`;
+                const CATEGORY_LABELS = {security:t('安全'),trade:t('貿易'),weather:t('天氣'),social:t('社會'),health:t('健康'),discovery:t('發現'),nature:t('自然'),political:t('政治')};
+                bulletins.forEach(b => {
+                    const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
+                    const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
+                    const head = en ? (b.headline_en || t(b.headline || '')) : (b.headline || '');
+                    const flavor = b.flavor ? t(b.flavor) : '';
+                    E.news += `<div class="news-bulletin severity-${b.severity}">
+                        <div class="news-header">
+                            <span class="news-severity">${severityIcon}</span>
+                            <span class="news-category">${categoryIcon} ${CATEGORY_LABELS[b.category] || t('消息')}</span>
+                            ${Number.isFinite(b.days_remaining) ? `<span class="news-duration">${t('剩餘')}${b.days_remaining}${t('天')}</span>` : ''}
                         </div>
-                        <div class="candidate-speech">"${c.speech}"</div>
+                        <div class="news-headline">${this._escapeHtml(head)}</div>
+                        ${flavor && flavor !== head ? `<div class="news-flavor">${this._escapeHtml(flavor)}</div>` : ''}
+                        ${b.published_time ? `<div class="news-time">${this._escapeHtml(b.published_time)}</div>` : ''}
                     </div>`;
                 });
-                // v5.38.0 旅人參選:競選登記期內可親自出馬
-                const isPlayerCand = election.candidates.some(c => c.agentId === 'player');
-                if (this.world.observerMode) { /* v6.83.0 觀察者不參選、不投票 */ } else if (!isPlayerCand) {
-                    const elig = this.world.election?.playerEligibility?.(this.world);
-                    if (elig?.ok) {
-                        html += `<button class="btn-vote" data-action="run-for-mayor" style="width:100%;margin-top:6px">👑 ${t('我要參選鎮長！')}</button>`;
-                    } else if (elig) {
-                        html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🗳️ ${t('想自己選鎮長？')}${this._escapeHtml(elig.msg || '')}</div>`;
-                    }
-                } else {
-                    const canvassed = Object.keys(this.world.election?.playerCanvassed || {}).length;
-                    html += `<div style="font-size:0.72rem;color:#ffd700;margin-top:6px">👑 ${t('你正在競選！已向')} ${canvassed} ${t('位村民拉票——去聊天用「說服」繼續爭取支持')}</div>`;
+                E.news += '</div></div>';
+            }
+        }
+        if (W('mods')) {
+            // v7.3.0 生效中的影響(新聞、天氣帶來的加減成)→ 小鎮概況
+            {
+                const mods = (this.state.news || {}).active_modifiers || {};
+                const modEntries = Object.entries(mods).filter(([k]) => k !== 'mood_modifier');
+                if (modEntries.length) {
+                    E.mods += `<div class="news-effects"><span class="news-effects-label">${t('生效中')}${t('：')}</span> `;
+                    modEntries.forEach(([key, val]) => {
+                        const effectLabels = {
+                            food_production:t('食物產量'), mine_output:t('礦產產出'), trade_prices:t('交易價格'),
+                            construction_speed:t('建設速度'), mood_bonus:t('心情加成'), crop_growth:t('作物生長'),
+                            merchant_frequency:t('商人頻率'), farm_bonus:t('農作加成'), sell_bonus:t('售價加成'),
+                            buy_bonus:t('買價優惠'), trade_bonus:t('貿易加成'), mining_bonus:t('採礦加成'),
+                            gathering_bonus:t('採集加成'), research_bonus:t('研究加成'), skill_bonus:t('技能成長'),
+                            guard_bonus:t('守衛戰力'), immigration_chance:t('移民機率'), departure_chance:t('離鄉機率'),
+                            raid_chance:t('襲擊機率'), raid_severity:t('襲擊強度'), animal_raid_chance:t('野獸襲擊機率'),
+                            plague_chance:t('疫病機率'), storm_chance:t('風暴機率'), drought_chance:t('乾旱機率'),
+                            chain_chance:t('連鎖事件機率'), festival_chance:t('慶典機率'), merchant_chance:t('商隊機率'),
+                            supply_shortage:t('物資短缺'), weather_farm_bonus:t('天氣農作影響'), weather_mood:t('天氣心情影響'),
+                        };
+                        const label = effectLabels[key] || key.replace(/_/g, ' ');
+                        const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
+                        const flatKeys = { weather_mood: 1 };
+                        const display = typeof val === 'number'
+                            ? (flatKeys[key] ? (val > 0 ? '+' : '') + Math.round(val) : (val > 0 ? '+' : '') + Math.round(val * 100) + '%')
+                            : (val ? t('是') : t('否'));
+                        E.mods += `<span class="news-effect ${cls}">${label}: ${display}</span> `;
+                    });
+                    E.mods += '</div>';
                 }
-            } else if (election.phase === 'voting') {
-                html += t('<h4>🗳️ 鎮長選舉 — 投票進行中</h4>');
-                html += `${t('<div class="election-info">剩餘 ')}${election.votingDaysLeft}${t(' 天投票</div>')}`;
-                const playerVoted = this.world.election?._playerVoted || this.world.observerMode; // v6.83.0 觀察者不投票(沒有投票按鈕)
-                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
-                election.candidates.forEach(c => {
-                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
-                    html += `<div class="election-candidate">
-                        <div class="candidate-header">
-                            <span class="candidate-name">${t(c.name)}</span>
-                            <span class="candidate-policy">${c.policyIcon} ${c.policyLabel}</span>
-                            <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
-                        </div>
-                        <div class="election-bar"><div class="election-bar-fill" style="width:${pct}%"></div></div>
-                        ${!playerVoted ? `<button class="btn-vote" data-action="player-vote" data-val="${c.agentId}">投票給${t(c.name)}</button>` : ''}
+            }
+        }
+        if (W('aidaily') || W('happen')) {
+            // --- AI 日報 ---
+            const dailyNews = this.state.dailyNews || {};
+            const papers = dailyNews.newspapers || [];
+            if (papers.length > 0) {
+                E.aidaily += t('<div class="news-section"><h4>🗞️ AI 日報</h4>');
+                const display = papers.slice().reverse().slice(0, 10);
+                for (let i = 0; i < display.length; i++) {
+                    const paper = display[i];
+                    const isExpanded = this._expandedNewspaper === paper.id;
+                    const isLatest = i === 0;
+                    E.aidaily += `<div class="news-card ${isExpanded ? 'news-expanded' : ''} ${isLatest ? 'news-latest' : ''}" data-action="view-newspaper" data-val="${paper.id}">`;
+                    E.aidaily += `<div class="news-card-header">`;
+                    E.aidaily += `<div class="news-card-issue">#${paper.id}</div>`;
+                    E.aidaily += `<div class="news-card-meta">`;
+                    E.aidaily += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
+                    E.aidaily += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
+                    E.aidaily += `</div>`;
+                    E.aidaily += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
+                    E.aidaily += `</div>`;
+                    if (!isExpanded && paper.content) {
+                        const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
+                        const preview = clipText(firstLine, 41); // v6.43.6
+                        E.aidaily += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
+                    }
+                    if (isExpanded) {
+                        E.aidaily += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
+                        // v5.17.0 情境入口:把本期事件做成可點連結,直達當事人資訊卡或相關分頁
+                        const pevs = paper.events || [];
+                        if (pevs.length) {
+                            E.aidaily += `<div class="news-card-events">`;
+                            pevs.forEach((e, ei) => {
+                                E.aidaily += `<button class="headline-row" data-action="news-goto" data-val="${paper.id}:${ei}">
+                                    <span class="headline-ic">${this._newsCatIcon(e.category)}</span>
+                                    <span class="headline-text">${this._escapeHtml(e.content)}</span>
+                                    <span class="headline-go">›</span></button>`;
+                            });
+                            E.aidaily += `</div>`;
+                        }
+                        // v5.88.0 跨鎮專欄:其他鎮日報的要聞
+                        if (Array.isArray(paper.crossTown) && paper.crossTown.length) {
+                            E.aidaily += `<div class="news-card-events" style="margin-top:8px"><div class="muted-text" style="font-size:0.72rem;margin-bottom:4px">🐎 ${t('跨鎮專欄')}</div>`;
+                            paper.crossTown.forEach(ct => { (ct.items || []).forEach(line => { E.aidaily += `<div class="headline-row" style="cursor:default"><span class="headline-ic">📰</span><span class="headline-text"><b>${this._escapeHtml(t(ct.town))}</b>｜${this._escapeHtml(t(line))}</span></div>`; }); });
+                            E.aidaily += `</div>`;
+                        }
+                        // v4.0: Interactive newspaper reaction buttons (only for latest)
+                        if (isLatest && !this._newsReacted && !this.world.observerMode) { // v6.83.0 觀察者不對日報表態
+                            E.aidaily += `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">`;
+                            E.aidaily += `<button class="trade-btn" data-action="news-react" data-val="investigate" style="flex:1;font-size:0.72rem">🔍 ${t('調查')}</button>`;
+                            E.aidaily += `<button class="trade-btn" data-action="news-react" data-val="support" style="flex:1;font-size:0.72rem">👍 ${t('支持')}</button>`;
+                            E.aidaily += `<button class="trade-btn" data-action="news-react" data-val="ignore" style="flex:1;font-size:0.72rem">🤷 ${t('忽略')}</button>`;
+                            E.aidaily += `</div>`;
+                        }
+                    }
+                    E.aidaily += '</div>';
+                }
+                if (papers.length > 10) {
+                    E.aidaily += `${t('<p class="muted-text" style="text-align:center;padding:4px 0;font-size:0.7rem">顯示最近 10 期（共 ')}${papers.length}${t(' 期）</p>')}`;
+                }
+                E.aidaily += '</div>';
+            }
+
+            const chains = this.state.active_chains || [];
+            if (chains.length) {
+                E.happen += t('<div class="chain-section"><h4>進行中的事件鏈</h4>');
+                chains.forEach(c => { E.happen += `<div>${c.current_event}${t('（階段 ')}${c.stage}/${c.total_stages}${t('）')}</div>`; });
+                E.happen += '</div>';
+            }
+            const travelling = this.state.travelling_agents || [];
+            if (travelling.length) {
+                E.happen += t('<div class="travelling-section"><h4>外出中的居民</h4>');
+                travelling.forEach(_tw => { E.happen += `<div class="travelling-item">${t(_tw.name)} — ${_tw.reason}</div>`; });
+                E.happen += '</div>';
+            }
+            const events = (this.state.recent_events || []).slice().reverse();
+            if (events.length) { // v7.3.0 鎮上發生的事:合成一張卡、一行一件(以前一件一張大卡,還露出英文類別)
+                const sevIc = { danger: '🔴', warning: '🟡', good: '🟢', positive: '🟢', info: '🔵' };
+                E.happen += `<div class="news-section"><h4>📌 ${t('鎮上發生的事')} <span class="pp-count">${events.length}</span></h4>`;
+                events.slice(0, 12).forEach(evt => { E.happen += `<div class="pp-tier-line">${sevIc[evt.severity] || '•'} <b>${t(evt.name)}</b>${t('：')}${evt.description} <small>${evt.time || ''}</small></div>`; });
+                E.happen += '</div>';
+            }
+        }
+        if (W('festival')) {
+            // === Festivals ===
+            const festivals = this.state.festivals || {};
+            if (festivals.activeFestival) {
+                const f = festivals.activeFestival;
+                E.festival += `<div class="festival-section"><h4>${f.icon} ${t(f.name)}${t('進行中！')}</h4>
+                    <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div>${this._festivalSponsorHtml()}</div>`; // v6.15.0 贊助列
+            }
+            if (festivals.activeQuest) {
+                const q = festivals.activeQuest;
+                const pct = Math.round((q.progress / q.goal) * 100);
+                E.festival += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${t(q.name)}</h4>
+                    <div style="padding:4px 8px">${q.desc}</div>
+                    <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div>${festivals.activeFestival ? '' : this._festivalSponsorHtml()}</div>`; // v6.15.0 前夕的贊助列(節慶開始後只在上面那塊顯示)
+            }
+
+        }
+        if (W('factions')) {
+            // === Factions ===
+            const factionData = this.state.factions || {};
+            const factionList = Object.values(factionData.factions || {});
+            if (factionList.length) {
+                E.factions += t('<div class="faction-section"><h4>👥 派系 / 社交圈</h4>');
+                factionList.forEach(f => {
+                    const memberNames = f.members.map(id => {
+                        const a = this.state.agents[id];
+                        return a ? a.name : '?';
+                    }).join('、');
+                    const cohesionCls = f.cohesion > 70 ? 'cohesion-high' : f.cohesion < 30 ? 'cohesion-low' : '';
+                    let relHtml = '';
+                    if (f.rivalFactionId) {
+                        const rival = factionList.find(x => x.id === f.rivalFactionId);
+                        if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${t(rival.name)}</span> `;
+                    }
+                    if (f.allyFactionId) {
+                        const ally = factionList.find(x => x.id === f.allyFactionId);
+                        if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${t(ally.name)}</span>`;
+                    }
+                    E.factions += `<div class="faction-card">
+                        <div class="faction-header">${f.icon} <strong>${t(f.name)}</strong>
+                            <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${f.cohesion > 70 ? t('緊密') : f.cohesion < 30 ? t('渙散') : t('普通')}</span></div>
+                        <div class="faction-members">${memberNames}</div>
+                        ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
+                });
+                E.factions += '</div>';
+            }
+
+        }
+        if (W('explore')) {
+            // === Exploration ===
+            const exploreData = this.state.exploration || {};
+            const discovered = Object.entries(exploreData.discoveredZones || {});
+            const expeditions = exploreData.activeExpeditions || [];
+            if (discovered.length || expeditions.length) {
+                E.explore += t('<div class="explore-section"><h4>🗺️ 探索區域</h4>');
+                if (expeditions.length) {
+                    E.explore += t('<div class="expedition-active"><strong>進行中的探險：</strong>');
+                    expeditions.forEach(e => {
+                        const ticksLeft = Math.max(0, e.returnTick - (this.state.tick || 0));
+                        const daysLeft = Math.ceil(ticksLeft / 96);
+                        E.explore += `<div class="expedition-item">${e.zoneIcon} ${e.zoneName} — ${e.agentNames.join(t('、'))} (${daysLeft}${t('天後返回)</div>')}`;
+                    });
+                    E.explore += '</div>';
+                }
+                discovered.forEach(([zoneId, info]) => {
+                    const zoneDef = this._getExplorationZone(zoneId);
+                    if (!zoneDef) return;
+                    const canSend = !expeditions.some(e => e.zoneId === zoneId);
+                    // v5.35.7 移除只列前 8 位的限制:全部不在探險中的村民都可選
+                    const availableNpcs = Object.entries(this.state.agents)
+                        .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player');
+                    E.explore += `<div class="explore-zone">
+                        <div class="zone-header">${zoneDef.icon} <strong>${t(zoneDef.name)}</strong>
+                            <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
+                        <div class="zone-desc">${zoneDef.description}</div>
+                        <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
+                        ${this.world.observerMode ? (canSend ? `<div class="zone-stats">${t('要不要派人探險由村民提案決定')}</div>` : t('<div class="zone-busy">探險進行中...</div>')) : canSend ? `<div class="zone-send">
+                            <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
+                                ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
+                            </select>
+                            <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">${t('派遣探險')}</button>
+                        </div>` : t('<div class="zone-busy">探險進行中...</div>')}
                     </div>`;
                 });
-                html += `${t('<div class="election-total">已投票：')}${totalVotes}${t(' 人')}${playerVoted && !this.world.observerMode ? t(' (你已投票)') : ''}</div>`;
-            } else if (election.phase === 'results') {
-                const winner = election.candidates[0];
-                const totalVotes = election.candidates.reduce((s, c) => s + c.votes, 0);
-                html += t('<h4>🏆 選舉結果</h4>');
-                if (winner) {
-                    html += `<div class="election-winner">
-                        <div class="winner-name">${t(winner.name)} ${t('當選鎮長！')}</div>
-                        <div class="winner-policy">${t('施政方針：')}${winner.policyIcon} ${winner.policyLabel}</div>
-                    </div>`;
+                E.explore += '</div>';
+            }
+
+        }
+        if (W('life')) {
+            // === Graveyard ===
+            const lifecycle = this.state.lifecycle || {};
+            const graveyard = lifecycle.graveyard || [];
+            const births = lifecycle.births || [];
+            if (graveyard.length || births.length) {
+                E.life += '<div class="lifecycle-section">';
+                if (births.length) {
+                    E.life += t('<h4>🎒 近期出生</h4>');
+                    births.slice(-5).reverse().forEach(b => {
+                        E.life += `<div class="birth-item">${t(b.name)} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
+                    });
                 }
-                election.candidates.forEach(c => {
-                    const pct = totalVotes > 0 ? Math.round(c.votes / totalVotes * 100) : 0;
-                    const isWinner = c === election.candidates[0];
-                    html += `<div class="election-candidate ${isWinner ? 'election-winner-card' : ''}">
-                        <span class="candidate-name">${isWinner ? '👑 ' : ''}${t(c.name)}</span>
-                        <span class="candidate-policy">${c.policyIcon}</span>
-                        <span class="candidate-votes">${c.votes}${t(' 票（')}${pct}%）</span>
-                        <div class="election-bar"><div class="election-bar-fill ${isWinner ? 'winner' : ''}" style="width:${pct}%"></div></div>
-                    </div>`;
-                });
-            }
-            html += '</div>';
-        }
-        // Election history
-        if (election?.electionHistory?.length && !election.active) {
-            const last = election.electionHistory[election.electionHistory.length - 1];
-            html += `<div class="election-history-brief">
-                <span>${t('上次選舉：')}${t(last.winner.name)}${t(' 當選（')}${last.winner.policyIcon || ''}${ELECTION_POLICIES_LABELS[last.winner.policy] || last.winner.policy}，${last.winner.votes}/${last.totalVotes} ${t('票）')}</span>
-            </div>`;
-        }
-
-        // --- Weather Panel ---
-        const weather = this.state.weather;
-        if (weather) {
-            html += '<div class="weather-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
-            html += `<h4>${weather.icon} ${t('天氣')}${t('：')}${t(weather.name)}</h4>`;
-            html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin:4px 0">${weather.desc}</div>`;
-            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:6px 0">`;
-            html += `<span>🌡️ ${weather.temperature}°C</span>`;
-            html += `<span>💧 ${t('濕度')} ${weather.humidity}%</span>`;
-            html += `<span>💨 ${t('風速')} ${weather.windSpeed}</span>`;
-            html += `</div>`;
-            // Farm & mood modifiers
-            const farmPct = Math.round(weather.farmModifier * 100);
-            const moodVal = weather.moodModifier;
-            html += `<div style="display:flex;gap:12px;font-size:0.75rem;margin:4px 0">`;
-            html += `<span style="color:${farmPct >= 0 ? 'var(--positive)' : 'var(--negative)'}">🌾 ${t('農業')} ${farmPct >= 0 ? '+' : ''}${farmPct}%</span>`;
-            html += `<span style="color:${moodVal >= 0 ? 'var(--positive)' : 'var(--negative)'}">😊 ${t('心情')} ${moodVal >= 0 ? '+' : ''}${moodVal}</span>`;
-            html += `</div>`;
-            // Forecast
-            if (weather.forecast?.length) {
-                html += `<div style="display:flex;gap:8px;margin-top:6px;font-size:0.72rem;color:var(--text-muted)">`;
-                html += `<span>${t('預報')}${t('：')}</span>`;
-                weather.forecast.forEach(f => { html += `<span title="${t(f.name)}">${f.icon}</span>`; });
-                html += `</div>`;
-            }
-            // Disaster warning
-            if (weather.disasterWarning) {
-                html += `<div style="margin-top:6px;padding:4px 8px;background:rgba(255,80,80,0.1);border-left:3px solid var(--negative);border-radius:4px;font-size:0.75rem">`;
-                html += `⚠️ ${t('災害預警')}${t('：')}${weather.disasterWarning.type === 'drought_severe' ? t('嚴重乾旱') : weather.disasterWarning.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}`;
-                if (weather.disasterWarning.daysUntil > 0) html += ` (${weather.disasterWarning.daysUntil} ${t('天後')})`;
-                html += `</div>`;
-            }
-            // Active disaster
-            if (weather.activeDisaster) {
-                html += `<div style="margin-top:6px;padding:6px 8px;background:rgba(255,40,40,0.15);border-left:3px solid var(--negative);border-radius:4px;font-size:0.8rem;font-weight:bold">`;
-                html += `🚨 ${t(weather.activeDisaster.name)}${t('（')}${t('剩餘')} ${weather.activeDisaster.daysLeft} ${t('天')}${t('）')}`;
-                html += `<div style="font-weight:normal;font-size:0.72rem;margin-top:2px">${weather.activeDisaster.desc}</div>`;
-                html += `</div>`;
-            }
-            html += '</div>';
-        }
-
-        // --- Council Panel ---
-        const council = this.state.council;
-        if (council && council.formed) {
-            html += '<div class="council-section" style="margin-bottom:12px;padding:10px 12px;background:rgba(255,255,255,0.03);border-radius:8px">';
-            html += `<h4>🏛️ ${t('小鎮議會')}</h4>`;
-            html += `<div style="font-size:0.75rem;color:var(--text-secondary);margin:4px 0">${t('成員')}${t('：')}${council.memberNames.join(t('、'))}</div>`;
-            // Pending proposal
-            if (council.pendingProposal) {
-                const p = council.pendingProposal;
-                html += `<div style="margin-top:8px;padding:8px;background:rgba(255,200,60,0.08);border:1px solid rgba(255,200,60,0.2);border-radius:6px">`;
-                html += `<div style="font-weight:bold;font-size:0.85rem">📜 ${p.title}</div>`;
-                html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin:4px 0">${p.desc}</div>`;
-                html += `<div style="font-size:0.72rem;color:var(--text-muted)">${t('提案者')}${t('：')}${p.proposerName} | ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</div>`;
-                html += `<div style="display:flex;gap:8px;margin-top:4px;font-size:0.75rem">`;
-                html += `<span style="color:var(--positive)">👍 ${p.forCount} ${t('贊成')}</span>`;
-                html += `<span style="color:var(--negative)">👎 ${p.againstCount} ${t('反對')}</span>`;
-                html += `</div>`;
-                if (!p.playerVoted) {
-                    html += `<div style="display:flex;gap:6px;margin-top:8px">`;
-                    html += `<button class="btn-accent" data-action="council-vote" data-val="for" style="flex:1;padding:6px">👍 ${t('贊成')}</button>`;
-                    html += `<button style="flex:1;padding:6px;border-radius:4px;border:1px solid rgba(255,255,255,0.15);background:rgba(255,80,80,0.1);color:var(--text-primary);cursor:pointer" data-action="council-vote" data-val="against">👎 ${t('反對')}</button>`;
-                    html += `</div>`;
-                } else {
-                    html += `<div style="font-size:0.72rem;color:var(--text-muted);margin-top:4px">✅ ${t('你已投票')}</div>`;
+                if (graveyard.length) {
+                    E.life += t('<h4>⚰️ 墓園</h4>');
+                    graveyard.slice(-10).reverse().forEach(g => {
+                        E.life += `<div class="grave-item">
+                            <div class="grave-name">${t(g.name)}（${g.age}${t('歲）')}</div>
+                            <div class="grave-info">${g.job} — ${g.deathCause}</div>
+                            <div class="grave-epitaph">${g.epitaph}</div>
+                            <div class="grave-time">${g.deathTime}</div></div>`;
+                    });
                 }
-                html += `</div>`;
-            } else {
-                html += `<div style="font-size:0.75rem;color:var(--text-muted);margin-top:4px">${t('目前沒有待表決的議案。')}</div>`;
+                E.life += '</div>';
             }
-            // Active decrees
-            if (council.activeDecrees?.length) {
-                html += `<div style="margin-top:8px;font-size:0.75rem">`;
-                html += `<div style="font-weight:bold;margin-bottom:4px">${t('生效中的政令')}${t('：')}</div>`;
-                council.activeDecrees.forEach(d => {
-                    html += `<div style="padding:2px 0;color:var(--text-secondary)">📋 ${d.title}</div>`;
-                });
-                html += `</div>`;
-            }
-            // Proposal log
-            if (council.proposalLog?.length) {
-                html += `<div style="margin-top:8px;font-size:0.7rem;color:var(--text-muted)">`;
-                html += `${t('近期決議')}${t('：')}`;
-                council.proposalLog.slice(-5).reverse().forEach(p => {
-                    html += `<span style="color:${p.passed ? 'var(--positive)' : 'var(--negative)'}"> ${p.passed ? '✅' : '❌'} ${p.title}(${p.forVotes}:${p.againstVotes})</span>`;
-                });
-                html += `</div>`;
-            }
-            html += '</div>';
-        }
 
-        // --- News Bulletins ---
-        const news = this.state.news || {};
-        const bulletins = news.bulletins || [];
-        if (bulletins.length) {
-            html += t('<div class="news-section"><h4>📰 新聞公告</h4><div class="news-ticker">');
-            const CATEGORY_LABELS = {security:t('安全'),trade:t('貿易'),weather:t('天氣'),social:t('社會'),health:t('健康'),discovery:t('發現'),nature:t('自然'),political:t('政治')};
-            bulletins.forEach(b => {
-                const severityIcon = {good:'🟢',info:'🔵',warning:'🟡',danger:'🔴'}[b.severity] || '⚪';
-                const categoryIcon = {security:'🛡️',trade:'📦',weather:'🌤️',social:'👥',health:'🏥',discovery:'🔍',nature:'🌿',political:'⚔️'}[b.category] || '📋';
-                html += `<div class="news-bulletin severity-${b.severity}">
-                    <div class="news-header">
-                        <span class="news-severity">${severityIcon}</span>
-                        <span class="news-category">${categoryIcon} ${CATEGORY_LABELS[b.category]||b.category}</span>
-                        <span class="news-duration">${t('剩餘')}${b.days_remaining}${t('天')}</span>
-                    </div>
-                    <div class="news-headline">${b.headline}</div>
-                    <div class="news-headline-en">${b.headline_en}</div>
-                    <div class="news-flavor">${b.flavor}</div>
-                    <div class="news-time">${b.published_time}</div>
-                </div>`;
-            });
-            html += '</div>';
-            // Active modifier effects summary
-            const mods = news.active_modifiers || {};
-            const modEntries = Object.entries(mods).filter(([k]) => k !== 'mood_modifier');
-            if (modEntries.length) {
-                html += t('<div class="news-effects"><span class="news-effects-label">生效中：</span> ');
-                modEntries.forEach(([key, val]) => {
-                    // v5.34.2 補全 modifier 中文標籤(原本只有 7 個,其餘直接露出英文 key)
-                    const effectLabels = {
-                        food_production:t('食物產量'), mine_output:t('礦產產出'), trade_prices:t('交易價格'),
-                        construction_speed:t('建設速度'), mood_bonus:t('心情加成'), crop_growth:t('作物生長'),
-                        merchant_frequency:t('商人頻率'), farm_bonus:t('農作加成'), sell_bonus:t('售價加成'),
-                        buy_bonus:t('買價優惠'), trade_bonus:t('貿易加成'), mining_bonus:t('採礦加成'),
-                        gathering_bonus:t('採集加成'), research_bonus:t('研究加成'), skill_bonus:t('技能成長'),
-                        guard_bonus:t('守衛戰力'), immigration_chance:t('移民機率'), departure_chance:t('離鄉機率'),
-                        raid_chance:t('襲擊機率'), raid_severity:t('襲擊強度'), animal_raid_chance:t('野獸襲擊機率'),
-                        plague_chance:t('疫病機率'), storm_chance:t('風暴機率'), drought_chance:t('乾旱機率'),
-                        chain_chance:t('連鎖事件機率'), festival_chance:t('慶典機率'), merchant_chance:t('商隊機率'),
-                        supply_shortage:t('物資短缺'), weather_farm_bonus:t('天氣農作影響'), weather_mood:t('天氣心情影響'),
-                    };
-                    const label = effectLabels[key] || key.replace(/_/g, ' ');
-                    const cls = (typeof val === 'number' && val > 0) ? 'effect-positive' : (typeof val === 'number' && val < 0) ? 'effect-negative' : 'effect-neutral';
-                    // weather_mood 是心情點數(±N),不是百分比
-                    const flatKeys = { weather_mood: 1 };
-                    const display = typeof val === 'number'
-                        ? (flatKeys[key] ? (val > 0 ? '+' : '') + Math.round(val) : (val > 0 ? '+' : '') + Math.round(val * 100) + '%')
-                        : (val ? t('是') : t('否'));
-                    html += `<span class="news-effect ${cls}">${label}: ${display}</span> `;
-                });
-                html += '</div>';
-            }
-            html += '</div>';
         }
-
-        // --- AI 日報 ---
-        const dailyNews = this.state.dailyNews || {};
-        const papers = dailyNews.newspapers || [];
-        if (papers.length > 0) {
-            html += t('<div class="news-section"><h4>🗞️ AI 日報</h4>');
-            const display = papers.slice().reverse().slice(0, 10);
-            for (let i = 0; i < display.length; i++) {
-                const paper = display[i];
-                const isExpanded = this._expandedNewspaper === paper.id;
-                const isLatest = i === 0;
-                html += `<div class="news-card ${isExpanded ? 'news-expanded' : ''} ${isLatest ? 'news-latest' : ''}" data-action="view-newspaper" data-val="${paper.id}">`;
-                html += `<div class="news-card-header">`;
-                html += `<div class="news-card-issue">#${paper.id}</div>`;
-                html += `<div class="news-card-meta">`;
-                html += `<div class="news-card-date">${t('第 {y} 年{s}').split('{y}').join(paper.year).split('{s}').join(t(paper.season))} ${t('第 {d} 天').split('{d}').join(paper.day)}</div>`;
-                html += `<div class="news-card-reporter">✍️ ${paper.reporter}${t('（')}${paper.reporterJob}${t('）')}</div>`;
-                html += `</div>`;
-                html += `<div class="news-card-toggle">${isExpanded ? '▲' : '▼'}</div>`;
-                html += `</div>`;
-                if (!isExpanded && paper.content) {
-                    const firstLine = paper.content.split('\n').find(l => l.trim().length > 0) || '';
-                    const preview = clipText(firstLine, 41); // v6.43.6
-                    html += `<div class="news-card-preview">${this._escapeHtml(preview)}</div>`;
-                }
-                if (isExpanded) {
-                    html += `<div class="news-card-content">${this._escapeHtml(paper.content)}</div>`;
-                    // v5.17.0 情境入口:把本期事件做成可點連結,直達當事人資訊卡或相關分頁
-                    const pevs = paper.events || [];
-                    if (pevs.length) {
-                        html += `<div class="news-card-events">`;
-                        pevs.forEach((e, ei) => {
-                            html += `<button class="headline-row" data-action="news-goto" data-val="${paper.id}:${ei}">
-                                <span class="headline-ic">${this._newsCatIcon(e.category)}</span>
-                                <span class="headline-text">${this._escapeHtml(e.content)}</span>
-                                <span class="headline-go">›</span></button>`;
-                        });
-                        html += `</div>`;
-                    }
-                    // v5.88.0 跨鎮專欄:其他鎮日報的要聞
-                    if (Array.isArray(paper.crossTown) && paper.crossTown.length) {
-                        html += `<div class="news-card-events" style="margin-top:8px"><div class="muted-text" style="font-size:0.72rem;margin-bottom:4px">🐎 ${t('跨鎮專欄')}</div>`;
-                        paper.crossTown.forEach(ct => { (ct.items || []).forEach(line => { html += `<div class="headline-row" style="cursor:default"><span class="headline-ic">📰</span><span class="headline-text"><b>${this._escapeHtml(t(ct.town))}</b>｜${this._escapeHtml(t(line))}</span></div>`; }); });
-                        html += `</div>`;
-                    }
-                    // v4.0: Interactive newspaper reaction buttons (only for latest)
-                    if (isLatest && !this._newsReacted && !this.world.observerMode) { // v6.83.0 觀察者不對日報表態
-                        html += `<div style="display:flex;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.08)">`;
-                        html += `<button class="trade-btn" data-action="news-react" data-val="investigate" style="flex:1;font-size:0.72rem">🔍 ${t('調查')}</button>`;
-                        html += `<button class="trade-btn" data-action="news-react" data-val="support" style="flex:1;font-size:0.72rem">👍 ${t('支持')}</button>`;
-                        html += `<button class="trade-btn" data-action="news-react" data-val="ignore" style="flex:1;font-size:0.72rem">🤷 ${t('忽略')}</button>`;
-                        html += `</div>`;
-                    }
-                }
-                html += '</div>';
-            }
-            if (papers.length > 10) {
-                html += `${t('<p class="muted-text" style="text-align:center;padding:4px 0;font-size:0.7rem">顯示最近 10 期（共 ')}${papers.length}${t(' 期）</p>')}`;
-            }
-            html += '</div>';
-        }
-
-        const chains = this.state.active_chains || [];
-        if (chains.length) {
-            html += t('<div class="chain-section"><h4>進行中的事件鏈</h4>');
-            chains.forEach(c => { html += `<div>${c.current_event}${t('（階段 ')}${c.stage}/${c.total_stages}${t('）')}</div>`; });
-            html += '</div>';
-        }
-        const travelling = this.state.travelling_agents || [];
-        if (travelling.length) {
-            html += t('<div class="travelling-section"><h4>外出中的居民</h4>');
-            travelling.forEach(_tw => { html += `<div class="travelling-item">${t(_tw.name)} — ${_tw.reason}</div>`; });
-            html += '</div>';
-        }
-        const events = (this.state.recent_events || []).slice().reverse();
-        events.forEach(evt => {
-            const typeBadge = evt.event_type && evt.event_type !== 'random'
-                ? `<span class="event-type-badge type-${evt.event_type}">${evt.event_type}</span>` : '';
-            html += `<div class="event-card severity-${evt.severity}">
-                <div style="font-weight:bold">${t(evt.name)}${typeBadge}</div>
-                <div style="font-size:0.75rem;color:var(--text-secondary)">${evt.time}</div>
-                <div style="margin-top:4px">${evt.description}</div></div>`;
-        });
-        // === Festivals ===
-        const festivals = this.state.festivals || {};
-        if (festivals.activeFestival) {
-            const f = festivals.activeFestival;
-            html += `<div class="festival-section"><h4>${f.icon} ${t(f.name)}${t('進行中！')}</h4>
-                <div style="padding:4px 8px;color:var(--text-secondary)">${f.description}</div>${this._festivalSponsorHtml()}</div>`; // v6.15.0 贊助列
-        }
-        if (festivals.activeQuest) {
-            const q = festivals.activeQuest;
-            const pct = Math.round((q.progress / q.goal) * 100);
-            html += `${t('<div class="quest-section"><h4>🎯 節日任務：')}${t(q.name)}</h4>
-                <div style="padding:4px 8px">${q.desc}</div>
-                <div class="quest-progress"><div class="quest-bar" style="width:${pct}%"></div><span>${pct}%</span></div>${festivals.activeFestival ? '' : this._festivalSponsorHtml()}</div>`; // v6.15.0 前夕的贊助列(節慶開始後只在上面那塊顯示)
-        }
-
-        // === Factions ===
-        const factionData = this.state.factions || {};
-        const factionList = Object.values(factionData.factions || {});
-        if (factionList.length) {
-            html += t('<div class="faction-section"><h4>👥 派系 / 社交圈</h4>');
-            factionList.forEach(f => {
-                const memberNames = f.members.map(id => {
-                    const a = this.state.agents[id];
-                    return a ? a.name : '?';
-                }).join('、');
-                const cohesionCls = f.cohesion > 70 ? 'cohesion-high' : f.cohesion < 30 ? 'cohesion-low' : '';
-                let relHtml = '';
-                if (f.rivalFactionId) {
-                    const rival = factionList.find(x => x.id === f.rivalFactionId);
-                    if (rival) relHtml += `${t('<span class="faction-rival">⚔️ 敵對：')}${t(rival.name)}</span> `;
-                }
-                if (f.allyFactionId) {
-                    const ally = factionList.find(x => x.id === f.allyFactionId);
-                    if (ally) relHtml += `${t('<span class="faction-ally">🤝 結盟：')}${t(ally.name)}</span>`;
-                }
-                html += `<div class="faction-card">
-                    <div class="faction-header">${f.icon} <strong>${t(f.name)}</strong>
-                        <span class="faction-cohesion ${cohesionCls}${t('">團結度：')}${f.cohesion > 70 ? t('緊密') : f.cohesion < 30 ? t('渙散') : t('普通')}</span></div>
-                    <div class="faction-members">${memberNames}</div>
-                    ${relHtml ? '<div class="faction-relations">' + relHtml + '</div>' : ''}</div>`;
-            });
-            html += '</div>';
-        }
-
-        // === Exploration ===
-        const exploreData = this.state.exploration || {};
-        const discovered = Object.entries(exploreData.discoveredZones || {});
-        const expeditions = exploreData.activeExpeditions || [];
-        if (discovered.length || expeditions.length) {
-            html += t('<div class="explore-section"><h4>🗺️ 探索區域</h4>');
-            if (expeditions.length) {
-                html += t('<div class="expedition-active"><strong>進行中的探險：</strong>');
-                expeditions.forEach(e => {
-                    const ticksLeft = Math.max(0, e.returnTick - (this.state.tick || 0));
-                    const daysLeft = Math.ceil(ticksLeft / 96);
-                    html += `<div class="expedition-item">${e.zoneIcon} ${e.zoneName} — ${e.agentNames.join(t('、'))} (${daysLeft}${t('天後返回)</div>')}`;
-                });
-                html += '</div>';
-            }
-            discovered.forEach(([zoneId, info]) => {
-                const zoneDef = this._getExplorationZone(zoneId);
-                if (!zoneDef) return;
-                const canSend = !expeditions.some(e => e.zoneId === zoneId);
-                // v5.35.7 移除只列前 8 位的限制:全部不在探險中的村民都可選
-                const availableNpcs = Object.entries(this.state.agents)
-                    .filter(([id, a]) => !a.is_player && a.activity_label !== t('探險中') && id !== 'player');
-                html += `<div class="explore-zone">
-                    <div class="zone-header">${zoneDef.icon} <strong>${t(zoneDef.name)}</strong>
-                        <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
-                    <div class="zone-desc">${zoneDef.description}</div>
-                    <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
-                    ${this.world.observerMode ? (canSend ? `<div class="zone-stats">${t('要不要派人探險由村民提案決定')}</div>` : t('<div class="zone-busy">探險進行中...</div>')) : canSend ? `<div class="zone-send">
-                        <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
-                            ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
-                        </select>
-                        <button class="explore-btn" data-action="send-expedition" data-val="${zoneId}">${t('派遣探險')}</button>
-                    </div>` : t('<div class="zone-busy">探險進行中...</div>')}
-                </div>`;
-            });
-            html += '</div>';
-        }
-
-        // === Graveyard ===
-        const lifecycle = this.state.lifecycle || {};
-        const graveyard = lifecycle.graveyard || [];
-        const births = lifecycle.births || [];
-        if (graveyard.length || births.length) {
-            html += '<div class="lifecycle-section">';
-            if (births.length) {
-                html += t('<h4>🎒 近期出生</h4>');
-                births.slice(-5).reverse().forEach(b => {
-                    html += `<div class="birth-item">${t(b.name)} — ${b.parentNames.join(t('與'))}${t('的孩子 <span class="birth-time">')}${b.birthTime}</span></div>`;
-                });
-            }
-            if (graveyard.length) {
-                html += t('<h4>⚰️ 墓園</h4>');
-                graveyard.slice(-10).reverse().forEach(g => {
-                    html += `<div class="grave-item">
-                        <div class="grave-name">${t(g.name)}（${g.age}${t('歲）')}</div>
-                        <div class="grave-info">${g.job} — ${g.deathCause}</div>
-                        <div class="grave-epitaph">${g.epitaph}</div>
-                        <div class="grave-time">${g.deathTime}</div></div>`;
-                });
-            }
-            html += '</div>';
-        }
-
-        container.innerHTML = html || t('<p class="muted-text" style="padding:20px">尚無事件。事件每天會隨機發生。</p>');
+        return E;
+    },
+    renderEvents(container) { this.renderNews(container); }, // v7.3.0 舊分頁鍵相容
+    // v7.3.0 政令與議案(從舊「事件」分頁搬來,議員名單已在城鎮等級區塊,這裡只列政令與決議)
+    _councilHtml() {
+        const c = this.state?.council; if (!c || !c.formed) return '';
+        const esc = (x) => this._escapeHtml(String(x ?? ''));
+        const dec = c.activeDecrees || [], log = (c.proposalLog || []).slice(-5).reverse(), p = c.pendingProposal;
+        if (!dec.length && !log.length && !p) return '';
+        let h = `<div class="pp-issues pp-council-box"><h4 class="pp-h">📋 ${t('政令與議案')}${dec.length ? ` <span class="pp-count">${dec.length}</span>` : ''}</h4>`;
+        for (const d of dec) h += `<div class="pp-tier-line">📋 ${esc(t(d.title))}</div>`;
+        if (p) h += `<div class="pp-tier-line">🗳️ ${esc(p.title)} <small>${esc(t(p.proposerName || ''))} · 👍 ${p.forCount} · 👎 ${p.againstCount} · ${t('剩餘')} ${p.daysLeft} ${t('天投票')}</small></div>`;
+        if (log.length) h += `<div class="pp-issue-hint">${t('近期決議')}${t('：')}${log.map(x => `${x.passed ? '✅' : '❌'} ${esc(x.title)}(${x.forVotes}:${x.againstVotes})`).join(' ')}</div>`;
+        return h + '</div>';
     },
 });

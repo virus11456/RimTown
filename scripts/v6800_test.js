@@ -53,11 +53,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.streak = { streak: FLOW.diet(w).streak, mood: Math.round(m1 - m0), log: (w.messageLog || []).slice(logN0).some(m => /🍰/.test(w.logText ? w.logText(m) : (m.content || m.text || ''))) };
       // 普通的一天中斷連續
       econ().variety = 1; w.flow.lastDay = -1; FLOW.daily(w); out.broken = { streak: FLOW.diet(w).streak, factor: FLOW.mealFactor(w) };
-      app.state = w.getState(); app.activeTab = 'economy'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
+      app.state = w.getState(); app.activeTab = 'econ-goods'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
       { const tx = document.querySelector('.ec-local')?.innerText || ''; out.plain = /(吃得普通|Eating plainly).*✗/.test(tx.replace(/\s+/g, ' ')); out.plainTx = (tx.match(/🍽️.*/) || [''])[0].slice(0, 90); }
       // 6) 面板:精製數量與吃得好
       goodDay(); set('tools', 30); w.flow.fine.tools = 12;
-      app.state = w.getState(); app.activeTab = 'economy'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
+      app.state = w.getState(); app.activeTab = 'econ-goods'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
       const panel = document.querySelector('#rimtown-app')?.innerText || document.body.innerText;
       out.panel = { fine: /✨\s*(精製|fine)\s*12/.test(panel), eat: /今天少吃一成正餐|10% fewer meals/.test(panel), wear: /(每日耗損|daily wear)\s*[\d.]+/.test(panel) };
       out.panelSnippet = (panel.match(/.{0,30}✨.{0,20}/) || [''])[0];

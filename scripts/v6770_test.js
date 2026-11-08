@@ -81,7 +81,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.trade = { harbor: TOWN_THEMES.harbor.exports[0], inland: ['frontier', 'mountain', 'forest', 'market'].every(k => TOWN_THEMES[k].imports.includes('salt')) };
       // 11) 面板
       fresh('harbor', '海風鎮'); run(3);
-      app.state = w.getState(); app.activeTab = 'economy'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
+      app.state = w.getState(); app.activeTab = 'econ-goods'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
       const sec = document.querySelector('.ec-local'); out.panel = sec ? sec.innerText.replace(/\s+/g, ' ') : null;
       out.raw = !!document.querySelector('#sidebar-content')?.innerText.match(/鹽|Salt/);
       return out;

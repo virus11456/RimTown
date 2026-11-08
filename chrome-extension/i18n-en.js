@@ -4,6 +4,29 @@
 (function () {
     const en = (window.RIMTOWN_I18N_EN = window.RIMTOWN_I18N_EN || {});
     Object.assign(en, {
+        // ── v7.3.0 面板統一與整合 ──
+        '雜貨': 'General goods',
+        '藥材': 'Medicinal herbs',
+        '異國貨': 'Exotic goods',
+        '本鎮公告': 'Town notices',
+        '消息': 'News',
+        '生效中': 'In effect',
+        '鎮上發生的事': 'Happening in town',
+        '政令與議案': 'Decrees and motions',
+        '目前沒有新消息。商隊、旅人和信差會陸續帶消息進鎮。': 'No news yet. Caravans, travelers and messengers will bring word into town.',
+        '更早的 {n} 天': '{n} earlier days',
+        '概況': 'Overview',
+        '物資': 'Goods',
+        '繁榮度、天氣、物價與就業、大家身上的錢。': 'Prosperity, weather, prices and jobs, and how much money people have.',
+        '倉庫裡有什麼、每天做了多少、跟商人的買賣。': 'What\'s in storage, what gets made each day, and trade with merchants.',
+        '正在蓋什麼、還能蓋什麼、研究到哪裡。': 'What\'s being built, what can be built, and research progress.',
+        '產業與老闆、鎮上的店、銀行、農場與工廠。': 'Businesses and owners, shops, the bank, farms and factories.',
+        '點村民看他在做什麼、在想什麼。': 'Tap a villager to see what they\'re doing and thinking.',
+        '誰愛誰、誰恨誰，一張圖看完。': 'Who loves whom and who hates whom, all in one map.',
+        '每天一期的觀察者日報；AI 記者寫的日報收在下面。': 'The observer\'s daily paper; the AI reporters\' papers are below.',
+        '鎮上發生的事、本鎮公告、外地傳來的消息、外交與報社。': 'What\'s happening in town, notices, news from afar, diplomacy and newspapers.',
+        '每一季的回顧、鎮史、文化作品、出生與墓園、編年史。': 'Season reviews, town history, culture, births and the cemetery, and the chronicle.',
+        '小鎮達成過的里程碑。': 'Milestones the town has reached.',
         // ── v7.2.1 提案材料採買 ──
         '已向外地訂購{what}，{n} 天後到': 'Ordered {what} from out of town; arrives in {n} days',
         '還缺{miss}': 'Still short: {miss}',

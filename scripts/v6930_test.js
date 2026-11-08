@@ -60,7 +60,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const CE = Object.create(ConversationEngine.prototype); out.brief = (CE._agentBrief(w, voter, null).mem || []).join(' | '); out.bossBrief = (CE._agentBrief(w, boss, null).mem || []).join(' | ');
       const save = app.world; app.state = w.getState(); app.selectedAgent = voter.agentId; const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
       try { app.renderAgentDetail(box); } catch (e) { out.detailErr = e.message; } const md = box.querySelector('.market-detail'); out.detail = md ? md.textContent.replace(/\s+/g, ' ') : ''; box.innerHTML = '';
-      app._economySubTab = 'resources'; try { app.renderEconomy(box); } catch (e) { out.econErr = e.message; } const um = box.querySelector('.union-meta'); out.econ = um ? um.textContent.replace(/\s+/g, ' ') : ''; out.econOverflow = um ? um.scrollWidth > um.clientWidth + 2 : null; box.remove(); app.state = save.getState();
+      app.activeTab = 'industry'; /* v7.3.0 產業與老闆搬到小鎮 › 產業 */ try { app.renderEconomy(box); } catch (e) { out.econErr = e.message; } const um = box.querySelector('.union-meta'); out.econ = um ? um.textContent.replace(/\s+/g, ' ') : ''; out.econOverflow = um ? um.scrollWidth > um.clientWidth + 2 : null; box.remove(); app.state = save.getState();
       // 13) 存讀檔
       const data = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(data); out.save = !!w2.union?.on && Object.keys(w2.union.members).length === Object.keys(U.members).length;
       // 14) 解散時基金分還給會員

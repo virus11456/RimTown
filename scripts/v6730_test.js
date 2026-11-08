@@ -45,7 +45,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       fA[0].relationships.getOrCreate(fB[0].agentId, fB[0].name).status = 'married'; LEGACY.families(w, L); out.ended = L.feuds.every(f => f.ended) && logHas(/化解|ended a long-standing/);
       out.town = CE._townBrief(w);
       w._absDay = _ad;
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-legacy')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'quest'; app._renderTownChronicle(box); /* v7.3.0 搬到日報 › 年表 */ out.ui = box.querySelector('.pp-legacy')?.innerText || ''; box.remove();
       out.famLabel = LEGACY.view(w).families.map(f => f.name).join(' / ');
       out.nameEn2 = (typeof I18N !== 'undefined') ? I18N.localizeNames(all[0].name, true) : '';
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.legacy?.chapters?.length === L.chapters.length && w2.legacy.legends.length === L.legends.length; w2.reset(); out.reset = !w2.legacy;
@@ -59,7 +59,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.feud && /世仇|feud/.test(r.feudBrief), '兩家互相看不順眼久了成為世仇，AI 知道', r.feudBrief.slice(-160));
     ok(r.ended, '兩家聯姻化解世仇', r);
     ok(/傳說|legends/i.test(r.town), 'AI 知道鎮上的傳說人物', r.town.slice(-120));
-    ok(/📚/.test(r.ui), '鎮況頁有鎮史', r.ui.slice(0, 200));
+    ok(/📚/.test(r.ui), '年表頁有鎮史', r.ui.slice(0, 200));
     ok(lang === 'zh' ? /家/.test(r.famLabel) : (!/[一-鿿]家/.test(r.famLabel) && /family/.test(r.famLabel)), '家族名依語言顯示', r.famLabel);
     ok(lang === 'zh' || (r.nameEn === r.nameEn2 && !/[一-鿿]/.test(r.nameEn2)), '英文人名翻譯沒被弄壞', { a: r.nameEn, b: r.nameEn2 });
     ok(r.rt && r.reset, '鎮史存讀檔保留、新城鎮重來', r);

@@ -15,7 +15,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_gh_intro', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); localStorage.setItem('rimtown_3d_q_by', 'user'); sessionStorage.setItem('rimtown_enter_now', '1'); }, { jwt, lang });
     await page.goto(BASE, { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?.world, null, { timeout: 60000 }); await page.waitForTimeout(2500);
     // 開「動態 → 小鎮」分頁,找到原料倉庫的「展開明細」
-    await page.evaluate((m) => { const app = window.rimtownApp; if (m === 'mob') app._openKairoTab('economy'); else { app.activeTab = 'economy'; app._updateTabHighlight?.('economy'); app.renderSidebar(); } }, mode);
+    await page.evaluate((m) => { const app = window.rimtownApp; if (m === 'mob') app._openKairoTab('econ-goods'); else { app.activeTab = 'econ-goods'; app._updateTabHighlight?.('economy'); app.renderSidebar(); } }, mode);
     await page.waitForTimeout(500);
     const find = () => page.evaluate(() => { const d = [...document.querySelectorAll('#sidebar-content details')].find(x => /展開明細|Show details|details/i.test(x.querySelector('summary')?.textContent || '')); return d ? { open: d.open, text: d.querySelector('summary').textContent.trim() } : null; });
     const f0 = await find();
@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const f2 = await find();
     ok(f2 && !f2.open, '手動收起後重畫也維持收起', f2);
     // 換分頁再回來不會殘留(回到預設收起)
-    await page.evaluate(() => { const app = window.rimtownApp; const d = [...document.querySelectorAll('#sidebar-content details')].find(x => /展開明細|Show details|details/i.test(x.querySelector('summary')?.textContent || '')); d.open = true; app.activeTab = 'residents'; app.renderSidebar(); app.activeTab = 'economy'; app.renderSidebar(); });
+    await page.evaluate(() => { const app = window.rimtownApp; const d = [...document.querySelectorAll('#sidebar-content details')].find(x => /展開明細|Show details|details/i.test(x.querySelector('summary')?.textContent || '')); d.open = true; app.activeTab = 'residents'; app.renderSidebar(); app.activeTab = 'econ-goods'; app.renderSidebar(); });
     const f3 = await find();
     ok(f3 && !f3.open, '換到別的分頁再回來,恢復預設收起', f3);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

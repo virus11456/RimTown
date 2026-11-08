@@ -49,7 +49,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const big2 = all[9]; restore = stubAI({ lend: true, why: '可以' }); BANK.lend(w, Bk, big2, 80, '翻修房子'); await new Promise(r => setTimeout(r, 50)); restore(); out.aiLend = !!Bk.loans[big2.agentId];
       w._absDay = _ad;
       app.state = w.getState(); app._showNpcCard(o1.agentId); out.card = document.getElementById('npc-quick-card')?.innerText || ''; app._hideNpcCard();
-      const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-biz')?.innerText || ''; box.remove();
+      const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'industry'; app.renderEconomy(box); /* v7.3.0 搬到小鎮 › 產業 */ out.ui = box.querySelector('.pp-biz')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.biz?.shops?.length === B.shops.length; w2.reset(); out.reset = !w2.biz;
       return out;
     });
@@ -63,7 +63,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.refuseRep && r.refuseFoe && r.lendOk, '銀行家審核：名聲差、處不好的借不到，正常的借得到', r);
     ok(r.aiRefuse && r.aiLend, '大筆貸款由銀行家 AI 決定', r);
     ok(/🥖|老闆|Owner/.test(r.card), '角色卡顯示自己的店', r.card.slice(0, 200));
-    ok(/🏪/.test(r.ui), '鎮況頁有鎮上的店', r.ui);
+    ok(/🏪/.test(r.ui), '產業頁有鎮上的店', r.ui);
     ok(r.rt && r.reset, '商店存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

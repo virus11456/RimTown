@@ -51,7 +51,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.up = !nb || nb.lv === lv0 + 1; out.upText = T.items.length ? TIDINGS.render(T.items[T.items.length - 1]) : '';
       w._absDay = _ad;
       // 畫面
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-tidings')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.renderNews(box); /* v7.3.0 搬到日報 › 消息 */ out.ui = box.querySelector('.pp-tidings')?.innerText || ''; box.remove();
       // 存讀檔
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.tidings?.items?.length === T.items.length; w2.reset(); out.reset = !w2.tidings;
       return out;
@@ -67,7 +67,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.spread, '消息沿著交情一個傳一個', r);
     ok(r.courierAcc, '信差帶來的王令最準', r);
     ok(r.up && /升格|grown|become/.test(r.upText), '遠方城鎮也會自己升格', r);
-    ok(/📨/.test(r.ui) && /天|day|rumor|傳聞|可靠|reliable/.test(r.ui), '鎮況頁有外地消息（地點、幾天前、誰帶回、可信度）', r.ui.slice(0, 300));
+    ok(/📨/.test(r.ui) && /天|day|rumor|傳聞|可靠|reliable/.test(r.ui), '消息頁有外地消息（地點、幾天前、誰帶回、可信度）', r.ui.slice(0, 300));
     ok(r.rt && r.reset, '消息存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

@@ -51,7 +51,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.maxIdea <= 8, '觀念閒聊記憶每人最多 8 筆,不擠掉人際記憶', r.maxIdea);
     ok(lang === 'zh' || r.ideaMem.every(x => !/[一-鿿]{2,}/.test(x.replace(/[一-鿿]{2,3}(?=[ :,])/g, ''))), '英文介面的觀念記憶是英文', r.ideaMem);
     ok(r.rt.ideas === r.rt.n && r.rt.inv >= 1, '存檔→讀檔保留觀念與發明', r.rt);
-    await page.evaluate(() => { const app = window.rimtownApp; app.state = app.world.getState(); app._economySubTab = 'tech'; app._goTab?.('economy'); app.renderSidebar?.(); });
+    await page.evaluate(() => { const app = window.rimtownApp; app.state = app.world.getState(); app._goTab?.('economy'); app.activeTab = 'econ-build'; app.renderSidebar?.(); });
     await page.waitForTimeout(600);
     const panel = await page.evaluate(() => ({ ideas: document.querySelectorAll('.tech-idea').length, heads: [...document.querySelectorAll('.tech-era-head')].map(e => e.innerText.replace(/\s+/g, ' ')) }));
     ok(panel.ideas >= 3 && panel.heads.some(h => /發明名人堂|Hall of inventions/.test(h)) && panel.heads.some(h => /支持與反對|For and against/.test(h)), '科技面板顯示觀念傳播條、派系、發明名人堂', panel);

@@ -44,7 +44,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 6) 科技頁畫出第四時代
       for (const p of Object.values(R.projects)) { p.status = p.era <= 2 ? 'complete' : 'locked'; p.progress = p.status === 'complete' ? p.cost : 0; } R.refreshLocks(); w.buildings.recomputeEffects(w);
       const save = app.world; app.state = w.getState(); const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
-      app._economySubTab = 'tech'; try { app.renderEconomy(box); } catch (e) { out.techErr = e.message; } const eras = [...box.querySelectorAll('.tech-era-head')].map(x => x.textContent.replace(/\s+/g, ' ').trim()).filter(x => /時代|Era /.test(x)); out.techEras = eras; out.techOverflow = box.scrollWidth > box.clientWidth + 2; out.techHasSteam = /蒸汽動力|Steam Power/.test(box.textContent); box.remove(); app.state = save.getState();
+      app.activeTab = 'econ-build'; try { app.renderEconomy(box); } catch (e) { out.techErr = e.message; } const eras = [...box.querySelectorAll('.tech-era-head')].map(x => x.textContent.replace(/\s+/g, ' ').trim()).filter(x => /時代|Era /.test(x)); out.techEras = eras; out.techOverflow = box.scrollWidth > box.clientWidth + 2; out.techHasSteam = /蒸汽動力|Steam Power/.test(box.textContent); box.remove(); app.state = save.getState();
       // 7) 跑幾天沒錯
       try { const d0 = w._absDay(); for (let i = 0; i < 96 * 3 && w._absDay() - d0 < 3; i++) { w.paused = false; w.tick(); } w.paused = true; } catch (e) { out.err = e.message; }
       return out;

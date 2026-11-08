@@ -51,7 +51,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const T = TIDINGS.S(w); T.items.push({ id: 'N999', pid: 'realm', pn: '赤陽王國', k: '{p}跟鄰國開戰了', ch: 'traveler', dist: true, made: D, day: D, by: null, m: {} }); T.known = { a: ['N999'], b: ['N999'], c: ['N999'] };
       C.lastMut = null; restore = stubAI({ rumor: '聽說敵軍已經打到山腳下了！' }); await CULTURE.mutate(w, C, D); restore(); out.mutate = TIDINGS.render(T.items[T.items.length - 1]) === '聽說敵軍已經打到山腳下了！';
       w._absDay = _ad;
-      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app._ppTab = 'town'; app.renderProposals(box); out.ui = box.querySelector('.pp-culture')?.innerText || ''; box.remove();
+      app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'quest'; app._renderTownChronicle(box); /* v7.3.0 搬到日報 › 年表 */ out.ui = box.querySelector('.pp-culture')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.culture?.works?.length === C.works.length; w2.reset(); out.reset = !w2.culture;
       return out;
     });
@@ -64,7 +64,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.oracle, '虔誠的巫者給出模稜兩可的神諭', r);
     ok(r.doctrine, '新教派立下自己的教義', r);
     ok(r.mutate, '重要謠言被 AI 改寫得更離譜', r);
-    ok(/🎭/.test(r.ui), '鎮況頁有文化', r.ui.slice(0, 200));
+    ok(/🎭/.test(r.ui), '年表頁有文化', r.ui.slice(0, 200));
     ok(r.rt && r.reset, '文化存讀檔保留、新城鎮重來', r);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
