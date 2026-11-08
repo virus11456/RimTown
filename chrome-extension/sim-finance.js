@@ -180,3 +180,125 @@ if (typeof World !== 'undefined') {
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.prices = (data?.prices && typeof data.prices.idx === 'object') ? data.prices : null; this.labor = (data?.labor && typeof data.labor === 'object') ? data.labor : null; } } catch (e) {} return r; };
 }
 if (typeof globalThis !== 'undefined') { globalThis.PRICES = PRICES; globalThis.LABOR = LABOR; }
+
+// ── v7.1.0 貿易與關稅 TRADE(盡量簡化、金流守恆)──
+// - 商行有私人老闆時,由老闆做進出口:本地價(原價 × 物價指數)比商人賣價＋關稅高才進口(付商人的錢流出鎮外、關稅進公庫、貨賣給鎮上倉庫賺差價);
+//   商人收購價比本地價高才出口(老闆向鎮上買貨、賣給商人,外地的錢流進來)。商行公營就照舊由公庫直接跟商人買賣
+// - 進口多→倉裡貨多→物價跌(本地生產者賺少);出口多→貨變少→物價漲
+// - 關稅預設 0。便宜進口貨一多,農夫、裁縫、木匠這些本地生產者會提案課 15% 關稅;關稅期間物價太高,窮人與商人會提案取消
+// - 商人開價也會看鎮上缺不缺(物價越高開價越高)
+const TRADE = (() => {
+    const GROUP = { food: 'food', wheat: 'food', rice: 'food', corn: 'food', potato: 'food', meals: 'food', bread: 'food', cloth: 'cloth', cotton: 'cloth', clothing: 'cloth', wood: 'fuel', plank: 'fuel' };
+    const PRODUCERS = { food: ['farmer', 'cook'], cloth: ['tailor'], fuel: ['carpenter'] };
+    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const day = (w) => (w._absDay ? w._absDay() : Math.floor((w.tickCount || 0) / 96));
+    const log = (w, k, p, who) => { try { w.logMessageT?.('trade', k, p || {}, who || ''); } catch (e) {} };
+    const rn = (r) => (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[r]) ? t(RESOURCE_NAMES_ZH[r]) : (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r);
+    function S(w) {
+        if (!w.tradeX || typeof w.tradeX !== 'object') w.tradeX = { tariff: 0, imp: 0, exp: 0, duty: 0, profit: 0, hist: [], lastProp: -99, setDay: 0 };
+        const X = w.tradeX; for (const k of ['imp', 'exp', 'duty', 'profit']) if (typeof X[k] !== 'number') X[k] = 0; X.hist = X.hist || []; return X;
+    }
+    const tariff = (w) => (w.tradeX ? S(w).tariff || 0 : 0);
+    const groupIdx = (w, r) => { const g = GROUP[r]; return g && typeof PRICES !== 'undefined' ? PRICES.idx(w, g) : null; };
+    // 本地價:民生物資看物價指數;其他貨看倉裡缺不缺(缺就貴、多就便宜)
+    function localPrice(w, r) {
+        const base = (typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r]) || 3; const g = groupIdx(w, r); if (g != null) return base * g;
+        const have = w.stockpile?.get?.(r) || 0; return base * (have < 8 ? 1.8 : have > 80 ? 0.7 : 1);
+    }
+    const W = (w) => (typeof WALLET !== 'undefined' && w.wallet) ? WALLET : null;
+    const owner = (w) => { try { return typeof MARKET !== 'undefined' && w.market ? MARKET.ownerOf(w, 'trade') : null; } catch (e) { return null; } };
+    const rec = (w, kind, r, qty, value) => { const X = S(w); X[kind] = Math.round((X[kind] + value) * 100) / 100; X.hist.push([day(w), kind === 'imp' ? 1 : 0, r, qty, Math.round(value)]); if (X.hist.length > 60) X.hist.splice(0, X.hist.length - 60); };
+    // 私人商行老闆做進出口(一天一次;每樣最多 25 份;老闆的現金與公庫都要付得起)
+    function privateTrade(w) {
+        const m = w.trade?.merchant; const id = owner(w); const Wl = W(w); if (!m || !m.offers?.length || !id || !Wl) return false;
+        const boss = w.agents[id]; if (!boss) return false; const sp = w.stockpile; const rate = tariff(w); const deals = [];
+        for (const o of m.offers) {
+            if (!o || o.amount < 1) continue; const loc = localPrice(w, o.resource);
+            if (!o.isBuying) { // 商人在賣 → 進口
+                const landed = o.price * (1 + rate); if (loc < landed * 1.12) continue;
+                const g = GROUP[o.resource]; const scarce = g ? PRICES.idx(w, g) >= 1.05 : (sp.get(o.resource) || 0) < 15; if (!scarce) continue;
+                const cash = Wl.get(w, boss), tr = sp.get('silver') || 0;
+                const qty = Math.floor(Math.min(o.amount, 25, cash / landed, Math.max(0, tr - 60) / loc)); if (qty < 2) continue;
+                const pay = Math.round(o.price * qty * 100) / 100, duty = Math.round(o.price * qty * rate * 100) / 100, sale = Math.round(loc * qty * 100) / 100;
+                if (!Wl.take(w, boss, pay + duty)) continue; // 付商人(流出鎮外)＋關稅
+                if (duty > 0) { sp.add('silver', duty, w.tickCount, t('進口關稅')); S(w).duty = Math.round((S(w).duty + duty) * 100) / 100; }
+                sp.add(o.resource, qty, w.tickCount, t('商行進口')); sp.consume('silver', sale, w.tickCount, t('向商行買進口貨')); Wl.add(w, boss, sale); // 鎮上倉庫照本地價買下
+                o.amount -= qty; rec(w, 'imp', o.resource, qty, pay); S(w).profit += sale - pay - duty; deals.push(['imp', o.resource, qty, Math.round(sale - pay - duty)]);
+            } else { // 商人在收 → 出口
+                if (o.price < loc * 1.12) continue; const have = sp.get(o.resource) || 0;
+                const g = GROUP[o.resource]; const plenty = g ? PRICES.idx(w, g) <= 0.95 : have > 40; if (!plenty) continue;
+                const cash = Wl.get(w, boss); const qty = Math.floor(Math.min(o.amount, 25, (have - (g === 'food' ? npcs(w).length * 6 : 15)) * 0.5, cash / loc)); if (qty < 2) continue;
+                const buy = Math.round(loc * qty * 100) / 100, earn = Math.round(o.price * qty * 100) / 100;
+                if (!Wl.take(w, boss, buy)) continue; if (!sp.consume(o.resource, qty, w.tickCount, t('商行出口'))) { Wl.add(w, boss, buy); continue; }
+                sp.add('silver', buy, w.tickCount, t('賣貨給商行')); Wl.add(w, boss, earn); // 外地商人付的錢流進鎮上
+                o.amount -= qty; rec(w, 'exp', o.resource, qty, earn); S(w).profit += earn - buy; deals.push(['exp', o.resource, qty, Math.round(earn - buy)]);
+            }
+        }
+        if (deals.length) {
+            const imp = deals.filter(d => d[0] === 'imp'), exp = deals.filter(d => d[0] === 'exp'); const parts = [];
+            if (imp.length) parts.push(t('進口') + ' ' + imp.map(d => `${rn(d[1])}×${d[2]}`).join(t('、'))); if (exp.length) parts.push(t('出口') + ' ' + exp.map(d => `${rn(d[1])}×${d[2]}`).join(t('、')));
+            log(w, '🚢 {a}的商行跟{m}做了生意：{d}（賺了 {p} 銀幣）。', { a: boss.name, m: m.name, d: parts.join(t('；')), p: deals.reduce((s, d) => s + d[3], 0) }, boss.name);
+        }
+        return true;
+    }
+    // 公營時公庫直接跟商人交易:只記進出口統計
+    function recordPublic(w, before) {
+        try { const m = w.trade?.merchant; if (!m || !before) return; m.offers.forEach((o, i) => { const d = (before[i] || 0) - (o.amount || 0); if (d > 0) rec(w, o.isBuying ? 'exp' : 'imp', o.resource, d, d * o.price); }); } catch (e) {}
+    }
+    // 商人開價看鎮上缺不缺
+    function adjustOffers(w) { try { const m = w.trade?.merchant; if (!m || m._v71) return; m._v71 = true; for (const o of m.offers || []) { const g = groupIdx(w, o.resource); if (g != null) o.price = Math.round(o.price * (0.9 + 0.1 * g) * 10) / 10; } } catch (e) {} }
+    // 關稅提案
+    function proposal(w) {
+        const P = w.proposals, X = S(w), d = day(w); if (!P?._createWith || !w.wallet || d - X.lastProp < 25) return;
+        if ((P.items || []).some(p => p.kind === 'tariff' && ['open', 'shelved', 'approved'].includes(p.status))) return;
+        const recent = X.hist.filter(h => h[0] >= d - 30); const impOf = (g) => recent.filter(h => h[1] === 1 && GROUP[h[2]] === g).reduce((s, h) => s + h[4], 0);
+        // 便宜是因為外地貨進來:那一類近 30 天進口 50 銀幣以上、價格又跌到 0.9 以下;關稅只管得到私人商行,所以商行要有老闆
+        const cheap = ['food', 'cloth', 'fuel'].filter(g => PRICES.idx(w, g) <= 0.9 && impOf(g) >= 50); const dear = ['food', 'cloth', 'fuel'].filter(g => PRICES.idx(w, g) >= 1.4);
+        let rate = null, who = null; const all = npcs(w);
+        if (!X.tariff && owner(w) && cheap.length) { rate = 0.15; const jobs = cheap.flatMap(g => PRODUCERS[g]); who = all.filter(a => jobs.includes(a.job?.key)).sort((x, y) => (MARKET.ownedBy?.(w, y.agentId)?.length || 0) - (MARKET.ownedBy?.(w, x.agentId)?.length || 0))[0]; }
+        else if (X.tariff && dear.length && d - (X.setDay || 0) >= 20) { rate = 0; who = all.filter(a => a.job?.key === 'trader' || (W(w) && W(w).get(w, a) < 15))[0]; }
+        if (rate == null || !who) return; X.lastProp = d;
+        const cand = { kind: 'tariff', key: 'tariff:' + d, jobs: [], make: () => rate > 0
+            ? { kind: 'tariff', key: 'tariff:' + d, newRate: rate, tk: '進口貨課 {n}% 關稅', tp: { n: Math.round(rate * 100) }, dk: '{who}說外地便宜的貨一直進來，本地做的賣不出好價錢。提議進口貨課 {n}% 關稅，保護鎮上的生計。', dp: { who: who.name, n: Math.round(rate * 100) }, cost: {}, category: 'economy' }
+            : { kind: 'tariff', key: 'tariff:' + d, newRate: 0, tk: '取消進口關稅', tp: {}, dk: '{who}說東西越來越貴，關稅讓外地貨進不來，苦的是大家。提議取消進口關稅。', dp: { who: who.name }, cost: {}, category: 'economy' } };
+        const p = P._createWith(w, d, cand, who); if (p) p.newRate = rate; return p;
+    }
+    // 投票:本地生產者(被便宜貨搶生意的)支持課稅;商人、商行老闆、手頭緊的人反對(要便宜貨)
+    function vote(w, p, a) {
+        const up = (p.newRate || 0) > 0; const k = a.job?.key; let s = 0; const cash = W(w) ? W(w).get(w, a) : 50;
+        if (['farmer', 'cook', 'tailor', 'carpenter', 'miner', 'blacksmith'].includes(k)) s += 1.5; if (k === 'trader' || owner(w) === a.agentId) s -= 3; if (cash < 15) s -= 1.5;
+        if ((MARKET.ownedBy?.(w, a.agentId) || []).some(x => ['farm', 'textile', 'timber'].includes(x))) s += 2; s += (Math.random() - 0.5) * 1.6;
+        if (!up) s = -s; return { v: s > 0 ? 'for' : 'against', why: k === 'trader' || cash < 15 ? 'purse' : 'job' };
+    }
+    function setTariff(w, rate) { const X = S(w); const old = X.tariff || 0; X.tariff = Math.max(0, Math.min(0.5, rate)); X.setDay = day(w); return X.tariff > 0 ? t('進口關稅從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(X.tariff * 100)) : t('進口關稅取消了'); }
+    function view(w) { const X = S(w), d = day(w); const r30 = X.hist.filter(h => h[0] >= d - 30); const imp = Math.round(r30.filter(h => h[1] === 1).reduce((s, h) => s + h[4], 0)), exp = Math.round(r30.filter(h => h[1] === 0).reduce((s, h) => s + h[4], 0)); return { tariff: Math.round((X.tariff || 0) * 100), imp, exp, bal: exp - imp, duty: Math.round(X.duty), private: !!owner(w) }; }
+    function brief(w) { if (!w.tradeX) return ''; const v = view(w); return `${t('關稅')} ${v.tariff}%${t('；')}${t('近 30 天進口')} ${v.imp}${t('、')}${t('出口')} ${v.exp} ${t('銀幣')}`; }
+    return { S, GROUP, localPrice, privateTrade, recordPublic, adjustOffers, proposal, vote, setTariff, view, brief, tariff };
+})();
+if (typeof VillagerAutonomy !== 'undefined' && VillagerAutonomy.prototype._merchant) {
+    const _m = VillagerAutonomy.prototype._merchant;
+    VillagerAutonomy.prototype._merchant = function (w, ...rest) {
+        try { if (w.observerMode && w.wallet && w.trade?.merchant) { TRADE.adjustOffers(w); if (TRADE.privateTrade(w)) return; } } catch (e) { console.warn('[Trade] private', e); }
+        const before = (w.trade?.merchant?.offers || []).map(o => o.amount); const r = _m.call(this, w, ...rest); try { if (w.observerMode) TRADE.recordPublic(w, before); } catch (e) {} return r;
+    };
+}
+if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tariff = { icon: '🚢', label: '關稅' };
+if (typeof ProposalSystem !== 'undefined') {
+    const PS = ProposalSystem.prototype; const _daily = PS.daily;
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode && w.wallet && (w._absDay?.() ?? 0) % 3 === 1) TRADE.proposal(w); } catch (e) { console.warn('[Trade] proposal', e); } return r; };
+    const _rv = PS._ruleVote;
+    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'tariff') { const r = TRADE.vote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
+}
+if (typeof ConversationEngine !== 'undefined') {
+    const CE = ConversationEngine.prototype; const _tb = CE._townBrief;
+    if (_tb) CE._townBrief = function (world) { const s = _tb.call(this, world); try { const x = TRADE.brief(world); return x ? `${s}${t('；')}${x}` : s; } catch (e) { return s; } };
+}
+if (typeof World !== 'undefined') {
+    const _reset = World.prototype.reset;
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.tradeX = null; return r; };
+    const _ser = World.prototype.serialize;
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.tradeX) d.tradeX = this.tradeX; return d; };
+    const _load = World.prototype.loadSave;
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.tradeX = (data?.tradeX && typeof data.tradeX === 'object') ? data.tradeX : null; } catch (e) {} return r; };
+}
+if (typeof globalThis !== 'undefined') globalThis.TRADE = TRADE;

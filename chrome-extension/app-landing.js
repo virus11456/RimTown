@@ -387,13 +387,13 @@ Object.assign(RimTownApp.prototype, {
                     [X('謠言會走樣', 'Rumors drift'), X('第二手開始有機會被誇大，有些八卦一開始就是假的。', 'From the second telling a story may be exaggerated, and some gossip was false from the start.')],
                     [X('鎮史', 'Town chronicle'), X('每一季寫成一章，記下誰當選、誰過世、發生過什麼大事。', 'Each season becomes a chapter: who was elected, who died, what happened.')]],
               log: [['06:00', X('張老伯帶著信徒在聖堂做晨禱。', 'Old Zhang leads the faithful in morning prayer.')], ['13:10', X('傳言：「聽說北邊的城鎮鬧饑荒，已經餓死好幾個人。」', 'Rumor: "They say the northern town has a famine and people are dying."')], ['21:00', X('吟遊詩人唱起去年那場大雪的歌。', 'A bard sings about last year\'s great snow.')]] },
-            { id: 'world', ic: '🗺️', c: '#5fc4b8', k: X('世界', 'The world'),
+            { id: 'world', ic: '🗺️', c: '#5fc4b8', k: X('世界', 'The world'), new: '7.1',
               h: X('小鎮外面還有一整個世界', 'There is a whole world outside town'),
               lead: X('每座鎮依地形擅長不同的東西：靠海才曬得出鹽、捕得到魚，森林邊的鎮木材多。缺什麼就靠商隊；搭馬車可以去其他城鎮，大雪、坍方、盜匪會封路。鎮與鎮之間有外交、聯姻和貿易戰。',
                   'Each town is good at different things depending on its land: only coastal towns make salt and catch fish, forest towns have timber. Whatever is missing comes by caravan; carriages travel between towns, and snow, landslides and bandits close the roads. Towns trade, marry into each other and fight trade wars.'),
               pts: [[X('地形決定物產', 'Land shapes the economy'), X('穀物、魚、肉、鹽、紙、工具、建材，各鎮產量不同。', 'Grain, fish, meat, salt, paper, tools and building materials vary from town to town.')],
                     [X('馬車與路況', 'Carriages and roads'), X('出遠門的人會離開地圖，回來時帶著外地的消息。', 'Travelers leave the map and come back with news from elsewhere.')],
-                    [X('外交', 'Diplomacy'), X('結盟、聯姻、關係惡化，都會影響貿易。', 'Alliances, marriages and feuds all affect trade.')]],
+                    [X('進出口與關稅', 'Trade and tariffs'), X('商行老闆看差價做進出口；便宜進口貨一多，本地生產者會提案課關稅。', 'The trading house imports and exports where the margins are; when cheap imports pile up, local producers push for a tariff.')]],
               log: [['15:00', X('海港的商隊到了，帶來魚和鹽。', 'A caravan from the harbor arrives with fish and salt.')], ['15:30', X('大雪封路，往山城的馬車停駛三天。', 'Heavy snow closes the road; carriages to the mountain town stop for three days.')], ['18:00', X('鄰鎮派人來談聯姻。', 'The neighboring town sends envoys to discuss a marriage.')]] },
         ];
         const tiers = [
@@ -415,8 +415,8 @@ Object.assign(RimTownApp.prototype, {
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         const roadmap = [
-            [X('最近上線', 'Recently added'), '#34d399', [X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining'), X('政治獻金、報社揭弊與罷免', 'Political donations, investigative papers and recalls')]],
-            [X('製作中', 'In progress'), '#f2c14e', [X('v7.1 貿易與關稅', 'v7.1 Trade and tariffs'), X('v7.2 信用、景氣循環與壟斷', 'v7.2 Credit, business cycles and monopolies')]],
+            [X('最近上線', 'Recently added'), '#34d399', [X('v7.1 貿易與關稅', 'v7.1 trade and tariffs'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining'), X('政治獻金、報社揭弊與罷免', 'Political donations, investigative papers and recalls')]],
+            [X('製作中', 'In progress'), '#f2c14e', [X('v7.2 信用、景氣循環與壟斷', 'v7.2 Credit, business cycles and monopolies'), X('v7.2 公庫與公共支出', 'v7.2 Treasury and public spending')]],
             [X('構想', 'Ideas'), '#60a5fa', [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')]],
         ];
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
