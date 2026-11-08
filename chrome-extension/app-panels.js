@@ -858,6 +858,7 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="pp-deadline">${p.status === 'open' ? t('投票中，鎮長 {n} 天內裁決').replace('{n}', Math.max(1, p.daysLeft)) : t('鎮長先擱著，過幾天會重新拍板')}</div>`;
             } else if (p.status === 'approved') {
                 html += `<div class="pp-deadline">${p.affordable ? t('已批准，等待執行') : t('已批准，等公庫湊齊資源（{n}/7 天）').replace('{n}', p.waitDays)}</div>`;
+                if (!p.affordable) html += `<div class="pp-cost short">${p.order ? '📦 ' + esc(t('已向外地訂購{what}，{n} 天後到').replace('{what}', p.order.what).replace('{n}', p.order.days)) : p.short ? '🧱 ' + esc(t('還缺{miss}').replace('{miss}', p.short)) + (p.buyShort ? ` · ${esc(t('公庫的錢不夠買'))}` : '') : ''}</div>`; // v7.2.1 缺什麼、訂了什麼
             } else if (p.result) {
                 html += `<div class="pp-result">${esc(p.result)}${p.decidedBy === 'auto' ? ` · ${t('依票數自動定案')}` : ''}</div>`;
                 if (p.mayorName || p.mayorWhy) html += `<div class="pp-mayor">🏛️ ${p.mayorActing ? t('代理鎮長') : t('鎮長')}${p.mayorName ? ' ' + esc(t(p.mayorName)) : ''}${t('：')}${esc(p.mayorWhy || '')}</div>`; // v6.37.0

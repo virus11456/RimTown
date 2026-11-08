@@ -28,7 +28,7 @@ class Stockpile {
         return true;
     }
     has(r, amount) { return (this.resources[r]||0) >= amount; }
-    canAfford(costs) { return Object.entries(costs).every(([r,a]) => this.has(r,a)); }
+    canAfford(costs) { const R=this.reserved||{}; return Object.entries(costs).every(([r,a]) => this.has(r,a+(R[r]||0))); } // v7.2.1 已批准提案保留的材料,其他工程不能動
     pay(costs, tick=0, reason='', source='') {
         if (!this.canAfford(costs)) return false;
         Object.entries(costs).forEach(([r,a]) => this.consume(r,a,tick,reason,source));

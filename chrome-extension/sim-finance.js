@@ -38,6 +38,7 @@ const PRICES = (() => {
     function daily(w) {
         const P = S(w), d = day(w); if (P.lastDay === d) return; P.lastDay = d;
         const days = stockDays(w); if (!days) return; const tg = target(days);
+        { const cy = typeof CYCLE !== 'undefined' ? CYCLE.c(w) : 0; if (cy) for (const k of KEYS) tg[k] = clamp(tg[k] * (1 + 0.12 * cy)); } // v7.2.0 繁榮時物價略漲、衰退時略跌
         for (const k of KEYS) {
             const old = P.idx[k]; const gap = tg[k] - old; let dv = gap * STEP; if (Math.abs(dv) < 0.004) dv = Math.sign(gap) * Math.min(Math.abs(gap), 0.004); // 每天往目標移 6%,最少 0.004(不然尾巴永遠到不了)
             const v = clamp(old + dv); P.idx[k] = Math.round(v * 1000) / 1000;
@@ -76,7 +77,10 @@ const LABOR = (() => {
     function slots(w, all) {
         const n = (all || npcs(w)).filter(a => adult(a) && a.job?.key !== 'mayor').length; const out = {};
         const foodHot = typeof PRICES !== 'undefined' && PRICES.idx(w, 'food') >= 1.3;
-        for (const [k, r] of Object.entries(RATIO)) out[k] = Math.max(1, Math.ceil(n * r * (k === 'farmer' && foodHot ? 1.2 : 1)));
+        // v7.2.0 景氣好私人產業多招人、景氣差少招;公庫很有錢時公職(守衛、醫生、研究員)多開缺
+        const cy = typeof CYCLE !== 'undefined' ? CYCLE.c(w) : 0; const rich = (w.stockpile?.get?.('silver') || 0) > n * 60 ? 1.2 : 1;
+        const PUBLICJ = ['guard', 'doctor', 'researcher', 'priest'];
+        for (const [k, r] of Object.entries(RATIO)) out[k] = Math.max(1, Math.ceil(n * r * (k === 'farmer' && foodHot ? 1.2 : 1) * (PUBLICJ.includes(k) ? rich : 1 + 0.1 * cy)));
         return out;
     }
     function filled(all) { const c = {}; for (const a of all) { const k = a.job?.key; if (k && RATIO[k] !== undefined) c[k] = (c[k] || 0) + 1; } return c; }
@@ -273,7 +277,7 @@ const TRADE = (() => {
     function setTariff(w, rate) { const X = S(w); const old = X.tariff || 0; X.tariff = Math.max(0, Math.min(0.5, rate)); X.setDay = day(w); return X.tariff > 0 ? t('進口關稅從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(X.tariff * 100)) : t('進口關稅取消了'); }
     function view(w) { const X = S(w), d = day(w); const r30 = X.hist.filter(h => h[0] >= d - 30); const imp = Math.round(r30.filter(h => h[1] === 1).reduce((s, h) => s + h[4], 0)), exp = Math.round(r30.filter(h => h[1] === 0).reduce((s, h) => s + h[4], 0)); return { tariff: Math.round((X.tariff || 0) * 100), imp, exp, bal: exp - imp, duty: Math.round(X.duty), private: !!owner(w) }; }
     function brief(w) { if (!w.tradeX) return ''; const v = view(w); return `${t('關稅')} ${v.tariff}%${t('；')}${t('近 30 天進口')} ${v.imp}${t('、')}${t('出口')} ${v.exp} ${t('銀幣')}`; }
-    return { S, GROUP, localPrice, privateTrade, recordPublic, adjustOffers, proposal, vote, setTariff, view, brief, tariff };
+    return { S, rec, GROUP, localPrice, privateTrade, recordPublic, adjustOffers, proposal, vote, setTariff, view, brief, tariff };
 })();
 if (typeof VillagerAutonomy !== 'undefined' && VillagerAutonomy.prototype._merchant) {
     const _m = VillagerAutonomy.prototype._merchant;
@@ -302,3 +306,114 @@ if (typeof World !== 'undefined') {
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.tradeX = (data?.tradeX && typeof data.tradeX === 'object') ? data.tradeX : null; } catch (e) {} return r; };
 }
 if (typeof globalThis !== 'undefined') globalThis.TRADE = TRADE;
+
+// ── v7.2.0 景氣循環、公共支出、反壟斷 CYCLE(盡量簡化、金流守恆)──
+// - 景氣指數 -1(衰退)～+1(繁榮):看村民消費成長、進出口順逆差,加上偶爾的外來衝擊(外地豐收、戰事謠言、商路中斷…),每天慢慢移動
+// - 繁榮:物價略漲、私人產業多招人、銀行願意多借;衰退:職缺變少(會裁員)、產業出事的風險變高、銀行縮手
+// - 公庫存太多(超過每人 40 銀幣):每週撥一部分做公共工程,付給本地木作坊、礦場、鐵鋪(衰退時撥更多,逆景氣);也會有人提案減稅
+// - 反壟斷:有人同時擁有 3 家以上產業,工會領袖或窮工人會提案拆分——最值錢的一家照市價賣給別人(沒人買得起就由公庫照市價買下),錢照算不會憑空出現
+const CYCLE = (() => {
+    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const day = (w) => (w._absDay ? w._absDay() : Math.floor((w.tickCount || 0) / 96));
+    const clamp = (v, a = -1, b = 1) => Math.max(a, Math.min(b, v));
+    const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
+    const SHOCKS = [['外地大豐收，商隊搶著來收貨', 0.5], ['鄰近城鎮景氣大好', 0.45], ['新商路開通', 0.5], ['傳出外地戰事，商人不敢上路', -0.55], ['外地錢莊倒閉，人心惶惶', -0.5], ['遠方鬧旱災，貨價亂跳', -0.4]];
+    function S(w) {
+        if (!w.cycle || typeof w.cycle !== 'object') w.cycle = { c: 0, target: 0, spent: [], lastSpent: null, lastDay: null, phase: 0, shock: null, works: 0, worksN: 0, split: 0, hist: [], lastProp: -99, lastTaxProp: -99 };
+        const C = w.cycle; C.spent = C.spent || []; C.hist = C.hist || []; return C;
+    }
+    const c = (w) => (w.cycle ? S(w).c || 0 : 0);
+    const phaseOf = (v) => v >= 0.35 ? 1 : v <= -0.35 ? -1 : 0;
+    const word = (v) => t(phaseOf(v) > 0 ? '繁榮' : phaseOf(v) < 0 ? '衰退' : '平穩');
+    function daily(w) {
+        const C = S(w), d = day(w); if (C.lastDay === d) return; C.lastDay = d;
+        const pop = Math.max(1, npcs(w).length);
+        const spentTot = w.wallet?.stats?.spent || 0; if (C.lastSpent != null) { C.spent.push(Math.max(0, spentTot - C.lastSpent) / pop); if (C.spent.length > 28) C.spent.shift(); } C.lastSpent = spentTot; // 每人每天的消費(人口變多不算景氣變好)
+        // 外來衝擊:約三個月一次,持續 20～40 天
+        if (C.shock && d >= C.shock.until) { C.shock = null; }
+        if (!C.shock && Math.random() < 1 / 90 && d > 20) { const s = SHOCKS[Math.floor(Math.random() * SHOCKS.length)]; C.shock = { k: s[0], amt: s[1], until: d + 20 + Math.floor(Math.random() * 20) }; log(w, s[1] > 0 ? '📰 {k}。' : '📰 {k}。', { k: t(s[0]) }); try { w.dailyNews?.collectEvent?.('economy', t(s[0]), 6, []); } catch (e) {} }
+        // 目標:消費成長(近 7 天對前 21 天)＋順逆差＋衝擊
+        let g = 0; if (C.spent.length >= 14) { const last = C.spent.slice(-7).reduce((s, v) => s + v, 0); const prev = C.spent.slice(0, -7); const base = prev.reduce((s, v) => s + v, 0) / prev.length * 7; g = base > 0 ? last / base - 1 : 0; }
+        let bal = 0; try { bal = typeof TRADE !== 'undefined' && w.tradeX ? TRADE.view(w).bal : 0; } catch (e) {}
+        C.target = clamp(g * 1.5 + Math.tanh(bal / (pop * 25)) * 0.3 + (C.shock?.amt || 0));
+        C.c = Math.round(clamp(C.c + (C.target - C.c) * 0.06) * 1000) / 1000;
+        const ph = phaseOf(C.c); if (ph !== C.phase) { log(w, ph > 0 ? '📈 景氣轉好，鎮上生意興隆。' : ph < 0 ? '📉 景氣變差，進入衰退。' : '⚖️ 景氣回到平穩。', {}); try { w.dailyNews?.collectEvent?.('economy', t(ph > 0 ? '景氣轉好' : ph < 0 ? '景氣衰退' : '景氣平穩'), 6, []); } catch (e) {} C.phase = ph; }
+        if (d % 3 === 0) { C.hist.push([d, C.c]); if (C.hist.length > 40) C.hist.shift(); }
+        if (ph < 0) for (const a of npcs(w)) if (!a.job || (typeof WALLET !== 'undefined' && w.wallet && WALLET.get(w, a) < 15)) a.addThought?.('hard_times', w);
+        if (d % 7 === 5) { publicWorks(w, C, pop); taxCut(w, C, pop, d); antitrust(w, C, d); try { if (C.c < -0.3 && Math.random() < -C.c * 0.6 && typeof MARKET !== 'undefined' && w.market) MARKET.risk(w, npcs(w)); } catch (e) {} } // 衰退時產業多一次出事的機會
+    }
+    // 公共工程:公庫超過「每人 40 銀幣＋200」的部分,每週撥 8%(衰退時 15%),付給本地木作坊、礦場、鐵鋪(依工人數分;公營的錢回到公庫)
+    function publicWorks(w, C, pop) {
+        if (typeof MARKET === 'undefined' || !w.market) return; const sp = w.stockpile; const silver = sp.get('silver') || 0; const excess = silver - (pop * 40 + 200); if (excess <= 0) return;
+        const n = Math.round(excess * (C.c < -0.2 ? 0.15 : 0.08)); if (n < 20) return; const all = npcs(w);
+        const parts = [['timber', 0.4], ['mine', 0.3], ['forge', 0.3]].map(([k, f]) => [k, f * (MARKET.workersOf(w, k, all).length ? 1 : 0)]); const tot = parts.reduce((s, [, f]) => s + f, 0); if (!tot) return;
+        if (!sp.consume('silver', n, w.tickCount, t('公共工程'))) return;
+        for (const [k, f] of parts) if (f) MARKET.sell(w, k, n * f / tot, t('公共工程款'));
+        C.works = Math.round((C.works || 0) + n); C.worksN = (C.worksN || 0) + 1; for (const a of all) a.moodModifier = (a.moodModifier || 0) + 0.5;
+        log(w, '🏗️ 鎮公所撥了 {n} 銀幣修路、修橋、整修公共設施{x}。', { n, x: C.c < -0.2 ? t('（景氣不好，多撥一點讓大家有工作）') : '' });
+    }
+    // 公庫太多:有人提案減稅(用原本的稅率提案,投票照舊)
+    function taxCut(w, C, pop, d) {
+        const P = w.proposals; if (!P?._createWith || !w.wallet || d - (C.lastTaxProp || -99) < 60) return; const tax = w.wallet.tax ?? 0.1; const silver = w.stockpile.get('silver') || 0;
+        if (silver < pop * 80 || tax <= 0.06) return; // 公庫超過每人 80 銀幣才提;這條路最多降到 6% if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return;
+        const who = npcs(w).filter(a => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 0) >= 60).sort(() => Math.random() - 0.5)[0]; if (!who) return; C.lastTaxProp = d;
+        const nt = Math.round((tax - 0.05) * 100) / 100;
+        const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir: 'down', tk: '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: '{who}說公庫存了 {s} 銀幣用不完，提議把稅從 {a}% 降到 {n}%，錢還給大家。', dp: { who: who.name, s: Math.round(silver), a: Math.round(tax * 100), n: Math.round(nt * 100) }, cost: {}, category: 'economy' }) };
+        const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = 'down'; }
+    }
+    // 反壟斷
+    function monopolist(w) { if (typeof MARKET === 'undefined' || !w.market) return null; const cnt = {}; for (const [k, id] of Object.entries(w.market.owners || {})) if (id && w.agents[id] && !w.agents[id].isDead) cnt[id] = (cnt[id] || 0) + 1; const top = Object.entries(cnt).sort((x, y) => y[1] - x[1])[0]; return top && top[1] >= 3 ? { id: top[0], n: top[1] } : null; }
+    function antitrust(w, C, d) {
+        const P = w.proposals; const m = monopolist(w); if (!P?._createWith || !m || d - (C.lastProp || -99) < 45) return;
+        if ((P.items || []).some(p => p.kind === 'antitrust' && ['open', 'shelved', 'approved'].includes(p.status))) return;
+        const mono = w.agents[m.id]; const U = w.union; const all = npcs(w);
+        const who = (U?.on && U.leader && U.leader !== m.id && w.agents[U.leader]) || all.filter(a => a.agentId !== m.id && a.job && (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99) < 40).sort((x, y) => ((y.personality?.traits || []).includes('charismatic') ? 1 : 0) - ((x.personality?.traits || []).includes('charismatic') ? 1 : 0))[0]; if (!who) return;
+        C.lastProp = d;
+        const names = MARKET.ownedBy(w, m.id).map(k => MARKET.name(k)).join(t('、'));
+        const cand = { kind: 'antitrust', key: 'antitrust:' + d, refKey: m.id, jobs: [], make: () => ({ kind: 'antitrust', key: 'antitrust:' + d, refKey: m.id, tk: '拆分{name}的產業', tp: { name: mono.name }, dk: '{who}說{name}一個人就握有{list}，工資、價錢全由他說了算。提議讓他照市價賣掉其中最大的一家。', dp: { who: who.name, name: mono.name, list: names }, cost: {}, category: 'economy' }) };
+        const p = P._createWith(w, d, cand, who); if (p) p.refKey = m.id; return p;
+    }
+    function antitrustVote(w, p, a) {
+        const id = p.refKey; let s = 0; const cash = typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 50;
+        if (a.agentId === id) s -= 10; if (typeof MARKET !== 'undefined' && MARKET.ownedBy(w, a.agentId).length) s -= 2.5; if (w.union?.members?.[a.agentId]) s += 3;
+        if (a.job && cash < 50) s += 1.5; if ((a.personality?.traits || []).includes('greedy')) s -= 1; try { if ((w.power?.inf?.[a.agentId] || {})[id]) s -= 4; } catch (e) {} // 收過他獻金的人
+        const r = a.relationships?.relationships?.[id]?.affinity || 0; s -= r / 30; s += (Math.random() - 0.5) * 1.6;
+        return { v: s > 0 ? 'for' : 'against', why: (w.power?.inf?.[a.agentId] || {})[id] ? 'donor' : w.union?.members?.[a.agentId] ? 'union' : cash < 50 ? 'needy' : 'boss' };
+    }
+    function split(w, p) {
+        if (typeof MARKET === 'undefined' || !w.market || typeof WALLET === 'undefined') return ''; const id = p.refKey; const owner = w.agents[id]; if (!owner || owner.isDead) return t('他已經不在鎮上了');
+        const ks = MARKET.ownedBy(w, id); if (ks.length < 2) return t('他手上已經沒有那麼多產業了');
+        const all = npcs(w); const k = ks.map(k => [k, MARKET.value(w, k, all)]).sort((x, y) => y[1] - x[1])[0]; const price = Math.round(k[1]);
+        const buyer = all.filter(a => a.agentId !== id && WALLET.get(w, a) >= price && MARKET.ownedBy(w, a.agentId).length < 2).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
+        if (!S(w).law) { S(w).law = true; log(w, '⚖️ 鎮上從此有了反壟斷法：擁有三家以上產業的人不能再買。', {}); }
+        if (buyer && WALLET.take(w, buyer, price)) { WALLET.add(w, owner, price); w.market.owners[k[0]] = buyer.agentId; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：{o}把{s}以 {n} 銀幣賣給了{b}。', { o: owner.name, s: MARKET.name(k[0]), n: price, b: buyer.name }, owner.name); return t('{s}賣給了{b}').replace('{s}', MARKET.name(k[0])).replace('{b}', buyer.name); }
+        const sp = w.stockpile; if (sp.consume('silver', price, w.tickCount, t('公庫收購產業'))) { WALLET.add(w, owner, price); delete w.market.owners[k[0]]; S(w).split = (S(w).split || 0) + 1; log(w, '⚖️ 反壟斷：沒人買得起，公庫以 {n} 銀幣收購了{o}的{s}，改為公營。', { o: owner.name, s: MARKET.name(k[0]), n: price }, owner.name); return t('{s}由公庫收購，改為公營').replace('{s}', MARKET.name(k[0])); }
+        return t('沒人買得起，公庫也買不起，只好作罷');
+    }
+    function view(w) { const C = S(w); return { c: C.c, word: word(C.c), shock: C.shock ? t(C.shock.k) : '', works: C.works || 0, worksN: C.worksN || 0, split: C.split || 0, mono: (() => { const m = monopolist(w); return m ? { name: t(w.agents[m.id]?.name || ''), n: m.n } : null; })() }; }
+    function brief(w) { if (!w.cycle) return ''; const v = view(w); return `${t('景氣')}${t('：')}${v.word}${v.shock ? `${t('（')}${v.shock}${t('）')}` : ''}`; }
+    return { S, c, daily, publicWorks, monopolist, antitrust, antitrustVote, split, view, brief, word };
+})();
+if (typeof THOUGHT_DEFS !== 'undefined') THOUGHT_DEFS.hard_times = { mood: -2, opinion: 0, days: 2, label: t('景氣不好，日子難過') };
+if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.antitrust = { icon: '⚖️', label: '反壟斷' };
+if (typeof ProposalSystem !== 'undefined') {
+    const PS = ProposalSystem.prototype; const _daily = PS.daily;
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode && w.wallet) CYCLE.daily(w); } catch (e) { console.warn('[Cycle] daily', e); } return r; };
+    const _rv = PS._ruleVote;
+    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'antitrust') { const r = CYCLE.antitrustVote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
+}
+// 景氣影響:銀行放款意願(產業出事的風險在 CYCLE.daily 裡處理)
+if (typeof BANK !== 'undefined' && BANK.lend) { const _lend = BANK.lend; BANK.lend = function (w, B, a, n, ...rest) { try { n = n * (1 + 0.35 * CYCLE.c(w)); } catch (e) {} return _lend.call(this, w, B, a, n, ...rest); }; }
+if (typeof ConversationEngine !== 'undefined') {
+    const CE = ConversationEngine.prototype; const _tb = CE._townBrief;
+    if (_tb) CE._townBrief = function (world) { const s = _tb.call(this, world); try { const x = CYCLE.brief(world); return x ? `${s}${t('；')}${x}` : s; } catch (e) { return s; } };
+}
+if (typeof World !== 'undefined') {
+    const _reset = World.prototype.reset;
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.cycle = null; return r; };
+    const _ser = World.prototype.serialize;
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.cycle) { const C = this.cycle; d.cycle = { ...C, spent: C.spent.slice(-28), hist: C.hist.slice(-40) }; } return d; };
+    const _load = World.prototype.loadSave;
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.cycle = (data?.cycle && typeof data.cycle === 'object') ? data.cycle : null; } catch (e) {} return r; };
+}
+if (typeof globalThis !== 'undefined') globalThis.CYCLE = CYCLE;

@@ -44,6 +44,8 @@ const MARKET = (() => {
     const ownerOf = (w, k) => { const id = S(w).owners[k]; return present(w, id) ? id : null; };
     const workersOf = (w, k, all) => (all || npcs(w)).filter(a => JOB2S[a.job?.key] === k);
     const ownedBy = (w, id) => Object.keys(SECTORS).filter(k => S(w).owners[k] === id);
+    // v7.2.0 反壟斷法:第一次拆分通過後生效,已經擁有三家以上產業的人不能再買
+    const canBuy = (w, id) => !(w.cycle?.law && ownedBy(w, id).length >= 3);
     const payRate = (w, k) => { const v = S(w).pay[k]; return typeof v === 'number' ? v : 1; };
     // 有老闆的私人產業工人由老闆發薪;公職與公營產業由公庫發
     const privatePaid = (w, a) => { const k = JOB2S[a?.job?.key]; return !!k && !!ownerOf(w, k); };
@@ -112,7 +114,7 @@ const MARKET = (() => {
             if (M.owners[k] && !id) M.owners[k] = null; // 老闆搬走了
             // 週轉不靈:老闆沒錢、連欠三天以上 → 賣給出得起錢的人
             if (id && M.unpaid[id] >= 3 && bal(w, id) < 2) {
-                const price = value(w, k, all); const buyer = all.filter(a => a.agentId !== id && bal(w, a.agentId) >= price).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
+                const price = value(w, k, all); const buyer = all.filter(a => a.agentId !== id && bal(w, a.agentId) >= price && canBuy(w, a.agentId)).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
                 if (buyer) { takeId(w, buyer.agentId, price); addId(w, id, price); M.owners[k] = buyer.agentId; M.pay[k] = has(buyer, 'greedy') ? 0.85 : 1; M.unpaid[id] = 0; const old = w.agents[id];
                     log(w, '📉 {o}週轉不靈，把{s}以 {n} 銀幣賣給了{b}。', { o: old?.name || '', s: name(k), n: price, b: buyer.name }, buyer.name);
                     mem(w, old, '撐不下去了，只好把{s}賣給{b}。', { s: name(k), b: buyer.name }, 8); mem(w, buyer, '我用 {n} 銀幣買下了{s}。', { n: price, s: name(k) }, 7); }
@@ -121,8 +123,8 @@ const MARKET = (() => {
             if (id || !ws.length) continue;
             // 公營產業標售:同行裡最有錢的人優先,不然由手頭最寬裕的人出資
             const price = value(w, k, all);
-            const inside = ws.filter(a => bal(w, a.agentId) >= price).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
-            const investor = inside || all.filter(a => bal(w, a.agentId) >= price * 2).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
+            const inside = ws.filter(a => bal(w, a.agentId) >= price && canBuy(w, a.agentId)).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
+            const investor = inside || all.filter(a => bal(w, a.agentId) >= price * 2 && canBuy(w, a.agentId)).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
             if (!investor) continue;
             takeId(w, investor.agentId, price); toTown(w, price, t('公營產業標售')); M.owners[k] = investor.agentId; M.pay[k] = has(investor, 'greedy') ? 0.85 : 1;
             log(w, '🏪 {o}出 {n} 銀幣買下了鎮上的{s}，當上了老闆。', { o: investor.name, n: price, s: name(k) }, investor.name);
