@@ -164,15 +164,16 @@ const CEREMONY = (() => {
             }
             if (c.scale >= 3) for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + 1;
             const gv = (w.lifecycle?.graveyard || []).slice().reverse().find(x => x.name === c.name); if (gv) gv.farewell = g.length;
+            try { if (typeof WAYS !== 'undefined') WAYS.onFuneral(w, g, w.agents[c.host]); } catch (e) {} // v8.1.0 來送行的人,喪家記一份情
             log(w, 'death', '⚱️ {name}的{what}辦完了，{n} 人到場送行。{sp}說：「{s}」', { name: c.name, what: c.memorial ? t('追思會') : t('葬禮'), n: g.length, sp: c.speaker || t('大家'), s: c.speech }, c.name);
             news(w, `${c.name}${t('的葬禮')}${t('：')}${g.length} ${t('人送行')}`, c.scale >= 3 ? 9 : 6, [c.name]);
         } else {
             const A = w.agents[c.a], B = w.agents[c.b]; if (!A || !B) return;
             let gifts = 0; const wal = W();
-            const guests = g.filter(x => x !== A && x !== B);
+            const guests = g.filter(x => x !== A && x !== B); try { if (typeof WAYS !== 'undefined') WAYS.weddingGuests(w, guests, c); } catch (e) {} // v8.1.0 冷戰的兩人被排在同一桌
             for (const x of guests) {
                 x.moodModifier = (x.moodModifier || 0) + 4;
-                if (wal && wal.get(w, x) > 20) { const n = 2 + Math.floor(Math.random() * 7); if (wal.take(w, x, n)) { wal.add(w, A, n / 2); wal.add(w, B, n / 2); gifts += n; } }
+                if (wal && wal.get(w, x) > 20) { const n = typeof WAYS !== 'undefined' ? WAYS.giftAmount(w, x, A, B) : 2 + Math.floor(Math.random() * 7); if (wal.take(w, x, n)) { wal.add(w, A, n / 2); wal.add(w, B, n / 2); gifts += n; try { if (typeof WAYS !== 'undefined') WAYS.onGift(w, x, A, B, n); } catch (e) {} } } // v8.1.0 收過的禮要包回去
                 mem(w, x, '參加了{a}和{b}的婚禮。{sp}舉杯說：「{s}」', { a: c.name, b: c.name2, sp: c.speaker || t('大家'), s: c.speech }, 6, [c.name, c.name2]);
                 rel(x, A)?.modifyAffinity?.(2); rel(x, B)?.modifyAffinity?.(2);
             }

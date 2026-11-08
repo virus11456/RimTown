@@ -252,7 +252,7 @@ if (typeof LifecycleSystem !== 'undefined') {
         try {
             if (estate > 0) {
                 if (world.wallet?.bal) delete world.wallet.bal[npc.agentId];
-                if (heirs.length) { const each = Math.round(estate / heirs.length * 10) / 10; for (const h of heirs) { WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
+                if (heirs.length) { const base = Math.floor(estate / heirs.length * 10 + 1e-6) / 10; const first = Math.round((estate - base * (heirs.length - 1)) * 10) / 10; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
                 else world.stockpile?.add?.('silver', Math.round(estate * 10) / 10, world.tickCount, t('無人繼承的遺產'));
             }
         } catch (e) {}

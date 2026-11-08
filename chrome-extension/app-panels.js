@@ -1002,6 +1002,20 @@ Object.assign(RimTownApp.prototype, {
                     B.cliques += `</div>`;
                 }
             } catch (e) {}
+            // v8.1.0 人情世故:信任、不敢開口的人、人情往來、冷戰、跟鄰居比
+            try {
+                const vw = (typeof WAYS !== 'undefined' && this.world) ? WAYS.view(this.world) : null;
+                if (vw) {
+                    const st = vw.st || {}; const tl = { high: t('高'), mid: t('普通'), low: t('低') }[vw.trustLv];
+                    B.cliques += `<div class="pp-issues pp-ways"><h4 class="pp-h">🤝 ${t('人情世故')}</h4>`;
+                    B.cliques += `<div class="pp-issue">🙃 <span>${t('鎮上的信任')}${t('：')}<b class="tech-risk-${vw.trustLv === 'high' ? 'low' : vw.trustLv === 'mid' ? 'mid' : 'high'}">${tl}</b> (${vw.trust})<small>${t('提案失敗、有人說一套做一套會讓大家更多疑')}</small></span></div>`;
+                    if (vw.silent.length) B.cliques += `<div class="pp-issue">🎭 <span>${t('丟了面子、這陣子不敢提案')}${t('：')}${esc(vw.silent.map(n => t(n)).join(t('、')))}</span></div>`;
+                    if (vw.colds.length) B.cliques += `<div class="pp-issue">🧊 <span>${t('冷戰中')}${t('：')}${esc(vw.colds.map(p => p.map(n => t(n)).join(' / ')).join(t('、')))}</span></div>`;
+                    const bits = [vw.favors ? `🧧 ${t('人情往來')} ${vw.favors}` : '', st.stingy ? `💌 ${t('禮金包太少')} ${st.stingy}` : '', st.hyp ? `🤫 ${t('說一套做一套被撞見')} ${st.hyp}` : '', st.reno ? `🏠 ${t('翻修')} ${st.reno}` : '', st.borrow ? `🏦 ${t('借錢跟著翻修')} ${st.borrow}` : '', st.check ? `☕ ${t('街坊上門關心')} ${st.check}` : '', st.forum ? `🫖 ${t('鄰里茶會')} ${st.forum}` : ''].filter(Boolean);
+                    if (bits.length) B.cliques += `<div class="pp-issue"><span><small>${bits.join(' · ')}</small></span></div>`;
+                    B.cliques += `</div>`;
+                }
+            } catch (e) {}
         }
         if (W('lore') || W('stats')) {
             // v6.47.0 村民提案留下的傳統與地標
@@ -1092,6 +1106,7 @@ Object.assign(RimTownApp.prototype, {
             if (dv && (dv.secrets.length || dv.mis.length)) {
                 const MIS = { cold: '{a}以為{b}很冷漠（其實只是害羞）', jealous: '{a}以為{b}劈腿（其實只是普通朋友）', overheard: '{a}以為{b}在說自己壞話（其實不是）', price: '{a}以為{b}賣東西坑人（其實是原料漲價）' };
                 S += `<div class="pp-issues pp-secrets"><h4 class="pp-h">🕵️ ${t('只有你知道的真相')} <span class="pp-count">${dv.secrets.length + dv.mis.length}</span></h4>`;
+                try { const vw = typeof WAYS !== 'undefined' ? WAYS.view(this.world) : null; for (const h of (vw?.hyp || [])) S += `<div class="pp-issue">🤫 <span>${esc(t('{a}投票支持「{t}」，私下卻{d}').replace('{a}', t(h.name)).replace('{t}', h.t).replace('{d}', t(h.deed)))}<small>${t('還沒被撞見')}</small></span></div>`; } catch (e) {} // v8.1.0 說一套做一套
                 for (const s of dv.secrets) S += `<div class="pp-issue">${s.plan ? '🕵️' : s.kind === 'white' ? '💗' : '🎭'} <span>${esc(s.text)}<small>${s.plan ? t('正在籌劃') : t('村民還不知道')}</small></span></div>`;
                 for (const m of dv.mis) S += `<div class="pp-issue">😶 <span>${esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b)))}<small>${t('誤會還沒解開')}</small></span></div>`;
                 S += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
