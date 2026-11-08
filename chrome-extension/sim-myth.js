@@ -142,7 +142,8 @@ const MYTH = (() => {
     if (typeof HEALTH !== 'undefined') { const _cb = HEALTH.canBuild; HEALTH.canBuild = (w, key) => (key === 'gene_lab' ? tier3(w) : (_cb ? _cb(w, key) : true)); }
     if (typeof ResearchManager !== 'undefined') {
         const RM = ResearchManager.prototype; const _ga = RM.getAvailable; const W = () => (typeof window !== 'undefined' && window.rimtownApp?.world) || MYTH.W;
-        const ok = (w, p) => { const e = p.era || 1; if (e < 6 || !w) return true; if (!MYTH.eraOpen(w)) return false; return p.key === 'gene_editing' || MYTH.labOpen(w); };
+        const ok = (w, p) => { const e = p.era || 1; if (e < 6 || e >= 7 || !w || RESEARCH_TREE[p.key]?.path) return true; // v7.8.0 路線科技有自己的門檻
+            if (!MYTH.eraOpen(w)) return false; return p.key === 'gene_editing' || MYTH.labOpen(w); };
         RM.getAvailable = function () { const out = _ga.call(this); const w = W(); return out.filter(p => ok(w, p)); };
         const _sr = RM.startResearch; RM.startResearch = function (key) { const p = this.projects[key]; const w = W(); if (p && !ok(w, p)) return false; return _sr.call(this, key); };
     }

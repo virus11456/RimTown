@@ -585,7 +585,7 @@ class ResearchManager {
     constructor() {
         this.projects={}; this.current=null;
         for(const [key,d] of Object.entries(RESEARCH_TREE)) {
-            this.projects[key]={key,era:d.era||1,name:d.name,description:d.description,cost:d.cost,progress:0,prerequisites:d.prerequisites||[],effects:d.effects||{},unlocks:d.unlocks||[],
+            this.projects[key]={key,era:d.era||1,path:d.path||null,name:d.name,description:d.description,cost:d.cost,progress:0,prerequisites:d.prerequisites||[],effects:d.effects||{},unlocks:d.unlocks||[],
                 status:d.prerequisites.length===0?'available':'locked'};
         }
     }
@@ -611,23 +611,31 @@ class ResearchManager {
         if(this.current&&this.projects[this.current]?.status==='researching') this.projects[this.current].status='available';
         p.status='researching'; this.current=key; this._idle=0; return true;
     }
-    dailyUpdate(world) {
-        // v6.37.0 沒在研究時先空 3 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
-        if(!this.current) { const rp0=world.stockpile.get('research_points'); if(!this.getAvailable().length && rp0>200) world.stockpile.consume('research_points',rp0-200,world.tickCount,'research'); // v6.91.0 全部研究完:研究點不再無限堆
-             this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
-             const av=this.getAvailable(); if(av.length){ const pick=av[Math.floor(Math.random()*av.length)]; this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } return; }
+    // v7.8.0 研究點不再空等:沒在研究時研究員做出來的點先存著(最多 3000),下一項開始時補進去;學者自己挑時先挑最早的時代、自己路線的科技
+    _scholarPts(world) {
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
              const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
         if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
+        return pts;
+    }
+    dailyUpdate(world) {
+        // v6.37.0 沒在研究時先空 2 天，讓村民有機會提「研究」提案；沒人提才由學者自己挑一個
+        if(!this.current) { const rp0=world.stockpile.get('research_points'); if(!this.getAvailable().length && rp0>200) world.stockpile.consume('research_points',rp0-200,world.tickCount,'research'); // v6.91.0 全部研究完:研究點不再無限堆
+             if(this.getAvailable().length) this._carry=Math.min(3000,(this._carry||0)+this._scholarPts(world)); // v7.8.0 空檔做的研究先存著
+             this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
+             const av=this.getAvailable(); if(av.length){ const pick=(typeof TECH!=='undefined'&&TECH.autoPick)?TECH.autoPick(this,world):av[Math.floor(Math.random()*av.length)]; if(pick){ this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } } return; }
+        const p=this.projects[this.current]; if(!p||p.status!=='researching') return;
+        let pts=this._scholarPts(world)*((typeof TECH!=='undefined'&&TECH.speedOf)?TECH.speedOf(world,p):1); // v7.8.0 核安法:路線上的高階研究慢一成
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40+(world.buildings?.getEffect?.('research_cap',0)||0)); // v7.4.0 研究院每天多用 40 // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
-        if(pts+bonus<=0) return;
-        const p=this.projects[this.current]; if(!p||p.status!=='researching') return;
-        p.progress+=pts+bonus;
+        const carry=this._carry||0; this._carry=0;
+        if(pts+bonus+carry<=0) return;
+        p.progress+=pts+bonus+carry;
         if(p.progress>=p.cost) {
             p.status='complete'; this.current=null;
+            try { if (typeof TECH!=='undefined') TECH.onComplete?.(world, p.key); } catch (e) {} // v7.8.0 精進改良再開下一級、重算跨路線成本
             world.buildings.recomputeEffects(world); // v6.43.1 研究效果併入效果表(倍率統一成增量)
             for(const op of Object.values(this.projects)) {
                 if(op.status==='locked'&&op.prerequisites.every(pre=>this.projects[pre]?.status==='complete')) op.status='available';
