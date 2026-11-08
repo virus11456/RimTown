@@ -1844,6 +1844,19 @@ Object.assign(RimTownApp.prototype, {
         try { if (typeof MYTHSOC !== 'undefined' && w.mythsoc && v.carriers.length) h += this._mythSocHtml(MYTHSOC.view(w)); } catch (e) {} // v7.6.0
         return h + '</div>';
     },
+    // v7.7.0 錢從哪來、往哪去(近 30 天):外地流入與流出、其他、淨變化、人均
+    _moneyCardHtml() {
+        const w = this.world; if (!w || typeof MONEY === 'undefined' || !w.observerMode || !w.money) return '';
+        const v = MONEY.view(w); if (v.days < 2) return ''; const fmt = (n) => `${n >= 0 ? '+' : '−'}${Math.abs(Math.round(n)).toLocaleString()}`;
+        const row = (c, n) => `<div class="mf-row"><span>${t(v.label(c))}</span><b class="${n >= 0 ? 'mf-in' : 'mf-out'}">${fmt(n)}</b></div>`;
+        let h = `<div class="econ-section money-section"><h3>💱 ${t('錢從哪來、往哪去')} <small>${t('近 {n} 天').replace('{n}', v.days)}</small></h3>`;
+        h += `<div class="market-meta">${t('全鎮的錢')} ${v.total.toLocaleString()} · ${t('每人平均')} ${v.per}${v.perOld != null ? ` ${t('（')}${t('{n} 天前').replace('{n}', v.days)} ${v.perOld}${t('）')}` : ''}</div>`;
+        h += `<div class="mf-grid"><div><div class="mf-h">⬇️ ${t('外地流入')}</div>${v.ins.length ? v.ins.map(([c, n]) => row(c, n)).join('') : `<div class="muted-text mf-none">${t('沒有')}</div>`}</div>`;
+        h += `<div><div class="mf-h">⬆️ ${t('流出鎮外')}</div>${v.outs.length ? v.outs.map(([c, n]) => row(c, n)).join('') : `<div class="muted-text mf-none">${t('沒有')}</div>`}</div></div>`;
+        if (Math.abs(v.other) >= 1) h += row('other', v.other);
+        h += `<div class="mf-row mf-net"><span>${t('淨變化')}</span><b class="${v.net >= 0 ? 'mf-in' : 'mf-out'}">${fmt(v.net)}</b></div>`;
+        return h + '</div>';
+    },
     // v7.6.0 神裔社會:看法分布、派系、宗教立場、平權令、階級與職業、獵人隊
     _mythSocHtml(s) {
         const esc = (x) => this._escapeHtml(String(x ?? '')); const tot = s.dist.fear + s.dist.mid + s.dist.ok || 1; const pc = (n) => Math.round(n / tot * 100);

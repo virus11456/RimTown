@@ -815,7 +815,7 @@ class CouncilSystem {
         if (passed) {
             // Apply immediate resource effects
             const sp = world.stockpile;
-            if (p.effects.silver && p.effects.silver > 0) sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.silver && p.effects.silver > 0) { if (typeof MONEY !== 'undefined') MONEY.sellSurplus(world, p.effects.silver, `${t('議會決議')}${t('：')}${p.title}`); else sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`); } // v7.7.0
             if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.mood_traders) Object.values(world.agents).forEach(a => { if (!a.isPlayer && a.job?.key === 'trader') a.moodModifier = (a.moodModifier || 0) + p.effects.mood_traders; }); // v6.87.0 商人不高興
             if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
@@ -1027,7 +1027,7 @@ class DailyDecisionSystem {
         const resourceKeys = ['food','wood','stone','metal','silver','tools','herbs','cloth','research_points'];
         for (const key of resourceKeys) {
             if (effects[key]) {
-                if (effects[key] > 0) sp.add(key, effects[key], world.tickCount, `${t('決策')}${t('：')}${decision.title}`);
+                if (effects[key] > 0) { if (key === 'silver' && typeof MONEY !== 'undefined') MONEY.sellSurplus(world, effects[key], `${t('決策')}${t('：')}${decision.title}`); else sp.add(key, effects[key], world.tickCount, `${t('決策')}${t('：')}${decision.title}`); } // v7.7.0 加銀幣改成賣多餘的貨
                 else sp.consume(key, Math.abs(effects[key]), world.tickCount, `${t('決策')}${t('：')}${decision.title}`);
             }
         }

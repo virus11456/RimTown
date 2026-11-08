@@ -35,14 +35,20 @@ const WALLET = (() => {
     function S(w) {
         if (!w.wallet || typeof w.wallet.bal !== 'object') w.wallet = { bal: {}, tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } };
         const W = w.wallet; W.stats = W.stats || { wages: 0, taxes: 0, spent: 0 }; if (typeof W.tax !== 'number') W.tax = 0.1;
-        for (const a of npcs(w)) if (typeof W.bal[a.agentId] !== 'number') W.bal[a.agentId] = Math.round((WAGE[a.job?.key] || 3) * 6 + Math.random() * 20);
-        W_OK.add(W); // 結構檢查過了;S1 之後只補單人
+        for (const a of npcs(w)) if (typeof W.bal[a.agentId] !== 'number') initBal(w, W, a);
+        W.started = true; W_OK.add(W); // 結構檢查過了;S1 之後只補單人
         return W;
+    }
+    // v7.7.0 初始存款:小孩從 0 開始(由爸媽養);開局以後才出現的大人是從外地搬來的,帶著自己的積蓄(記進月報的「移民帶來」)
+    function initBal(w, W, a) {
+        if ((a.age ?? 30) < 16) { W.bal[a.agentId] = 0; return; }
+        const n = Math.round((WAGE[a.job?.key] || 3) * 6 + Math.random() * 20); W.bal[a.agentId] = n;
+        if (W.started) try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'immigrant', n); } catch (e) {}
     }
     // v6.76.2 單人查／加／扣錢只補這個人的初始存款(以前每次都把全鎮掃一遍,一格叫上百次);全鎮的補齊留給每天結算與總覽
     function S1(w, a) {
         const W = (w.wallet && typeof w.wallet.bal === 'object' && W_OK.has(w.wallet)) ? w.wallet : S(w);
-        if (typeof W.bal[a.agentId] !== 'number' && !a.isPlayer && !a.isDead) W.bal[a.agentId] = Math.round((WAGE[a.job?.key] || 3) * 6 + Math.random() * 20);
+        if (typeof W.bal[a.agentId] !== 'number' && !a.isPlayer && !a.isDead) initBal(w, W, a);
         return W;
     }
     const W_OK = new WeakSet();
@@ -90,6 +96,8 @@ const WALLET = (() => {
         const tipCap = 6, tips = new Map();
         const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
         const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0;
+        // v7.7.0 小孩買衣服、柴火由家裡的大人出;家裡沒人出得起才用自己的錢
+        const payBy = (a, n) => { if ((a.age ?? 30) >= 16) return take(w, a, n); try { const f = (typeof HEALTH !== 'undefined' ? HEALTH.family(w, a) : []).filter(o => (o.age ?? 30) >= 16 && get(w, o) >= n + 3).sort((x, y) => get(w, y) - get(w, x))[0]; if (f && take(w, f, n)) return true; } catch (e) {} return take(w, a, n); };
         // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
         const px = (k) => (typeof PRICES !== 'undefined' && w.prices ? PRICES.idx(w, k) : 1);
         const MEAL = Math.round(MEAL0 * px('food') * 100) / 100, CLOTHES = Math.round(CLOTHES0 * px('cloth') * 100) / 100, FIREWOOD = Math.round(FIREWOOD0 * px('fuel') * 100) / 100;
@@ -105,13 +113,13 @@ const WALLET = (() => {
             else { a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 25)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天只吃了一點點。', {}, 5); }
             // 衣服:每人錯開,每十天一次
             if ((d + (a.agentId.length * 7)) % 10 === 0) {
-                if (take(w, a, CLOTHES)) { W.stats.spent += CLOTHES; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
+                if (payBy(a, CLOTHES)) { W.stats.spent += CLOTHES; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多);v6.90.0 越有錢花得越多(大約跟財富的平方根成正比)
             const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
-                if (take(w, a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
+                if (payBy(a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }
             }
         }

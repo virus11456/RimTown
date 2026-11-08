@@ -62,7 +62,7 @@ const RAW_MATERIALS = ['wood','stone','metal','cloth','herbs'];
 function processDailyProduction(world) {
     const sp = world.stockpile;
     // v6.40.0 銀行利息:每天照公庫銀幣的比例生一點(上限 20)
-    { const ir = world.buildings?.getEffect?.('interest', 0) || 0; if (ir > 0) { const g = Math.min(20, Math.round(sp.get('silver') * ir)); if (g > 0) sp.add('silver', g, world.tickCount, t('銀行利息'), 'bank'); } }
+    { const ir = world.buildings?.getEffect?.('interest', 0) || 0; if (ir > 0) { const B = world.bank; const g = Math.min(20, Math.round(sp.get('silver') * ir), Math.floor((B?.earned || 0) * 0.5), Math.floor(Math.max(0, (B?.reserve || 0) - (typeof BANK !== 'undefined' && B ? BANK.totalDep(B) * 0.4 : 0)))); if (B && B.open && g > 0) { B.reserve -= g; B.earned -= g; sp.add('silver', g, world.tickCount, t('銀行利息'), 'bank'); } } } // v7.7.0 利息由銀行賺到的放款利息支付(以前憑空生出來)
     // v6.40.1 建築維護費:觀察者不花錢後公庫只進不出(上線實測 15 天 170 → 2000+),每棟完成的建築每天 2 銀幣、大型建築 4 銀幣
     { const BIG = ['town_walls', 'clock_tower', 'aqueduct', 'press', 'bank', 'hospital', 'council_hall', 'observatory', 'theater', 'sewers', 'barracks', 'caravanserai'];
       const up = (world.buildings?.completed || []).reduce((s, b) => s + (BIG.includes(b.buildingKey) ? 4 : 2) * (b.level || 1), 0);
@@ -78,7 +78,7 @@ function processDailyProduction(world) {
     RAW_MATERIALS.forEach(r => {
         let gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r);
         if (!(gap > 0)) return;
-        if (world.observerMode) { const unit = IMPORT_PRICE[r] || 5; const afford = Math.floor(Math.max(0, sp.get('silver') - 50) / unit); gap = Math.min(gap, afford); if (gap <= 0) return; sp.consume('silver', Math.round(gap * unit * 10) / 10, world.tickCount, t('原料進口'), 'import'); sp.add(r, gap, world.tickCount, t('原料進口')); }
+        if (world.observerMode) { const unit = IMPORT_PRICE[r] || 5; const afford = Math.floor(Math.max(0, sp.get('silver') - 50) / unit); gap = Math.min(gap, afford); if (gap <= 0) return; if (sp.consume('silver', Math.round(gap * unit * 10) / 10, world.tickCount, t('原料進口'), 'import')) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'import_raw', -Math.round(gap * unit * 10) / 10); } catch (e) {} } sp.add(r, gap, world.tickCount, t('原料進口')); }
         else sp.add(r, gap, world.tickCount, t('原料自動補給'));
     });
     if (!world.workPolicy) world.workPolicy = {};

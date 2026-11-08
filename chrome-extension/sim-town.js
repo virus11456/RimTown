@@ -298,7 +298,10 @@ function uniqueVillagerName(world, name, opts = {}) {
     for (const tr of (world?.events?._travellingAgents || [])) if (tr?.agentData?.name) used.add(tr.agentData.name); // 出遠門的人也算(回來時才不會撞名)
     for (const g of (world?.lifecycle?.graveyard || [])) if (g?.name) used.add(g.name); // 過世的人的名字也不重用
     for (const n of (opts.used || [])) used.add(n);
+    if (name) name = String(name).split('・').pop(); // v7.7.0 一律從本名重新組,前綴不會越疊越多
     if (name && !used.has(name)) return name;
+    // v7.7.0 外地搬來的人:保留本名,前面加出生地(例如「河谷・林雅婷」);出生地不會變
+    if (name && opts.birthplace && typeof MONEY !== 'undefined') { const s = MONEY.short(opts.birthplace); const cand = `${s}・${name}`; if (s && !used.has(cand)) return MONEY.prefixed(world, name, opts.birthplace); }
     const S0 = typeof RANDOM_SURNAMES !== 'undefined' ? RANDOM_SURNAMES : ['陳', '林', '王'];
     const GM = typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : ['明'], GF = typeof RANDOM_GIVEN_FEMALE !== 'undefined' ? RANDOM_GIVEN_FEMALE : ['芳'];
     const givens = opts.gender === 'female' ? GF : opts.gender === 'male' ? GM : GM.concat(GF);
@@ -591,7 +594,7 @@ class EventSystem {
         if (!imm) imm = pickRandom(available);
         this._usedImmigrantNames.add(imm.name);
         // v6.81.0 人多了名單會重複用:同名的人還在鎮上就換個名字(加上家鄉／排行),避免兩個同名村民
-        { const nm = uniqueVillagerName(world, imm.name, { gender: imm.gender }); if (nm !== imm.name) imm = { ...imm, name: nm }; }
+        { const bp = typeof MONEY !== 'undefined' ? MONEY.originTown(world) : ''; const nm = uniqueVillagerName(world, imm.name, { gender: imm.gender, birthplace: bp }); if (nm !== imm.name) imm = { ...imm, name: nm }; if (bp) imm = { ...imm, birthplace: bp }; }
         const id = `imm_${imm.name}_${world.tickCount}`;
         const personality = new Personality(imm.traits, imm.background);
         personality.values = shuffle([t('家庭'),t('自由'),t('知識'),t('財富'),t('權力'),t('藝術'),t('自然'),t('社群'),t('冒險'),t('和平')]).slice(0, 1+Math.floor(Math.random()*3));
