@@ -1816,6 +1816,7 @@ Object.assign(RimTownApp.prototype, {
         if (v.ails.length) h += `<div class="hb-tags">${v.ails.map(x => `<span class="hb-tag sev${x.s}">${HEALTH.PI[x.p]} ${t(HEALTH.PN[x.p])}${t(HEALTH.KN[x.k])}・${sevW[x.s]}</span>`).join('')}</div>`;
         if (v.aids.length) h += `<div class="hb-tags">${v.aids.map(k => `<span class="hb-tag aid">${AIDN[k] || k}</span>`).join('')}</div>`;
         if (v.queued) h += `<div class="hb-note">⏳ ${t('排隊等移植中')}</div>`;
+        try { const g = typeof MYTH !== 'undefined' ? MYTH.geneOf(w, a) : null; if (g) { const G = MYTH.GENES[g]; h += `<div class="hb-gene"><b>${G.icon} ${t('神裔')}${t('：')}${t(G.name)}</b><div>✨ ${t(G.good)}</div><div>⚠️ ${t(G.bad)}</div></div>`; } } catch (e) {} // v7.5.0
         return h + '</div>';
     },
     // v7.4.0 小鎮概況的健康卡
@@ -1829,6 +1830,16 @@ Object.assign(RimTownApp.prototype, {
         h += `<div class="market-meta">${v.surgery ? '🏥 ' + t('醫院可以開刀') : '⛔ ' + t('還不能開刀（要醫院＋外科醫學）')} · ${v.tx.organ ? t('心肺也能移植') : v.tx.limb ? t('眼手腳可以移植') : t('還不能移植')} · ${v.medaid ? '🏛️ ' + t('公費醫療補助中') : t('沒有公費醫療')}${v.st.bribes ? ` · 💰 ${t('插隊紅包')} ${v.st.bribes}` : ''}</div>`;
         if (v.patients.length) h += `<div class="hb-tags">${v.patients.slice(0, 8).map(p => `<button type="button" class="hb-tag sev${Math.max(...p.ails.map(x => x.s))}" data-action="select-agent" data-val="${esc(p.id)}">${esc(p.name)} ${p.ails.map(x => HEALTH.PI[x.p]).join('')}</button>`).join('')}</div>`;
         if (v.log.length) h += `<div class="muted-text" style="font-size:0.72rem;margin-top:4px">${v.log.map(x => `${RN[x[2]] || x[2]} ${esc(t(x[1]))}${t('（')}${t(HEALTH.PN[x[3]] || '')}${t('）')}`).join(' · ')}</div>`;
+        return h + '</div>';
+    },
+    // v7.5.0 小鎮概況:神話基因卡(研究到神話基因譜或鎮上有神裔才出現)
+    _mythCardHtml() {
+        const w = this.world; if (!w || typeof MYTH === 'undefined' || !w.observerMode) return '';
+        const v = MYTH.view(w); if (!v.open && !v.carriers.length) return ''; const esc = (x) => this._escapeHtml(String(x ?? ''));
+        let h = `<div class="econ-section myth-section"><h3>🧿 ${t('神話基因')}${v.carriers.length ? ` <span class="pp-count">${v.carriers.length}</span>` : ''}${v.ban ? ` <small>🚫 ${t('已禁止')}</small>` : ''}</h3>`;
+        h += `<div class="market-meta">${t('編輯')} ${v.st.edits || 0} · ${t('失敗')} ${v.st.fails || 0} · ${t('死亡')} ${v.st.deaths || 0} · ${t('傷人')} ${v.st.attacks || 0} · ${t('吸血')} ${v.st.bites || 0} · ${t('失火')} ${v.st.fires || 0} · ${t('復活')} ${v.st.revived || 0} · ${t('驅逐')} ${v.st.exiled || 0}${v.st.under ? ` · 🕳️ ${t('地下診所')} ${v.st.under}` : ''}</div>`;
+        if (v.carriers.length) h += `<div class="hb-tags">${v.carriers.map(c => `<button type="button" class="hb-tag${c.mad ? ' sev3' : ''}" data-action="select-agent" data-val="${esc(c.id)}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>`;
+        else h += `<div class="muted-text" style="font-size:0.72rem">${t('還沒有人做基因編輯。要很有錢的人才付得起。')}</div>`;
         return h + '</div>';
     },
 });

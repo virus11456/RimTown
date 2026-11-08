@@ -63,7 +63,7 @@ const HEALTH = (() => {
         const same = list.find(y => y.p === x.p && y.k === x.k); if (same) { same.s = Math.min(3, same.s + 1); return same; }
         if (list.length >= 2) list.sort((p, q) => p.s - q.s).shift(); // 最多記兩樣,輕的讓位
         const it = { p: x.p, k: x.k, s: x.s, d: day(w) }; list.push(it);
-        if (x.dmg) hurt(w, a, x.p, x.dmg);
+        if (x.dmg) HEALTH.hurt(w, a, x.p, x.dmg);
         a.addThought?.(x.k === 'injury' ? 'hurt' : 'ill', w);
         mem(w, a, x.k === 'injury' ? '我的{p}受傷了（{why}），很痛。' : '我的{p}出了毛病（{why}），渾身不對勁。', { p: t(PN[x.p]), why: t(why) }, 6);
         return it;
@@ -71,9 +71,9 @@ const HEALTH = (() => {
     function natural(w, a, d, winter, H) {
         const age = a.age || 30, b = body(w, a), k = a.job?.key, cash = WL() ? WL().get(w, a) : 50;
         // 老化
-        if (age >= 55) { const r = age >= 70 ? 2 : 1; hurt(w, a, 'e', 0.03 * r); hurt(w, a, 'c', 0.025 * r); hurt(w, a, 'l', 0.02 * r); }
+        if (age >= 55) { const r = age >= 70 ? 2 : 1; HEALTH.hurt(w, a, 'e', 0.03 * r); HEALTH.hurt(w, a, 'c', 0.025 * r); HEALTH.hurt(w, a, 'l', 0.02 * r); }
         // 職業病
-        if (k === 'miner') hurt(w, a, 'l', 0.03); if (k === 'blacksmith') hurt(w, a, 'e', 0.02);
+        if (k === 'miner') HEALTH.hurt(w, a, 'l', 0.03); if (k === 'blacksmith') HEALTH.hurt(w, a, 'e', 0.02);
         if (b.l < 70 && Math.random() < 0.003) addAil(w, a, { p: 'l', k: 'disease', s: 1 }, '肺病');
         // 心臟:年紀、吃太好、壓力
         if (age >= 45) { let p = 0.0004 + (cash > 300 ? 0.0006 : 0) + (trait(a, 'glutton') ? 0.0006 : 0) + ((a.mood || 50) < 20 ? 0.0006 : 0) - (trait(a, 'ascetic') ? 0.0003 : 0); if (Math.random() < p) addAil(w, a, { p: 'c', k: 'disease', s: 1 }, '心臟病'); }
@@ -167,10 +167,10 @@ const HEALTH = (() => {
     function surgery(w, a, x, doc, H, fee) {
         H.st.ops++; const list = ails(w, a);
         if (Math.random() < deathRisk(w, x.s)) { H.st.died++; rec(w, H, a, 'died', x.p); log(w, '⚰️ {a}的{p}手術失敗，沒能救回來。', { a: a.name, p: t(PN[x.p]) }, a.name); malpractice(w, a, doc); die(w, a, '手術失敗'); return; }
-        const p = successRate(w, a, doc, x.s); const roll = Math.random();
+        const p = HEALTH.successRate(w, a, doc, x.s); const roll = Math.random();
         if (roll < p) { list.splice(list.indexOf(x), 1); setPart(w, a, x.p, Math.max(body(w, a)[x.p], 85)); H.st.ok++; rec(w, H, a, 'ok', x.p); a.addThought?.('cured', w); mem(w, a, '{d}幫我開刀，{p}好了！', { d: doc.name, p: t(PN[x.p]) }, 7); log(w, '🏥 {d}幫{a}動了{p}手術，很成功。', { d: doc.name, a: a.name, p: t(PN[x.p]) }, a.name); }
         else if (roll < p + (1 - p) / 2) { list.splice(list.indexOf(x), 1); setPart(w, a, x.p, Math.max(body(w, a)[x.p], 60)); H.st.ok++; rec(w, H, a, 'part', x.p); log(w, '🏥 {a}的{p}手術算是成功，但沒辦法完全恢復。', { a: a.name, p: t(PN[x.p]) }, a.name); }
-        else { hurt(w, a, x.p, 15); H.st.fail++; rec(w, H, a, 'fail', x.p); mem(w, a, '手術失敗了，我的{p}更糟了。', { p: t(PN[x.p]) }, 8); log(w, '😞 {a}的{p}手術失敗，留下了後遺症。', { a: a.name, p: t(PN[x.p]) }, a.name); malpractice(w, a, doc); }
+        else { HEALTH.hurt(w, a, x.p, 15); H.st.fail++; rec(w, H, a, 'fail', x.p); mem(w, a, '手術失敗了，我的{p}更糟了。', { p: t(PN[x.p]) }, 8); log(w, '😞 {a}的{p}手術失敗，留下了後遺症。', { a: a.name, p: t(PN[x.p]) }, a.name); malpractice(w, a, doc); }
     }
     // 手術失敗:家屬可能怪醫生(好感大跌,醫生心情差;被告上法庭的戲份交給既有的審判提案)
     function malpractice(w, a, doc) { if (!doc) return; for (const f of family(w, a)) { const r = f.relationships?.getOrCreate?.(doc.agentId, doc.name); if (r) r.affinity = Math.max(-100, (r.affinity || 0) - 20); } doc.moodModifier = (doc.moodModifier || 0) - 6; mem(w, doc, '{a}的手術沒成功，家屬很不諒解。', { a: a.name }, 7); }
@@ -227,8 +227,8 @@ const HEALTH = (() => {
     function progress(w, all, H, d) {
         for (const a of all) {
             const list = ails(w, a); for (let i = list.length - 1; i >= 0; i--) { const x = list[i];
-                if (x.k === 'fever') { hurt(w, a, 'l', 0.6); if (d - x.d >= 6 && Math.random() < 0.25) { list.splice(i, 1); continue; } if (d - x.d >= 10 && Math.random() < 0.04) x.s = Math.min(3, x.s + 1); }
-                else if (x.k === 'disease') { hurt(w, a, x.p, 0.4 * x.s); if (d - x.d >= 15 && Math.random() < 0.03) x.s = Math.min(3, x.s + 1); }
+                if (x.k === 'fever') { HEALTH.hurt(w, a, 'l', 0.6); if (d - x.d >= 6 && Math.random() < 0.25) { list.splice(i, 1); continue; } if (d - x.d >= 10 && Math.random() < 0.04) x.s = Math.min(3, x.s + 1); }
+                else if (x.k === 'disease') { HEALTH.hurt(w, a, x.p, 0.4 * x.s); if (d - x.d >= 15 && Math.random() < 0.03) x.s = Math.min(3, x.s + 1); }
                 else if (x.k === 'injury') { if (x.s === 1 && d - x.d >= 8 && Math.random() < 0.15) { list.splice(i, 1); setPart(w, a, x.p, body(w, a)[x.p] + 5); continue; } if (x.s >= 2 && d - x.d >= 20 && !canSurgery(w)) { list.splice(i, 1); mem(w, a, '{p}的傷一直沒好好治，留下了殘疾。', { p: t(PN[x.p]) }, 7); continue; } }
             }
             if (!list.length) delete H.a[a.agentId];
@@ -240,7 +240,7 @@ const HEALTH = (() => {
     }
     // 遺傳:剛出生的孩子帶著爸媽的心肺體質(研究遺傳學後做遺傳諮詢,影響減半)
     function heredity(w, all, H) {
-        H.seen = H.seen || {}; for (const a of all) { if (H.seen[a.agentId]) continue; H.seen[a.agentId] = 1; if ((a.age || 30) > 1 || !(a._parentNames || []).length) continue;
+        H.seen = H.seen || {}; for (const a of all) { if (H.seen[a.agentId]) continue; H.seen[a.agentId] = 1; if ((a.age ?? 30) > 1 || !(a._parentNames || []).length) continue;
             const ps = all.filter(o => a._parentNames.includes(o.name)); if (!ps.length) continue; const k = done(w, 'genetics') ? 0.25 : 0.5;
             for (const p of ['c', 'l', 'e']) { const worst = Math.min(...ps.map(o => body(w, o)[p])); if (worst < 70) setPart(w, a, p, 100 - (100 - worst) * k); } }
         if (Object.keys(H.seen).length > 400) H.seen = {};

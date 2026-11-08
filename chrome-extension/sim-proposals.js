@@ -743,6 +743,8 @@ class ProposalSystem {
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
                 }
                 case 'antitrust': { result = (typeof CYCLE !== 'undefined') ? CYCLE.split(w, p) : ''; ok = !!result; break; } // v7.2.0 反壟斷
+                case 'gene_ban': { result = (typeof MYTH !== 'undefined') ? MYTH.ban(w) : ''; ok = !!result; break; } // v7.5.0
+                case 'myth_exile': { result = (typeof MYTH !== 'undefined') ? MYTH.exile(w, p) : ''; ok = !!result; break; } // v7.5.0
                 case 'medaid': { result = (typeof HEALTH !== 'undefined') ? HEALTH.setAid(w) : ''; ok = !!result; break; } // v7.4.0 公費醫療補助
                 case 'tariff': { result = (typeof TRADE !== 'undefined') ? TRADE.setTariff(w, p.newRate || 0) : ''; ok = !!result; break; } // v7.1.0 關稅
                 case 'faith_tax': case 'faith_untax': { result = (typeof FAITH !== 'undefined' && FAITH.setTax) ? FAITH.setTax(w, p.kind === 'faith_tax') : ''; ok = !!result; break; } // v7.0.0 宗教捐獻課稅／取消

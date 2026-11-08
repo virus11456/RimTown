@@ -795,3 +795,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .hb-tag.sev3 { border-color: rgba(233,90,90,.7); }
 .rimtown-container .hb-tag.aid { border-color: rgba(111,207,151,.5); }
 .rimtown-container .hb-note { margin-top: 6px; font-size: 0.72rem; color: var(--text-muted); }
+
+/* ===== v7.5.0 神話基因 ===== */
+.rimtown-container .hb-gene { margin-top: 8px; padding: 8px 10px; border-radius: 10px; border: 1px solid rgba(180,120,255,.45); background: rgba(150,100,255,.08); font-size: 0.76rem; line-height: 1.6; }
+.rimtown-container .hb-gene b { display: block; margin-bottom: 2px; }
