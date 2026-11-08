@@ -1625,7 +1625,7 @@ class World {
                 const nm = pickRandom(RANDOM_SURNAMES) + pickRandom(givens);
                 if (!usedNames.has(nm) && !RESERVED_NAMES.has(nm)) { usedNames.add(nm); return nm; } // v5.79.0 避開五鎮既有人名
             }
-            return pickRandom(RANDOM_SURNAMES) + pickRandom(givens) + randInt(1, 9);
+            const nm = typeof uniqueVillagerName === 'function' ? uniqueVillagerName(this, '', { gender, used: [...usedNames, ...RESERVED_NAMES] }) : pickRandom(RANDOM_SURNAMES) + pickRandom(givens); usedNames.add(nm); return nm; // v7.6.0 不再加數字
         };
         const homes = ['residential_north', 'residential_south', 'residential_east'];
         const jobKeys = Object.keys(JOB_DEFINITIONS).filter(k => k !== 'mayor');

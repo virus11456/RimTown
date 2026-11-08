@@ -1817,6 +1817,7 @@ Object.assign(RimTownApp.prototype, {
         if (v.aids.length) h += `<div class="hb-tags">${v.aids.map(k => `<span class="hb-tag aid">${AIDN[k] || k}</span>`).join('')}</div>`;
         if (v.queued) h += `<div class="hb-note">⏳ ${t('排隊等移植中')}</div>`;
         try { const g = typeof MYTH !== 'undefined' ? MYTH.geneOf(w, a) : null; if (g) { const G = MYTH.GENES[g]; h += `<div class="hb-gene"><b>${G.icon} ${t('神裔')}${t('：')}${t(G.name)}</b><div>✨ ${t(G.good)}</div><div>⚠️ ${t(G.bad)}</div></div>`; } } catch (e) {} // v7.5.0
+        try { const m = typeof MYTHSOC !== 'undefined' ? MYTHSOC.agentView(w, a) : null; if (m && w.mythsoc) { const bits = []; if (m.label) bits.push(`🧿 ${t(m.label)}`); if (m.group) bits.push(m.group === 'pure' ? `🛡️ ${t('純人派')}` : `🧬 ${t('神裔會')}`); if (m.half) bits.push(`🌗 ${t('混血神裔')}`); if (m.elite) bits.push(`🏛️ ${t('神裔世家')}`); if (bits.length) h += `<div class="hb-tags">${bits.map(x => `<span class="hb-tag myth">${x}</span>`).join('')}</div>`; } } catch (e) {} // v7.6.0
         return h + '</div>';
     },
     // v7.4.0 小鎮概況的健康卡
@@ -1840,6 +1841,24 @@ Object.assign(RimTownApp.prototype, {
         h += `<div class="market-meta">${t('編輯')} ${v.st.edits || 0} · ${t('失敗')} ${v.st.fails || 0} · ${t('死亡')} ${v.st.deaths || 0} · ${t('傷人')} ${v.st.attacks || 0} · ${t('吸血')} ${v.st.bites || 0} · ${t('失火')} ${v.st.fires || 0} · ${t('復活')} ${v.st.revived || 0} · ${t('驅逐')} ${v.st.exiled || 0}${v.st.under ? ` · 🕳️ ${t('地下診所')} ${v.st.under}` : ''}</div>`;
         if (v.carriers.length) h += `<div class="hb-tags">${v.carriers.map(c => `<button type="button" class="hb-tag${c.mad ? ' sev3' : ''}" data-action="select-agent" data-val="${esc(c.id)}">${c.icon} ${esc(c.name)}</button>`).join('')}</div>`;
         else h += `<div class="muted-text" style="font-size:0.72rem">${t('還沒有人做基因編輯。要很有錢的人才付得起。')}</div>`;
+        try { if (typeof MYTHSOC !== 'undefined' && w.mythsoc && v.carriers.length) h += this._mythSocHtml(MYTHSOC.view(w)); } catch (e) {} // v7.6.0
+        return h + '</div>';
+    },
+    // v7.6.0 神裔社會:看法分布、派系、宗教立場、平權令、階級與職業、獵人隊
+    _mythSocHtml(s) {
+        const esc = (x) => this._escapeHtml(String(x ?? '')); const tot = s.dist.fear + s.dist.mid + s.dist.ok || 1; const pc = (n) => Math.round(n / tot * 100);
+        let h = `<div class="ms-block"><div class="ms-bar" role="img" aria-label="${esc(t('鎮民對神裔的看法'))}"><span class="ms-fear" style="width:${pc(s.dist.fear)}%"></span><span class="ms-mid" style="width:${pc(s.dist.mid)}%"></span><span class="ms-ok" style="width:${pc(s.dist.ok)}%"></span></div>`;
+        h += `<div class="market-meta">😨 ${t('怕神裔')} ${s.dist.fear} · 😐 ${t('沒意見')} ${s.dist.mid} · 🤝 ${t('支持')} ${s.dist.ok}${s.rights ? ` · ✅ ${t('平權令')}` : ''}</div>`;
+        const grp = (g, icon, name) => g ? `<button type="button" class="hb-tag myth" data-action="select-agent" data-val="${esc(g.lid)}">${icon} ${t(name)} ${g.n} ${t('人')}${t('（')}${esc(g.leader)}${t('帶頭')}${t('）')}</button>` : '';
+        const gs = grp(s.pure, '🛡️', '純人派') + grp(s.guild, '🧬', '神裔會'); if (gs) h += `<div class="hb-tags">${gs}</div>`;
+        if (s.rels.length) h += `<div class="market-meta">⛪ ${s.rels.map(r => `${esc(r.name)}${t('：')}${r.cult ? `✨ ${t('崇拜')}${esc(r.saint)}` : r.st === 'blas' ? t('視為褻瀆') : t('視為神選')}`).join(' · ')}</div>`;
+        const JN = (k) => { try { return JOB_DEFINITIONS[k]?.title || k; } catch (e) { return k; } };
+        const jobs = Object.entries(s.jobs).sort((a, b) => b[1] - a[1]).slice(0, 4).map(([k, n]) => `${esc(JN(k))} ${n}`).join('、');
+        h += `<div class="market-meta">💰 ${t('神裔平均')} ${s.wealth.c} · ${t('一般人')} ${s.wealth.o} · 🏛️ ${t('士紳以上')} ${s.gentry.c}/${s.gentry.cn} ${t('對')} ${s.gentry.o}/${s.gentry.on}${s.elite ? ` · ${t('神裔世家')} ${s.elite}` : ''}${s.half ? ` · 🌗 ${t('混血')} ${s.half}` : ''}</div>`;
+        if (jobs) h += `<div class="market-meta">🛠️ ${t('神裔的工作')}${t('：')}${jobs}${s.st.night ? ` · 🌙 ${t('夜班津貼')} ${Math.round(s.st.night)}` : ''}</div>`;
+        const st = s.st; const bits = [[st.badmouth, '講壞話'], [st.fired, '被辭退'], [st.outcast, '逐出教門'], [st.boycott, '拒絕出席婚禮'], [st.panic, '恐慌報導'], [st.fair, '平反報導'], [st.deeds, '幫上忙']].filter(x => x[0]).map(x => `${t(x[1])} ${x[0]}`);
+        if (bits.length) h += `<div class="market-meta">${bits.join(' · ')}</div>`;
+        if (s.hunts.length) h += `<div class="muted-text" style="font-size:0.72rem;margin-top:4px">🔦 ${t('獵人隊')}${t('：')}${s.hunts.map(x => `${esc(x.sus)} ${x.right ? '🎯 ' + t('抓對了') : x.wrong ? '⚖️ ' + t('冤案') : '❔ ' + t('還不知道')}`).join(' · ')}</div>`;
         return h + '</div>';
     },
 });

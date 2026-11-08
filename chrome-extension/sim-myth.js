@@ -75,7 +75,7 @@ const MYTH = (() => {
     }
     function injure(w, v, parts, why) { if (typeof HEALTH === 'undefined') return; HEALTH.S(w); const p = parts[Math.floor(Math.random() * parts.length)]; HEALTH.addAil(w, v, { p, k: 'injury', s: Math.random() < 0.35 ? 2 : 1, dmg: 15 }, why); return p; }
     function sides(w, a, g, M, d, all) {
-        const S2 = stab(w); const others = all.filter(o => o !== a); const victim = () => others[Math.floor(Math.random() * others.length)];
+        const S2 = stab(w) * (M.g[a.agentId]?.half ? 0.5 : 1); /* v7.6.0 混血副作用減半 */ const others = all.filter(o => o !== a); const victim = () => others[Math.floor(Math.random() * others.length)];
         if (g === 'wolf' && d % 15 === 7 && Math.random() < 0.6 * S2) { const v = victim(); if (!v) return; const p = injure(w, v, ['h', 'f', 'e'], '被狼人咬傷'); M.st.attacks++; const caught = Math.random() < 0.35;
             log(w, caught ? '🌕🐺 滿月夜，{a}變成狼人咬傷了{v}，被守衛當場認出來！' : '🌕🐺 滿月夜，有野獸咬傷了{v}，大家不知道是誰。', { a: a.name, v: v.name }, a.name); mem(w, v, '滿月夜被一頭狼咬傷了{p}。', { p: t(HEALTH?.PN?.[p] || '') }, 8); incident(w, a, 'wolf', v, caught); if (caught) injure(w, a, ['f'], '被守衛打傷'); }
         if (g === 'night' && d - (M.g[a.agentId].bite || 0) >= 7) { M.g[a.agentId].bite = d; const v = victim(); if (!v) return; M.st.bites++;
@@ -100,7 +100,7 @@ const MYTH = (() => {
             const cand = { kind: 'gene_ban', key: 'gene_ban:' + d, jobs: [], make: () => ({ kind: 'gene_ban', key: 'gene_ban:' + d, tk: '禁止基因編輯', tp: {}, dk: '{who}說把神的血編進人身上是在玩火，最近接連出事。提議全面禁止基因編輯。', dp: { who: who.name }, cost: {}, category: 'people', jobBias: ['priest'] }) }; P._createWith(w, d, cand, who); } }
     }
     function vote(w, p, a) {
-        const M = S(w); const mine = !!geneOf(w, a); let s = (Math.random() - 0.5) * 2;
+        const M = S(w); const mine = !!geneOf(w, a); let s = (Math.random() - 0.5) * 2 - (typeof MYTHSOC !== 'undefined' && w.mythsoc && !mine ? MYTHSOC.att(w, a) / 30 : 0); // v7.6.0 怕神裔的人更想驅逐、禁止
         if (p.kind === 'gene_ban') { s += (devout(w, a) ? 3 : 0) + (mine ? -4 : 0) + (M.inc.some(x => x[3] && day(w) - x[0] <= 30) ? 1 : 0) - ((WL()?.get(w, a) || 0) > 600 ? 2 : 0); }
         else { const tgt = w.agents[p.refKey]; const r = a.relationships?.relationships?.[p.refKey]; s += (r ? -(r.affinity || 0) / 30 : 0) + (mine ? -2 : 0) + (devout(w, a) ? 1 : 0); if (tgt && ((a._parentNames || []).includes(tgt.name) || (tgt._parentNames || []).includes(a.name) || r?.status === 'married')) s -= 5; }
         return { v: s > 0 ? 'for' : 'against', why: p.kind === 'gene_ban' ? (devout(w, a) ? 'faith' : 'safety') : 'safety' };

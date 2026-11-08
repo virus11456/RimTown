@@ -388,7 +388,8 @@ const ORIGIN = (() => {
         const S0 = typeof RANDOM_SURNAMES !== 'undefined' ? RANDOM_SURNAMES : ['陳', '林', '王'];
         for (let i = 0; i < 40; i++) { const male = r.chance(0.5); const G = male ? (typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : ['明']) : (typeof RANDOM_GIVEN_FEMALE !== 'undefined' ? RANDOM_GIVEN_FEMALE : ['芳']);
             const nm = r.pick(S0) + r.pick(G); if (!used.has(nm) && !(typeof RESERVED_NAMES !== 'undefined' && RESERVED_NAMES.has(nm))) { used.add(nm); return { nm, gender: male ? 'male' : 'female' }; } }
-        return { nm: r.pick(S0) + r.int(1, 99), gender: 'male' };
+        const G = [...(typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : ['明'])]; for (const s of S0) for (const g of G) { const nm = s + g; if (!used.has(nm) && !(typeof RESERVED_NAMES !== 'undefined' && RESERVED_NAMES.has(nm))) { used.add(nm); return { nm, gender: 'male' }; } } // v7.6.0 不再用姓＋數字
+        return { nm: r.pick(S0) + r.pick(G), gender: 'male' };
     }
     function graves(w, n, size, founded, r) {
         const L = w.lifecycle; if (!L || !n) return 0;

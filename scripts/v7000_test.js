@@ -37,7 +37,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (let i = 0; i < 10; i++) { F.lastDay = -1 - i; FAITH.daily(w); }
       out.faith = { drift: Math.round((money() - m0) * 100) / 100, spent: Math.round(((R.upkeep || 0) + (R.relief || 0) + (R.built || 0) + (R.feasts || 0) - spent0) * 100) / 100, fund: Math.round(R.fund) };
       // 4) 課稅後捐獻有 15% 進公庫(仍守恆)
-      F.tax = true; const b = npcs().find(a => F.of[a.agentId]?.rel) || npcs()[0]; F.of[b.agentId] = F.of[b.agentId] || { rel: R.id, piety: 80 }; const tr0 = sp.get('silver'), f0 = R.fund, m1 = money();
+      F.tax = true; const b = npcs().find(a => F.of[a.agentId]?.rel) || npcs()[0]; F.of[b.agentId] = F.of[b.agentId] || { rel: R.id, piety: 80 }; w.wallet.bal[b.agentId] = Math.max(100, WALLET.get(w, b)); /* 錢包不夠 40 時捐不出來,測試會誤判 */ const tr0 = sp.get('silver'), f0 = R.fund, m1 = money();
       const give = WALLET.take(w, b, 40); // 模擬一筆 40 的捐獻走正式路徑
       if (give) { const tax = Math.round(40 * FAITH.TAX_RATE * 100) / 100; sp.add('silver', tax, w.tickCount, 'test'); R.fund += 40 - tax; }
       out.tax = { toTown: Math.round((sp.get('silver') - tr0) * 100) / 100, toFund: Math.round((R.fund - f0) * 100) / 100, drift: Math.round((money() - m1) * 100) / 100 };

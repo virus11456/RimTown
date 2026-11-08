@@ -120,7 +120,7 @@ const CEREMONY = (() => {
         }
         const A = w.agents[c.a], B = w.agents[c.b];
         const thr = c.scale >= 3 ? 10 : c.scale === 2 ? 25 : 40;
-        return npcs(w).filter(x => x !== A && x !== B && (Math.max(aff(x, A), aff(x, B)) > thr || isFamily(x, A) || isFamily(x, B)))
+        return npcs(w).filter(x => x !== A && x !== B && !(c.boycott || []).includes(x.agentId) /* v7.6.0 反對神裔婚事的家人不來 */ && (Math.max(aff(x, A), aff(x, B)) > thr || isFamily(x, A) || isFamily(x, B)))
             .sort((p, q) => Math.max(aff(q, A), aff(q, B)) - Math.max(aff(p, A), aff(p, B))).slice(0, cap);
     }
     const away = (w, a) => !a || a.isDead || !w.agents[a.agentId] || a.currentLocation === 'exploration' || a.activity === 'exploring';
