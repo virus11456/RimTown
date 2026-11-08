@@ -347,13 +347,13 @@ Object.assign(RimTownApp.prototype, {
                     [X('議會與否決', 'Council and veto'), X('城鎮越大議會越大；議員每年春天改選，出缺由落選者遞補。', 'Bigger towns have bigger councils; seats are re-elected each spring and vacancies go to the runners-up.')],
                     [X('罷免與下台', 'Recall and resignation'), X('醜聞累積、民怨夠大就提前改選；被罷免的人兩個月內不能再參選。', 'Enough scandal and anger triggers an early election; a recalled leader cannot run again for two months.')]],
               log: [['10:00', X('L12「蓋第二座穀倉」通過：14 票贊成、5 票反對。', 'L12 "Build a second granary" passes: 14 for, 5 against.')], ['10:05', X('鎮長：「去年冬天差點斷糧，這筆錢該花。」', 'Mayor: "We almost ran out of food last winter. This is money well spent."')], ['16:30', X('議會以 4 比 1 推翻了鎮長對最低工資案的否決。', 'The council overturns the mayor\'s veto on the minimum wage, 4 to 1.')]] },
-            { id: 'money', ic: '💰', c: '#f2c14e', k: X('經濟與階級', 'Money and class'), new: '7.0',
+            { id: 'money', ic: '💰', c: '#f2c14e', k: X('經濟與階級', 'Money and class'), new: '7.2',
               h: X('錢會流動，也會往有錢人那邊流', 'Money moves — and it moves toward the rich'),
               lead: X('每個村民都有自己的錢包：領工資、繳稅，三餐、衣服、柴火自己買，付不起就挨餓受凍。產業有老闆，老闆發薪也會壓薪；房子有房東，租不起就被趕出去睡廣場。存款有利息、放款收利息，銀行也會擠兌。這是一個不會特別保護窮人的小鎮。',
                   'Every villager has a wallet: they earn wages, pay taxes, buy their own meals, clothes and firewood, and go hungry or cold when they can\'t. Businesses have owners who pay wages and squeeze them; houses have landlords, and those who can\'t pay rent end up sleeping in the square. Savings earn interest, loans charge it, and banks can suffer runs. This town does not go out of its way to protect the poor.'),
               pts: [[X('物價與失業', 'Prices and unemployment'), X('倉裡存貨少，糧、衣、柴就漲價，工資卻不會跟著漲；職缺跟著人口走，人太多的行業會裁員，找不到工作就沒有收入。', 'When stores run low, food, clothes and firewood get pricier while wages stay put; job openings follow the population, crowded trades lay people off, and no job means no income.')],
                     [X('房東與房客', 'Landlords and tenants'), X('房租照收入與地段算，欠租三週會被驅逐；公有房舍給沒地方住的人。', 'Rent depends on wages and location; three weeks behind and you are evicted. Public housing goes to people with nowhere to live.')],
-                    [X('六級社會階層', 'Six social classes'), X('從底層到王族；相差兩階不隨便聊天，有錢人可以買爵位。', 'From the poorest to royalty; people two classes apart rarely chat, and the rich can buy a title.')]],
+                    [X('景氣與壟斷', 'Booms, busts and monopolies'), X('景氣有好有壞，衰退時裁員、公庫多撥公共工程；有人獨占三家以上產業，會被提案拆分。', 'The economy booms and busts; in a recession jobs are cut and the treasury spends more on public works; anyone who owns three or more businesses may be forced to sell one.')]],
               log: [['07:00', X('劉阿福這個月欠了三週房租，被房東趕了出來。', 'Liu Afu is three weeks behind on rent and gets evicted.')], ['12:00', X('麵包店老闆把工資壓到每天 3 銀幣。', 'The bakery owner cuts wages to 3 silver a day.')], ['18:10', X('📈 糧價漲到原本的 1.6 倍，磨坊工人說快吃不起了。', '📈 Food prices hit 1.6× normal; the mill workers say they can barely eat.')]] },
             { id: 'union', ic: '✊', c: '#e5736b', k: X('工會', 'Unions'), new: '6.93',
               h: X('被壓榨的人會組織起來', 'The squeezed get organized'),
@@ -415,8 +415,8 @@ Object.assign(RimTownApp.prototype, {
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         const roadmap = [
-            [X('最近上線', 'Recently added'), '#34d399', [X('v7.1 貿易與關稅', 'v7.1 trade and tariffs'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining'), X('政治獻金、報社揭弊與罷免', 'Political donations, investigative papers and recalls')]],
-            [X('製作中', 'In progress'), '#f2c14e', [X('v7.2 信用、景氣循環與壟斷', 'v7.2 Credit, business cycles and monopolies'), X('v7.2 公庫與公共支出', 'v7.2 Treasury and public spending')]],
+            [X('最近上線', 'Recently added'), '#34d399', [X('v7.2 景氣循環、公共支出、反壟斷', 'v7.2 business cycles, public spending and antitrust'), X('v7.1 貿易與關稅', 'v7.1 trade and tariffs'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining'), X('政治獻金、報社揭弊與罷免', 'Political donations, investigative papers and recalls')]],
+            [X('構想中', 'Planned'), '#f2c14e', [X('鎮與鎮之間的貨幣與匯率', 'Currencies and exchange between towns'), X('股份與合夥經營產業', 'Shares and partnerships in businesses')]],
             [X('構想', 'Ideas'), '#60a5fa', [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')]],
         ];
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)

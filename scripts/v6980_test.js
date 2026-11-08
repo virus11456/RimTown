@@ -41,7 +41,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       ok(r.sw <= r.cw && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
       // 目錄點下去會捲到那一段
       const before = await page.evaluate(() => document.getElementById('landing').scrollTop);
-      await page.click('.lp-toc a[href="#lp-union"]'); await page.waitForTimeout(1200);
+      await page.click('.lp-toc a[href="#lp-union"]'); await page.waitForFunction(() => Math.abs(document.getElementById('lp-union').getBoundingClientRect().top) < 80, null, { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(200); // 等平滑捲動停下來
       const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const t = document.getElementById('lp-union').getBoundingClientRect().top; return { top: Math.round(t), st: L.scrollTop }; });
       ok(jump.st > before && Math.abs(jump.top) < 80, '目錄點「工會」會捲到工會那段', jump);
       // 捲出畫面後 3D 停止(不再重畫)
