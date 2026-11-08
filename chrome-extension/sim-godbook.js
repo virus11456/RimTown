@@ -136,7 +136,7 @@ const GODBOOK = (function () {
         kind_chain: ['有人欠下第一份人情', (w) => Object.keys(w.ways?.owe || {}).length >= 1], heirloom: ['小鎮滿 45 天', (w) => day(w) >= 45], town_meeting: ['鎮上辦過一次鄰里茶會', (w) => (w.ways?.st?.forum || 0) >= 1],
         golden_age: ['小鎮升格為城市', (w) => { try { return typeof TIERS !== 'undefined' && TIERS.level(w) >= 2; } catch (e) { return false; } }],
         comet: ['研究進入第四時代', (w) => (w.research?.currentEra?.() || 1) >= 4], eureka: ['完成 30 項研究', (w) => researched(w) >= 30],
-        prophet: ['鎮上有宗教滿一年', (w) => (w.faith?.rels || []).length > 0 && day(w) >= 360], bountiful: ['小鎮撐過一場災厄（災厄工坊或天災）', (w) => hist(w).length >= 1],
+        prophet: ['鎮上有宗教，小鎮滿一年', (w) => (w.faith?.rels || []).length > 0 && day(w) >= 360], bountiful: ['小鎮撐過一場災厄（災厄工坊或天災）', (w) => hist(w).length >= 1 || (w.godbook?.disDay != null && day(w) - w.godbook.disDay >= 7)],
         truth_rain: ['說一套做一套被撞見 3 次', (w) => (w.ways?.st?.hyp || 0) >= 3], mind_flip: ['有人冷戰到最後再也不往來', (w) => (w.ways?.st?.apart || 0) >= 1],
         golden_touch: ['銀行撐過擠兌，或公庫超過 3000 銀幣', (w) => w.bank?.lastRunEnd != null || (w.stockpile?.get?.('silver') || 0) >= 3000],
         forget: ['一場災厄死了 5 個人以上', (w) => hist(w).some(h => (h.died || 0) >= 5)],
@@ -176,7 +176,7 @@ const GODBOOK = (function () {
     };
     const _play = P.play; P.play = function (w, id) {
         const can = this.canPlay(w, id); if (!can.ok) return { ok: false, why: can.why, days: can.days, cost: can.cost };
-        const r = _play.call(this, w, id); if (r?.ok) { spend(w, cost(this.card(id))); const C = S(w); C.spent = (C.spent || 0) + cost(this.card(id)); }
+        const r = _play.call(this, w, id); if (r?.ok) { spend(w, cost(this.card(id))); const C = S(w); C.spent = (C.spent || 0) + cost(this.card(id)); if (this.card(id).cat === 'disaster' && C.disDay == null) C.disDay = day(w); } // 天災過了一週還撐著,也算撐過一場災厄
         return r;
     };
     const _hand = P.hand; P.hand = function (w) {

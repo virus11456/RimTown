@@ -11735,7 +11735,7 @@
         '小鎮升格為城市': 'The town becomes a city',
         '研究進入第四時代': 'Research reaches the fourth era',
         '完成 30 項研究': 'Complete 30 research projects',
-        '鎮上有宗教滿一年': 'The town has had a religion for a year',
+        '鎮上有宗教，小鎮滿一年': 'The town has a religion and is a year old',
         '小鎮撐過一場災厄（災厄工坊或天災）': 'The town survives a calamity (from the workshop or nature)',
         '說一套做一套被撞見 3 次': 'Hypocrites caught 3 times',
         '有人冷戰到最後再也不往來': 'A cold shoulder ends with two people never speaking again',

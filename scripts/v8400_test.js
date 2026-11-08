@@ -64,6 +64,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const s1 = DARK.secret(w, { kind: 'scheme', culprit: pa.agentId, victim: pb.agentId, k: '{a}偷拿了{b}的東西', p: { a: pa.name, b: pb.name } });
       X.hyp = [{ a: pb.agentId, k: 'policy', t: 'T2', d: w._absDay() }]; B.pages.truth_rain = 1;
       reset(); const trn = E.play(w, 'truth_rain'); out.truth = { ok: !!trn.ok, secret: !!s1.found, hyp: !!X.hyp[0].exp, spent: r1(100 - C.power) };
+      // 天災過了一週還撐著 → 神賜豐年寫進書裡
+      const dd0 = w._absDay(); out.bount = { marked: B.disDay === dd0, before: GODBOOK.check(w).some(c => c.id === 'bountiful') }; B.disDay = dd0 - 8; out.bount.after = GODBOOK.check(w).some(c => c.id === 'bountiful');
       // 集體失憶:感情減半、冷戰結束
       for (let i = 0; i < 30 && !WAYS.coldWith(w, pa, pc); i++) WAYS.quarrel(w, pa, pc); E._aff(pb, pc, 60); const fb = aff(pb, pc); B.pages.forget = 1;
       reset(); const fg = E.play(w, 'forget'); out.forget = { ok: !!fg.ok, half: Math.abs(aff(pb, pc) - Math.round(fb / 2)) <= 1, cold: !WAYS.coldWith(w, pa, pc) };
@@ -99,6 +101,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.bank.ok && r.bank.run, '銀行謠言：引發擠兌', r.bank);
     ok(r.heirloom.ok && r.heirloom.gain >= 40 && r.heirloom.gain <= 80 && r.heirloom.drift === 0 && r.touch.ok && r.touch.gain === 1000 && r.touch.drift === 0 && r.touch.greedy >= 1 && r.bequest.ok && r.bequest.drift === 0, '傳家寶、點石成金、慈善遺產：神給的錢都記進金流帳（銀幣對得上）；點石成金讓人變貪心', { h: r.heirloom, t: r.touch, b: r.bequest });
     ok(r.truth.ok && r.truth.secret && r.truth.hyp && r.truth.spent === 30, '真話雨（禁忌，30 神力）：秘密曝光、說一套做一套的人被拆穿', r.truth);
+    ok(r.bount.marked && !r.bount.before && r.bount.after, '天災過了一週還撐著，「神賜豐年」寫進神之書', r.bount);
     ok(r.forget.ok && r.forget.half && r.forget.cold && r.flip.ok && r.flip.best && r.flip.worst, '集體失憶：感情減半、冷戰結束；顛倒人心：最好的一對變差、最差的一對變好', { f: r.forget, m: r.flip });
     ok(r.dream.poor === 'power' && r.dream.ok && r.dream.left === 7, '託夢也花神力（3 點），不夠就託不了', r.dream);
     ok(r.regen.g1 >= 1.5 && r.regen.g1 <= 2.5 && r.regen.gain === r.regen.g1, '神力每天回復 1.5 起跳（虔誠的人多回得快）', r.regen);
