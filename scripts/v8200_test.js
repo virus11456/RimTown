@@ -121,6 +121,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
         const boxW = box ? box.getBoundingClientRect() : null; ui.fit = !boxW || boxW.right <= innerWidth + 1;
         C.cur = null; C.coolTo = 0; C.hist.unshift({ name: spec.name, day: d0 - 60, end: d0 - 30, died: 3, inf: 9, ppl: A().map(a => a.agentId) }); app._ghShow(); await new Promise(r => setTimeout(r, 200));
         ui.lesson = !!tray.querySelector('.gh-lesson'); ui.undef2 = /undefined|NaN|\{[a-z]+\}/.test(tray.innerText); C.hist.shift(); app._ghHide?.();
+        // 科技分頁:研究完的時代折疊,點開後刷新也記得
+        const RP = w.research.projects; for (const q of Object.values(RP)) if ((q.era || 1) <= 2) { q.status = 'complete'; q.progress = q.cost; } w.research.refreshLocks(); app.state = w.getState(); app._techOpen = {};
+        const mobile = innerWidth <= 768; const openTab = async (tab) => { if (mobile) app._openKairoTab(tab); else { app.activeTab = tab; app.renderSidebar(); } await new Promise(r => setTimeout(r, 300)); };
+        const pane = () => (mobile ? document.getElementById('kairo-card-body') : document.getElementById('sidebar-content')) || document.body;
+        await openTab('econ-tech'); const fs = [...pane().querySelectorAll('details.tech-era-fold')]; ui.fold = fs.length >= 2 && fs.every(d => !d.open) && /12\/12|\d+\/\d+/.test(fs[0].querySelector('summary').innerText);
+        fs[0]?.querySelector('summary').click(); await new Promise(r => setTimeout(r, 80)); await openTab('econ-tech'); const f2 = pane().querySelectorAll('details.tech-era-fold'); ui.keep = !!f2[0]?.open && !f2[1]?.open; ui.foldOverflow = document.documentElement.scrollWidth > innerWidth + 1;
         out.ui = ui; }
       return out;
     });
@@ -143,6 +149,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.credit.during === 0 && r.credit.after === 1, '疫情期間鎮上變差算在疫情頭上，不算提案的錯；過了就照常', r.credit);
     ok(r.save.pw && r.save.burned && r.save.sold && r.save.ok && r.brief.hyp, '存讀檔（疫情裡的人、被騙過的名單）、AI 知道自己偷偷沒守規定', { s: r.save, b: r.brief });
     ok(r.ui.tab && r.ui.box && r.ui.lines >= 5 && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow && r.ui.fit && r.ui.lesson && !r.ui.undef2, `介面：工坊分頁、「疫情裡的人」、上次疫情的記憶（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.fold && r.ui.keep && !r.ui.foldOverflow, '科技分頁：研究完的時代折疊成一行，點開後畫面刷新也記得', { fold: r.ui.fold, keep: r.ui.keep, of: r.ui.foldOverflow });
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }

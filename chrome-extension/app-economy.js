@@ -383,7 +383,10 @@ Object.assign(RimTownApp.prototype, {
                     continue;
                 }
                 const head = `${g.pk ? `${PI[g.pk]?.icon || ''} ` : ''}${t('第 {n} 時代').replace('{n}', t(['', '一', '二', '三', '四', '五', '六'][era]))}${t('・')}${t(en.name || '')}${g.excl ? ` 🔐` : ''}`;
-                html += `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${head} <span>${done}/${list.length}</span></div>`;
+                // v8.2.0 研究完的時代折疊起來(點標題展開,刷新時記得開關)
+                const fold = list.length > 0 && done === list.length && !g.lock; const fk = `${g.pk || ''}${era}`; const fOpen = !!(this._techOpen || {})[fk];
+                html += fold ? `<details class="tech-era tech-era-fold" data-era="${fk}"${fOpen ? ' open' : ''}><summary class="tech-era-head"><span class="tech-era-name">${en.icon || ''} ${head}</span><span>✅ ${done}/${list.length} <i class="tech-fold-ic" aria-hidden="true">▸</i></span></summary>`
+                    : `<div class="tech-era"><div class="tech-era-head">${en.icon || ''} ${head} <span>${done}/${list.length}</span></div>`;
                 if (g.lock) html += `<div class="tech-desc" style="color:var(--text-muted)">🔒 ${g.lock}</div>`;
                 for (const p of list) {
                     const st = p.status === 'complete' ? 'done' : p.key === currentKey || p.status === 'researching' ? 'now' : p.status === 'available' ? 'open' : 'locked';
@@ -400,7 +403,7 @@ Object.assign(RimTownApp.prototype, {
                         ${st === 'now' ? `<div class="progress-bar" style="height:4px;margin-top:4px"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>` : ''}
                     </div>`;
                 }
-                html += '</div>';
+                html += fold ? '</details>' : '</div>';
             }
             // v7.8.0 路線帶來的問題(最近)
             if (TV?.inc?.length) {
@@ -602,6 +605,7 @@ Object.assign(RimTownApp.prototype, {
         if (S === 'industry') { const B = this._townBlocks(null, ['biz', 'bank']); html += B.biz + B.bank; const tmp = document.createElement('div'); this.renderIndustryAndFarm(tmp); html += tmp.innerHTML; } // v7.3.0 店、銀行(原在鎮況)、產業等級與農場(原本獨立的「產業」頁)
         html += '</div>';
         container.innerHTML = html;
+        if (!container._techFold) { container._techFold = 1; container.addEventListener('toggle', (e) => { const d = e.target; if (d?.classList?.contains('tech-era-fold')) (this._techOpen || (this._techOpen = {}))[d.dataset.era] = d.open; }, true); } // v8.2.0 記住時代折疊的開關
     },
 
     executeTrade(offerIdx, qty) {

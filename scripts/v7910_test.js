@@ -130,7 +130,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.ai.calls === 1 && r.ai.rows >= 3 && r.ai.rows <= 8 && r.ai.acts >= 2 && r.ai.said && r.ai.fallback > 0, '完整智能體模式：出大事那天壓力最大的人整批交給 AI（一次請求、最多 8 人、照 AI 的選擇和台詞反應）；AI 沒回應就照規則', r.ai);
     ok(r.tier.lvA === 1 && r.tier.lvB === 2 && r.tier.lvC === 2, '城鎮跟科技軟綁定：科技不夠不能升城市；剛升格的 60 天內不降級', r.tier);
     ok(!r.old.path && r.old.kept === 'electro' && r.old.bio === 5, '舊存檔：v7.8 自動判定的電子機械空出來讓大家辯論；投票選的保留；基因生物的法律存得住', r.old);
-    ok(r.ui.paths && r.ui.excl && !r.ui.lab && r.ui.opts >= 1 && r.ui.optRows >= 3 && !r.ui.undef && !r.ui.overflow, '介面：科技分頁兩條路線、專屬標示；提案卡多選一；災厄工坊分頁先隱藏', r.ui);
+    ok(r.ui.paths && r.ui.excl && r.ui.opts >= 1 && r.ui.optRows >= 3 && !r.ui.undef && !r.ui.overflow, '介面：科技分頁兩條路線、專屬標示；提案卡多選一', r.ui);
     if (lang === 'en') ok(!r.ui.cjk.length, '英文沒有中文', r.ui.cjk);
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
