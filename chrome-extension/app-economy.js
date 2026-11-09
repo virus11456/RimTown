@@ -15,6 +15,14 @@ Object.assign(RimTownApp.prototype, {
     },
 
     // --- Economy Tab (with factory sub-tab) ---
+    // v9.7.0 建築升級效果 key → 中文說明(之前直接露出 drought_resistance:+0.3 這種英文)
+    _upEffText(k, v) {
+        const L = { defense_bonus: ['防禦', 0], raid_chance: ['被襲擊機率', 1], guard_xp_bonus: ['守衛經驗', 1], drought_resistance: ['抗旱', 1], healing_bonus: ['治療效果', 1], farm_bonus: ['農作產量', 1], food_capacity: ['糧倉容量', 0], food_decay: ['食物腐壞', 1], mood_modifier: ['心情', 0], mood_bonus: ['心情', 0], herbs_production: ['每天藥草', 0], recreation_bonus: ['娛樂', 0], trade_bonus: ['交易收益', 1], smithing_bonus: ['打鐵效率', 1], tool_quality: ['工具品質', 1], merchant_frequency: ['商人來訪', 1], xp_bonus: ['技能成長', 1], research_bonus: ['研究速度', 1] };
+        const d = L[k]; if (typeof v !== 'number') return `${d ? t(d[0]) : k.replace(/_/g, ' ')}`;
+        const pct = d ? d[1] : (Math.abs(v) < 1 && !Number.isInteger(v));
+        const n = pct ? `${Math.round(v * 100)}%` : `${Math.round(v * 10) / 10}`;
+        return `${d ? t(d[0]) : k.replace(/_/g, ' ')} ${v > 0 ? '+' : ''}${n}`;
+    },
     // v5.53.2 資源 key → 在地化名稱(跨分頁共用,修工廠/產業成本露出英文 key 的問題)
     _resName(r) {
         if (!this._resNameMap) this._resNameMap = { salt:t('鹽'), paper:t('紙'), food:t('食物'), wood:t('木材'), stone:t('石材'), metal:t('金屬'), cloth:t('布料'), herbs:t('草藥'), silver:t('銀幣'), meals:t('餐食'), tools:t('工具'), clothing:t('衣物'), medicine:t('藥品'), furniture:t('家具'), research_points:t('研究'),
@@ -500,7 +508,7 @@ Object.assign(RimTownApp.prototype, {
                 html += t('<div class="available-buildings"><div class="build-label">🔨 可升級（等村民提案）：</div>');
                 upgradeable.forEach(u => {
                     const costStr = Object.entries(u.costs).map(([r,a]) => `${icons[r]||''}${a}`).join(' ');
-                    const effStr = Object.entries(u.effects).map(([k,v]) => `${k}:${v>0?'+':''}${v}`).join(' ');
+                    const effStr = Object.entries(u.effects).map(([k,v]) => this._upEffText(k, v)).join(' · ');
                     html += `<div class="build-option ${u.can_afford ? '' : 'cant-afford'}">
                         <div class="build-name">${t(u.name)} <span class="building-level">Lv.${u.currentLevel}→${u.nextLevel}</span></div>
                         <div class="build-desc">${u.description}</div>
