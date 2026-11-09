@@ -45,8 +45,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const lab = (w.dark.labor || []).find(x => x.id === C.agentId);
       out.labor = { started: !!lab, asked: !!F()[C.agentId]?.askedFamily, inLabor: MONEY.inLabor(w, C), set: MONEY.laborSet(w).has(C.agentId), chip: MONEY.fineChip(w, C), brief: MONEY.fineBrief(w, C), owed: MONEY.owedOf(w, C) };
       // 服勞役那天公庫不發他薪水(同職業的人照領)
-      clearFam(D); D.job = new Job('guard'); w.stockpile.resources.silver = Math.max(w.stockpile.get('silver'), 2000); setBal(sp, 0); setBal(C, 50); setBal(D, 50); const cB = bal(C), dB = bal(D); out.labor.net = Math.round(WALLET.netOf(WALLET.S(w), D) * 100) / 100;
-      WALLET.daily ? (WALLET.S(w).lastDay = -1, WALLET.daily(w)) : null; out.labor.wageC = Math.round((bal(C) - cB) * 100) / 100; out.labor.wageD = Math.round((bal(D) - dB) * 100) / 100;
+      clearFam(D); D.job = new Job('guard'); { const MK = w.market || {}; for (const k of Object.keys(MK.owners || {})) if (MK.owners[k] === C.agentId || MK.owners[k] === D.agentId) { MK.owners[k] = null; if (MK.shares) delete MK.shares[k]; } } /* v8.7 起合股常讓 C/D 變老闆,要先拿掉,才量得到單純的工資 */ w.stockpile.resources.silver = Math.max(w.stockpile.get('silver'), 2000); setBal(sp, 0); setBal(C, 50); setBal(D, 50); const cB = bal(C), dB = bal(D); out.labor.net = Math.round(WALLET.netOf(WALLET.S(w), D) * 100) / 100;
+      const _md = MARKET.daily; MARKET.daily = () => {}; /* 只量工資:那天的市場結算(合股、標售)先關掉 */ try { WALLET.daily ? (WALLET.S(w).lastDay = -1, WALLET.daily(w)) : null; } finally { MARKET.daily = _md; } out.labor.wageC = Math.round((bal(C) - cB) * 100) / 100; out.labor.wageD = Math.round((bal(D) - dB) * 100) / 100;
       let n = 0; while (F()[C.agentId] && n++ < 15) MONEY.finesDaily(w); out.labor.workedOff = !F()[C.agentId] && n <= 6;
       // 7) 大赦:勞役名單被清掉 → 欠款一筆勾銷
       setBal(D, 0); MONEY.fine(w, D, 30, t('罰款')); F()[D.agentId].since = w._absDay() - 14; fix(0.99, () => MONEY.finesDaily(w)); const wasLabor = MONEY.inLabor(w, D);

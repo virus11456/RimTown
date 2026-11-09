@@ -8,7 +8,7 @@
 // 社會問題跟著科技走（不看路線）：🟡 鍋爐燙傷、煤灰染黑衣服、礦工咳嗽、氣動管道送錯信、童工、煉金臭味、坐飛艇；
 // 🟠 鍋爐爆炸、黑霧一週、點金騙局、蒸汽機甲失控、人造人要名字；🔴 大黑霧（倫敦 1952 那種：冬天起霧、煙散不掉，老人和肺不好的人撐不過）。
 // 法律：清潔空氣法（煙減半、蓋東西慢一點）、工廠法（工時與童工：燙傷爆炸少一半、做工慢一點）、禁造人造人。
-// 賢者之石只能把石頭變成金屬和鋼，變不出銀幣（銀幣守恆）。點金騙局的錢從投資的人錢包轉到騙子錢包。存在 world.tech.steam。
+// v8.7.0 賢者之石凝聚以太（療癒、驅動造物、讓一個人長生，見 sim-longevity.js），不產銀幣（銀幣守恆）。點金騙局的錢從投資的人錢包轉到騙子錢包。存在 world.tech.steam。
 'use strict';
 
 const STEAM = (function () {
@@ -242,8 +242,7 @@ const STEAM = (function () {
         smogDaily(w, X, d); lawDaily(w, X, d);
         const sp = w.stockpile; const stone = () => sp?.get?.('stone') || 0;
         if (built(w, 'refinery') && stone() >= 3) { sp.consume('stone', 3, w.tickCount, t('提煉廠'), 'production'); sp.add('metal', 1, w.tickCount, t('提煉廠')); }
-        // 賢者之石:只能把石頭變成鋼(變不出銀幣)
-        if (done(w, 'philosopher_stone') && stone() >= 4) { sp.consume('stone', 4, w.tickCount, t('賢者之石'), 'production'); sp.add('steel', 1, w.tickCount, t('賢者之石')); X.st.stone = (X.st.stone || 0) + 1; }
+        // v8.7.0 賢者之石改成凝聚以太(療癒、驅動造物、讓一個人長生),見 sim-longevity.js
         // 點金騙局:一個月後該翻倍的銀子沒出現
         const q = X.scam; if (q && d - q.d >= 30) { X.scam = null; const k = w.agents[q.q]; if (k && !k.isDead) {
             const vs = q.v.map(id => w.agents[id]).filter(v => v && !v.isDead); for (const v of vs) { aff(v, k, -25); mark(w, v, 'scammed'); mem(w, v, '交給{q}的錢一毛都沒回來，鉛還是鉛。', { q: k.name }, 8); }
@@ -262,7 +261,7 @@ const STEAM = (function () {
     }
     function townBrief(w) {
         const X = w.tech?.steam; if (!X) return ''; const out = [];
-        if (X.smog >= 25) out.push(t(SMOG_WORD[smogLv(w)])); if (X.air) out.push(t('有清潔空氣法')); if (X.factory) out.push(t('有工廠法')); if (done(w, 'philosopher_stone')) out.push(t('賢者之石只能把石頭變成鋼，變不出銀幣'));
+        if (X.smog >= 25) out.push(t(SMOG_WORD[smogLv(w)])); if (X.air) out.push(t('有清潔空氣法')); if (X.factory) out.push(t('有工廠法')); 
         return out.join(t('，'));
     }
     // 3D 畫面:煙越濃天空越暗(0～1)
@@ -290,9 +289,9 @@ const STEAM = (function () {
         smoke_filter: { era: 5, path: 'steam', name: t('濾煙塔'), description: t('煙囪頂上加一層煉金濾網：煤煙少三成'), cost: 11500, prerequisites: pre('alchemy', 'engineering'), effects: { healing_bonus: 1.05 }, unlocks: [] },
         // ---- ✨ 以太(第六時代,專屬) ----
         clockwork_automaton: { era: 6, path: 'steam', name: t('發條人偶'), description: t('上緊發條就會做事的人偶：最危險的礦坑交給它，礦工和廚師的缺少一些'), cost: 22000, prerequisites: pre('difference_engine', 'steam_mech'), effects: { build_speed: 1.1, smithing_bonus: 1.1 }, unlocks: [] },
-        aether_engine: { era: 6, path: 'steam', name: t('以太引擎'), description: t('不燒煤的引擎：研究和建造都快，煤煙再少一半'), cost: 24000, prerequisites: pre('element_refining', 'airship'), effects: { research_bonus: 0.08, build_speed: 1.1 }, unlocks: [] },
+        aether_engine: { era: 6, path: 'steam', name: t('以太引擎'), description: t('不燒煤的引擎：研究和建造都快，煤煙再少一半；礦工從此挖得到以太礦'), cost: 24000, prerequisites: pre('element_refining', 'airship'), effects: { research_bonus: 0.08, build_speed: 1.1 }, unlocks: [] },
         floating_city: { era: 6, path: 'steam', name: t('浮空城'), description: t('用以太撐起來的城區：可以蓋浮空城區，遠方的人都會來看'), cost: 27000, prerequisites: pre('aether_engine', 'airship'), effects: { culture_bonus: 10, beauty_bonus: 8, merchant_frequency: 0.2, defense_bonus: 3 }, unlocks: ['sky_isle'] },
-        philosopher_stone: { era: 6, path: 'steam', name: t('賢者之石'), description: t('傳說中的石頭：每天把四份石頭變成一份鋼——但變不出銀幣'), cost: 25000, prerequisites: pre('element_refining', 'alchemy'), effects: { stone_efficiency: 1.1 }, unlocks: [] },
+        philosopher_stone: { era: 6, path: 'steam', name: t('賢者之石'), description: t('把礦坑挖出的以太凝成一顆完整的賢者之石：戴著它的那一個人老得很慢，也能點石成鋼（會耗掉它的能量）。要存非常多以太，而以太也是大家過生活要用的'), cost: 25000, prerequisites: pre('element_refining', 'alchemy'), effects: { stone_efficiency: 1.1 }, unlocks: [] },
         homunculus: { era: 6, path: 'steam', name: t('人造人'), description: t('燒瓶裡長出來的人：不吃不睡地種田蓋房，農夫和木匠的缺少一些；它們會不會想要名字？'), cost: 28000, prerequisites: pre('philosopher_stone', 'clockwork_automaton'), effects: { farm_bonus: 1.1, build_speed: 1.1 }, unlocks: [] },
     };
     Object.assign(T, ADD); for (const k of Object.keys(ADD)) T[k].prerequisites = T[k].prerequisites.filter(has);

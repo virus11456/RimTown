@@ -35,6 +35,7 @@ const POLITICS = (() => {
                 if (j && Array.isArray(j.lines)) { j.lines.forEach((s, i) => { if (lines[i] && typeof s === 'string' && s.trim()) { lines[i].k = '{x}'; lines[i].p = { x: s.trim().slice(0, 60) }; } }); if (Number.isInteger(j.best) && lines[j.best]) lines[j.best].score += 100; } // AI 判定的贏家就是贏家
             } catch (e) {}
         }
+        for (let i = lines.length - 1; i >= 0; i--) { const a = w.agents[lines[i].id]; if (!a || a.isDead) lines.splice(i, 1); } if (lines.length < 2) return null; // v8.7.0 等 AI 的時候候選人可能過世或搬走了
         const win = lines.slice().sort((x, y) => y.score - x.score)[0]; const wa = w.agents[win.id];
         log(w, 'council', '🎤 選舉辯論登場！', {});
         for (const l of lines) { const a = w.agents[l.id]; log(w, 'council', '🎤 {a}：「{s}」', { a: a.name, s: { k: l.k, p: l.p } }, a.name); }
@@ -80,7 +81,7 @@ const POLITICS = (() => {
             const text = String(j.text || '').slice(0, 80);
             if (j.result === 'treaty') { DIPLO.bump(w, pid, 15); if ((D.rel[pid] || 0) >= 20 && D.status[pid] !== 'ally') { D.status[pid] = 'trade'; } }
             if (j.result === 'marriage') DIPLO.bump(w, pid, 10);
-            if (j.result === 'compensation') { const n = Math.min(60, w.stockpile?.get?.('silver') || 0); if (n) w.stockpile.consume('silver', n, w.tickCount, t('外交賠償')); DIPLO.bump(w, pid, 8); }
+            if (j.result === 'compensation') { const n = Math.min(60, w.stockpile?.get?.('silver') || 0); if (n && w.stockpile.consume('silver', n, w.tickCount, t('外交賠償'))) { try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'event', -n); } catch (e) {} } /* v8.8.0 賠給外地的錢記到「事件」 */ DIPLO.bump(w, pid, 8); }
             if (j.result === 'none') DIPLO.bump(w, pid, -5);
             log(w, 'event', '🕊️ 跟{p}的談判：{x}', { p: p.name[0], x: text }, envoyName);
             return { result: j.result, text };

@@ -816,7 +816,7 @@ class CouncilSystem {
             // Apply immediate resource effects
             const sp = world.stockpile;
             if (p.effects.silver && p.effects.silver > 0) { if (typeof MONEY !== 'undefined') MONEY.sellSurplus(world, p.effects.silver, `${t('議會決議')}${t('：')}${p.title}`); else sp.add('silver', p.effects.silver, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`); } // v7.7.0
-            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
+            if (p.effects.silver && p.effects.silver < 0) sp.consume('silver', Math.abs(p.effects.silver), world.tickCount, `${t('議會決議')}${t('：')}${p.title}`, 'upkeep'); /* v8.8.0 議會撥的錢付給本地承包商 */
             if (p.effects.mood_traders) Object.values(world.agents).forEach(a => { if (!a.isPlayer && a.job?.key === 'trader') a.moodModifier = (a.moodModifier || 0) + p.effects.mood_traders; }); // v6.87.0 商人不高興
             if (p.effects.herbs) sp.add('herbs', p.effects.herbs, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
             if (p.effects.tools) sp.add('tools', p.effects.tools, world.tickCount, `${t('議會決議')}${t('：')}${p.title}`);
@@ -1294,8 +1294,8 @@ class EventChoiceSystem {
             Object.values(world.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + effects.mood_all; });
         }
         if (effects.silver) {
-            if (effects.silver > 0) world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'), 'player');
-            else world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
+            const _ok = effects.silver > 0 ? (world.stockpile.add('silver', effects.silver, world.tickCount, t('事件決策'), 'player'), true) : world.stockpile.consume('silver', Math.abs(effects.silver), world.tickCount, t('事件決策'));
+            try { if (_ok && typeof MONEY !== 'undefined') MONEY.flow(world, 'event', effects.silver); } catch (e) {} /* v8.8.0 隨機事件的錢記到「事件」 */
         }
         // v4.5.0 一般資源消耗/獲得 + 防災準備等級
         for (const rk of ['food','wood','stone','metal','tools','herbs','cloth']) {

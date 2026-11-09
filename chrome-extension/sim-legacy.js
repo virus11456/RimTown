@@ -49,7 +49,7 @@ const LEGACY = (() => {
             for (const o of npcs(w)) if (Math.random() < 0.3) mem(w, o, '大家都在懷念{a}，他是鎮上的傳奇。', { a: x.name }, 6);
             // 公庫寬裕就立像
             const tr = w.stockpile?.get?.('silver') || 0;
-            if (tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念')); lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = tpl('{a}像', { a: x.name }); try { I18N.registerName(sn, `Statue of ${I18N.localizeNames(x.name, true)}`); } catch (e) {} Lm.push({ name: sn, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
+            if (tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念'), 'upkeep'); /* v8.8.0 雕像工錢付給本地工匠 */ lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = tpl('{a}像', { a: x.name }); try { I18N.registerName(sn, `Statue of ${I18N.localizeNames(x.name, true)}`); } catch (e) {} Lm.push({ name: sn, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
         }
     }
     // ---------- 家族與世仇 ----------

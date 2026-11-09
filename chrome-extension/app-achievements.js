@@ -98,6 +98,8 @@ const ACH_CAT_NAME = { town: '城鎮', politics: '提案與政治', ways: '人�
         ['strike', 'economy', '罷工', '工人罷工要求加薪', '✊', { ev: /罷工/ }],
         ['bank_run', 'economy', '撐過擠兌', '銀行撐過一場擠兌', '🏦', { ev: /撐過了擠兌/ }],
         ['antitrust', 'economy', '反壟斷', '反壟斷法拆分了某人的產業', '⚖️', { ev: /反壟斷：/ }],
+        ['sh_syn', 'economy', '合股做生意', '鎮上有人找朋友合股買下一家產業', '🤝', { fn: (w) => (w.market?.sh?.st?.syn || 0) >= 1 }],
+        ['sh_out', 'economy', '股東會變天', '股東們聯手把當家拉下來', '🗳️', { fn: (w) => (w.market?.sh?.st?.out || 0) >= 1 }],
         // 信仰與文化
         ['bribe_exposed', 'culture', '揭弊', '收錢的事被揭穿', '🙇', { ev: /收錢的事被揭穿/ }],
         ['press_expose', 'culture', '報社揭發', '報社揭發一樁醜聞', '📰', { ev: /報社揭發/ }],
@@ -122,6 +124,9 @@ const ACH_CAT_NAME = { town: '城鎮', politics: '提案與政治', ways: '人�
         ['wc_infertile', 'tech', '又聽到嬰兒哭了', '小鎮撐過一場全球不孕', '🍼', { fn: (w) => (w.worldcal?.hist || []).some(h => h.kind === 'infertile') }],
         ['wc_iceage', 'tech', '最暖的醜毛衣', '小鎮撐過一場冰河期', '🧊', { fn: (w) => (w.worldcal?.hist || []).some(h => h.kind === 'iceage') }],
         ['wc_rift', 'tech', '把天空縫回去', '小鎮撐過一場以太裂隙', '🌀', { fn: (w) => (w.worldcal?.hist || []).some(h => h.kind === 'rift') }],
+        ['ae_stone', 'tech', '一顆，只有一顆', '小鎮煉成一顆完整的賢者之石', '💎', { fn: (w) => (w.longev?.st?.stones || 0) >= 1 }],
+        ['ae_dust', 'tech', '歲月追上來了', '賢者之石離身，持有人化為塵土', '⏳', { fn: (w) => (w.longev?.st?.dust || 0) >= 1 }],
+        ['gene_mass', 'tech', '多活十五年', '十個人做了基因延壽療程', '🧬', { fn: (w) => (w.longev?.st?.treated || 0) >= 10 }],
         ['wc_averted', 'tech', '化解於未然', '主對策在世界級災厄降臨前做完', '🕊️', { fn: (w) => (w.worldcal?.hist || []).some(h => h.out === 'averted') }],
         ['wc_lab', 'god', '末日由我開始', '在災厄工坊發動一場世界級災厄', '🌍', { fn: (w) => (w.worldcal?.hist || []).some(h => h.src === 'lab') || w.worldcal?.cur?.src === 'lab' }],
         ['lab_endure', 'god', '硬撐過來', '沒有疫苗，小鎮也撐過一場災厄', '🕯️', { fn: (w) => (w.calamity?.hist || []).some(h => h.how === 'endure' && h.survived !== false && (h.died || 0) > 0) }],

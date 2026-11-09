@@ -25,7 +25,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 1) 最低工資
       const Wl = WALLET.S(w); const farmer = npcs().find(a => a.job?.key === 'farmer') || npcs().find(a => WALLET.WAGE[a.job?.key]);
       out.noFloor = WALLET.netOf({ tax: 0.6 }, farmer) < WALLET.FLOOR; // 沒通過最低工資:照市價
-      { const ps0 = w.proposals; const d0 = ps0._abs(w); const oldTax = Wl.tax; Wl.tax = 0.6; Wl.minWage = 0; ps0.cooldown = {};
+      { const ps0 = w.proposals; const d0 = ps0._abs(w); const oldTax = Wl.tax; Wl.tax = 0.6; Wl.minWage = 0; ps0.cooldown = {}; ps0.items = (ps0.items || []).filter(q => q.kind !== 'minwage'); /* 遊戲剛跑的那幾天可能已經有人提過 */
         const c0 = (ps0._candidates(w, d0) || []).find(c => c.kind === 'minwage'); out.mwCand = !!c0;
         if (c0) { const p0 = ps0._create(w, d0, c0); out.mwTitle = ps0.title(p0);
           // 投票:窮人支持、有錢人反對(多次取樣看傾向)
@@ -63,6 +63,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.heirMem = (kid.memory.entries || []).slice(-6).map(m => (typeof m.text === 'function' ? m.text() : m.content) || '').join(' | ');
       // 5) 出遠門的人不被當成消失
       const tr = npcs().find(a => a.agentId !== B.banker && a !== kid && !a.isPlayer && a.job);
+      { const MK = w.market || {}; for (const k of Object.keys(MK.owners || {})) if (MK.owners[k] === tr.agentId) { MK.owners[k] = null; if (MK.shares) delete MK.shares[k]; } for (const sh of Object.values(MK.shares || {})) if (sh && sh[tr.agentId] != null) delete sh[tr.agentId]; } /* v8.7 合股可能讓他當老闆(出門也要發薪):先拿掉 */
       Wl.bal[tr.agentId] = 77; const CL = CLASS.S(w); CL.titles[tr.agentId] = { k: 'knight', day: day }; const BZ = BIZ.S(w);
       BZ.shops.push({ id: 'BT', type: 'stall', owner: tr.agentId, partner: null, name: ['測試攤', 'Test stall'], price: 3, till: 0, profit: 0, week: 0, opened: day, lossDays: 0, closed: false });
       B.loans[tr.agentId] = { owed: 25, principal: 25, rate: 0.1, day: day - 40, due: day - 20 }; CIVIC.S(w).jail[tr.agentId] = w._absDay() + 30;
@@ -73,7 +74,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.keep = { bal: Wl.bal[tr.agentId], title: !!CL.titles[tr.agentId], shop: !BZ.shops.find(s => s.id === 'BT')?.closed, loan: !!B.loans[tr.agentId], jail: !!CIVIC.S(w).jail[tr.agentId] };
       // 回來
       for (const t2 of w.events._travellingAgents) if (t2.agentData.agentId === tr.agentId) t2.returnTick = w.tickCount;
-      runDay(); const back = w.agents[tr.agentId]; out.back = !!back; out.backBal = back ? WALLET.get(w, back) : null;
+      { const _md = MARKET.daily; MARKET.daily = () => {}; /* v8.7 合股會把回來的人身上的錢拉去入股:這天只看錢有沒有留著 */ try { runDay(); } finally { MARKET.daily = _md; } } const back = w.agents[tr.agentId]; out.back = !!back; out.backBal = back ? WALLET.get(w, back) : null;
       // 6) 新生兒記得爸媽:出生、存讀檔、出遠門
       const pa = npcs().find(a => a.age >= 22 && a.age < 45), pb = npcs().find(a => a !== pa && a.age >= 22 && a.age < 45);
       const nBefore = Object.keys(w.agents).length; w.lifecycle._birthChild(w, pa, pb, false);

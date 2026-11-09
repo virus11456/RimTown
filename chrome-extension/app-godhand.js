@@ -77,7 +77,7 @@ Object.assign(RimTownApp.prototype, {
         const tray = document.getElementById('gh-tray'); const d = this._ghData(); if (!tray || !d) return;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         const cats = (typeof EVENT_CARD_CATS !== 'undefined') ? EVENT_CARD_CATS : {};
-        const f = this._ghFilter || 'all';
+        const f = this._ghFilter || 'all'; try { this._uiCheck?.(); } catch (e) {} // v8.8.0 打出第一張牌後「反應追蹤」馬上出現
         const reacts = (d.played || []).reduce((s, e) => s + (e.reactions?.length || 0), 0);
         if (this._ghTab === 'track') this._ghSeenReacts = reacts;
         const newR = Math.max(0, reacts - (this._ghSeenReacts || 0));
@@ -86,8 +86,8 @@ Object.assign(RimTownApp.prototype, {
                 <div class="gh-title">🃏 ${t('事件卡')}<span class="gh-pw-top" title="${t('打牌、託夢、災厄工坊共用的神力')}">🔮 <b>${d.sandbox ? '∞' : d.power}</b>${d.sandbox ? '' : `/${d.powerCap}`}</span><span class="gh-left ${d.todayLeft ? '' : 'none'}">${t('今天還能打')} <b>${d.todayLeft}</b>/${d.perDay}</span></div>
                 <div class="gh-tabs" role="tablist">
                     <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}${d.book ? ` <small title="${t('神之書')}">📖 ${d.book.have}/${d.book.total}</small>` : ''}</button>
-                    <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
-                    ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
+                    ${(this._uiOn?.('gh-track') ?? true) || this._ghTab === 'track' ? `<button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>` : ''}
+                    ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() && ((this._uiOn?.('gh-lab') ?? true) || this._ghTab === 'lab') ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
                 </div>
                 <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
                 <button class="gh-x" data-gh="close" aria-label="${t('關閉')}">✕</button>

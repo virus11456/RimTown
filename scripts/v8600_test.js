@@ -55,12 +55,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       c.ph = 'panic'; c.pd = d; c.prog = 5; c.fix = null; c.prep = null; const pop0 = adults().length; const regs0 = (CALAMITY.S(w).regs || []).length;
       while (c.ph === 'panic') step();
       const Z = w.worldcal.sterile; out.inf.hit = { out: c.out, dead: c.dead, f: Z?.f, long: Z ? Z.until - d >= 300 : false, left: pop0 - adults().length, regress: (CALAMITY.S(w).regs || []).length > regs0, shock: (w.crisis?.cur || []).some(x => x.kind === 'wc_infertile') };
-      // 出生被擋
+      // 出生被擋(先清掉基因延壽名單:做過療程的人生育力也會下降,這裡只看不孕)
+      if (w.longev) w.longev.gene = {};
       const kids0 = Object.keys(w.agents).length; const [pa, pb] = adults().slice(0, 2); for (let i = 0; i < 10; i++) w.lifecycle._birthChild(w, pa, pb, false);
       out.inf.blocked = { born: Object.keys(w.agents).length - kids0, n: w.worldcal.sterile?.blocked || 0 };
       const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.inf.save = w2.worldcal?.sterile?.f === 0;
       while (w.worldcal.cur) step();
       // 期限過了:第一個嬰兒
+      if (w.longev) w.longev.gene = {}; /* 跑完災厄的那段時間裡,基因延壽療程可能又讓爸媽做過(會擋生育),先清掉 */
       d = w.worldcal.sterile.until + 1; const k1 = Object.keys(w.agents).length; w.worldcal.sterile.blocked = 3; w.worldcal.sterile.until = d + 5; w.worldcal.sterile.f = 1; w.lifecycle._birthChild(w, pa, pb, false);
       out.inf.first = { born: Object.keys(w.agents).length - k1, log: (w.messageLog || []).slice(-10).some(m => /🍼/.test(String(m.content || ''))) };
       d += 10; w.lifecycle._birthChild(w, pa, pb, false); out.inf.expired = !w.worldcal.sterile;

@@ -940,7 +940,7 @@ Object.assign(RimTownApp.prototype, {
             try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
                 const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
                 B.bank += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
-                if (V.open) B.bank += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
+                if (V.open) B.bank += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>${V.bizLent ? `<div class="pp-tier-line">🏗️ ${t('創業與蓋房貸款')}${t('：')}${t('累計')} ${V.bizLent} ${t('銀幣')}${V.biz ? ` · ${t('還在還')} ${V.biz} ${t('人')}` : ''}</div>` : ''}`;
                 else if (V.failed) B.bank += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
                 else B.bank += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
                 // v6.74.0 債券、紓困、鎮公所背債
@@ -1118,7 +1118,7 @@ Object.assign(RimTownApp.prototype, {
         if (!S) S = `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">🕊️</span>${t('目前沒有人在說謊、設局或誤會別人。')}</div>`;
         let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}">${icon} ${t(label)}${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
-        let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${tabBtn('town', '🏘️', '鎮況', nIss, hot)}${tabBtn('truth', '🕵️', '真相', nSec)}</div>`;
+        let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}</div>`;
         html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
         html += tab === 'town' ? T : tab === 'truth' ? S : P;
         if (tab === 'props') for (const k of stampShown) this._stampSeen.add(k);
@@ -1257,6 +1257,10 @@ Object.assign(RimTownApp.prototype, {
         <div class="setting-group" style="margin-bottom:8px">
             <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-idlecam" ${idlecam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}"> ${t('閒置時鏡頭慢慢環繞小鎮')}</label>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。')}</div>
+        </div>
+        <div class="setting-group" style="margin-bottom:8px">
+            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-uiall" ${this._uiAll?.() ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_ui_all',this.checked?'1':'0')}catch(e){};if(window.rimtownApp)window.rimtownApp.renderSidebar()"> ${t('一開始就顯示全部功能')}</label>
+            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('不勾的話，分頁會隨著小鎮發展慢慢解鎖。')}${(() => { const p = this._uiPending?.() || []; return p.length && !this._uiAll?.() ? ' ' + t('還沒解鎖') + t('：') + p.map(x => x.icon + ' ' + x.label).join(t('、')) : ''; })()}</div>
         </div>`;
         // v5.59.2 背景音樂開關搬進設定分頁(原本只在無入口的舊版彈窗裡,玩家關不掉音樂)
         html += `<div style="margin-top:8px">

@@ -336,6 +336,7 @@ const WORLDCAL = (function () {
     // ---------- 每天 ----------
     function daily(w) {
         if (!w?.observerMode) return; const X = S(w); const d = day(w); if (X.lastDay === d) return; X.lastDay = d;
+        if (X.sterile && d >= X.sterile.until) delete X.sterile; // v8.7.0 不孕期滿就解除(以前只有生孩子的時候才檢查)
         const c = X.cur;
         if (!c) { if ((X.next ?? 0) <= d && !w.calamity?.cur && eligible(w) && Math.random() < 1 / 25) { const k = pickKind(w); if (k) begin(w, k, 'nature'); } return; }
         progDaily(w, c); flavor(w, c);

@@ -52,7 +52,7 @@ const BANK = (() => {
         // v6.87.0 呆帳慢慢沖銷(約三週減半),以前只增不減,呆帳一過 40 就天天有擠兌風險
         B.bad = Math.max(0, Math.round(((B.bad || 0) * 0.97 - 0.5) * 10) / 10);
         // 搬走的人把存款領走(出遠門的人存款留著)
-        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; B.reserve = Math.max(0, B.reserve - Math.min(v, B.reserve)); delete B.dep[id]; }
+        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; const out = Math.min(v, Math.max(0, B.reserve)); B.reserve = Math.max(0, B.reserve - out); delete B.dep[id]; if (out > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -out); } // v8.8.0 搬走的人帶走的存款記到「搬走帶走」
         if (B.status === 'run') { bankRun(w, B, d); return; }
         if (B.reserve < totalDep(B) * 0.35 && totalDep(B) >= 40 && !B.bonds.length && d - (B.lastIssue ?? -99) >= 20 && Math.random() < 0.3) issueBonds(w, B, d, 80, false);
         const all = npcs(w);
@@ -214,7 +214,7 @@ const BANK = (() => {
         if (yes) {
             const owed = Math.round(need * (1 + INTEREST));
             const D = B.debt || (B.debt = { owed: 0, borrowed: 0, paid: 0, since: d, late: 0, lastPay: null });
-            D.owed += owed; D.borrowed += need; B.reserve += need; B.bailouts = (B.bailouts || 0) + 1;
+            D.owed += owed; D.borrowed += need; B.reserve += need; B.bailouts = (B.bailouts || 0) + 1; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xloan', need); /* v8.8.0 從外地借進來的錢記帳 */
             log(w, '🏛️ {m}決定紓困：向外地錢莊借 {n} 銀幣救銀行，鎮公所背下 {o} 銀幣的債（含利息）。', { m: m.name, n: need, o: owed }, m.name);
             log(w, '🗣️ {m}：「{x}」', { m: m.name, x: why }, m.name);
             mem(w, m, '我決定以鎮公所的名義借錢救銀行，背了 {o} 銀幣的債。理由是：{x}', { o: owed, x: why }, 8);
@@ -233,7 +233,7 @@ const BANK = (() => {
         const D = B.debt; if (!D || D.owed <= 0 || D.lastPay === d) return; D.lastPay = d;
         const pay = Math.min(D.owed, Math.max(2, Math.ceil(D.owed * 0.03)));
         if (treasury(w) >= pay && w.stockpile.consume('silver', pay, w.tickCount, t('償還紓困債'), 'upkeep')) {
-            D.owed = Math.max(0, D.owed - pay); D.paid += pay; D.late = 0;
+            D.owed = Math.max(0, D.owed - pay); D.paid += pay; D.late = 0; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xrepay', -pay); /* v8.8.0 還給外地錢莊 */
             if (D.owed <= 0) { log(w, '🎉 鎮公所還清了紓困銀行的債，連本帶利一共 {n} 銀幣。', { n: Math.round(D.paid) }); (B.debtHist || (B.debtHist = [])).push({ since: D.since, done: d, paid: Math.round(D.paid) }); if (B.debtHist.length > 4) B.debtHist.shift(); B.debt = null; }
         } else {
             D.late++; D.owed = Math.ceil(D.owed * 1.01);
@@ -260,7 +260,7 @@ const BANK = (() => {
     }
     function brief(w, a) { const B = w.bank; if (!B || !B.open) return ''; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; const bs = bondsOf(B, a); if (bs.length && !dv && !L) return `${t('銀行')}${t('：')}${t('持有債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; if (!dv && !L) return a.agentId === B.banker ? t('你經營鎮上的銀行') : ''; return `${t('銀行')}${t('：')}${dv ? t('存款 {n} 銀幣').replace('{n}', dv) : ''}${dv && L ? t('，') : ''}${L ? t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed)) : ''}`; }
     function chip(w, a) { const B = w.bank; if (!B || !B.open) return ''; if (a.agentId === B.banker) return `🏦 ${t('銀行家')}`; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; if (L) return `🏦 ${t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed))}`; if (dv) return `🏦 ${t('存款 {n} 銀幣').replace('{n}', dv)}`; const bs = bondsOf(B, a); if (bs.length) return `📜 ${t('債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; return ''; }
-    function view(w) { const B = S(w); return { open: B.open, status: B.status, banker: w.agents[B.banker] ? t(w.agents[B.banker].name) : null, dep: Math.round(totalDep(B)), loan: Math.round(totalLoan(B)), reserve: Math.round(B.reserve), rate: Math.round(B.rate * 100), bad: Math.round(B.bad), savers: Object.keys(B.dep).length, borrowers: Object.keys(B.loans).length, why: B.rateWhy || '', failed: B.history.slice(-1)[0] || null, pending: B.run?.asked === 'pending', debt: B.debt ? { owed: Math.round(B.debt.owed), paid: Math.round(B.debt.paid), late: B.debt.late || 0 } : null, bail: B.lastBail ? { by: t(B.lastBail.by), yes: B.lastBail.yes, n: B.lastBail.n, why: t(B.lastBail.why || ''), day: B.lastBail.day } : null, debtDone: (B.debtHist || []).slice(-1)[0] || null, bonds: (B.bonds || []).reduce((s, x) => s + x.n, 0), bondHolders: new Set((B.bonds || []).map(x => x.holder)).size, bondRate: B.bonds?.length ? Math.round(B.bonds[B.bonds.length - 1].rate * 100) : 0, defaults: B.defaults || 0 }; }
+    function view(w) { const B = S(w); return { open: B.open, status: B.status, banker: w.agents[B.banker] ? t(w.agents[B.banker].name) : null, dep: Math.round(totalDep(B)), loan: Math.round(totalLoan(B)), reserve: Math.round(B.reserve), rate: Math.round(B.rate * 100), bad: Math.round(B.bad), savers: Object.keys(B.dep).length, borrowers: Object.keys(B.loans).length, biz: Object.values(B.loans).filter(L => L.kind === 'biz').length, bizLent: Math.round(B.bizLent || 0), why: B.rateWhy || '', failed: B.history.slice(-1)[0] || null, pending: B.run?.asked === 'pending', debt: B.debt ? { owed: Math.round(B.debt.owed), paid: Math.round(B.debt.paid), late: B.debt.late || 0 } : null, bail: B.lastBail ? { by: t(B.lastBail.by), yes: B.lastBail.yes, n: B.lastBail.n, why: t(B.lastBail.why || ''), day: B.lastBail.day } : null, debtDone: (B.debtHist || []).slice(-1)[0] || null, bonds: (B.bonds || []).reduce((s, x) => s + x.n, 0), bondHolders: new Set((B.bonds || []).map(x => x.holder)).size, bondRate: B.bonds?.length ? Math.round(B.bonds[B.bonds.length - 1].rate * 100) : 0, defaults: B.defaults || 0 }; }
     return { S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf };
 })();
 if (typeof ProposalSystem !== 'undefined') {

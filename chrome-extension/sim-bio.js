@@ -173,7 +173,7 @@ const BIO = (function () {
         // ---- 💉 生技(第五時代) ----
         gm_crops: { era: 5, path: 'bio', name: t('基因作物'), description: t('改寫作物的基因：糧食 +25%、不怕乾旱；可以蓋種子庫。重視自然的人會反對'), cost: 12500, prerequisites: pre('genetics', 'selective_breeding'), effects: { farm_bonus: 1.25, drought_resistance: 0.5 }, unlocks: ['seed_vault'] },
         // ---- 🧬 基因(第六時代,專屬) ----
-        life_extension: { era: 6, path: 'bio', name: t('延壽療法'), description: t('修補老化的細胞：老死的年紀晚十五歲，老人還能做事；但人口變老、遺產晚交'), cost: 21000, prerequisites: pre('regen_medicine', 'gene_editing'), effects: { healing_bonus: 1.1 }, unlocks: [] },
+        life_extension: { era: 6, path: 'bio', name: t('延壽療法'), description: t('改寫老化的基因：人人都能花一點錢做療程，老死晚十五年；代價是有人基因失調、生育力下降，長輩也遲遲不退位'), cost: 21000, prerequisites: pre('regen_medicine', 'gene_editing'), effects: { healing_bonus: 1.1 }, unlocks: [] },
         synthetic_life: { era: 6, path: 'bio', name: t('合成生命'), description: t('從零寫出一個生命：生產力達到頂點……但有人說，自然開始不聽話了'), cost: 26000, prerequisites: pre('gene_stabilizer', 'life_extension'), effects: { farm_bonus: 1.1, research_bonus: 0.1, healing_bonus: 1.1 }, unlocks: [] },
     };
     Object.assign(T, ADD); for (const k of Object.keys(ADD)) T[k].prerequisites = T[k].prerequisites.filter(has);
