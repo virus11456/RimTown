@@ -385,7 +385,7 @@ class ProposalSystem {
         }
         // v6.87.0 最低工資是政治選擇,不是天生就有:做滿一天扣完稅還不夠過活的人一多,底層勞工會提,要投票通過才生效(錢從公庫出,有錢人多半反對)
         if (typeof WALLET !== 'undefined' && w.wallet && !(w.wallet.minWage > 0) && this._cool(day, 'minwage', 30)) {
-            const Wt = w.wallet.tax || 0; const working = npcs.filter(a => WALLET.WAGE[a.job?.key]); const under = working.filter(a => WALLET.WAGE[a.job.key] * (1 - Wt) < WALLET.FLOOR);
+            const Wt = w.wallet.tax || 0; const working = npcs.filter(a => WALLET.WAGE[a.job?.key]); const PL = typeof INFL !== 'undefined' ? INFL.p(w) : 1, WI = WALLET.wageIdx ? WALLET.wageIdx() : 1; const under = working.filter(a => WALLET.WAGE[a.job.key] * WI * (1 - Wt) < WALLET.FLOOR * PL); // v8.9.0 夠不夠過活要看物價
             if (working.length >= 6 && under.length >= Math.max(3, Math.ceil(working.length * 0.25))) {
                 out.push({ kind: 'minwage', key: 'minwage', weight: w.union?.on ? 3 : 1.2, jobs: ['farmer', 'miner', 'priest', 'tailor', 'guard'], pred: (a) => bal(a) < 15 || this._hasValue(a, '社群') || !!w.union?.members?.[a.agentId], /* v6.93.0 有工會時會員常提 */ make: () => ({ kind: 'minwage', key: 'minwage', tk: '訂定最低工資', tp: {}, dk: '做滿一天、扣完稅還不夠吃穿的有 {n} 人。提議扣稅後每天至少領 {f} 銀幣，差額由公庫補，一年約多花 {y} 銀幣。', dp: { n: under.length, f: WALLET.FLOOR, y: Math.round(under.reduce((t2, a) => t2 + (WALLET.FLOOR - WALLET.WAGE[a.job.key] * (1 - Wt)), 0) * 60) }, cost: {}, effects: {}, category: 'welfare' }) });
             }
@@ -668,8 +668,8 @@ class ProposalSystem {
                 }
                 case 'minwage': { // v6.87.0
                     if (typeof WALLET === 'undefined' || !w.wallet) { ok = false; result = '無法施行'; break; }
-                    w.wallet.minWage = WALLET.FLOOR; w.wallet.minWageDay = day; ok = true; result = `${t('最低工資')} ${WALLET.FLOOR} ${t('銀幣')}`;
-                    for (const a of this._npcs(w)) if (WALLET.WAGE[a.job?.key] && WALLET.WAGE[a.job.key] * (1 - (w.wallet.tax || 0)) < WALLET.FLOOR && Math.random() < 0.6) a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上訂了最低工資，以後做一天總算夠吃穿了。', {}, 6, []);
+                    w.wallet.minWage = Math.round(WALLET.FLOOR * (typeof INFL !== 'undefined' ? INFL.p(w) : 1) * 100) / 100; w.wallet.minWageDay = day; ok = true; result = `${t('最低工資')} ${w.wallet.minWage} ${t('銀幣')}`; // v8.9.0 照現在的物價訂
+                    for (const a of this._npcs(w)) if (WALLET.WAGE[a.job?.key] && WALLET.WAGE[a.job.key] * (WALLET.wageIdx ? WALLET.wageIdx() : 1) * (1 - (w.wallet.tax || 0)) < WALLET.FLOOR * (typeof INFL !== 'undefined' ? INFL.p(w) : 1) && Math.random() < 0.6) a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上訂了最低工資，以後做一天總算夠吃穿了。', {}, 6, []);
                     break;
                 }
                 case 'relief': {
@@ -751,6 +751,8 @@ class ProposalSystem {
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
                 case 'bio_safety': case 'bio_price': case 'bio_gmban': case 'bio_halt': { result = (typeof BIO !== 'undefined') ? BIO.setLaw(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 基因生物的法律
                 case 'steam_air': case 'steam_factory': case 'steam_homun': { result = (typeof STEAM !== 'undefined') ? STEAM.setLaw(w, p.kind) : ''; ok = !!result; break; } // v8.0.0 蒸汽煉金的法律
+                case 'casino_ban': { result = (typeof CASINO !== 'undefined') ? CASINO.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 禁賭
+                case 'infl_raise': { result = (typeof INFL !== 'undefined') ? INFL.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 工資跟上物價
                 case 'ae_use': case 'ae_grant': { result = (typeof LONGEV !== 'undefined') ? LONGEV.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 長生:以太存還是用、賢者之石給誰
                 case 'sh_audit': case 'sh_staff': { result = (typeof SHARES !== 'undefined') ? SHARES.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 股份:帳本公開、員工認股
                 case 'wc_fix': case 'wc_shelter': case 'wc_unplug': case 'wc_bank': case 'wc_stock': case 'wc_evac': { result = (typeof WORLDCAL !== 'undefined') ? WORLDCAL.enact(w, p) : ''; ok = !!result; break; } // v8.5.0 世界級災厄的對策

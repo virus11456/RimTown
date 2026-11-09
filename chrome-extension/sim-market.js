@@ -81,7 +81,7 @@ const MARKET = (() => {
             const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人沒工資
             const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
             const rate = payRate(w, k);
-            const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
+            const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * (a._edu ? 1.15 : 1) * (WALLET.wageIdx ? WALLET.wageIdx() : 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
             const ratio = have >= total ? 1 : Math.max(0, have / total);
             // v8.8.0 算到「分」:老闆付出去的剛好等於工人拿到的＋所得稅
@@ -110,7 +110,7 @@ const MARKET = (() => {
     }
     // 產業估價:底價＋每個工人＋最近一週的利潤。公營產業的工資由公庫付、帳上看不到,要用估計的工資扣掉(以前漏扣,估價虛高到沒人買得起)
     const value = (w, k, all) => { const h = S(w).hist[k] || []; const ws = workersOf(w, k, all); const owned = !!ownerOf(w, k);
-        const wageBill = ws.reduce((s, a) => s + (WALLET.WAGE[a.job?.key] || 4), 0) * h.length;
+        const wageBill = ws.reduce((s, a) => s + (WALLET.WAGE[a.job?.key] || 4), 0) * (WALLET.wageIdx ? WALLET.wageIdx() : 1) * h.length;
         const prof = h.reduce((s, [r, c]) => s + r * (1 - TAX) - (owned ? c : 0), 0) - (owned ? 0 : wageBill);
         return Math.round(40 + ws.length * 12 + Math.max(0, prof) * 0.5); };
     function assign(w, all, d) {

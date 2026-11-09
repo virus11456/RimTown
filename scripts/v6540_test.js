@@ -82,14 +82,14 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
 
     // ---------- 夜景 ----------
     const nt = await page.evaluate(async () => {
-      const app = window.rimtownApp, w = app.world, tm = app.tileMap; w.paused = false;
+      const app = window.rimtownApp, w = app.world, tm = app.tileMap; w.paused = false; clearInterval(app.simInterval); app.simInterval = null; /* 停掉即時模擬:機器忙時 70 個畫格會拖很久,時鐘被推過頭 */
       const go = async (h) => { let g = 0; while (!(w.clock.hour === h && w.clock.minute === 0) && g++ < 200) w.tick(); app.state = w.getState(); for (let i = 0; i < 70; i++) { app.render(); await new Promise(r => requestAnimationFrame(r)); } };
       await go(21); const n = Object.keys(tm._winIdx || {}).length; const lit21 = Array.from(tm._winLit).slice(1, n + 1).filter(x => x > 0.5).length;
       tm.season = '夏季'; tm.weatherType = 'clear'; tm._updateFireflies(); const ff = !!tm._ff?.visible;
       // 直接驗窗燈規則:醒著的那棟亮、全家睡了那棟暗
       const ids = Object.values(tm._winIdx).filter(Boolean); const b1 = ids.find(b => !tm._winPub?.[b]), b2 = ids.filter(b => !tm._winPub?.[b])[1]; for (let i = 0; i < 90; i++) tm._updateWindowLights({ [b1]: [1, 0], [b2]: [0, 2] }); const rule = [+tm._winLit[b1].toFixed(2), +tm._winLit[b2].toFixed(2)];
       await go(2); const lit2 = Array.from(tm._winLit).slice(1, n + 1).filter(x => x > 0.5).length; const asleep = Object.values(w.agents).filter(a => a.activity === 'sleeping').length;
-      w.paused = true;
+      w.paused = true; app.startSimulation?.();
       return { n, lit21, lit2, asleep, ff, rule, lantern: tm._lanternMat?.emissiveIntensity, bulbs: (tm._bulbMats || []).length, door: (tm._doorGlow || []).length };
     });
     ok(nt.n > 5 && nt.lit21 >= 1 && nt.rule[0] > 0.9, '晚上有人醒著在家的房子亮燈', nt);
