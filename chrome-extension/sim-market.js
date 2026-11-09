@@ -169,7 +169,9 @@ const MARKET = (() => {
         const M = S(w); M.strike = M.strike || {};
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id); if (ws.length < 4) continue;
-            const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if (payRate(w, k) > 0.7 || mood > 48 || Math.random() > 0.5) continue;
+            // v9.6.0 工資壓在七成以下超過三週,心情再好也忍不下去(以前要心情低於 48 才罷工,一整年幾乎沒人罷工,工資一直卡在五成)
+            M.low = M.low || {}; if (payRate(w, k) > 0.7) { delete M.low[k]; continue; } if (M.low[k] == null) M.low[k] = d;
+            const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if ((mood > 48 && d - M.low[k] < 21) || Math.random() > 0.5) continue;
             M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1; const boss = w.agents[id];
             log(w, '✊ {s}的 {n} 個工人罷工了，要求{o}加薪。', { s: name(k), n: ws.length, o: boss?.name || '' }, boss?.name || '');
             for (const a of ws) mem(w, a, '我們{s}的人一起罷工，工資再這樣壓下去活不下去。', { s: name(k) }, 7);

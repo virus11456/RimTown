@@ -468,10 +468,10 @@ Object.assign(RimTownApp.prototype, {
             // v9.1.1 第七章「你」的兩個主題
             { id: 'watch', ic: '🔭', c: '#8fd3c7', k: X('觀看', 'Watching'),
               h: X('拉近看屋裡，翻開每個人的心事', 'Look inside the houses, and into people\'s heads'),
-              lead: X('地圖上每位村民在做什麼都看得到：點一下，鏡頭就跟著他，資訊卡寫著心情從哪來、跟誰要好、欠誰錢。鏡頭拉近，屋頂會打開，看得到有人在床上睡、有人坐著吃飯、有人在鐵砧前打鐵。每天早上有觀察者日報，晚上有一集「八點檔」把今天的大事串起來。',
-                  'You can see what every villager is doing: tap one and the camera follows them, with a card showing where their mood comes from, who they like and who they owe. Zoom in and the roofs open up, showing someone asleep in bed, someone eating at the table, someone hammering at the anvil. Every morning there is an observer\'s daily, and every evening an "8 pm episode" strings the day\'s big moments together.'),
+              lead: X('地圖上每位村民在做什麼都看得到：點一下，鏡頭就跟著他，資訊卡寫著心情從哪來、跟誰要好、欠誰錢。鏡頭拉近，屋頂會打開，看得到有人在床上睡、有人坐著吃飯、有人在鐵砧前打鐵。每天有一份日報，把昨天的大事、各報的評論、外地傳來的消息和記者專欄排在同一份。',
+                  'You can see what every villager is doing: tap one and the camera follows them, with a card showing where their mood comes from, who they like and who they owe. Zoom in and the roofs open up, showing someone asleep in bed, someone eating at the table, someone hammering at the anvil. Every day there is one daily paper with yesterday\'s big news, what each paper said, news from afar and a reporter\'s column.'),
               pts: [[X('拉近看屋裡', 'Look inside'), X('拉遠有屋頂，拉近換成剖面，屋裡的人依在做什麼坐著、躺著或工作，名牌旁有小圖示。', 'From afar the roofs are on; zoom in and you get a cutaway where people sit, lie or work depending on what they are doing, with a small icon by their name.')],
-                    [X('日報與八點檔', 'The daily and the 8 pm episode'), X('觀察者日報整理昨天的大小事；八點檔把一天寫成一集，每一季寫成一章鎮史。', 'The observer\'s daily sums up yesterday; the 8 pm episode turns each day into an episode, and each season becomes a chapter of town history.')],
+                    [X('日報與鎮史', 'The daily and the town history'), X('日報整理昨天的大小事、各報怎麼說和外地消息；每一季寫成一章鎮史。', 'The daily sums up yesterday, what each paper said and news from afar; each season becomes a chapter of town history.')],
                     [X('真相頁', 'The truth page'), X('說謊、栽贓、做假帳、壓新聞，村民不知道的事你都看得到。', 'Lies, frame-ups, cooked books and buried stories: you see what the villagers do not.')]],
               log: [['07:00', X('觀察者日報：鎮長的稅率提案以 12 比 9 通過。', 'Observer\'s daily: the mayor\'s tax proposal passes 12 to 9.')], ['13:10', X('拉近一看，鐵鋪裡三個人在打鐵，老闆坐在角落算帳。', 'Zoom in: three people hammer away in the forge while the owner does the books in the corner.')], ['20:00', X('今晚八點檔：〈賭場門口的那場爭吵〉。', 'Tonight\'s 8 pm episode: "The quarrel outside the casino".')]] },
             { id: 'god', ic: '🃏', c: '#f2c14e', k: X('神之書', 'Book of Gods'),
@@ -519,7 +519,7 @@ Object.assign(RimTownApp.prototype, {
               bridge: X('而這一切，都在你眼前發生。', 'And all of it happens right in front of you.') },
             { id: 'you', c: '#c39bd3', scale: X('你', 'You'),
               h: X('你是觀察者，偶爾當神', 'You are the observer — and now and then, a god'),
-              lead: X('你不控制任何人。你可以拉近看屋裡的人在做什麼，讀每天的日報和八點檔，翻真相頁看誰在說謊；神力存夠了，就打一張事件卡、託一個夢、設計一場災難，然後看小鎮怎麼回應。', 'You control no one. Zoom in to see what people are doing indoors, read the daily and the 8 pm episode, check the truth page to see who is lying; when you have enough divine power, play an event card, send a dream or design a disaster, then watch how the town responds.'),
+              lead: X('你不控制任何人。你可以拉近看屋裡的人在做什麼，讀每天的日報，翻真相頁看誰在說謊；神力存夠了，就打一張事件卡、託一個夢、設計一場災難，然後看小鎮怎麼回應。', 'You control no one. Zoom in to see what people are doing indoors, read the daily paper, check the truth page to see who is lying; when you have enough divine power, play an event card, send a dream or design a disaster, then watch how the town responds.'),
               topics: ['watch', 'god', 'lab'],
               bridge: X('沒有劇本，也沒有結局。', 'No script, and no ending.') },
         ];

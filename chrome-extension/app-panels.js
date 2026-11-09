@@ -504,7 +504,7 @@ Object.assign(RimTownApp.prototype, {
         return `<div class="town-headlines">
             <div class="headlines-title">
                 <span>🗞️ ${t('今日頭條')} <span class="headlines-sub">${t('第 {y} 年{s}').split('{y}').join(latest.year).split('{s}').join(t(latest.season))} ${t('第 {d} 天').split('{d}').join(latest.day)}</span></span>
-                <button class="headlines-more" data-action="goto-tab" data-val="events">${t('完整日報')} ›</button>
+                <button class="headlines-more" data-action="goto-tab" data-val="records">${t('完整日報')} ›</button>
             </div>
             ${rows}
         </div>`;
@@ -1445,7 +1445,9 @@ Object.assign(RimTownApp.prototype, {
         else body = `<h3 class="np-headline">${esc(v.title)}</h3>`
             + (v.quote ? `<blockquote class="np-quote">${t('「')}${esc(v.quote.text)}${t('」')}<cite>— ${esc(v.quote.who)}</cite></blockquote>` : '')
             + v.sections.map(sec => `<div class="np-sec np-${sec.key}"><h4>${sec.icon} ${esc(sec.label)}</h4><ul>${sec.items.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')
-            + (v.teaser.length ? `<div class="np-sec np-next"><h4>🔭 ${t('明日看點')}</h4><ul>${v.teaser.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '');
+            + (v.teaser.length ? `<div class="np-sec np-next"><h4>🔭 ${t('明日看點')}</h4><ul>${v.teaser.map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>` : '')
+            + (v.ai ? `<details class="np-ai"${this._npAiOpen ? ' open' : ''}><summary>✍️ ${t('記者專欄')}${v.ai.reporter ? `<span class="np-ai-by">${esc(t(v.ai.reporter))}${v.ai.job ? t('（') + esc(t(v.ai.job)) + t('）') : ''}</span>` : ''}</summary><div class="np-ai-body">${esc(v.ai.content)}</div>`
+                + (v.ai.cross.length ? `<div class="np-ai-cross"><b>🐎 ${t('跨鎮專欄')}</b>${v.ai.cross.map(ct => (ct.items || []).map(line => `<div>${esc(t(ct.town))}｜${esc(t(line))}</div>`).join('')).join('')}</div>` : '') + `</details>` : '');
         return `<div role="region" class="np-paper${v.live ? ' live' : ''}" aria-label="${t('每日報紙')}">
             <div class="np-mast"><div class="np-name">${t('觀察者日報')}</div>
             <div class="np-meta"><span>${t('第 {n} 期').split('{n}').join(v.no)}</span><span>${esc(v.label)}</span>${v.live ? `<span class="np-live">${t('今日・編輯中')}</span>` : ''}</div>
@@ -1607,8 +1609,8 @@ Object.assign(RimTownApp.prototype, {
                 }
             }
         }
-        if (W('aidaily') || W('happen')) {
-            // --- AI 日報 ---
+        if (W('aidaily')) {
+            // --- AI 日報 ---(v9.6.0 只在有要的時候才組:以前要「鎮上發生的事」也會把整份 AI 日報 HTML 組一遍)
             const dailyNews = this.state.dailyNews || {};
             const papers = dailyNews.newspapers || [];
             if (papers.length > 0) {
@@ -1668,7 +1670,8 @@ Object.assign(RimTownApp.prototype, {
                 }
                 E.aidaily += '</div>';
             }
-
+        }
+        if (W('happen')) {
             const chains = this.state.active_chains || [];
             if (chains.length) {
                 E.happen += t('<div class="chain-section"><h4>進行中的事件鏈</h4>');

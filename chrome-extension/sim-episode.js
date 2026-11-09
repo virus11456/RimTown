@@ -18,8 +18,10 @@ const EPISODE = (() => {
     };
     const W8 = { death: 95, birth: 90, raid: 90, departure: 80, mourning: 72, festival: 70, chain_event: 70, arrival: 68, immigration: 66, milestone: 65, town: 65, event: 62, drama: 75,
         romance: 72, relationship: 64, council: 58, decision: 58, order: 52, faction: 50, mischief: 55, gossip: 46, whisper: 44, discovery: 56, exploration: 50, building: 48, research: 45,
-        news: 40, trade: 38, factory: 38, industry: 38, economy: 34, farm: 30, social: 36, conversation: 22 };
-    const SECS = ['main', 'hall', 'love', 'gossip', 'street', 'life'];
+        news: 40, press: 42, away: 41, trade: 38, factory: 38, industry: 38, economy: 34, farm: 30, social: 36, conversation: 22 };
+    const SECS = ['main', 'hall', 'love', 'gossip', 'street', 'life', 'press', 'away'];
+    // v9.6.0 新聞整合:報社的報導、外地消息各自一版(以前混在「民生經濟」裡,跟消息頁、報社區塊重複)
+    const PRESS_K = '{i} {paper}：{s}', AWAY_K = '📨 {via}帶來{p}的消息：{n}';
     const SEC_META = {
         main: { icon: '🗞️', label: '頭版要聞', max: 4 },
         hall: { icon: '🏛️', label: '鎮公所', max: 4 },
@@ -27,6 +29,8 @@ const EPISODE = (() => {
         gossip: { icon: '🗣️', label: '八卦與傳聞', max: 4 },
         street: { icon: '🏘️', label: '街坊大小事', max: 3 },
         life: { icon: '🌾', label: '民生經濟', max: 4 },
+        press: { icon: '📰', label: '各報怎麼說', max: 4 },
+        away: { icon: '🐎', label: '外地消息', max: 3 },
     };
 
     const absDay = (w) => (typeof w._absDay === 'function' ? w._absDay() : 0);
@@ -67,13 +71,13 @@ const EPISODE = (() => {
             if (ty === 'weather') { weather = textOf(m); continue; }
             if (ty === 'conversation') counts.convo++;
             if (ty === 'gossip' || ty === 'whisper') counts.gossip++;
-            const sec = SEC_OF[ty]; if (!sec) continue;
+            const sec = m.k === PRESS_K ? 'press' : m.k === AWAY_K ? 'away' : SEC_OF[ty]; if (!sec) continue;
             if (sec === 'gossip' || sec === 'street') { // 同一則八卦被好幾個人轉述：只留第一次
                 const raw = clean(textOf(m)); const q = raw.indexOf('「'); const key = (q >= 0 ? raw.slice(q + 1) : raw).replace(/^(我跟你說|千真萬確|你敢信嗎|聽說)[，！？、\s]*/, '').slice(0, 14);
                 if (seen.has(key)) continue; seen.add(key);
             }
             if (sec === 'main') counts.events++;
-            let score = W8[ty] || 30;
+            let score = sec === 'press' || sec === 'away' ? W8[sec] : (W8[ty] || 30);
             if (ty === 'event' && /^\[(CRITICAL|MAJOR)\]/.test(m.k ? String(m.p?.v ? `[${m.p.v}]` : '') : String(m.content || ''))) score += 15;
             if (ty === 'council' && (m.k ? /^📜/.test(m.k) : /^📜/.test(String(m.content || '')))) counts.proposal++;
             items.push(Object.assign({ sec, ty, s: score, tk: m.tick || 0, i: items.length }, m.k ? { k: m.k, p: m.p } : { c: String(m.content || '') }));
@@ -96,7 +100,9 @@ const EPISODE = (() => {
         const head = kept.find(i => i.sec === 'main' || i.sec === 'hall' || i.sec === 'love') || kept.find(i => i.sec === 'life') || kept[0] || null; // 頭條優先用大事、公事、感情；八卦最後才用
         kept.sort((a, b) => a.tk - b.tk || a.i - b.i);
         const topSkill = Object.entries(skill).sort((a, b) => b[1] - a[1])[0];
-        return { day, items: kept, head, quote, counts, weather, topSkill: topSkill ? topSkill[0] : '', people: Object.keys(w.agents || {}).length };
+        // v9.6.0 每週感情線(以前每 7 天跳一個要按掉的大視窗):觀察者模式改成刊在當天報紙
+        const wk = (w._weeklyPaper && w._weeklyPaper.d === day) ? w._weeklyPaper.lines : null;
+        return { day, items: kept, head, quote, counts, weather, weekly: wk, topSkill: topSkill ? topSkill[0] : '', people: Object.keys(w.agents || {}).length };
     }
 
     // 明日看點：還在等的提案、選舉、災情
@@ -130,6 +136,7 @@ const EPISODE = (() => {
             const its = mat.items.filter(i => i.sec === s && i !== mat.head); if (!its.length) continue;
             out.push({ key: s, icon: SEC_META[s].icon, label: t(SEC_META[s].label), items: its.map(itemText) });
         }
+        if (mat.weekly && mat.weekly.length) out.push({ key: 'weekly', icon: '💞', label: t('本週感情線'), items: mat.weekly.map(x => t(x)) });
         if (mat.counts.skill) out.push({ key: 'people', icon: '📈', label: t('人物'), items: [fill('今天有 {n} 次手藝進步，最勤快的是{who}。', { n: mat.counts.skill, who: mat.topSkill })] });
         return out;
     }
@@ -155,8 +162,15 @@ const EPISODE = (() => {
             day: ep.day, no: ep.day, label: label(w, ep.day), live: !!ep.live, title: headline(m2), lead: head ? itemText(head) : '',
             sections: sections(m2), teaser: (ep.teaser || []).map(x => fill(x.k, x.p)), weather: mat.weather ? clean(mat.weather) : '',
             quote: mat.quote ? { who: nm(mat.quote.who), text: t(mat.quote.text) } : null,
-            counts: mat.counts, people: mat.people, empty: !mat.items.length && !mat.counts.skill,
+            counts: mat.counts, people: mat.people, empty: !mat.items.length && !mat.counts.skill, ai: aiFor(w, ep.day),
         };
+    }
+    // v9.6.0 AI 記者寫的那份(換日時寫前一天的事,所以報上日期是隔天)併進同一期,當作「記者專欄」
+    function aiFor(w, day) {
+        const ps = w.dailyNews?.newspapers || []; if (!ps.length) return null;
+        const abs = (p) => { const si = ['春季', '夏季', '秋季', '冬季'].indexOf(p.season); return ((p.year - 1) * 4 + Math.max(0, si)) * 15 + p.day; };
+        for (let i = ps.length - 1; i >= 0; i--) { const p = ps[i]; const a = abs(p); if (a - 1 === day) return p.content ? { id: p.id, reporter: p.reporter || '', job: p.reporterJob || '', content: String(p.content), cross: Array.isArray(p.crossTown) ? p.crossTown : [] } : null; if (a - 1 < day) break; }
+        return null;
     }
     function today(w) { const day = absDay(w); const mat = collect(w, day); return { day, live: true, mat, teaser: teaser(w, mat) }; }
     function list(w) { return Array.isArray(w.episodes) ? w.episodes : []; }
@@ -173,7 +187,7 @@ const EPISODE = (() => {
         return ep;
     }
 
-    return { collect, view, today, list, finalize, clean, dayOfMsg, label, KEEP };
+    return { collect, view, today, list, finalize, clean, dayOfMsg, label, aiFor, KEEP, PRESS_K, AWAY_K };
 })();
 if (typeof window !== 'undefined') window.EPISODE = EPISODE;
 
@@ -194,5 +208,12 @@ if (typeof World !== 'undefined' && !World.prototype._episodeHooked) {
         try { if (r) this.episodes = Array.isArray(data?.episodes) ? data.episodes.filter(e => e && e.day && e.mat && Array.isArray(e.mat.items) && e.mat.items.every(i => i.sec)).slice(-EPISODE.KEEP) : []; } catch (e) { this.episodes = []; }
         return r;
     };
-    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.episodes = []; return r; };
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.episodes = []; this._weeklyPaper = null; return r; };
+    // v9.6.0 觀察者模式的每週感情線改刊在報紙上,不再跳出要按掉的大視窗
+    const _wd = World.prototype.generateWeeklyDigest;
+    if (typeof _wd === 'function') World.prototype.generateWeeklyDigest = function (...args) {
+        const dg = _wd.apply(this, args);
+        try { if (dg && this.observerMode) { const lines = [].concat(dg.newCouples || [], dg.triangles || [], (dg.crushes || []).slice(0, 2), (dg.rivals || []).slice(0, 2)).map(String).slice(0, 6); if (lines.length) this._weeklyPaper = { d: this._absDay(), lines }; this._pendingWeeklyDigest = null; } } catch (e) {}
+        return dg;
+    };
 }
