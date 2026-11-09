@@ -24,9 +24,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
           reg: !!document.getElementById('landing-register') && !!document.getElementById('landing-login'),
           lp: { stats: n('.lp-stats li'), day: n('.lp-day li'), gallery: [...document.querySelectorAll('.lp-gallery img')].map(i => i.getAttribute('src')), tiers: n('.lp-tiers li'), faq: n('.lp-faq details'), final: n('.lp-final [data-lp-go]'), hero: !!document.querySelector('.lp-hero .lp-sky') && !!document.querySelector('.lp-hero #lp-stage') } };
       });
-      ok(r.howto === 4 && r.feats === 17 && r.ai === 2, '怎麼玩 4 步、玩法 17 段(v7.9.0 加科技路線、災厄工坊；v8.1.0 加人情世故；v8.2.0 災厄工坊開放；v8.7.0 加世界級災厄、股份、以太與長生)、AI 與金鑰 2 則(v6.78.1 起沒有自備金鑰)', { howto: r.howto, feats: r.feats, ai: r.ai });
+      ok(r.howto === 4 && r.feats === 18 && r.ai === 2, '怎麼玩 4 步、玩法 18 段(v7.9.0 加科技路線、災厄工坊；v8.1.0 加人情世故；v8.2.0 災厄工坊開放；v8.7.0 加世界級災厄、股份、以太與長生；v8.9.0 加賭場)、AI 與金鑰 2 則(v6.78.1 起沒有自備金鑰)', { howto: r.howto, feats: r.feats, ai: r.ai });
       ok(r.reg, '未登入時有註冊／登入按鈕', r.reg);
-      ok(r.lp.hero && r.lp.stats === 6 && r.lp.day === 0 && r.lp.tiers === 4 && r.lp.faq === 6 && r.lp.final === 2, '首頁各區：主視覺、數字、成長路線、常見問題、頁尾按鈕(v6.98.0 拿掉「小鎮的一天」)', r.lp);
+      ok(r.lp.hero && r.lp.stats === 6 && r.lp.day === 0 && r.lp.tiers === 4 && r.lp.faq === 7 && r.lp.final === 2, '首頁各區：主視覺、數字、成長路線、常見問題(v8.9.0 加漸進解鎖)、頁尾按鈕(v6.98.0 拿掉「小鎮的一天」)', r.lp);
       ok(r.lp.gallery.length === 0, 'v6.98.0 不再放截圖牆（畫面減量）', r.lp.gallery);
       const stale = lang === 'zh'
         ? /五座城鎮、近百位|玩家附近|你唯一能做的|看顧小鎮的觀察者/
