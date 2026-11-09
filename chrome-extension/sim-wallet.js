@@ -313,4 +313,9 @@ if (typeof ConversationEngine !== 'undefined') {
     const _cp = CE._buildCharacterProfile;
     CE._buildCharacterProfile = function (agent) { const p = _cp.call(this, agent); try { const w = this._world || (typeof window !== 'undefined' && window.rimtownApp?.world); const s = w && WALLET.describe(w, agent); if (s) p.status = `${p.status}${t('；')}${s}`; } catch (e) {} return p; };
 }
+// v8.5.0 搬走的人當下就帶走自己的積蓄(以前要等隔天結算才從帳上消失,記成「對不上的差額」;現在記進「搬走的人帶走」)
+if (typeof World !== 'undefined' && World.prototype.leaveTown) {
+    const _lt = World.prototype.leaveTown;
+    World.prototype.leaveTown = function (agentId, ...rest) { const r = _lt.call(this, agentId, ...rest); try { const B = this.wallet?.bal; if (B && agentId in B && !this.agents?.[agentId] && !this.isAway?.(agentId)) delete B[agentId]; } catch (e) {} return r; };
+}
 if (typeof globalThis !== 'undefined') globalThis.WALLET = WALLET;

@@ -14,7 +14,7 @@ const LEGACY = (() => {
     function S(w) { if (!w.legacy || !Array.isArray(w.legacy.chapters)) w.legacy = { chapters: [], legends: [], roles: {}, families: {}, feuds: [], lastSeason: null, lastGrave: (w.lifecycle?.graveyard || []).length, lastDay: null }; const L = w.legacy; L.roles = L.roles || {}; L.families = L.families || {}; return L; }
     const surname = (a) => String(a?.name || '').slice(0, 1);
     // ---------- 史書 ----------
-    const BIG = /失傳|文明倒退|政變|加冕|婚禮|倒閉|翻案|起義|繼承|聖物|結盟|禁運|擠兌|升格|分裂|異端|創立|傳世|傳說|駕崩|離世|當選|coup|crown|wedding|collapse|overturn|uprising|alliance|embargo|grown|schism|founded|masterpiece|died|elected|rediscovered|regress/i;
+    const BIG = /撐過了|失傳|文明倒退|政變|加冕|婚禮|倒閉|翻案|起義|繼承|聖物|結盟|禁運|擠兌|升格|分裂|異端|創立|傳世|傳說|駕崩|離世|當選|coup|crown|wedding|collapse|overturn|uprising|alliance|embargo|grown|schism|founded|masterpiece|died|elected|rediscovered|regress|survived/i;
     function seasonEvents(w) { return (w.messageLog || []).slice(-400).map(m => String(m.content || '')).filter(s => BIG.test(s)).slice(-8); }
     async function chapter(w, L, year, season) {
         const evs = seasonEvents(w); const scribe = npcs(w).filter(a => a.job?.key === 'researcher').sort(() => Math.random() - 0.5)[0] || npcs(w).find(a => a.job?.key === 'priest') || npcs(w)[0]; if (!scribe) return null;

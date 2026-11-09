@@ -931,3 +931,30 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-book-sec.gh-rar-legend .gh-book-card.on { border-color: #F2C14E; }
 .rimtown-container .gh-book-sec.gh-rar-forbid .gh-book-card.on { border-color: #A970FF; }
 @media (max-width: 768px) { .rimtown-container .gh-book-grid { grid-template-columns: 1fr; } .rimtown-container .gh-tabs button { padding: 0 9px; } }
+
+/* v8.5.0 世界級災厄 */
+.rimtown-container .wc-box { margin: 6px 0 8px; padding: 10px 12px; border-radius: 12px; background: var(--bg-card); border: 1px solid var(--border); }
+.rimtown-container .wc-box.wc-nukewar { border-color: rgba(250, 204, 21, .45); }
+.rimtown-container .wc-box.wc-aliens { border-color: rgba(52, 211, 153, .45); }
+.rimtown-container .wc-box.wc-ai { border-color: rgba(96, 165, 250, .5); }
+.rimtown-container .wc-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 6px; }
+.rimtown-container .wc-h .gh-when { margin-left: auto; }
+.rimtown-container .wc-src { font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: rgba(168, 85, 247, .18); }
+.rimtown-container .wc-steps { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
+.rimtown-container .wc-step { font-size: .72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
+.rimtown-container .wc-step.past { opacity: .7; }
+.rimtown-container .wc-step.on { color: var(--text-primary); border-color: currentColor; background: rgba(250, 204, 21, .14); font-weight: 700; }
+.rimtown-container .wc-bar { display: grid; grid-template-columns: minmax(0, auto) 1fr auto; align-items: center; gap: 8px; margin: 8px 0 2px; font-size: .82rem; }
+.rimtown-container .wc-bar .progress-bar { min-width: 60px; }
+.rimtown-container .wc-sub { font-size: .74rem; color: var(--text-muted); }
+.rimtown-container .wc-chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0; font-size: .76rem; }
+.rimtown-container .wc-chips span { padding: 2px 8px; border-radius: 8px; border: 1px dashed var(--border); }
+.rimtown-container .wc-chips span.on { border-style: solid; background: rgba(52, 211, 153, .14); }
+.rimtown-container .wc-out-averted { color: #34d399; } .rimtown-container .wc-out-eased { color: #f59e0b; } .rimtown-container .wc-out-hit { color: #f87171; }
+.rimtown-container .wc-lab { margin: 10px 0; }
+.rimtown-container .wc-kind { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 10px; padding: 8px 10px; margin: 6px 0; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); }
+.rimtown-container .wc-kind > div:first-child { flex: 1 1 200px; min-width: 0; }
+.rimtown-container .wc-kind.off { opacity: .75; }
+.rimtown-container .wc-kind .gh-play { flex: 0 0 auto; }
+.rimtown-container .wc-kind .gh-d-note { flex-basis: 100%; }
+.rimtown-container .wc-hist { margin-top: 6px; }

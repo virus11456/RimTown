@@ -159,7 +159,7 @@ Object.assign(RimTownApp.prototype, {
         const w = this.world; const V = CALAMITY.view(w); const esc = (x) => this._escapeHtml(String(x ?? '')); const P = V.parts;
         const pw = V.sandbox ? '∞' : `${V.power}/${V.cap}`;
         let h = `<div class="gh-lab"><div class="gh-lab-top"><span class="gh-pw">🔮 ${t('神力')} <b>${pw}</b></span><label class="gh-sbx"><input type="checkbox" id="gh-lab-sbx" ${V.sandbox ? 'checked' : ''}> ${t('沙盒模式（神力無限）')}</label></div>`;
-        h += `<div class="gh-lab-note">${t('你只能讓災厄更糟，不能阻止它。神力每天累積 1 點（小鎮越興旺越快），最多 100。')}</div>`;
+        h += `<div class="gh-lab-note">${t('你只能讓災厄更糟，不能阻止它。神力每天累積 1.5 點（小鎮越興旺、虔誠的人越多越快），最多 100。')}</div>`;
         if (V.cur) {
             const c = V.cur; const sp = c.spec;
             h += `<div class="gh-lab-cur"><div class="gh-lab-h"><span>🦠 <b>${esc(c.name)}</b></span><span class="gh-ph gh-ph-${c.phase}">${esc(c.phaseName)}</span><span class="gh-when">${t('第 {d} 天').replace('{d}', c.days + 1)}</span></div>`;
@@ -179,6 +179,7 @@ Object.assign(RimTownApp.prototype, {
             h += `<button class="gh-play gh-boost" data-gh="lab-boost" ${canB ? '' : 'disabled aria-disabled="true"'}>😈 ${c.boosting ? t('正在加速擴散') : t('推一把（{n} 神力）：三天內傳得更快').replace('{n}', V.boostCost)}</button></div>`;
             h += '</div>'; return h;
         }
+        if (typeof WORLDCAL !== 'undefined' && WORLDCAL.active(w)) { h += this._wcBlock('lab'); h += '</div>'; return h; } // v8.5.0 世界級災厄進行中
         const S = this._ghLabSpec(); const pv = CALAMITY.preview(S);
         const chip = (g, k, d, on, multi) => `<button class="gh-chip${on ? ' on' : ''}" data-gh="${multi ? 'lab-multi' : 'lab-opt'}" data-g="${g}" data-v="${k}" aria-pressed="${on}" title="${esc(t(d.desc || ''))}">${d.icon ? d.icon + ' ' : ''}${esc(t(d.name))}<small>${d.cost ? '+' + d.cost : ''}</small></button>`;
         const LBL = { route: '傳播途徑（選 1～2）', sym: '症狀（最多 4 個）', quirk: '怪病特性（最多 2 個，可不選）', latency: '潛伏期', speed: '爆發速度', length: '持續時間', lethal: '致死率', resist: '抗藥性', climate: '季節', target: '偏好族群' };
@@ -192,8 +193,34 @@ Object.assign(RimTownApp.prototype, {
         const enough = V.sandbox || V.power >= pv.cost; const why = !V.can.ok ? (V.can.why === 'cooldown' ? t('上一場災厄剛結束，還要 {n} 天才能再放').replace('{n}', V.can.days) : '') : !enough ? t('神力不夠（要 {n}）').replace('{n}', pv.cost) : '';
         h += `<button class="gh-play" data-gh="lab-release" ${V.can.ok && enough ? '' : 'disabled aria-disabled="true"'}>🧪 ${t('釋放（{n} 神力）').replace('{n}', pv.cost)}</button>${why ? `<div class="gh-d-note">${esc(why)}</div>` : ''}</div>`;
         const L = V.ways?.lesson; if (L && (L.L > 0 || L.calm)) h += `<div class="gh-lab-note gh-lesson">📖 ${L.L > 0 ? esc(t('鎮上還記得{n}（{d} 人死去，{a} 天前）：下一場會更早發現、更早防疫，經歷過的人也更願意配合。').replace('{n}', t(L.name)).replace('{d}', L.died).replace('{a}', L.ago)) : esc(t('上次{n}沒死人，大家覺得「也沒怎樣」，下一場可能輕忽。').replace('{n}', t(L.name)))}</div>`; // v8.2.0 集體記憶
+        h += this._wcBlock('lab'); // v8.5.0 撐過的世界級災厄可以在這裡發動
         if (V.hist.length) h += `<div class="gh-lab-hist"><div class="gh-lab-h">📜 ${t('過去的災厄')}</div>${V.hist.map(x => `<div>🦠 <b>${esc(x.name)}</b> · ${t('{i} 人染病、{d} 人死去').replace('{i}', x.inf).replace('{d}', x.died)}${x.fled ? ' · ' + t('{n} 人逃走').replace('{n}', x.fled) : ''} · ${t('{n} 天').replace('{n}', x.end - x.day)} · ${x.survived === false ? '💀 ' + t('全滅') : x.how === 'cure' ? '💉 ' + t('靠疫苗撐過') : '🛡️ ' + t('硬撐過來')}${x.reg ? ` · 📜 ${t('文明倒退')}${t('（')}${t(CALAMITY.REG_NAME[x.reg.tier] || '')}${t('）')}${x.reg.lost ? t('失傳 {n} 項').replace('{n}', x.reg.lost) : t('沒有失傳')}` : ''}</div>`).join('')}</div>`;
         h += '</div>'; return h;
+    },
+    // v8.5.0 世界級災厄:科技分頁與災厄工坊共用
+    _wcBlock(where) {
+        if (typeof WORLDCAL === 'undefined' || !this.world) return ''; const V = WORLDCAL.view(this.world); const esc = (x) => this._escapeHtml(String(x ?? '')); const c = V.cur;
+        let h = '';
+        if (c) {
+            const LG = { omen: '🌫️ 出現了說不出的怪事', reveal: '🔬 {x}算出了真相', rumor: '🗣️ 消息傳遍全鎮', panic: '😱 鎮上陷入恐慌', fix: '🔬 研究員開始全力研究', fixdone: '✅ 主對策完成', shelter: '🏚️ 防空洞挖好了', unplug: '🧯 AI 全智能體拔掉了', arrive_averted: '🕊️ 降臨：化解了', arrive_eased: '💥 降臨：減輕了（{x} 人罹難）', arrive_hit: '💥 降臨：重創（{x} 人罹難）', after: '🌅 開始收拾' };
+            h += `<div class="wc-box wc-${c.kind}"><div class="wc-h"><span>🌍 ${t('世界級災厄')}${t('：')}<b>${c.icon} ${esc(c.name)}</b></span>${c.src === 'lab' ? `<span class="wc-src">🧪 ${t('工坊發動')}</span>` : ''}<span class="gh-when">${t('第 {d} 天').replace('{d}', c.day)}</span></div>`;
+            h += `<div class="wc-steps">${c.phases.map((p, i) => `<span class="wc-step${i === c.idx ? ' on' : i < c.idx ? ' past' : ''}">${p.icon} ${esc(p.name)}</span>`).join('')}</div>`;
+            h += `<div class="tech-desc">${esc(c.short)}${c.left > 0 ? ` · ⏳ <b>${t('還有 {n} 天降臨').replace('{n}', c.left)}</b><small>${t('（只有你看得到）')}</small>` : ''}</div>`;
+            if (c.idx >= 1 && !c.out) h += `<div class="wc-bar"><span>${c.fixIcon} ${esc(c.fixName)}</span><div class="progress-bar"><div class="progress-fill" style="width:${c.prog}%"></div></div><b>${c.prog}%</b></div><div class="tech-desc wc-sub">${c.fix ? t('研究員放下手上的研究，全力在做') : t('還沒有提案通過，只有研究員零星在做')} · ${t('做完就能化解，做一半能減輕')}</div>`;
+            if (c.out) h += `<div class="tech-desc">${t('結果')}${t('：')}<b class="wc-out-${c.out}">${esc(c.outName)}</b>${c.dead ? ` · ⚰️ ${t('{n} 人罹難').replace('{n}', c.dead)}` : ''}${c.left2 ? ` · 🧳 ${t('{n} 人搬走').replace('{n}', c.left2)}` : ''}</div>`;
+            h += `<div class="wc-chips"><span class="${c.prep ? 'on' : ''}">${c.prepIcon} ${esc(c.prepName)}${c.prep ? ' ✓' : ''}</span>${c.idx >= 1 ? `<span>🙄 ${t('說沒事')} ${c.deny}</span><span>😰 ${t('喊危險')} ${c.warn}</span>` : ''}</div>`;
+            if (c.log.length) h += `<div class="gh-lab-log">${c.log.slice(-6).map(l => `<div><span class="gh-when">${t('第 {d} 天').replace('{d}', l[0] - (this.world._absDay() - c.day + 1) + 1)}</span> ${esc(t(LG[l[1]] || l[1]).replace('{x}', t(l[2] || '')))}</div>`).join('')}</div>`;
+            h += '</div>';
+        }
+        if (where === 'lab' && !c) {
+            const WHY = { locked: '小鎮撐過一次才能在這裡發動', active: '現在還有災厄沒結束', cooldown: '上一場剛結束，還要 {n} 天', small: '鎮上的人太少了', power: '神力不夠（要 {n}）' };
+            h += `<div class="wc-lab"><div class="gh-lab-h">🌍 ${t('世界級災厄')}</div><div class="gh-lab-note">${t('走電子機械路線到太空時代的小鎮，可能會自然遇上；撐過一次，就能在這裡發動壓縮版（12～20 天）。')}</div>`;
+            for (const k of V.kinds) { const why = k.can.ok ? '' : t(WHY[k.can.why] || '').replace('{n}', k.can.why === 'power' ? V.cost : k.can.days || '');
+                h += `<div class="wc-kind${k.on ? '' : ' off'}"><div><b>${k.icon} ${esc(k.name)}</b><div class="gh-book-fx">${esc(k.short)} · ${t('主對策')}${t('：')}${esc(k.fix)}</div></div>${k.on ? `<button class="gh-play" data-gh="lab-wc" data-v="${k.key}" ${k.can.ok ? '' : 'disabled aria-disabled="true"'}>${t('發動（{n} 神力）').replace('{n}', V.cost)}</button>` : ''}${why ? `<div class="gh-d-note">${k.on ? '' : '🔒 '}${esc(why)}</div>` : ''}</div>`; }
+            h += '</div>';
+        }
+        if (V.hist.length && (where === 'tech' || !c)) h += `<div class="tech-desc wc-hist">📜 ${V.hist.slice(0, 3).map(x => `${x.icon} ${esc(x.name)}${t('（')}${esc(x.outName)}${x.dead ? t('，{n} 人罹難').replace('{n}', x.dead) : ''}${t('）')}`).join(' · ')}</div>`;
+        return h;
     },
     // v8.2.0 疫情裡的人:偷溜、被抓、送飯、待在家、萬靈藥、防疫疲乏
     _ghLabWays(W, esc) {
@@ -214,6 +241,7 @@ Object.assign(RimTownApp.prototype, {
         else if (k === 'lab-opt') S[g] = v;
         else if (k === 'lab-release') { const r = CALAMITY.release(w, S, this._ghLabZero || null); if (r.ok) { try { this._showCornerNotice?.({ icon: '🧪', title: t('災厄已經釋放'), name: '', desc: t('一開始只有你知道。等村民自己發現、自己應對。') }); } catch (e) {} try { this.state = w.getState(); } catch (e) {} } }
         else if (k === 'lab-boost') CALAMITY.boost(w);
+        else if (k === 'lab-wc' && typeof WORLDCAL !== 'undefined') { const r = WORLDCAL.release(w, v); if (r.ok) { try { this._showCornerNotice?.({ icon: WORLDCAL.KINDS[v]?.icon || '🌍', title: t('世界級災厄已經發動'), name: '', desc: t('一開始只有一些說不出的怪事。看村民怎麼發現、怎麼爭論、怎麼準備。') }); } catch (e) {} } }
         this._ghRender(); this._ghFab();
     },
     _ghLabInput(e) {
