@@ -101,8 +101,9 @@ const ASSETS_TO_CACHE = [
   './app-panels.js',
   './app-economy.js',
   './app-records.js', './app-unlock.js',
-  './icons/icon48.png',
-  './icons/icon128.png',
+  './icons/icon32.png',
+  './icons/icon192.png',
+  './icons/apple-touch-icon.png',
 ];
 
 // Install: cache core assets
