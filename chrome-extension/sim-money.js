@@ -33,15 +33,25 @@ const MONEY = (() => {
     // ---------- 多餘的貨 ----------
     const PRICE = (r) => (typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r]) || ({ food: 1, wood: 1.5, stone: 2, metal: 4, cloth: 3, herbs: 3.5, meals: 2.5, tools: 8, clothing: 6, medicine: 10, furniture: 7, paper: 3 }[r] || 0);
     // 只賣成品與多的糧食:原料(木、石、金屬、布、藥草)是鎮上做東西要用的,賣掉又得用更貴的價錢買回來
-    function floors(w) { const pop = npcs(w).length; return { food: Math.max(120, pop * 12), meals: Math.max(20, pop * 3), /* 糧食要留夠(移民也看存糧),多的才賣 */ tools: Math.max(15, pop * 0.6), clothing: Math.max(12, pop * 0.5), furniture: 8, medicine: Math.max(10, pop * 0.3), paper: 20 }; }
+    // v9.6.0 外銷的貨款付給做出這批貨的產業(以前倉庫的貨算公家的、貨款全進公庫,礦場、鐵鋪、布莊幾乎沒有收入,老闆每週算帳都虧就一直砍薪,一整年卡在五成)
+    // 有老闆的付給老闆(扣營業稅),公營的照舊進公庫;藥、麵包、酒這類沒有對應產業的也進公庫
+    const RES2S = { food: 'farm', meals: 'kitchen', bread: 'kitchen', beer: 'kitchen', wine: 'kitchen', wood: 'timber', furniture: 'timber', paper: 'timber', stone: 'mine', metal: 'mine', tools: 'forge', cloth: 'textile', clothing: 'textile' };
+    const PRODUCER_SHARE = 0.5;
+    function payGoods(w, r, v, why) {
+        v = r2(v); if (!(v > 0)) return; const k = RES2S[r];
+        // 一半是做貨的工錢(付給產業),一半歸公庫:倉庫的原料多半是公庫向外地買的,倉儲運送也是公家的
+        if (k && typeof MARKET !== 'undefined' && w.market && w.observerMode) { const half = r2(v * PRODUCER_SHARE); MARKET.sell(w, k, half, why); if (v - half > 0) w.stockpile.add('silver', r2(v - half), w.tickCount, why); }
+        else w.stockpile.add('silver', v, w.tickCount, why);
+    }
+    function floors(w) { const pop = npcs(w).length; return { stone: Math.max(80, pop * 3), metal: Math.max(20, pop * 0.6), food: Math.max(120, pop * 12), meals: Math.max(20, pop * 3), /* 糧食要留夠(移民也看存糧),多的才賣 */ tools: Math.max(15, pop * 0.6), clothing: Math.max(12, pop * 0.5), furniture: 8, medicine: Math.max(10, pop * 0.3), paper: 20 }; }
     const GROUP = { food: 'food', meals: 'food', clothing: 'cloth' };
     const scarce = (w, r) => { try { return typeof PRICES !== 'undefined' && w.prices && GROUP[r] && PRICES.idx(w, GROUP[r]) > 1.0; } catch (e) { return false; } };
     function surplusList(w) { const sp = w.stockpile, F = floors(w); const out = []; for (const [r, f] of Object.entries(F)) { const have = sp?.get?.(r) || 0, p = PRICE(r), extra = Math.floor(have - f - (sp.reserved?.[r] || 0)); if (p > 0 && extra >= 1 && !scarce(w, r)) out.push({ r, extra, p, v: extra * p }); } return out.sort((a, b) => b.v - a.v); }
     // 把價值大約 n 銀幣的多餘貨賣給外地,錢進公庫;沒有多的貨就賣不到
     function sellSurplus(w, n, why) {
         const sp = w.stockpile; if (!sp || !(n > 0)) return 0; let left = n, got = 0;
-        for (const g of surplusList(w)) { if (left <= 0.01) break; const qty = Math.min(g.extra, Math.ceil(left / g.p)); if (qty < 1 || !sp.consume(g.r, qty, w.tickCount, why || t('賣給外地'))) continue; const v = r2(qty * g.p); got += v; left -= v; }
-        got = r2(got); if (got > 0) { sp.add('silver', got, w.tickCount, why || t('賣出多餘的貨')); flow(w, 'surplus', got); S(w).st.surplus = r2(S(w).st.surplus + got); }
+        for (const g of surplusList(w)) { if (left <= 0.01) break; const qty = Math.min(g.extra, Math.ceil(left / g.p)); if (qty < 1 || !sp.consume(g.r, qty, w.tickCount, why || t('賣給外地'))) continue; const v = r2(qty * g.p); got += v; left -= v; payGoods(w, g.r, v, why || t('賣出多餘的貨')); }
+        got = r2(got); if (got > 0) { flow(w, 'surplus', got); S(w).st.surplus = r2(S(w).st.surplus + got); }
         return got;
     }
     // ---------- 商人出口 ----------
@@ -51,9 +61,11 @@ const MONEY = (() => {
         const bonus = (w.buildings?.getEffect?.('trade_bonus', 0) || 0); const away = (a) => w.isAway?.(a.agentId) || a.currentLocation === 'exploration';
         for (const a of npcs(w).filter(x => x.job?.key === 'trader' && (x.age ?? 30) >= 16 && !away(x))) {
             let budget = BUDGET * (1 + bonus), base = 0, qtyAll = 0; const sold = [];
-            for (const g of surplusList(w)) { if (budget <= 0.5) break; const qty = Math.min(g.extra, Math.floor(budget / g.p)); if (qty < 1 || !sp.consume(g.r, qty, w.tickCount, t('商人運去外地賣'))) continue; const v = qty * g.p; base += v; budget -= v; qtyAll += qty; sold.push([g.r, qty]); }
+            // v9.6.0 先每樣貨分一份額度再賣(以前照價值排、預算都被工具和衣服吃掉,石材一份也賣不出去,礦場只能一直堆)
+            const SL = surplusList(w), share = budget / Math.max(1, SL.length);
+            for (const g of SL) { if (budget <= 0.5) break; const qty = Math.min(g.extra, Math.floor(Math.min(budget, Math.max(share, g.p)) / g.p)); if (qty < 1 || !sp.consume(g.r, qty, w.tickCount, t('商人運去外地賣'))) continue; const v = qty * g.p; base += v; budget -= v; qtyAll += qty; sold.push([g.r, qty]); }
             if (!(base > 0)) continue; base = r2(base); const sale = r2(base * MARKUP), profit = r2(sale - base);
-            sp.add('silver', base, w.tickCount, t('商人出口的貨款')); // 倉庫的貨是公家的,本錢歸公庫
+            for (const [r, q] of sold) payGoods(w, r, q * PRICE(r), t('商人出口的貨款')); // v9.6.0 本錢付給做貨的產業(公營的才歸公庫)
             // 加價賺的是商行的營收:有老闆的付給老闆(老闆再發薪水給商人),公營的進公庫(公庫發商人薪水)
             if (typeof MARKET !== 'undefined' && w.market) MARKET.sell(w, 'trade', profit, t('商人出口')); else if (Wl) { if (Wl.bizIncome) Wl.bizIncome(w, a, profit); else Wl.add(w, a, profit); } else sp.add('silver', profit, w.tickCount, t('商人出口'));
             flow(w, 'export', sale); const M = S(w); M.st.exportQty += qtyAll; M.st.exportSale = r2(M.st.exportSale + sale);
@@ -163,7 +175,7 @@ const MONEY = (() => {
         return { days: Math.min(n, M.hist.length), ins, outs, other: sum.other || 0, net, total: T, pop, per: pop ? Math.round(T / pop) : 0, perOld: old && old[2] ? Math.round(old[1] / old[2]) : null, label: (c) => CAT[c] || c, st: M.st };
     }
     function townBrief(w) { if (!w.money) return ''; const v = view(w); if (v.days < 7) return ''; return t('近 {n} 天鎮上的錢{dir} {m} 銀幣').replace('{n}', v.days).replace('{dir}', v.net >= 0 ? t('多了') : t('少了')).replace('{m}', Math.abs(Math.round(v.net))); }
-    return { S, total, flow, track, close, sellSurplus, surplusList, floors, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, familyPays, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
+    return { RES2S, payGoods, S, total, flow, track, close, sellSurplus, surplusList, floors, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, familyPays, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
 })();
 
 // ---------- 接上其他系統 ----------
@@ -178,6 +190,11 @@ if (typeof World !== 'undefined') { MONEY.track(World.prototype, 'leaveTown', 'e
 if (typeof VillagerAutonomy !== 'undefined') MONEY.track(VillagerAutonomy.prototype, '_shop', 'shop');
 if (typeof ProcessingSystem !== 'undefined') MONEY.track(ProcessingSystem.prototype, 'sellProduct', 'factory');
 if (typeof ProposalSystem !== 'undefined') MONEY.track(ProposalSystem.prototype, '_execute', 'proposals');
+// v9.6.0 提案「把多出來的貨賣掉」賣給外地商店的錢,也付給做貨的產業(錢從公庫轉給產業老闆,全鎮總數不變)
+if (typeof ShopSystem !== 'undefined' && !ShopSystem.prototype.sell.__v96) { const _sell = ShopSystem.prototype.sell; ShopSystem.prototype.sell = function (itemKey, amount, world) {
+    const r = _sell.apply(this, arguments);
+    try { if (r?.success && world?.observerMode && world.market && typeof MARKET !== 'undefined' && MONEY.RES2S[itemKey]) { const v = Math.round((SHOP_ITEMS[itemKey]?.sellPrice || 0) * amount * 100) / 100; const half = Math.round(v * 0.5 * 100) / 100; if (half > 0 && world.stockpile.consume('silver', half, world.tickCount, t('貨款轉給產業'))) MARKET.sell(world, MONEY.RES2S[itemKey], half, t('賣給外地商店')); } } catch (e) { console.warn('[Money] shop sell', e); }
+    return r; }; ShopSystem.prototype.sell.__v96 = true; }
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { MONEY.daily(w); } catch (e) { console.warn('[Money] daily', e); } return r; };

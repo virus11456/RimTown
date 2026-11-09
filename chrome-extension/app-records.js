@@ -5,6 +5,9 @@ Object.assign(RimTownApp.prototype, {
     // v7.3.0 日報分頁:觀察者日報(每天一期)＋AI 日報(記者寫的)＋村民對話與逐筆紀錄;編年史搬到「年表」
     renderRecords(container) {
         this.renderLog(container);
+        // v9.6.0 觀察者模式:AI 記者寫的稿子併進當天報紙的「記者專欄」,不再另外一疊 AI 日報
+        const np = container.querySelector('.np-ai'); if (np) np.addEventListener('toggle', () => { this._npAiOpen = np.open; });
+        if (this.world?.observerMode) return;
         const E = this._eventPieces(['aidaily']);
         if (E.aidaily) { const n = (this.state?.dailyNews?.newspapers || []).length; container.insertAdjacentHTML('beforeend', `<details class="log-fold rec-ai"${this._recAiOpen ? ' open' : ''}><summary>🗞️ ${t('AI 日報')}${t('（')}${n}${t('）')}</summary>${E.aidaily}</details>`); }
     },

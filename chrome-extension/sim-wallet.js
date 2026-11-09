@@ -93,6 +93,7 @@ const WALLET = (() => {
             add(w, a, shareOf(a));
             if (ratio < 1) { a.addThought?.('wage_unpaid', w); if (Math.random() < 0.4) mem(w, a, ratio > 0 ? '公庫只發得出 {p}% 的薪水，這樣怎麼過日子。' : '公庫沒錢，這個月的薪水領不到了。', { p: Math.round(ratio * 100) }, 5); }
         }
+        if (ratio < 1) W.shortDay = typeof w._absDay === 'function' ? w._absDay() : 0; // v9.6.0 稅率提案看得到「最近發不出薪水」
         if (ratio < 1 && Math.random() < 0.5) log(w, 'economy', '💸 公庫只剩 {n} 銀幣，薪水只發得出 {p}%。', { n: Math.round(have), p: Math.round(ratio * 100) });
     }
     function living(w, W, all) {

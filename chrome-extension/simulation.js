@@ -691,6 +691,16 @@ class World {
                 if (rel.affinity <= -35 && relB.affinity <= -35
                     && (day - (this._feudCooldown[key] || -99)) >= 5 && Math.random() < 0.15) {
                     this._feudCooldown[key] = day;
+                    // v9.6.0 勸架:兩邊都要好的人出面打圓場,這次沒吵起來、氣也消了一點(以前只會越吵越僵,一年下來交惡的比交好的還多)
+                    if (this.observerMode) {
+                        const peace = npcs.find(m => m !== a && m !== b && (m.relationships.relationships[a.agentId]?.affinity || 0) >= 30 && (m.relationships.relationships[b.agentId]?.affinity || 0) >= 30);
+                        if (peace && Math.random() < 0.35) {
+                            rel.modifyAffinity(6); relB.modifyAffinity(6);
+                            this.logMessageT('social', '🕊️ {a}和{b}差點當街吵起來，{m}趕緊出面打圓場，兩人氣消了一點。', { a: a.name, b: b.name, m: peace.name }, peace.name);
+                            peace.memory?.addT?.(this.tickCount, this.clock.timeStr, 'social', '我替{a}和{b}打了圓場，希望他們別再鬧了。', { a: a.name, b: b.name }, 4, [a.name, b.name]);
+                            continue;
+                        }
+                    }
                     rel.modifyAffinity(-4); relB.modifyAffinity(-4);
                     a.moodModifier = (a.moodModifier || 0) - 6;
                     b.moodModifier = (b.moodModifier || 0) - 6;
@@ -702,10 +712,10 @@ class World {
                         const wa = w.relationships.relationships[a.agentId]?.affinity || 0;
                         const wb = w.relationships.relationships[b.agentId]?.affinity || 0;
                         if (wa >= 40 && wb < 40) {
-                            w.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(-3);
+                            { const rb = w.relationships.getOrCreate(b.agentId, b.name); if (!this.observerMode || (rb.affinity || 0) > -25) rb.modifyAffinity(-3); } // v9.6.0 替朋友抱不平只會疏遠,不會因此變成死對頭
                             w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{a2}這邊。', { a: a.name, b: b.name, a2: a.name }, 4, [a.name, b.name]);
                         } else if (wb >= 40 && wa < 40) {
-                            w.relationships.getOrCreate(a.agentId, a.name).modifyAffinity(-3);
+                            { const ra = w.relationships.getOrCreate(a.agentId, a.name); if (!this.observerMode || (ra.affinity || 0) > -25) ra.modifyAffinity(-3); }
                             w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{b2}這邊。', { a: a.name, b: b.name, b2: b.name }, 4, [a.name, b.name]);
                         } else if ((wa || wb) && Math.random() < 0.3) {
                             w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '看到{a}和{b}當眾大吵,小鎮的氣氛有點僵。', { a: a.name, b: b.name }, 3, [a.name, b.name]);

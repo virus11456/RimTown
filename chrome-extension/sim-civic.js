@@ -53,7 +53,10 @@ const CIVIC = (() => {
         if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return;
         const tr = w.stockpile?.get?.('silver') || 0, all = npcs(w), tax = w.wallet.tax ?? 0.1;
         const poor = all.filter(a => cash(w, a) < 10).length;
-        let dir = null; if (tr < 60 && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04) dir = 'down';
+        // v9.6.0 公庫見底(付不出公職薪水、或剩不到每人 4 銀幣)先加稅;公庫還算寬裕(每人 8 銀幣以上)才因為窮人多而減稅
+        // 以前只要四分之一的人窮就一直減稅,稅率卡在 2%,公庫空了也沒人提加稅
+        const short = (w.wallet.shortDay ?? -99) >= d - 7;
+        let dir = null; if ((tr < Math.max(60, all.length * 4) || short) && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04 && tr >= all.length * 8) dir = 'down';
         if (!dir) return;
         const who = dir === 'up' ? (all.find(a => a.job?.key === 'mayor') || all.find(a => has(a, 'hardworking'))) : (all.filter(a => cash(w, a) < 10).sort((x, y) => (has(y, 'charismatic') ? 1 : 0) - (has(x, 'charismatic') ? 1 : 0))[0]);
         if (!who) return; C.lastTax = d;
