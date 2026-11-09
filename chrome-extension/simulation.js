@@ -101,11 +101,11 @@ class World {
                 this.logMessageT('event', '[{v}] {event}: {description}', { v: event.severity.toUpperCase(), event: event.name, description: event.description });
                 // v4.0: Offer player a choice for significant events
                 // v5.32.0 第二章(繁榮 20)起才把事件應對交給玩家,第一章自動結算不打擾
-                if (event.severity !== 'minor' && this.eventChoice && (this.prosperity?.prosperity || 0) >= 20) {
+                if (event.severity !== 'minor' && this.eventChoice && ((this.prosperity?.prosperity || 0) >= 20 || this.observerMode)) { // v9.4.0 觀察者模式一開始就由首長應對
                     this.eventChoice.offerChoice(event, this);
                 }
                 // Only auto-apply mood if no choice was offered
-                if (!this.eventChoice?.pendingEvent && event.effects.mood_all != null) {
+                if ((!this.eventChoice?.pendingEvent || this.observerMode) && event.effects.mood_all != null) { // v9.4.0 首長怎麼應對是另一回事,災難本身的打擊照算
                     Object.values(this.agents).forEach(a => { a.moodModifier = (a.moodModifier || 0) + event.effects.mood_all; });
                 }
                 if (this.dailyNews) this.dailyNews.collectEvent('event', `${event.name}${t('：')}${event.description}`, event.severity === 'critical' ? 10 : event.severity === 'major' ? 8 : 5);
@@ -792,6 +792,8 @@ class World {
         if (this.observerMode) { // v6.83.0 觀察者模式:舊存檔留下的「每日決策／村民求助」直接收掉(這兩個系統已不跑);事件抉擇由首長決定(sim-assembly CRISIS)
             if (this.dailyDecision?.pendingDecision) this.dailyDecision.pendingDecision = null;
             if (this.npcHelp?.pendingRequest) this.npcHelp.pendingRequest = null;
+            const pe = this.eventChoice?.pendingEvent; // v9.4.0 首長處理到一半出錯留下的事件:放超過一天就收掉,不然之後的事件都進不來
+            if (pe && !pe.autoResolve && this.tickCount - (pe.timestamp || 0) >= DAY) this.eventChoice.pendingEvent = null;
             return;
         }
         const pickLog = (what, label) => this.logMessageT('event_choice', '⏳ 你遲遲沒有決定,小鎮自行處理了「{what}」:{label}', { what, label });
@@ -2350,6 +2352,7 @@ class World {
                 this.lifecycle.births = data.lifecycle.births || [];
                 this.lifecycle.playerChildren = data.lifecycle.playerChildren || [];
                 this.lifecycle._daysSinceCheck = data.lifecycle._daysSinceCheck || 0;
+                this.lifecycle._ageSeason = data.lifecycle._ageSeason ?? null; // v9.4.0
             }
 
             // Exploration

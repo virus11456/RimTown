@@ -103,9 +103,10 @@ class ProsperityEngine {
         }
 
         // 貿易活躍度 (0-15)
-        if (world.questSystem) {
-            score += Math.min(15, (world.questSystem.tradeCount || 0) * 1.5);
-        }
+        // v9.4.0 觀察者模式沒有玩家交易,改看最近 15 天鎮上真的做了幾筆進出口
+        let trades = world.questSystem?.tradeCount || 0;
+        if (world.observerMode && typeof TRADE !== 'undefined') { try { const d = world._absDay?.() || 0; trades = (TRADE.S(world).hist || []).filter(h => h[0] > d - 15).length; } catch (e) {} }
+        score += Math.min(15, trades * 1.5);
 
         this.dimensions.economy.value = Math.min(100, score);
     }

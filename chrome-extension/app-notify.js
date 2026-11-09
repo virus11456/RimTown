@@ -333,7 +333,9 @@ Object.assign(RimTownApp.prototype, {
         const ww = this.world.weather;
         if (ww?.activeDisaster && !this._shownDisasterId) {
             this._shownDisasterId = ww.activeDisaster.type;
-            this._showInteractiveNotification({
+            // v9.4.0 觀察者模式:天災改成角落通知,不再跳出要按「了解」的彈窗(以前會讓畫面停住)
+            if (this.world.observerMode) this._showCornerNotice({ icon: '🚨', title: ww.activeDisaster.name, name: '', desc: ww.activeDisaster.desc });
+            else this._showInteractiveNotification({
                 icon: '🚨',
                 title: ww.activeDisaster.name,
                 desc: ww.activeDisaster.desc,

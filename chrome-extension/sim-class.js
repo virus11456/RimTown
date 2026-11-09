@@ -76,9 +76,11 @@ const CLASS = (() => {
         if (leader && (C.lastGrant ?? -99) <= d - 15 && Math.random() < 0.3) {
             const rec = (a) => { try { const r = w.proposals?.record?.(a.agentId); return (r?.done || 0) * 3 + (r?.approved || 0); } catch (e) { return 0; } };
             const help = (a) => { try { return (w.dark?.rep?.[a.agentId]?.helped || 0) * 2; } catch (e) { return 0; } };
-            const cand = all.filter(a => a !== leader).map(a => ({ a, s: rec(a) + help(a) })).filter(x => x.s >= 4).sort((x, y) => y.s - x.s)[0];
+            C.gn = C.gn || {}; C.gd = C.gd || {}; // v9.4.0 功績會被「用掉」:封過的人分數扣掉,90 天內不再封同一個人
+            const cand = all.filter(a => a !== leader && !(C.gd[a.agentId] > d - 90)).map(a => ({ a, s: rec(a) + help(a) - (C.gn[a.agentId] || 0) * 6 })).filter(x => x.s >= 4).sort((x, y) => y.s - x.s)[0];
             if (cand) {
-                const T = C.titles[cand.a.agentId]; C.lastGrant = d;
+                const T = C.titles[cand.a.agentId]; C.lastGrant = d; C.gn[cand.a.agentId] = (C.gn[cand.a.agentId] || 0) + 1; C.gd[cand.a.agentId] = d;
+                if (!T) { const top = Object.entries(C.gn).filter(([id]) => id !== cand.a.agentId && w.agents[id] && !w.agents[id].isDead).sort((x, y) => y[1] - x[1])[0]; const old = top && top[1] >= 2 ? w.agents[top[0]] : null; if (old && Math.random() < 0.6) { mem(w, old, '這次的冊封沒有我，聽說是{a}。', { a: cand.a.name }, 6); old.moodModifier = (old.moodModifier || 0) - 2; } } // 老面孔有點吃味
                 if (T && !T.bought) T.rank = Math.min(RANKS.length - 1, (T.rank || 0) + 1);
                 else if (!T) C.titles[cand.a.agentId] = { rank: 0, since: d, how: 'granted' };
                 const r = RANKS[C.titles[cand.a.agentId].rank]; C.lv[cand.a.agentId] = compute(w, cand.a);

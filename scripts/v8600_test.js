@@ -129,7 +129,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.ach.length, '成就：撐過全球不孕、冰河期、以太裂隙', r.ach);
     ok(r.drift === 0, '銀幣守恆（世界級災厄自己沒有憑空產生或消滅銀幣）', r.drift);
     ok(r.ui.box && r.ui.steril && r.ui.tech, `介面：工坊與科技分頁顯示裂隙進度和「不孕還沒過去」（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
-    ok(r.ui.kinds === 7 && r.ui.paths === 7 && r.ui.btn >= 3 && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：手牌區塊列出七種、標出路線、撐過的能發動；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.kinds === 8 && r.ui.paths === 8 && r.ui.btn >= 3 && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：手牌區塊列出八張（黑日蓋著）、標出路線、撐過的能發動；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }

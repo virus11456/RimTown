@@ -111,7 +111,7 @@ async function apiTest() {
       const lockC = tray.querySelector('.gh-wcc.off'); lockC?.click(); await new Promise(r => setTimeout(r, 200)); out.ui.lockedBtn = !!tray.querySelector('.gh-wcd [data-gh="wc-play"][disabled]');
       const t1 = tray.innerText;
       app._ghTab = 'lab'; app._ghRender(); out.ui.labNoList = !tray.querySelector('.gh-wcc') && !tray.querySelector('.wc-kind');
-      app._ghTab = 'hand'; app._ghFilter = 'wc'; app._ghSel = 'wc:zombie'; app._ghRender(); out.ui.filterOnly = !tray.querySelector('.gh-hand:not(.gh-wc-row) .gh-card') && tray.querySelectorAll('.gh-wcc').length === 7;
+      app._ghTab = 'hand'; app._ghFilter = 'wc'; app._ghSel = 'wc:zombie'; app._ghRender(); out.ui.filterOnly = !tray.querySelector('.gh-hand:not(.gh-wc-row) .gh-card') && tray.querySelectorAll('.gh-wcc').length === 8;
       out.ui.overflow = document.documentElement.scrollWidth > innerWidth + 1;
       out.ui.squash = ['.gh-head', '.gh-tabs', '.gh-filters'].filter(q => { const e = tray.querySelector(q); return e && e.getBoundingClientRect().height + 1 < e.scrollHeight; }); // v9.2.1 標題列、篩選列不能被擠扁
       tray.querySelector('.gh-wcd [data-gh="wc-play"]')?.click(); await new Promise(r => setTimeout(r, 300));
@@ -144,7 +144,7 @@ async function apiTest() {
     ok(r.noCure.n >= 1 && r.noCure.dead && r.noCure.dc, '解藥一直沒做出來：最後的喪屍被圍住、算進死亡', r.noCure);
     ok(r.wall.yes < r.wall.no, '築了牆，變喪屍的人少很多', r.wall);
     ok(r.drift === 0, '銀幣守恆', r.drift);
-    ok(r.ui.inCol && r.ui.detailSide && r.ui.cards === 7 && r.ui.on === 3, `手牌：世界級災厄在手牌那一欄自己一個區塊（七種，三種解鎖）`, r.ui);
+    ok(r.ui.inCol && r.ui.detailSide && r.ui.cards === 8 && r.ui.on === 3, `手牌：世界級災厄在手牌那一欄自己一個區塊（八張，三種解鎖、黑日蓋著）`, r.ui);
     ok(r.ui.det && r.ui.lockedBtn && r.ui.labNoList && r.ui.filterOnly, '選了看詳情、沒解鎖的不能打；篩選「世界級」只看災厄；工坊不再列清單', r.ui);
     ok(r.ui.played.kind === 'zombie' && r.ui.played.src === 'lab' && r.ui.played.spent === 80 && r.ui.played.closed && r.ui.box, '從手牌發動：花 80 神力、抽屜收起；進行中手牌區塊看得到喪屍人數與解藥', r.ui.played);
     ok(!r.ui.undef && !r.ui.cjk.length && !r.ui.overflow && !r.ui.squash.length, `不破版（標題列、篩選列沒被擠扁）、沒有沒翻譯的字（${zh ? '中文' : '英文'}、${W}px）`, r.ui);

@@ -33,8 +33,23 @@ const FAITH2 = (() => {
         }
     }
     // 分裂與異端
+    // v9.4.0 沒人信的教派(連出遠門的信徒都沒有)放滿 30 天就解散,剩下的基金捐給公庫;分裂上限跟著人口變多
+    function dissolve(w, f, d) {
+        f.empty = f.empty || {};
+        for (const R of f.rels.slice(1)) {
+            const any = Object.values(f.of || {}).some(x => x?.rel === R.id);
+            if (any) { delete f.empty[R.id]; continue; }
+            if (f.empty[R.id] == null) { f.empty[R.id] = d; continue; }
+            if (d - f.empty[R.id] < 30) continue;
+            const n = Math.round((R.fund || 0) * 100) / 100; if (n > 0) { try { w.stockpile?.add?.('silver', n, w.tickCount, t('解散教派的基金')); } catch (e) {} }
+            f.rels = f.rels.filter(x => x !== R); delete f.heads?.[R.id]; delete f.empty[R.id];
+            if (n > 0) log(w, '🕯️ {r}最後一位信徒也走了，香火就此斷絕。剩下的 {n} 銀幣捐給了公庫。', { r: R.name[0], n }, ''); else log(w, '🕯️ {r}最後一位信徒也走了，香火就此斷絕。', { r: R.name[0] }, '');
+        }
+    }
     function schism(w, d) {
-        const f = F(w); if (!f || f.rels.length >= 5) return;
+        const f = F(w); if (!f) return; try { dissolve(w, f, d); } catch (e) { console.warn('[Faith2] dissolve', e); }
+        const pop = Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead).length;
+        if (f.rels.length >= Math.min(8, 4 + Math.floor(pop / 40))) return;
         for (const R of f.rels.slice()) {
             const h = headOf(w, R); if (!h) continue; const bs = FAITH.believers(w, R); if (bs.length < 4) continue;
             const c = bs.filter(a => a !== h && FAITH.pietyOf(w, a) >= 60 && (has(a, 'charismatic') || has(a, 'creative') || has(a, 'abrasive')) && aff(a, h) < -10)[0];

@@ -10,6 +10,7 @@ const CROWN = (() => {
     const mem = (w, a, k, p, imp = 7) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
     const log = (w, type, k, p, who) => { try { w.logMessageT?.(type, k, p || {}, who); } catch (e) {} };
     const news = (w, s, imp = 9, who = []) => { try { w.dailyNews?.collectEvent?.('politics', s, imp, who); } catch (e) {} };
+    const lt = (w) => { try { return (typeof TIERS !== 'undefined' ? TIERS.LV[TIERS.level(w)]?.leader : '') || '鎮長'; } catch (e) { return '鎮長'; } }; // v9.4.0 首長的稱呼跟著城鎮等級
     const isCapital = (w) => typeof TIERS !== 'undefined' && TIERS.level(w) >= 3;
     const aff = (a, b) => a?.relationships?.relationships?.[b?.agentId]?.affinity || 0;
     const money = (w, a) => (typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
@@ -33,6 +34,9 @@ const CROWN = (() => {
         C.history.push({ id: a.agentId, name: a.name, from: d, how }); if (C.history.length > 20) C.history.shift();
         setRoyal(w, a, true);
         for (const o of npcs(w)) if ((o._parentNames || []).includes(a.name)) setRoyal(w, o, true);
+        if (a.job?.key === 'mayor') { // v9.4.0 國王不兼首長:讓出位子,隔天由代理接手並辦補選
+            log(w, 'event', '🏛️ {a}登基後讓出了首長的位子，說「一個人不能又當國王又當{t}」。鎮上馬上要辦補選。', { a: a.name, t: lt(w) }, a.name);
+            if (!w.election?.stepDown?.(w, a, 'crowned')) { try { a.job = (typeof Job !== 'undefined' && JOB_DEFINITIONS?.trader) ? new Job('trader') : null; } catch (e) { a.job = null; } } }
         const dyn = en() ? C.dynasty.en : C.dynasty.zh;
         const k = { first: '👑 {a}在議會確認下加冕為王，{d}由此開始！', heir: '👑 {a}繼承王位，成為新國王。', elected: '👑 繼承危機落幕，議會推舉{a}登基。', coup: '⚔️ 政變成功！{a}推翻舊王，自立為王，建立{d}。' }[how] || '👑 {a}加冕為王。';
         log(w, 'event', k, { a: a.name, d: dyn }, a.name); news(w, `${a.name}${t('加冕為王')}`, 10, [a.name]);
@@ -97,7 +101,7 @@ const CROWN = (() => {
     function legitimacy(w, C, k) {
         let delta = (60 - C.legit) * 0.03;
         try { const I = w.proposals?.issues || {}; for (const [key, i] of Object.entries(I)) { if (/^(food|heating|poverty|wages)$/.test(key)) delta -= (i.sev || 1) * 0.6; } } catch (e) {}
-        if ((w.wallet?.tax ?? 0.1) > 0.15) delta -= 1.2;
+        { const pct = Math.round((w.wallet?.tax ?? 0.1) * 100); if (pct > 15) delta -= Math.min(4, (pct - 15) * 0.25); } // v9.4.0 先四捨五入(0.1+0.05 不再被當成超過 15%),超出越多民心掉越快
         if ((w.prosperity?.prosperity || 0) >= 80) delta += 0.6;
         try { const r = w.dark?.rep?.[k.agentId] || {}; delta -= (r.exposed || 0) * 0.5; } catch (e) {}
         const avg = npcs(w).reduce((s, a) => s + (a.mood || 50), 0) / Math.max(1, npcs(w).length); delta += (avg - 50) * 0.02;
@@ -107,8 +111,8 @@ const CROWN = (() => {
     function royalKids(w, k) { for (const o of npcs(w)) if ((o._parentNames || []).includes(k.name)) { try { if (!CLASS.S(w).titles[o.agentId]?.royal) setRoyal(w, o, true); } catch (e) {} } }
     // ---------- 王令 ----------
     const DECREES = {
-        tax_down: { zh: '減稅令', en: 'Tax Relief Decree', icon: '📉', legit: 6, apply: (w) => { if (w.wallet) w.wallet.tax = Math.max(0.03, (w.wallet.tax ?? 0.1) - 0.05); } },
-        tax_up: { zh: '加稅令', en: 'Tax Increase Decree', icon: '📈', legit: -8, apply: (w) => { if (w.wallet) w.wallet.tax = Math.min(0.3, (w.wallet.tax ?? 0.1) + 0.05); } },
+        tax_down: { zh: '減稅令', en: 'Tax Relief Decree', icon: '📉', legit: 6, apply: (w) => { if (w.wallet) w.wallet.tax = Math.round(Math.max(0.03, (w.wallet.tax ?? 0.1) - 0.05) * 100) / 100; } },
+        tax_up: { zh: '加稅令', en: 'Tax Increase Decree', icon: '📈', legit: -8, apply: (w) => { if (w.wallet) w.wallet.tax = Math.round(Math.min(0.3, (w.wallet.tax ?? 0.1) + 0.05) * 100) / 100; } },
         festival: { zh: '王室慶典', en: 'Royal Festival', icon: '🎉', legit: 5, apply: (w) => { for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + 6; const n = Math.min(80, w.stockpile.get('silver') || 0); if (n > 0 && typeof MARKET !== 'undefined' && w.market && w.stockpile.consume('silver', n, w.tickCount, t('王室慶典'))) { MARKET.sell(w, 'kitchen', n * 0.6, t('王室慶典')); MARKET.sell(w, 'farm', n * 0.4, t('王室慶典')); } /* v7.6.0 慶典的錢付給食堂與農莊,不是消失 */ } },
         relief: { zh: '賑災令', en: 'Relief Decree', icon: '🍞', legit: 8, apply: (w) => { if (typeof WALLET === 'undefined' || !w.wallet) return; const poor = npcs(w).filter(a => WALLET.get(w, a) < 10); const per = Math.min(15, Math.floor((w.stockpile?.get?.('silver') || 0) / Math.max(1, poor.length) / 2)); for (const a of poor) if (per > 0 && w.stockpile.consume('silver', per, w.tickCount, t('賑災'))) WALLET.add(w, a, per); } },
         amnesty: { zh: '大赦令', en: 'Amnesty Decree', icon: '🕊️', legit: 4, apply: (w) => { try { const D = w.dark; if (D) { D.labor = []; } } catch (e) {} } },
@@ -166,6 +170,11 @@ const CROWN = (() => {
         mem(w, L, '政變失敗了，我會被怎麼處置……', {}, 10); mem(w, k, '{l}想推翻我，幸好及時發現。', { l: L.name }, 9);
         L.relationships.getOrCreate(k.agentId, k.name).modifyAffinity(-30); k.relationships.getOrCreate(L.agentId, L.name).modifyAffinity(-50);
         try { DARK.wrong(w, L, k, 3, '密謀推翻{v}', { v: k.name }); } catch (e) {}
+        // v9.4.0 政變失敗的首謀丟官:首長職位交出來(補選)、議員席次拔掉(落選者遞補)
+        try {
+            if (L.job?.key === 'mayor' && w.election?.stepDown?.(w, L, 'coup')) { log(w, 'council', '🏛️ {l}身為{t}卻帶頭政變，被當場拔掉職位。鎮上要重新選{t}。', { l: L.name, t: lt(w) }, L.name); mem(w, L, '我丟了{t}的位子，什麼都沒了。', { t: lt(w) }, 9); }
+            if ((w.council?.members || []).includes(L.agentId)) { if (typeof TIERS !== 'undefined') TIERS.hint(w, L.agentId, 'coup'); w.council.members = w.council.members.filter(id => id !== L.agentId); log(w, 'council', '🏛️ {l}的議員資格被取消，空出的席位會由上次落選的人遞補。', { l: L.name }, L.name); }
+        } catch (e) { console.warn('[Crown] strip office', e); }
         try { if (typeof DARK !== 'undefined') { const D = DARK.S(w); let sc = (D.secrets || []).find(x => x.id === P.sec); if (!sc) sc = DARK.secret(w, { kind: 'scheme', culprit: L.agentId, victim: k.agentId, k: '{a}正在密謀推翻國王{k}', p: { a: L.name, k: k.name } }); sc.found = true; D.exposedCount[L.agentId] = Math.max(2, (D.exposedCount[L.agentId] || 0) + 1); DARK.bump(w, L, 'exposed'); DARK.proposeVerdict(w, sc, L, k, k); } } catch (e) { console.warn('[Crown] verdict', e); } // 政變是重罪:至少公共勞役
     }
     // ---------- 起義 ----------
@@ -188,7 +197,7 @@ const CROWN = (() => {
     }
     function brief(w) { const C = w.crown; if (!C) return ''; if (C.republic) return t('王都已推翻王室，改為共和'); const k = king(w); if (!k) return C.crisis ? t('王位空懸，繼承危機中') : ''; return `${t('國王')}${t('：')}${t(k.name)}${t('（')}${en() ? C.dynasty?.en || '' : C.dynasty?.zh || ''}${t('，')}${t('民心')} ${Math.round(C.legit)}/100${t('）')}`; }
     function view(w) { const C = w.crown; if (!C) return null; const k = king(w); return { king: k ? t(k.name) : null, dynasty: C.dynasty ? (en() ? C.dynasty.en : C.dynasty.zh) : '', legit: Math.round(C.legit), decrees: (C.decrees || []).slice(-3).reverse(), crisis: C.crisis ? C.crisis.claimants.map(id => w.agents[id]?.name).filter(Boolean).map(n => t(n)) : null, republic: !!C.republic, plot: C.plot ? { leader: w.agents[C.plot.leader]?.name, n: C.plot.members.length } : null, history: C.history.slice(-5) }; }
-    return { S, daily, king, crown, brief, view, DECREES, prestige };
+    return { S, daily, king, crown, brief, view, DECREES, prestige, legitimacy, foiled }; // v9.4.0 legitimacy／foiled 給測試用
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

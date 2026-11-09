@@ -994,3 +994,23 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 /* v9.2.1 手牌抽屜內容變多（世界級災厄區塊）時，標題列／篩選列不能被擠扁，只讓下面的內容捲動 */
 .rimtown-container .gh-tray > .gh-grab, .rimtown-container .gh-tray > .gh-head, .rimtown-container .gh-tray > .gh-filters { flex-shrink: 0; }
 .rimtown-container .gh-tray > .gh-body, .rimtown-container .gh-tray > .gh-track, .rimtown-container .gh-tray > .gh-lab { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* v9.3.0 黑日:蓋著的牌、三條戰線 */
+.rimtown-container .gh-wcc.wc-p-all, .rimtown-container .gh-wcd.wc-p-all { --c: #8A7FB8; }
+.rimtown-container .gh-wcd.wc-hidden .gh-d-ic { filter: grayscale(1); }
+.rimtown-container .gh-wc-seven { display: flex; gap: 6px; flex-wrap: wrap; font-size: 1.1rem; }
+.rimtown-container .gh-wc-seven span { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px dashed var(--border); color: var(--text-muted); }
+.rimtown-container .gh-wc-seven span.on { border-style: solid; border-color: var(--accent); }
+.rimtown-container .wc-front.on > span:first-child { font-weight: 800; color: var(--accent); }
+
+/* v9.5.0 鎮上話題與人生劇本 */
+.rimtown-container .pp-buzz-row { display: grid; grid-template-columns: 4.2em 1fr; gap: 2px 8px; align-items: center; margin: 4px 0; padding: 4px 6px; border-radius: 6px; background: var(--bg-tertiary, rgba(255,255,255,0.04)); opacity: 0.72; }
+.rimtown-container .pp-buzz-row.on { opacity: 1; }
+.rimtown-container .pp-buzz-ph { font-size: 0.75rem; padding: 1px 6px; border-radius: 999px; text-align: center; white-space: nowrap; background: rgba(140,140,160,0.25); color: var(--text-secondary); }
+.rimtown-container .pp-buzz-row.ph-hot .pp-buzz-ph { background: rgba(233,69,96,0.22); color: #e94560; }
+.rimtown-container .pp-buzz-row.ph-after .pp-buzz-ph { background: rgba(120,160,200,0.2); color: #7aa7d6; }
+.rimtown-container .pp-buzz-t { min-width: 0; overflow-wrap: anywhere; }
+.rimtown-container .pp-buzz-heat { grid-column: 1 / -1; height: 3px; border-radius: 2px; background: linear-gradient(90deg, #e94560 var(--h), transparent var(--h)); opacity: 0.6; }
+.rimtown-container .pp-life-row { margin: 4px 0; padding: 4px 6px; border-radius: 6px; cursor: pointer; background: var(--bg-tertiary, rgba(255,255,255,0.04)); overflow-wrap: anywhere; }
+.rimtown-container .pp-life-row:hover { background: rgba(233,69,96,0.08); }
+.rimtown-container .pp-life-row small { display: block; color: var(--text-secondary); margin-top: 2px; }
+.rimtown-container .pp-life-dots { color: #e9a645; letter-spacing: 1px; font-size: 0.8rem; }

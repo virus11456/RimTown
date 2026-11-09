@@ -791,10 +791,11 @@ class LifecycleSystem {
 
     _processAging(world) {
         // Age NPCs once every 2 seasons (approx every 30 game-days)
-        if (world.clock.day !== 1) return;
-        if (!this._agingToggle) this._agingToggle = false;
-        this._agingToggle = !this._agingToggle;
-        if (!this._agingToggle) return; // Skip every other season
+        // v9.4.0 以前只在「季初第 1 天剛好輪到檢查」又隔一次才長,一季 15 天是奇數,實際四季才長一歲;改成每過兩季長一歲
+        const per = world.clock?.DAYS_PER_SEASON || 15; const si = Math.floor(((world._absDay?.() || 1) - 1) / per);
+        if (this._ageSeason == null) { this._ageSeason = si; return; }
+        if (si - this._ageSeason < 2) return;
+        this._ageSeason += 2;
         Object.values(world.agents).forEach(a => {
             if (!a.isPlayer) {
                 a.age += 1; // 1 year per 2 seasons for balanced lifespan
@@ -924,7 +925,24 @@ class LifecycleSystem {
             Object.values(world.agents).filter(a => !a.isPlayer).length + 1);
     }
 
+    // v9.4.0 舊存檔:觀察者模式沒有旅人,以前跟旅人交往／結婚的村民放下這段感情(不會再生小孩,也能找新對象)
+    _releasePlayerPartners(world) {
+        if (!world.observerMode || this._relPP === (world._absDay?.() || 0)) return; this._relPP = world._absDay?.() || 0;
+        const ps = Object.values(world.agents).filter(a => a?.isPlayer); if (!ps.length) return;
+        for (const a of Object.values(world.agents)) {
+            if (!a || a.isPlayer || a.isDead) continue;
+            for (const pl of ps) {
+                const r = a.relationships?.relationships?.[pl.agentId]; if (!r || (r.status !== 'married' && r.status !== 'dating')) continue;
+                const wed = r.status === 'married'; r.status = 'ex'; r.statusSince = world.tickCount;
+                const back = pl.relationships?.relationships?.[a.agentId]; if (back && (back.status === 'married' || back.status === 'dating')) back.status = 'ex';
+                try { a.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'relationship', wed ? '旅人走了以後再也沒回來。我等了很久，終於決定放下，好好過自己的日子。' : '那段跟旅人的感情，就當作一場夢吧。', {}, 8, []); } catch (e) {}
+                try { world.logMessageT?.('social', wed ? '💔 {a}等不到遠行的旅人回來，終於摘下了婚戒，決定重新開始。' : '💔 {a}放下了跟旅人的那段感情。', { a: a.name }, a.name); } catch (e) {}
+            }
+        }
+    }
+
     _checkBirths(world) {
+        try { this._releasePlayerPartners(world); } catch (e) { console.warn('[Society] release', e); }
         // Check for married couples (including player-NPC couples)
         const allAgents = Object.values(world.agents);
         for (const agent of allAgents) {
@@ -939,6 +957,7 @@ class LifecycleSystem {
 
             // Player-NPC couples: mark child as player's child
             const involvesPlayer = agent.isPlayer || otherAgent.isPlayer;
+            if (involvesPlayer && world.observerMode) continue; // v9.4.0 觀察者模式不再有旅人的孩子
 
             // Birth probability based on age and relationship quality
             const avgAge = (agent.age + otherAgent.age) / 2;
@@ -1051,6 +1070,7 @@ class LifecycleSystem {
             births: this.births.slice(-10000),
             playerChildren: this.playerChildren || [],
             _daysSinceCheck: this._daysSinceCheck,
+            _ageSeason: this._ageSeason ?? null,
         };
     }
 }

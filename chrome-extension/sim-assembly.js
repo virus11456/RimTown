@@ -36,8 +36,9 @@ const ASSEMBLY = (() => {
     const VILLAGE = new Set(['tier_up', 'tax']);
     function seated(w) {
         const C = w.council; if (!C?._formed) return [];
-        const lid = leaderId(w);
-        return (C.members || []).map(id => w.agents[id]).filter(a => a && !a.isDead && a.agentId !== lid && a.currentLocation !== 'exploration');
+        const lid = leaderId(w); let act = null; try { act = w.election?.currentMayor?.(w)?.agentId || null; } catch (e) {} // v9.4.0 代理首長也不能先投票再自己否決
+        const kid = (typeof CROWN !== 'undefined' && w.crown) ? w.crown.king : null; const jail = (a) => typeof CIVIC !== 'undefined' && CIVIC.jailed?.(w, a);
+        return (C.members || []).map(id => w.agents[id]).filter(a => a && !a.isDead && a.agentId !== lid && a.agentId !== act && a.agentId !== kid && !jail(a) && a.currentLocation !== 'exploration' && !String(a.agentId).startsWith('visit_')); // v9.4.0 國王、坐牢的、外鎮訪客不入座
     }
     function isMajor(w, p) {
         if (!p || p.kind === 'verdict') return false;
@@ -94,11 +95,11 @@ const ASSEMBLY = (() => {
         const votes = {}, why = {}, names = {}; let f = 0;
         for (const m of ms) { const r = memberVote(w, p, m, pub); votes[m.agentId] = r.v; why[m.agentId] = r.why; names[m.agentId] = m.name; if (r.v === 'for') f++; }
         const n = ms.length, ag = n - f;
-        p.council = { day: d, for: f, against: ag, n, votes, why, names, pass: f >= ag, sup: f >= Math.ceil(n * 2 / 3), lv: lv(w) };
+        p.council = { day: d, for: f, against: ag, n, votes, why, names, pass: f > ag, tie: f === ag, sup: f >= Math.min(n, Math.max(Math.ceil(n * 2 / 3), Math.floor(n / 2) + 2)), lv: lv(w) }; // v9.4.0 過半才通過(平手不過);推翻否決要真正的三分之二,三人議會要全票
         const title = ps.title(p);
         for (const m of ms) { const r = R(w, m.agentId); r.nv = (r.nv || 0) + 1; if (votes[m.agentId] === 'for') r.ns = (r.ns || 0) + 1; r.votes.push({ pid: p.id, title, v: votes[m.agentId], day: d, kind: p.kind }); if (r.votes.length > 12) r.votes.splice(0, r.votes.length - 12); }
         const Lw = L(w);
-        log(w, 'council', '🏛️ {council}表決{id}「{title}」：{f} 贊成 / {a} 反對，{res}。', { council: Lw.council, id: p.id, title, f, a: ag, res: p.council.pass ? '送交鎮長拍板' : '議會否決' });
+        log(w, 'council', '🏛️ {council}表決{id}「{title}」：{f} 贊成 / {a} 反對，{res}。', { council: Lw.council, id: p.id, title, f, a: ag, res: p.council.pass ? '送交鎮長拍板' : p.council.tie ? '平手，沒有過半，議會否決' : '議會否決' });
         try { w.dailyNews?.collectEvent?.('politics', `${t(Lw.council)}${t('表決')}${p.id}${t('（')}${f}:${ag}${t('）')}${t('：')}${t(p.council.pass ? '通過' : '否決')}`, 6, []); } catch (e) {}
         return p.council;
     }
@@ -119,6 +120,7 @@ const ASSEMBLY = (() => {
         const D = w.dark; if (!D?.secrets) return;
         const Lw = L(w);
         for (const s of D.secrets) {
+            if (!s.asm && s.found && !s._mayDone && s.k === '{c}私下塞錢給{v}買票') { s._mayDone = true; try { mayorBought(w, s); } catch (e) { console.warn('[Assembly] mayor buy', e); } continue; }
             if (!s.asm || !s.found || s._asmDone) continue; s._asmDone = true;
             const c = w.agents[s.culprit]; const r = R(w, s.culprit); r.exposed++;
             if (!c) continue;
@@ -134,7 +136,40 @@ const ASSEMBLY = (() => {
                 }
             } else if (s.asm === 'buy') {
                 log(w, 'council', '📰 {c}在{member}選舉時買票的事傳開了。', { c: c.name, member: Lw.member }, c.name);
+                // v9.4.0 買票當上的議員:被揭穿就當選無效,席位由落選者遞補
+                if ((w.council?.members || []).includes(c.agentId)) {
+                    try { if (typeof TIERS !== 'undefined') TIERS.hint(w, c.agentId, 'scandal'); } catch (e) {}
+                    w.council.members = w.council.members.filter(id => id !== c.agentId);
+                    log(w, 'council', '⚖️ {c}的{member}當選無效——票是買來的。空出的席位由上次落選的人遞補。', { c: c.name, member: Lw.member }, c.name);
+                    mem(w, c, '買票的事被揭穿，我的{member}當選無效。走在街上大家都在看我。', { member: Lw.member }, 9);
+                    c.moodModifier = (c.moodModifier || 0) - 10;
+                    try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票被揭穿，議員當選無效')}`, 9, [c.name]); } catch (e) {}
+                }
             }
+        }
+    }
+
+    // v9.4.0 首長選舉買票被揭穿:還在位的話被迫下台、辦補選;買來的票要是沒讓他當選,只丟臉
+    function mayorBought(w, s) {
+        const c = w.agents[s.culprit]; if (!c || c.isDead) return;
+        const E = w.election; const holder = E?._officeHolder?.(w);
+        const lead = (typeof TIERS !== 'undefined' ? TIERS.LV[TIERS.level(w)]?.leader : '') || '鎮長';
+        const last = (E?.electionHistory || []).slice(-1)[0];
+        const won = holder && holder.agentId === c.agentId && (!last || last.winner?.agentId === c.agentId) && (day(w) - (s.day || 0)) < 120;
+        if (won && E.stepDown?.(w, c, 'scandal')) {
+            log(w, 'council', '⚖️ {c}當年選{t}時私下塞錢買票，證據傳遍全鎮。{c}只好辭職下台，鎮上要辦補選。', { c: c.name, t: lead }, c.name);
+            mem(w, c, '買票的事被揭穿了，我只能辭去{t}。我怎麼會走到這一步？', { t: lead }, 10);
+            c.moodModifier = (c.moodModifier || 0) - 12;
+            const v = w.agents[s.victim]; if (v) mem(w, v, '{c}當年塞錢給我買票，現在全鎮都知道了，我也很難做人。', { c: c.name }, 7);
+            try { if (typeof WAYS !== 'undefined') WAYS.loseFace?.(w, c, 10); } catch (e) {}
+            try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票醜聞下台')}`, 10, [c.name]); } catch (e) {}
+        } else if (E?.active && (E.candidates || []).some(x => x.agentId === c.agentId)) {
+            log(w, 'council', '📰 投票前夕爆出{c}私下塞錢買票！拿過錢的人心虛，沒拿的人很火大。', { c: c.name }, c.name);
+            for (const o of Object.values(w.agents)) { const r = o && o !== c && !o.isDead && !o.isPlayer ? o.relationships?.relationships?.[c.agentId] : null; if (r) { try { r.modifyAffinity(-6); } catch (e) {} } } // 只影響本來就認識他的人(不替全鎮新建關係)
+        } else if (holder?.agentId !== c.agentId) {
+            log(w, 'council', '📰 {c}在{t}選舉時私下塞錢買票的事傳開了，好在最後沒選上。', { c: c.name, t: lead }, c.name);
+        } else {
+            log(w, 'council', '📰 有人翻出{c}很久以前買票的舊帳，大家議論了幾天。', { c: c.name }, c.name);
         }
     }
 
@@ -447,7 +482,9 @@ const CRISIS = (() => {
         ev._npc = true;
         const i = pick(w, ev); if (i < 0) { ec.pendingEvent = null; return null; }
         const L = leader(w), label = ev.choices[i]?.label || '', name = ev.eventName || '';
-        const r = ec.resolveChoice(i, w, L ? L.name : '');
+        let r = null;
+        try { r = ec.resolveChoice(i, w, L ? L.name : ''); } catch (e) { console.warn('[Crisis] resolve', e); ec.pendingEvent = null; return null; } // v9.4.0 結算出錯就收掉,不要卡住之後所有事件
+        if (ec.pendingEvent === ev) ec.pendingEvent = null;
         try { if (L) L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{e}的時候，我決定「{c}」。', { e: name, c: label }, 6, []); } catch (e) {}
         return r;
     }

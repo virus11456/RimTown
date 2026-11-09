@@ -49,7 +49,7 @@ Object.assign(RimTownApp.prototype, {
     _ghShow() {
         this._ghEnsure(); const tray = document.getElementById('gh-tray'); if (!tray) return;
         this._ghOpen = true; this._ghTab = this._ghTab || 'hand';
-        const d = this._ghData(); if (!this._ghSel || !d?.hand?.some(c => c.id === this._ghSel)) { const first = d?.hand?.find(c => c.left <= 0) || d?.hand?.[0]; this._ghSel = first?.id || null; }
+        const d = this._ghData(); if (!String(this._ghSel || '').startsWith('wc:') && (!this._ghSel || !d?.hand?.some(c => c.id === this._ghSel))) { /* v9.3.0 選著世界級災厄的話保留 */ const first = d?.hand?.find(c => c.left <= 0) || d?.hand?.[0]; this._ghSel = first?.id || null; }
         this._ghRender(); tray.hidden = false; this._ghPlace();
         requestAnimationFrame(() => { tray.classList.add('open'); tray.querySelector('.gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); });
         this._ghFab();
@@ -206,7 +206,7 @@ Object.assign(RimTownApp.prototype, {
     },
     // v9.2.0 世界級災厄移進手牌:跟手牌同一邊,自己一個區塊。解鎖跟著帳號(撐過一次,在哪個鎮都能打)
     _wcView() { if (typeof WORLDCAL === 'undefined' || !this.world || this.world.observerMode === false) return null; if (!((this._uiOn?.('gh-wc') ?? true))) return null; try { return WORLDCAL.view(this.world); } catch (e) { return null; } },
-    _wcWhy(V, k) { const WHY = { locked: '小鎮撐過一次才能打出', active: '現在還有災厄沒結束', cooldown: '上一場剛結束，還要 {n} 天', small: '鎮上的人太少了（要 6 個大人）', power: '神力不夠（要 {n}）' }; return k.can.ok ? '' : t(WHY[k.can.why] || '').replace('{n}', k.can.why === 'power' ? V.cost : k.can.days || ''); },
+    _wcWhy(V, k) { const WHY = { locked: '小鎮撐過一次才能打出', active: '現在還有災厄沒結束', cooldown: '上一場剛結束，還要 {n} 天', small: '鎮上的人太少了（要 6 個大人）', power: '神力不夠（要 {n}）', hidden: '七種世界級災厄全部撐過，才會發現它（已撐過 {n}/7）' }; return k.can.ok ? '' : t(WHY[k.can.why] || '').replace('{n}', k.can.why === 'power' ? V.cost : k.can.why === 'hidden' ? k.seven : k.can.days || ''); },
     _wcHandRow(V, esc) {
         const n = V.kinds.filter(k => k.on).length; const c = V.cur;
         let h = `<div class="gh-wc"><div class="gh-wc-h">🌍 ${t('世界級災厄')} <small>${t('已解鎖 {a}/{b}').replace('{a}', n).replace('{b}', V.kinds.length)} · ${t('撐過一次就寫進帳號，換到哪個城鎮都能打')}</small></div>`;
@@ -218,14 +218,18 @@ Object.assign(RimTownApp.prototype, {
                 <span class="gh-band">${esc(k.pathName)}</span><span class="gh-cost">🔮${V.cost}</span>
                 <span class="gh-ic" aria-hidden="true">${k.icon}</span>
                 <span class="gh-nm">${esc(k.name)}</span>
-                ${k.on ? '' : `<span class="gh-cd">🔒 ${t('未解鎖')}</span>`}
+                ${k.on ? '' : k.hidden ? `<span class="gh-cd">❔ ${k.seven}/7</span>` : `<span class="gh-cd">🔒 ${t('未解鎖')}</span>`}
             </button>`;
         }
         return h + `</div></div>`;
     },
     _wcDetail(V, k, esc) {
         const why = this._wcWhy(V, k);
-        const hint = k.on ? t('打出後先是一些說不出的怪事，接著學者警告、全鎮爭論、準備與賽跑，14～20 天後降臨。') : t('這條路線（{p}）的第六時代研究到六成，小鎮就可能自然遇上；撐過一次就解鎖，之後在任何城鎮都能打出。').replace('{p}', k.pathName);
+        if (k.hidden) return `<div class="gh-detail gh-wcd wc-p-all wc-hidden"><div class="gh-d-head"><span class="gh-d-ic" aria-hidden="true">❔</span><div><div class="gh-d-nm">？？？</div><div class="gh-d-meta">🌍 ${t('世界級')} · ${t('還沒被發現')}</div></div></div>
+            <div class="gh-d-desc">${esc(t('還沒有人知道它是什麼。也許要等世界經歷過所有的末日，才會有人抬頭看見。'))}</div>
+            <div class="gh-wc-seven">${V.kinds.filter(x => x.path !== 'all').map(x => `<span class="${x.on ? 'on' : ''}" title="${esc(x.name)}">${x.on ? x.icon : '·'}</span>`).join('')}</div>
+            <button class="gh-play" disabled aria-disabled="true">❔ ${t('還不能打出')}</button><div class="gh-d-note">🔒 ${esc(this._wcWhy(V, k))}</div></div>`;
+        const hint = k.key === 'blacksun' ? t('終局災厄：三條路線同時崩壞。研究員要分頭救電網、生命、以太三條戰線，哪一線沒救起來就在那裡受重創；村民會吵要先救哪一線。') : k.on ? t('打出後先是一些說不出的怪事，接著學者警告、全鎮爭論、準備與賽跑，14～20 天後降臨。') : t('這條路線（{p}）的第六時代研究到六成，小鎮就可能自然遇上；撐過一次就解鎖，之後在任何城鎮都能打出。').replace('{p}', k.pathName);
         return `<div class="gh-detail gh-wcd wc-p-${k.path}">
             <div class="gh-d-head"><span class="gh-d-ic" aria-hidden="true">${k.icon}</span><div><div class="gh-d-nm">${esc(k.name)}</div><div class="gh-d-meta">🌍 ${t('世界級')} · ${esc(k.pathName)} · 🔮 ${V.cost} · ${t('14～20 天')}</div></div></div>
             <div class="gh-d-desc">${esc(k.short)}</div>
@@ -239,11 +243,16 @@ Object.assign(RimTownApp.prototype, {
         if (typeof WORLDCAL === 'undefined' || !this.world) return ''; const V = WORLDCAL.view(this.world); const esc = (x) => this._escapeHtml(String(x ?? '')); const c = V.cur;
         let h = '';
         if (c) {
-            const LG = { omen: '🌫️ 出現了說不出的怪事', reveal: '🔬 {x}算出了真相', rumor: '🗣️ 消息傳遍全鎮', panic: '😱 鎮上陷入恐慌', fix: '🔬 研究員開始全力研究', fixdone: '✅ 主對策完成', shelter: '🏚️ 防空洞挖好了', unplug: '🧯 AI 全智能體拔掉了', bank: '🧊 精卵庫蓋好了', stock: '🪵 冬季倉庫堆滿了', evac: '🧳 裂隙周邊的人家搬走了', wall: '🧱 圍牆築好了', zcure: '💉 解藥：{x} 個喪屍變回人', arrive_averted_zb: '🧪 降臨：化解了', arrive_eased_zb: '🧟 降臨：減輕了（{x} 人變成喪屍）', arrive_hit_zb: '🧟 降臨：重創（{x} 人變成喪屍）', arrive_averted_kid: '🧬 降臨：化解了', arrive_eased_kid: '🍼 降臨：減輕了（孩子少了一半）', arrive_hit_kid: '🍼 降臨：重創（再也沒有孩子出生）', arrive_averted_van: '🔮 降臨：化解了', arrive_eased_van: '🌀 降臨：減輕了（{x} 人被吸走）', arrive_hit_van: '🌀 降臨：重創（{x} 人被吸走）', arrive_averted: '🕊️ 降臨：化解了', arrive_eased: '💥 降臨：減輕了（{x} 人罹難）', arrive_hit: '💥 降臨：重創（{x} 人罹難）', after: '🌅 開始收拾' };
+            const LG = { omen: '🌫️ 出現了說不出的怪事', reveal: '🔬 {x}算出了真相', rumor: '🗣️ 消息傳遍全鎮', panic: '😱 鎮上陷入恐慌', fix: '🔬 研究員開始全力研究', fixdone: '✅ 主對策完成', shelter: '🏚️ 防空洞挖好了', unplug: '🧯 AI 全智能體拔掉了', bank: '🧊 精卵庫蓋好了', stock: '🪵 冬季倉庫堆滿了', evac: '🧳 裂隙周邊的人家搬走了', wall: '🧱 圍牆築好了', ark: '🛖 地下方舟蓋好了', focus: '🎯 研究員先救「{x}」', front: '✅ {x}撐住了', zcure: '💉 解藥：{x} 個喪屍變回人', arrive_averted_zb: '🧪 降臨：化解了', arrive_eased_zb: '🧟 降臨：減輕了（{x} 人變成喪屍）', arrive_hit_zb: '🧟 降臨：重創（{x} 人變成喪屍）', arrive_averted_kid: '🧬 降臨：化解了', arrive_eased_kid: '🍼 降臨：減輕了（孩子少了一半）', arrive_hit_kid: '🍼 降臨：重創（再也沒有孩子出生）', arrive_averted_van: '🔮 降臨：化解了', arrive_eased_van: '🌀 降臨：減輕了（{x} 人被吸走）', arrive_hit_van: '🌀 降臨：重創（{x} 人被吸走）', arrive_averted: '🕊️ 降臨：化解了', arrive_eased: '💥 降臨：減輕了（{x} 人罹難）', arrive_hit: '💥 降臨：重創（{x} 人罹難）', after: '🌅 開始收拾' };
             h += `<div class="wc-box wc-${c.kind}"><div class="wc-h"><span>🌍 ${t('世界級災厄')}${t('：')}<b>${c.icon} ${esc(c.name)}</b></span>${c.src === 'lab' ? `<span class="wc-src">🧪 ${t('工坊發動')}</span>` : ''}<span class="gh-when">${t('第 {d} 天').replace('{d}', c.day)}</span></div>`;
             h += `<div class="wc-steps">${c.phases.map((p, i) => `<span class="wc-step${i === c.idx ? ' on' : i < c.idx ? ' past' : ''}">${p.icon} ${esc(p.name)}</span>`).join('')}</div>`;
+            if (c.fronts) { // v9.3.0 黑日:三條戰線各一條進度
+                h += `<div class="tech-desc">${esc(c.short)}${c.left > 0 ? ` · ⏳ <b>${t('還有 {n} 天降臨').replace('{n}', c.left)}</b><small>${t('（只有你看得到）')}</small>` : ''}</div>`;
+                h += c.fronts.map(f => `<div class="wc-bar wc-front${f.focus ? ' on' : ''}"><span>${f.icon} ${esc(f.name)}${f.focus ? ' 🎯' : ''}</span><div class="progress-bar"><div class="progress-fill" style="width:${f.prog}%"></div></div><b>${f.out ? `<span class="wc-out-${f.out}">${esc(f.outName)}</span>` : f.prog + '%'}</b></div>`).join('');
+                if (!c.out) h += `<div class="tech-desc wc-sub">${c.fix ? t('研究員放下手上的研究，分三組搶救') : t('還沒有提案通過，只有研究員零星在做')} · ${t('每一線做完就化解，做一半能減輕')}</div>`;
+            } else
             h += `<div class="tech-desc">${esc(c.short)}${c.left > 0 ? ` · ⏳ <b>${t('還有 {n} 天降臨').replace('{n}', c.left)}</b><small>${t('（只有你看得到）')}</small>` : ''}</div>`;
-            if (c.idx >= 1 && !c.out) h += `<div class="wc-bar"><span>${c.fixIcon} ${esc(c.fixName)}</span><div class="progress-bar"><div class="progress-fill" style="width:${c.prog}%"></div></div><b>${c.prog}%</b></div><div class="tech-desc wc-sub">${c.fix ? t('研究員放下手上的研究，全力在做') : t('還沒有提案通過，只有研究員零星在做')} · ${t('做完就能化解，做一半能減輕')}</div>`;
+            if (c.idx >= 1 && !c.out && !c.fronts) h += `<div class="wc-bar"><span>${c.fixIcon} ${esc(c.fixName)}</span><div class="progress-bar"><div class="progress-fill" style="width:${c.prog}%"></div></div><b>${c.prog}%</b></div><div class="tech-desc wc-sub">${c.fix ? t('研究員放下手上的研究，全力在做') : t('還沒有提案通過，只有研究員零星在做')} · ${t('做完就能化解，做一半能減輕')}</div>`;
             if (c.out) h += `<div class="tech-desc">${t('結果')}${t('：')}<b class="wc-out-${c.out}">${esc(c.outName)}</b>${c.dead ? ` · ⚰️ ${t('{n} 人罹難').replace('{n}', c.dead)}` : ''}${c.van ? ` · 🌀 ${t('{n} 人被吸進裂隙').replace('{n}', c.van)}` : ''}${c.left2 > 0 ? ` · 🧳 ${t('{n} 人搬走').replace('{n}', c.left2)}` : ''}</div>`;
             if (c.zb) h += `<div class="tech-desc wc-zb">🧟 ${t('喪屍 {n}').replace('{n}', c.zb.n)} · 🩸 ${t('被咬還沒發病 {n}').replace('{n}', c.zb.bit)}${c.zb.hid ? ` · 🤫 ${t('家人瞞著 {n} 次').replace('{n}', c.zb.hid)}` : ''}${c.zb.killed ? ` · 🪓 ${t('被清剿 {n}').replace('{n}', c.zb.killed)}` : ''}${c.zb.cured ? ` · 💉 ${t('變回人 {n}').replace('{n}', c.zb.cured)}` : ''}${c.prog < 100 ? ` · 🧪 ${t('解藥 {n}%').replace('{n}', c.prog)}` : ''}</div>`;
             h += `<div class="wc-chips"><span class="${c.prep ? 'on' : ''}">${c.prepIcon} ${esc(c.prepName)}${c.prep ? ' ✓' : ''}</span>${c.idx >= 1 ? `<span>🙄 ${t('說沒事')} ${c.deny}</span><span>😰 ${t('喊危險')} ${c.warn}</span>` : ''}</div>`;

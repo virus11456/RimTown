@@ -331,6 +331,17 @@ const IMMIGRANT_POOL = [
     {name:'范浩',age:36,gender:'male',traits:['lazy','charismatic'],job:'priest',background:'悠哉的精神導師。'},
 ];
 
+// v9.4.0 程序生成的移民:職業先隨機(到了鎮上就業市場會照職缺調整),背景從幾種身世裡抽
+const IMMIGRANT_WHY = ['家鄉鬧旱災，一路找活幹來到這裡。', '聽說這裡的人好相處，想重新開始。', '跟家裡吵翻了，一個人出來闖。', '前一個城鎮的工坊倒了，只好另謀出路。', '來投靠遠房親戚，結果親戚早就搬走了。', '欠了一屁股債，躲到這裡來。', '年輕時就夢想離開老家，看看外面的世界。', '另一半過世了，想換個地方生活。', '在路上聽商人說起這裡，就決定留下來。', '戰亂逃難過來的，對打仗的事絕口不提。'];
+function IMMIGRANT_GEN(world) {
+    const gender = Math.random() < 0.5 ? 'male' : 'female';
+    const TR = Object.keys(typeof TRAIT_POOL !== 'undefined' ? TRAIT_POOL : { kind: 1, hardworking: 1, shy: 1, optimist: 1 });
+    const traits = shuffle(TR.slice()).slice(0, 2);
+    const job = pickRandom(['farmer', 'farmer', 'miner', 'cook', 'carpenter', 'tailor', 'trader', 'blacksmith', 'guard', 'doctor', 'researcher']);
+    const name = uniqueVillagerName(world, null, { gender });
+    return { name, age: 18 + Math.floor(Math.random() * 33), gender, traits, job, background: pickRandom(IMMIGRANT_WHY) };
+}
+
 class EventSystem {
     constructor() {
         this.eventLog = []; this.activeEffects = {}; this.conversationTopics = [];
@@ -583,11 +594,12 @@ class EventSystem {
     }
     _spawnImmigrant(world) {
         let available = IMMIGRANT_POOL.filter(p => !this._usedImmigrantNames.has(p.name));
-        if (!available.length) { this._usedImmigrantNames.clear(); available = [...IMMIGRANT_POOL]; }
+        // v9.4.0 12 位固定移民都來過以後,改成每次隨機組一個新的人(年齡、性別、個性、職業、背景都不一樣),不再一直重複同一批人
+        if (!available.length) available = [IMMIGRANT_GEN(world)];
         // v5.19.0 城鎮身分:成形的路線會吸引「氣味相投」的移民(依職業軸加權挑選)
         let imm;
         const routeAxis = world.townIdentity?.routeAxis?.();
-        if (routeAxis && Math.random() < 0.7) {
+        if (routeAxis && available.length > 1 && Math.random() < 0.7) {
             const weights = available.map(p => JOB_AXIS[p.job] === routeAxis ? 4 : 1);
             imm = weightedChoice(available, weights);
         }
@@ -681,7 +693,11 @@ class ElectionSystem {
     // v6.43.3 _officeHolder:掛著鎮長職位的人(可能去探險了);_realMayor:人在鎮上、能拍板的正式鎮長
     _isExploring(a) { return !!a && (a.currentLocation === 'exploration' || a.activity === 'exploring'); }
     _officeHolder(world) { return Object.values(world.agents).find(a => a && !a.isPlayer && !a.isDead && a.job?.key === 'mayor') || null; }
-    _realMayor(world) { const m = this._officeHolder(world); return (m && !this._isExploring(m)) ? m : null; }
+    _realMayor(world) { const m = this._officeHolder(world); return (m && !this._isExploring(m) && !this._jailed(world, m)) ? m : null; }
+    // v9.4.0 坐牢的人不能拍板、不能代理、不能參選;國王不兼首長
+    _jailed(world, a) { try { return typeof CIVIC !== 'undefined' && !!CIVIC.jailed?.(world, a); } catch (e) { return false; } }
+    _isKing(world, a) { return !!a && !!world.crown && world.crown.king === a.agentId; }
+    _canServe(world, a) { return !!a && !this._jailed(world, a) && !this._isKing(world, a); }
     _mayorTravelling(world) { return (world.events?._travellingAgents || []).find(tr => tr.agentData?.jobKey === 'mayor') || null; }
     // 目前在鎮上能拍板的人:正式鎮長;不在就由代理鎮長
     currentMayor(world) {
@@ -697,7 +713,8 @@ class ElectionSystem {
         const real = this._realMayor(world);
         if (real) {
             if (this.acting) {
-                const back = (this.acting.reason === 'travel' || this.acting.reason === 'explore') && this.acting.mayorId === real.agentId; // v6.43.3 探險回來也交還
+                const back = (this.acting.reason === 'travel' || this.acting.reason === 'explore' || this.acting.reason === 'jail') && this.acting.mayorId === real.agentId; // v6.43.3 探險回來也交還;v9.4.0 出獄也交還
+                if (back && this.acting.reason === 'jail') { world.logMessageT('council', '🔓 鎮長{mayor}出獄了，{acting}把代理的工作交還。有人說他該下台，有人說刑期滿了就算了。', { mayor: real.name, acting: this.acting.name }); this.acting = null; return; }
                 world.logMessageT('council', back ? '🏛️ 鎮長{mayor}回來了，{acting}把代理的工作交還。' : '🏛️ {acting}的代理鎮長任期結束，由新鎮長{mayor}接手。', { mayor: real.name, acting: this.acting.name });
                 this.acting = null;
             }
@@ -705,13 +722,14 @@ class ElectionSystem {
         }
         const tr = this._mayorTravelling(world);
         const ex = tr ? null : this._officeHolder(world); // v6.43.3 還掛著職位但不在鎮上 → 去探險了
-        const reason = tr ? 'travel' : ex ? 'explore' : 'gone';
+        const reason = tr ? 'travel' : ex ? (this._jailed(world, ex) ? 'jail' : 'explore') : 'gone';
         const actingHere = this.acting && this._residents(world).some(a => a.agentId === this.acting.agentId); // v6.43.3 代理人自己離鎮或去探險 → 換人
         if (!this.acting || !actingHere || this.acting.reason !== reason) {
             const pick = this._pickActing(world);
             if (pick) {
                 this.acting = { agentId: pick.agentId, name: pick.name, since: world._absDay?.() || 0, reason, mayorId: tr?.agentData?.agentId || ex?.agentId || '', mayorName: tr?.agentData?.name || ex?.name || '' };
-                if (ex) world.logMessageT('council', '🏛️ 鎮長{mayor}出去探險了，這幾天由{acting}代理鎮長。', { mayor: ex.name, acting: pick.name });
+                if (ex && reason === 'jail') { world.logMessageT('council', '🔒 鎮長{mayor}還關在牢裡，不能拍板，這幾天由{acting}代理鎮長。', { mayor: ex.name, acting: pick.name }); try { world.dailyNews?.collectEvent?.('politics', t('{a}坐牢期間停權，由{b}代理').replace('{a}', t(ex.name)).replace('{b}', t(pick.name)), 8, [ex.name]); } catch (e) {} }
+                else if (ex) world.logMessageT('council', '🏛️ 鎮長{mayor}出去探險了，這幾天由{acting}代理鎮長。', { mayor: ex.name, acting: pick.name });
                 else if (tr) world.logMessageT('council', '🏛️ 鎮長{mayor}出遠門了，這幾天由{acting}代理鎮長。', { mayor: tr.agentData.name, acting: pick.name });
                 else world.logMessageT('council', '🏛️ 鎮上暫時沒有鎮長，由{acting}代理，馬上辦補選。', { acting: pick.name });
                 pick.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', (tr || ex) ? '鎮長{mayor}出遠門，我暫時代理鎮長。' : '鎮上沒有鎮長，我先代理，等補選結果。', { mayor: tr?.agentData?.name || ex?.name || '' }, 7, []);
@@ -720,9 +738,18 @@ class ElectionSystem {
         // 永久離開(不是出遠門)而且沒在辦選舉 → 補選
         if (!tr && !ex && !this.active) this._startElection(world, { byElection: true });
     }
+    // v9.4.0 首長被迫交出職位(登基、醜聞、政變失敗):換掉職業、記進從政履歷,馬上由代理接手並辦補選
+    stepDown(world, a, why) {
+        if (!a || a.job?.key !== 'mayor') return false;
+        try { if (typeof TIERS !== 'undefined') TIERS.hint(world, a.agentId, why); } catch (e) {}
+        try { a.job = (typeof Job !== 'undefined' && typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null; } catch (e) { a.job = null; }
+        if (this.acting?.mayorId === a.agentId) this.acting = null; // 不再等他回來(坐牢、出遠門也一樣)
+        try { this._checkMayor(world); } catch (e) { console.warn('[Election] stepDown', e); }
+        return true;
+    }
     // 代理人選:上一屆的第二名(還在鎮上的話),不然挑社交能力最好、最有魅力的人
     _pickActing(world) {
-        const res = this._residents(world); if (!res.length) return null;
+        const res = this._residents(world).filter(a => this._canServe(world, a) && a.job?.key !== 'mayor'); if (!res.length) return null; // v9.4.0 國王、坐牢的、被停權的鎮長本人不代理
         const last = this.electionHistory[this.electionHistory.length - 1];
         const second = last?.candidates?.slice().sort((a, b) => b.votes - a.votes).find(c => c.agentId !== last.winner?.agentId && res.some(a => a.agentId === c.agentId));
         if (second) return world.agents[second.agentId];
@@ -806,7 +833,7 @@ class ElectionSystem {
     }
 
     _startElection(world, opts = {}) {
-        const eligible = this._residents(world); // v6.42.0 排除外鎮訪客、出遠門的人
+        const eligible = this._residents(world).filter(a => this._canServe(world, a)); // v6.42.0 排除外鎮訪客、出遠門的人;v9.4.0 國王和坐牢的人不參選
         if (eligible.length < 2) return;
         this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
         this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {}; this._campPending = false;
@@ -986,7 +1013,8 @@ class ElectionSystem {
             const fallbackJobs = ['farmer','guard','trader','researcher'];
             const newJobKey = fallbackJobs[Math.floor(Math.random() * fallbackJobs.length)];
             oldMayor.job = JOB_DEFINITIONS[newJobKey] ? new Job(newJobKey) : null;
-            oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', `${t('我在選舉中落敗，不再擔任鎮長')}`, 9, [winner.name]);
+            const ran = this.candidates.some(c => c.agentId === oldMayor.agentId); // v9.4.0 沒參選的(卸任、坐牢、當了國王)不是「落敗」
+            oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', ran ? `${t('我在選舉中落敗，不再擔任鎮長')}` : `${t('我的鎮長任期結束，交棒給')}${t(winner.name)}`, ran ? 9 : 7, [winner.name]);
         }
         if (newMayorAgent) {
             newMayorAgent.job = new Job('mayor');
