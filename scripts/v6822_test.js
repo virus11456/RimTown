@@ -37,7 +37,7 @@ const init = ({ lang, jwt, enter }) => {
       ok(!heavy.length && lazy3d && r.scripts <= 14, '首頁沒有下載遊戲地圖、模擬或更新紀錄；3D 主視覺的 three.js 畫面出來後才載', { heavy, lazy3d, scripts: r.scripts });
       ok(r.anims.length > 0 && r.anims.every(t => t === 'svg'), '星空動畫只動整層圖層（不是 SVG 裡的每顆星）', r.anims);
       // 捲出畫面暫停
-      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 400)); const h = document.querySelector('.lp-hero'); return { off: h.classList.contains('lp-off'), state: getComputedStyle(document.querySelector('.lp-sky-l')).animationPlayState }; });
+      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 1200)); /* 高負載時 IntersectionObserver 回報較慢 */ const h = document.querySelector('.lp-hero'); return { off: h.classList.contains('lp-off'), state: getComputedStyle(document.querySelector('.lp-sky-l')).animationPlayState }; });
       ok(off.off && off.state === 'paused', '主視覺捲出畫面就暫停動畫', off);
       await page.waitForFunction(() => typeof RIMTOWN_CHANGELOG !== 'undefined' && document.querySelectorAll('#landing-log .landing-log-item').length >= 5, null, { timeout: 10000 }).catch(() => {}); // 更新紀錄 640KB,忙的時候要多等一下
       const log = await page.evaluate(() => ({ items: document.querySelectorAll('#landing-log .landing-log-item').length, loaded: typeof RIMTOWN_CHANGELOG !== 'undefined' }));

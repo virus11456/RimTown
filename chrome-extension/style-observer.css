@@ -991,3 +991,6 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-wcc.off .gh-ic { filter: grayscale(1); opacity: .55; }
 @media (max-width: 768px) { .rimtown-container .gh-wcc { width: 104px; height: 132px; } }
 .rimtown-container .t3d-tag.is-zb { background: rgba(60, 86, 48, 0.88); color: #E4F2D6; }
+/* v9.2.1 手牌抽屜內容變多（世界級災厄區塊）時，標題列／篩選列不能被擠扁，只讓下面的內容捲動 */
+.rimtown-container .gh-tray > .gh-grab, .rimtown-container .gh-tray > .gh-head, .rimtown-container .gh-tray > .gh-filters { flex-shrink: 0; }
+.rimtown-container .gh-tray > .gh-body, .rimtown-container .gh-tray > .gh-track, .rimtown-container .gh-tray > .gh-lab { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
