@@ -61,7 +61,7 @@ const DREAM = (() => {
         const F = w.faith; const ce = ai(w); if (!F || !ce) return;
         const fresh = Object.entries(F.prayers || {}).filter(([id, p]) => p.day === d && !p.text && w.agents[id]).slice(0, 3); if (!fresh.length) return;
         try { const list = fresh.map(([id, p], i) => { const a = w.agents[id]; const R = F.rels.find(r => r.id === p.rel); return `${i + 1}. ${a.name}${t('向')}${R ? R.deity[0] : ''}${t('祈求')}${t('：')}${t(p.wish)}`; }).join('\n'); const prompt = `${t('請替每位村民寫一句真誠的禱詞（25 字內，第一人稱）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 180);
-            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { if (typeof j[i] === 'string' && j[i].trim()) { p.text = j[i].trim().slice(0, 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: w.agents[id].name, x: p.text }, w.agents[id].name); } });
+            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { const a = w.agents[id]; if (!a || a.isDead) return; /* 等 AI 回覆時人可能不在了(以前會丟錯,同一批其他人的禱詞也跟著沒了) */ if (typeof j[i] === 'string' && j[i].trim()) { p.text = j[i].trim().slice(0, 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: a.name, x: p.text }, a.name); } });
         } catch (e) {}
     }
     // ---------- 託夢 ----------
