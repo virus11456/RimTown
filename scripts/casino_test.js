@@ -34,8 +34,11 @@ async function run(browser, lang, vp) {
       B[boss.agentId] = 100000; const gam = all.filter(a => a !== boss).slice(0, 12); for (const a of gam) { a.personality.traits = ['greedy', 'optimist']; B[a.agentId] = 100; }
       const g0 = Object.fromEntries(gam.map(a => [a.agentId, 100])); if (w.bank) w.bank.open = false;
       const v0 = C.st.visits, h0 = C.st.house, pd0 = C.st.paid; const hc = conserved(() => { for (let k = 0; k < 60; k++) run1(); });
-      const went = gam.filter(a => (C.v[a.agentId] || 0) > 0); const lost = went.filter(a => (B[a.agentId] ?? 0) < g0[a.agentId]);
-      out.edge = { visits: C.st.visits - v0, house: C.st.house - h0, paid: C.st.paid - pd0, net: (C.st.house - h0) - (C.st.paid - pd0), went: went.length, lost: lost.length, cons: hc };
+      // 樣本要大才看得出莊家優勢:每天把賭客的錢重設成 100,連跑 500 天,累計每個人的輸贏
+      const cum = {}; const v1 = C.st.visits, h1 = C.st.house, pd1 = C.st.paid;
+      for (let k = 0; k < 500; k++) { for (const a of gam) if (w.agents[a.agentId]) { B[a.agentId] = 100; } B[boss.agentId] = 100000; run1(); for (const a of gam) if (w.agents[a.agentId]) cum[a.agentId] = (cum[a.agentId] || 0) + (B[a.agentId] - 100); }
+      const went = gam.filter(a => (C.v[a.agentId] || 0) > 0 && a.agentId in cum); const lost = went.filter(a => cum[a.agentId] < 0);
+      out.edge = { visits: C.st.visits - v1, house: Math.round(C.st.house - h1), paid: Math.round(C.st.paid - pd1), net: Math.round((C.st.house - h1) - (C.st.paid - pd1)), went: went.length, lost: lost.length, cons: hc, d60: C.st.visits - v0 > 0 };
       if (w.bank) w.bank.open = true;
       // ---------- 3) 一夕致富:中大獎 25 倍;莊家付不出就倒 ----------
       for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 100000; const lucky = gam.find(a => w.agents[a.agentId]); B[lucky.agentId] = 50; C.streak = {};
@@ -76,9 +79,9 @@ async function run(browser, lang, vp) {
   ok(r.village, '村莊不會開賭場', r.village);
   ok(r.open.open && r.open.owner && r.open.paid && r.open.log && r.open.name, '城鎮以上，有野心的有錢人花錢開賭場', r.open);
   ok(r.open.cons.ok, '開賭場的錢付給工匠，全鎮的錢不多不少', r.open.cons);
-  ok(r.edge.visits >= 30 && r.edge.net > 0, '一個月下來莊家淨賺', r.edge);
-  ok(r.edge.went >= 5 && r.edge.lost / r.edge.went >= 0.6, '去賭的人多數輸錢（十賭九輸）', r.edge);
-  ok(r.edge.cons.ok, '下注、輸贏都只是在村民之間移動，全鎮的錢不多不少', r.edge.cons);
+  ok(r.edge.visits >= 500 && r.edge.net > 0 && r.edge.net / r.edge.house > 0.1, '長期下來莊家淨賺', r.edge);
+  ok(r.edge.went >= 5 && r.edge.lost / r.edge.went >= 0.7, '常去賭的人絕大多數輸錢（十賭九輸）', r.edge);
+  ok(r.edge.d60 && r.edge.cons.ok, '兩個月自然下注，錢都只是在村民之間移動，全鎮的錢不多不少', r.edge.cons);
   ok(r.jack.n >= 1 && r.jack.got >= 120 && r.jack.log, '偶爾有人中大獎，一夕致富', r.jack);
   ok(r.jack.cons.ok, '大獎是莊家付的，全鎮的錢不多不少', r.jack.cons);
   ok(r.broke.closed && r.broke.why === 'broke' && r.broke.ownerCash < 0.01 && r.broke.log && r.broke.cons.ok, '莊家付不出大獎就傾家蕩產、賭場關門', r.broke);
