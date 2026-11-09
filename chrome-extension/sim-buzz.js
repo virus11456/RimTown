@@ -5,7 +5,7 @@
 // - 餘波:熱度退了,當事人終於鬆一口氣;最後淡出,寫進「最近談過的事」
 // - 影響:村民閒聊會講到正在熱的話題(依個性反應)、AI 對話與提案裁決的提示詞會帶上、問鎮上近況時會講
 const BUZZ = (() => {
-    const CAP = 3, HOT = 50, MAX = 12;
+    const CAP = 3, HOT = 60, MAX = 12; // v9.5.1 門檻 50→60:單一則大新聞要有人跟進或熱議才會變全鎮話題
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const log = (w, k, p, who) => { try { w.logMessageT?.('social', k, p || {}, who || ''); } catch (e) {} };
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
@@ -17,7 +17,7 @@ const BUZZ = (() => {
     const norm = (s) => String(s || '').replace(/[\s，。、！？：「」『』（）()!?,.:;'"“”]/g, '');
     // 收進話題池(dailyNews.collectEvent 會呼叫);_quiet:自己寫的新聞不要再回頭餵自己
     function feed(w, cat, text, imp, who) {
-        if (!w || !text || (imp || 0) < 6 || SKIP.has(cat) || S(w)._quiet) return null;
+        if (!w || !text || (imp || 0) < 7 || SKIP.has(cat) || S(w)._quiet) return null; // v9.5.1 6→7,小事不進話題池
         const X = S(w), d = day(w); who = (Array.isArray(who) ? who : []).filter(Boolean).slice(0, 3);
         const key = cat + '|' + (who[0] || norm(text).slice(0, 8));
         let it = X.items.find(x => x.key === key);
@@ -28,11 +28,12 @@ const BUZZ = (() => {
         } else {
             it = { id: 'Z' + (++X.n), key, cat, text: String(text).slice(0, 80), who, heat: imp * 5, peak: 0, ph: 'brew', d0: d, last: d, imp, fed: 1, talk: 0 };
             X.items.push(it);
-            if (X.items.length > MAX) { X.items.sort((a, b) => b.heat - a.heat); X.items.length = MAX; }
+            if (X.items.length > MAX) { X.items.sort((a, b) => b.heat - a.heat); for (const o of X.items.splice(MAX)) if (o.peak >= HOT) toHist(w, o); } // v9.5.1 被擠出池子的熱門話題也記進「最近談過」
         }
         it.peak = Math.max(it.peak, it.heat);
         return it;
     }
+    function toHist(w, it) { const X = S(w); X.hist.push({ text: it.text, cat: it.cat, peak: Math.round(it.peak), d0: it.d0, d1: day(w), talk: it.talk }); if (X.hist.length > 12) X.hist.splice(0, X.hist.length - 12); }
     const ranked = (w) => S(w).items.slice().sort((a, b) => b.heat - a.heat);
     const attended = (w) => ranked(w).slice(0, CAP);
     // 村民聊天時挑一個話題(越熱越常被講);講了就加溫
@@ -64,8 +65,8 @@ const BUZZ = (() => {
             const on = top.has(it.id);
             if (it.ph === 'brew') {
                 if (it.heat < HOT) it.heat *= on ? 0.93 : 0.82; // 一爆出來就夠大的事(重要度 10)直接變熱門
-                if (it.heat >= HOT) { it.ph = 'hot'; it.hotDay = d; log(w, '🔥 全鎮都在談：{x}', { x: it.text }, it.who[0] || ''); }
-                else if (d - it.d0 >= 5 && it.heat < HOT * 0.4) { X.items = X.items.filter(x => x !== it); continue; } // 沒人理就熄了
+                if (it.heat >= HOT) { it.ph = 'hot'; it.hotDay = d; if (!(X.hotLog > d - 2)) { X.hotLog = d; log(w, '🔥 全鎮都在談：{x}', { x: it.text }, it.who[0] || ''); } } // v9.5.1 兩天內只報一次
+                else if (d - it.d0 >= 5 && it.heat < HOT * 0.35) { X.items = X.items.filter(x => x !== it); continue; } // 沒人理就熄了
             } else if (it.ph === 'hot') {
                 it.heat *= on ? 0.88 : 0.72;
                 const pushed = !on && before.has(it.id); // 被新的大事擠出大家的注意力
@@ -78,7 +79,7 @@ const BUZZ = (() => {
                 it.heat *= 0.8;
             }
             it.peak = Math.max(it.peak, it.heat);
-            if (it.ph !== 'brew' && it.heat < 8) { X.items = X.items.filter(x => x !== it); if (it.peak >= HOT) { X.hist.push({ text: it.text, cat: it.cat, peak: Math.round(it.peak), d0: it.d0, d1: d, talk: it.talk }); if (X.hist.length > 12) X.hist.splice(0, X.hist.length - 12); } }
+            if (it.ph !== 'brew' && it.heat < 8) { X.items = X.items.filter(x => x !== it); if (it.peak >= HOT) toHist(w, it); }
         }
         X.att = attended(w).map(x => x.id);
         // 「最近鎮上在聊」也換成正在熱的話題(問村民鎮上近況時會講)
@@ -135,7 +136,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.buzz = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.buzz) d.buzz = { items: this.buzz.items, hist: this.buzz.hist, n: this.buzz.n, lastDay: this.buzz.lastDay, att: this.buzz.att }; return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.buzz) d.buzz = { items: this.buzz.items, hist: this.buzz.hist, n: this.buzz.n, lastDay: this.buzz.lastDay, att: this.buzz.att, hotLog: this.buzz.hotLog }; return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.buzz = (data?.buzz && Array.isArray(data.buzz.items)) ? data.buzz : null; } catch (e) {} return r; };
 }

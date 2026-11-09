@@ -12655,6 +12655,15 @@
         '天亮了': 'Dawn Again',
         '黑日來臨前，三條戰線全部救起來': 'Saved all three fronts before the Black Sun arrived',
         '先救哪一線': 'Which front first',
+        // v9.5.1
+        '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……': '💔 {agent} watches {other} with {luckyOne}, with a bitter pang in their heart...',
+        '正朝著心願「{g}」努力（下一步：{s}）': 'Working toward "{g}" (next step: {s})',
+        '為心願「{g}」再努力一點：{s}': 'Push a little harder toward "{g}": {s}',
+        '離「{g}」還有多遠呢……但我不會停下來的。': 'How far am I from "{g}"? I won\'t stop now.',
+        '夜裡又想起「{g}」。下一步是{s}，明天再往前一點吧。': 'Thinking about "{g}" again tonight. Next is {s}; one more step tomorrow.',
+        '把手藝練到登峰造極': 'master my craft',
+        '拜師苦練，小有名氣': 'Trained hard and made a name',
+        '能獨當一面了': 'Can stand on their own now',
         // v9.5.0 鎮上話題＋人生劇本
         '{t}跟{o}在一起了。原來我一直只是在自作多情。': '{t} is with {o} now. I was only fooling myself all along.',
         '{t}跟{o}在一起了，心碎了一地。': '{t} ended up with {o}, and it broke my heart.',

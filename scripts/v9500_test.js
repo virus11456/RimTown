@@ -50,7 +50,7 @@ async function run(lang) {
     // 冷掉:一路放著 → 全部淡出,正熱過的進「最近談過」
     next(40); out.fade = { left: BUZZ.S(w).items.length, hist: BUZZ.S(w).hist.length };
     // 醞釀太久沒人理就熄掉、不進紀錄
-    const h0 = BUZZ.S(w).hist.length; w.dailyNews.collectEvent('economy', '測試小事E', 6, [a0.name]); next(8); out.fizzle = { left: BUZZ.S(w).items.length, hist: BUZZ.S(w).hist.length - h0 };
+    const h0 = BUZZ.S(w).hist.length; w.dailyNews.collectEvent('economy', '測試小事E', 7, [a0.name]); next(8); out.fizzle = { left: BUZZ.S(w).items.length, hist: BUZZ.S(w).hist.length - h0 };
     w.loadSave(sv); out.reload = (w.buzz?.items || []).length > 0;
     w._absDay = sw; fd = w._absDay?.() || fd;
     // ================= 人生劇本 =================

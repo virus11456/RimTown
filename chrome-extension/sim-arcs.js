@@ -27,6 +27,7 @@ const ARCS = (() => {
         revenge:[{ k: '把對{t}的仇記在心裡', ok: (w, a, A) => (rel(a, A.target)?.affinity ?? 0) <= -30 }, { k: '開始找{t}的把柄', ok: (w, a, A) => (rel(a, A.target)?.affinity ?? 0) <= -55 || (w.dark?.rep?.[A.target]?.exposed || 0) >= 1 }],
         fame:   [{ k: '鎮上開始有人認得他', ok: (w, a) => friends(w, a) >= 6 }],
         rise:   [{ k: '日子慢慢好起來', ok: (w, a) => clv(w, a) >= 2 }],
+        craft:  [{ k: '拜師苦練，小有名氣', ok: (w, a) => MIND.craftLv(a) >= 6 }, { k: '能獨當一面了', ok: (w, a) => MIND.craftLv(a) >= 10 }],
         family: [{ k: '有了另一半', ok: (w, a) => !!a.relationships?.getPartner?.() }, { k: '家裡添了孩子', ok: (w, a) => (a._childNames || []).length > 0 || Object.values(w.agents).some(o => (o._parentNames || []).includes(a.name)) }],
     };
     const total = (A) => (STEPS[A?.key] || []).length + 1;
@@ -129,12 +130,23 @@ const ARCS = (() => {
             .sort((x, y) => y.r - x.r).slice(0, 5);
         return { rows, recent: (M.recent || []).slice(-3).reverse().map(x => ({ name: x.name, end: endText(x.end), g: render(x.g) })) };
     }
+    // 給規則對話、每日計畫用的一句(取代舊的「夢想」)
+    function lineFor(w, a) { const A = w.mind?.amb?.[a.agentId]; if (!A || !STEPS[A.key]) return ''; return t('正朝著心願「{g}」努力（下一步：{s}）').replace('{g}', goal(w, A)).replace('{s}', stepText(w, A, Math.min(A.st || 0, total(A) - 1))); }
+    function planT(w, a) { const A = w.mind?.amb?.[a.agentId]; if (!A || !STEPS[A.key]) return null; return { k: '為心願「{g}」再努力一點：{s}', p: { g: goalT(w, A), s: stepT(w, A, Math.min(A.st || 0, total(A) - 1)) } }; }
+    function diaryT(w, a) { const A = w.mind?.amb?.[a.agentId]; if (!A || !STEPS[A.key]) return null; return Math.random() < 0.5 ? { k: '離「{g}」還有多遠呢……但我不會停下來的。', p: { g: goalT(w, A) } } : { k: '夜裡又想起「{g}」。下一步是{s}，明天再往前一點吧。', p: { g: goalT(w, A), s: stepT(w, A, Math.min(A.st || 0, total(A) - 1)) } }; }
     function daily(w) { const M = w.mind; if (!M?.amb) return; const d = day(w); if (M.arcDay != null && d - M.arcDay < 3) return; M.arcDay = d; ends(w); tick(w); snap(w); }
     wrapBrief();
-    return { STEPS, total, goal, stepText, tick, daily, ends, snap, card, board, dots, endText };
+    return { STEPS, total, goal, stepText, tick, daily, ends, snap, card, board, dots, endText, lineFor, planT, diaryT };
 })();
 if (typeof MIND !== 'undefined') {
     const _d = MIND.daily;
     MIND.daily = function (w) { const r = _d.call(this, w); try { ARCS.daily(w); } catch (e) { console.warn('[Arcs] daily', e); } return r; };
+}
+// v9.5.1 舊的「夢想」(v5.4,看全鎮繁榮度、純時間推進)在觀察者模式停用:村民卡、每日計畫、對話都改看心願／人生劇本
+if (typeof LifeGoalSystem !== 'undefined') {
+    const LG = LifeGoalSystem.prototype; const obs = (g) => g._obs ?? (typeof window !== 'undefined' && !!window.rimtownApp?.world?.observerMode);
+    const _du = LG.dailyUpdate; LG.dailyUpdate = function (world, ...r) { this._obs = !!world?.observerMode; if (this._obs) return; return _du.call(this, world, ...r); };
+    const _gg = LG.getGoal; LG.getGoal = function (id) { return obs(this) ? null : _gg.call(this, id); };
+    const _ds = LG.describe; LG.describe = function (id) { return obs(this) ? null : _ds.call(this, id); };
 }
 if (typeof globalThis !== 'undefined') globalThis.ARCS = ARCS;
