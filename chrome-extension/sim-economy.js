@@ -110,6 +110,7 @@ function processDailyProduction(world) {
         if (policy === 'extra') {
             // v5.52.0 加班要付津貼(銀幣 sink),v5.53.0 3→8:試玩回饋 3 銀幣在流水裡無感
             if (sp.consume('silver', 8, world.tickCount, `${agent.name}${t('的加班津貼')}`)) {
+                if (typeof WALLET !== 'undefined' && world.wallet) WALLET.add(world, agent, 8); // 津貼真的付給加班的人(以前從公庫扣掉就消失了)
                 eff *= 1.5;
                 agent.moodModifier = (agent.moodModifier || 0) - 3;
                 if (Math.random() < 0.3) agent.memory?.add?.(world.tickCount, world.clock.timeStr, 'daily', t('連日加班，身體有點吃不消，但訂單堆著總得有人做。'), 4, []);

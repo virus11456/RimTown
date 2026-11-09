@@ -79,7 +79,7 @@ const UNION = (() => {
     // 解散時把罷工基金分還給最後的會員(沒人可分就進公庫),錢不會憑空消失
     function refund(w, people) {
         const U = S(w); const n = Math.floor(U.fund * 100) / 100; if (n <= 0) return; const Wl = WL();
-        if (people.length && Wl) { const each = Math.floor(n / people.length * 100) / 100; for (const a of people) Wl.add(w, a, each); }
+        if (people.length && Wl) { const each = Math.floor(n / people.length * 100) / 100; people.forEach((a, i) => Wl.add(w, a, i === 0 ? Math.round((n - each * (people.length - 1)) * 100) / 100 : each)); } // 分不完的零頭給第一位(以前零頭跟著基金歸零消失)
         else w.stockpile?.add?.('silver', n, w.tickCount, t('工會解散的基金'));
         U.fund = 0;
     }

@@ -8984,6 +8984,7 @@
         '沒有需要補助的人了': 'nobody needed a stipend anymore',
         '繼承了{name}留下的 {n} 銀幣。': 'Inherited {n} silver left by {name}.',
         '無人繼承的遺產': 'Unclaimed estate',
+        '銀行清算剩下的錢': 'Leftover from the bank liquidation',
         '👑 國王{k}出巡，由{r}暫時攝政。': '👑 King {k} is away on a tour; {r} rules as regent for now.',
         '👑 國王{k}回到王都，攝政結束。': '👑 King {k} is back in the capital; the regency ends.',
         '本機空間不足': 'Local storage is full',
