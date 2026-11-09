@@ -751,6 +751,7 @@ class ProposalSystem {
                 case 'tech_path': { result = (typeof TECH !== 'undefined') ? TECH.choose(w, p.refKey, p) : ''; ok = !!result; break; } // v7.8.0 科技路線
                 case 'bio_safety': case 'bio_price': case 'bio_gmban': case 'bio_halt': { result = (typeof BIO !== 'undefined') ? BIO.setLaw(w, p.kind) : ''; ok = !!result; break; } // v7.9.0 基因生物的法律
                 case 'steam_air': case 'steam_factory': case 'steam_homun': { result = (typeof STEAM !== 'undefined') ? STEAM.setLaw(w, p.kind) : ''; ok = !!result; break; } // v8.0.0 蒸汽煉金的法律
+                case 'casino_ban': { result = (typeof CASINO !== 'undefined') ? CASINO.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 禁賭
                 case 'infl_raise': { result = (typeof INFL !== 'undefined') ? INFL.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 工資跟上物價
                 case 'ae_use': case 'ae_grant': { result = (typeof LONGEV !== 'undefined') ? LONGEV.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 長生:以太存還是用、賢者之石給誰
                 case 'sh_audit': case 'sh_staff': { result = (typeof SHARES !== 'undefined') ? SHARES.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 股份:帳本公開、員工認股

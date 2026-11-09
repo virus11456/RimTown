@@ -13,9 +13,9 @@ const MONEY = (() => {
     const r2 = (n) => Math.round(n * 100) / 100;
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who); } catch (e) {} };
     const mem = (w, a, k, p, imp) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'work', k, p || {}, imp || 4, []); } catch (e) {} };
-    const IN = ['export', 'merchant', 'factory', 'caravan', 'surplus', 'immigrant', 'loot', 'event', 'xloan'];
+    const IN = ['export', 'merchant', 'factory', 'caravan', 'surplus', 'immigrant', 'loot', 'event', 'xloan', 'tourism'];
     const OUT = ['import_raw', 'import_goods', 'shop', 'works', 'orders', 'proposals', 'emigrant', 'xrepay', 'travel', 'school'];
-    const CAT = { travel: '去外地旅遊', school: '送孩子去外地讀書', xloan: '向外地錢莊借錢（紓困）', xrepay: '還外地錢莊的紓困債', export: '商人出口', merchant: '來訪商人買賣', surplus: '賣出多餘的貨', immigrant: '移民帶來的積蓄', loot: '探險帶回', factory: '工廠產品外銷', caravan: '往來商隊', shop: '鎮上商店進貨與賣貨', proposals: '提案（外銷商隊、外地材料）', import_raw: '向外地買原料', import_goods: '外地奢侈品', works: '外地包商的工程款', orders: '向外地訂貨', emigrant: '搬走的人帶走', event: '神的手筆（事件卡）', other: '其他' };
+    const CAT = { tourism: '外地賭客與觀光', travel: '去外地旅遊', school: '送孩子去外地讀書', xloan: '向外地錢莊借錢（紓困）', xrepay: '還外地錢莊的紓困債', export: '商人出口', merchant: '來訪商人買賣', surplus: '賣出多餘的貨', immigrant: '移民帶來的積蓄', loot: '探險帶回', factory: '工廠產品外銷', caravan: '往來商隊', shop: '鎮上商店進貨與賣貨', proposals: '提案（外銷商隊、外地材料）', import_raw: '向外地買原料', import_goods: '外地奢侈品', works: '外地包商的工程款', orders: '向外地訂貨', emigrant: '搬走的人帶走', event: '神的手筆（事件卡）', other: '其他' };
     // 全鎮的錢:公庫＋每個人的錢包＋銀行準備金＋工會基金＋教團基金
     function total(w) { let s = (w.stockpile?.resources?.silver || 0) + (+w.bank?.reserve || 0) + (+w.union?.fund || 0); const B = w.wallet?.bal; if (B) for (const k in B) s += (+B[k] || 0); for (const R of (w.faith?.rels || [])) s += (+R.fund || 0); return s; }
     function S(w) { if (!w.money || typeof w.money !== 'object') w.money = {}; const M = w.money; M.days = M.days || {}; M.hist = M.hist || []; M.pend = M.pend || 0; M.st = M.st || { exportQty: 0, exportSale: 0, surplus: 0 }; return M; }

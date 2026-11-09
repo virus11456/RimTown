@@ -220,25 +220,140 @@ const WORKS = (() => {
     return { S, tender, daily, view, brief, KINDS };
 })();
 
+// v8.9.0 賭場:城鎮以上才有,有野心的有錢人開;十賭九輸,偶爾有人一夕致富,也有人輸到家破人亡;城市以上吸引外地賭客(觀光)
+const CASINO = (() => {
+    const day = (w) => (w?._absDay ? w._absDay() : 0);
+    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+    const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+    const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+    const bump = (a, b, n) => { try { a.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(n); } catch (e) {} };
+    const log = (w, k, p, who) => { try { w.logMessageT?.('social', k, p || {}, who || ''); } catch (e) {} };
+    const mem = (w, a, k, p, imp = 6) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
+    const news = (w, s, imp, nm) => { try { w.dailyNews?.collectEvent?.('social', s, imp || 7, nm || []); } catch (e) {} };
+    const r2 = (n) => Math.round(n * 100) / 100;
+    const cash = (w, a) => (typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
+    const tier = (w) => { try { return typeof TIERS !== 'undefined' ? TIERS.level(w) : 0; } catch (e) { return 0; } };
+    const devout = (w, a) => { try { return typeof FAITH !== 'undefined' && w.faith && FAITH.pietyOf(w, a) >= 60; } catch (e) { return false; } };
+    const NAMES = [['金滿堂', 'Golden Hall'], ['好運來', 'Lucky Star'], ['聚寶閣', 'Treasure Pavilion'], ['一擲樓', 'The Last Throw'], ['銀骰坊', 'Silver Dice']];
+    const EDGE = 0.38, JACK = 0.003, JACKX = 20; // 贏的機會 38%(押多少賺多少),0.3% 中大獎(20 倍):莊家每押抽將近兩成,長期下來十賭九輸
+    function S(w) {
+        if (!w.casino || typeof w.casino !== 'object') w.casino = { open: false, owner: null, name: null, opened: null, ban: false, lastDay: null, lastProp: -99, ruin0: 0, v: {}, streak: {}, lost: {}, st: { visits: 0, house: 0, paid: 0, jack: 0, ruin: 0, fled: 0, divorce: 0, tourists: 0, tour: 0 }, today: null };
+        const C = w.casino; C.v = C.v || {}; C.streak = C.streak || {}; C.lost = C.lost || {}; C.st = C.st || {}; return C;
+    }
+    const nameOf = (C) => C.name ? (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en' ? C.name[1] : C.name[0]) : '';
+    // 賭性:貪心、樂觀的人愛賭;克己、虔誠、謹慎的人少碰;輸了想翻本的人越陷越深
+    function urge(w, C, a) {
+        let p = 0.05 * (has(a, 'greedy') ? 1.7 : 1) * (has(a, 'optimist') ? 1.4 : 1) * (has(a, 'lazy') ? 1.3 : 1) * (has(a, 'ascetic') || has(a, 'stoic') || has(a, 'perfectionist') ? 0.25 : 1) * (devout(w, a) ? 0.3 : 1);
+        const st = C.streak[a.agentId] || 0; p += Math.min(0.45, st * 0.12); // 越輸越想翻本
+        if (cash(w, a) < 40 * INFL.p(w) && (w.bank?.loans?.[a.agentId] || (w.market?.hungry?.[a.agentId] || 0) > 0)) p += 0.05; // 走投無路的人想靠運氣
+        return Math.min(0.7, p);
+    }
+    function open(w, C, d) {
+        const px = INFL.p(w); const cand = here(w).filter(a => cash(w, a) >= 250 * px && (has(a, 'greedy') || has(a, 'ambitious') || has(a, 'charismatic')) && a.job?.key !== 'priest').sort((x, y) => cash(w, y) - cash(w, x))[0];
+        if (!cand) return; const cost = r2(120 * px); if (!WALLET.take(w, cand, cost)) return;
+        const hand = here(w).filter(o => o !== cand && ['builder', 'carpenter'].includes(o.job?.key)); const h = hand[Math.floor(Math.random() * hand.length)]; if (h) WALLET.add(w, h, cost); else w.stockpile?.add?.('silver', cost, w.tickCount, t('蓋賭場'));
+        const nm = NAMES[Math.floor(Math.random() * NAMES.length)]; C.open = true; C.owner = cand.agentId; C.name = nm; C.opened = d; try { I18N.registerName(nm[0], nm[1]); } catch (e) {}
+        log(w, '🎰 {a}花 {n} 銀幣在鎮上開了一家賭場「{s}」。有人說會帶來財路，也有人說會害人。', { a: cand.name, n: Math.round(cost), s: nm[0] }, cand.name);
+        news(w, `🎰 ${cand.name}${t('開了賭場')}${t('「')}${t(nm[0])}${t('」')}`, 7, [cand.name]); mem(w, cand, '我開了一家賭場，莊家永遠是贏的那一邊。', {}, 8);
+        for (const o of here(w)) if (o !== cand && (devout(w, o) || o.job?.key === 'priest') && Math.random() < 0.5) { bump(o, cand, -6); mem(w, o, '{a}開了賭場，這是在害人。', { a: cand.name }, 5); }
+    }
+    function close(w, C, why) { const o = w.agents[C.owner]; C.open = false; C.closedWhy = why; C.owner = null; if (o) mem(w, o, why === 'broke' ? '賭場被一個大贏家搬空了，莊家也有輸的一天。' : '我的賭場關門了。', {}, 8); }
+    function daily(w) {
+        if (typeof WALLET === 'undefined' || !w.wallet) return; const C = S(w), d = day(w); if (C.lastDay === d) return; C.lastDay = d; const tr = tier(w);
+        if (C.ban) return;
+        if (!C.open) { if (tr >= 1 && d >= 20 && Math.random() < 0.04) open(w, C, d); return; }
+        const own = w.agents[C.owner]; if (!own || own.isDead) { if (!w.isAway?.(C.owner)) { log(w, '🎰 賭場「{s}」的老闆不在了，賭場關了門。', { s: C.name[0] }); close(w, C, 'gone'); } return; }
+        const px = INFL.p(w); const T = (C.today = { n: 0, net: 0 });
+        for (const a of here(w)) {
+            if (a === own || cash(w, a) < 5 || Math.random() > urge(w, C, a)) continue;
+            const c = cash(w, a), st = C.streak[a.agentId] || 0; const rich = c >= 200 * px, poor = c < 40 * px;
+            let f = rich ? 0.02 + Math.random() * 0.04 : poor ? 0.3 + Math.random() * 0.4 : 0.1 + Math.random() * 0.1; if (st >= 2) f = Math.max(f, 0.5 + Math.random() * 0.5); // 輸紅了眼就全押
+            // 想翻本卻沒錢:去銀行借
+            if (st >= 2 && c < 10 * px && typeof BANK !== 'undefined' && w.bank?.open && !w.bank.loans?.[a.agentId]) { try { const got = BANK.lend(w, BANK.S(w), a, Math.ceil(30 * px), t('翻本')); if (got) log(w, '🏦 {a}跟銀行借了 {n} 銀幣，說要去賭場翻本。', { a: a.name, n: got }, a.name); } catch (e) {} }
+            const stake = r2(Math.max(2, cash(w, a) * f)); if (!(stake > 0) || !WALLET.take(w, a, stake)) continue;
+            C.v[a.agentId] = (C.v[a.agentId] || 0) + 1; C.st.visits++; T.n++; const r = Math.random();
+            if (r < JACK || r < EDGE) {
+                const jack = r < JACK; let win = jack ? r2(stake * JACKX) : stake; const ownCash = cash(w, own); const pay = Math.min(win, ownCash); // 莊家付不出就把家當都賠上
+                if (pay > 0) WALLET.take(w, own, pay); WALLET.add(w, a, r2(stake + pay)); C.st.paid = r2(C.st.paid + pay); T.net = r2(T.net - pay); C.streak[a.agentId] = 0;
+                if (jack) {
+                    C.st.jack++; log(w, '🎉 {a}在「{s}」押中了大獎，一夜之間贏了 {n} 銀幣！', { a: a.name, s: C.name[0], n: Math.round(pay) }, a.name); news(w, `🎉 ${a.name}${t('一夕致富')}`, 9, [a.name]);
+                    mem(w, a, '我在賭場一夜贏了 {n} 銀幣，人生從此不一樣了。', { n: Math.round(pay) }, 9); a.moodModifier = (a.moodModifier || 0) + 15;
+                    for (const o of here(w)) if (o !== a && (has(o, 'jealous') || cash(w, o) < 20 * px) && Math.random() < 0.4) { bump(o, a, -5); mem(w, o, '{a}在賭場一夜暴富，憑什麼不是我？我也要去試試。', { a: a.name }, 5); C.streak[o.agentId] = Math.max(C.streak[o.agentId] || 0, 1); }
+                    if (pay < win) { log(w, '💥 「{s}」被{a}贏得付不出錢，老闆{o}傾家蕩產，賭場關門。', { s: C.name[0], a: a.name, o: own.name }, own.name); close(w, C, 'broke'); return; }
+                }
+            } else {
+                if (WALLET.bizIncome) WALLET.bizIncome(w, own, stake); else WALLET.add(w, own, stake); C.st.house = r2(C.st.house + stake); T.net = r2(T.net + stake);
+                C.streak[a.agentId] = st + 1; const L = (C.lost[a.agentId] = C.lost[a.agentId] || []); L.push([d, stake]); while (L.length && L[0][0] < d - 15) L.shift();
+                if (rich && Math.random() < 0.15) log(w, '🎲 {a}在賭場輸了 {n} 銀幣，笑笑說就當買個開心。', { a: a.name, n: Math.round(stake) }, a.name);
+                else if (f >= 0.3 && Math.random() < 0.3) { log(w, '🎲 {a}把{x}都押在賭桌上，一把輸光了。', { a: a.name, x: f >= 0.8 ? t('身上所有的錢') : t('一大半的家當') }, a.name); mem(w, a, '我在賭場輸了 {n} 銀幣，下次一定要贏回來。', { n: Math.round(stake) }, 6); }
+                if (cash(w, a) < 2 && L.reduce((s, x) => s + x[1], 0) >= 40 * px && (st + 1) >= 3) ruin(w, C, a, L.reduce((s, x) => s + x[1], 0));
+            }
+        }
+        // 城市以上:外地賭客來試手氣(觀光收入,錢從外地進來)
+        if (tr >= 2 && cash(w, own) > 0) { const n = tr * (1 + Math.floor(Math.random() * 3)); const spend = r2(n * (6 + Math.random() * 6) * px); const inn = r2(n * 2 * px);
+            if (WALLET.bizIncome) WALLET.bizIncome(w, own, spend); else WALLET.add(w, own, spend); if (typeof MARKET !== 'undefined' && w.market) MARKET.sell(w, 'kitchen', inn, t('外地賭客')); else w.stockpile?.add?.('silver', inn, w.tickCount, t('外地賭客'));
+            try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'tourism', r2(spend + inn)); } catch (e) {}
+            C.st.tourists += n; C.st.tour = r2(C.st.tour + spend + inn); if (Math.random() < 0.08) log(w, '🧳 {n} 個外地客專程來「{s}」試手氣，順便在鎮上吃住，花了 {m} 銀幣。', { n, s: C.name[0], m: Math.round(spend + inn) }); }
+        try { banPropose(w, C, d); } catch (e) {}
+        for (const id of Object.keys(C.v)) if (!w.agents[id] && !w.isAway?.(id)) { delete C.v[id]; delete C.streak[id]; delete C.lost[id]; }
+    }
+    // 輸到家破人亡:配偶受不了離開、欠債的人連夜跑路
+    function ruin(w, C, a, tot) {
+        C.st.ruin++; C.streak[a.agentId] = 0; C.lost[a.agentId] = []; a.moodModifier = (a.moodModifier || 0) - 20;
+        log(w, '💔 {a}在賭場前後輸掉了 {n} 銀幣，連吃飯的錢都沒了。', { a: a.name, n: Math.round(tot) }, a.name); mem(w, a, '我把家當全輸在賭場了，我怎麼會走到這一步。', {}, 9);
+        const RR = a.relationships?.relationships || {}; const sk = Object.keys(RR).find(k => RR[k]?.status === 'married'); const sp = sk ? RR[sk] : null; const spouse = sk ? w.agents[sk] : null;
+        if (spouse && !spouse.isDead && Math.random() < 0.5) {
+            sp.status = 'ex'; const back = spouse.relationships?.relationships?.[a.agentId]; if (back) { back.status = 'ex'; back.affinity = Math.min(back.affinity ?? 0, -30); } C.st.divorce++;
+            log(w, '💔 {b}受不了{a}一直去賭，帶著孩子離開了這個家。', { a: a.name, b: spouse.name }, spouse.name); mem(w, spouse, '{a}把家都賭光了，我不能再跟他過下去。', { a: a.name }, 9);
+        }
+        for (const o of (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : [])) if (o !== a && o !== spouse && Math.random() < 0.6) { bump(o, a, -10); mem(w, o, '{a}在賭場把家都輸光了。', { a: a.name }, 6); }
+        const owes = w.bank?.loans?.[a.agentId]; if (owes || Math.random() < 0.25) {
+            log(w, '🌙 {a}欠了一屁股債，連夜跑路離開了小鎮。', { a: a.name }, a.name); news(w, `🌙 ${a.name}${t('賭輸跑路')}`, 7, [a.name]); C.st.fled++;
+            try { a._leaveReason = t('賭債'); w.leaveTown?.(a.agentId, t('賭債')); } catch (e) {}
+        }
+    }
+    // 輸到破產的人多了,就有人提「禁賭」
+    function banPropose(w, C, d) {
+        const T = typeof TECH !== 'undefined' ? TECH : null; if (!T?.propose || T.busy?.(w, 'casino_ban')) return; if (C.st.ruin - (C.ruin0 || 0) < 2 || d - (C.lastProp ?? -99) < 40) return;
+        const own = w.agents[C.owner]; const who = here(w).filter(a => a !== own && (a.job?.key === 'priest' || devout(w, a) || has(a, 'kind'))).sort((x, y) => (devout(w, y) ? 1 : 0) - (devout(w, x) ? 1 : 0))[0]; if (!who) return;
+        C.lastProp = d; C.ruin0 = C.st.ruin;
+        T.propose(w, 'casino_ban', 'casino', who, '關掉賭場、全鎮禁賭', '{who}說「{s}」開張以來已經有 {n} 個人輸到家破人亡：提議關掉賭場、全鎮禁賭。', { s: C.name?.[0] || '', n: C.st.ruin }, 'social', {}, {});
+    }
+    function vote(w, p0, a) {
+        const C = S(w); const own = a.agentId === C.owner; const gambler = (C.v[a.agentId] || 0) >= 3; const kitchen = (() => { try { return typeof MARKET !== 'undefined' && MARKET.ownedBy(w, a.agentId).includes('kitchen'); } catch (e) { return false; } })();
+        const hurt = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []).some(o => (C.lost[o.agentId] || []).length >= 2) || C.st.ruin > 0 && aff(a, w.agents[C.owner]) < -20;
+        const s = (devout(w, a) || a.job?.key === 'priest' ? 1.6 : 0) + (hurt ? 1.4 : 0) + (has(a, 'kind') ? 0.5 : 0) + (has(a, 'ascetic') ? 0.6 : 0) - (own ? 5 : 0) - (gambler ? 1.5 : 0) - (kitchen ? 1 : 0) - (has(a, 'greedy') ? 0.6 : 0) + (Math.random() - 0.5);
+        return { v: s > 0 ? 'for' : 'against', why: s > 0 ? (hurt ? 'cas_hurt' : 'cas_sin') : (own || kitchen ? 'cas_money' : 'cas_free') };
+    }
+    function enact(w, p0) { const C = S(w); const nm = C.name?.[0] || ''; C.ban = true; if (C.open) close(w, C, 'ban'); log(w, '🚫 小鎮決定禁賭，「{s}」關門了。', { s: nm }); return t('全鎮禁賭'); }
+    function view(w) { const C = w.casino; if (!C || (!C.open && !C.ban && !C.st?.visits)) return null; return { open: C.open, ban: C.ban, name: nameOf(C), owner: C.owner && w.agents[C.owner] ? t(w.agents[C.owner].name) : '', st: C.st, today: C.today || { n: 0, net: 0 } }; }
+    function brief(w, a) {
+        const C = w.casino; if (!C) return ''; if (a.agentId === C.owner && C.open) return t('你在鎮上開賭場，莊家長期下來總是贏。');
+        const st = C.streak?.[a.agentId] || 0; if (st >= 2) return t('你最近在賭場一直輸，滿腦子只想把錢贏回來。'); if ((C.v?.[a.agentId] || 0) >= 5) return t('你常去賭場碰碰運氣。'); return '';
+    }
+    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX };
+})();
+
 // ---------- 接上其他系統 ----------
-if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { infl_raise: { icon: '💼', label: '工資跟上物價' } });
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { infl_worker: '做一天的工已經買不起以前的東西', infl_fair: '物價漲了工資也該漲', infl_boss: '工資一漲，店就撐不下去', infl_spiral: '工資一漲物價又會跟著漲' });
+if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { infl_raise: { icon: '💼', label: '工資跟上物價' }, casino_ban: { icon: '🚫', label: '禁賭' } });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { infl_worker: '做一天的工已經買不起以前的東西', infl_fair: '物價漲了工資也該漲', infl_boss: '工資一漲，店就撐不下去', infl_spiral: '工資一漲物價又會跟著漲', cas_hurt: '家裡有人被賭場害慘了', cas_sin: '賭博傷風敗俗', cas_money: '賭場帶來生意和觀光客', cas_free: '願賭服輸，大人自己負責' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); if (w.observerMode) { try { INFL.daily(w); } catch (e) { console.warn('[Infl] daily', e); } try { SPEND.daily(w); } catch (e) { console.warn('[Spend] daily', e); } try { WORKS.daily(w); } catch (e) { console.warn('[Works] daily', e); } } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); if (w.observerMode) { try { INFL.daily(w); } catch (e) { console.warn('[Infl] daily', e); } try { SPEND.daily(w); } catch (e) { console.warn('[Spend] daily', e); } try { WORKS.daily(w); } catch (e) { console.warn('[Works] daily', e); } try { CASINO.daily(w); } catch (e) { console.warn('[Casino] daily', e); } } return r; };
     const _rv = PS._ruleVote;
-    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'infl_raise') { const r = INFL.vote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
+    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'infl_raise' || p.kind === 'casino_ban') { const r = p.kind === 'casino_ban' ? CASINO.vote(w, p, a) : INFL.vote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype; const _ab = CE._agentBrief;
-    CE._agentBrief = function (world, a, other) { const b = _ab.call(this, world, a, other); try { const s = [INFL.brief(world), SPEND.brief(world, a), WORKS.brief(world, a)].filter(Boolean); if (s.length) b.mem = [...(b.mem || []), ...s]; } catch (e) {} return b; };
+    CE._agentBrief = function (world, a, other) { const b = _ab.call(this, world, a, other); try { const s = [INFL.brief(world), SPEND.brief(world, a), WORKS.brief(world, a), CASINO.brief(world, a)].filter(Boolean); if (s.length) b.mem = [...(b.mem || []), ...s]; } catch (e) {} return b; };
 }
 if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
-    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.infl = null; this.spend = null; try { INFL.sync(this); } catch (e) {} return r; };
+    World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.infl = null; this.spend = null; this.casino = null; try { INFL.sync(this); } catch (e) {} return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d) { if (this.infl) d.infl = this.infl; if (this.spend) d.spend = this.spend; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d) { if (this.infl) d.infl = this.infl; if (this.spend) d.spend = this.spend; if (this.casino) d.casino = this.casino; } return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.infl = (data?.infl && typeof data.infl === 'object') ? data.infl : null; this.spend = (data?.spend && typeof data.spend === 'object') ? data.spend : null; INFL.sync(this); } } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) { this.infl = (data?.infl && typeof data.infl === 'object') ? data.infl : null; this.spend = (data?.spend && typeof data.spend === 'object') ? data.spend : null; this.casino = (data?.casino && typeof data.casino === 'object') ? data.casino : null; INFL.sync(this); } } catch (e) {} return r; };
 }
-if (typeof globalThis !== 'undefined') { globalThis.INFL = INFL; globalThis.SPEND = SPEND; globalThis.WORKS = WORKS; }
+if (typeof globalThis !== 'undefined') { globalThis.INFL = INFL; globalThis.SPEND = SPEND; globalThis.WORKS = WORKS; globalThis.CASINO = CASINO; }
