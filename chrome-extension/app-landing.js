@@ -319,12 +319,6 @@ Object.assign(RimTownApp.prototype, {
         const L = I18N.getLang() === 'en' ? 'en' : 'zh';
         const X = (zh, en) => (L === 'en' ? en : zh);
         const stats = [['57', X('項科技', 'technologies')], ['6', X('個時代', 'eras')], ['4', X('級城鎮', 'town tiers')], ['50+', X('張事件卡', 'event cards')], ['8', X('種神話基因', 'mythic genes')], ['6', X('級社會階層', 'social classes')]]; // v7.7.1 科技數與時代跟著第五、六時代更新
-        const howto = [
-            ['🏘️', X('開一個世界', 'Start a world'), X('每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場。', 'Every game is its own world, starting from Frontier Town. The neighbors, roads and far-off towns belong to that game alone.')],
-            ['👀', X('在天上看', 'Watch from above'), X('點村民，鏡頭就跟著他，看得到他在想什麼、跟誰要好、欠誰錢。觀察者日報整理昨天的大小事。', 'Tap a villager and the camera follows them: what they think, who they like, who they owe. The observer\'s daily sums up yesterday.')],
-            ['🃏', X('偶爾推一把', 'Nudge, rarely'), X('用神力打神之書裡的事件卡（每天最多 3 張）、託夢給某位村民、在災厄工坊設計災難，或化身路過的旅人跟人聊天。其他全由村民自己決定。', 'Spend divine power on cards from the Book of Gods (up to 3 a day), send someone a dream, design a disaster in the workshop, or chat as a passing traveler. Everything else is up to the villagers.')],
-            ['📜', X('看小鎮怎麼回應', 'See how the town reacts'), X('每個人的反應、提案和七天後的變化都記下來，每一季寫成一章鎮史。沒有結局，可以一直玩下去。', 'Reactions, proposals and how things look a week later are all recorded; each season becomes a chapter of town history. There is no ending.')],
-        ];
         // 每一段:錨點、圖示、顏色、小標、標題、導言、重點(標題＋說明)、遊戲裡會看到的紀錄、新功能版本
         const bands = [
             { id: 'people', ic: '🧑‍🤝‍🧑', c: '#f28c4a', k: X('村民', 'Villagers'), new: '6.97',
@@ -408,12 +402,12 @@ Object.assign(RimTownApp.prototype, {
                     [X('村民自己立法', 'Villagers write the rules'), X('核安法、廢核、生物安全法、藥價管制、禁止基因作物、停止人體實驗：出了事之後，受害的人會帶頭提案。', 'Nuclear safety laws, abolishing nuclear power, biosafety laws, drug price controls, GM crop bans, halting human experiments: after something goes wrong, the people who were hurt lead the proposals.')],
                     [X('🚂 蒸汽煉金：很需要人手，代價是煤煙', '🚂 Steam Alchemy: plenty of jobs, paid for in smoke'), X('高壓鍋爐、齒輪工坊、蒸汽機甲讓礦工、鐵匠、木匠的職缺變多，不會被機器搶飯碗。代價是煤煙：煙越濃天空越暗、越多人咳嗽；冬天起霧、煙散不掉的時候可能變成大黑霧。村民會提清潔空氣法、工廠法（工時與童工），人造人問起自己能不能有名字時，還會吵要不要禁造。賢者之石只能把石頭變成鋼，變不出銀幣。', 'High-pressure boilers, gear workshops and steam mechs open more jobs for miners, smiths and carpenters instead of handing them to machines. The price is coal smoke: the thicker it gets, the darker the sky and the more people cough, and on a foggy winter day it can turn into a Great Smog. Villagers propose a Clean Air Act and a Factory Act (working hours and child labor), and when a homunculus asks whether it can have a name, the town argues over banning them. The philosopher\'s stone can turn stone into steel, but never into silver.')]],
               log: [['10:20', X('路線大辯論：電子機械 9 票、蒸汽煉金 14 票、維持傳統 4 票，小鎮決定走蒸汽煉金。', 'Path debate: Electro-mechanical 9, Steam Alchemy 14, keep tradition 4. The town chooses Steam Alchemy.')], ['14:05', X('氣動管道把阿明寫給小芳的情書送到了老陳家，全鎮笑了一整天。', 'The pneumatic tubes delivered A-Ming\'s love letter for Xiao-Fang to Old Chen instead. The town laughed about it all day.')], ['21:40', X('王嬸剛晾好的衣服被煤灰染成了灰色，抱著一籃髒衣服跑去找工坊老闆理論。', 'Auntie Wang\'s freshly hung laundry turned grey with soot, and she carried the basket over to complain to the workshop owner.')]] },
-            { id: 'doom', ic: '🌍', c: '#ff8a65', k: X("世界級災厄", "World calamities"), new: '8.6',
+            { id: 'doom', ic: '🌍', c: '#ff8a65', k: X("世界級災厄", "World calamities"), new: '9.2',
               h: X("科技走到頂點，世界也可能走到盡頭", "At the peak of technology, the world may meet its end"),
-              lead: X("每條科技路線的第六時代研究到六成，就可能遇上那條路線的末日：電子機械的核子大戰、外星入侵、AI 控制；基因生物的全球不孕；蒸汽煉金的冰河期與以太裂隙。每場都走六段：徵兆、研究與爭論、口耳相傳、恐慌、降臨、災後世界，總長一兩個月。", "Once a town has researched 60% of its path's sixth era, that path's doomsday may come: nuclear war, alien invasion or an AI takeover on the electro path; global infertility on the bio path; an ice age or an aether rift on the steam path. Each one runs through six phases (omens, research and debate, word spreads, panic, arrival, aftermath) over a month or two."),
-              pts: [[X("跟降臨倒數賽跑", "Racing the countdown"), X("研究員要在降臨前做完主對策：停火斡旋、解讀訊號、斷網開關、生殖修復療法、生態方舟、封印裂隙。做完化解、做一半減輕、沒做到重創。", "Researchers must finish the countermeasure before it arrives: ceasefire talks, decoding the signal, a kill switch, fertility repair, an eco-ark, sealing the rift. Finish and it is averted, get halfway and it is eased, fall short and the town is devastated.")],
+              lead: X("每條科技路線的第六時代研究到六成，就可能遇上那條路線的末日：電子機械的核子大戰、外星入侵、AI 控制；基因生物的全球不孕與喪屍危機；蒸汽煉金的冰河期與以太裂隙。每場都走六段：徵兆、研究與爭論、口耳相傳、恐慌、降臨、災後世界，總長一兩個月。", "Once a town has researched 60% of its path's sixth era, that path's doomsday may come: nuclear war, alien invasion or an AI takeover on the electro path; global infertility or a zombie outbreak on the bio path; an ice age or an aether rift on the steam path. Each one runs through six phases (omens, research and debate, word spreads, panic, arrival, aftermath) over a month or two."),
+              pts: [[X("跟降臨倒數賽跑", "Racing the countdown"), X("研究員要在降臨前做完主對策：停火斡旋、解讀訊號、斷網開關、生殖修復療法、喪屍解藥、生態方舟、封印裂隙。做完化解、做一半減輕、沒做到重創。", "Researchers must finish the countermeasure before it arrives: ceasefire talks, decoding the signal, a kill switch, fertility repair, a zombie cure, an eco-ark, sealing the rift. Finish and it is averted, get halfway and it is eased, fall short and the town is devastated.")],
                     [X("說沒事的和喊危險的", "Deniers and alarmists"), X("全鎮分成兩派吵；有錢人先搬走、信徒說是天譴；世界末日前有人和好、有人告白、有人把秘密說出來。災後當初說沒事的人抬不起頭。", "The town splits into two camps; the rich leave first and the devout call it divine punishment; before the end some make peace, some confess their love, some reveal their secrets. Afterwards the deniers can't look anyone in the eye.")],
-                    [X("災厄會留下痕跡", "Scars that stay"), X("核子冬天、AI 管家的宵禁、一年生不出孩子、好幾個月的長冬、天上那道紫色的疤；撐過一次就寫進災厄工坊。", "Nuclear winter, the AI steward's curfew, a year without births, a winter that lasts for months, a purple scar across the sky; survive one and it is written into the disaster workshop.")]],
+                    [X("災厄會留下痕跡", "Scars that stay"), X("核子冬天、AI 管家的宵禁、一年生不出孩子、好幾個月的長冬、天上那道紫色的疤、墓園邊的新墳；撐過一次就解鎖（跟著帳號），之後在任何城鎮都能從手牌打出來。", "Nuclear winter, the AI steward's curfew, a year without births, a winter that lasts for months, a purple scar across the sky, new graves by the cemetery; survive one and it unlocks on your account, so you can play it from your hand in any town.")]],
               log: [['08:00', X("收音機裡外國的廣播越來越火爆，主持人說話的聲音都在發抖。", "The foreign broadcasts on the radio grow more heated; the host's voice is shaking.")], ['12:30', X("老王在酒館拍桌子：「什麼世界末日，我爺爺那一代也說過。」", "Old Wang bangs the tavern table: \"End of the world? My grandfather heard that too.\"")], ['19:40', X("冬季倉庫堆滿了木柴和醃菜，連小孩都來幫忙搬。", "The winter storehouse is piled with firewood and pickles; even the children help carry.")]] },
             { id: 'aftermath', ic: '🔥', c: '#e5736b', k: X('災後反應', 'After disaster'), new: '7.9',
               h: X('大事發生之後，每個人都有自己的反應', 'When disaster strikes, everyone reacts their own way'),
@@ -471,7 +465,79 @@ Object.assign(RimTownApp.prototype, {
                     [X('馬車與路況', 'Carriages and roads'), X('出遠門的人會離開地圖，回來時帶著外地的消息。', 'Travelers leave the map and come back with news from elsewhere.')],
                     [X('進出口與關稅', 'Trade and tariffs'), X('商行老闆看差價做進出口；便宜進口貨一多，本地生產者會提案課關稅。', 'The trading house imports and exports where the margins are; when cheap imports pile up, local producers push for a tariff.')]],
               log: [['15:00', X('海港的商隊到了，帶來魚和鹽。', 'A caravan from the harbor arrives with fish and salt.')], ['15:30', X('大雪封路，往山城的馬車停駛三天。', 'Heavy snow closes the road; carriages to the mountain town stop for three days.')], ['18:00', X('鄰鎮派人來談聯姻。', 'The neighboring town sends envoys to discuss a marriage.')]] },
+            // v9.1.1 第七章「你」的兩個主題
+            { id: 'watch', ic: '🔭', c: '#8fd3c7', k: X('觀看', 'Watching'),
+              h: X('拉近看屋裡，翻開每個人的心事', 'Look inside the houses, and into people\'s heads'),
+              lead: X('地圖上每位村民在做什麼都看得到：點一下，鏡頭就跟著他，資訊卡寫著心情從哪來、跟誰要好、欠誰錢。鏡頭拉近，屋頂會打開，看得到有人在床上睡、有人坐著吃飯、有人在鐵砧前打鐵。每天早上有觀察者日報，晚上有一集「八點檔」把今天的大事串起來。',
+                  'You can see what every villager is doing: tap one and the camera follows them, with a card showing where their mood comes from, who they like and who they owe. Zoom in and the roofs open up, showing someone asleep in bed, someone eating at the table, someone hammering at the anvil. Every morning there is an observer\'s daily, and every evening an "8 pm episode" strings the day\'s big moments together.'),
+              pts: [[X('拉近看屋裡', 'Look inside'), X('拉遠有屋頂，拉近換成剖面，屋裡的人依在做什麼坐著、躺著或工作，名牌旁有小圖示。', 'From afar the roofs are on; zoom in and you get a cutaway where people sit, lie or work depending on what they are doing, with a small icon by their name.')],
+                    [X('日報與八點檔', 'The daily and the 8 pm episode'), X('觀察者日報整理昨天的大小事；八點檔把一天寫成一集，每一季寫成一章鎮史。', 'The observer\'s daily sums up yesterday; the 8 pm episode turns each day into an episode, and each season becomes a chapter of town history.')],
+                    [X('真相頁', 'The truth page'), X('說謊、栽贓、做假帳、壓新聞，村民不知道的事你都看得到。', 'Lies, frame-ups, cooked books and buried stories: you see what the villagers do not.')]],
+              log: [['07:00', X('觀察者日報：鎮長的稅率提案以 12 比 9 通過。', 'Observer\'s daily: the mayor\'s tax proposal passes 12 to 9.')], ['13:10', X('拉近一看，鐵鋪裡三個人在打鐵，老闆坐在角落算帳。', 'Zoom in: three people hammer away in the forge while the owner does the books in the corner.')], ['20:00', X('今晚八點檔：〈賭場門口的那場爭吵〉。', 'Tonight\'s 8 pm episode: "The quarrel outside the casino".')]] },
+            { id: 'god', ic: '🃏', c: '#f2c14e', k: X('神之書', 'Book of Gods'),
+              h: X('神力不多，要用在刀口上', 'Divine power is scarce — spend it well'),
+              lead: X('神力每天慢慢回來，虔誠的人越多回得越快。神之書裡有五十多張事件卡，分普通、稀有、傳說、禁忌四級，稀有以上要小鎮發生過某些事才會寫進書裡。你也可以託夢給某個人，或化身路過的旅人跟人聊天，村民不知道你是神。',
+                  'Divine power trickles back each day, faster when more people are devout. The Book of Gods holds over fifty event cards in four tiers — common, rare, legendary and forbidden — and the rarer ones are only written in after something has happened in town. You can also send someone a dream, or chat with people as a passing traveler; nobody knows you are a god.'),
+              pts: [[X('事件卡', 'Event cards'), X('每天最多三張：豐年、彗星、善意接力、真話雨……村民用自己的方式解讀。', 'Up to three a day — a bumper harvest, a comet, a chain of kindness, a rain of truth… and villagers interpret each one in their own way.')],
+                    [X('託夢', 'Dreams'), X('在某人夢裡說一句話，他醒來可能真的去做，也可能當作怪夢。', 'Say one sentence in someone\'s dream; they may act on it when they wake, or shrug it off as a strange dream.')],
+                    [X('化身旅人', 'Walk among them'), X('跟村民聊天，你說的話會留在他的記憶裡、可能傳開，甚至變成提案。', 'Chat with villagers; what you say stays in their memory, may spread, and can even become a proposal.')]],
+              log: [['06:30', X('你託夢給小豆子：「去圖書館看看」。他醒來想了很久。', 'You send little Doudou a dream: "Go to the library." He wakes up and thinks about it for a long time.')], ['10:00', X('你打出「彗星」：迷信的人心慌，學者的研究大有進展。', 'You play "Comet": the superstitious panic while scholars make a breakthrough.')], ['15:20', X('旅人隨口說的一句話，傳到了鎮長耳裡。', 'Something the traveler said in passing reaches the mayor\'s ears.')]] },
         ];
+        // v9.1.1 首頁敘事改版：不再是十幾段並排的功能介紹，而是一條從小到大的故事線——先講這款遊戲的核心（三根柱子＋一件事怎麼牽動整個鎮），
+        // 再分七章由一個人往外擴到整個世界，最後回到你；每章先講一句核心概念（淺），主題卡點開才看細節（深），章尾一句話接到下一章
+        const B = Object.fromEntries(bands.map(b => [b.id, b]));
+        const chapters = [
+            { id: 'self', c: '#f28c4a', scale: X('一個人', 'One person'),
+              h: X('先從一個人開始', 'It starts with one person'),
+              lead: X('每位村民都是一個完整的人：有個性和價值觀，記得誰對他好，有自己的錢包，也有會生病的身體。餓了要吃飯，病了要看醫生，沒錢就得想辦法。', 'Every villager is a whole person: a personality and values, a memory of who was kind to them, a wallet of their own and a body that can fall ill. Hungry, they need food; sick, they need a doctor; broke, they need a plan.'),
+              topics: ['people', 'health', 'myth'],
+              bridge: X('一個人的處境和情緒，會變成他對別人的態度。', 'A person\'s situation and mood become how they treat others.') },
+            { id: 'ties', c: '#e8b04b', scale: X('人與人', 'Between people'),
+              h: X('人跟人之間，比規則複雜', 'People are messier than rules'),
+              lead: X('面子、人情、八卦、冷戰、信仰：村民之間有一整套看不見的規矩。誰欠誰人情、誰跟誰鬧翻，都會影響他明天怎麼做事、怎麼投票。', 'Face, favors, gossip, cold wars, faith: villagers live by a whole set of unwritten rules. Who owes whom and who fell out with whom shapes how they work and vote tomorrow.'),
+              topics: ['ways', 'culture'],
+              bridge: X('交情和信任，決定了誰跟誰合夥、誰替誰做事。', 'Friendship and trust decide who goes into business with whom, and who works for whom.') },
+            { id: 'living', c: '#f2c14e', scale: X('討生活', 'Making a living'),
+              h: X('每一枚銀幣都有來處和去處', 'Every coin comes from somewhere and goes somewhere'),
+              lead: X('鎮上的錢不會憑空出現，也不會憑空消失：工資、稅、分紅、利息、賭債，全是村民之間真的轉手。有人當老闆，有人當夥計，有人組工會，有人輸光家產。', 'Money in town never appears or vanishes out of thin air: wages, taxes, dividends, interest and gambling debts all really change hands between villagers. Some become owners, some workers, some organize unions, some lose everything.'),
+              topics: ['money', 'shares', 'union', 'casino'],
+              bridge: X('有錢的人想要話語權，沒錢的人想要改變。', 'The rich want a say; the poor want change.') },
+            { id: 'power', c: '#7fb3f5', scale: X('誰說了算', 'Who decides'),
+              h: X('規則是村民自己訂的', 'The villagers make the rules'),
+              lead: X('要蓋什麼、稅收多少、禁不禁賭，都由村民提案、投票，再由首長拍板；報社監督，財團收買，議會可以推翻否決。你看得到檯面上的投票，也看得到檯面下的交易。', 'What to build, how much tax to collect, whether to ban gambling: villagers propose and vote, and the leader decides. The press keeps watch, money buys influence, and the council can overturn a veto. You see the votes on the table and the deals under it.'),
+              topics: ['politics', 'power'],
+              bridge: X('訂下的政策，決定了小鎮往哪裡長。', 'The policies they choose decide which way the town grows.') },
+            { id: 'era', c: '#6fcf97', scale: X('小鎮長大', 'The town grows'),
+              h: X('從二十幾個人的村莊，到有國王的王都', 'From a village of twenty to a capital with a king'),
+              lead: X('研究推著時代往前走，人口和繁榮讓村莊升級成城鎮、城市、王都。到了第四時代，全鎮要投票選一條科技路線：電子機械、基因生物或蒸汽煉金，每條路都有自己的奇蹟和代價。', 'Research pushes the eras forward, and population and prosperity turn a village into a town, a city, a capital. In the fourth era the whole town votes on a path — electro-mechanical, bio-genetic or steam-alchemy — each with its own wonders and costs.'),
+              topics: ['growth', 'path', 'aether'], tiers: true,
+              bridge: X('走得越遠，牽連的就不只一個鎮。', 'The further they go, the more it reaches beyond one town.') },
+            { id: 'world', c: '#5fc4b8', scale: X('世界與災難', 'The world, and its ends'),
+              h: X('外面還有別的鎮，也有末日', 'There are other towns out there — and doomsdays'),
+              lead: X('鄰鎮有自己的物產、外交和消息；商隊、旅人、聯姻把大家連在一起。走到第六時代，可能遇上核戰、外星入侵、冰河期這種世界級災厄，村民怎麼面對，是這個世界最大的考驗。', 'Neighboring towns have their own goods, diplomacy and news; caravans, travelers and marriages tie everyone together. In the sixth era a world-scale calamity may come — nuclear war, an alien invasion, an ice age — and how the villagers face it is this world\'s greatest test.'),
+              topics: ['world', 'doom', 'aftermath'],
+              bridge: X('而這一切，都在你眼前發生。', 'And all of it happens right in front of you.') },
+            { id: 'you', c: '#c39bd3', scale: X('你', 'You'),
+              h: X('你是觀察者，偶爾當神', 'You are the observer — and now and then, a god'),
+              lead: X('你不控制任何人。你可以拉近看屋裡的人在做什麼，讀每天的日報和八點檔，翻真相頁看誰在說謊；神力存夠了，就打一張事件卡、託一個夢、設計一場災難，然後看小鎮怎麼回應。', 'You control no one. Zoom in to see what people are doing indoors, read the daily and the 8 pm episode, check the truth page to see who is lying; when you have enough divine power, play an event card, send a dream or design a disaster, then watch how the town responds.'),
+              topics: ['watch', 'god', 'lab'],
+              bridge: X('沒有劇本，也沒有結局。', 'No script, and no ending.') },
+        ];
+        const pillars = [
+            ['🧠', X('他們自己做決定', 'They decide for themselves'), X('每位村民都有個性、記憶、錢包和身體。要不要提案、投給誰、去不去賭場、跟誰結婚，都是他自己依經歷想出來的，而且說得出理由。', 'Every villager has a personality, memories, a wallet and a body. Whether to propose, whom to vote for, whether to gamble, whom to marry: each decides from their own experience, and can tell you why.')],
+            ['🔗', X('每件事都牽動別的事', 'Everything is connected'), X('經濟、政治、信仰、八卦、科技、災難不是各自獨立的小遊戲，而是同一群人的生活。一個人輸光了錢，會影響他的婚姻、工作、投票，還有整個鎮的輿論。', 'Money, politics, faith, gossip, technology and disaster are not separate mini-games; they are the same people\'s lives. When one man gambles away his savings, it touches his marriage, his job, his vote and the mood of the whole town.')],
+            ['👁️', X('你只能看，偶爾當神', 'You watch, and sometimes play god'), X('你不是主角，也不能控制任何人。你看著小鎮長出自己的歷史，偶爾用神力推一把，再看它怎麼回應。', 'You are not the hero and you control no one. You watch the town grow its own history, nudge it now and then with divine power, and see how it responds.')],
+        ];
+        // 一件事怎麼牽動整個鎮：每一步標上它屬於哪一章（點了跳過去）
+        const chain = [
+            ['living', X('有錢的阿福在鎮上開了賭場，還雇了一個荷官。', 'Wealthy Afu opens a casino in town and hires a dealer.')],
+            ['self', X('愛冒險的礦工老陳一週去三次，輸光積蓄，開始跟莊家賒帳。', 'Old Chen, a miner who loves a risk, goes three times a week, loses his savings and starts betting on credit.')],
+            ['ties', X('太太勸他戒賭沒成功，兩人大吵一架；街坊開始說閒話。', 'His wife begs him to quit and fails; they have a blazing row, and the neighbors start to talk.')],
+            ['power', X('討厭賭場的人越來越多，跑到門口抗議，有人提案禁賭，全鎮照自己的看法投票。', 'More and more people hate the casino; they protest at its door, someone proposes a ban, and the town votes its conscience.')],
+            ['power', X('報社寫成專題，阿福花錢想把報導壓下來，只有你在真相頁看得到。', 'The paper runs a feature and Afu pays to bury it. Only you can see that, on the truth page.')],
+            ['you', X('你可以什麼都不做，也可以打一張「善意接力」，看看有沒有人願意拉老陳一把。', 'You can do nothing, or play "A chain of kindness" and see whether anyone helps Old Chen back up.')],
+        ];
+        const CH = Object.fromEntries(chapters.map((c, i) => [c.id, { ...c, n: i + 1 }]));
         const tiers = [
             ['🏡', X('村莊', 'Village'), X('村長＋長老會 3 席', 'Chief + 3-seat elders'), X('一切的開始：二十幾個人、一間鎮公所。', 'Where it starts: twenty-some people and a hall.')],
             ['🏘️', X('城鎮', 'Town'), X('人口 30＋繁榮 50＋第一時代', 'Pop 30 + prosperity 50 + era 1'), X('鎮長與 5 席鎮議會，銀行與報社陸續出現。', 'A mayor and 5-seat council; banks and papers appear.')],
@@ -483,6 +549,7 @@ Object.assign(RimTownApp.prototype, {
             ['🔑', X('內建 AI，不用填金鑰', 'Built-in AI, no key needed'), X('所有玩家都用小鎮內建的 AI：先用 Claude，Claude 不能用才換 GPT，兩個都不能用才用 Groq 備援。每個帳號每天有使用上限；金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。', 'Everyone uses the town\'s built-in AI: Claude first, GPT only if Claude is unavailable, and Groq as a last resort. Each account has a daily limit; keys live only on the server, never in the page source or saves.')],
         ];
         const faq = [
+            ...aiNotes.map(n => [n[1], n[2]]), // v9.1.1 AI 與金鑰併進常見問題（首頁太長）
             [X('要下載或安裝嗎？', 'Do I need to install anything?'), X('不用。打開網頁就能玩，電腦、平板、手機都可以。', 'No. It runs in the browser on computers, tablets and phones.')],
             [X('我可以控制村民嗎？', 'Can I control the villagers?'), X('不行，這是觀察型遊戲。你能做的是打事件卡、託夢、化身旅人聊天，其他全由村民自己決定。', 'No, this is an observation game. You can play event cards, send dreams or chat as a traveler; the rest is up to them.')],
             [X('存檔會不會不見？', 'Will my save disappear?'), X('登入後存檔會自動同步到雲端，換裝置登入就能接著玩；本機也會留一份備份。', 'Once logged in, saves sync to the cloud so you can continue on another device; a local backup is kept too.')],
@@ -493,9 +560,9 @@ Object.assign(RimTownApp.prototype, {
         ];
         // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
         const roadmap = {
-            done: [['v8.9', X('錢的去處與賭場', 'Where money goes, and a casino'), X('通貨膨脹、更多花錢的地方、公共建設競標承包；城鎮以上開賭場，有人一夕致富，有人家破人亡', 'Inflation, more ways to spend, contracted public works; towns get a casino where some get rich overnight and others lose everything')],
-                ['v8.8', X('漸進解鎖與創業貸款', 'Gradual unlocks and start-up loans'), X('開局只看到基本介面，小鎮長大才慢慢打開；銀行拿存款借給開店、蓋房的人', 'You start with the basics and more opens as the town grows; the bank lends deposits to people opening shops or building houses')],
-                ['v8.7', X('股份、以太與長生', 'Shares, aether and longevity'), X('村民合股做生意、股東會奪權；以太要存起來煉賢者之石還是先過生活，由村民投票', 'Villagers go into business together and stage boardroom coups; they vote on whether to save aether for the philosopher\'s stone or live well now')]],
+            done: [['v9.2', X('喪屍危機', 'Zombie outbreak'), X('基因生物的第二種世界級災厄：被咬的人變成喪屍，家人瞞著傷口、守衛清剿、研究員趕解藥；世界級災厄移到手牌，解鎖跟著帳號', 'A second Bio world calamity: the bitten turn into zombies while families hide wounds, guards hunt and researchers race for a cure. World calamities now sit in your hand, and unlocks follow your account')],
+                ['v9.1', X('拉近看屋裡', 'Look inside'), X('拉遠有屋頂，拉近換成剖面；屋裡的人睡床、坐著吃飯、在工作台做事；首頁改成一條從一個人到整個世界的故事線', 'Roofs from afar, a cutaway up close; people indoors sleep in beds, sit down to eat and work at their benches. The homepage now tells one story from a single person to a whole world')],
+                ['v9.0', X('鎮上的新東西', 'Something new in town'), X('新東西出現，村民自己決定喜不喜歡，並用同一套行動跟它互動：去用、推薦、抱怨、勸家人、門口抗議、提案禁止', 'When something new appears, villagers decide for themselves how they feel and act on it the same way every time: use it, recommend it, complain, urge family, protest at the door, propose a ban')]],
             next: [[X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
                 [X('世界史詩', 'World epic'), X('AI 依你的世界真實發生的事寫成史詩，每個玩家都不一樣', 'The AI writes an epic from what actually happened in your world, different for every player')]],
             ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
@@ -536,24 +603,53 @@ Object.assign(RimTownApp.prototype, {
             document.head.appendChild(sc);
         };
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
-        const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
+        const logHtml = log.map((e, i) => `<div class="landing-log-item${i >= 3 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
                 <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('');
         const sec = (id, kicker, title, body, extra = '') => `<section class="landing-section lp-sec${extra}" id="${id}"><div class="lp-sec-head"><span class="lp-kicker">${kicker}</span><h2>${title}</h2></div>${body}</section>`;
-        const band = (b, i) => `<section class="lp-band${i % 2 ? ' lp-band-flip' : ''}" id="lp-${b.id}" style="--c:${b.c}" aria-labelledby="lp-${b.id}-h">
-            <div class="lp-band-in">
-                <div class="lp-band-copy">
-                    <span class="lp-kicker"><span aria-hidden="true">${b.ic}</span> ${b.k}${b.new ? ` <em class="lp-new">${X('新', 'New')} v${b.new}</em>` : ''}</span>
-                    <h2 id="lp-${b.id}-h">${b.h}</h2>
-                    <p class="lp-band-lead">${b.lead}</p>
+        const num = (n) => String(n).padStart(2, '0');
+        const first = (txt) => { const m = L === 'en' ? txt.match(/^.*?[.!?](?=\s|$)/) : txt.match(/^.*?。/); return m ? m[0] : txt; }; // 主題卡上只放第一句（淺），其餘點開看（深）
+        const topic = (b) => `<article class="lp-topic" id="lp-${b.id}" style="--c:${b.c}">
+                <div class="lp-topic-k"><span aria-hidden="true">${b.ic}</span>${b.k}</div>
+                <h3>${b.h}</h3>
+                <p class="lp-topic-sum">${first(b.lead)}</p>
+                <details class="lp-topic-more"><summary>${X('看細節', 'More')}</summary>
+                    ${(() => { const rest = b.lead.slice(first(b.lead).length).trim(); return rest ? `<p class="lp-band-lead">${rest}</p>` : ''; })()}
                     <dl class="lp-points">${b.pts.map(p => `<div><dt>${p[0]}</dt><dd>${p[1]}</dd></div>`).join('')}</dl>
+                </details>
+            </article>`;
+        const tiersHtml = () => `<div class="lp-ch-tiers"><div class="lp-scene-head">${X('城鎮四級', 'Four town tiers')}</div><ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${X('人口、繁榮或時代掉下來，城鎮也會降級。', 'If population, prosperity or era drops, the town is demoted.')}</p></div>`;
+        const chapter = (c, i) => {
+            const ts = c.topics.map(id => B[id]).filter(Boolean);
+            const scene = ts.map(b => b.log[0]).filter(Boolean).sort((a, b) => a[0].localeCompare(b[0])).slice(0, 3);
+            const next = chapters[i + 1];
+            return `<section class="lp-chapter" id="lp-ch-${c.id}" style="--c:${c.c}" aria-labelledby="lp-ch-${c.id}-h">
+            <div class="lp-ch-in">
+                <div class="lp-ch-top">
+                    <header class="lp-ch-head">
+                        <span class="lp-kicker"><b class="lp-ch-num" aria-hidden="true">${num(i + 1)}</b>${X('第 {n} 章', 'Chapter {n}').replace('{n}', i + 1)} · ${c.scale}</span>
+                        <h2 id="lp-ch-${c.id}-h">${c.h}</h2>
+                        <p class="lp-ch-lead">${c.lead}</p>
+                    </header>
+                    <aside class="lp-scene" aria-label="${X('遊戲裡你會看到', 'What you\'ll see in the game')}">
+                        <div class="lp-scene-head">${X('遊戲裡你會看到', 'What you\'ll see in the game')}</div>
+                        <ol>${scene.map(l => `<li><time>${l[0]}</time><span>${l[1]}</span></li>`).join('')}</ol>
+                    </aside>
                 </div>
-                <aside class="lp-scene" aria-label="${X('遊戲裡你會看到', 'What you\'ll see in the game')}">
-                    <div class="lp-scene-head">${X('遊戲裡你會看到', 'What you\'ll see in the game')}</div>
-                    <ol>${b.log.map(l => `<li><time>${l[0]}</time><span>${l[1]}</span></li>`).join('')}</ol>
-                </aside>
+                <div class="lp-topics">${ts.map(topic).join('')}</div>
+                ${c.tiers ? tiersHtml() : ''}
+                <p class="lp-ch-bridge${next ? '' : ' is-end'}">${next ? `<a href="#lp-ch-${next.id}" data-lp-jump="lp-ch-${next.id}"><span class="lp-ch-bridge-txt">${c.bridge}</span><span class="lp-ch-bridge-go">${X('下一章', 'Next')} ${num(i + 2)} · ${next.scale} <span aria-hidden="true">↓</span></span></a>` : `<span class="lp-ch-bridge-txt">${c.bridge}</span>`}</p>
             </div>
         </section>`;
+        };
+        const core = `<section class="landing-section lp-sec lp-core" id="landing-core"><div class="lp-sec-head"><span class="lp-kicker">${X('這是什麼遊戲', 'What this game is')}</span><h2>${X('一座自己活著的小鎮', 'A town that lives on its own')}</h2></div>
+                <ol class="lp-pillars">${pillars.map((p, i) => `<li class="lp-pillar"><span class="lp-pillar-ic" aria-hidden="true">${p[0]}</span><h3>${p[1]}</h3><p>${p[2]}</p></li>`).join('')}</ol>
+                <div class="lp-chain" id="landing-chain">
+                    <div class="lp-chain-head"><h3>${X('一件事怎麼牽動整個鎮', 'How one thing ripples through a town')}</h3><p>${X('以下沒有寫在劇本裡。每一步都是村民依自己的個性和處境決定的，換一局就不一樣。', 'None of this is scripted. Every step is decided by villagers according to their own character and circumstances, and it plays out differently every game.')}</p></div>
+                    <ol>${chain.map(([cid, txt]) => `<li style="--c:${CH[cid].c}"><a class="lp-chain-tag" href="#lp-ch-${cid}" data-lp-jump="lp-ch-${cid}">${num(CH[cid].n)} ${CH[cid].scale}</a><span>${txt}</span></li>`).join('')}</ol>
+                </div>
+            </section>`;
+        const chnav = `<nav class="lp-chnav" aria-label="${X('章節', 'Chapters')}"><div class="lp-chnav-in"><span class="lp-chnav-k">${X('從一個人到整個世界', 'From one person to a whole world')}</span><ol>${chapters.map((c, i) => `<li style="--c:${c.c}"><a href="#lp-ch-${c.id}" data-lp-jump="lp-ch-${c.id}"><b>${num(i + 1)}</b>${c.scale}</a></li>`).join('')}</ol></div></nav>`;
         el.innerHTML = `<div class="lp">
             <header class="lp-hero">${sky}
                 <div class="landing-lang" role="group" aria-label="Language">
@@ -564,7 +660,7 @@ Object.assign(RimTownApp.prototype, {
                         <span class="lp-kicker">${X('瀏覽器 3D・AI 小鎮沙盒', 'Browser 3D · AI town sandbox')}</span>
                         <h1 class="lp-title">${X('邊境鎮', 'RimTown')}<span>${L === 'en' ? 'Frontier Town' : 'RimTown'}</span></h1>
                         <p class="lp-tagline">${X('一座由 AI 村民自己過日子的 3D 小鎮。你在天上看著，偶爾推它一把。', 'A 3D town where AI villagers live their own lives. You watch from above and nudge it now and then.')}</p>
-                        <p class="lp-lead">${X('他們自己工作、戀愛、吵架、提案、投票、做生意、組工會、收獻金、上報紙、進賭場，也會生病、看醫生，甚至花大錢把神話基因編進身體裡；小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。', 'They work, fall in love, argue, propose, vote, run businesses, form unions, take donations, make the papers and gamble at the casino; they also fall ill, see doctors, and some even pay a fortune to have mythic genes edited into their bodies. The town may grow from a village into a capital, or fall apart after one famine. No script, no ending.')}</p>
+                        <p class="lp-lead">${X('每位村民都有自己的個性、記憶、錢包和身體，他們做的每個決定都會牽動別人：一場賭局可能拆散一個家、掀起一場抗議、改變一次選舉。小鎮可能從村莊長成王都，也可能因為一場饑荒散掉。沒有劇本，也沒有結局。', 'Every villager has their own personality, memories, wallet and body, and every choice they make ripples out to others: one bet can break up a family, spark a protest and swing an election. The town may grow from a village into a capital, or fall apart after one famine. No script, and no ending.')}</p>
                         <div class="landing-cta">${cta}</div>
                         <ul class="lp-badges">${[['🖥️', X('免安裝', 'No install')], ['📱', X('手機也能玩', 'Works on phones')], ['☁️', X('雲端存檔', 'Cloud saves')], ['🌐', X('中文／English', '中文／English')]].map(b => `<li><span aria-hidden="true">${b[0]}</span>${b[1]}</li>`).join('')}</ul>
                         <div class="landing-version">v${esc(ver)}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
@@ -574,18 +670,16 @@ Object.assign(RimTownApp.prototype, {
             </header>
             <div class="landing-inner">
                 <ul class="lp-stats" aria-label="${X('遊戲規模', 'Game scale')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
-                ${sec('landing-howto', X('你是觀察者', 'You are the observer'), X('怎麼玩', 'How to play'), `<ol class="lp-steps landing-steps">${howto.map((s, i) => `<li class="lp-step landing-step"><span class="lp-step-num" aria-hidden="true">${i + 1}</span><h3><span aria-hidden="true">${s[0]}</span> ${s[1]}</h3><p>${s[2]}</p></li>`).join('')}</ol>`)}
-                <nav class="lp-toc" aria-label="${X('玩法目錄', 'Features')}"><span class="lp-toc-k">${X('小鎮裡會發生什麼', 'What happens in town')}</span>${bands.map(b => `<a href="#lp-${b.id}" data-lp-jump="lp-${b.id}"><span aria-hidden="true">${b.ic}</span>${b.k}</a>`).join('')}</nav>
+                ${core}
             </div>
-            <div id="landing-features" class="lp-bands">${bands.map(band).join('')}</div>
+            ${chnav}
+            <div id="landing-features" class="lp-chapters">${chapters.map(chapter).join('')}</div>
             <div class="landing-inner">
-                ${sec('landing-tiers', X('成長路線', 'Growth'), X('從村莊到王都', 'From village to capital'), `<ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${X('人口、繁榮或時代掉下來，城鎮也會降級。', 'If population, prosperity or era drops, the town is demoted.')}</p>`)}
-                ${sec('landing-ai', X('AI 怎麼運作', 'How the AI works'), X('AI 與金鑰', 'AI and keys'), `<div class="lp-ai landing-ai">${aiNotes.map(f => `<div class="landing-card lp-ai-note"><h3><span aria-hidden="true">${f[0]}</span> ${f[1]}</h3><p>${f[2]}</p></div>`).join('')}</div><div class="lp-flow" aria-label="${X('AI 備援順序', 'AI fallback order')}"><span class="lp-flow-chip on">Claude</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">GPT</span><span class="lp-flow-arrow" aria-hidden="true">→</span><span class="lp-flow-chip">Groq</span><span class="lp-flow-note">${X('前一個不能用才換下一個', 'Each is used only if the one before is unavailable')}</span></div>`)}
                 ${this._renderBrainSection()}
                 ${sec('landing-faq', X('常見問題', 'FAQ'), X('你可能想問', 'You might be wondering'), `<div class="lp-faq">${faq.map(q => `<details><summary>${q[0]}</summary><p>${q[1]}</p></details>`).join('')}</div>`)}
                 <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${X('一直在更新', 'Always updating')}</span><h2>${X('更新紀錄', 'Changelog')}</h2></div>
                     <div class="landing-log" id="landing-log">${logHtml || `<div class="landing-log-item">${typeof RIMTOWN_CHANGELOG === 'undefined' ? t('載入中…') : t('尚無紀錄')}</div>`}</div>
-                    ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
+                    ${log.length > 3 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
                 </section>
                 <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${X('接下來', 'Next')}</span><h2>${X('路線圖', 'Roadmap')}</h2></div>
                     <div class="lp-rm">
@@ -607,6 +701,7 @@ Object.assign(RimTownApp.prototype, {
         // 目錄跳段:在 #landing 這個捲動容器裡平滑捲過去
         el.querySelectorAll('[data-lp-jump]').forEach(a => a.addEventListener('click', (ev) => { const tg = el.querySelector('#' + a.dataset.lpJump); if (!tg) return; ev.preventDefault(); tg.scrollIntoView({ behavior: window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' }); }));
         this._wireBrainDemo(el);
+        try { this._lpChObs?.disconnect(); const links = [...el.querySelectorAll('.lp-chnav a')]; if (links.length && 'IntersectionObserver' in window) { this._lpChObs = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; links.forEach(a => { const on = a.dataset.lpJump === e.target.id; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); }), { root: el, rootMargin: '-40% 0px -55% 0px' }); el.querySelectorAll('.lp-chapter').forEach(s => this._lpChObs.observe(s)); } } catch (e) {} // v9.1.1
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
             const box = el.querySelector('#landing-log');
             if (box && 'IntersectionObserver' in window) { try { this._lpLogObs?.disconnect(); this._lpLogObs = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { this._lpLogObs.disconnect(); loadLog(); } }, { root: el, rootMargin: '900px 0px' }); this._lpLogObs.observe(box); } catch (e) { loadLog(); } } else loadLog();
@@ -632,7 +727,7 @@ Object.assign(RimTownApp.prototype, {
         el.querySelector('#landing-log-more')?.addEventListener('click', (ev) => {
             const box = el.querySelector('#landing-log'); if (!box) return;
             const expanded = box.classList.toggle('expanded');
-            ev.currentTarget.textContent = expanded ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`;
+            ev.currentTarget.textContent = expanded ? t('只看最近 3 版') : `${t('顯示全部')} (${log.length})`;
         });
         this._landingUpdateContinue();
     },
@@ -641,12 +736,12 @@ Object.assign(RimTownApp.prototype, {
         const el = document.getElementById('landing'); const box = el?.querySelector('#landing-log'); if (!box) return false;
         const esc = s => this._escapeHtml ? this._escapeHtml(String(s)) : String(s);
         const log = (typeof RIMTOWN_CHANGELOG !== 'undefined' && Array.isArray(RIMTOWN_CHANGELOG)) ? RIMTOWN_CHANGELOG : [];
-        box.innerHTML = log.map((e, i) => `<div class="landing-log-item${i >= 5 ? ' extra' : ''}">
+        box.innerHTML = log.map((e, i) => `<div class="landing-log-item${i >= 3 ? ' extra' : ''}">
                 <div class="landing-log-head"><span>v${esc(e.version)}</span><time>${esc(e.date || '')}</time></div>
                 <ul>${((I18N.getLang() === 'en' && e.changes_en && e.changes_en.length) ? e.changes_en : (e.changes || [])).map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>`).join('') || `<div class="landing-log-item">${t('尚無紀錄')}</div>`;
-        if (log.length > 5 && !el.querySelector('#landing-log-more')) {
+        if (log.length > 3 && !el.querySelector('#landing-log-more')) {
             const b = document.createElement('button'); b.className = 'landing-more'; b.id = 'landing-log-more'; b.textContent = `${t('顯示全部')} (${log.length})`; box.after(b);
-            b.addEventListener('click', () => { const ex = box.classList.toggle('expanded'); b.textContent = ex ? t('只看最近 5 版') : `${t('顯示全部')} (${log.length})`; });
+            b.addEventListener('click', () => { const ex = box.classList.toggle('expanded'); b.textContent = ex ? t('只看最近 3 版') : `${t('顯示全部')} (${log.length})`; });
         }
         return true;
     },

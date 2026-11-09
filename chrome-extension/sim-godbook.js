@@ -143,7 +143,7 @@ const GODBOOK = (function () {
     };
     const LS = 'rimtown_godbook';
     const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) { return []; } };
-    const lsAdd = (id) => { try { const s = new Set(lsGet()); s.add(id); localStorage.setItem(LS, JSON.stringify([...s])); } catch (e) {} };
+    const lsAdd = (id) => { try { const s = new Set(lsGet()); const had = s.has(id); s.add(id); localStorage.setItem(LS, JSON.stringify([...s])); if (!had && typeof window !== 'undefined') window.dispatchEvent?.(new Event('rimtown-unlock')); } catch (e) {} }; // v9.2.0 新解鎖 → 推上帳號
     function S(w) { if (!w.godbook || typeof w.godbook !== 'object') w.godbook = { pages: {} }; w.godbook.pages = w.godbook.pages || {}; return w.godbook; }
     const card = (id) => EVENT_CARDS.find(c => c.id === id) || null;
     function unlocked(w, id) { const c = card(id); if (!c) return false; if (c.rar === 'common') return true; return !!S(w).pages[id] || lsGet().includes(id); }

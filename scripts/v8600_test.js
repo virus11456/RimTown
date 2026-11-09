@@ -99,11 +99,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       while (c5.ph !== 'panic') step(); app._ghTab = 'lab'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
       const tray = document.getElementById('gh-tray'); const lt = tray?.innerText || ''; const box = tray?.querySelector('.wc-box');
       out.ui = { box: !!box && box.classList.contains('wc-rift'), steril: !!tray?.querySelector('.wc-sterile') };
-      app._ghHide?.(); const mobile = innerWidth <= 768; if (mobile && app._openKairoTab) app._openKairoTab('econ-tech'); else { app.activeTab = 'econ-tech'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 400));
+      app._ghFilter = 'all'; app._ghHide?.(); const mobile = innerWidth <= 768; if (mobile && app._openKairoTab) app._openKairoTab('econ-tech'); else { app.activeTab = 'econ-tech'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 400));
       const era = document.querySelector('.wc-era'); const et = era?.innerText || ''; out.ui.tech = !!era?.querySelector('.wc-box') && !!era?.querySelector('.wc-sterile');
-      while (w.worldcal.cur) step(); w.worldcal.cool = 0; C.power = 100; app._ghTab = 'lab'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
-      const kinds = tray?.querySelectorAll('.wc-kind') || []; const kt = tray?.innerText || '';
-      out.ui.kinds = kinds.length; out.ui.paths = tray?.querySelectorAll('.wc-path').length || 0; out.ui.btn = tray?.querySelectorAll('.wc-kind [data-gh="lab-wc"]').length || 0;
+      while (w.worldcal.cur) step(); w.worldcal.cool = 0; C.power = 100; app._ghTab = 'hand'; app._ghFilter = 'wc'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
+      const kinds = tray?.querySelectorAll('.gh-wcc') || []; const kt = tray?.innerText || '';
+      out.ui.kinds = kinds.length; out.ui.paths = tray?.querySelectorAll('.gh-wcc .gh-band').length || 0; out.ui.btn = tray?.querySelectorAll('.gh-wcc:not(.off)').length || 0;
       const all = lt + '\n' + et + '\n' + kt; out.ui.undef = /undefined|NaN|\{[a-z]+\}/.test(all); out.ui.cjk = (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? (all.match(/[一-鿿]+/g) || []).slice(0, 6) : [];
       out.ui.overflow = document.documentElement.scrollWidth > innerWidth + 1; app._ghHide?.();
       out.drift = Math.round(wcDrift * 100) / 100;
@@ -111,7 +111,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       return out;
     });
     const zh = lang === 'zh'; const E = r.elig;
-    ok(!E.bioFew && E.bioYes && E.bioKinds.join() === 'infertile' && E.bioPick === 'infertile' && E.stYes && E.steamKinds.join() === 'iceage,rift' && E.smog && E.aeth && E.elKinds.join() === 'ai,aliens,nukewar', '每條路線第六時代研究到六成才會發生；基因生物→全球不孕；蒸汽煉金煤煙多→冰河期、以太引擎浮空城→裂隙；電子機械不變', E);
+    ok(!E.bioFew && E.bioYes && E.bioKinds.sort().join() === 'infertile,zombie' && ['infertile', 'zombie'].includes(E.bioPick) && E.stYes && E.steamKinds.join() === 'iceage,rift' && E.smog && E.aeth && E.elKinds.join() === 'ai,aliens,nukewar', '每條路線第六時代研究到六成才會發生；基因生物→全球不孕；蒸汽煉金煤煙多→冰河期、以太引擎浮空城→裂隙；電子機械不變', E);
     const I = r.inf;
     ok(I.fixProp && I.bank && I.cost && I.vFam === 'for' && I.vDev === 'against' && I.whyDev === 'bio_god', '全球不孕：有人提「全力研究」與「精卵庫」（要用紙）；想要孩子的人贊成、虔誠的人覺得是在扮演神', I);
     ok(I.hit.out === 'hit' && I.hit.dead === 0 && I.hit.f === 0 && I.hit.long && I.hit.left >= 1 && I.hit.regress && I.hit.shock, '沒做到 → 重創：沒有人死，但一整年生不出孩子、想要孩子的夫妻搬走、基因學問失傳、災後反應', I.hit);
@@ -129,7 +129,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.ach.length, '成就：撐過全球不孕、冰河期、以太裂隙', r.ach);
     ok(r.drift === 0, '銀幣守恆（世界級災厄自己沒有憑空產生或消滅銀幣）', r.drift);
     ok(r.ui.box && r.ui.steril && r.ui.tech, `介面：工坊與科技分頁顯示裂隙進度和「不孕還沒過去」（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
-    ok(r.ui.kinds === 6 && r.ui.paths === 6 && r.ui.btn >= 3 && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：工坊列出六種、標出路線、撐過的能發動；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.kinds === 7 && r.ui.paths === 7 && r.ui.btn >= 3 && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：手牌區塊列出七種、標出路線、撐過的能發動；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }

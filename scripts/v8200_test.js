@@ -20,8 +20,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_gh_intro', '1'); localStorage.setItem('rimtown_full_agent', '0'); localStorage.removeItem('rimtown_lab'); }, { jwt, lang });
     // 首頁:災厄工坊段落回來了(8.2 新)
     await page.goto(BASE + 'index.html', { waitUntil: 'load' }); await page.waitForTimeout(1200);
-    const land = await page.evaluate(() => { const b = document.getElementById('lp-lab'); return { band: !!b, isNew: !!b?.querySelector('.lp-new') && /8\.2/.test(b.querySelector('.lp-new').textContent), bands: document.querySelectorAll('#landing-features .lp-band').length, recent: /v8\.2/.test(document.getElementById('landing')?.textContent || ''), overflow: document.documentElement.scrollWidth > innerWidth + 1 }; });
-    ok(land.band && land.isNew && land.bands === 18 && land.recent && !land.overflow, '首頁：災厄工坊段落回來了（標 8.2 新）、路線圖寫上 v8.2', land);
+    const land = await page.evaluate(() => { const b = document.getElementById('lp-lab'); return { band: !!b, inYou: !!b?.closest('#lp-ch-you'), bands: document.querySelectorAll('#landing-features .lp-chapter').length, recent: !!document.querySelector('.lp-rm-done'), overflow: document.documentElement.scrollWidth > innerWidth + 1 }; });
+    ok(land.band && land.inYou && land.bands === 7 && land.recent && !land.overflow, '首頁：災厄工坊在第七章「你」裡（v9.1.1 七章敘事）、路線圖還在', land);
     await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
     const r = await page.evaluate(async () => {
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {};

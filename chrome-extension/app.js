@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.0.0';
+const RIMTOWN_APP_VERSION = '9.2.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -429,6 +429,7 @@ class RimTownApp {
         }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
+        try { this._wireUnlockSync?.(); } catch (e) {} // v9.2.0 解鎖跟著帳號
         await this.loadSettings();
         // v5.62.1 一次性遷移:清掉城鎮列表裡同名的「第1天孤兒」重複條目
         try { await this._initLocalStore(); } catch (e) { console.warn('[RimTown] local store init', e); } // v6.76.1 其他鎮的本機副本搬去 IndexedDB
@@ -2008,7 +2009,22 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed[data-speed]').forEach(b => { const on = parseFloat(b.dataset.speed) === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
     }
 
+    // v9.1.2 側欄互動時暫停自動重畫（按下到放開後 0.6 秒、捲動中 0.8 秒）
+    _wireSidebarHold() {
+        if (this._sbHoldWired) return; this._sbHoldWired = true;
+        const inSb = (e) => !!(e.target && e.target.closest && e.target.closest('#sidebar-content, #rimtown-sidebar, #kairo-card'));
+        const hold = (ms) => { this._sbHoldUntil = Math.max(this._sbHoldUntil || 0, Date.now() + ms); };
+        const opt = { capture: true, passive: true };
+        document.addEventListener('pointerdown', (e) => { if (inSb(e)) hold(1500); }, opt);
+        document.addEventListener('touchstart', (e) => { if (inSb(e)) hold(1500); }, opt);
+        document.addEventListener('pointerup', (e) => { if (inSb(e)) this._sbHoldUntil = Date.now() + 600; }, opt);
+        document.addEventListener('touchend', (e) => { if (inSb(e)) this._sbHoldUntil = Date.now() + 600; }, opt);
+        document.addEventListener('pointercancel', () => { this._sbHoldUntil = Date.now() + 300; }, opt);
+        document.addEventListener('scroll', (e) => { if (inSb(e)) hold(800); }, opt);
+    }
+
     setupTabListeners() {
+        try { this._wireSidebarHold(); } catch (e) {}
         // v5.20.0 三大入口收束:小鎮 / 居民 / 故事(+設定)。主鍵即該組的「頭」分頁。
         // v6.25.0 觀察者沙盒四大入口:動態／村民／提案／日報(設定走齒輪鈕)
         this._mobileTabGroups = {
@@ -2880,6 +2896,8 @@ class RimTownApp {
             return;
         }
         // v6.33.0 手機:抽屜沒打開就不重畫側欄(打開時 _openKairoTab 會畫);打開著也最多每秒一次(3x 速度一秒 1.5 個 tick,每次整個 innerHTML 重建 8ms)
+        // v9.1.2 手指按著側欄（或剛放開、正在捲）就先不重畫：重畫會把按著的按鈕換掉，手機上那一下點擊就消失了（例：科技頁內容多，點「產業」常沒反應）
+        if (Date.now() < (this._sbHoldUntil || 0)) return;
         if (window.innerWidth <= 768 && this._kairoReady) {
             const card = document.getElementById('kairo-card');
             if (!card || card.classList.contains('hidden')) return;
@@ -3011,11 +3029,16 @@ class RimTownApp {
             });
             subBar += '</div>';
             const hint = this._tabHints?.[cur]; if (hint) subBar += `<div class="pp-tabhint">${hint}</div>`;
-            content.innerHTML = subBar;
+            const bar0 = content.firstElementChild;
+            if (content._subBarHtml === subBar && bar0 && bar0.dataset.grpBar === '1') { // v9.1.2 分頁列一樣就沿用原本的按鈕，只換下面的內容
+                const last = hint ? bar0.nextElementSibling : bar0;
+                while (last && last.nextSibling) last.nextSibling.remove();
+            } else { content.innerHTML = subBar; content._subBarHtml = subBar; if (content.firstElementChild) content.firstElementChild.dataset.grpBar = '1'; }
             const subContent = document.createElement('div');
             content.appendChild(subContent);
             this._renderTabContent(subContent);
         } else {
+            content._subBarHtml = null;
             this._renderTabContent(content);
         }
         this._restoreDetails(content, keep);

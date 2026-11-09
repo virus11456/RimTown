@@ -63,7 +63,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         const ids = new Set(cooks.map(c => c.agentId)); const before = Object.fromEntries(cooks.map(c => [c.agentId, WALLET.get(w, c)]));
         // 只算分成:把每位廚師自己的開銷先算出來(三餐 3、衣服日 6、冬天柴 1.5)
         const d = (w._absDay ? w._absDay() : 0); const winter = w.clock?.season === '冬季';
-        WALLET.S(w).lastDay = -1; try { WALLET.daily(w); } catch (e) { out.walletErr = e.message; }
+        WALLET.S(w).lastDay = -1; const _R = Math.random; Math.random = () => 0.999; /* v9.1.2 只量工資：關掉 v8.9 起的隨機消費（看戲、宴客、旅遊…），不然偶爾有廚師多花錢就判失敗 */ try { WALLET.daily(w); } catch (e) { out.walletErr = e.message; } finally { Math.random = _R; }
         const gain = cooks.map(c => { const own = 3 + (((d + (c.agentId.length * 7)) % 10 === 0) ? 6 : 0) + (winter ? 1.5 : 0); return Math.round((WALLET.get(w, c) - before[c.agentId] + own) * 100) / 100; });
         out.tips = { gain, paidCooks: gain.filter(g => g > 0.2).length, max: Math.max(...gain), bizTax: Math.round(((WALLET.S(w).stats.bizTax || 0) - tax0) * 100) / 100, rate: WALLET.BIZ_TAX, market: typeof MARKET !== 'undefined' };
         // 開店的進帳繳 15%

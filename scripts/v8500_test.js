@@ -84,11 +84,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       while (c5.ph !== 'panic') step(); app._ghTab = 'lab'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
       const tray = document.getElementById('gh-tray'); const lt = tray?.innerText || ''; const box = tray?.querySelector('.wc-box');
       out.ui = { box: !!box, steps: box ? box.querySelectorAll('.wc-step').length : 0, on: !!box?.querySelector('.wc-step.on'), bar: !!box?.querySelector('.wc-bar'), form: !!tray?.querySelector('.gh-lab-form') };
-      app._ghHide?.(); const mobile = innerWidth <= 768; if (mobile && app._openKairoTab) app._openKairoTab('econ-tech'); else { app.activeTab = 'econ-tech'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 400));
+      app._ghFilter = 'all'; app._ghHide?.(); const mobile = innerWidth <= 768; if (mobile && app._openKairoTab) app._openKairoTab('econ-tech'); else { app.activeTab = 'econ-tech'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 400));
       const era = document.querySelector('.wc-era'); const et = era?.innerText || ''; out.ui.tech = !!era && !!era.querySelector('.wc-box');
       // 結束後的工坊清單
-      while (w.worldcal.cur) step(); w.worldcal.cool = 0; C.power = 100; app._ghTab = 'lab'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
-      const kinds = tray?.querySelectorAll('.wc-kind') || []; const btn = tray?.querySelectorAll('.wc-kind [data-gh="lab-wc"]') || []; const kt = tray?.innerText || '';
+      while (w.worldcal.cur) step(); w.worldcal.cool = 0; C.power = 100; app._ghTab = 'hand'; app._ghFilter = 'wc'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
+      const kinds = tray?.querySelectorAll('.gh-wcc') || []; const btn = tray?.querySelectorAll('.gh-wcc:not(.off)') || []; const kt = tray?.innerText || '';
       out.ui.kinds = kinds.length; out.ui.btn = btn.length; out.ui.hist = !!tray?.querySelector('.wc-hist');
       const all = lt + '\n' + et + '\n' + kt; out.ui.undef = /undefined|NaN|\{[a-z]+\}/.test(all); out.ui.cjk = (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? (all.match(/[一-鿿]+/g) || []).slice(0, 6) : [];
       out.ui.overflow = document.documentElement.scrollWidth > innerWidth + 1; app._ghHide?.();
@@ -110,7 +110,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.brief.town && r.brief.town2 && r.brief.town2 !== r.brief.town && r.brief.mem !== '', 'AI 知道鎮上的狀況（徵兆時只覺得怪，之後知道是什麼）和自己是哪一派', r.brief);
     ok(!r.ach.length, '成就：撐過三種世界級災厄、化解於未然、在工坊發動', r.ach);
     ok(r.ui.box && r.ui.steps === 6 && r.ui.on && r.ui.bar && !r.ui.form && r.ui.tech, `介面：工坊與科技分頁顯示六段、目前階段、主對策進度；進行中不能設計病原體（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
-    ok(r.ui.kinds === 6 && r.ui.btn >= 1 && r.ui.hist && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：工坊列出六種世界級災厄、撐過的可以發動、過去的紀錄；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.kinds === 7 && r.ui.btn >= 1 && r.ui.hist && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：手牌的世界級災厄區塊列出七種、撐過的可以發動、過去的紀錄；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }

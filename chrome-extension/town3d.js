@@ -626,11 +626,144 @@ class Town3D extends PixelTileMap {
         return null;
     }
 
+    // v9.1.0 屋內剖面：地板、矮牆（門口留缺）、依建築種類擺家具；同時記下床位／座位／工作位，鏡頭拉近時村民會被安排到這些位置
+    _buildInterior(locId, tmpl, w, d, cx, cz, doorX, wall, stone, wood, h) {
+        const cg = new THREE.Group(); cg.position.set(cx, 0, cz); this._bCut.add(cg);
+        const lite = this._lite(), F = 0.28, cutH = 0.85;
+        const B = (bw, bh, bd, col, x, y, z) => this._box(bw, bh, bd, col, x, y, z, cg);
+        const C = (r, ch, col, x, y, z, seg) => this._cyl(r, r, ch, seg || 8, col, x, y, z, cg);
+        if (!this._fireMat) this._fireMat = new THREE.MeshLambertMaterial({ color: new THREE.Color('#FFB050'), emissive: new THREE.Color('#FF7A20'), emissiveIntensity: 0.9 });
+        const glow = (bw, bh, bd, x, y, z, mat) => { const m = new THREE.Mesh(this._geo('box', () => new THREE.BoxGeometry(1, 1, 1)), mat || this._fireMat); m.scale.set(bw, bh, bd); m.position.set(x, y, z); cg.add(m); return m; };
+        const dk = (hex, k) => { const c = new THREE.Color(hex); c.multiplyScalar(k); return '#' + c.getHexString(); };
+        const stoneFloor = tmpl === 'chapel' || tmpl === 'town_hall' || tmpl === 'guardpost', clinicFloor = tmpl === 'clinic';
+        const floor = clinicFloor ? '#D8D2C4' : stoneFloor ? '#A9A194' : '#B48A5A';
+        // 地基＋地板（木地板加幾道板縫）
+        B(w + 0.14, 0.32, d + 0.14, stone, 0, 0.06, 0);
+        B(w - 0.06, 0.06, d - 0.06, floor, 0, F - 0.03, 0);
+        if (!lite && !stoneFloor && !clinicFloor) for (let x = -w / 2 + 0.75; x < w / 2 - 0.3; x += 0.75) B(0.03, 0.02, d - 0.3, dk(floor, 0.82), x, F + 0.005, 0);
+        // 矮牆：後、左、右整面，前面在門口留缺；牆頂一條深色收邊，看得出是剖開的
+        const wt = 0.16, wy = F + cutH / 2 - 0.02, cap = dk(wall, 0.7);
+        const wallSeg = (sw, sd, x, z) => { if (sw <= 0.05 || sd <= 0.05) return; B(sw, cutH, sd, wall, x, wy, z); B(sw + 0.02, 0.06, sd + 0.02, cap, x, F + cutH, z); };
+        wallSeg(w, wt, 0, -d / 2 + wt / 2);
+        wallSeg(wt, d - wt, -w / 2 + wt / 2, wt / 2);
+        wallSeg(wt, d - wt, w / 2 - wt / 2, wt / 2);
+        const gapL = doorX - 0.55, gapR = doorX + 0.55;
+        wallSeg(gapL + w / 2 - wt, wt, (-w / 2 + wt + gapL) / 2, d / 2 - wt / 2);
+        wallSeg(w / 2 - wt - gapR, wt, (gapR + w / 2 - wt) / 2, d / 2 - wt / 2);
+        B(1.1, 0.12, 0.36, stone, doorX, 0.06, d / 2 + 0.2); // 門口台階
+        // 位置登記：x/z 是建築內的相對座標，存成世界座標
+        const S = { sleep: [], eat: [], sit: [], work: [], stand: [] };
+        const spot = (cat, x, z, rot, y, icon) => S[cat].push({ x: cx + x, z: cz + z, rot, y: y ?? F, icon: icon || '' });
+        const L = -w / 2 + wt + 0.05, R = w / 2 - wt - 0.05, Bk = -d / 2 + wt + 0.05, Fr = d / 2 - wt - 0.05;
+        const SEAT = F + 0.42;
+        const stool = (x, z, col) => { C(0.19, 0.06, col || '#8C6440', x, SEAT - 0.03, z); if (!lite) C(0.06, 0.36, dk(col || '#8C6440', 0.7), x, F + 0.18, z, 5); else B(0.12, 0.36, 0.12, dk(col || '#8C6440', 0.7), x, F + 0.18, z); };
+        const chair = (x, z, rot, col) => { col = col || '#7A5636'; B(0.4, 0.06, 0.4, col, x, SEAT - 0.03, z); for (const [a, b] of [[-0.16, -0.16], [0.16, -0.16], [-0.16, 0.16], [0.16, 0.16]]) B(0.05, 0.4, 0.05, dk(col, 0.75), x + a, F + 0.2, z + b); const bx = -Math.sin(rot) * 0.18, bz = -Math.cos(rot) * 0.18; const bk = B(0.4, 0.42, 0.05, col, x + bx, SEAT + 0.2, z + bz); bk.rotation.y = rot; };
+        const table = (x, z, tw, td, col) => { col = col || '#9A7048'; B(tw, 0.07, td, col, x, F + 0.62, z); for (const [a, b] of [[-1, -1], [1, -1], [-1, 1], [1, 1]]) B(0.07, 0.6, 0.07, dk(col, 0.7), x + a * (tw / 2 - 0.08), F + 0.3, z + b * (td / 2 - 0.08)); };
+        const roundTable = (x, z, r, col) => { C(r, 0.07, col || '#9A7048', x, F + 0.62, z, 10); C(0.08, 0.6, dk(col || '#9A7048', 0.7), x, F + 0.3, z, 6); };
+        const seatsAround = (x, z, r, n, cat, icon, col, a0) => { for (let i = 0; i < n; i++) { const a = (a0 || 0) + i * Math.PI * 2 / n, sx = x + Math.sin(a) * r, sz = z + Math.cos(a) * r; stool(sx, sz, col); spot(cat, sx, sz, a + Math.PI, SEAT, icon); } };
+        const bed = (x, z, bw, bd, blanket, n, frame) => { // 床頭朝後牆(-z)；村民躺下時頭朝 -z，腳在床尾
+            frame = frame || wood; B(bw, 0.3, bd, frame, x, F + 0.15, z); B(bw - 0.12, 0.14, bd - 0.12, '#F1EBDD', x, F + 0.37, z);
+            B(bw - 0.06, 0.06, bd * 0.58, blanket, x, F + 0.46, z + bd * 0.19); B(bw, 0.62, 0.1, frame, x, F + 0.31, z - bd / 2 + 0.05);
+            for (let i = 0; i < n; i++) { const px = x - bw / 2 + bw * (i + 0.5) / n; B(Math.min(0.55, bw / n - 0.12), 0.12, 0.32, '#FFFFFF', px, F + 0.5, z - bd / 2 + 0.32); S.sleep.push({ x: cx + px, z: cz + z + bd / 2 - 0.12, rot: 0, y: F + 0.47, icon: '', lie: true }); }
+        };
+        const shelf = (x, z, sw, sh, sd, rows, goods) => { B(sw, sh, sd, wood, x, F + sh / 2, z); if (lite) return; const along = sw >= sd; for (let r = 0; r < rows; r++) { const yy = F + 0.25 + r * (sh - 0.3) / Math.max(1, rows - 1 || 1); for (let k = 0; k < 4; k++) { const f = (k + 0.5) / 4 - 0.5, col = goods[(k + r + h) % goods.length]; if (along) B(sw / 5, 0.18, 0.12, col, x + f * sw * 0.9, Math.min(F + sh - 0.12, yy), z + sd / 2 + 0.02); else B(0.12, 0.18, sd / 5, col, x + sd / 2 + 0.02 * Math.sign(-x), Math.min(F + sh - 0.12, yy), z + f * sd * 0.9); } } };
+        const rug = (x, z, rw, rd, col) => { B(rw, 0.02, rd, col, x, F + 0.01, z); if (!lite) B(rw - 0.25, 0.022, rd - 0.25, dk(col, 0.8), x, F + 0.012, z); };
+        const lamp = (x, y, z) => { if (this._lanternMat) glow(0.16, 0.2, 0.16, x, y, z, this._lanternMat); };
+        const BOOKS = ['#8C3B3B', '#3B5A8C', '#4F7A3B', '#8C6A2B', '#5A3B7A'], GOODS = ['#C9533D', '#E0B040', '#7BA05B', '#C98A3A', '#B8B2A8'];
+        const casino = locId === 'casino';
+        if (tmpl === 'house') {
+            const blanket = ['#C9533D', '#4F6F93', '#5D9A6A', '#C98A3A', '#8C5A9A'][h % 5];
+            bed(L + 0.85, Bk + 1.05, 1.7, 2.1, blanket, 2);
+            if (d >= 5.5) bed(L + 0.5, Bk + 3.15, 0.95, 1.85, ['#E8C07A', '#9AC0E0', '#E8A0B0'][h % 3], 1);
+            // 灶台＋火光＋鍋
+            B(1.2, 0.95, 0.6, stone, R - 0.6, F + 0.47, Bk + 0.3); glow(0.5, 0.26, 0.08, R - 0.6, F + 0.25, Bk + 0.61); B(0.36, 0.22, 0.36, '#3F3A44', R - 0.6, F + 1.06, Bk + 0.3);
+            spot('work', R - 0.6, Bk + 1.05, Math.PI, F, '🍳');
+            shelf(L + 2.3, Bk + 0.16, 0.95, 1.05, 0.3, 2, ['#C9A86A', '#E8E0D0', '#8C5A3C']);
+            spot('work', L + 2.3, Bk + 0.8, Math.PI, F, '🧹');
+            const tx = R - 1.25, tz = 0.45; table(tx, tz, 1.15, 0.8); lamp(tx + 0.3, F + 0.75, tz - 0.15);
+            if (!lite) { B(0.24, 0.05, 0.24, '#E8E0D0', tx - 0.25, F + 0.68, tz); B(0.2, 0.04, 0.2, '#E8E0D0', tx + 0.1, F + 0.68, tz + 0.15); }
+            for (const [sx, sz, rot] of [[tx - 0.82, tz, Math.PI / 2], [tx + 0.82, tz, -Math.PI / 2], [tx, tz + 0.66, Math.PI], [tx, tz - 0.66, 0]]) { if (sx > R - 0.15) continue; stool(sx, sz); spot('eat', sx, sz, rot, SEAT, '🍲'); }
+            rug(-0.15, Fr - 1.0, 1.6, 1.1, ['#B04A3A', '#3C7E71', '#7A5A9A'][(h >>> 2) % 3]);
+            spot('stand', -0.4, Fr - 1.1, Math.PI, F); spot('stand', 0.3, Fr - 0.9, Math.PI, F); spot('stand', -0.1, Fr - 1.6, 0, F);
+        } else if (tmpl === 'tavern') {
+            const cw = Math.max(2, w - 3.4), ccx = L + 0.3 + cw / 2;
+            B(cw, 0.9, 0.55, wood, ccx, F + 0.45, Bk + 1.35); B(cw + 0.1, 0.07, 0.65, casino ? '#2F6B3A' : '#B8865A', ccx, F + 0.93, Bk + 1.35);
+            B(cw, 1.1, 0.32, wood, ccx, F + 0.55, Bk + 0.18);
+            if (!lite) for (let i = 0; i < 7; i++) B(0.09, 0.26, 0.09, ['#3A7A4A', '#8C3B3B', '#C9A13A', '#4A5A8C'][i % 4], ccx - cw / 2 + 0.3 + i * (cw - 0.6) / 6, F + 1.23, Bk + 0.2);
+            spot('work', ccx - cw * 0.22, Bk + 0.75, 0, F, casino ? '🎲' : '🍺'); spot('work', ccx + cw * 0.22, Bk + 0.75, 0, F, casino ? '🃏' : '🍺');
+            for (let i = 0; i < 4; i++) { const sx = ccx - cw / 2 + 0.4 + i * (cw - 0.8) / 3; stool(sx, Bk + 2.05); spot('eat', sx, Bk + 2.05, Math.PI, SEAT, casino ? '🎲' : '🍺'); }
+            const tabs = [[L + 1.4, Fr - 1.6], [R - 1.4, Fr - 1.6]]; if (d >= 8.5 && w >= 9) tabs.push([R - 1.4, Bk + 2.4]);
+            for (const [x, z] of tabs) { if (casino) { B(1.3, 0.08, 0.9, '#2F6B3A', x, F + 0.64, z); B(0.2, 0.6, 0.2, wood, x, F + 0.3, z); } else roundTable(x, z, 0.55); seatsAround(x, z, 0.9, 4, 'sit', casino ? '🎲' : '🍻', null, Math.PI / 4); if (!casino) lamp(x, F + 0.76, z); }
+            C(0.32, 0.7, '#7A5232', R - 0.45, F + 0.35, Bk + 0.45, 8); C(0.32, 0.7, '#7A5232', R - 0.45, F + 0.35, Bk + 1.2, 8); if (!lite) C(0.32, 0.6, '#7A5232', R - 1.15, F + 0.3, Bk + 0.45, 8);
+            spot('stand', 0, 0.4, Math.PI, F); spot('stand', -1.0, 0.8, Math.PI / 2, F); spot('stand', 1.0, 0.6, -Math.PI / 2, F);
+        } else if (tmpl === 'general_store') {
+            const sw = Math.min(2.6, (w - 1.2) / 2);
+            for (const x of [L + 0.2 + sw / 2, R - 1.8 - sw / 2 + 1.2]) { shelf(x, Bk + 0.25, sw, 1.35, 0.45, 3, GOODS); spot('stand', x, Bk + 1.15, Math.PI, F, '🛒'); }
+            shelf(L + 0.24, 0.2, 0.45, 1.35, Math.min(2.6, d - 3), 3, GOODS); spot('stand', L + 1.1, 0.2, -Math.PI / 2, F, '🛒');
+            B(0.6, 0.85, 2.0, wood, R - 1.45, F + 0.42, 0.6); B(0.7, 0.06, 2.1, '#B8865A', R - 1.45, F + 0.87, 0.6); if (!lite) B(0.3, 0.2, 0.25, '#C9A13A', R - 1.45, F + 0.99, 0.2);
+            spot('work', R - 0.75, 0.6, -Math.PI / 2, F, '🧾'); spot('stand', R - 2.2, 0.6, Math.PI / 2, F, '💰');
+            for (const [x, z] of [[L + 0.6, Fr - 0.6], [L + 1.3, Fr - 0.55]]) B(0.55, 0.45, 0.55, '#A07A4A', x, F + 0.22, z);
+            if (!lite) C(0.25, 0.5, '#D8C8A0', L + 0.65, F + 0.25, Fr - 1.35, 7);
+        } else if (tmpl === 'library') {
+            const n = Math.max(2, Math.floor((w - 1) / 2.3)), sw = (w - 1) / n - 0.15;
+            for (let i = 0; i < n; i++) { const x = L + 0.4 + sw / 2 + i * (sw + 0.15); shelf(x, Bk + 0.22, sw, 1.6, 0.4, 4, BOOKS); if (i % 2 === 0) spot('work', x, Bk + 1.0, Math.PI, F, '📖'); }
+            for (const x of [-1.5, 1.5]) { const z = 0.5; table(x, z, 1.5, 0.85, '#8C6440'); lamp(x + 0.5, F + 0.75, z); if (!lite) B(0.35, 0.06, 0.25, '#E8E0D0', x - 0.2, F + 0.68, z); for (const [sz, rot] of [[z - 0.72, 0], [z + 0.72, Math.PI]]) for (const ox of [-0.4, 0.4]) { chair(x + ox, sz, rot); spot('sit', x + ox, sz, rot, SEAT, '📖'); } }
+            B(1.3, 0.8, 0.55, wood, R - 0.9, F + 0.4, Fr - 1.0); chair(R - 0.9, Fr - 0.35, Math.PI); spot('work', R - 0.9, Fr - 0.35, Math.PI, SEAT, '✍️');
+        } else if (tmpl === 'workshop') {
+            B(1.6, 1.0, 1.2, stone, L + 0.9, F + 0.5, Bk + 0.7); glow(1.1, 0.12, 0.7, L + 0.9, F + 1.03, Bk + 0.7); B(1.0, 1.2, 0.8, dk(stone, 0.8), L + 0.9, F + 1.75, Bk + 0.5);
+            B(0.5, 0.42, 0.3, '#4A4A52', L + 1.0, F + 0.21, Bk + 2.15); B(0.75, 0.16, 0.34, '#5A5A64', L + 1.0, F + 0.5, Bk + 2.15);
+            spot('work', L + 1.0, Bk + 2.85, Math.PI, F, '🔨');
+            B(0.9, 0.8, 2.4, wood, R - 0.5, F + 0.4, -0.4); B(1.0, 0.07, 2.5, '#B8865A', R - 0.5, F + 0.83, -0.4); if (!lite) { B(0.5, 0.06, 0.12, '#6B6F78', R - 0.5, F + 0.9, -1.0); B(0.12, 0.08, 0.4, '#8C6440', R - 0.5, F + 0.9, 0.3); }
+            spot('work', R - 1.25, -1.0, Math.PI / 2, F, '🪚'); spot('work', R - 1.25, 0.3, Math.PI / 2, F, '🔧');
+            for (let i = 0; i < (lite ? 2 : 4); i++) { const lg = C(0.14, 1.1, '#8B5A2B', L + 0.5 + (i % 2) * 0.32, F + 0.14 + Math.floor(i / 2) * 0.27, Fr - 0.8, 6); lg.rotation.z = Math.PI / 2; }
+            B(1.6, 1.2, 0.12, wood, 0.6, F + 0.9, Bk + 0.06); if (!lite) for (let i = 0; i < 4; i++) B(0.06, 0.6, 0.06, '#6B6F78', 0.1 + i * 0.35, F + 0.9, Bk + 0.15);
+            spot('work', L + 1.95, Bk + 0.75, -Math.PI / 2, F, '🔥'); spot('work', L + 1.25, Fr - 1.45, Math.PI, F, '🪓');
+            spot('stand', 0.2, 0.8, Math.PI, F); spot('stand', -0.6, 1.4, Math.PI / 2, F);
+        } else if (tmpl === 'clinic') {
+            const n = Math.max(2, Math.min(3, Math.floor((w - 1) / 2.2)));
+            for (let i = 0; i < n; i++) { const x = L + 0.7 + i * ((R - L - 1.4) / Math.max(1, n - 1)); bed(x, Bk + 1.0, 1.0, 1.9, '#9AC0E0', 1, '#C8C8D0'); if (i < 2) spot('work', x + 0.85, Bk + 1.4, -Math.PI / 2, F, '🩺'); }
+            B(0.5, 1.4, 1.4, '#E8E8F0', L + 0.3, F + 0.7, 0.8); if (!lite) { B(0.04, 0.3, 0.1, '#C9533D', L + 0.57, F + 1.05, 0.8); B(0.04, 0.1, 0.3, '#C9533D', L + 0.57, F + 1.05, 0.8); }
+            table(R - 1.2, Fr - 1.2, 1.2, 0.7, '#C8C8D0'); chair(R - 1.2, Fr - 1.75, 0); spot('work', R - 1.2, Fr - 1.75, 0, SEAT, '📋'); chair(R - 1.2, Fr - 0.6, Math.PI); spot('sit', R - 1.2, Fr - 0.6, Math.PI, SEAT, '🤒');
+            for (const x of [-0.6, 0.2]) { stool(x, Fr - 0.9); spot('sit', x, Fr - 0.9, Math.PI, SEAT, '🤧'); }
+        } else if (tmpl === 'chapel') {
+            B(1.6, 0.9, 0.7, '#E8E0D0', 0, F + 0.45, Bk + 0.6); B(1.7, 0.05, 0.8, '#7A2E8C', 0, F + 0.92, Bk + 0.6);
+            lamp(-0.6, F + 1.05, Bk + 0.6); lamp(0.6, F + 1.05, Bk + 0.6); B(0.12, 1.0, 0.12, '#D9C3A5', 0, F + 1.3, Bk + 0.25); B(0.5, 0.12, 0.12, '#D9C3A5', 0, F + 1.5, Bk + 0.25);
+            spot('work', 0, Bk + 1.35, 0, F, '🙏');
+            const ax = doorX, pw = Math.min(2.2, w / 2 - 1.2);
+            for (let r = 0; r < 3; r++) { const z = Bk + 2.4 + r * 1.05; if (z > Fr - 0.6) break; for (const sd of [-1, 1]) { const x = ax + sd * (0.75 + pw / 2); if (x - pw / 2 < L || x + pw / 2 > R) continue; B(pw, 0.08, 0.42, wood, x, SEAT - 0.04, z); B(pw, 0.5, 0.07, wood, x, SEAT + 0.2, z + 0.24); for (const e of [-1, 1]) B(0.07, 0.42, 0.42, dk(wood, 0.8), x + e * (pw / 2 - 0.05), F + 0.2, z); for (const ox of [-0.45, 0.45]) spot('sit', x + ox * pw / 2.2, z, Math.PI, SEAT, '🙏'); } }
+            rug(ax, (Bk + 1.6 + Fr) / 2, 0.9, Fr - Bk - 1.8, '#8C2E3C');
+        } else if (tmpl === 'town_hall') {
+            const tw = Math.max(2.4, w - 4), tz = 0.1;
+            table(0, tz, tw, 1.15, '#7A5232'); if (!lite) for (let i = 0; i < 3; i++) B(0.3, 0.04, 0.22, '#E8E0D0', -tw / 3 + i * tw / 3, F + 0.67, tz);
+            const nn = Math.max(2, Math.floor(tw / 0.9));
+            for (let i = 0; i < nn; i++) { const x = -tw / 2 + 0.45 + i * (tw - 0.9) / Math.max(1, nn - 1); for (const [sz, rot] of [[tz - 0.85, 0], [tz + 0.85, Math.PI]]) { chair(x, sz, rot, '#8C3B3B'); spot(i % 2 ? 'sit' : 'work', x, sz, rot, SEAT, '📜'); } }
+            B(0.8, 1.0, 0.5, wood, 0, F + 0.5, Bk + 0.5); spot('work', 0, Bk + 1.05, 0, F, '🎤');
+            B(1.2, 1.4, 0.05, '#B04A3A', -2.0, F + 1.3, Bk + 0.04); B(1.2, 1.4, 0.05, '#2E6E9E', 2.0, F + 1.3, Bk + 0.04);
+            rug(doorX, Fr - 0.9, 1.2, 1.4, '#8C2E3C');
+        } else if (tmpl === 'guardpost') {
+            bed(L + 0.5, Bk + 1.0, 0.95, 1.9, '#6B6F58', 1, '#6B5040'); B(0.95, 0.08, 1.9, '#6B5040', L + 0.5, F + 1.25, Bk + 1.0); for (const zz of [Bk + 0.1, Bk + 1.9]) B(0.08, 1.3, 0.08, '#6B5040', L + 0.9, F + 0.65, zz);
+            B(1.4, 1.2, 0.2, wood, R - 1.0, F + 0.6, Bk + 0.12); if (!lite) for (let i = 0; i < 3; i++) B(0.05, 1.5, 0.05, '#9AA0A6', R - 1.5 + i * 0.5, F + 0.8, Bk + 0.3);
+            spot('work', R - 1.0, Bk + 0.9, Math.PI, F, '🛡️');
+            table(R - 0.9, Fr - 1.2, 0.9, 0.7); stool(R - 0.9, Fr - 0.6); spot('sit', R - 0.9, Fr - 0.6, Math.PI, SEAT, '🎲'); stool(R - 1.65, Fr - 1.2); spot('eat', R - 1.65, Fr - 1.2, Math.PI / 2, SEAT, '🍞');
+            spot('stand', 0, 0.2, Math.PI, F);
+        } else {
+            for (let i = 0; i < 3; i++) B(0.9, 0.5, 0.7, '#D8B850', L + 0.6 + i * 1.0, F + 0.25, Bk + 0.5);
+            if (!lite) for (let i = 0; i < 2; i++) C(0.28, 0.55, '#C8B088', R - 0.5, F + 0.28, Bk + 0.5 + i * 0.7, 7);
+            table(R - 1.3, Fr - 1.3, 1.0, 0.7); stool(R - 1.3, Fr - 0.7); spot('sit', R - 1.3, Fr - 0.7, Math.PI, SEAT);
+            spot('work', L + 1.6, Bk + 1.4, Math.PI, F, '🌾'); spot('stand', 0, 0.4, Math.PI, F);
+        }
+        this._inSpots[locId] = S; this._inTmpl[locId] = casino ? 'casino' : tmpl;
+    }
+
     // ---------- 建築 ----------
     _buildBuildings() {
         const theme = this.themeKey || "frontier";
         const roofs = this.roofPalette || ROOF_PALETTE[theme] || ROOF_PALETTE.frontier; // v6.45.0 種子鎮有自己的屋頂配色
         this._buildingTops = {};
+        // v9.1.0 屋頂透視：外觀（屋頂＋外牆）與剖面（地板＋矮牆＋家具）分兩組各自合併，鏡頭拉近時互換
+        this._bExt = new THREE.Group(); this._bExt.userData.ownMerge = true; this._static.add(this._bExt);
+        this._bCut = new THREE.Group(); this._bCut.userData.ownMerge = true; this._bCut.visible = !!this._cutOn; this._static.add(this._bCut);
+        this._inSpots = {}; this._inTmpl = {};
         this._winIdx = {}; this._winPub = {}; this._doorGlow = []; let winN = 0; // v6.54.0 每棟一個窗燈編號(0 = 不分棟、照常亮)
         for (const [locId, z] of Object.entries(this.buildingZones)) {
             if (z.doorPixelX === undefined) continue; // 住宅區父層、農田、礦場、廣場等不是盒子建築
@@ -644,7 +777,7 @@ class Town3D extends PixelTileMap {
             const wallH = (tmpl === 'house' ? 1.5 + (h % 3) * 0.15 : big ? 2.4 : 2.0) * (style === 2 ? 1.45 : 1);
             const wall = style === 0 ? WOOD_WALLS[h % WOOD_WALLS.length] : style === 2 ? BRICK_WALLS[h % BRICK_WALLS.length] : WALL_PALETTE[h % WALL_PALETTE.length];
             const roof = style === 0 ? THATCH_ROOFS[(h >>> 4) % THATCH_ROOFS.length] : style === 2 ? SLATE_ROOFS[(h >>> 4) % SLATE_ROOFS.length] : roofs[(h >>> 4) % roofs.length];
-            const g = new THREE.Group(); g.position.set(cx, 0, cz); this._static.add(g);
+            const g = new THREE.Group(); g.position.set(cx, 0, cz); this._bExt.add(g);
             this._box(w, wallH + 0.3, d, wall, 0, wallH / 2 - 0.15, 0, g);
             // v6.43.0 石砌地基
             const stone = ['#9A9184', '#8C8478', '#A39A8C'][h % 3], wood = '#5A3E2B', roofDk = (() => { const k = new THREE.Color(roof); k.multiplyScalar(0.72); return '#' + k.getHexString(); })();
@@ -752,6 +885,7 @@ class Town3D extends PixelTileMap {
             if (tmpl === 'town_hall') { this._box(0.14, 1.2, 0.14, '#D9C3A5', w / 2 - 0.5, wallH + roofH + 0.4, 0, g); this._box(0.5, 0.3, 0.04, '#E8732A', w / 2 - 0.2, wallH + roofH + 0.85, 0, g); }
             if (tmpl === 'general_store' || tmpl === 'tavern') this._box(Math.min(w - 0.6, 2.4), 0.06, 0.7, tmpl === 'tavern' ? '#C9533D' : '#3C7E71', doorX, 1.5, d / 2 + 0.36, g);
             this._buildingTops[locId] = wallH + roofH + 0.1;
+            try { this._buildInterior(locId, tmpl, w, d, cx, cz, z.doorPixelX / TILE - cx, wall, stone, wood, h); } catch (e) { console.warn('[Town3D] interior', locId, e); }
         }
         // 不屬於盒子建築的牆/屋頂格子(穀倉、礦坑入口等):逐格擠出
         const wallGeo = this._geo('box', () => new THREE.BoxGeometry(1, 1, 1));
@@ -969,7 +1103,7 @@ class Town3D extends PixelTileMap {
         this._lampCount = n;
     }
     // v6.28.0 靜態方塊依材質合併:幾百個小 Mesh → 每種顏色一個,繪製呼叫 250 → 數十(手機 GPU 提交成本的大頭)
-    _mergeStatic() { this._mergeInto(this._static, true); }
+    _mergeStatic() { for (const g of [this._bExt, this._bCut]) if (g && g.children.length) this._mergeInto(g, false); this._mergeInto(this._static, true); }
     // v6.54.0 玩久了會一直長的圖層(新蓋的建築、裝飾、地標、農地、工坊、墓園、探險／節慶標記)重建後也合併:以前每多一棟就多十幾次繪製,越玩越卡
     _clearGroup(g) { if (!g) return; g.traverse(o => { if (o.isMesh && o.name === 'merged') o.geometry.dispose(); }); g.clear(); g.userData.needMerge = true; }
     _mergeDynamicGroups() { for (const g of [this._dyn, this._lmGroup, this._farmGroup, this._factGroup, this._graveGroup, this._expGroup, this._festGroup]) if (g && g.userData.needMerge) { g.userData.needMerge = false; if (g.children.length) this._mergeInto(g, false); } }
@@ -980,7 +1114,7 @@ class Town3D extends PixelTileMap {
         const VC = '__vc__'; // v6.43.0 一般純色材質全部併成一個頂點色網格(一次繪製)
         root.updateMatrixWorld(true);
         const collect = (o, inNoMerge) => {
-            const nm = inNoMerge || !!o.userData?.noMerge;
+            const nm = inNoMerge || !!o.userData?.noMerge || (o !== root && !!o.userData?.ownMerge); // v9.1.0 自己另外合併的子群組不併進上層
             if (o.isMesh && !o.isInstancedMesh && !nm && sharedGeos.has(o.geometry) && !skipMat.has(o.material) && o !== this._flame && o.material.transparent !== true) {
                 const key = o.material.userData?.plain ? VC : o.material;
                 let g = groups.get(key); if (!g) { g = { meshes: [] }; groups.set(key, g); }
@@ -1186,8 +1320,61 @@ class Town3D extends PixelTileMap {
         this._agentGroup.add(m); this._agentMeshes[aid] = m;
         return m;
     }
+    // v9.1.0 鏡頭拉近到一定程度就把屋頂與外牆換成剖面（有緩衝，避免在門檻附近一直閃）
+    _updateCutaway() {
+        const on = this.dist < (this._cutOn ? 27 : 24);
+        if (on === !!this._cutOn) return;
+        this._cutOn = on;
+        if (this._bExt) this._bExt.visible = !on;
+        if (this._bCut) this._bCut.visible = on;
+    }
+    // v9.1.0 屋內的人：依在做什麼安排到床／椅子／工作台，慢慢走過去，再擺出躺、坐、做事的姿勢
+    _placeIndoor(m, agent, pos, loc, use, sleeping, walking) {
+        const S = this._inSpots?.[loc]; if (!S || !this._cutOn) { if (m.userData.inP) { m.userData.inP = null; m.userData.inRot = null; m.userData.inIcon = ''; } return; }
+        const F = 0.28, act = agent.activity || '';
+        let sp = null;
+        if (!walking) {
+            const chain = sleeping ? ['sleep', 'stand'] : act === 'eating' ? ['eat', 'sit', 'stand'] : act === 'working' ? ['work', 'stand', 'sit']
+                : (act === 'socializing' || act === 'recreation' || act === 'resting' || act === 'mourning') ? ['sit', 'eat', 'stand'] : ['stand', 'sit', 'eat'];
+            for (const c of chain) { const k = loc + '|' + c, i = use[k] || 0; if (i < S[c].length) { use[k] = i + 1; sp = S[c][i]; sp.cat = c; break; } }
+        }
+        const wx = pos.x / TILE, wz = pos.y / TILE;
+        let p = m.userData.inP; if (!p) p = m.userData.inP = { x: wx, z: wz };
+        const tx = sp ? sp.x : wx, tz = sp ? sp.z : wz, dx = tx - p.x, dz = tz - p.z, dd = Math.hypot(dx, dz);
+        const now = performance.now(), dt = Math.min(0.4, Math.max(0, (now - (p.t || now)) / 1000)); p.t = now; // 依實際時間走（每秒約 2.5 格），幀率低也不會拖很久
+        if (dd > 0.02) { const st = Math.min(dd, (sp ? 2.5 : 8) * dt); p.x += dx / dd * st; p.z += dz / dd * st; }
+        const moving = dd > 0.08;
+        m.position.set(p.x, F, p.z); m.rotation.x = 0;
+        const wrap = (a) => ((a + Math.PI * 3) % (Math.PI * 2)) - Math.PI;
+        const want = moving ? Math.atan2(dx, dz) : sp ? sp.rot : (m.userData.inRot ?? m.rotation.y);
+        const cur = m.userData.inRot ?? m.rotation.y, nr = cur + wrap(want - cur) * 0.25; m.userData.inRot = nr; m.rotation.y = nr;
+        const t = this.animFrame, ph = (m.userData.blinkPh || 0) * 0.37, sc = m.scale.y || 1.3;
+        const limbs = {}; for (const ch of m.children) if (ch.name) limbs[ch.name] = ch;
+        if (moving) {
+            const sw = Math.sin(t * 0.45 + ph);
+            if (limbs.legL) limbs.legL.rotation.x = sw * 0.7; if (limbs.legR) limbs.legR.rotation.x = -sw * 0.7;
+            if (limbs.armL) limbs.armL.rotation.x = -sw * 0.6; if (limbs.armR) limbs.armR.rotation.x = sw * 0.6;
+        } else if (sleeping) {
+            m.rotation.x = -Math.PI / 2 * 0.9; m.rotation.y = 0; m.userData.inRot = 0;
+            m.position.y = sp && sp.cat === 'sleep' ? sp.y + 0.14 : F + 0.32;
+        } else if (sp && sp.y > F + 0.1) { // 坐著：腿往前抬、身體放低到椅面
+            m.position.y = sp.y - 0.4 * sc + 0.04;
+            if (limbs.legL) limbs.legL.rotation.x = -Math.PI / 2; if (limbs.legR) limbs.legR.rotation.x = -Math.PI / 2;
+            if (act === 'eating' && limbs.armR) limbs.armR.rotation.x = -1.1 - 0.6 * Math.max(0, Math.sin(t * 0.08 + ph));
+            else if (act === 'working' && limbs.armR) limbs.armR.rotation.x = -0.9 + Math.sin(t * 0.12 + ph) * 0.25;
+            else if (act === 'socializing' && limbs.armL) limbs.armL.rotation.x = -0.5 - 0.5 * Math.max(0, Math.sin(t * 0.06 + ph));
+        } else if (sp && act === 'working') { // 站著做事：手一直動（打鐵、煮飯、整理貨架）
+            if (limbs.armR) limbs.armR.rotation.x = -1.1 + Math.sin(t * 0.2 + ph) * 0.7;
+            if (limbs.armL) limbs.armL.rotation.x = -0.5 + Math.sin(t * 0.2 + ph + 1.4) * 0.2;
+        }
+        const ic = !sp || moving || sleeping ? '' : act === 'working' ? (sp.cat === 'work' ? sp.icon : '')
+            : act === 'eating' ? (sp.cat === 'eat' && sp.icon ? sp.icon : '🍲') : act === 'socializing' ? '💬' : act === 'recreation' ? (sp.icon || '🎲')
+            : act === 'resting' ? '😌' : act === 'mourning' ? '😢' : sp.icon;
+        m.userData.inIcon = ic || '';
+    }
     _updateAgents3D(agents, selectedAgent) {
         const seen = new Set(); const occ = {}; // v6.54.0 每棟裡面醒著／睡著幾個人(決定窗燈)
+        const inUse = {}; // v9.1.0 這一幀屋內床位／座位用到第幾個
         const crowd = Object.keys(this.agentPositions).length > 40; // v6.55.0 人多才啟用遠處簡化
         const lodR = Math.max(6, Math.min(16, (this.dist || 30) * 0.35)), lodR2 = lodR * lodR, tx0 = this.target.x, tz0 = this.target.z;
         // v6.32.0 對話中的兩人面對面
@@ -1200,10 +1387,11 @@ class Town3D extends PixelTileMap {
             const m = this._agentMesh(aid, agent, pos);
             const wx = pos.x / TILE, wz = pos.y / TILE;
             const inside = this._isInsideBuilding(pos.x, pos.y);
-            const hidden = !!(inside && this.buildingZones[inside] && this.buildingZones[inside].doorPixelX !== undefined);
+            const doorZone = !!(inside && this.buildingZones[inside] && this.buildingZones[inside].doorPixelX !== undefined);
+            const hidden = doorZone && !(this._cutOn && this._inSpots?.[inside]); // v9.1.0 拉近看得到屋內，人就不藏了
             m.visible = !hidden; m.userData.hidden = hidden;
             if (inside) { const b = this._winIdx?.[inside]; if (b) { const o = occ[b] || (occ[b] = [0, 0]); if (agent.activity === 'sleeping') o[1]++; else o[0]++; } }
-            if (hidden) continue;
+            if (hidden) { if (m.userData.inP) { m.userData.inP = null; m.userData.inRot = null; m.userData.inIcon = ""; } continue; }
             if (crowd || m.userData.far) { const dx = wx - tx0, dz = wz - tz0; this._setAgentFar(m, crowd && aid !== selectedAgent && dx * dx + dz * dz > lodR2); }
             const gy = this.groundY(wx, wz);
             const walking = pos.walking;
@@ -1225,12 +1413,15 @@ class Town3D extends PixelTileMap {
                 if (m.userData.tool) m.userData.tool.visible = farming;
                 m.userData.farming = farming;
             }
+            if (agent.appear?.zb && !(sleeping && !walking)) { const sw = Math.sin(this.animFrame * 0.08 + (aid.charCodeAt(1) || 0)) * 0.12; for (const ch of m.children) if (ch.name === 'armL') ch.rotation.x = -1.45 + sw; else if (ch.name === 'armR') ch.rotation.x = -1.45 - sw; m.rotation.z = Math.sin(this.animFrame * 0.05 + (aid.charCodeAt(0) || 0)) * 0.08; } else if (m.rotation.z) m.rotation.z = 0; // v9.2.0 喪屍:手往前伸、走路搖搖晃晃
             if (m.userData.eyes && !m.userData.far) { const shut = (sleeping && !walking) || ((this.animFrame + (m.userData.blinkPh || 0)) % 230) < 7; m.userData.eyes.visible = !shut; m.userData.lids.visible = shut; } // v6.94.0 眨眼、睡覺閉眼
             m.rotation.x = sleeping && !walking ? -Math.PI / 2 * 0.9 : 0;
             if (sleeping && !walking) m.position.y = gy + 0.32;
+            if (doorZone) this._placeIndoor(m, agent, pos, inside, inUse, sleeping, walking);
+            else if (m.userData.inP) { m.userData.inP = null; m.userData.inRot = null; m.userData.inIcon = ''; }
             if (aid === selectedAgent) {
                 if (!this._selRing) { this._selRing = new THREE.Mesh(new THREE.RingGeometry(0.5, 0.68, 28), new THREE.MeshBasicMaterial({ color: new THREE.Color('#E8732A'), transparent: true, opacity: 0.85, side: THREE.DoubleSide })); this._selRing.rotation.x = -Math.PI / 2; this.scene.add(this._selRing); }
-                this._selRing.visible = true; this._selRing.position.set(wx, gy + 0.03, wz);
+                this._selRing.visible = true; this._selRing.position.set(m.position.x, (m.userData.inP ? 0.28 : gy) + 0.03, m.position.z);
                 const s = 1 + Math.sin(this.animFrame * 0.12) * 0.08; this._selRing.scale.set(s, s, 1);
             }
         }
@@ -1345,6 +1536,12 @@ class Town3D extends PixelTileMap {
             const top = this._buildingTops?.[locId] ?? (z && z.doorPixelX === undefined ? 1.2 : 2.6);
             const cx = z ? z.x + z.w / 2 : lp.x / TILE, cz = z ? z.y + z.h / 2 : lp.y / TILE;
             const n = this._labelIndex?.[locId] || '';
+            if (this._cutOn && this._inSpots?.[locId] && z) { // v9.1.0 屋頂拿掉時名牌移到離鏡頭較遠的那面牆上方，不擋屋內
+                const vx = cx - this.camera.position.x, vz = cz - this.camera.position.z, vl = Math.hypot(vx, vz) || 1, k = Math.min(z.w, z.h) / 2;
+                const elc = this._ov('loc:' + locId, 't3d-label' + (locId === this._hoverLoc ? ' is-hot' : ''), `<span class="t3d-num">${n}</span><span class="t3d-name">${this._esc(t3(lp.name))}</span>`);
+                if (!elc._bound) { elc._bound = true; elc.addEventListener('click', (e) => { e.stopPropagation(); this._lastTapExact = true; this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
+                this._place(elc, cx + vx / vl * k, 1.7, cz + vz / vl * k); continue;
+            }
             const el = this._ov('loc:' + locId, 't3d-label' + (locId === this._hoverLoc ? ' is-hot' : ''), `<span class="t3d-num">${n}</span><span class="t3d-name">${this._esc(t3(lp.name))}</span>`);
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this._lastTapExact = true; this.focusLocation(locId); if (this.onClick) this.onClick(locId); }); }
             this._place(el, cx, top + 0.3, cz);
@@ -1359,14 +1556,15 @@ class Town3D extends PixelTileMap {
         for (const [aid, pos] of Object.entries(this.agentPositions)) {
             const agent = agents[aid]; const m = this._agentMeshes[aid];
             if (!agent || !m || !m.visible) continue;
-            const wx = pos.x / TILE, wz = pos.y / TILE, gy = m.position.y;
+            const inP = m.userData.inP, wx = inP ? m.position.x : pos.x / TILE, wz = inP ? m.position.z : pos.y / TILE, gy = m.position.y; // v9.1.0 屋內的人照擺好的位置掛名牌
             const isSel = aid === selectedAgent;
             const emote = this.agentEmotes?.[aid];
             if (m.userData.far && !isSel && !emote && !talking.has(aid)) continue; // v6.55.0 人多時遠處的人不掛名牌(選取、有表情、在說話的照常)
             const sleeping = agent.activity === 'sleeping' && !this.agentPositions[aid]?.walking; // v6.44.2 還在走回家的路上不冒 zzz(看起來像夢遊)
-            const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : '';
+            const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : m.userData.inIcon ? ` <i class="t3d-emo t3d-act">${m.userData.inIcon}</i>` : '';
             let office = ''; try { const W = window.rimtownApp?.world; const bd = W && typeof TIERS !== 'undefined' ? TIERS.badge(W, W.agents[aid]) : null; if (bd && bd.cls !== 'former') office = `<b class="t3d-office t3d-office-${bd.cls}">${bd.icon} ${this._esc(bd.text)}</b>`; } catch (e) {} // v6.56.0 官職標籤
-            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : ''), `${office}${this._esc(t3(agent.name || aid))}${extra}`);
+            const zb = agent.appear?.zb ? '🧟 ' : ''; // v9.2.0
+            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : '') + (zb ? ' is-zb' : ''), `${office}${zb}${this._esc(t3(agent.name || aid))}${extra}`);
             this._place(el, wx, gy + 0.3 + 1.85 * ((m.scale.y || 1.3) / 1.3), wz); // v6.92.0 小孩的名牌跟著放低
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
         }
@@ -1378,7 +1576,7 @@ class Town3D extends PixelTileMap {
             shownBubble.add(b.agentId);
             const full = String(b.text || ''); const text = clipText(full, 56); // v6.36.0 截斷補省略號
             const el = this._ov('bb:' + b.agentId, 't3d-bubble', `<b>${this._esc(t3(b.speaker || ''))}</b>${this._esc(t3(text))}`);
-            this._place(el, pos.x / TILE, m.position.y + 0.3 + 2.2 * ((m.scale.y || 1.3) / 1.3), pos.y / TILE);
+            const inP = m.userData.inP; this._place(el, inP ? m.position.x : pos.x / TILE, m.position.y + 0.3 + 2.2 * ((m.scale.y || 1.3) / 1.3), inP ? m.position.z : pos.y / TILE);
         }
         // 浮動特效
         const fx = this._floatFx;
@@ -1557,7 +1755,7 @@ class Town3D extends PixelTileMap {
         const q = this.lowQuality ? 0.45 : this.isMobile ? 0.6 : 1; // v6.28.0
         if (wt === 'rain' || wt === 'storm') for (let i = 0; i < Math.round((heavy ? 40 : 24) * q); i++) this._fxSpawn('rain', { x: tx + (Math.random() - 0.5) * R * 2, y: 10 + Math.random() * 8, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.12 : 0.03, vy: -0.55 - Math.random() * 0.2, vz: 0, life: 60 });
         if (wt === 'snow' || wt === 'blizzard') for (let i = 0; i < Math.round((heavy ? 18 : 9) * q); i++) this._fxSpawn('snow', { x: tx + (Math.random() - 0.5) * R * 2, y: 9 + Math.random() * 6, z: tz + (Math.random() - 0.5) * R * 2, vx: heavy ? 0.06 : 0.01, vy: -0.06 - Math.random() * 0.04, vz: 0, life: 400, ph: Math.random() * 6.28 });
-        if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if (Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
+        if (frame % 10 === 0 && this._chimneyTops) for (const c of this._chimneyTops) if ((!this._cutOn || c.key) && Math.random() < 0.6) this._fxSpawn('smoke', { x: c.x + (Math.random() - 0.5) * 0.2, y: c.y, z: c.z + (Math.random() - 0.5) * 0.2, vx: (Math.random() - 0.5) * 0.01 + 0.012, vy: 0.025 + Math.random() * 0.012, vz: (Math.random() - 0.5) * 0.01, life: 90 + Math.random() * 40, maxLife: 130 });
         if (night > 0.6 && frame % 6 === 0) for (const z of Object.values(this.natureZones)) if (Math.random() < 0.25 * q) this._fxSpawn('firefly', { x: z.x + Math.random() * z.w, y: 0.4 + Math.random() * 1.4, z: z.y + Math.random() * z.h, vx: (Math.random() - 0.5) * 0.02, vy: (Math.random() - 0.5) * 0.01, vz: (Math.random() - 0.5) * 0.02, life: 120 + Math.random() * 100, ph: Math.random() * 6.28 });
         if (this.season === '秋季' && frame % 12 === 0) { const fz = this.natureZones['forest']; if (fz && Math.random() < 0.6) this._fxSpawn('leaf', { x: fz.x + Math.random() * fz.w, y: 2.5 + Math.random(), z: fz.y + Math.random() * fz.h, vx: 0.015 + Math.random() * 0.01, vy: -0.018, vz: 0.01, life: 160, ph: Math.random() * 6.28 }); }
         const fest = this.festivalData?.activeFestival;
@@ -1821,6 +2019,7 @@ class Town3D extends PixelTileMap {
         this._syncExtras(extraData);
         this._syncLandmarks(); // v6.47.0 村民提案立的地標
         this._updateCamera();
+        this._updateCutaway();
         this._updateLighting();
         this._updateWater();
         this._updateParticles();
