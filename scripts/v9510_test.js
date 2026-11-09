@@ -31,6 +31,15 @@ async function run(lang) {
     // 話題門檻:重要度 6 不進池、單一則 9 只醞釀
     w.buzz = null; w.dailyNews.collectEvent('event', '小事一件', 6, [P[3].name]); out.b6 = BUZZ.S(w).items.length;
     w.dailyNews.collectEvent('event', '大事一件', 9, [P[3].name]); BUZZ.daily(w); out.b9 = BUZZ.S(w).items[0]?.ph;
+    // 出生軟上限:人口到目標還是生得出來,遠超過才不生
+    { const ad = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18);
+      const m = ad.find(a => a.gender === 'male'), f = ad.find(a => a.gender === 'female' && !a.relationships.getPartner());
+      if (m && f) { m.age = 28; f.age = 27; const r1 = m.relationships.getOrCreate(f.agentId, f.name), r2 = f.relationships.getOrCreate(m.agentId, m.name); r1.status = 'married'; r2.status = 'married';
+        const E = w.events; const tp0 = E.TARGET_POPULATION; const born = () => (w.lifecycle.births || []).length; const r0 = Math.random; Math.random = () => 0;
+        try { const pop = Object.values(w.agents).filter(a => !a.isPlayer).length; E.TARGET_POPULATION = pop; const b0 = born(); w.lifecycle._checkBirths(w); out.atCap = born() - b0;
+          E.TARGET_POPULATION = 20; let g = 0; while (Object.values(w.agents).filter(a => !a.isPlayer).length < 31 && g++ < 30) { try { E._spawnImmigrant(w); } catch (e) { break; } }
+          const pop2 = Object.values(w.agents).filter(a => !a.isPlayer).length; const b1 = born(); w.lifecycle._checkBirths(w); out.overCap = born() - b1; out.tp = [pop, pop2, E.TARGET_POPULATION];
+        } finally { Math.random = r0; E.TARGET_POPULATION = tp0; } } }
     w.logMessageT = lm; return out;
   });
   const cjk = /[一-鿿]/;
@@ -40,7 +49,9 @@ async function run(lang) {
   ok(r.skill.ups >= 6 && r.skill.levels.every(l => l % 5 === 0), `技能升級只記 5、10、15 級（升了 ${r.skill.ups} 級、記了 ${r.skill.logged} 則）`, r.skill);
   ok(!/的夢想「|dream "/.test(r.card || ''), '村民卡不再出現舊的夢想', (r.card || '').slice(0, 120));
   ok(r.b6 === 0 && r.b9 === 'brew', '重要度 6 的小事不進話題池；單一則重要新聞只醞釀', r);
+  if (lang === 'en') ok(!/ & /.test(r.card || '') && !/王麗|陳偉/.test(r.card || ''), 'English: villager card relationship lines are whole sentences with English names', (r.card || '').replace(/\s+/g, ' ').match(/💍[^🧺]*/)?.[0]);
   if (lang === 'en') ok(!!r.plain && !(r.plain || '').includes(r.zhName), 'English: plain (non-template) logs show English names', { plain: r.plain, zh: r.zhName });
+  ok(r.atCap >= 1 && r.overCap === 0, `人口到目標還生得出孩子；遠超過目標才不生（到目標生了 ${r.atCap}、超過生了 ${r.overCap}）`, r);
   ok(!errs.length, '沒有錯誤', errs.slice(0, 5));
   await browser.close();
 }

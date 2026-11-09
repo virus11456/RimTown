@@ -12656,6 +12656,11 @@
         '黑日來臨前，三條戰線全部救起來': 'Saved all three fronts before the Black Sun arrived',
         '先救哪一線': 'Which front first',
         // v9.5.1
+        '與{n}是夫妻': 'Married to {n}',
+        '與{n}交往中': 'Dating {n}',
+        '與{n}是前任': '{n} is an ex',
+        '暗戀{n}': 'Has a crush on {n}',
+        '與{n}是死對頭': 'Sworn enemies with {n}',
         '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……': '💔 {agent} watches {other} with {luckyOne}, with a bitter pang in their heart...',
         '正朝著心願「{g}」努力（下一步：{s}）': 'Working toward "{g}" (next step: {s})',
         '為心願「{g}」再努力一點：{s}': 'Push a little harder toward "{g}": {s}',

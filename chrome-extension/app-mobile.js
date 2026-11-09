@@ -376,14 +376,15 @@ Object.assign(RimTownApp.prototype, {
         const rels = a.relationships || {};
         for (const r of Object.values(rels)) {
             if (r.target_id === 'player') continue;
-            if (r.status === 'married') lines.push(`💍 ${t('與')} ${r.target_name} ${t('是夫妻')}${r.is_cheating ? ' 🖤' : ''}`);
-            else if (r.status === 'dating') lines.push(`💕 ${t('與')} ${r.target_name} ${t('交往中')}${r.is_cheating ? ' 🖤' : ''}`);
-            else if (r.status === 'ex') lines.push(`💔 ${t('與')} ${r.target_name} ${t('是前任')}`);
+            const nm = t(r.target_name); // v9.5.1 英文版以前會變成「💍  & 王麗 are married」(句子拆開翻、名字沒翻)
+            if (r.status === 'married') lines.push(`💍 ${t('與{n}是夫妻').replace('{n}', nm)}${r.is_cheating ? ' 🖤' : ''}`);
+            else if (r.status === 'dating') lines.push(`💕 ${t('與{n}交往中').replace('{n}', nm)}${r.is_cheating ? ' 🖤' : ''}`);
+            else if (r.status === 'ex') lines.push(`💔 ${t('與{n}是前任').replace('{n}', nm)}`);
         }
         const crushes = Object.values(rels).filter(r => r.target_id !== 'player' && !r.status && (r.romantic_interest || 0) > 50).slice(0, 2);
-        crushes.forEach(r => lines.push(`💘 ${t('暗戀')} ${r.target_name}`));
+        crushes.forEach(r => lines.push(`💘 ${t('暗戀{n}').replace('{n}', t(r.target_name))}`));
         const foes = Object.values(rels).filter(r => r.target_id !== 'player' && (r.affinity || 0) < -60).slice(0, 2);
-        foes.forEach(r => lines.push(`💢 ${t('與')} ${r.target_name} ${t('是死對頭')}`));
+        foes.forEach(r => lines.push(`💢 ${t('與{n}是死對頭').replace('{n}', t(r.target_name))}`));
         // v6.53.0 寵物、名聲、派系做成一排小標籤;恩怨與秘密收在「心事」裡,點開才看(只有上帝視角看得到)
         const chips = [], inner = [];
         try {
