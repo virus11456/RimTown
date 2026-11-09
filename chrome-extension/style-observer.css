@@ -971,3 +971,10 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-locked-sum:hover, .rimtown-container .gh-locked-sum:focus-visible { background: var(--bg-card, rgba(127,127,127,.12)); outline: none; }
 .rimtown-container .gh-tabs button small { font-size: 0.7em; opacity: 0.8; }
 @media (max-width: 768px) { .rimtown-container .gh-body > * { flex-shrink: 0; } }
+/* v9.0.0 鎮上的新東西：大家怎麼看 */
+.rimtown-container .pp-thing > span { display: block; width: 100%; }
+.rimtown-container .pp-things-bar { display: flex; height: 8px; border-radius: 4px; overflow: hidden; margin: 6px 0 4px; background: rgba(255,255,255,0.08); }
+.rimtown-container .pp-things-bar i { display: block; height: 100%; }
+.rimtown-container .pp-things-legend { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 0.75rem; color: var(--text-secondary); }
+.rimtown-container .pp-things-legend b { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+.rimtown-container .pp-things-q { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
