@@ -21,7 +21,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     // 首頁:災厄工坊段落回來了(8.2 新)
     await page.goto(BASE + 'index.html', { waitUntil: 'load' }); await page.waitForTimeout(1200);
     const land = await page.evaluate(() => { const b = document.getElementById('lp-lab'); return { band: !!b, isNew: !!b?.querySelector('.lp-new') && /8\.2/.test(b.querySelector('.lp-new').textContent), bands: document.querySelectorAll('#landing-features .lp-band').length, recent: /v8\.2/.test(document.getElementById('landing')?.textContent || ''), overflow: document.documentElement.scrollWidth > innerWidth + 1 }; });
-    ok(land.band && land.isNew && land.bands === 14 && land.recent && !land.overflow, '首頁：災厄工坊段落回來了（標 8.2 新）、路線圖寫上 v8.2', land);
+    ok(land.band && land.isNew && land.bands === 17 && land.recent && !land.overflow, '首頁：災厄工坊段落回來了（標 8.2 新）、路線圖寫上 v8.2', land);
     await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
     const r = await page.evaluate(async () => {
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {};
