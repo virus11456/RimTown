@@ -819,8 +819,28 @@ Object.assign(RimTownApp.prototype, {
         const W = (k) => !want || want.includes(k);
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         d = d || this.state?.proposals || { issues: [], traditions: [], landmarks: [], stats: { made: 0, approved: 0, rejected: 0, done: 0 } };
-        const B = { things: '', tier: '', legacy: '', dream: '', culture: '', politics: '', mind: '', civic: '', goods: '', biz: '', bank: '', press: '', diplo: '', tidings: '', faith: '', issues: '', cliques: '', lore: '', stats: '' };
+        const B = { buzz: '', lives: '', things: '', tier: '', legacy: '', dream: '', culture: '', politics: '', mind: '', civic: '', goods: '', biz: '', bank: '', press: '', diplo: '', tidings: '', faith: '', issues: '', cliques: '', lore: '', stats: '' };
         if (!this.world) return B;
+        if (W('buzz')) {
+            // v9.5.0 鎮上話題:醞釀 → 正熱 → 餘波,大家同時只關注三件事
+            try { if (typeof BUZZ !== 'undefined' && this.world.buzz) { const V = BUZZ.view(this.world);
+                if (V.items.length || V.hist.length) {
+                    B.buzz += `<div class="pp-issues pp-buzz"><h4 class="pp-h">🗣️ ${t('鎮上在談什麼')}</h4>`;
+                    for (const x of V.items) B.buzz += `<div class="pp-buzz-row ph-${x.ph}${x.on ? ' on' : ''}"><span class="pp-buzz-ph">${esc(x.phName)}</span><span class="pp-buzz-t">${x.icon} ${esc(t(x.text))}</span><span class="pp-buzz-heat" style="--h:${Math.min(100, x.heat)}%"></span></div>`;
+                    if (V.hist.length) B.buzz += `<div class="pp-issue-hint">${t('最近談過')}${t('：')}${V.hist.map(h => `${h.icon} ${esc(t(h.text))}${t('（')}${t('{n} 天').replace('{n}', h.days)}${t('）')}`).join(t('；'))}</div>`;
+                    B.buzz += `<div class="pp-issue-hint">${t('大事會先醞釀、再全鎮熱議、最後只剩餘波；大家同時只會關注三件事，新的大事會把舊的擠下去。')}</div></div>`;
+                } } } catch (e) {}
+        }
+        if (W('lives')) {
+            // v9.5.0 人生劇本:最接近夢想的人
+            try { if (typeof ARCS !== 'undefined' && this.world.mind) { const V = ARCS.board(this.world);
+                if (V && (V.rows.length || V.recent.length)) {
+                    B.lives += `<div class="pp-issues pp-lives"><h4 class="pp-h">📖 ${t('人生劇本')}</h4>`;
+                    for (const x of V.rows) B.lives += `<div class="pp-life-row" data-agent="${esc(x.id)}"><b>${esc(t(x.name))}</b> <span class="pp-life-dots">${x.dots}</span> <span>${esc(x.g)}</span><small>${t('下一步')}${t('：')}${esc(x.next)}${x.last ? ` · ${esc(x.last)}` : ''}</small></div>`;
+                    if (V.recent.length) B.lives += `<div class="pp-issue-hint">${t('最近落幕')}${t('：')}${V.recent.map(r => `${esc(t(r.name))} ${r.end}${t('：')}${esc(r.g)}`).join(t('；'))}</div>`;
+                    B.lives += `</div>`;
+                } } } catch (e) {}
+        }
         if (W('things')) {
             // v9.0.0 鎮上的新東西：大家怎麼看（村民自己形成的好惡，不是規定好的）
             try {
@@ -1116,8 +1136,8 @@ Object.assign(RimTownApp.prototype, {
             P += `<h4 class="pp-h">📚 ${t('已定案')} <span class="pp-count">${d.history.length}</span></h4>`; hist.forEach(p => { P += card(p, 'view'); });
             if (d.history.length > HN) P += `<button type="button" class="pp-more" data-pp-more="1">${showAll ? t('收起，只看最近 {n} 件').replace('{n}', HN) : t('顯示更早的 {n} 件').replace('{n}', d.history.length - HN)}</button>`;
         }
-        const B = this._townBlocks(d, ['issues', 'things', 'tier', 'politics', 'mind', 'civic', 'faith', 'cliques', 'dream', 'lore', 'stats']);
-        T = [B.issues, B.things, B.tier, this._councilHtml(), B.politics, B.mind, B.civic, B.faith, B.cliques, this._eventPieces(['factions']).factions, B.dream, B.lore, B.stats].join(''); // v7.3.0 急事放最上面;鎮史文化珍品→日報年表、外交報社外地消息→日報消息、店與銀行→小鎮產業
+        const B = this._townBlocks(d, ['issues', 'buzz', 'lives', 'things', 'tier', 'politics', 'mind', 'civic', 'faith', 'cliques', 'dream', 'lore', 'stats']);
+        T = [B.issues, B.buzz, B.lives, B.things, B.tier, this._councilHtml(), B.politics, B.mind, B.civic, B.faith, B.cliques, this._eventPieces(['factions']).factions, B.dream, B.lore, B.stats].join(''); // v7.3.0 急事放最上面;鎮史文化珍品→日報年表、外交報社外地消息→日報消息、店與銀行→小鎮產業
         // v6.51.0 只有你知道的真相:還沒被拆穿的謊言、陰謀,還沒解開的誤會
         try {
             const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
@@ -1146,6 +1166,7 @@ Object.assign(RimTownApp.prototype, {
         if (container._ppSig === sig && container.firstElementChild?.classList?.contains('proposals-panel')) return;
         container._ppSig = sig;
         container.innerHTML = html;
+        container.querySelectorAll('.pp-life-row[data-agent]').forEach(r => r.addEventListener('click', (e) => { e.stopPropagation(); if (this.world?.agents?.[r.dataset.agent]) this._showNpcCard(r.dataset.agent); })); // v9.5.0 點人生劇本看那個人
         container.querySelector('[data-pp-more]')?.addEventListener('click', (e) => { e.stopPropagation(); this._ppHistAll = !this._ppHistAll; this.renderProposals(container); });
         container.querySelectorAll('[data-pp-tab]').forEach(b => b.addEventListener('click', (e) => { e.stopPropagation(); this._ppTab = b.dataset.ppTab; try { localStorage.setItem('rimtown_pp_tab', this._ppTab); } catch (er) {} this.renderProposals(container); container.scrollTop = 0; }));
     },
