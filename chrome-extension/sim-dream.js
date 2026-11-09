@@ -54,7 +54,7 @@ const DREAM = (() => {
         const rule = (x) => { const b = w.agents[x.to]; return x.forgiven ? (has(b, 'kind') ? '人都會犯錯，我不想記恨。' : '他是真心的，我就給他一次機會。') : (has(b, 'jealous') || has(b, 'abrasive') ? '這種事哪是一句對不起就算了？' : '我需要一點時間。'); };
         const ce = ai(w); let lines = null;
         if (ce) { try { const list = fresh.map((x, i) => `${i + 1}. ${w.agents[x.to].name}${t(x.forgiven ? '原諒了' : '還不肯原諒')}${w.agents[x.by].name}`).join('\n'); const prompt = `${t('以下每一對村民，道歉之後一方原諒或不原諒。請用被道歉的人的口吻各寫一句理由（20 字內）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 160); if (Array.isArray(j)) lines = j; } catch (e) {} }
-        fresh.forEach((x, i) => { const b = w.agents[x.to]; if (!b || b.isDead) return; /* 等 AI 回覆的這段時間,被道歉的人可能已經過世或搬走 */ const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: lines[i].trim().slice(0, 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
+        fresh.forEach((x, i) => { const b = w.agents[x.to]; if (!b) return; /* v9.7.1 等 AI 回話時原諒的人已經離開或過世 */ const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: lines[i].trim().slice(0, 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
     }
     // ---------- 禱詞 ----------
     async function prayers(w, d) {

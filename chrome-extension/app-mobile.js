@@ -623,3 +623,27 @@ Object.assign(RimTownApp.prototype, {
         this._showNpcCard(agentId);
     },
 });
+
+// v9.7.2 iPhone 主畫面 App：量實際螢幕高度,修正 100dvh 偏矮造成的底部空白(只在 iOS standalone 動作;Android 的 screen.height 含系統列,不能這樣算)
+(function fitIOSStandalone() {
+    if (typeof window === 'undefined' || window.navigator.standalone !== true) return;
+    const root = document.documentElement; root.classList.add('ios-standalone');
+    const fit = () => {
+        const portrait = window.innerHeight >= window.innerWidth;
+        const sh = portrait ? Math.max(screen.height, screen.width) : Math.min(screen.height, screen.width); // iOS 的 screen 不會跟著轉
+        const ih = window.innerHeight, gap = sh - ih;
+        const fix = gap > 8 && gap < 200; root.style.setProperty('--app-h', (fix ? sh : ih) + 'px');
+        // 撐滿後 iOS 回報的 Home 條高度是 0,底部分頁會壓在 Home 條上:有瀏海的機種自己補 34px
+        let envB = 0; try { const pr = document.createElement('div'); pr.style.cssText = 'position:fixed;bottom:0;padding-bottom:env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(pr); envB = parseFloat(getComputedStyle(pr).paddingBottom) || 0; pr.remove(); } catch (e) {}
+        root.classList.toggle('ios-gapfix', fix && envB < 1 && Math.max(screen.height, screen.width) >= 812 && portrait);
+    };
+    if (document.body) fit(); else document.addEventListener('DOMContentLoaded', fit); window.addEventListener('resize', fit); window.addEventListener('orientationchange', () => setTimeout(fit, 300));
+    // 排查用:網址加 ?vp=1 會顯示畫面尺寸
+    const diag = () => setTimeout(() => {
+        const d = document.createElement('div'); d.id = 'vp-diag'; const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;left:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(probe); const cs = getComputedStyle(probe);
+        const c = document.querySelector('.rimtown-container')?.getBoundingClientRect();
+        d.textContent = `screen ${screen.width}x${screen.height}\ninner ${innerWidth}x${innerHeight}\nvisualViewport ${Math.round(visualViewport?.width || 0)}x${Math.round(visualViewport?.height || 0)}\nsafe top ${cs.paddingTop} bottom ${cs.paddingBottom}\n--app-h ${root.style.getPropertyValue('--app-h')} ${root.classList.contains('ios-gapfix') ? '+home34' : ''}\ncontainer top ${Math.round(c?.top)} h ${Math.round(c?.height)}\n(點一下關閉)`;
+        d.onclick = () => d.remove(); document.body.appendChild(d); probe.remove();
+    }, 800);
+    if (/[?&]vp=1/.test(location.search)) { if (document.readyState === 'complete') diag(); else window.addEventListener('load', diag); }
+})();

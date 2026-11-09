@@ -1909,6 +1909,16 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 let response = await this.llm.generate(prompt, 600, 0.9, true, { human: true });
                 if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { await new Promise(r => setTimeout(r, 1500)); response = await this.llm.generate(prompt, 600, 0.9, true, { human: true }); }
                 if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { this.lastPlayerReplyFallback = (this.llm._quota && this.llm._quota.remaining === 0) ? 'quota' : 'busy'; }
+                // v9.7.3 備援模型有時把自己上一句原封不動再講一次(答非所問):偵測到就提醒它再答一次
+                try {
+                    const norm = (x) => String(x || '').replace(/EFFECTS:[\s\S]*$/i, '').replace(new RegExp('^\\s*\\*{0,2}' + npc.name + '\\*{0,2}[：:]', 'gm'), '').replace(/[\s，。！？!?、…~～「」"'（）()]/g, '');
+                    const prevNpc = [...player.chatHistory].reverse().find(c => c.speaker === npc.name && c.target === player.name);
+                    const a = norm(response), b = prevNpc ? norm(prevNpc.text) : '';
+                    if (b.length >= 6 && a.length >= 6 && (a === b || a.startsWith(b) || b.startsWith(a))) {
+                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${prevNpc.text.slice(0, 60)}${t('」，不要重複，直接回應對方剛剛說的「')}${playerMessage.slice(0, 60)}${t('」。）')}`, 600, 1.0, true, { human: true });
+                        if (again && again !== '__RATE_LIMITED__' && again !== '__ERROR__' && norm(again) !== b) response = again;
+                    }
+                } catch (e) {}
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
             } catch(e) { console.error('[RimTown] LLM player reply failed:', e); this.lastPlayerReplyFallback = this.lastPlayerReplyFallback || 'busy'; }
@@ -2298,7 +2308,7 @@ class LLMClient {
         this.baseUrl = baseUrl || '';
         // Rate limiting
         this._requestTimestamps = [];
-        this._maxRequestsPerMinute = 20;
+        this._maxRequestsPerMinute = Infinity; // v9.7.1 不限
         this._rateLimitedUntil = 0;
         // Fallback
         this.fallbackGroqKey = null;
@@ -2371,9 +2381,9 @@ class LLMClient {
             const longPause = (this._rateLimitedLen || 60000) >= 60000;
             if (strict || !isPlayerChat || !longPause || now < this._rateLimitedUntil - 30000) return false;
         }
-        this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
-        const limit = isPlayerChat ? this._maxRequestsPerMinute - 4 : Math.floor(this._maxRequestsPerMinute / 2); /* v9.7.0 留 4 個名額給玩家本人的訊息 */
-        return this._requestTimestamps.length < limit;
+        // v9.7.1 使用者決定拿掉每分鐘 20 次的上限:只在 AI 真的回報忙碌/出錯時才暫停(上面的 _rateLimitedUntil)
+        this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000); // 只留著統計用
+        return true;
     }
 
     _recordRequest() { this._requestTimestamps.push(Date.now()); }

@@ -186,7 +186,7 @@ async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() +
         let msg = ''; try { msg = JSON.stringify(await r.json()); } catch (e) {}
         if (/thinking|temperature|sampling/i.test(msg)) { delete body.thinking; delete body.temperature; body.max_tokens = Math.max(400, body.max_tokens); r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000)); }
     }
-    if (!r.ok) { const e = new Error('relay_http_' + r.status); e.status = r.status; throw e; }
+    if (!r.ok) { let detail = ''; if (r.status === 400) { try { detail = ' ' + String(await r.text()).replace(/\s+/g, ' ').slice(0, 180); } catch (e) {} } const e = new Error('relay_http_' + r.status + detail); e.status = r.status; throw e; } // v9.7.3 400 帶上原因(只有錯誤訊息,不含金鑰)
     const data = await r.json();
     if (data && data.stop_reason === 'refusal') { const e = new Error('relay_refusal'); e.status = 502; e.refusal = true; throw e; }
     const text = (Array.isArray(data.content) ? data.content.filter(c => c && c.type === 'text').map(c => c.text).join('') : '') || '';
@@ -303,7 +303,9 @@ module.exports = async (req, res) => {
     if (!RELAY_KEY && !groqKey && !OPENAI_KEY) return L.err(res, 503, 'no_server_key', '伺服器 AI 未設定');
 
     const b = req.body || {};
-    const prompt = String(b.prompt || '').slice(0, 6000);
+    // v9.7.3 截斷或拼接時把 emoji 切半會留下落單的代理字元,官方 API 會整筆回 400;送出前清掉
+    const fixSur = (x) => x.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
+    const prompt = fixSur(fixSur(String(b.prompt || '')).slice(0, 6000));
     if (!prompt) return L.err(res, 400, 'missing_prompt', 'Missing prompt');
     const maxTokens = Math.min(600, Math.max(1, parseInt(b.max_tokens, 10) || 300));
     const temperature = Math.min(1.5, Math.max(0, parseFloat(b.temperature) || 0.9));
@@ -373,7 +375,7 @@ module.exports = async (req, res) => {
                     _lane.openaiFailCount = Math.min(_lane.openaiFailCount + 1, 5);
                     _lane.openaiCooldownUntil = Date.now() + (e && e.retryAfterMs ? Math.min(e.retryAfterMs, 3600000) : 60000 * _lane.openaiFailCount);
                 }
-            } else if (!(e && e.refusal)) { // 拒絕扮演是單次現象,不冷卻中繼
+            } else if (!(e && (e.refusal || e.status === 400))) { // 拒絕扮演、400(這一筆請求本身有問題)是單次現象,不冷卻中繼;v9.7.3 以前 400 也冷卻,接下來一分鐘的玩家對話全掉到備援模型
                 _lane.relayFailCount = Math.min(_lane.relayFailCount + 1, 5);
                 _lane.relayCooldownUntil = Date.now() + 60000 * _lane.relayFailCount; // 60s × 次數,最多 5 分鐘
             }

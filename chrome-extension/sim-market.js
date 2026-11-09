@@ -273,7 +273,7 @@ const MARKET = (() => {
     }
     // 老闆過世:配偶或成年子女繼承
     function heirsOf(w, a) {
-        return npcs(w).filter(o => o !== a && (['married', 'dating'].includes(o.relationships?.relationships?.[a.agentId]?.status) || ((o._parentNames || []).includes(a.name) && (o.age || 0) >= 16)))
+        return npcs(w).filter(o => o !== a && (o.relationships?.relationships?.[a.agentId]?.status === 'married' || ((o._parentNames || []).includes(a.name) && (o.age || 0) >= 16))) /* v9.7.4 交往中的不算繼承人 */
             .sort((x, y) => (y.relationships?.relationships?.[a.agentId]?.status === 'married') - (x.relationships?.relationships?.[a.agentId]?.status === 'married') || (y.age || 0) - (x.age || 0));
     }
     function brief(w, a) {
@@ -310,12 +310,20 @@ if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
 if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
-        let own = [], heir = null;
-        try { if (world.market && npc) { own = MARKET.ownedBy(world, npc.agentId); if (own.length) heir = MARKET.heirsOf(world, npc)[0] || null; } } catch (e) {}
+        let own = [], heir = null, rivals = [];
+        try { if (world.market && npc) { own = MARKET.ownedBy(world, npc.agentId); rivals = Object.keys(world.market.rival || {}).filter(k => world.market.rival[k]?.owner === npc.agentId); if (own.length || rivals.length) heir = MARKET.heirsOf(world, npc)[0] || null; } } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         try {
             if (own.length) { const M = MARKET.S(world); for (const k of own) M.owners[k] = heir ? heir.agentId : null;
                 if (heir) { world.logMessageT?.('economy', '🏪 {h}繼承了{o}留下的{s}。', { h: heir.name, o: npc.name, s: own.map(MARKET.name).join(t('、')) }, heir.name); heir.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '我繼承了{o}留下的{s}。', { o: npc.name, s: own.map(MARKET.name).join(t('、')) }, 8, [npc.name]); } }
+            // v9.7.4 對面那家(競爭店)也由家人接手;繼承人剛好是原本那家的老闆就併成一家;沒人繼承就收掉
+            if (rivals.length) { const M = MARKET.S(world);
+                for (const k of rivals) { const R = M.rival?.[k]; if (!R) continue;
+                    if (heir && M.owners[k] === heir.agentId) { delete M.rival[k]; world.logMessageT?.('economy', '🏪 {h}繼承了{o}在對面開的{s}，兩家併成一家。', { h: heir.name, o: npc.name, s: MARKET.name(k) }, heir.name); }
+                    else if (heir) { R.owner = heir.agentId; world.logMessageT?.('economy', '🏪 {h}接手了{o}在對面開的{s}。', { h: heir.name, o: npc.name, s: MARKET.name(k) }, heir.name); heir.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '我接手了{o}開的{s}。', { o: npc.name, s: MARKET.name(k) }, 8, [npc.name]); }
+                    else { delete M.rival[k]; world.logMessageT?.('economy', '🏪 {o}過世後沒有家人接手，對面那家{s}關門了。', { o: npc.name, s: MARKET.name(k) }, npc.name); } } }
+            // v9.7.4 繼承後超過反壟斷上限:照法律限期賣掉多的(實際出售由每週的反壟斷檢查處理)
+            if (heir && (own.length || rivals.length) && world.cycle?.law && MARKET.firmsOf && MARKET.capOf) { const n = MARKET.firmsOf(world, heir.agentId).length, cap = MARKET.capOf(world); if (n > cap) world.logMessageT?.('economy', '⚖️ {h}繼承後名下有 {n} 家店，超過反壟斷法的上限 {c} 家，得限期賣掉多的。', { h: heir.name, n, c: cap }, heir.name); }
             if (world.market?.hungry) delete world.market.hungry[npc.agentId];
         } catch (e) {}
         return r;
