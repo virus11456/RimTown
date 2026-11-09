@@ -35,6 +35,7 @@ const POLITICS = (() => {
                 if (j && Array.isArray(j.lines)) { j.lines.forEach((s, i) => { if (lines[i] && typeof s === 'string' && s.trim()) { lines[i].k = '{x}'; lines[i].p = { x: s.trim().slice(0, 60) }; } }); if (Number.isInteger(j.best) && lines[j.best]) lines[j.best].score += 100; } // AI 判定的贏家就是贏家
             } catch (e) {}
         }
+        for (let i = lines.length - 1; i >= 0; i--) { const a = w.agents[lines[i].id]; if (!a || a.isDead) lines.splice(i, 1); } if (lines.length < 2) return null; // v8.7.0 等 AI 的時候候選人可能過世或搬走了
         const win = lines.slice().sort((x, y) => y.score - x.score)[0]; const wa = w.agents[win.id];
         log(w, 'council', '🎤 選舉辯論登場！', {});
         for (const l of lines) { const a = w.agents[l.id]; log(w, 'council', '🎤 {a}：「{s}」', { a: a.name, s: { k: l.k, p: l.p } }, a.name); }

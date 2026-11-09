@@ -815,7 +815,7 @@ class LifecycleSystem {
             let deathChance = 0;
 
             // Age-based mortality
-            const ageEff = npc.age - (world.research?.projects?.life_extension?.status === 'complete' ? 15 : 0); // v7.9.0 延壽療法:老死晚十五歲
+            const ageEff = (typeof LONGEV !== 'undefined') ? LONGEV.ageEff(world, npc) : npc.age - (world.research?.projects?.life_extension?.status === 'complete' ? 15 : 0); // v7.9.0 延壽療法:老死晚十五歲;v8.7.0 改成做過療程的人才晚十五歲
             if (ageEff >= 80) deathChance = 0.08;
             else if (ageEff >= 70) deathChance = 0.03;
             else if (ageEff >= 60) deathChance = 0.01;

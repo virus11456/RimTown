@@ -462,11 +462,11 @@ Object.assign(RimTownApp.prototype, {
         ];
         // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
         const roadmap = {
-            done: [['v8.6', X('三條路線都有世界級災厄', 'World calamities on every path'), X('基因生物的全球不孕、蒸汽煉金的冰河期與以太裂隙', 'Global infertility on the bio path; an ice age and an aether rift on the steam path')],
-                ['v8.5', X('世界級災厄', 'World calamities'), X('核子世界大戰、外星入侵、AI 接管，研究員要跟降臨倒數賽跑', 'Nuclear war, alien invasion and AI takeover, with researchers racing the countdown')],
-                ['v8.4', X('神之書', 'Book of Gods'), X('事件卡分四級稀有度；打牌、託夢、災厄工坊共用神力', 'Event cards in four rarities; cards, dreams and the workshop share one divine power')]],
+            done: [['v8.7', X('股份、以太與長生', 'Shares, aether and longevity'), X('村民合股做生意、股東會奪權；以太要存起來煉賢者之石還是先過生活，由村民投票', 'Villagers go into business together and stage boardroom coups; they vote on whether to save aether for the philosopher\'s stone or live well now')],
+                ['v8.6', X('三條路線都有世界級災厄', 'World calamities on every path'), X('基因生物的全球不孕、蒸汽煉金的冰河期與以太裂隙', 'Global infertility on the bio path; an ice age and an aether rift on the steam path')],
+                ['v8.5', X('世界級災厄', 'World calamities'), X('核子世界大戰、外星入侵、AI 接管，研究員要跟降臨倒數賽跑', 'Nuclear war, alien invasion and AI takeover, with researchers racing the countdown')]],
             next: [[X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
-                [X('股份與合夥經營', 'Shares and partnerships'), X('村民合資開店、分紅，吵架了還會拆夥', 'Villagers pool money to open shops, split profits and sometimes fall out')]],
+                [X('世界史詩', 'World epic'), X('AI 依你的世界真實發生的事寫成史詩，每個玩家都不一樣', 'The AI writes an epic from what actually happened in your world, different for every player')]],
             ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
         };
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)

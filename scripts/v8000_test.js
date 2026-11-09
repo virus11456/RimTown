@@ -2,7 +2,7 @@
 // 科技樹（第四、五時代大家都能研究、第六時代專屬、蒸汽動力兩條路線共用）、門檻（齒輪工坊、煉金工坊、禁造人造人）、
 // 村民傾向（礦工鐵匠工會偏蒸汽、醫生農夫怕煙）、很需要人手（職缺變多；發條人偶、人造人才搶工作）、
 // 煤煙（累積、散掉、法律與科技減煙、肺病）、社會問題（小事、中事、大黑霧；金流守恆）、法律（提案、投票、執行、效果）、
-// 賢者之石與提煉廠（只變貨物、不變銀幣）、災後反應、風氣跟地形、存讀檔、介面（科技分頁、首頁、3D 天空與飛艇；中英、桌機與 390px）
+// 提煉廠（只變貨物、不變銀幣；賢者之石 v8.7.0 改成凝聚以太）、災後反應、風氣跟地形、存讀檔、介面（科技分頁、首頁、3D 天空與飛艇；中英、桌機與 390px）
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -134,7 +134,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(g.own > 0 && g.ownLaw < g.own * 0.4 && g.ok && g.dead >= 1 && g.sick >= 2 && g.pend && g.shock && g.brief && g.smog < 50, '大黑霧：冬天煙濃才會發生（清潔空氣法降到三分之一）；有人罹難、很多人咳、推清潔空氣法、村民反應、AI 知道', g);
     ok(r.laws.props === 'steam_air,steam_factory,steam_homun' && r.laws.docAir === 'for' && r.laws.ownAir === 'against', '法律提案：清潔空氣法、工廠法、禁造人造人；醫生贊成清潔空氣法、老闆反對', r.laws);
     ok(r.laws.on.air && r.laws.on.factory && r.laws.on.ban && r.laws.on.bs <= -0.05 && r.laws.noHomun, '法律通過後生效：蓋東西慢一點；禁造之後不能再研究人造人', r.laws.on);
-    ok(r.stone.stone >= 7 && r.stone.steel >= 1 && r.stone.metal >= 1 && r.stone.silver === 0, '賢者之石與提煉廠：石頭變成鋼和金屬，變不出銀幣', r.stone);
+    ok(r.stone.stone >= 3 && r.stone.steel === 0 && r.stone.metal >= 1 && r.stone.silver === 0, '提煉廠：石頭變成金屬；賢者之石不再變貨物（v8.7.0 改成凝聚以太）；變不出銀幣', r.stone);
     const L = r.lean;
     ok(L.mountain.steam > L.mountain.electro && L.market.steam === 0 && L.cnt.electro > L.cnt.steam * 1.5 && L.cnt.steam > 400 && L.cnt.bio > 400, '風氣跟地形：礦山偏蒸汽煉金、貿易要道沒有；整體約電子 50%、蒸汽 25%、基因 25%', L);
     ok(r.save.smog && r.save.air && r.save.path === 'steam' && r.save.reroll && r.save.kept, '存讀檔：煤煙、法律、路線都存得住；還沒選路線的舊存檔重新抽風氣，選了的不動', r.save);

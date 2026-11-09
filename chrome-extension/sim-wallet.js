@@ -52,11 +52,12 @@ const WALLET = (() => {
         return W;
     }
     const W_OK = new WeakSet();
-    const get = (w, a) => a ? Math.max(0, Math.round((S1(w, a).bal[a.agentId] || 0) * 10) / 10) : 0;
-    const add = (w, a, n) => { if (!a || !(n > 0)) return; const W = S1(w, a); W.bal[a.agentId] = Math.round(((W.bal[a.agentId] || 0) + n) * 10) / 10; };
-    const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S1(w, a); const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 10) / 10; return true; };
+    // v8.7.0 錢包算到「分」(以前四捨五入到「角」,但其他地方的金額都算到分,每筆交易都會憑空多出或少掉幾分錢)
+    const get = (w, a) => a ? Math.max(0, Math.round((S1(w, a).bal[a.agentId] || 0) * 100) / 100) : 0;
+    const add = (w, a, n) => { if (!a || !(n > 0)) return; const W = S1(w, a); n = Math.round(n * 100) / 100; W.bal[a.agentId] = Math.round(((W.bal[a.agentId] || 0) + n) * 100) / 100; };
+    const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S1(w, a); n = Math.round(n * 100) / 100; const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 100) / 100; return true; };
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
-    const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 10) / 10, w.tickCount, why); };
+    const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 100) / 100, w.tickCount, why); };
     // v6.81.0 營業稅:做生意賣東西的收入(開店、廚師賣餐、裁縫賣衣)先繳 15% 給公庫,剩下才進自己口袋
     const BIZ_TAX = 0.15;
     const bizIncome = (w, a, n) => { if (!a || !(n > 0)) return 0; const tax = Math.round(n * BIZ_TAX * 100) / 100; if (tax > 0) { toTown(w, tax, t('營業稅')); const W = S(w); W.stats.bizTax = Math.round(((W.stats.bizTax || 0) + tax) * 10) / 10; } add(w, a, n - tax); return n - tax; };
@@ -252,8 +253,8 @@ if (typeof LifecycleSystem !== 'undefined') {
         try {
             if (estate > 0) {
                 if (world.wallet?.bal) delete world.wallet.bal[npc.agentId];
-                if (heirs.length) { const base = Math.floor(estate / heirs.length * 10 + 1e-6) / 10; const first = Math.round((estate - base * (heirs.length - 1)) * 10) / 10; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
-                else world.stockpile?.add?.('silver', Math.round(estate * 10) / 10, world.tickCount, t('無人繼承的遺產'));
+                if (heirs.length) { const base = Math.floor(estate / heirs.length * 100 + 1e-6) / 100; const first = Math.round((estate - base * (heirs.length - 1)) * 100) / 100; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
+                else world.stockpile?.add?.('silver', Math.round(estate * 100) / 100, world.tickCount, t('無人繼承的遺產'));
             }
         } catch (e) {}
         return r;
