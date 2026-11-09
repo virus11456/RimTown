@@ -449,9 +449,12 @@
 @media (max-width: 768px) {
     .rimtown-container .mobile-header .mobile-header-row { gap: 6px; min-width: 0; }
     .rimtown-container .mobile-header .mobile-header-actions { flex-shrink: 0; margin-left: auto; }
-    .rimtown-container .mobile-header .mobile-title { flex: 0 3 auto; min-width: 0; max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rimtown-container .mobile-header .mobile-clock { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .rimtown-container .mobile-header .mobile-population { flex: 0 2 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    /* v9.7.0 鎮名一行、時間＋人數一行，讓三樣都不被截成「…」 */
+    .rimtown-container .mobile-header .mobile-info { flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; justify-content: center; line-height: 1.2; }
+    .rimtown-container .mobile-header .mobile-title { font-size: 0.85rem; min-width: 0; max-width: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rimtown-container .mobile-header .mobile-sub { display: flex; align-items: baseline; gap: 6px; min-width: 0; white-space: nowrap; overflow: hidden; }
+    .rimtown-container .mobile-header .mobile-clock { font-family: inherit; font-variant-numeric: tabular-nums; font-size: 0.7rem; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rimtown-container .mobile-header .mobile-population { font-size: 0.7rem; margin-left: 0; flex: 0 0 auto; white-space: nowrap; }
 }
 
 /* v6.43.2 掛在 body 下的通知／彈窗(不在 .rimtown-container 裡)也用介面字型;以前英文版會掉成瀏覽器預設的襯線字 */

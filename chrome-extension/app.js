@@ -2007,6 +2007,7 @@ class RimTownApp {
     _syncSpeedButtons() {
         const m = this._speedMultiplier || 1;
         document.querySelectorAll('.btn-speed[data-speed]').forEach(b => { const on = parseFloat(b.dataset.speed) === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+        const cyc = document.getElementById('mobile-btn-speed'); if (cyc) cyc.textContent = m + 'x'; /* v9.7.0 手機速度收成一顆 */
     }
 
     // v9.1.2 側欄互動時暫停自動重畫（按下到放開後 0.6 秒、捲動中 0.8 秒）
@@ -2475,6 +2476,7 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed[data-speed]').forEach(btn => {
             btn.addEventListener('click', (e) => { e.stopPropagation(); this._setSpeed(btn.dataset.speed); });
         });
+        document.getElementById('mobile-btn-speed')?.addEventListener('click', (e) => { e.stopPropagation(); const L = RIMTOWN_SPEEDS, i = L.indexOf(this._speedMultiplier || 1); this._setSpeed(L[(i + 1) % L.length]); });
         this._syncSpeedButtons();
         document.getElementById('btn-new-game')?.addEventListener('click', () => this.createNewTown()); // v6.76.3 同一條路
         document.getElementById('btn-save')?.addEventListener('click', async () => {
@@ -2962,7 +2964,7 @@ class RimTownApp {
             mobileClock.textContent = `Y${clock.year} ${t(clock.season)} D${clock.day} ${this._dayPhaseIcon(clock.hour || 12)}${h}:${m}`;
         }
         const mobilePop = document.getElementById('mobile-population');
-        if (mobilePop) mobilePop.textContent = `${agentCount}${t('人')}`;
+        if (mobilePop) mobilePop.textContent = `👤${agentCount}`; /* v9.7.0 手機上方列縮短 */
         // Update mobile pause button state
         const mobilePauseBtn = document.getElementById('mobile-btn-pause');
         if (mobilePauseBtn) {

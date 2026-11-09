@@ -716,6 +716,7 @@
         '{s}的掌櫃': 'manager of the {s}',
         '{who}說鎮上的錢越來越集中在少數人手上，{name}一個人就有 {n} 家店。提議把反壟斷法收緊：一個人名下最多兩家。': '{who} says the town\'s money keeps piling up with a few people, and {name} alone owns {n} shops. Proposes tightening the antitrust law: at most two businesses per person.',
         '⚖️ 依反壟斷法，{o}名下店太多，對面那家{s}沒人接手，只好收掉。': '⚖️ Under the antitrust law, {o} owns too many shops; nobody took over the rival {s}, so it closed.',
+        '切換速度': 'Change speed',
         '⚖️ 依反壟斷法，{o}把{s}以 {n} 銀幣賣給了{b}。': '⚖️ Under the antitrust law, {o} sold the {s} to {b} for {n} silver.',
         '⚖️ 依反壟斷法，{o}把對面那家{s}以 {n} 銀幣賣給了{b}。': '⚖️ Under the antitrust law, {o} sold the rival {s} to {b} for {n} silver.',
         '⚖️ 依反壟斷法，{o}的{s}沒人買得起，公庫以 {n} 銀幣收購，改為公營。': '⚖️ Under the antitrust law, nobody could afford {o}\'s {s}; the treasury bought it for {n} silver and it is now public.',

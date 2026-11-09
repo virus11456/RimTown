@@ -273,11 +273,13 @@
     <!-- Mobile Header (shown only on ≤768px) -->
     <div class="mobile-header">
         <div class="mobile-header-row">
-            <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
-            <span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span>
-            <span id="mobile-population" class="mobile-population">--</span>
+            <div class="mobile-info">
+                <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
+                <span class="mobile-sub"><span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span><span id="mobile-population" class="mobile-population">--</span></span>
+            </div>
             <div class="mobile-header-actions">
                 <button id="mobile-btn-pause" class="mobile-ctrl-btn">⏸</button>
+                <button id="mobile-btn-speed" class="mobile-ctrl-btn mobile-speed-cycle" title="切換速度" data-i18n-title="切換速度" aria-label="切換速度">1x</button>
                 <div class="mobile-menu-speed">
                     <button class="btn-speed active" data-speed="1">1x</button>
                     <button class="btn-speed" data-speed="1.5">1.5x</button>

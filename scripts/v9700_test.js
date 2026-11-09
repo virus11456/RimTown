@@ -28,7 +28,7 @@ async function run(lang) {
     { const t0 = T(), b0 = WALLET.get(w, ent); Math.random = () => 0; try { COMPETE.entry(w, all(), d); } finally { Math.random = r0; }
       const R = MARKET.rivalOf(w, k); out.entry = { open: !!R, owner: R?.owner === ent.agentId, emp: R ? Object.keys(R.emp).length : 0, paid: Math.round(b0 - WALLET.get(w, ent)), total: Math.round((T() - t0) * 100) / 100, price: R?.price, pay: R?.pay }; }
     // 2. 兩家分客人,打折省下的錢回到村民手上,總數不變
-    { const R = MARKET.rivalOf(w, k); const bi = WALLET.get(w, boss), br = WALLET.get(w, ent), t0 = T(), sv0 = M.saved || 0; MARKET.sell(w, k, 100, 'test');
+    { const R = MARKET.rivalOf(w, k); for (const a of Object.values(w.agents)) if (!a.isPlayer && !a.isDead) WALLET.get(w, a); /* 剛搬來的人第一次開錢包會帶安家費(記在移民),先開好才不會混進這一筆 */ const bi = WALLET.get(w, boss), br = WALLET.get(w, ent), t0 = T(), sv0 = M.saved || 0; MARKET.sell(w, k, 100, 'test');
       out.split = { share: MARKET.shareOf(w, k), inc: Math.round((WALLET.get(w, boss) - bi) * 100) / 100, riv: Math.round((WALLET.get(w, ent) - br) * 100) / 100, rebate: Math.round(((M.saved || 0) - sv0) * 100) / 100, total: Math.round((T() - t0) * 100) / 100 }; }
     // 3. 對手店的工人由對手老闆發薪
     { const R = MARKET.rivalOf(w, k); const e1 = Object.keys(R.emp)[0]; const ea = w.agents[e1]; const bi = WALLET.get(w, boss), br = WALLET.get(w, ent), be = WALLET.get(w, ea); MARKET.payroll(w, WALLET.S(w), all());

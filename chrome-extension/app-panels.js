@@ -1060,7 +1060,7 @@ Object.assign(RimTownApp.prototype, {
             if ((d.traditions || []).length || (d.landmarks || []).length) {
                 B.lore += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
                 for (const x of (d.traditions || []).slice().reverse()) B.lore += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
-                for (const x of (d.landmarks || []).slice().reverse()) B.lore += `<div class="pp-lore-row">${esc(x.icon)} ${esc(x.name)} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+                for (const x of (d.landmarks || []).slice().reverse()) B.lore += `<div class="pp-lore-row">${esc(x.icon)} ${esc(typeof x.name === 'string' ? t(x.name) : '')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
                 B.lore += `</div>`;
             }
             B.stats += `<h4 class="pp-h">📊 ${t('提案統計')}</h4><div class="pp-summary">${t('提出')} ${d.stats.made} · ${t('已批准')} ${d.stats.approved} · ${t('已否決')} ${d.stats.rejected} · ${t('已完成')} ${d.stats.done}</div>`;
