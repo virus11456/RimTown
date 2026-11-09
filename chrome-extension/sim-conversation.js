@@ -2298,7 +2298,7 @@ class LLMClient {
         this.baseUrl = baseUrl || '';
         // Rate limiting
         this._requestTimestamps = [];
-        this._maxRequestsPerMinute = 20;
+        this._maxRequestsPerMinute = Infinity; // v9.7.1 不限
         this._rateLimitedUntil = 0;
         // Fallback
         this.fallbackGroqKey = null;
@@ -2371,9 +2371,9 @@ class LLMClient {
             const longPause = (this._rateLimitedLen || 60000) >= 60000;
             if (strict || !isPlayerChat || !longPause || now < this._rateLimitedUntil - 30000) return false;
         }
-        this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
-        const limit = isPlayerChat ? this._maxRequestsPerMinute - 4 : Math.floor(this._maxRequestsPerMinute / 2); /* v9.7.0 留 4 個名額給玩家本人的訊息 */
-        return this._requestTimestamps.length < limit;
+        // v9.7.1 使用者決定拿掉每分鐘 20 次的上限:只在 AI 真的回報忙碌/出錯時才暫停(上面的 _rateLimitedUntil)
+        this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000); // 只留著統計用
+        return true;
     }
 
     _recordRequest() { this._requestTimestamps.push(Date.now()); }
