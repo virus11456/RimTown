@@ -25,7 +25,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 1) 最低工資
       const Wl = WALLET.S(w); const farmer = npcs().find(a => a.job?.key === 'farmer') || npcs().find(a => WALLET.WAGE[a.job?.key]);
       out.noFloor = WALLET.netOf({ tax: 0.6 }, farmer) < WALLET.FLOOR; // 沒通過最低工資:照市價
-      { const ps0 = w.proposals; const d0 = ps0._abs(w); const oldTax = Wl.tax; Wl.tax = 0.6; Wl.minWage = 0; ps0.cooldown = {};
+      { const ps0 = w.proposals; const d0 = ps0._abs(w); const oldTax = Wl.tax; Wl.tax = 0.6; Wl.minWage = 0; ps0.cooldown = {}; ps0.items = (ps0.items || []).filter(q => q.kind !== 'minwage'); /* 遊戲剛跑的那幾天可能已經有人提過 */
         const c0 = (ps0._candidates(w, d0) || []).find(c => c.kind === 'minwage'); out.mwCand = !!c0;
         if (c0) { const p0 = ps0._create(w, d0, c0); out.mwTitle = ps0.title(p0);
           // 投票:窮人支持、有錢人反對(多次取樣看傾向)

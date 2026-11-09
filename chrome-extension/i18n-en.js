@@ -12259,6 +12259,11 @@
         '修繕與賠償': 'Repairs and compensation',
         '向外地錢莊借錢（紓困）': 'Borrowed from outside lenders (bailout)',
         '還外地錢莊的紓困債': 'Bailout debt repaid to outside lenders',
+        '🏦 {a}跟銀行借了 {n} 銀幣當開店的本錢。': '🏦 {a} borrowed {n} silver from the bank to open a shop.',
+        '🏦 {a}跟銀行借了 {n} 銀幣，要蓋一棟房子出租。': '🏦 {a} borrowed {n} silver from the bank to build a house for rent.',
+        '開店': 'Opening a shop',
+        '創業與蓋房貸款': 'Business and building loans',
+        '還在還': 'Still repaying',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

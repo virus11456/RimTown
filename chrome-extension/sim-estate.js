@@ -154,7 +154,10 @@ const ESTATE = (() => {
         const vacant = Object.values(E.units).filter(u => !u.occ).length; const homeless = Object.keys(E.homeless).length;
         const short = (vacant < 2 && (homeless > 0 || hh.size >= Object.keys(E.units).length)) ? Math.max(1, Math.ceil((hh.size - Object.keys(E.units).length) / 3) + Math.ceil(homeless / 2)) : 0;
         for (let k = 0; k < Math.min(2, short); k++) {
-            const cost = 110, mat = { wood: 12, stone: 8 }; const b = all.filter(a => cash(w, a) >= cost + 50).sort((x, y) => cash(w, y) - cash(w, x))[0];
+            const cost = 110, mat = { wood: 12, stone: 8 }; let b = all.filter(a => cash(w, a) >= cost + 50).sort((x, y) => cash(w, y) - cash(w, x))[0];
+            // v8.8.0 沒人自己出得起,就由有工作、手上有點錢的人跟銀行借錢來蓋(以後收房租還)
+            if (!b && w.stockpile?.canAfford?.(mat) && typeof BIZ !== 'undefined' && BIZ.bizLoan) { const c = all.filter(a => a.job && (a.age ?? 30) >= 22 && cash(w, a) >= 35 && !w.bank?.loans?.[a.agentId]).sort((x, y) => cash(w, y) - cash(w, x))[0];
+                if (c) { const got = BIZ.bizLoan(w, c, cost + 15 - cash(w, c), '蓋出租屋'); if (got && cash(w, c) >= cost) { b = c; log(w, '🏦 {a}跟銀行借了 {n} 銀幣，要蓋一棟房子出租。', { a: c.name, n: got }, c.name); } } }
             if (b && w.stockpile?.canAfford?.(mat) && Wl.take(w, b, cost)) {
                 w.stockpile.pay(mat, w.tickCount, t('蓋出租屋')); if (typeof MARKET !== 'undefined' && w.market) { MARKET.sell(w, 'timber', cost * 0.6, t('蓋出租屋')); MARKET.sell(w, 'mine', cost * 0.4, t('蓋出租屋')); } else toTown(w, cost, t('蓋出租屋'));
                 const id = 'U' + (++E.n); E.units[id] = { id, owner: b.agentId, occ: null, lv: 0, built: day(w) }; E.stats.built = (E.stats.built || 0) + 1;

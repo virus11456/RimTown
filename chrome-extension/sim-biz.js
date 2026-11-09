@@ -25,9 +25,16 @@ const BIZ = (() => {
     const shopOf = (w, a) => S(w).shops.find(s => !s.closed && (s.owner === a?.agentId || s.partner === a?.agentId)) || null;
     function typeFor(a) { if (has(a, 'creative')) return 'studio'; for (const [k, T] of Object.entries(TYPES)) if (T.job && a.job?.key === T.job) return k; return Math.random() < 0.5 ? 'inn' : 'stall'; }
     function defaultName(a, k) { const T = TYPES[k]; const zhName = `${a.name.slice(0, 1)}記${T.zh}`; const enName = `${(typeof I18N !== 'undefined' ? I18N.localizeNames(a.name, true) : a.name).split(' ')[0]}'s ${T.en}`; return [zhName, enName]; }
+    // v8.8.0 創業貸款:銀行有放得出去的存款、這個人沒有欠款,就借;還款期比周轉長(45 天)
+    function bizLoan(w, a, n, why) {
+        if (typeof BANK === 'undefined' || !w.bank) return 0; const BK = BANK.S(w); if (!BK.open || BK.status === 'run' || BK.loans?.[a.agentId] || BANK.lendable(BK) < n + 20) return 0;
+        const got = BANK.lend(w, BK, a, Math.ceil(n), t(why)); const L = BK.loans?.[a.agentId]; if (got && L) { L.due = Math.max(L.due || 0, day(w) + 45); L.kind = 'biz'; BK.bizLent = Math.round((BK.bizLent || 0) + got); } return got;
+    }
     async function open(w, B, a, d) {
         const k = typeFor(a); const T = TYPES[k]; const cost = 60; let partner = null;
-        if (cash(w, a) < cost) { partner = npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0]; if (!partner) return null; }
+        if (cash(w, a) < cost) { partner = npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0];
+            // v8.8.0 找不到合夥人,就拿存款大家放在銀行的錢:跟銀行借開店的本錢,之後慢慢用店裡的進帳還
+            if (!partner) { const got = bizLoan(w, a, cost - cash(w, a) + 5, '開店'); if (!got || cash(w, a) < cost) return null; log(w, '🏦 {a}跟銀行借了 {n} 銀幣當開店的本錢。', { a: a.name, n: got }, a.name); } }
         const mine = Math.min(cash(w, a), partner ? cost - 40 : cost); if (!WALLET.take(w, a, mine)) return null; if (partner && !WALLET.take(w, partner, 40)) { WALLET.add(w, a, mine); return null; }
         { const paid = mine + (partner ? 40 : 0); const hand = npcs(w).filter(o => o !== a && o !== partner && ['builder', 'carpenter'].includes(o.job?.key)); const h = hand[Math.floor(Math.random() * hand.length)]; if (h) WALLET.add(w, h, paid); else w.stockpile?.add?.('silver', paid, w.tickCount, t('開店的材料與執照')); } // v8.8.0 開店的錢付給鎮上的工匠(沒有就進公庫),不再憑空消失
         let name = defaultName(a, k);
@@ -81,7 +88,7 @@ const BIZ = (() => {
         // 有人想創業
         if (B.shops.length < Math.max(2, Math.floor(npcs(w).length / 6))) {
             const amb = w.mind?.amb || {};
-            const c = npcs(w).filter(a => (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= 30);
+            const c = npcs(w).filter(a => (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= ((w.bank?.open && typeof BANK !== 'undefined' && BANK.lendable(w.bank) >= 80) ? 15 : 30)); // v8.8.0 銀行借得到錢,手頭少一點也敢創業
             const a = c.sort(() => Math.random() - 0.5)[0]; if (a && Math.random() < 0.15) open(w, B, a, d);
         }
     }
@@ -96,7 +103,7 @@ const BIZ = (() => {
     }
     function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: TYPES[s.type].icon, name: en() ? s.name[1] : s.name[0], type: t(TYPES[s.type].zh), owner: t(w.agents[s.owner]?.name || ''), partner: s.partner ? t(w.agents[s.partner]?.name || '') : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
     function chip(w, a) { const s = shopOf(w, a); if (!s) return ''; return `${TYPES[s.type].icon} ${s.owner === a.agentId ? t('老闆') : t('合夥人')}${t('：')}${en() ? s.name[1] : s.name[0]}`; }
-    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf };
+    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

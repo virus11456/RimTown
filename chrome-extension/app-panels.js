@@ -940,7 +940,7 @@ Object.assign(RimTownApp.prototype, {
             try { if (typeof BANK !== 'undefined' && this.world.bank) { const V = BANK.view(this.world);
                 const st = V.status === 'run' ? `😱 ${t('擠兌中')}` : V.status === 'failed' ? `💥 ${t('已倒閉')}` : V.open ? `✅ ${t('營業中')}` : t('還沒開');
                 B.bank += `<div class="pp-issues pp-bank"><h4 class="pp-h">🏦 ${t('銀行')} <small>${st}</small></h4>`;
-                if (V.open) B.bank += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>`;
+                if (V.open) B.bank += `<div class="pp-tier-line">${t('銀行家')}${t('：')}${esc(V.banker || '')} · ${t('放款利率')} ${V.rate}%${V.why ? ` ${t('（')}${esc(V.why)}${t('）')}` : ''}</div><div class="pp-tier-line">${t('存款')} ${V.dep}${t('（')}${V.savers} ${t('人')}${t('）')} · ${t('放款')} ${V.loan}${t('（')}${V.borrowers} ${t('人')}${t('）')} · ${t('準備金')} ${V.reserve} · ${t('呆帳')} ${V.bad}</div>${V.bizLent ? `<div class="pp-tier-line">🏗️ ${t('創業與蓋房貸款')}${t('：')}${t('累計')} ${V.bizLent} ${t('銀幣')}${V.biz ? ` · ${t('還在還')} ${V.biz} ${t('人')}` : ''}</div>` : ''}`;
                 else if (V.failed) B.bank += `<div class="pp-tier-line">${t('上次倒閉讓存戶損失 {n} 銀幣').replace('{n}', V.failed.lost)}</div>`;
                 else B.bank += `<div class="pp-issue-hint">${t('升格為城鎮後就會有銀行。')}</div>`;
                 // v6.74.0 債券、紓困、鎮公所背債
