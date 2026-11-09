@@ -20,7 +20,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const r = await page.evaluate(async () => {
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {};
       const w = app.world; w.observerMode = true; const out = {}; const R0 = Math.random; const fix = (v, f) => { Math.random = () => v; try { return f(); } finally { Math.random = R0; } };
-      let d = w._absDay(); w._absDay = () => d; const step = (n = 1) => { for (let i = 0; i < n; i++) { d++; WORLDCAL.daily(w); try { w.proposals.daily(w); } catch (e) {} } };
+      let d = w._absDay(); w._absDay = () => d; let wcDrift = 0; const step = (n = 1) => { for (let i = 0; i < n; i++) { d++; const T0 = MONEY.total(w), p0 = MONEY.S(w).pend || 0; WORLDCAL.daily(w); wcDrift += (MONEY.total(w) - T0) - ((MONEY.S(w).pend || 0) - p0); try { w.proposals.daily(w); } catch (e) {} } }; // 只量世界級災厄自己那一步的帳(別的系統的背景差額不算)
       const adults = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 16 && !String(a.agentId).startsWith('visit_'));
       const P = () => w.research.projects; const setDone = (ks, on = true) => { const Q = P(); for (const k of ks) if (Q[k]) { Q[k].status = on ? 'complete' : 'locked'; if (on) Q[k].progress = Q[k].cost; } };
       const E6 = ['rocketry', 'nuclear_weapons', 'satellite', 'space_station', 'quantum_computer', 'ai_agent'];
@@ -53,7 +53,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       while (c.ph === 'panic') step(); const arrDay = c.pd; out.hit = { out: c.out, dead: c.dead, popDrop: pop0 - adults().length, wrecked: b0 - (w.buildings.completed || []).length, regress: (CALAMITY.S(w).regs || []).length > regs0, shock: (w.crisis?.cur || []).some(x => x.kind === 'wc_nukewar') };
       const faces = fear.map(id => w.agents[id]).filter(a => a && !a.isDead).map(a => WAYS.faceOf(w, a));
       while (w.worldcal.cur) step(); const h = w.worldcal.hist[0];
-      out.end = { hist: h?.kind === 'nukewar' && h?.out === 'hit', unl: WORLDCAL.unlocked('nukewar'), lose: fear.map(id => w.agents[id]).filter(a => a && !a.isDead).some((a, i) => WAYS.faceOf(w, a) < (faces[i] ?? 101)), next: w.worldcal.next - d >= 600, drift: Math.abs(Math.round(((MONEY.S(w).days[rumDay]?.other || 0) + (MONEY.S(w).days[arrDay]?.other || 0)) * 100) / 100) < 1.5 ? 0 : [MONEY.S(w).days[rumDay], MONEY.S(w).days[arrDay]] };
+      out.end = { hist: h?.kind === 'nukewar' && h?.out === 'hit', unl: WORLDCAL.unlocked('nukewar'), lose: fear.map(id => w.agents[id]).filter(a => a && !a.isDead).some((a, i) => WAYS.faceOf(w, a) < (faces[i] ?? 101)), next: w.worldcal.next - d >= 600, drift: Math.round(wcDrift * 100) / 100 };
       // 4) 化解:主對策做完
       restore();
       WORLDCAL.S(w).cool = 0; WORLDCAL.S(w).next = 0; const c2 = WORLDCAL.begin(w, 'aliens', 'nature'); c2.ph = 'panic'; c2.pd = d; c2.prog = 100; c2.used.fixDone = 1; const pop1 = adults().length; const regs1 = (CALAMITY.S(w).regs || []).length;
