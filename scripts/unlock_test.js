@@ -71,10 +71,10 @@ async function run(browser, lang, vp) {
   ok(r.resTabs.includes('residents') && r.resTabs.includes('chat') && !r.resTabs.includes('relmap'), '村民分頁一開始只有村民、聊天', r.resTabs);
   ok(r.ppTabs.length === 1, '提案頁一開始只有「提案」，沒有鎮況和真相', r.ppTabs);
   ok(r.notes1 === 0, '開局不跳解鎖提示', r.notes1);
-  const a = r.at; const exp = { 'econ-build': 2, 'econ-tech': 4, relmap: 6, 'pp-town': 8, 'pp-truth': 15, industry: 20, 'gh-lab': 28 };
+  const a = r.at; const exp = { 'econ-build': 2, 'econ-tech': 4, relmap: 6, 'pp-town': 8, 'pp-truth': 15, industry: 20, 'gh-lab': 28, 'gh-wc': 28 }; // v9.2.0 世界級災厄跟手牌放一起,跟工坊同一天
   for (const [k, d] of Object.entries(exp)) ok(a[k] === d, `${k} 在第 ${d} 天解鎖`, a[k]);
   ok(!('gh-track' in a), '沒打過牌，反應追蹤不會只因為時間到就解鎖', a['gh-track']);
-  ok(r.notes.length === 7 && r.notes.every(n => n.t === T('解鎖了新分頁', 'New tab unlocked') && n.d && n.n), '每次解鎖都跳一則角落提示（標題、分頁名、說明）', r.notes.slice(0, 2));
+  ok(r.notes.length === 8 && r.notes.every(n => n.t === T('解鎖了新分頁', 'New tab unlocked') && n.d && n.n), '每次解鎖都跳一則角落提示（標題、分頁名、說明）', r.notes.slice(0, 2));
   if (lang === 'en') ok(r.notes.every(n => !/[一-鿿]/.test(n.d + n.n)), '英文版的解鎖提示沒有中文', r.notes.filter(n => /[一-鿿]/.test(n.d + n.n)));
   ok(['econ-build', 'econ-tech', 'industry'].every(k => r.townTabs2.includes(k)) && r.resTabs2.includes('relmap'), '解鎖後分頁出現在分頁列', { t: r.townTabs2, r: r.resTabs2 });
   ok(r.ppTabs2 === 3, '解鎖後提案頁有提案、鎮況、真相三個子分頁', r.ppTabs2);
