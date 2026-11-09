@@ -16,9 +16,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); localStorage.setItem('rimtown_3d_q_by', 'user'); sessionStorage.setItem('rimtown_enter_now', '1'); }, { jwt, lang });
     await page.goto(BASE, { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?.world, null, { timeout: 60000 }); await page.waitForTimeout(2500);
     await page.evaluate(() => document.querySelectorAll('#achv-toast-host > *').forEach(e => e.remove()));
-    const fab = await page.evaluate(() => { const f = document.getElementById('gh-fab'); if (!f) return null; const r = f.getBoundingClientRect(); const h = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { w: Math.round(r.width), h: Math.round(r.height), top: f === h || f.contains(h), txt: f.innerText.replace(/\s+/g, ' '), inView: r.bottom <= innerHeight && r.right <= innerWidth && r.left >= 0 }; });
+    const fab = await page.evaluate(() => { const f = document.getElementById('gh-fab'); if (!f) return null; const r = f.getBoundingClientRect(); const h = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return { max: EventCardSystem.MAX_PER_DAY, w: Math.round(r.width), h: Math.round(r.height), top: f === h || f.contains(h), txt: f.innerText.replace(/\s+/g, ' '), inView: r.bottom <= innerHeight && r.right <= innerWidth && r.left >= 0 }; });
     ok(fab && fab.top && fab.h >= 44 && fab.w >= 44 && fab.inView, '地圖上的 🃏 按鈕看得到、點得到、夠大', fab);
-    ok(fab && /2\/2/.test(fab.txt), '按鈕顯示今天還能打 2/2', fab?.txt);
+    ok(fab && new RegExp(fab.max + '/' + fab.max).test(fab.txt), '按鈕顯示今天還能打幾張（全部）', fab);
     await page.tap ? null : null;
     if (dev === 'mobile') await page.tap('#gh-fab'); else await page.click('#gh-fab');
     await page.waitForTimeout(400);
@@ -51,7 +51,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const cardId = await page.evaluate(() => document.querySelector('#gh-tray .gh-card.sel')?.dataset.v);
     await page.click('#gh-tray .gh-play'); await page.waitForTimeout(500);
     const after = await page.evaluate(() => ({ open: document.getElementById('gh-tray').classList.contains('open'), n: document.querySelector('#gh-fab .gh-fab-n')?.textContent, played: window.rimtownApp.world.eventCards.played.length }));
-    ok(!after.open && /1\/2/.test(after.n) && after.played === 1, '打出後抽屜收起、按鈕變 1/2', { ...after, cardId });
+    const mx = await page.evaluate(() => EventCardSystem.MAX_PER_DAY); ok(!after.open && after.n === `${mx - 1}/${mx}` && after.played === 1, '打出後抽屜收起、按鈕少一張', { ...after, cardId });
     // 反應追蹤分頁
     await page.evaluate(() => window.rimtownApp._ghShow()); await page.waitForTimeout(300);
     await page.click('#gh-tray [data-gh="tab"][data-v="track"]'); await page.waitForTimeout(200);

@@ -609,7 +609,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-issue-hint { margin-top: 4px; font-size: 0.7rem; color: var(--text-muted); }
 .rimtown-container .gh-help { min-width: 40px; min-height: 40px; border-radius: 50%; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: 0.95rem; font-weight: 700; cursor: pointer; }
 .rimtown-container .gh-help.on, .rimtown-container .gh-help:hover, .rimtown-container .gh-help:focus-visible { background: var(--bg-card); color: var(--text-primary); outline: none; }
-.rimtown-container .gh-intro { margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.84rem; line-height: 1.6; }
+.rimtown-container .gh-intro { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; margin: 0 0 10px; padding: 10px 12px; border-radius: 10px; background: var(--bg-card); border: 1px solid var(--border); color: var(--text-primary); font-size: 0.84rem; line-height: 1.6; }
 .rimtown-container .gh-intro-t { font-weight: 700; margin-bottom: 4px; }
 .rimtown-container .gh-intro p { margin: 0 0 6px; }
 .rimtown-container .gh-intro ul { margin: 0 0 8px; padding-left: 1.2em; }
@@ -910,3 +910,24 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .ach-legacy > summary h4 { flex: 1; margin-bottom: 0; }
 .rimtown-container .ach-legacy[open] > summary h4 { margin-bottom: 6px; }
 .rimtown-container .ach-note { font-size: 0.74rem; color: var(--text-muted); margin: 2px 0 8px; }
+/* v8.4.0 神之書:神力、稀有度、卡牌成本、神之書分頁 */
+.rimtown-container .gh-pw-top { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
+.rimtown-container .gh-pw-top b { color: #B79CFF; font-size: 0.92rem; }
+.rimtown-container .gh-cost { position: absolute; top: 25px; right: 5px; font-size: 0.62rem; font-weight: 800; padding: 1px 6px; border-radius: 999px; background: rgba(0,0,0,0.5); color: #fff; }
+.rimtown-container .gh-card.gh-rar-rare { box-shadow: inset 0 0 0 1px #5AA0FF; }
+.rimtown-container .gh-card.gh-rar-legend { box-shadow: inset 0 0 0 2px #F2C14E, 0 0 12px rgba(242,193,78,0.35); }
+.rimtown-container .gh-card.gh-rar-forbid { box-shadow: inset 0 0 0 2px #A970FF, 0 0 14px rgba(169,112,255,0.4); }
+.rimtown-container .gh-card.gh-rar-legend.sel, .rimtown-container .gh-card.gh-rar-forbid.sel { box-shadow: 0 0 0 3px var(--accent), 0 10px 22px rgba(0,0,0,0.35); }
+.rimtown-container .gh-tabs small { font-size: 0.66rem; opacity: 0.8; }
+.rimtown-container .gh-book { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; min-height: 0; padding-bottom: 8px; }
+.rimtown-container .gh-book-h { font-weight: 800; font-size: 0.86rem; margin-bottom: 6px; display: flex; align-items: baseline; gap: 8px; }
+.rimtown-container .gh-book-h small { font-weight: 600; font-size: 0.72rem; color: var(--text-muted); }
+.rimtown-container .gh-book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+.rimtown-container .gh-book-card { display: flex; gap: 8px; align-items: flex-start; padding: 8px 10px; border-radius: 10px; background: var(--bg-card, #2E2A44); border: 1px solid var(--border); font-size: 0.78rem; line-height: 1.4; min-width: 0; overflow-wrap: anywhere; }
+.rimtown-container .gh-book-card .gh-ic { font-size: 1.4rem; flex: none; }
+.rimtown-container .gh-book-card.off { opacity: 0.6; }
+.rimtown-container .gh-book-fx { color: var(--text-secondary); font-size: 0.72rem; margin-top: 2px; }
+.rimtown-container .gh-book-sec.gh-rar-rare .gh-book-card.on { border-color: #5AA0FF; }
+.rimtown-container .gh-book-sec.gh-rar-legend .gh-book-card.on { border-color: #F2C14E; }
+.rimtown-container .gh-book-sec.gh-rar-forbid .gh-book-card.on { border-color: #A970FF; }
+@media (max-width: 768px) { .rimtown-container .gh-book-grid { grid-template-columns: 1fr; } .rimtown-container .gh-tabs button { padding: 0 9px; } }

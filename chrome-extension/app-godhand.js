@@ -83,10 +83,11 @@ Object.assign(RimTownApp.prototype, {
         const newR = Math.max(0, reacts - (this._ghSeenReacts || 0));
         let html = `<div class="gh-grab" aria-hidden="true"></div>
             <div class="gh-head">
-                <div class="gh-title">🃏 ${t('事件卡')}<span class="gh-left ${d.todayLeft ? '' : 'none'}">${t('今天還能打')} <b>${d.todayLeft}</b>/${d.perDay}</span></div>
+                <div class="gh-title">🃏 ${t('事件卡')}<span class="gh-pw-top" title="${t('打牌、託夢、災厄工坊共用的神力')}">🔮 <b>${d.sandbox ? '∞' : d.power}</b>${d.sandbox ? '' : `/${d.powerCap}`}</span><span class="gh-left ${d.todayLeft ? '' : 'none'}">${t('今天還能打')} <b>${d.todayLeft}</b>/${d.perDay}</span></div>
                 <div class="gh-tabs" role="tablist">
                     <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}</button>
                     <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
+                    <button role="tab" aria-selected="${this._ghTab === 'book'}" class="${this._ghTab === 'book' ? 'on' : ''}" data-gh="tab" data-v="book">📖 ${t('神之書')}${d.book ? ` <small>${d.book.have}/${d.book.total}</small>` : ''}</button>
                     ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
                 </div>
                 <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
@@ -98,6 +99,8 @@ Object.assign(RimTownApp.prototype, {
                 <p>${t('你不在鎮上，只在天上看著村民過日子。事件卡是你唯一能「動手」的地方：打出一張，就讓一件事發生在鎮上，然後看村民怎麼反應。')}</p>
                 <ul>
                     <li>🌪️ ${t('天災、🕳️ 人禍、🍀 機運、💞 人際四類；每張卡下方寫著會發生什麼')}</li>
+                    <li>🔮 ${t('打牌花神力：⚪ 3、🔵 6、🟡 15、🟣 30；神力每天累積（小鎮興旺、虔誠的人多就更快），託夢和災厄工坊也用它')}</li>
+                    <li>📖 ${t('稀有、傳說、禁忌卡要小鎮發生過某些事，才會寫進「神之書」（換鎮也還在）')}</li>
                     <li>⏳ ${t('每天最多打 {n} 張，打過的卡要冷卻幾天才能再用').replace('{n}', d.perDay)}</li>
                     <li>💬 ${t('村民會聊這件事、記在心裡、跟著提出提案；「反應追蹤」會記下他們的反應和七天後的變化')}</li>
                 </ul>
@@ -105,6 +108,7 @@ Object.assign(RimTownApp.prototype, {
             </div>`;
         if (this._ghIntroOpen()) { tray.innerHTML = html; return; } // 說明頁取代手牌,不擠在一起
         if (this._ghTab === 'lab' && typeof CALAMITY !== 'undefined' && CALAMITY.labOpen()) { html += this._ghLabHtml(); tray.innerHTML = html; return; } // v7.9.0 災厄工坊
+        if (this._ghTab === 'book') { html += this._ghBookHtml(esc); tray.innerHTML = html; return; } // v8.4.0 神之書
         if (this._ghTab === 'track') {
             html += `<div class="gh-track">`;
             if (!d.played?.length) html += `<div class="gh-empty">📼 ${t('還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。')}</div>`;
@@ -124,9 +128,9 @@ Object.assign(RimTownApp.prototype, {
         if (!list.some(c => c.id === this._ghSel)) this._ghSel = (list.find(c => c.left <= 0) || list[0])?.id || null;
         html += `<div class="gh-body"><div class="gh-hand" role="listbox" aria-label="${t('手牌')}">`;
         for (const c of list) {
-            const blocked = c.left > 0 || c.dailyFull, sel = c.id === this._ghSel;
-            html += `<button class="gh-card gh-${c.cat}${sel ? ' sel' : ''}${blocked ? ' blocked' : ''}" role="option" aria-selected="${sel}" data-gh="sel" data-v="${c.id}">
-                <span class="gh-band">${c.catIcon} ${esc(c.catLabel)}</span>
+            const blocked = c.left > 0 || c.dailyFull || c.noPower || c.noCtx, sel = c.id === this._ghSel;
+            html += `<button class="gh-card gh-${c.cat} gh-rar-${c.rar || 'common'}${sel ? ' sel' : ''}${blocked ? ' blocked' : ''}" role="option" aria-selected="${sel}" data-gh="sel" data-v="${c.id}">
+                <span class="gh-band">${c.catIcon} ${esc(c.catLabel)}</span><span class="gh-cost" title="${esc(c.rarLabel || '')}">${c.rarIcon || ''}🔮${c.cost ?? ''}</span>
                 <span class="gh-ic" aria-hidden="true">${c.icon}</span>
                 <span class="gh-nm">${esc(c.name)}</span>
                 ${c.left > 0 ? `<span class="gh-cd">⏳ ${c.left}${t('天')}</span>` : ''}
@@ -135,13 +139,13 @@ Object.assign(RimTownApp.prototype, {
         html += `</div>`;
         const cur = list.find(c => c.id === this._ghSel);
         if (cur) {
-            const blocked = cur.left > 0 || cur.dailyFull;
-            const why = cur.left > 0 ? t('冷卻中，還要 {n} 天').replace('{n}', cur.left) : cur.dailyFull ? t('今天的兩張已經打完，明天再來') : t('打出後鏡頭會帶到現場；村民接下來幾天的反應會出現在「反應追蹤」。');
+            const blocked = cur.left > 0 || cur.dailyFull || cur.noPower || cur.noCtx;
+            const why = cur.left > 0 ? t('冷卻中，還要 {n} 天').replace('{n}', cur.left) : cur.dailyFull ? t('今天的三張已經打完，明天再來') : cur.noCtx ? t('鎮上現在沒有這種事可以發生') : cur.noPower ? t('神力不夠（要 {n}）').replace('{n}', cur.cost) : t('打出後鏡頭會帶到現場；村民接下來幾天的反應會出現在「反應追蹤」。');
             html += `<div class="gh-detail gh-${cur.cat}">
-                <div class="gh-d-head"><span class="gh-d-ic" aria-hidden="true">${cur.icon}</span><div><div class="gh-d-nm">${esc(cur.name)}</div><div class="gh-d-meta">${cur.catIcon} ${esc(cur.catLabel)} · ${t('冷卻')} ${cur.cd} ${t('天')}</div></div></div>
+                <div class="gh-d-head"><span class="gh-d-ic" aria-hidden="true">${cur.icon}</span><div><div class="gh-d-nm">${esc(cur.name)}</div><div class="gh-d-meta">${cur.rarIcon || ''} ${esc(cur.rarLabel || '')} · ${cur.catIcon} ${esc(cur.catLabel)} · 🔮 ${cur.cost ?? ''} · ${t('冷卻')} ${cur.cd} ${t('天')}</div></div></div>
                 <div class="gh-d-desc">${esc(cur.desc)}</div>
                 <div class="gh-d-fx">⚡ ${esc(cur.effect)}</div>
-                <button class="gh-play" data-gh="play" data-v="${cur.id}" ${blocked ? 'disabled aria-disabled="true"' : ''}>🃏 ${t('打出')}</button>
+                <button class="gh-play" data-gh="play" data-v="${cur.id}" ${blocked ? 'disabled aria-disabled="true"' : ''}>🃏 ${t('打出（{n} 神力）').replace('{n}', cur.cost ?? 0)}</button>
                 <div class="gh-d-note">${esc(why)}</div>
             </div>`;
         }
@@ -232,8 +236,19 @@ Object.assign(RimTownApp.prototype, {
         if (k === 'sel') { this._ghSel = v; this._ghRender(); document.querySelector('#gh-tray .gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); return; }
         if (k === 'play') return this._ghPlay(v);
         if (k && k.startsWith('lab-')) return this._ghLabClick(k, v, b);
-        if (k === 'random') { const d = this._ghData(); const h = (d?.hand || []).filter(c => c.left <= 0 && !c.dailyFull); if (h.length) this._ghPlay(h[Math.floor(Math.random() * h.length)].id); return; }
+        if (k === 'random') { const d = this._ghData(); const h = (d?.hand || []).filter(c => c.left <= 0 && !c.dailyFull && !c.noPower && !c.noCtx); if (h.length) this._ghPlay(h[Math.floor(Math.random() * h.length)].id); return; }
         if (k === 'agent') { this._ghHide(); try { this.selectedAgent = v; this._goLook?.({ agentId: v }); this.renderSidebar?.(); } catch (err) {} }
+    },
+    // v8.4.0 神之書:全部的卡,依稀有度分頁;還沒寫進書裡的只看得到怎麼解鎖
+    _ghBookHtml(esc) {
+        if (typeof GODBOOK === 'undefined' || !GODBOOK) return '';
+        const B = GODBOOK.book(this.world); let h = `<div class="gh-book"><div class="gh-lab-note">${t('稀有以上的卡要小鎮發生過某些事才會寫進書裡；寫進去的卡換鎮也還在。')}</div>`;
+        for (const g of B) { const n = g.cards.filter(c => c.on).length;
+            h += `<div class="gh-book-sec gh-rar-${g.rar}"><div class="gh-book-h">${g.icon} ${esc(g.label)} <small>🔮 ${g.cost} · ${n}/${g.cards.length}</small></div><div class="gh-book-grid">`;
+            for (const c of g.cards) h += c.on ? `<div class="gh-book-card on"><span class="gh-ic" aria-hidden="true">${c.icon}</span><div><b>${esc(c.name)}</b><div class="gh-book-fx">${esc(c.effect)}</div></div></div>`
+                : `<div class="gh-book-card off"><span class="gh-ic" aria-hidden="true">❔</span><div><b>${esc(c.name)}</b><div class="gh-book-fx">🔒 ${esc(c.hint)}</div></div></div>`;
+            h += `</div></div>`; }
+        return h + '</div>';
     },
     _ghPlay(id) {
         const before = this._ghData()?.todayLeft;

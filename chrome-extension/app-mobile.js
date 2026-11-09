@@ -501,7 +501,7 @@ Object.assign(RimTownApp.prototype, {
             else if (act === 'nudge') { this._nudgeDream(agentId); }
             else if (act === 'dream') { // v6.72.0 託夢:你寫一句話,他醒來自己解讀
                 let tx = null; try { tx = window.prompt(t('想在夢裡對他說什麼？（一句話）')); } catch (e2) {}
-                if (tx && tx.trim()) DREAM.send(this.world, agentId, tx).then(r => { if (!r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: '', desc: r.why === 'cooldown' ? t('今天已經託過夢了，明天再來。') : t('沒辦法託夢。') }); this.state = this.world.getState(); this._showNpcCard(agentId); });
+                if (tx && tx.trim()) DREAM.send(this.world, agentId, tx).then(r => { if (!r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: '', desc: r.why === 'cooldown' ? t('今天已經託過夢了，明天再來。') : r.why === 'power' ? t('神力不夠，託夢要 3 點神力。') : t('沒辦法託夢。') }); this.state = this.world.getState(); this._showNpcCard(agentId); });
             }
             else if (act === 'follow') { this._toggleFollow(agentId); this._showNpcCard(agentId); } // v5.48.0 追蹤(重繪按鈕狀態)
             else if (act === 'cam') { const on = this.tileMap?.isFollowing?.(agentId); this.tileMap?.followAgent?.(on ? null : agentId); this.bgm?.sfx?.('click'); this._showNpcCard(agentId); } // v6.29.0 跟拍
