@@ -112,7 +112,7 @@ const WORLDCAL = (function () {
     function progDaily(w, c) {
         if (!['debate', 'rumor', 'panic'].includes(c.ph)) return;
         const res = adults(w).filter(a => a.job?.key === 'researcher').length;
-        let v = (0.5 + 0.35 * res) * (c.fix ? 2 : 0.5) * c.fast;
+        let v = (0.5 + 0.25 * Math.min(6, res)) * (c.fix ? 2 : 0.5) * c.fast; // 研究員多到六個以上也快不了多少
         if (done(w, 'space_station') || done(w, 'quantum_computer')) v *= 1.15; // 天上的研究室、量子電腦幫忙算
         if (c.kind === 'ai' && c.prep) v *= 1.3; // AI 拔掉了,它也沒辦法再搗亂
         c.prog = Math.min(100, Math.round((c.prog + v) * 10) / 10);
