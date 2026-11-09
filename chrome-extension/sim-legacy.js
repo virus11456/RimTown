@@ -49,7 +49,7 @@ const LEGACY = (() => {
             for (const o of npcs(w)) if (Math.random() < 0.3) mem(w, o, '大家都在懷念{a}，他是鎮上的傳奇。', { a: x.name }, 6);
             // 公庫寬裕就立像
             const tr = w.stockpile?.get?.('silver') || 0;
-            if (tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念'), 'upkeep'); /* v8.8.0 雕像工錢付給本地工匠 */ lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = tpl('{a}像', { a: x.name }); try { I18N.registerName(sn, `Statue of ${I18N.localizeNames(x.name, true)}`); } catch (e) {} Lm.push({ name: sn, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
+            if (tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念'), 'upkeep'); /* v8.8.0 雕像工錢付給本地工匠 */ lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = `${x.name}像`; /* v9.7.0 修：以前存成模板物件，名牌顯示 [object Object] */ statueName(sn, x.name); Lm.push({ name: sn, of: x.name, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
         }
     }
     // ---------- 家族與世仇 ----------
@@ -74,6 +74,14 @@ const LEGACY = (() => {
             if (ex && !ex.ended) for (const a of A) for (const b of B) if (Math.random() < 0.1) { a.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(-1); }
         }
     }
+    // v9.7.0 雕像名登記英文；舊存檔裡存成 {k,p} 模板物件的地標名修回文字
+    function statueName(sn, of) { try { I18N.registerName(sn, `Statue of ${I18N.localizeNames(of, true)}`); } catch (e) {} }
+    function fixLandmarks(w) {
+        for (const x of (w?.proposals?.landmarks || [])) {
+            if (x && x.name && typeof x.name === 'object') { const p = x.name.p || {}; x.of = x.of || p.a; x.name = String(x.name.k || '').replace(/\{(\w+)\}/g, (m, k) => p[k] ?? m); }
+            if (x && x.of && typeof x.name === 'string') statueName(x.name, x.of);
+        }
+    }
     async function daily(w) {
         const L = S(w), d = day(w); if (L.lastDay === d) return; L.lastDay = d;
         register(w, L); legends(w, L, d);
@@ -89,7 +97,7 @@ const LEGACY = (() => {
     }
     function townBrief(w) { const L = w.legacy; if (!L || !L.legends.length) return ''; return `${t('鎮上的傳說人物')}${t('：')}${L.legends.slice(-3).map(l => `${t(l.name)}${t('（')}${t(l.role)}${t('）')}`).join(t('、'))}`; }
     function view(w) { const L = S(w); return { chapters: L.chapters.slice(-4).reverse().map(c => ({ title: Memory.render(c.title.k, c.title.p), text: Memory.render(c.text.k, c.text.p), by: t(c.by) })), legends: L.legends.slice(-5).reverse().map(l => ({ name: t(l.name), role: t(l.role), statue: l.statue })), families: Object.values(L.families).filter(f => f.motto).sort((a, b) => (b.rep || 0) - (a.rep || 0)).slice(0, 5).map(f => ({ name: en() ? `${t(f.head || '')}'s family` : `${f.name}家`, motto: t(f.motto[0]), rep: f.rep || 0, n: f.n || 0 })), feuds: L.feuds.filter(f => !f.ended).map(f => en() ? `${t(f.ha || f.a)}'s family ⚔️ ${t(f.hb || f.b)}'s family` : `${f.a}家 ⚔️ ${f.b}家`) }; }
-    return { S, chapter, roleOf, register, legends, families, daily, famOf, brief, townBrief, view, surname, MOTTO };
+    return { S, chapter, roleOf, register, legends, families, daily, famOf, brief, townBrief, view, surname, MOTTO, fixLandmarks };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
@@ -106,6 +114,6 @@ if (typeof World !== 'undefined') {
     const _ser = World.prototype.serialize;
     World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.legacy) d.legacy = this.legacy; return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.legacy = (data?.legacy && Array.isArray(data.legacy.chapters)) ? data.legacy : null; } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.legacy = (data?.legacy && Array.isArray(data.legacy.chapters)) ? data.legacy : null; } catch (e) {} try { if (r) LEGACY.fixLandmarks(this); } catch (e) {} return r; };
 }
 if (typeof globalThis !== 'undefined') globalThis.LEGACY = LEGACY;

@@ -54,14 +54,14 @@ const DREAM = (() => {
         const rule = (x) => { const b = w.agents[x.to]; return x.forgiven ? (has(b, 'kind') ? '人都會犯錯，我不想記恨。' : '他是真心的，我就給他一次機會。') : (has(b, 'jealous') || has(b, 'abrasive') ? '這種事哪是一句對不起就算了？' : '我需要一點時間。'); };
         const ce = ai(w); let lines = null;
         if (ce) { try { const list = fresh.map((x, i) => `${i + 1}. ${w.agents[x.to].name}${t(x.forgiven ? '原諒了' : '還不肯原諒')}${w.agents[x.by].name}`).join('\n'); const prompt = `${t('以下每一對村民，道歉之後一方原諒或不原諒。請用被道歉的人的口吻各寫一句理由（20 字內）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 160); if (Array.isArray(j)) lines = j; } catch (e) {} }
-        fresh.forEach((x, i) => { const b = w.agents[x.to]; const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: lines[i].trim().slice(0, 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
+        fresh.forEach((x, i) => { const b = w.agents[x.to]; if (!b || b.isDead) return; /* 等 AI 回覆的這段時間,被道歉的人可能已經過世或搬走 */ const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: lines[i].trim().slice(0, 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
     }
     // ---------- 禱詞 ----------
     async function prayers(w, d) {
         const F = w.faith; const ce = ai(w); if (!F || !ce) return;
         const fresh = Object.entries(F.prayers || {}).filter(([id, p]) => p.day === d && !p.text && w.agents[id]).slice(0, 3); if (!fresh.length) return;
         try { const list = fresh.map(([id, p], i) => { const a = w.agents[id]; const R = F.rels.find(r => r.id === p.rel); return `${i + 1}. ${a.name}${t('向')}${R ? R.deity[0] : ''}${t('祈求')}${t('：')}${t(p.wish)}`; }).join('\n'); const prompt = `${t('請替每位村民寫一句真誠的禱詞（25 字內，第一人稱）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 180);
-            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { if (typeof j[i] === 'string' && j[i].trim()) { p.text = j[i].trim().slice(0, 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: w.agents[id].name, x: p.text }, w.agents[id].name); } });
+            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { const a = w.agents[id]; if (!a || a.isDead) return; /* 等 AI 回覆時人可能不在了(以前會丟錯,同一批其他人的禱詞也跟著沒了) */ if (typeof j[i] === 'string' && j[i].trim()) { p.text = j[i].trim().slice(0, 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: a.name, x: p.text }, a.name); } });
         } catch (e) {}
     }
     // ---------- 託夢 ----------

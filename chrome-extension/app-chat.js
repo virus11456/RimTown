@@ -25,11 +25,14 @@ Object.assign(RimTownApp.prototype, {
         try {
             // Add a natural delay (1.5-3s) so NPC doesn't reply instantly
             const typingDelay = 1500 + Math.random() * 1500;
+            const CE = this.world.conversationEngine; if (CE) CE.lastPlayerReplyFallback = null;
             const [reply] = await Promise.all([
-                this.world.conversationEngine.generatePlayerReply(player, npc, trimmedMsg, this.world),
+                CE.generatePlayerReply(player, npc, trimmedMsg, this.world),
                 new Promise(r => setTimeout(r, typingDelay))
             ]);
             if (this.world.questSystem) this.world.questSystem.onChat(targetId); // v5.83.0 記下對象
+            // v9.7.0 AI 沒接上、只好用簡短的規則回覆時,老實告訴玩家(不然看起來像雞同鴨講)
+            if (CE && CE.lastPlayerReplyFallback) { try { this._showCornerNotice({ icon: '💬', title: t('AI 沒接上'), name: '', desc: CE.lastPlayerReplyFallback === 'quota' ? t('今天的 AI 額度用完了，村民只能簡短回應；明天會恢復') : t('AI 這次沒有回應，村民只能簡短回應；可以再說一次') }); } catch (e) {} }
             // Clear unread for this NPC
             if (this._chatUnread) this._chatUnread.delete(targetId);
             // v5.16.0 意圖的額外機械後果(獨立於 LLM,永遠可見)
@@ -699,7 +702,7 @@ Object.assign(RimTownApp.prototype, {
     },
     async _judgeIntent(npc, key, text) {
         const llm = this.llmClient; if (!llm || !text || text.length < 2) return null;
-        const JUDGE_DAILY_CAP = this.world?.growth?.has('empath') ? 40 : 30; // 每人每天最多 30 次(知心 40),保護整站共用的免費額度
+        const JUDGE_DAILY_CAP = Infinity; // v9.7.0 拿掉每日 30 次(知心 40)上限
         if (this._judgeCount(0) >= JUDGE_DAILY_CAP) { if (!this._judgeCapNoticed) { this._judgeCapNoticed = true; this._showCornerNotice({ icon: '🧠', title: t('AI 判定'), name: '', desc: t('今天的 AI 判定次數用完了，改用規則判定') }); } return null; }
         const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
         const rel = npc.relationships?.relationships?.player || { affinity: 0, trust: 0 };

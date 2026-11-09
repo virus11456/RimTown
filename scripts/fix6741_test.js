@@ -11,7 +11,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   // 伺服器:v6.76.6 起登入玩家預設每日 5000 次;AI_USER_DAILY 可覆蓋(0 = 不限),回覆附上剩餘與上限
   const src = fs.readFileSync(path.join(__dirname, '../api/chat.js'), 'utf8');
   const m = src.match(/const USER_DAILY = (.*);/); const ud = (env) => (new Function('process', 'return ' + m[1]))({ env });
-  ok(ud({}) === 5000 && /if \(limit > 0 && q\.count >= limit\)/.test(src), '伺服器：登入玩家預設每日 5000 次 AI', { USER_DAILY: ud({}) });
+  ok(ud({}) === 0 && /if \(limit > 0 && q\.count >= limit\)/.test(src), '伺服器：v9.7.0 起預設不限每日次數（AI_USER_DAILY 可再設上限）', { USER_DAILY: ud({}) });
   ok(ud({ AI_USER_DAILY: '500' }) === 500 && ud({ AI_USER_DAILY: '0' }) === 0 && /limit: limit > 0 \? limit : null/.test(src), '伺服器：AI_USER_DAILY 可覆蓋（0 = 不限），並回傳剩餘與上限', null);
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   for (const lang of ['zh', 'en']) {

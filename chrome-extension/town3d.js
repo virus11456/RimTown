@@ -1807,7 +1807,7 @@ class Town3D extends PixelTileMap {
             this._box(0.9, 0.25, 0.9, '#8C8578', cx, gy + 0.125, cz, this._lmGroup);
             this._box(0.5, 0.9, 0.5, '#B9AE98', cx, gy + 0.7, cz, this._lmGroup);
             this._box(0.6, 0.12, 0.6, '#D9C9A3', cx, gy + 1.21, cz, this._lmGroup);
-            this._lmLabels.push({ key: 'lm:' + i, cls: 't3d-label t3d-landmark', html: `<span class="t3d-num">${this._esc(x.icon || '🗿')}</span><span class="t3d-name">${this._esc(typeof t3 === 'function' ? t3(x.name) : x.name)}</span>`, x: cx, y: gy + 1.9, z: cz });
+            this._lmLabels.push({ key: 'lm:' + i, cls: 't3d-label t3d-landmark', html: `<span class="t3d-num">${this._esc(x.icon || '🗿')}</span><span class="t3d-name">${this._esc(typeof x.name === 'string' ? t3(x.name) : '')}</span>`, x: cx, y: gy + 1.9, z: cz });
         });
     }
     _syncExtras(extraData) {

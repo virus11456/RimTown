@@ -10,8 +10,9 @@
     <meta name="theme-color" content="#1a1a2e">
     <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
     <link rel="manifest" href="pwa-manifest.json">
-    <link rel="icon" type="image/png" href="icons/icon48.png">
-    <link rel="apple-touch-icon" href="icons/icon128.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png">
     <title>邊境鎮 - AI 小鎮模擬</title>
     <link rel="canonical" href="https://rimtown.cc/town">
     <style>
@@ -273,11 +274,13 @@
     <!-- Mobile Header (shown only on ≤768px) -->
     <div class="mobile-header">
         <div class="mobile-header-row">
-            <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
-            <span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span>
-            <span id="mobile-population" class="mobile-population">--</span>
+            <div class="mobile-info">
+                <span class="mobile-title" data-i18n="邊境鎮">邊境鎮</span>
+                <span class="mobile-sub"><span id="mobile-clock" class="mobile-clock" data-i18n="載入中...">載入中...</span><span id="mobile-population" class="mobile-population">--</span></span>
+            </div>
             <div class="mobile-header-actions">
                 <button id="mobile-btn-pause" class="mobile-ctrl-btn">⏸</button>
+                <button id="mobile-btn-speed" class="mobile-ctrl-btn mobile-speed-cycle" title="切換速度" data-i18n-title="切換速度" aria-label="切換速度">1x</button>
                 <div class="mobile-menu-speed">
                     <button class="btn-speed active" data-speed="1">1x</button>
                     <button class="btn-speed" data-speed="1.5">1.5x</button>
@@ -427,6 +430,7 @@
     <script src="sim-longevity.js"></script>
     <script src="sim-things.js"></script>
     <script src="sim-spend.js"></script>
+    <script src="sim-compete.js"></script>
     <script src="sim-buzz.js"></script>
     <script src="sim-arcs.js"></script>
     <script src="chiptune.js"></script>
