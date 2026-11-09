@@ -318,7 +318,9 @@ const CASINO = (() => {
         for (const [id, D] of Object.entries(C.debt)) {
             const a = w.agents[id]; if (!a || a.isDead) { delete C.debt[id]; continue; } if (d - D.day < 7) continue;
             let got = Math.min(cash(w, a), D.n); if (got > 0 && WALLET.take(w, a, got)) { WALLET.add(w, own, got); D.n = r2(D.n - got); }
-            if (D.n > 0.5) { try { const fp = typeof MONEY !== 'undefined' && MONEY.familyPays ? MONEY.familyPays(w, a, D.n, t('賭債')) : 0; if (fp > 0) { WALLET.take(w, a, fp); WALLET.add(w, own, fp); D.n = r2(D.n - fp); got += fp; } } catch (e) {} }
+            // 家人代還（錢直接從家人付給賭場老闆）
+            if (D.n > 0.5) { const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []).filter(o => o !== own && cash(w, o) >= D.n + 20 && Math.random() < 0.4)[0];
+                if (fam && WALLET.take(w, fam, D.n)) { WALLET.add(w, own, D.n); log(w, '💸 {f}咬著牙替{a}還了 {n} 銀幣賭債。', { f: fam.name, a: a.name, n: Math.round(D.n) }, fam.name); mem(w, fam, '我替{a}還了賭債，心裡很不是滋味。', { a: a.name }, 7); try { if (C.thing && typeof THINGS !== 'undefined') THINGS.feel(w, C.thing, fam, -20); } catch (e) {} D.n = 0; } }
             if (D.n <= 0.5) { delete C.debt[id]; C.st.collect++; log(w, '🧾 {a}把欠{o}的賭債還清了。', { a: a.name, o: own.name }, a.name); continue; }
             if (!D.warned || d - D.warned >= 4) { D.warned = d; a.moodModifier = (a.moodModifier || 0) - 8; bump(a, own, -8); log(w, '👊 {o}找人堵在{a}家門口討賭債：「還欠 {n} 銀幣，別想躲。」', { o: own.name, a: a.name, n: Math.round(D.n) }, a.name); mem(w, a, '{o}的人天天堵在我家門口討債，我怕得不敢出門。', { o: own.name }, 8); }
             if (d - D.day >= 21) {

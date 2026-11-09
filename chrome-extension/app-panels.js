@@ -824,7 +824,7 @@ Object.assign(RimTownApp.prototype, {
         if (W('things')) {
             // v9.0.0 鎮上的新東西：大家怎麼看（村民自己形成的好惡，不是規定好的）
             try {
-                const tv = typeof THINGS !== 'undefined' ? THINGS.view(this.world).filter(x => x.n >= 3).slice(0, 4) : [];
+                const tv = typeof THINGS !== 'undefined' ? THINGS.view(this.world).filter(x => x.n >= 3).sort((x, y) => ((y.protest ? 50 : 0) + y.love + y.hate * 1.5 + y.dislike) - ((x.protest ? 50 : 0) + x.love + x.hate * 1.5 + x.dislike)).slice(0, 4) : []; // 吵得最兇的排前面
                 if (tv.length) {
                     B.things += `<div class="pp-issues pp-things"><h4 class="pp-h">🆕 ${t('鎮上的新東西：大家怎麼看')}</h4>`;
                     for (const x of tv) {
