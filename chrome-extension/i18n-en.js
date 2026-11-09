@@ -5737,6 +5737,7 @@
         '尚無紀錄': 'No entries yet',
         '顯示全部': 'Show all',
         '只看最近 5 版': 'Latest 5 only',
+        '只看最近 3 版': 'Latest 3 only',
         '即將實現': 'Coming up',
         '開發中': 'In development',
         '規劃中': 'Planned',

@@ -21,29 +21,31 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const r = await page.evaluate(() => {
         const L = document.getElementById('landing'); const C = L.cloneNode(true); C.querySelector('#landing-log')?.remove(); const txt = C.textContent;
         const n = (s) => document.querySelectorAll(s).length;
-        const bands = [...document.querySelectorAll('#landing-features .lp-band')].map(b => ({ id: b.id, h2: !!b.querySelector('h2'), lead: (b.querySelector('.lp-band-lead')?.textContent || '').length, pts: b.querySelectorAll('.lp-points dt').length, log: b.querySelectorAll('.lp-scene li').length }));
-        const toc = [...document.querySelectorAll('.lp-toc a')].map(a => a.getAttribute('href'));
+        const bands = [...document.querySelectorAll('#landing-features .lp-chapter')].map(b => ({ id: b.id, h2: !!b.querySelector('h2'), lead: (b.querySelector('.lp-ch-lead')?.textContent || '').length, topics: [...b.querySelectorAll('.lp-topic')].map(t => ({ id: t.id, h3: !!t.querySelector('h3'), sum: (t.querySelector('.lp-topic-sum')?.textContent || '').length, pts: t.querySelectorAll('.lp-points dt').length })), log: b.querySelectorAll('.lp-scene li').length, bridge: !!b.querySelector('.lp-ch-bridge') }));
+        const toc = [...document.querySelectorAll('.lp-chnav a')].map(a => a.getAttribute('href'));
+        const core = { pillars: n('#landing-core .lp-pillar'), chain: [...document.querySelectorAll('#landing-chain li .lp-chain-tag')].map(a => a.getAttribute('href')) };
         return { bands, toc, live: !!document.querySelector('.lp-stage-live canvas'), bubbles: [...document.querySelectorAll('.lp-bubble.on')].map(b => b.textContent),
           news: n('.lp-new'), imgs: [...L.querySelectorAll('img')].map(i => i.getAttribute('src')), cards: n('#landing-features .landing-card'),
           cjk: (txt.match(/[一-鿿]{2,}/g) || []).filter(s => s !== '邊境鎮' && s !== '中文'), sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: L.scrollWidth, lcw: L.clientWidth,
-          v3: typeof VILLAGER3D !== 'undefined', jc: typeof JOB_COLORS !== 'undefined' };
+          v3: typeof VILLAGER3D !== 'undefined', jc: typeof JOB_COLORS !== 'undefined', core };
       });
       const order = await page.evaluate(() => { const nav = performance.getEntriesByType('navigation')[0]; const th = performance.getEntriesByType('resource').find(e => /three\.min\.js/.test(e.name)); return { inHtml: !!document.querySelector('script[src*="three.min.js"]:not([async])'), after: th ? th.startTime >= nav.domContentLoadedEventEnd : null }; });
       ok(!order.inHtml && order.after === true, 'three.js 不在首頁 HTML 裡，畫面出來後才載（不拖慢首屏）', order);
       ok(r.live && r.v3 && r.jc, '主視覺是 3D 方塊村民（跟遊戲同一套 villager3d.js）', { live: r.live, v3: r.v3 });
       ok(r.bubbles.length >= 1 && r.bubbles.every(b => lang === 'en' ? !/[一-鿿]/.test(b) : /[一-鿿]/.test(b)), '村民頭上會冒出對應語言的對話泡泡', r.bubbles);
-      ok(r.bands.length === 18 /* v8.1.0 加人情世故；v8.2.0 災厄工坊開放；v8.7.0 加世界級災厄、股份、以太與長生；v8.9.0 加賭場 */ && r.bands.every(b => b.h2 && b.lead > 60 && b.pts >= 3 && b.pts <= 4 && b.log >= 3 && b.log <= 4), '12 段玩法介紹(v7.9.0 加科技路線、災厄工坊)：各有標題、導言、3～4 個重點、3～4 筆遊戲紀錄', r.bands);
+      ok(r.bands.length === 7 && r.bands.every(b => b.h2 && b.lead > 40 && b.topics.length >= 2 && b.log >= 2 && b.log <= 3 && b.bridge && b.topics.every(t => t.h3 && t.sum > 10 && t.pts >= 3 && t.pts <= 4)), 'v9.1.1 七章：各有標題、核心導言、2～4 個主題（每個有一句摘要＋點開的 3～4 個重點）、遊戲紀錄、接到下一章的一句話', r.bands);
+      ok(r.core.pillars === 3 && r.core.chain.length >= 5 && r.core.chain.every(h => r.bands.some(b => '#' + b.id === h)), '核心：三根柱子＋一件事怎麼牽動整個鎮（每一步連到所屬章節）', r.core);
       ok(r.cards === 0, '玩法不是卡片牆', r.cards);
-      ok(r.toc.length === r.bands.length && r.toc.every((h, i) => h === '#' + r.bands[i].id), '目錄連到每一段', r.toc);
-      ok(r.news >= 4, '新功能標上版本', r.news);
+      ok(r.toc.length === r.bands.length && r.toc.every((h, i) => h === '#' + r.bands[i].id), '章節導覽連到每一章', r.toc);
+      ok(r.news === 0, 'v9.1.1 介紹不再掛版本標籤（版本只在更新紀錄與路線圖）', r.news);
       ok(r.imgs.length === 0, '畫面減量：沒有截圖', r.imgs);
       if (lang === 'en') ok(!r.cjk.length, '英文版沒有殘留中文', r.cjk.slice(0, 5));
       ok(r.sw <= r.cw && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
       // 目錄點下去會捲到那一段
       const before = await page.evaluate(() => document.getElementById('landing').scrollTop);
-      await page.click('.lp-toc a[href="#lp-union"]'); await page.waitForFunction(() => Math.abs(document.getElementById('lp-union').getBoundingClientRect().top) < 80, null, { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(200); // 等平滑捲動停下來
-      const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const t = document.getElementById('lp-union').getBoundingClientRect().top; return { top: Math.round(t), st: L.scrollTop }; });
-      ok(jump.st > before && Math.abs(jump.top) < 80, '目錄點「工會」會捲到工會那段', jump);
+      await page.click('.lp-chnav a[href="#lp-ch-living"]'); await page.waitForFunction(() => Math.abs(document.getElementById('lp-ch-living').getBoundingClientRect().top) < 80, null, { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(200); // 等平滑捲動停下來
+      const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const t = document.getElementById('lp-ch-living').getBoundingClientRect().top; return { top: Math.round(t), st: L.scrollTop, on: document.querySelector('.lp-chnav a.on')?.getAttribute('href') }; });
+      ok(jump.st > before && Math.abs(jump.top) < 80 && jump.on === '#lp-ch-living', '章節導覽點「討生活」會捲到那一章，導覽列也亮在那一章', jump);
       // 捲出畫面後 3D 停止(不再重畫)
       const stopped = await page.evaluate(async () => { const c = document.querySelector('.lp-stage-canvas'); if (!c) return null; const gl = c.getContext('webgl2') || c.getContext('webgl'); let n = 0; const orig = gl.drawArrays.bind(gl); gl.drawArrays = (...a) => { n++; return orig(...a); }; await new Promise(r => setTimeout(r, 800)); return n; });
       ok(stopped === 0, '主視覺捲出畫面就停止繪製', stopped);

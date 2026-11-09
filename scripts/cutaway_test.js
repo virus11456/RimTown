@@ -26,17 +26,20 @@ async function run(browser, lang, vp) {
   ok(s1.tmpl.includes('house') && s1.tmpl.length >= 4, '民宅與各種公共建築都有各自的擺設', s1.tmpl);
   // 2) 拉遠：有屋頂、看不到剖面
   const hid = await page.evaluate(() => Object.keys(window.rimtownApp.tileMap.buildingZones).find(k => /^residential_.*_\d+$/.test(k)));
-  await cam(hid, 50); await page.waitForTimeout(900);
+  await cam(hid, 50); await page.waitForFunction(() => !window.rimtownApp.tileMap._cutOn, null, { timeout: 20000 }).catch(() => {}); await page.waitForTimeout(600);
   const far = await page.evaluate(() => { const tm = window.rimtownApp.tileMap; return { on: !!tm._cutOn, ext: tm._bExt.visible, cut: tm._bCut.visible, calls: tm.renderer.info.render.calls }; });
   ok(!far.on && far.ext && !far.cut, '拉遠時屋頂在、剖面不畫', far);
   // 3) 把兩個人放進屋裡睡覺：拉遠看不到、拉近躺在床上
   const ids = await page.evaluate((hid) => { const app = window.rimtownApp, tm = app.tileMap, z = tm.buildingZones[hid]; const aids = Object.keys(tm.agentPositions).filter(a => app.world.agents[a] && !app.world.agents[a].isPlayer).slice(0, 3);
     window.__pin = () => { const cx = (z.x + z.w / 2) * 16, cy = (z.y + z.h / 2) * 16; aids.forEach((a, i) => { const p = tm.agentPositions[a]; p.x = cx + (i - 1) * 6; p.y = cy; p.targetX = p.x; p.targetY = p.y; p.walking = false; p.doorPhase = null; p.finalTarget = null; p._pathWaypoints = null; p.activity = i < 2 ? 'sleeping' : 'eating'; const ag = app.world.agents[a]; ag.activity = p.activity; ag.current_activity = p.activity; const sa = app.state?.agents?.[a]; if (sa) { sa.activity = p.activity; sa.current_activity = p.activity; } }); };
     tm.__upd = tm.__upd || tm.updateAgents; tm.updateAgents = () => {}; window.__pin(); clearInterval(window.__pinT); window.__pinT = setInterval(window.__pin, 50); return aids; }, hid);
-  await page.waitForTimeout(800);
+  await page.waitForFunction((ids) => ids.every(a => window.rimtownApp.tileMap._agentMeshes[a]?.visible === false), ids, { timeout: 20000 }).catch(() => {});
   const farA = await page.evaluate((ids) => ids.map(a => window.rimtownApp.tileMap._agentMeshes[a]?.visible), ids);
   ok(farA.every(v => v === false), '拉遠時屋裡的人看不到（被屋頂擋住）', farA);
-  await cam(hid, 14); await page.waitForTimeout(2500);
+  await cam(hid, 14);
+  // 等到大家走到位子上（畫面很忙時幀率低，不能用固定秒數）
+  await page.waitForFunction((ids) => { const tm = window.rimtownApp.tileMap; const ms = ids.map(a => tm._agentMeshes[a]); return tm._cutOn && ms[0]?.rotation.x < -1.2 && ms[1]?.rotation.x < -1.2 && ms[2]?.userData.inIcon === '🍲'; }, ids, { timeout: 30000, polling: 200 }).catch(() => {});
+  await page.waitForTimeout(500);
   const near = await page.evaluate(({ ids, hid }) => { const tm = window.rimtownApp.tileMap; const S = tm._inSpots[hid];
     const ms = ids.map(a => tm._agentMeshes[a]); const bed = (m) => S.sleep.some(b => Math.hypot(b.x - m.position.x, b.z - m.position.z) < 0.15);
     const seat = (m) => [...S.eat, ...S.sit].some(b => Math.hypot(b.x - m.position.x, b.z - m.position.z) < 0.15);
@@ -46,15 +49,15 @@ async function run(browser, lang, vp) {
   ok(near.vis.every(Boolean), '拉近時屋裡的人看得到', near.vis);
   ok(near.lie.every(x => x < -1.2) && near.onBed.every(Boolean) && near.y[0] > 0.6, '睡覺的人躺在床上（不是躺在地上）', near);
   ok(near.seat && near.legs < -1.2 && near.y[2] < 0.28, '吃飯的人坐到餐桌旁的椅子上', near);
-  ok(near.icon === '🍲' && near.tags[2].includes('🍲'), '名牌旁顯示在做什麼（🍲）', [near.icon, near.tags[2]]);
+  ok(near.icon === '🍲', '名牌旁顯示在做什麼（🍲；有表情時表情優先）', [near.icon, near.tags[2]]);
   ok(near.cutMeshes <= 6, `剖面合併後只多幾次繪製（${near.cutMeshes} 個網格）`, near.cutMeshes);
   ok(near.tags[0].includes('z z z'), '睡覺的人名牌有 z z z', near.tags[0]);
   // 4) 再拉遠：屋頂回來、人又被擋住
-  await cam(hid, 50); await page.waitForTimeout(900);
+  await cam(hid, 50); await page.waitForFunction((ids) => !window.rimtownApp.tileMap._cutOn && ids.every(a => window.rimtownApp.tileMap._agentMeshes[a]?.visible === false), ids, { timeout: 20000 }).catch(() => {});
   const back = await page.evaluate((ids) => { const tm = window.rimtownApp.tileMap; return { on: !!tm._cutOn, ext: tm._bExt.visible, vis: ids.map(a => tm._agentMeshes[a]?.visible), inP: ids.map(a => !!tm._agentMeshes[a]?.userData.inP) }; }, ids);
   ok(!back.on && back.ext && back.vis.every(v => v === false) && back.inP.every(v => !v), '拉遠後屋頂回來、屋裡的人又被擋住', back);
   // 5) 門檻附近不會一直閃（有緩衝）
-  const flick = await page.evaluate(async () => { const tm = window.rimtownApp.tileMap; let n = 0, last = tm._cutOn; for (const d of [23.5, 25, 26, 25, 24.5, 26.5, 25]) { tm.dist = d; await new Promise(r => setTimeout(r, 120)); if (tm._cutOn !== last) { n++; last = tm._cutOn; } } return n; });
+  const flick = await page.evaluate(async () => { const tm = window.rimtownApp.tileMap; let n = 0, last = tm._cutOn; clearInterval(window.__camT); for (const d of [23.5, 25, 26, 25, 24.5, 26.5, 25]) { tm.dist = d; const f0 = tm.animFrame; await new Promise(r => { const t0 = Date.now(); const w = () => (tm.animFrame > f0 + 1 || Date.now() - t0 > 3000) ? r() : setTimeout(w, 30); w(); }); if (tm._cutOn !== last) { n++; last = tm._cutOn; } } return n; });
   ok(flick <= 1, '在切換門檻附近來回縮放不會一直閃', flick);
   await page.evaluate(() => { clearInterval(window.__pinT); clearInterval(window.__camT); const tm = window.rimtownApp.tileMap; if (tm.__upd) tm.updateAgents = tm.__upd; });
   ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
