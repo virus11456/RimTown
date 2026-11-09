@@ -89,14 +89,14 @@ async function apiTest() {
       try { for (let i = 0; i < 6 && w.worldcal.cur; i++) { WORLDCAL._t.zombieDaily(w, C); bitSeen = Math.max(bitSeen, Object.keys(C.zb.bit).length); d++; } } finally { Math.random = R0; }
       out.spread = { n0, n1: C.zb.ids.length, bit: C.zb.st.bitten, turned: C.zb.st.turned, killed: C.zb.st.killed, hid: C.zb.st.hid, bitSeen, cap: C.zb.ids.length + Object.keys(C.zb.bit).length <= Math.ceil((people().length + C.zb.ids.length) * 0.4) + 1, left: people().length };
       // 5) 解藥做完 → 全部變回人
+      if (!C.zb.ids.length) WORLDCAL._t.zTurn(w, C, people()[0], true); // 守衛可能已經清光,補一個
       C.fast = 1; C.prog = 99.9; const before = C.zb.ids.length; WORLDCAL._t.zombieDaily(w, C);
-      out.cure = { before, after: C.zb.ids.length, bit: Object.keys(C.zb.bit).length, cured: C.zb.st.cured, back: before ? !WORLDCAL.isZombie(w, w.agents[zIds.find(id => w.agents[id] && !w.agents[id].isDead)] || {}) : true };
+      out.cure = { before, after: C.zb.ids.length, bit: Object.keys(C.zb.bit).length, cured: C.zb.st.cured, back: zIds.concat(Object.keys(w.agents)).filter(id => w.agents[id] && !w.agents[id].isDead).every(id => !WORLDCAL.isZombie(w, w.agents[id])) };
       let g = 0; while (w.worldcal.cur && g++ < 200) step();
       const h = w.worldcal.hist[0]; out.end = { kind: h?.kind, unl: WORLDCAL.unlocked('zombie'), flags: Object.values(w.agents).filter(a => WORLDCAL.isZombie(w, a)).length };
       // 6) 沒做完:最後的喪屍被圍住
-      restore(); const c3 = WORLDCAL.begin(w, 'zombie', 'nature'); c3.prog = 0; c3.fast = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== 'after') step(); c3.fast = 0;
-      const ids3 = c3.zb.ids.slice(); while (w.worldcal.cur) { c3.fast = 0; c3.prog = 0; step(); }
-      out.noCure = { n: ids3.length, dead: ids3.every(id => w.agents[id]?.isDead || !w.agents[id]), dc: c3.dead >= ids3.length };
+      restore(); const c3 = WORLDCAL.begin(w, 'zombie', 'nature'); const seen3 = new Set(); c3.prog = 0; c3.fast = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== 'after') { step(); for (const id of (c3.zb?.ids || [])) seen3.add(id); } c3.fast = 0; while (w.worldcal.cur) { c3.fast = 0; c3.prog = 0; for (const id of (c3.zb?.ids || [])) seen3.add(id); step(); } const ids3 = [...seen3]; // 整場出現過的喪屍（有的會先被守衛清剿）
+      out.noCure = { n: ids3.length, dead: ids3.every(id => w.agents[id]?.isDead || !w.agents[id]), dc: c3.dead >= 1 };
       // 7) 築了牆:變喪屍的少一半
       let a1 = 0, a2 = 0; for (let i = 0; i < 6; i++) { restore(); const cc = WORLDCAL.begin(w, 'zombie', 'nature'); cc.prog = 0; cc.prep = i % 2 ? d : null; WORLDCAL._t.arrive(w, cc); if (i % 2) a2 += cc.zb.ids.length; else a1 += cc.zb.ids.length; w.worldcal.cur = null; }
       out.wall = { no: a1, yes: a2 };
@@ -113,6 +113,7 @@ async function apiTest() {
       app._ghTab = 'lab'; app._ghRender(); out.ui.labNoList = !tray.querySelector('.gh-wcc') && !tray.querySelector('.wc-kind');
       app._ghTab = 'hand'; app._ghFilter = 'wc'; app._ghSel = 'wc:zombie'; app._ghRender(); out.ui.filterOnly = !tray.querySelector('.gh-hand:not(.gh-wc-row) .gh-card') && tray.querySelectorAll('.gh-wcc').length === 7;
       out.ui.overflow = document.documentElement.scrollWidth > innerWidth + 1;
+      out.ui.squash = ['.gh-head', '.gh-tabs', '.gh-filters'].filter(q => { const e = tray.querySelector(q); return e && e.getBoundingClientRect().height + 1 < e.scrollHeight; }); // v9.2.1 標題列、篩選列不能被擠扁
       tray.querySelector('.gh-wcd [data-gh="wc-play"]')?.click(); await new Promise(r => setTimeout(r, 300));
       out.ui.played = { kind: w.worldcal?.cur?.kind, src: w.worldcal?.cur?.src, spent: 100 - CALAMITY.S(w).power, closed: !app._ghOpen };
       // 進行中:手牌區塊顯示狀態
@@ -146,7 +147,7 @@ async function apiTest() {
     ok(r.ui.inCol && r.ui.detailSide && r.ui.cards === 7 && r.ui.on === 3, `手牌：世界級災厄在手牌那一欄自己一個區塊（七種，三種解鎖）`, r.ui);
     ok(r.ui.det && r.ui.lockedBtn && r.ui.labNoList && r.ui.filterOnly, '選了看詳情、沒解鎖的不能打；篩選「世界級」只看災厄；工坊不再列清單', r.ui);
     ok(r.ui.played.kind === 'zombie' && r.ui.played.src === 'lab' && r.ui.played.spent === 80 && r.ui.played.closed && r.ui.box, '從手牌發動：花 80 神力、抽屜收起；進行中手牌區塊看得到喪屍人數與解藥', r.ui.played);
-    ok(!r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `不破版、沒有沒翻譯的字（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(!r.ui.undef && !r.ui.cjk.length && !r.ui.overflow && !r.ui.squash.length, `不破版（標題列、篩選列沒被擠扁）、沒有沒翻譯的字（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(posts.some(p => (p.unlocks?.worldcal || []).includes('iceage')), '新解鎖（撐過冰河期）幾秒後自動推上帳號', posts.slice(-2).map(p => p.unlocks));
     ok(r.ach.zb && r.ach.all, '成就：撐過喪屍危機、七種世界級災厄全部撐過（跟著帳號）', r.ach);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
