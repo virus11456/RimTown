@@ -1,5 +1,5 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v9.6.0';
+const CACHE_NAME = 'rimtown-v9.7.0';
 // v6.82.2 首頁(/)與遊戲(/town)分頁。Vercel 開了 cleanUrls,index.html／town.html 會轉址到 / 與 /town,
 // 轉址回應不能拿來回應頁面導覽,所以清單只放 './',遊戲頁另外試著快取 './town'(本機沒有乾淨網址就略過)
 const ASSETS_TO_CACHE = [
@@ -82,7 +82,7 @@ const ASSETS_TO_CACHE = [
   './sim-ways.js',
   './sim-plague-ways.js',
   './sim-godbook.js',
-  './sim-worldcal.js', './sim-shares.js', './sim-longevity.js', './sim-things.js', './sim-spend.js', './sim-buzz.js', './sim-arcs.js',
+  './sim-worldcal.js', './sim-shares.js', './sim-longevity.js', './sim-things.js', './sim-spend.js', './sim-compete.js', './sim-buzz.js', './sim-arcs.js',
   './villager3d.js',
   './landing-3d.js',
   './tilemap.js',
@@ -101,8 +101,9 @@ const ASSETS_TO_CACHE = [
   './app-panels.js',
   './app-economy.js',
   './app-records.js', './app-unlock.js',
-  './icons/icon48.png',
-  './icons/icon128.png',
+  './icons/icon32.png',
+  './icons/icon192.png',
+  './icons/apple-touch-icon.png',
 ];
 
 // Install: cache core assets

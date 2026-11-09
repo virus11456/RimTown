@@ -35,7 +35,8 @@ Object.assign(RimTownApp.prototype, {
         // v6.53.0 手機:底部面板拉開時 🃏 先讓開,不蓋住面板內容
         { const kc = document.getElementById('kairo-card'); const under = this._ghIsMobile() && !this._ghOpen && kc && !kc.classList.contains('hidden') && kc.offsetParent !== null && kc.getBoundingClientRect().height > window.innerHeight * 0.35;
           const card = this._ghIsMobile() && [...document.querySelectorAll('#npc-quick-card, #loc-quick-card')].some(c => !c.classList.contains('hidden') && c.getClientRects().length); // 手機村民卡／建築卡開著也讓開
-          fab.classList.toggle('gh-under-sheet', !!(under || card)); }
+          const sb = document.getElementById('rimtown-sidebar'); const chat = this._ghIsMobile() && !this._ghOpen && sb && sb.classList.contains('chat-open') && !sb.classList.contains('kairo-hidden') && sb.getClientRects().length; // v9.7.0 手機聊天抽屜開著也讓開(之前蓋住「送出」)
+          fab.classList.toggle('gh-under-sheet', !!(under || card || chat)); }
         // 桌機:放在地圖區右下角(左下角有操作提示);手機交給 CSS
         if (!this._ghIsMobile()) { const a = this._ghArea(); fab.style.left = 'auto'; fab.style.right = Math.max(12, window.innerWidth - a.right + 16) + 'px'; } else { fab.style.left = ''; fab.style.right = ''; }
         const n = fab.querySelector('.gh-fab-n'); if (n) n.textContent = `${d.todayLeft}/${d.perDay}`;

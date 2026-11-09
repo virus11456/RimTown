@@ -743,6 +743,7 @@ class ProposalSystem {
                     ok = !!r?.success; result = ok ? (p.side === 'buy' ? `${t('進了')} ${p.qty} ${t('份')}` : `${t('賣掉')} ${p.qty} ${t('份')}`) : (r?.msg || '沒買賣成'); break;
                 }
                 case 'antitrust': { result = (typeof CYCLE !== 'undefined') ? CYCLE.split(w, p) : ''; ok = !!result; break; } // v7.2.0 反壟斷
+                case 'antitrust_cap': { result = (typeof COMPETE !== 'undefined') ? COMPETE.enactCap(w, p) : ''; ok = !!result; break; } // v9.7.0 反壟斷法收緊到兩家
                 case 'gene_ban': { result = (typeof MYTH !== 'undefined') ? MYTH.ban(w) : ''; ok = !!result; break; } // v7.5.0
                 case 'myth_exile': { result = (typeof MYTH !== 'undefined') ? MYTH.exile(w, p) : ''; ok = !!result; break; } // v7.5.0
                 case 'gene_rights': { result = (typeof MYTHSOC !== 'undefined') ? MYTHSOC.rights(w) : ''; ok = !!result; break; } // v7.6.0

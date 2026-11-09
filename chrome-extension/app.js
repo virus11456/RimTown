@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.6.0';
+const RIMTOWN_APP_VERSION = '9.7.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2007,6 +2007,7 @@ class RimTownApp {
     _syncSpeedButtons() {
         const m = this._speedMultiplier || 1;
         document.querySelectorAll('.btn-speed[data-speed]').forEach(b => { const on = parseFloat(b.dataset.speed) === m; b.classList.toggle('active', on); b.setAttribute('aria-pressed', on); });
+        const cyc = document.getElementById('mobile-btn-speed'); if (cyc) cyc.textContent = m + 'x'; /* v9.7.0 手機速度收成一顆 */
     }
 
     // v9.1.2 側欄互動時暫停自動重畫（按下到放開後 0.6 秒、捲動中 0.8 秒）
@@ -2475,6 +2476,7 @@ class RimTownApp {
         document.querySelectorAll('.btn-speed[data-speed]').forEach(btn => {
             btn.addEventListener('click', (e) => { e.stopPropagation(); this._setSpeed(btn.dataset.speed); });
         });
+        document.getElementById('mobile-btn-speed')?.addEventListener('click', (e) => { e.stopPropagation(); const L = RIMTOWN_SPEEDS, i = L.indexOf(this._speedMultiplier || 1); this._setSpeed(L[(i + 1) % L.length]); });
         this._syncSpeedButtons();
         document.getElementById('btn-new-game')?.addEventListener('click', () => this.createNewTown()); // v6.76.3 同一條路
         document.getElementById('btn-save')?.addEventListener('click', async () => {
@@ -2962,7 +2964,7 @@ class RimTownApp {
             mobileClock.textContent = `Y${clock.year} ${t(clock.season)} D${clock.day} ${this._dayPhaseIcon(clock.hour || 12)}${h}:${m}`;
         }
         const mobilePop = document.getElementById('mobile-population');
-        if (mobilePop) mobilePop.textContent = `${agentCount}${t('人')}`;
+        if (mobilePop) mobilePop.textContent = `👤${agentCount}`; /* v9.7.0 手機上方列縮短 */
         // Update mobile pause button state
         const mobilePauseBtn = document.getElementById('mobile-btn-pause');
         if (mobilePauseBtn) {
@@ -3012,6 +3014,7 @@ class RimTownApp {
         // v5.49.3 桌面版:聊天分頁進入對話時側欄加寬成雙欄(地圖 canvas 由 ResizeObserver 自動重排)
         document.querySelector('.rimtown-container')?.classList.toggle('chat-wide', this.activeTab === 'chat' && !!this.chatTarget);
         this._syncKairoLayout();
+        { const k = this.activeTab + '|' + (_sb?.className || ''); if (k !== this._ghLayoutKey) { this._ghLayoutKey = k; try { this._ghFab?.(); } catch (e) {} } } // v9.7.0 面板切換時 🃏 跟著讓位
         const content = document.getElementById('sidebar-content');
         const keep = this._snapDetails(content); // v6.76.5 側欄每秒重畫:記住哪些「展開明細」是打開的,畫完再還原
 
