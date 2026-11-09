@@ -106,9 +106,10 @@ const FAITH = (() => {
         const season = ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock?.season);
         if (season === R.festSeason && w.clock?.day === R.festDay && R._feastDay !== d) { R._feastDay = d; const n = take(Math.min((R.fund || 0) * 0.4, bs.length * 1.5)); if (n) { if (typeof MARKET !== 'undefined' && w.market && MARKET.sale) MARKET.sale(w, 'meal', n); else w.stockpile?.add?.('silver', n, w.tickCount, t('節日辦桌')); R.feasts = Math.round(((R.feasts || 0) + n) * 100) / 100; } }
         // 基金太多:超過(100 ＋ 每位信徒 8)的部分,每天拿一成出來,一半修建場所(付給木作坊與礦場)、一半救濟鎮上最窮的人
-        const cap = 100 + bs.length * 8; if ((R.fund || 0) > cap) { const n = take(((R.fund || 0) - cap) * 0.1); if (n) { payLocal(w, 'timber', n * 0.3, t('修建宗教場所')); payLocal(w, 'mine', n * 0.2, t('修建宗教場所'));
-            const poor = npcs(w).filter(a => money(w, a) < 15).sort((x, y) => money(w, x) - money(w, y)).slice(0, 3); const each = poor.length ? n * 0.5 / poor.length : 0;
-            if (each > 0) for (const p of poor) { WALLET.add(w, p, Math.round(each * 100) / 100); } else payLocal(w, 'timber', n * 0.5, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
+        const cap = 100 + bs.length * 8; if ((R.fund || 0) > cap) { const n = take(((R.fund || 0) - cap) * 0.1); if (n) { const r2 = (x) => Math.round(x * 100) / 100; const wood = r2(n * 0.3), stone = r2(n * 0.2), rest = r2(n - wood - stone); // 三份都算到分、最後一份拿剩下的(以前各自四捨五入,每次多出或少掉一兩分)
+            payLocal(w, 'timber', wood, t('修建宗教場所')); payLocal(w, 'mine', stone, t('修建宗教場所'));
+            const poor = npcs(w).filter(a => money(w, a) < 15).sort((x, y) => money(w, x) - money(w, y)).slice(0, 3);
+            if (poor.length) { const each = Math.floor(rest / poor.length * 100) / 100; poor.forEach((p, i) => WALLET.add(w, p, i === 0 ? r2(rest - each * (poor.length - 1)) : each)); } else payLocal(w, 'timber', rest, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
     }
     function daily(w) {
         const F = S(w), d = day(w); if (F.lastDay === d) return; F.lastDay = d;

@@ -223,7 +223,7 @@ const FLOW = (() => {
         wear(w, 'furniture', pop * 0.01, t('家具用舊了')); // v6.80.0 家具工坊做的精製家具壞得慢一半
         enjoy(w, 'luxury_furniture', pop * 0.004, 2, t('添購精裝家具'));
         // 8) 黃金送去鑄成銀幣(一天最多 5 兩)
-        { const g = Math.min(5, Math.floor(get(w, 'gold'))); if (g >= 1 && Sp.consume('gold', g, tick, t('鑄幣'))) { Sp.add('silver', g * 20, tick, t('黃金鑄成銀幣')); once(w, 'mint', 10, () => log(w, '🪙 鎮上把 {g} 兩黃金鑄成了銀幣。', { g })); } }
+        { const g = Math.min(5, Math.floor(get(w, 'gold'))); if (g >= 1 && Sp.consume('gold', g, tick, t('鑄幣'))) { Sp.add('silver', g * 20, tick, t('黃金鑄成銀幣')); try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'mint', g * 20); } catch (e) {} /* 鑄幣是新生出來的錢,記進月報(以前算進「其他」) */ once(w, 'mint', 10, () => log(w, '🪙 鎮上把 {g} 兩黃金鑄成了銀幣。', { g })); } }
         // 9) 廚房人手：連三天餐食不夠、糧食又很多，就請一位最會煮的農夫改當廚師(十天最多一次)
         { const cooks = all.filter(a => a.job?.key === 'cook').length, farmers = all.filter(a => a.job?.key === 'farmer');
           F.mealShort = (get(w, 'meals') < pop * 0.5 && get(w, 'food') > pop * 20) ? (F.mealShort || 0) + 1 : 0;

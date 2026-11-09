@@ -52,7 +52,7 @@ const BANK = (() => {
         // v6.87.0 呆帳慢慢沖銷(約三週減半),以前只增不減,呆帳一過 40 就天天有擠兌風險
         B.bad = Math.max(0, Math.round(((B.bad || 0) * 0.97 - 0.5) * 10) / 10);
         // 搬走的人把存款領走(出遠門的人存款留著)
-        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; const out = Math.min(v, Math.max(0, B.reserve)); B.reserve = Math.max(0, B.reserve - out); delete B.dep[id]; if (out > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -out); } // v8.8.0 搬走的人帶走的存款記到「搬走帶走」
+        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; const out = Math.min(v, Math.max(0, B.reserve)); B.reserve -= out; /* 不再把負的準備金拉回 0(會憑空生錢) */ delete B.dep[id]; if (out > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -out); } // v8.8.0 搬走的人帶走的存款記到「搬走帶走」
         if (B.status === 'run') { bankRun(w, B, d); return; }
         if (B.reserve < totalDep(B) * 0.35 && totalDep(B) >= 40 && !B.bonds.length && d - (B.lastIssue ?? -99) >= 20 && Math.random() < 0.3) issueBonds(w, B, d, 80, false);
         const all = npcs(w);
@@ -259,7 +259,7 @@ const BANK = (() => {
         if (banker) { mem(w, banker, '我的銀行倒了，大家都在罵我。', {}, 10); try { DARK.bump(w, banker, 'exposed'); } catch (e) {} }
         B.history.push({ day: d, lost: Math.round(lost), banker: banker?.name || '' });
         { const tot = totalDep(B), cashLeft = Math.floor(B.reserve || 0); if (tot > 0 && cashLeft > 0) { let paid = 0; for (const [id, v] of Object.entries(B.dep)) { const a = w.agents[id]; if (!a || a.isDead) continue; const n = Math.floor(cashLeft * v / tot); if (n > 0) { WALLET.add(w, a, n); paid += n; mem(w, a, '銀行清算，我只拿回 {n} 銀幣。', { n }, 7); } } B.reserve -= paid; B.liquidated = paid; } } // v7.6.0 清算:剩下的錢照存款比例還給存戶
-        if (B.reserve > 0 && banker && !banker.isDead) { WALLET.add(w, banker, Math.floor(B.reserve)); B.reserve -= Math.floor(B.reserve); } // 零頭歸銀行家
+        { const left = Math.round((B.reserve || 0) * 100) / 100; if (left > 0) { if (banker && !banker.isDead) WALLET.add(w, banker, left); else w.stockpile?.add?.('silver', left, w.tickCount, t('銀行清算剩下的錢')); B.reserve -= left; } } // 零頭歸銀行家(以前只給整數、銀行家不在就整筆消失,接著準備金歸零,錢憑空不見;現在剩多少給多少,沒有銀行家就進公庫)
         B.dep = {}; B.reserve = 0; B.open = false; B.status = 'failed'; B.failDay = d; B.bad = 0; // 放款還是要還,但銀行沒了就一筆勾銷
         for (const bd of (B.bonds || [])) { const a = w.agents[bd.holder]; if (a) mem(w, a, '銀行倒了，我買的 {n} 銀幣債券變成廢紙。', { n: bd.n }, 8); }
         B.loans = {}; B.run = null; B.bonds = [];
