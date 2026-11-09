@@ -513,7 +513,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 
 ### v9.5.2 (2026-11-09)
 - 👶 `sim-society.js` `_checkBirths`：人口上限改軟上限（≥ 目標人口機率減半、≥ 目標×1.3＋4 才不生；已有三個孩子 ×0.3）
-- 📜 `sim-dark.js` 搶生意同一對十天一報；🌐 `app-mobile.js` 村民卡感情線改成整句模板（`與{n}是夫妻` 等）並翻名字
+- 📜 `sim-dark.js` 搶生意同一對十天一報；`simulation.js` 單戀嫉妒再加全鎮兩天一報；🌐 `app-mobile.js` 村民卡感情線改成整句模板（`與{n}是夫妻` 等）並翻名字
 - `scripts/v9510_test.js` 加出生軟上限與英文感情線
 
 ### v9.5.1 (2026-11-09)
