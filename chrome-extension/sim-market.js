@@ -52,9 +52,9 @@ const MARKET = (() => {
 
     // ---------- 收錢 ----------
     function sell(w, k, n, why) {
-        if (!(n > 0)) return; const M = S(w); M.rev[k] = (M.rev[k] || 0) + n;
+        n = Math.round(n * 100) / 100; if (!(n > 0)) return; const M = S(w); M.rev[k] = (M.rev[k] || 0) + n;
         const id = ownerOf(w, k); if (!id) { toTown(w, n, why || t('公營收入')); return; }
-        const tax = n * TAX; toTown(w, tax, t('營業稅')); const Wl = W(w); if (Wl) Wl.stats.bizTax = Math.round(((Wl.stats.bizTax || 0) + tax) * 10) / 10;
+        const tax = Math.round(n * TAX * 100) / 100; toTown(w, tax, t('營業稅')); // v8.8.0 算到「分」,稅＋老闆實拿剛好等於客人付的錢 const Wl = W(w); if (Wl) Wl.stats.bizTax = Math.round(((Wl.stats.bizTax || 0) + tax) * 10) / 10;
         addId(w, id, n - tax);
     }
     // 一筆消費(三餐、衣服、柴火、消費)
@@ -62,7 +62,7 @@ const MARKET = (() => {
         const parts = SPLIT[kind] || [['trade', 1]]; const all = npcs(w);
         // 鎮上沒有廚師就自己煮:三餐的錢全付給農莊
         if (kind === 'meal' && !workersOf(w, 'kitchen', all).length && !ownerOf(w, 'kitchen')) return sell(w, 'farm', n, t('餐費'));
-        for (const [k, f] of parts) sell(w, k, n * f, t('村民消費'));
+        let left = Math.round(n * 100) / 100; parts.forEach(([k, f], i) => { const v = i === parts.length - 1 ? left : Math.round(n * f * 100) / 100; left = Math.round((left - v) * 100) / 100; sell(w, k, v, t('村民消費')); }); // v8.8.0 拆帳最後一份拿剩下的,不會多出或少掉零頭
     }
     // 公庫的工程款、維護費:六成付給本地承包商(依工人數分)
     function procure(w, n) {
@@ -84,10 +84,13 @@ const MARKET = (() => {
             const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
             const ratio = have >= total ? 1 : Math.max(0, have / total);
-            if (ratio > 0) takeId(w, id, total * ratio);
-            M.cost[k] = (M.cost[k] || 0) + total * ratio;
+            // v8.8.0 算到「分」:老闆付出去的剛好等於工人拿到的＋所得稅
+            let gs = gross.map(g => Math.round(g * ratio * 100) / 100); let tot = Math.round(gs.reduce((s, g) => s + g, 0) * 100) / 100;
+            if (tot > have) { gs = gross.map(g => Math.floor(g * ratio * 100) / 100); tot = Math.round(gs.reduce((s, g) => s + g, 0) * 100) / 100; }
+            if (!(tot > 0 && takeId(w, id, tot))) { gs = gs.map(() => 0); tot = 0; }
+            M.cost[k] = (M.cost[k] || 0) + tot;
             ws.forEach((a, i) => {
-                const g = gross[i] * ratio; addId(w, a.agentId, g * (1 - tax)); toTown(w, g * tax, t('所得稅'));
+                const g = gs[i]; const tx = Math.round(g * tax * 100) / 100; addId(w, a.agentId, Math.round((g - tx) * 100) / 100); toTown(w, tx, t('所得稅'));
                 Wl.stats.wages += g * (1 - tax); Wl.stats.taxes += g * tax;
                 if (ratio < 1) { a.addThought?.('boss_unpaid', w); if (Math.random() < 0.4) mem(w, a, ratio > 0 ? '{o}只發得出 {p}% 的工資，這樣怎麼過日子。' : '{o}說週轉不過來，今天的工資沒著落。', { o: boss?.name || '', p: Math.round(ratio * 100) }, 5); }
             });
@@ -186,7 +189,11 @@ const MARKET = (() => {
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id || Math.random() > 0.04) continue; const boss = w.agents[id]; if (!boss) continue;
             const loss = Math.round(Math.min(bal(w, id) * 0.25, value(w, k, all) * 0.6)); if (loss < 5 || !takeId(w, id, loss)) continue;
-            log(w, RISKS[Math.floor(Math.random() * RISKS.length)], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
+            const ri = Math.floor(Math.random() * RISKS.length); log(w, RISKS[ri], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
+            // v8.8.0 賠掉的錢不會憑空消失:失火的修繕費給工匠、倒帳的錢留在欠債的客人手上、被偷的進了小偷口袋(都找不到人就進公庫)
+            { const others = all.filter(a => a !== boss && !a.isDead && (a.age ?? 30) >= 16); const pick = (L) => L[Math.floor(Math.random() * L.length)];
+              const to = ri === 0 ? pick(others.filter(a => ['builder', 'carpenter'].includes(a.job?.key))) : ri === 2 ? pick(others.filter(a => has(a, 'greedy') || a.dark?.liar)) || pick(others.slice().sort((x, y) => bal(w, x.agentId) - bal(w, y.agentId)).slice(0, 5)) : pick(others);
+              if (to) addId(w, to.agentId, loss); else toTown(w, loss, t('修繕與賠償')); }
         }
     }
     const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; if (typeof UNION !== 'undefined' && UNION.idle(w, a)) return true; /* v6.93.0 工會罷工的會員、被開除的人不上工 */ return !!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId); };

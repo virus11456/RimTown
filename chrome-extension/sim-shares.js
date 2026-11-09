@@ -105,7 +105,7 @@ const SHARES = (function () {
             const paid = []; let ok = true;
             for (const [a, n] of parts) { if (takeId(w, a.agentId, Math.round(n * 100) / 100)) paid.push([a, Math.round(n * 100) / 100]); else { ok = false; break; } }
             if (!ok) { for (const [a, n] of paid) addId(w, a.agentId, n); continue; }
-            toTown(w, price, t('公營產業標售'));
+            toTown(w, paid.reduce((x, [, n]) => x + n, 0), t('公營產業標售')); // v8.8.0 進公庫的是大家實際湊到的錢
             const s = {}; for (const [a, n] of paid) s[a.agentId] = n; M.shares[k] = norm(s); M.owners[k] = lead.agentId; M.pay[k] = has(lead, 'greedy') ? 0.85 : 1;
             const X = M.sh; X.st.syn++; X.basis[k] = {}; for (const [a, n] of paid) X.basis[k][a.agentId] = n;
             const others = paid.slice(1).map(([a]) => a);

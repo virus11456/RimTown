@@ -62,6 +62,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.inf.save = w2.worldcal?.sterile?.f === 0;
       while (w.worldcal.cur) step();
       // 期限過了:第一個嬰兒
+      if (w.longev) w.longev.gene = {}; /* 跑完災厄的那段時間裡,基因延壽療程可能又讓爸媽做過(會擋生育),先清掉 */
       d = w.worldcal.sterile.until + 1; const k1 = Object.keys(w.agents).length; w.worldcal.sterile.blocked = 3; w.worldcal.sterile.until = d + 5; w.worldcal.sterile.f = 1; w.lifecycle._birthChild(w, pa, pb, false);
       out.inf.first = { born: Object.keys(w.agents).length - k1, log: (w.messageLog || []).slice(-10).some(m => /🍼/.test(String(m.content || ''))) };
       d += 10; w.lifecycle._birthChild(w, pa, pb, false); out.inf.expired = !w.worldcal.sterile;

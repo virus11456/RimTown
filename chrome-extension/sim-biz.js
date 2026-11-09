@@ -29,6 +29,7 @@ const BIZ = (() => {
         const k = typeFor(a); const T = TYPES[k]; const cost = 60; let partner = null;
         if (cash(w, a) < cost) { partner = npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0]; if (!partner) return null; }
         const mine = Math.min(cash(w, a), partner ? cost - 40 : cost); if (!WALLET.take(w, a, mine)) return null; if (partner && !WALLET.take(w, partner, 40)) { WALLET.add(w, a, mine); return null; }
+        { const paid = mine + (partner ? 40 : 0); const hand = npcs(w).filter(o => o !== a && o !== partner && ['builder', 'carpenter'].includes(o.job?.key)); const h = hand[Math.floor(Math.random() * hand.length)]; if (h) WALLET.add(w, h, paid); else w.stockpile?.add?.('silver', paid, w.tickCount, t('開店的材料與執照')); } // v8.8.0 開店的錢付給鎮上的工匠(沒有就進公庫),不再憑空消失
         let name = defaultName(a, k);
         const S2 = { id: 'B' + (++B.n), type: k, owner: a.agentId, partner: partner?.agentId || null, name, price: T.price + (has(a, 'jealous') ? 1 : 0), till: 0, profit: 0, week: 0, opened: d, lossDays: 0, closed: false };
         B.shops.push(S2);
@@ -49,7 +50,8 @@ const BIZ = (() => {
             for (const c of all) { if (c === o || cash(w, c) < s.price + 5) continue; const p = 0.08 / same * (6 / (s.price + 2)) * (1 + (has(o, 'charismatic') ? 0.3 : 0) + (aff(c, o) > 30 ? 0.3 : 0) - (aff(c, o) < -20 ? 0.6 : 0)); if (Math.random() < p && WALLET.take(w, c, s.price)) { s.till += s.price; sales++; } }
             const upkeep = 2; s.till -= upkeep; s.week += sales * s.price - upkeep; s.profit += sales * s.price - upkeep;
             s.lossDays = s.till < 0 ? s.lossDays + 1 : 0;
-            if (s.till > 0) { const pay = (a, n) => (WALLET.bizIncome ? WALLET.bizIncome(w, a, n) : WALLET.add(w, a, n)); pay(o, s.till * (s.partner ? 0.5 : 1)); if (s.partner && w.agents[s.partner]) pay(w.agents[s.partner], s.till * 0.5); s.till = 0; } // v6.81.0 店裡的進帳先繳營業稅
+            let paidOut = 0; if (s.till > 0) { const pay = (a, n) => (WALLET.bizIncome ? WALLET.bizIncome(w, a, n) : WALLET.add(w, a, n)); const pp = s.partner && w.agents[s.partner] && !w.agents[s.partner].isDead ? w.agents[s.partner] : null; pay(o, s.till * (pp ? 0.5 : 1)); if (pp) pay(pp, s.till * 0.5); paidOut = s.till; s.till = 0; }
+            { const kept = sales * s.price - paidOut; if (kept > 0.001) w.stockpile?.add?.('silver', Math.round(kept * 100) / 100, w.tickCount, t('店租與營業開銷')); } // v8.8.0 每天的開銷(攤位、柴火、進貨)付給公庫,不再憑空消失 // v6.81.0 店裡的進帳先繳營業稅
             if (s.lossDays >= 15 || (s.till < -40)) close(w, s, 'broke');
             if (d % 7 === 0) weekly(w, s);
         }
@@ -112,7 +114,8 @@ if (typeof BANK !== 'undefined') {
     const _lend = BANK.lend; const asking = new WeakMap(); // 銀行狀態 → 開始等待的世代
     BANK.lend = function (w, B, a, n, why) {
         const v = BIZ.vet(w, B, a);
-        if (!v.ok) { try { w.logMessageT?.('trade', '🏦 銀行家拒絕借錢給{a}{r}。', { a: a.name, r: v.why === 'rep' ? '（名聲太差）' : '（兩人處不好）' }, a.name); } catch (e) {} try { a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '銀行不肯借我錢。', {}, 6, []); } catch (e) {} return 0; }
+        if (!v.ok && B.refused?.[a.agentId] != null && (w._absDay?.() ?? 0) - B.refused[a.agentId] < 10) return 0; // v8.8.0 被拒絕過的人十天內不會再去碰釘子(以前同一個人天天被拒、天天記一筆)
+        if (!v.ok) { (B.refused = B.refused || {})[a.agentId] = w._absDay?.() ?? 0; try { w.logMessageT?.('trade', '🏦 銀行家拒絕借錢給{a}{r}。', { a: a.name, r: v.why === 'rep' ? '（名聲太差）' : '（兩人處不好）' }, a.name); } catch (e) {} try { a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '銀行不肯借我錢。', {}, 6, []); } catch (e) {} return 0; }
         const ce = w.conversationEngine; const banker = w.agents[B.banker];
         if (n >= 40 && w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && banker && asking.get(B) !== w._gen) {
             asking.set(B, w._gen); const g0 = w._gen; const live = () => w._gen === g0 && w.bank === B && w.agents[a.agentId] === a && !a.isDead;

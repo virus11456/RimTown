@@ -73,7 +73,7 @@ const WALLET = (() => {
         try { social(w, W, all, today); } catch (e) { console.warn('[Wallet] social', e); }
         try { election(w, W, all); } catch (e) { console.warn('[Wallet] election', e); }
         try { if (typeof MARKET !== 'undefined') MARKET.daily(w, W, all); } catch (e) { console.warn('[Market] daily', e); } // v6.89.0 產權、調薪、挨餓
-        for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) delete W.bal[id]; // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
+        for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) { const v = +W.bal[id] || 0; delete W.bal[id]; if (v && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -v); } // v8.8.0 帶走的錢記到「搬走帶走」 // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
     }
     // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
@@ -84,11 +84,12 @@ const WALLET = (() => {
         const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人那幾天沒有工資
         const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a)) && !(jail && jail.has(a.agentId))); const gross = workers.reduce((s, a) => s + wageOf(a), 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
-        const ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
-        if (ratio > 0) fromTown(w, Math.round(net * ratio * 10) / 10, t('發薪水'));
+        let ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
+        const shareOf = (a) => Math.round(netOf(W, a) * ratio * 100) / 100; // v8.8.0 公庫付出去的剛好等於大家領到的(以前公庫照「角」扣、錢包照「分」加)
+        if (ratio > 0 && !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) { ratio = Math.max(0, (have - 0.05 * workers.length) / net); if (!(ratio > 0) || !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) ratio = 0; W.unpaid = workers.length; }
         W.stats.wages += net * ratio; W.stats.taxes += Math.max(0, gross - net) * ratio;
         for (const a of workers) {
-            add(w, a, netOf(W, a) * ratio);
+            add(w, a, shareOf(a));
             if (ratio < 1) { a.addThought?.('wage_unpaid', w); if (Math.random() < 0.4) mem(w, a, ratio > 0 ? '公庫只發得出 {p}% 的薪水，這樣怎麼過日子。' : '公庫沒錢，這個月的薪水領不到了。', { p: Math.round(ratio * 100) }, 5); }
         }
         if (ratio < 1 && Math.random() < 0.5) log(w, 'economy', '💸 公庫只剩 {n} 銀幣，薪水只發得出 {p}%。', { n: Math.round(have), p: Math.round(ratio * 100) });

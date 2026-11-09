@@ -12242,6 +12242,21 @@
         '{a}身上戴著賢者之石，老得很慢': '{a} carries the philosopher\'s stone and ages very slowly',
         '{a}戴著賢者之石（能量 {c}%，少老了 {n} 年）': '{a} carries the philosopher\'s stone ({c}% power, {n} years of aging held back)',
         '把礦坑挖出的以太凝成一顆完整的賢者之石：戴著它的那一個人老得很慢，也能點石成鋼（會耗掉它的能量）。要存非常多以太，而以太也是大家過生活要用的': 'Condense mined aether into a whole philosopher\'s stone: the one person who carries it ages very slowly, and it can turn rock into steel (at the cost of its power). It takes a huge amount of aether, which everyone also needs for daily life',
+        '鎮上開始蓋房子了：在這裡看誰在蓋什麼、還缺什麼材料。': 'The town has started building: see who is building what and which materials are still missing.',
+        '研究員開始研究了：在這裡看研究進度、走哪條科技路線。': 'The researchers have started working: see research progress and which tech path the town takes.',
+        '大家開始有交情和心結了：在這裡看誰跟誰要好、誰跟誰不合。': 'Friendships and grudges are forming: see who gets along and who doesn\'t.',
+        '鎮上開始有急事和小團體：在提案頁的「鎮況」看大家在煩什麼。': 'Urgent matters and cliques are appearing: check "Town" on the Proposals page to see what everyone is worried about.',
+        '有人開始說謊、設局了：只有你看得到的「真相」打開了。': 'Someone has started lying and scheming: the "Truth" tab, visible only to you, is now open.',
+        '鎮上出現了老闆和店家：在這裡看產業、股東、店鋪和銀行。': 'Owners and shops have appeared: see industries, shareholders, shops and the bank here.',
+        '你打出了第一張事件卡：在這裡看村民怎麼反應、七天後變成怎樣。': 'You played your first event card: see how villagers react and how things stand seven days later.',
+        '小鎮撐過一季了：你可以在災厄工坊親手設計一場災難。': 'The town has made it through a season: you can now design a disaster yourself in the Calamity Workshop.',
+        '解鎖了新分頁': 'New tab unlocked',
+        '一開始就顯示全部功能': 'Show all features from the start',
+        '不勾的話，分頁會隨著小鎮發展慢慢解鎖。': 'If unchecked, tabs unlock gradually as the town develops.',
+        '還沒解鎖': 'Not yet unlocked',
+        '開店的材料與執照': 'Shop fittings and license',
+        '店租與營業開銷': 'Shop rent and running costs',
+        '修繕與賠償': 'Repairs and compensation',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

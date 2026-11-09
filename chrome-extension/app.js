@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '8.7.0';
+const RIMTOWN_APP_VERSION = '8.8.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2986,6 +2986,7 @@ class RimTownApp {
     // v6.0.0 B14：_setupKairoUI … 等方法移到 app-mobile.js
 
     renderSidebar() {
+        try { this._uiCheck?.(); } catch (e) {} // v8.8.0 漸進解鎖
         // 手機抽屜:聊天分頁給較高的面板(62vh),其他分頁 44vh 讓地圖為主
         const _sb = document.getElementById('rimtown-sidebar');
         if (_sb) _sb.classList.toggle('chat-open', this.activeTab === 'chat');
@@ -3003,6 +3004,7 @@ class RimTownApp {
             let subBar = `<div class="sub-tab-bar mobile-group-tabs pp-tabs${group.length >= 5 && (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? ' many' : ''}" role="tablist">`; // v7.8.0 五個子分頁時,英文窄螢幕沒選中的只顯示圖示(中文兩個字放得下) // v7.3.0 跟提案分頁同一種膠囊分頁
             const cur = this.activeTab === 'events' ? 'news' : this.activeTab;
             group.forEach(_tw => {
+                if (this._uiOn && !this._uiOn(_tw.key) && cur !== _tw.key) return; // v8.8.0 還沒解鎖的分頁先不顯示
                 const on = cur === _tw.key;
                 subBar += `<button type="button" role="tab" aria-selected="${on}" class="pp-tab${on ? ' on active' : ''}" data-action="mobile-group-tab" data-val="${_tw.key}" title="${_tw.label}" aria-label="${_tw.label}">${_tw.icon} <span class="pp-tl">${_tw.label}</span></button>`;
             });
