@@ -349,6 +349,8 @@ Object.assign(RimTownApp.prototype, {
                 if ((st.minor || 0) + (st.mid || 0) + (st.big || 0) > 0) html += `<div class="tech-desc" style="color:var(--text-muted)">🟡 ${t('小事')} ${st.minor || 0} · 🟠 ${t('中事')} ${st.mid || 0} · 🔴 ${t('大災')} ${st.big || 0}${st.laid ? ` · ${t('被機器裁員')} ${st.laid}` : ''}${st.died ? ` · ${t('罹難')} ${st.died}` : ''}${st.left ? ` · ${t('搬走')} ${st.left}` : ''}</div>`;
                 html += '</div>';
             }
+            // ---- v8.5.0 世界級災厄 ----
+            { const wc = this._wcBlock?.('tech') || ''; if (wc) html += `<div class="tech-era wc-era"><div class="tech-era-head">🌍 ${t('世界級災厄')}</div>${wc}</div>`; }
             // ---- v7.9.0 大災之後的文明倒退:失傳的科技(殘卷)、停擺的建築 ----
             const LOST = this.world?.calamity?.lost || {};
             if (Object.keys(LOST).length && typeof CALAMITY !== 'undefined') {

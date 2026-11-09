@@ -460,11 +460,16 @@ Object.assign(RimTownApp.prototype, {
             [X('AI 會不會亂講話？', 'Will the AI say random things?'), X('村民只能根據自己的記憶、性格和鎮上真的發生的事說話；伺服器也會擋掉不像村民的回覆。', 'Villagers speak only from their own memories, personality and what really happened in town; the server also filters replies that don\'t sound like a villager.')],
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
-        const roadmap = [
-            [X('最近上線', 'Recently added'), '#34d399', [X('v8.4 神之書：事件卡分普通／稀有／傳說／禁忌，小鎮發生過的事才寫進書裡；打牌、託夢、災厄工坊共用神力', 'v8.4 Book of Gods: Normal, Rare, Legendary and Forbidden event cards, written into the book as the town lives through things; cards, dreams and the disaster workshop share one divine power'), X('v8.3 成就大改版：九大類、約 50 個新成就，舊成就留作紀念', 'v8.3 achievements remade: nine categories, about 50 new ones, old ones kept as keepsakes'), X('v8.2 災厄工坊開放：自己設計病原體，看小鎮怎麼撐過去（偷溜、送飯、萬靈藥、吃過虧才學乖）', 'v8.2 the disaster workshop opens: design a pathogen and watch the town cope (sneaking out, food at the door, miracle cures, lessons learned the hard way)'), X('v8.1 人情世故：面子、人情帳、嘴硬、說一套做一套、跟鄰居比、懷舊、日常習慣、冷戰', 'v8.1 how people really are: saving face, favors owed, never admitting fault, hypocrisy, keeping up with the neighbors, nostalgia, daily routines, cold shoulders'), X('v8.0 蒸汽煉金路線：很需要人手、煤煙與大黑霧、清潔空氣法與工廠法、飛艇、賢者之石、人造人', 'v8.0 Steam Alchemy path: plenty of jobs, coal smoke and the Great Smog, clean air and factory acts, airships, the philosopher\'s stone and homunculi'), X('v7.9 基因生物路線、路線大辯論、災後反應（互助、怪罪、抗議、搶劫潮）、大災之後文明倒退', 'v7.9 bio-genetic path, the tech path debate, disaster aftermath (mutual aid, blame, protests, looting waves) and civilization setbacks after catastrophes'), X('v7.8 科技路線：電子機械（電力、核能、太空）、自動化失業、核災與廢核公投', 'v7.8 tech paths: electro-mechanical (electricity, nuclear, space), automation layoffs, nuclear disasters and nuclear-free votes'), X('v7.7.2 罰款付不出來：家人代繳、工資分期扣、服勞役抵債', 'v7.7.2 unpaid fines: family help, wage deductions and labor to work it off'), X('v7.7.1 商行分東家、掌櫃、夥計；大城鎮存檔不再擠爆', 'v7.7.1 trading houses with owners, managers and clerks; big towns no longer overflow local storage'), X('v7.7 錢從哪來、往哪去：商人真的出口、不再憑空產錢', 'v7.7 where the money comes from: traders really export, no more silver from thin air'), X('v7.6 神裔社會：純人派、獵人隊冤案、新神教、平權令', 'v7.6 the god-blooded in society: Pure Blood faction, wrongful hunts, new faiths, an equal rights act'), X('v7.5 神話基因：狼人、吸血鬼與神的血', 'v7.5 mythic genes: werewolves, vampires and the blood of gods'), X('v7.4 身體與醫療：生病受傷、手術移植、生技時代', 'v7.4 health and medicine: illness, injury, surgery, transplants and a biotech era'), X('v7.3 介面整合：分頁樣式統一、新聞不再重複', 'v7.3 tidier panels: one consistent style, no duplicated news'), X('v7.0 浮動物價、就業市場、宗教財務', 'v7.0 floating prices, a job market and religious finances'), X('方塊村民：每人長相不同、依年齡貧富換外觀', 'Blocky villagers that each look different and dress by age and wealth'), X('工會、罷工與集體談判', 'Unions, strikes and collective bargaining')]],
-            [X('構想中', 'Planned'), '#f2c14e', [X('災厄工坊的世界級災厄：核戰、外星入侵、AI 控制、冰河期、全球不孕', 'World calamities in the workshop: nuclear war, alien invasion, AI takeover, ice age, global infertility'), X('鎮與鎮之間的貨幣與匯率', 'Currencies and exchange between towns'), X('股份與合夥經營產業', 'Shares and partnerships in businesses')]],
-            [X('構想', 'Ideas'), '#60a5fa', [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')]],
-        ];
+        // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
+        const roadmap = {
+            done: [['v8.5', X('世界級災厄', 'World calamities'), X('核子世界大戰、外星入侵、AI 接管，研究員要跟降臨倒數賽跑', 'Nuclear war, alien invasion and AI takeover, with researchers racing the countdown')],
+                ['v8.4', X('神之書', 'Book of Gods'), X('事件卡分四級稀有度；打牌、託夢、災厄工坊共用神力', 'Event cards in four rarities; cards, dreams and the workshop share one divine power')],
+                ['v8.3', X('成就大改版', 'Achievements remade'), X('九大類、約 50 個新成就，舊成就留作紀念', 'Nine categories and about 50 new ones; old ones kept as keepsakes')]],
+            next: [[X('另外兩條路線的世界級災厄', 'World calamities for the other two paths'), X('基因生物的全球不孕、蒸汽煉金的冰河期與以太裂隙', 'Global infertility on the bio path; an ice age and an aether rift on the steam path')],
+                [X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
+                [X('股份與合夥經營', 'Shares and partnerships'), X('村民合資開店、分紅，吵架了還會拆夥', 'Villagers pool money to open shops, split profits and sometimes fall out')]],
+            ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
+        };
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
         const sky = (() => {
             const stars = [[60, 40], [140, 90], [220, 30], [330, 70], [410, 25], [520, 60], [610, 35], [700, 85], [790, 45], [880, 20], [960, 70], [1050, 40], [1130, 95], [1180, 30], [260, 120], [470, 110], [740, 130], [1000, 125]]
@@ -553,7 +558,15 @@ Object.assign(RimTownApp.prototype, {
                     ${log.length > 5 ? `<button class="landing-more" id="landing-log-more">${t('顯示全部')} (${log.length})</button>` : ''}
                 </section>
                 <section class="landing-section lp-sec"><div class="lp-sec-head"><span class="lp-kicker">${X('接下來', 'Next')}</span><h2>${X('路線圖', 'Roadmap')}</h2></div>
-                    <div class="landing-roadmap">${roadmap.map(r => `<div class="landing-roadmap-col"><h3><span class="landing-tag" style="background:${r[1]};color:#111">${r[0]}</span></h3><ul>${r[2].map(x => `<li>${x}</li>`).join('')}</ul></div>`).join('')}</div>
+                    <div class="lp-rm">
+                        <div class="lp-rm-col lp-rm-done"><div class="lp-rm-h"><span class="lp-rm-dot" aria-hidden="true"></span>${X('已上線', 'Shipped')}<small>${X('最近三版', 'latest three')}</small></div>
+                            ${roadmap.done.map(([v, h, d]) => `<div class="lp-rm-item"><span class="lp-rm-ver">${v}</span><div><b>${h}</b><p>${d}</p></div></div>`).join('')}
+                            <a class="lp-rm-more" href="#landing-log" data-lp-log>${X('更早的版本看上面的更新紀錄 ↑', 'Earlier versions are in the changelog above ↑')}</a></div>
+                        <div class="lp-rm-col lp-rm-next"><div class="lp-rm-h"><span class="lp-rm-dot" aria-hidden="true"></span>${X('下一步', 'Up next')}<small>${X('正在設計', 'in design')}</small></div>
+                            ${roadmap.next.map(([h, d]) => `<div class="lp-rm-item"><div><b>${h}</b><p>${d}</p></div></div>`).join('')}</div>
+                        <div class="lp-rm-col lp-rm-idea"><div class="lp-rm-h"><span class="lp-rm-dot" aria-hidden="true"></span>${X('構想', 'Ideas')}<small>${X('還沒排時程', 'not scheduled')}</small></div>
+                            <div class="lp-rm-pills">${roadmap.ideas.map(x => `<span>${x}</span>`).join('')}</div></div>
+                    </div>
                 </section>
                 <section class="lp-final"><h2>${X('去看看你的小鎮今天發生了什麼', 'Go see what happened in your town today')}</h2><p>${X('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。', 'Sign-up needs an invite code. Saves sync to the cloud, so you can continue on any device.')}</p><div class="landing-cta">${loggedIn ? `<button class="landing-btn primary" data-lp-go="continue">▶ ${t('繼續遊戲')}</button>` : `<button class="landing-btn primary" data-lp-go="register">✨ ${t('註冊')}</button><button class="landing-btn secondary" data-lp-go="login">🔑 ${t('登入')}</button>`}</div></section>
                 <footer class="landing-footer">${X('邊境鎮 RimTown', 'RimTown')} · v${esc(ver)}</footer>
@@ -583,6 +596,7 @@ Object.assign(RimTownApp.prototype, {
         el.querySelector('#landing-register')?.addEventListener('click', () => this._openAuth('register'));
         el.querySelector('#landing-login')?.addEventListener('click', () => this._openAuth('login'));
         el.querySelector('#landing-continue')?.addEventListener('click', () => this._enterGame());
+        el.querySelectorAll('[data-lp-log]').forEach(a => a.addEventListener('click', (e) => { e.preventDefault(); el.querySelector('#landing-log')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); })); // v8.5.0 路線圖 → 更新紀錄
         el.querySelectorAll('[data-lp-go]').forEach(btn => btn.addEventListener('click', () => { const g = btn.dataset.lpGo; if (g === 'continue') this._enterGame(); else this._openAuth(g); })); // v6.79.0 頁尾再放一次按鈕
         el.querySelector('#landing-logout')?.addEventListener('click', () => this._doLogout());
         el.querySelector('#landing-log-more')?.addEventListener('click', (ev) => {
