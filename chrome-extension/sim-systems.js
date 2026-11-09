@@ -1284,6 +1284,11 @@ class EventChoiceSystem {
         return null;
     }
 
+    _leaderTitle(world, name) {
+        let tl = '鎮長'; try { if (typeof TIERS !== 'undefined') tl = TIERS.LV[TIERS.level(world)]?.leader || tl; } catch (e) {}
+        try { const E = world.election; if (E?.acting?.name === name && !E._realMayor?.(world)) return '代理' + tl; } catch (e) {}
+        return tl;
+    }
     resolveChoice(choiceIndex, world, by) { // v6.82.3 by:觀察者模式由首長(或大家)決定時傳入決定者名字;'' 代表大家商量
         if (!this.pendingEvent || !this.pendingEvent.choices[choiceIndex]) return null;
         const choice = this.pendingEvent.choices[choiceIndex];
@@ -1331,9 +1336,10 @@ class EventChoiceSystem {
         if (effects.relocate) { try { world.onRelocate?.(effects.relocate, world); } catch (e) { console.warn('[relocate]', e); } } // v5.90.0 跨鎮搬家(由 app 處理信箱)
 
         if (by !== undefined) {
-            if (by) world.logMessageT('event_choice', '⚡ 面對{eventName}，鎮長{who}決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName, who: by }, by);
+            const ttl = by ? this._leaderTitle(world, by) : ''; // v9.4.0 依城鎮等級寫村長／鎮長／市長／國王,代理也寫出來
+            if (by) world.logMessageT('event_choice', '⚡ 面對{eventName}，{title}{who}決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName, who: by, title: ttl }, by);
             else world.logMessageT('event_choice', '⚡ 面對{eventName}，大家商量後決定：「{label}」', { label: choice.label, eventName: this.pendingEvent.eventName });
-            if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${by ? `${t('鎮長')}${t(by)}` : t('大家商量後')}${t('決定')}${t('「')}${choice.label}${t('」')}`, 7, by ? [by] : []);
+            if (world.dailyNews) world.dailyNews.collectEvent('event', `${t('面對')}${this.pendingEvent.eventName}${t('，')}${by ? `${t(ttl)}${t(by)}` : t('大家商量後')}${t('決定')}${t('「')}${choice.label}${t('」')}`, 7, by ? [by] : []);
         } else {
             world.logMessageT('event_choice', '⚡ 你選擇了「{label}」來應對{eventName}', { label: choice.label, eventName: this.pendingEvent.eventName });
             if (world.dailyNews) {

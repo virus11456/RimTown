@@ -236,8 +236,14 @@ const BANK = (() => {
             D.owed = Math.max(0, D.owed - pay); D.paid += pay; D.late = 0; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xrepay', -pay); /* v8.8.0 還給外地錢莊 */
             if (D.owed <= 0) { log(w, '🎉 鎮公所還清了紓困銀行的債，連本帶利一共 {n} 銀幣。', { n: Math.round(D.paid) }); (B.debtHist || (B.debtHist = [])).push({ since: D.since, done: d, paid: Math.round(D.paid) }); if (B.debtHist.length > 4) B.debtHist.shift(); B.debt = null; }
         } else {
-            D.late++; D.owed = Math.ceil(D.owed * 1.01);
-            if (D.late === 1 || D.late % 7 === 0) log(w, '💸 公庫還不出紓困債，欠款加上罰息變成 {n} 銀幣。', { n: Math.round(D.owed) });
+            // v9.4.0 還不了整筆就先還一部分(還到一半以上不罰息);罰息最多加到原本欠款的 1.5 倍,之後錢莊改派人來催債
+            D.cap = D.cap || Math.ceil(D.owed * 1.5); const part = Math.floor(Math.min(treasury(w), pay));
+            if (part > 0 && w.stockpile.consume('silver', part, w.tickCount, t('償還紓困債'), 'upkeep')) { D.owed = Math.max(0, D.owed - part); D.paid += part; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xrepay', -part); }
+            if (part >= pay / 2) { D.late = Math.max(0, D.late - 1); return; }
+            D.late++;
+            if (D.owed < D.cap) { D.owed = Math.min(D.cap, Math.ceil(D.owed * 1.01)); if (D.late === 1 || D.late % 7 === 0) log(w, '💸 公庫還不出紓困債，欠款加上罰息變成 {n} 銀幣。', { n: Math.round(D.owed) }); }
+            else if (D.late % 10 === 0) { const L = leader(w); log(w, '🧾 外地錢莊派了兩個催債的人來鎮上，在鎮公所門口一坐就是一整天。{l}只能陪著笑臉，說公庫一有錢就還。', { l: L?.name || t('鎮長') }, L?.name);
+                if (L) { try { if (typeof WAYS !== 'undefined') WAYS.loseFace?.(w, L, 6); } catch (e) {} L.moodModifier = (L.moodModifier || 0) - 3; try { L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '催債的人又來了，全鎮都看到我低聲下氣。', {}, 7, []); } catch (e) {} } }
         }
     }
     function townBrief(w) {

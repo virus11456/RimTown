@@ -370,9 +370,19 @@ const TECH = (function () {
     }
 
     // ---------- 每天 ----------
+    // v9.4.0 海路、商路、燈塔:以前只能靠任務鏈終章拿到(觀察者模式不跑任務),改成研究到了由鎮上的人自己開通
+    function routes(w) {
+        const done = (k) => w.research?.projects?.[k]?.status === 'complete'; const F = w.harborFlags || (w.harborFlags = {});
+        const who = (jobs) => Object.values(w.agents).filter(a => a && !a.isPlayer && !a.isDead && jobs.includes(a.job?.key)).sort((a, b) => (b.skills?.skills?.社交?.level || 0) - (a.skills?.skills?.社交?.level || 0))[0];
+        const say = (k, p, imp, a) => { try { w.logMessageT?.('event', k, p, a?.name || ''); } catch (e) {} try { w.dailyNews?.collectEvent?.('economy', (typeof Memory !== 'undefined' ? Memory.render(k, p) : k), imp, a ? [a.name] : []); } catch (e) {} if (a) try { a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '是我帶頭開通的，鎮上的人都記得。', {}, 8, []); } catch (e) {} };
+        const harbor = baseOfW(w) === 'harbor' || !!w.townMap?.locations?.harbor || !!w.townMap?.locations?.dock;
+        if (!F.tradeRoute && done('trade_routes')) { const a = who(['trader']); F.tradeRoute = true; say('🐫 {a}帶著第一支固定商隊上路，驛站一路蓋到遠方——{town}的商路正式開通了！', { a: a?.name || '商人們', town: w.townName || '小鎮' }, 8, a); }
+        if (!F.seaRoute && harbor && done('navigation')) { const a = who(['trader', 'farmer']); F.seaRoute = true; say('⛵ {a}跟著船家照新畫的海圖出航，平安回來——海路通了，從此船會定期進港。', { a: a?.name || '老漁夫' }, 8, a); }
+        if (!F.lighthouseUpgraded && harbor && F.seaRoute && done('architecture')) { const a = who(['carpenter']); F.lighthouseUpgraded = true; say('🗼 {a}把老燈塔加高、換上新的燈室，夜裡的船遠遠就看得見。', { a: a?.name || '工匠們' }, 6, a); }
+    }
     function daily(w) {
         if (!w?.research) return; const T = S(w); const d = day(w); if (T.lastDay === d) return; T.lastDay = d;
-        pathDaily(w, T, d); lawDaily(w, T, d); incidents(w);
+        pathDaily(w, T, d); lawDaily(w, T, d); incidents(w); try { routes(w); } catch (e) { console.warn('[Tech] routes', e); }
         // 投票反對核安法的人記下來(出事時被怪)
         for (const p of (w.proposals?.items || [])) if (p.kind === 'tech_safety' && !p._noted && p.status !== 'open' && p.status !== 'shelved') { p._noted = true; T.lawNo = Object.entries(p.votes || {}).filter(([, v]) => v === 'against').map(([id]) => id).slice(0, 40); }
         for (const id of Object.keys(T.mk)) if (!w.agents[id] || w.agents[id].isDead) delete T.mk[id];

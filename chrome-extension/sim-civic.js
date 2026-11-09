@@ -62,7 +62,7 @@ const CIVIC = (() => {
         const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = dir; }
         return p;
     }
-    function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.max(0.02, Math.min(0.3, p.newTax)); return tpl('稅率從 {a}% 調成 {n}%', { a: Math.round(old * 100), n: Math.round(w.wallet.tax * 100) }); }
+    function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return tpl('稅率從 {a}% 調成 {n}%', { a: Math.round(old * 100), n: Math.round(w.wallet.tax * 100) }); }
     function taxVote(w, p, a) {
         const c = cash(w, a), tr = w.stockpile?.get?.('silver') || 0;
         if (p.dir === 'down') return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against';
@@ -96,7 +96,9 @@ const CIVIC = (() => {
             try { w.dailyNews?.collectEvent?.('event', `${t('國王壽宴')}`, 9, [k.name]); } catch (e) {}
         }
         if (!k.relationships?.getPartner?.() && Math.random() < 0.02) {
-            const bride = npcs(w).filter(a => a !== k && a.gender !== k.gender && a.age >= 18 && Math.abs(a.age - k.age) <= 15 && !a.relationships?.getPartner?.()).sort((x, y) => { try { return CLASS.level(w, y) - CLASS.level(w, x); } catch (e) { return 0; } })[0];
+            // v9.4.0 不娶自己的親人:父母子女、兄弟姊妹(同父或同母)、王室成員(多半是國王的家人)都排除
+            const kp = k._parentNames || []; const kin = (a) => kp.includes(a.name) || (a._parentNames || []).includes(k.name) || (a._parentNames || []).some(n => kp.includes(n)) || (() => { try { return !!CLASS.S(w).titles[a.agentId]?.royal; } catch (e) { return false; } })();
+            const bride = npcs(w).filter(a => a !== k && a.gender !== k.gender && a.age >= 18 && Math.abs(a.age - k.age) <= 15 && !a.relationships?.getPartner?.() && !kin(a)).sort((x, y) => { try { return CLASS.level(w, y) - CLASS.level(w, x); } catch (e) { return 0; } })[0];
             if (!bride) return;
             const r1 = k.relationships.getOrCreate(bride.agentId, bride.name), r2 = bride.relationships.getOrCreate(k.agentId, k.name); r1.status = 'married'; r2.status = 'married'; r1.affinity = Math.max(r1.affinity, 50); r2.affinity = Math.max(r2.affinity, 50);
             try { const Cc = CLASS.S(w); Cc.titles[bride.agentId] = Object.assign(Cc.titles[bride.agentId] || {}, { royal: true }); Cc.lv[bride.agentId] = 5; } catch (e) {}

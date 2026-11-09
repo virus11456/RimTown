@@ -530,7 +530,7 @@ class ProposalSystem {
     }
 
     // ---------- v6.37.0 鎮長裁決 ----------
-    _mayor(w) { return this._npcs(w).find(a => a.job?.key === 'mayor') || w.election?.currentMayor?.(w) || null; } // v6.42.0 鎮長不在時由代理鎮長裁決
+    _mayor(w) { const E = w.election; if (E?._realMayor) { try { return E._realMayor(w) || E.currentMayor?.(w) || null; } catch (e) {} } return this._npcs(w).find(a => a.job?.key === 'mayor') || E?.currentMayor?.(w) || null; } // v9.4.0 坐牢、探險中的首長不拍板,由代理裁決 // v6.42.0 鎮長不在時由代理鎮長裁決
     _isActing(w, m) { return !!(m && m.job?.key !== 'mayor' && w.election?.acting?.agentId === m.agentId); }
     _mayorLean(m, p) {
         if (!m) return 0;

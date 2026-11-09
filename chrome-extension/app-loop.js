@@ -471,7 +471,9 @@ Object.assign(RimTownApp.prototype, {
     // ============================================================
     // v5.97.0 昨日結算一句話:委託完成/失敗、經驗、商隊回報、考驗進度
     _daySummaryText() {
-        const w = this.world; const rb = w?.requests; const ld = rb?.lastDay; if (!ld) return '';
+        const w = this.world; const rb = w?.requests; const ld = rb?.lastDay;
+        if (w?.observerMode) return ''; // v9.4.0 觀察者(含舊存檔):不再顯示玩家時代的委託／經驗／商隊(考驗另有一行)
+        if (!ld) return '';
         const parts = [`${t('委託')} ${ld.done}/${ld.total}${ld.failed ? t('（過期 {n}）').replace('{n}', ld.failed) : ''}`]; // v6.22.0 英文用半形括號
         const yday = (w.clock.day > 1 ? w.clock.day - 1 : (w.clock.DAYS_PER_SEASON || 15));
         const xp = (w.growth?.log || []).filter(e => e.day === yday).reduce((a, e) => a + (e.n || 0), 0); if (xp) parts.push(`${t('經驗')} +${xp}`);

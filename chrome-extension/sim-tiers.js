@@ -60,6 +60,7 @@ const TIERS = (() => {
         if (!a) { const g = w.lifecycle?.graveyard || []; return g.some(x => x.agentId === id) ? 'died' : 'left'; }
         return 'ended';
     }
+    function hint(w, id, e) { if (!id) return; const T = S(w); T.endHint = T.endHint || {}; T.endHint[id] = e; } // v9.4.0 先記下為什麼卸任(登基、醜聞、政變失敗)
     function holderOf(w) {
         const E = w.election; if (!E || typeof E._officeHolder !== 'function') return leaderOf(w)?.agentId || null;
         try { return E._officeHolder(w)?.agentId || E._mayorTravelling?.(w)?.agentData?.agentId || null; } catch (e) { return null; }
@@ -89,7 +90,7 @@ const TIERS = (() => {
     const SEAS = ['春季', '夏季', '秋季', '冬季'], SEAS_EN = ['Spring', 'Summer', 'Autumn', 'Winter'];
     function dateText(d) { const n = Math.max(0, (d || 1) - 1), y = Math.floor(n / 60) + 1, si = Math.floor((n % 60) / 15); return en() ? `Y${y} ${SEAS_EN[si]}` : `第${y}年${SEAS[si]}`; }
     const titleOf = (w, x) => x.role === 'council' ? memberTitle(w, x.lv) : x.role === 'acting' ? (en() ? 'Acting ' : '代理') + leaderTitle(w, x.lv) : leaderTitle(w, x.lv);
-    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], ended: ['卸任', 'left office'] };
+    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], crowned: ['登基為王，讓出職位', 'gave up the office on becoming king'], scandal: ['醜聞曝光，被迫下台', 'forced out by a scandal'], coup: ['政變失敗，被拔除職位', 'stripped of office after a failed coup'], ended: ['卸任', 'left office'] };
     const endText = (e) => { const z = END[e] || END.ended; return en() ? z[1] : t(z[0]); };
     function leaderNote(x) {
         const w = x.w || 0;
@@ -236,7 +237,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
+    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), hint, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)
