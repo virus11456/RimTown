@@ -417,6 +417,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
                 const goal = world.lifeGoals?.getGoal?.(npc.agentId);
                 const def = goal && !goal.done && typeof LIFE_GOALS !== 'undefined' ? LIFE_GOALS[goal.goalId] : null;
                 if (def) lifePool.push(tpl('離「{def}」還有多遠呢...但我不會停下來的。', { def: def.name }), tpl('夜裡想起我的夢想:{stage}。明天再往前一步吧。', { stage: def.stages[goal.stage] || '' })); // v6.19.0 模板
+                else if (world.mind && typeof ARCS !== 'undefined') { const T = ARCS.diaryT(world, npc); if (T) lifePool.push(T); } // v9.5.1
                 const crush = npc.relationships.getRomanticInterests().filter(r => !r.status)[0];
                 if (crush) lifePool.push(tpl('今天又想起{who}...我到底在期待什麼呢。', { who: crush.targetName }), tpl('要是能跟{who}多說上幾句話就好了。', { who: crush.targetName }));
                 if (npc.needs.social < 35) lifePool.push(tpl('好久沒跟人好好說話了,心裡悶悶的。'));

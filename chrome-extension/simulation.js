@@ -79,7 +79,7 @@ class World {
         this.logMessage(type, Memory.render(k, p), agentName, targetName, k, p);
     }
     static logText(m) {
-        if (!m || !m.k) return m ? m.content : '';
+        if (!m || !m.k) { if (!m) return ''; if (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en' && I18N.localizeNames) { if (m._tl !== 'en') { m._tx = I18N.localizeNames(String(m.content || '')); m._tl = 'en'; } return m._tx; } return m.content; } // v9.5.1 沒有模板的舊式訊息:英文模式至少把人名換成英文
         const L0 = (typeof I18N !== 'undefined' && I18N.getLang) ? I18N.getLang() : 'zh';
         const L = L0 === 'en' && typeof I18N !== 'undefined' && I18N.dictReady && !I18N.dictReady() ? 'en:nodict' : L0; // v6.43.1 字典到了要重算
         if (m._tl !== L) { m._tx = Memory.render(m.k, m.p); m._tl = L; }
@@ -1151,7 +1151,7 @@ class World {
                             agent.addThought('jealous', this, luckyOne.agentId, luckyOne.name); // v5.15.0 嫉妒的煎熬
                             agent.moodModifier = (agent.moodModifier || 0) - 6;
                             rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
-                            this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne},心裡很不是滋味...', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name);
+                            { const dd = this._absDay(), J = agent._jealLog || (agent._jealLog = {}); if (!(J[other.agentId] > dd - 10)) { J[other.agentId] = dd; this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name); } } // v9.5.1 同一段單戀十天內只報一次
                             if (this.gossipNetwork && Math.random() < 0.4) this.gossipNetwork.createRelGossip(this, 'jealous', agent, luckyOne, other.name);
                         }
                     } else {

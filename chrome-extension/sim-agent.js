@@ -756,7 +756,7 @@ class Agent {
             if (map) {
                 (map.primary||[]).forEach(n => {
                     if(this.skills.addXp(n, xp*2)) {
-                        world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name);
+                        { const lv = this.skills.get(n).level; if (!world.observerMode || lv % 5 === 0) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: lv }, this.name); } // v9.5.1 觀察者模式只記 5、10、15、20 級(以前一天二十幾則洗掉其他紀錄)
                         this.currentThought = `${t(n)}${t('技能進步了！')}`;
                     }
                 });
@@ -764,7 +764,7 @@ class Agent {
             }
         } else {
             const actMap = ACTIVITY_SKILL_MAP[this.activity] || [];
-            actMap.forEach(n => { if(this.skills.addXp(n, xp)) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: this.skills.get(n).level }, this.name); });
+            actMap.forEach(n => { if(this.skills.addXp(n, xp)) { const lv = this.skills.get(n).level; if (!world.observerMode || lv % 5 === 0) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: lv }, this.name); } });
         }
     }
     _decideActivity(hour) {
@@ -1175,7 +1175,7 @@ class Agent {
         if (goal && !goal.done) {
             const def = (typeof LIFE_GOALS !== 'undefined') ? LIFE_GOALS[goal.goalId] : null;
             if (def) parts.push(`${t('正朝著人生夢想「')}${def.name}${t('」努力(')}${def.stages[goal.stage] || ''}${t(')')}`);
-        }
+        } else if (world?.mind && typeof ARCS !== 'undefined') { const s = ARCS.lineFor(world, this); if (s) parts.push(s); } // v9.5.1 觀察者模式:夢想併進心願／人生劇本
         const enemy = Object.values(this.relationships.relationships).filter(r => r.affinity < -30).sort((a,b)=>a.affinity-b.affinity)[0];
         if (enemy) parts.push(`${t('最近跟')}${enemy.targetName}${t('處得很僵')}`);
         const reflection = this.memory.getThoughts(1)[0];
@@ -1212,7 +1212,7 @@ class Agent {
         if (goal && !goal.done) {
             const def = (typeof LIFE_GOALS !== 'undefined') ? LIFE_GOALS[goal.goalId] : null;
             if (def) goalsT.push(tpl('為夢想「{dream}」再努力一點:{stage}', { dream: def.name, stage: def.stages[goal.stage] || '' }));
-        }
+        } else if (world?.mind && typeof ARCS !== 'undefined') { const T = ARCS.planT(world, this); if (T) goalsT.push(T); } // v9.5.1
         if (world.election?.phase && world.election.phase !== 'none') goalsT.push(tpl('跟人聊聊鎮長選舉,想想要投給誰'));
         if (this.needs.social < 35) goalsT.push(tpl('好一陣子沒跟人好好聊天了,今天想找人說說話'));
         // 晚間安排依性格

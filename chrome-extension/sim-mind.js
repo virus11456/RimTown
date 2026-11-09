@@ -20,7 +20,10 @@ const MIND = (() => {
         fame:   { zh: '成為鎮上的名人', en: 'become famous in town', icon: '⭐' },
         rise:   { zh: '出人頭地', en: 'rise in the world', icon: '🪜' },
         family: { zh: '讓家人過好日子', en: 'give my family a good life', icon: '🏡' },
+        craft:  { zh: '把手藝練到登峰造極', en: 'master my craft', icon: '🎨' }, // v9.5.1 併入舊的「技藝登峰」夢想
     };
+    const CRAFT = ['工藝', '藝術', '烹飪', '醫療', '智識', '建造', '種植'];
+    const craftLv = (a) => { try { return Math.max(0, ...CRAFT.map(c => a.skills?.get?.(c)?.level || 0)); } catch (e) { return 0; } };
     for (const v of Object.values(AMB)) { try { I18N.registerName(v.zh, v.en); } catch (e) {} }
     const isNotable = (w, a) => { try { return typeof CROWD !== 'undefined' ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     // ---------- 意見 ----------
@@ -74,6 +77,7 @@ const MIND = (() => {
         if (crush && (has(a, 'romantic') || Math.random() < 0.5)) opts.push(['love', 4, crush.targetId]);
         try { const foe = typeof DARK !== 'undefined' ? DARK.foeOf(w, a) : null; if (foe?.b) opts.push(['revenge', has(a, 'abrasive') || has(a, 'jealous') ? 4 : 2, foe.b.agentId]); } catch (e) {}
         if (has(a, 'creative') || has(a, 'gossip')) opts.push(['fame', 2]);
+        if (has(a, 'creative') || has(a, 'perfectionist') || ['blacksmith', 'tailor', 'carpenter', 'cook', 'doctor', 'researcher'].includes(a.job?.key)) opts.push(['craft', has(a, 'perfectionist') ? 4 : 2]);
         opts.push(['rise', 1]); if (a.relationships?.getPartner?.() || (a._childNames || []).length) opts.push(['family', 2]);
         const tot = opts.reduce((s, o) => s + o[1], 0); let r = Math.random() * tot; for (const o of opts) { if ((r -= o[1]) <= 0) return { key: o[0], target: o[2] || null }; } return { key: 'rise' };
     }
@@ -88,6 +92,7 @@ const MIND = (() => {
             if (A.key === 'fame') return Object.values(w.dark?.rep?.[a.agentId] || {}).reduce((s, n) => s + n, 0) >= 5 || (w.goods?.owned?.[a.agentId] || []).length > 0;
             if (A.key === 'rise') return CLASS.level(w, a) >= 3;
             if (A.key === 'family') return cash(w, a) >= 120 && (a.mood || 50) >= 60;
+            if (A.key === 'craft') return craftLv(a) >= 15;
         } catch (e) {}
         return false;
     }
@@ -96,14 +101,14 @@ const MIND = (() => {
             if ((a.age || 30) < 16) continue; let A = M.amb[a.agentId];
             if (!A) { const p = pickAmb(w, a); A = M.amb[a.agentId] = Object.assign(p, { since: d }); continue; }
             if (achieved(w, a, A)) {
-                a.moodModifier = (a.moodModifier || 0) + 10; mem(w, a, '我終於做到了：{g}。接下來呢？', { g: AMB[A.key].zh.replace('{t}', w.agents[A.target]?.name || '') }, 8);
-                if (isNotable(w, a)) log(w, '🌟 {a}完成了人生心願：{g}', { a: a.name, g: AMB[A.key].zh.replace('{t}', w.agents[A.target]?.name || '') }, a.name);
+                a.moodModifier = (a.moodModifier || 0) + 10; mem(w, a, '我終於做到了：{g}。接下來呢？', { g: { k: AMB[A.key].zh, p: { t: w.agents[A.target]?.name || '' } } }, 8);
+                if (isNotable(w, a)) log(w, '🌟 {a}完成了人生心願：{g}', { a: a.name, g: { k: AMB[A.key].zh, p: { t: w.agents[A.target]?.name || '' } } }, a.name);
                 (A.done || (A.done = [])); const done = (M.done || (M.done = {})); (done[a.agentId] || (done[a.agentId] = [])).push(A.key);
                 M.amb[a.agentId] = Object.assign(pickAmb(w, a), { since: d }); continue;
             }
             if (d - A.since >= 60 && Math.random() < 0.3) {
                 const old = A; const nw = pickAmb(w, a); if (nw.key === old.key) continue;
-                a.moodModifier = (a.moodModifier || 0) - 4; mem(w, a, '{g}大概是做不到了，我想換個方向。', { g: AMB[old.key].zh.replace('{t}', w.agents[old.target]?.name || '') }, 7);
+                a.moodModifier = (a.moodModifier || 0) - 4; mem(w, a, '{g}大概是做不到了，我想換個方向。', { g: { k: AMB[old.key].zh, p: { t: w.agents[old.target]?.name || '' } } }, 7);
                 M.amb[a.agentId] = Object.assign(nw, { since: d });
             }
         }
@@ -113,7 +118,7 @@ const MIND = (() => {
         const today = (a.memory?.entries || []).filter(m => (w.tickCount - (m.tick || 0)) < 96).sort((x, y) => (y.importance || 0) - (x.importance || 0))[0];
         const mood = (a.mood || 50) >= 65 ? '心情不錯' : (a.mood || 50) < 40 ? '心裡很悶' : '平平淡淡';
         const A = w.mind?.amb?.[a.agentId];
-        return { k: '今天{e}，{m}。{g}', p: { e: today ? { k: '{x}', p: { x: today.text ? today.text() : today.content } } : '沒什麼特別的事', m: mood, g: A ? { k: '我還是想{x}。', p: { x: AMB[A.key].zh.replace('{t}', w.agents[A.target]?.name || '') } } : '' } };
+        return { k: '今天{e}，{m}。{g}', p: { e: today ? { k: '{x}', p: { x: today.text ? today.text() : today.content } } : '沒什麼特別的事', m: mood, g: A ? { k: '我還是想{x}。', p: { x: { k: AMB[A.key].zh, p: { t: w.agents[A.target]?.name || '' } } } } : '' } };
     }
     async function diaries(w, M, d) {
         const who = npcs(w).filter(a => isNotable(w, a)).slice(0, 6); if (!who.length) return;
@@ -148,7 +153,7 @@ const MIND = (() => {
     function brief(w, a) { const parts = [stanceText(w, a)]; const A = w.mind?.amb?.[a.agentId]; if (A) parts.push(`${t('你的人生心願')}${t('：')}${ambText(w, A).replace(/^\S+ /, '')}`); return parts.filter(Boolean).join(t('；')); }
     function lastDiary(w, a) { const arr = w.mind?.diary?.[a?.agentId]; if (!arr || !arr.length) return ''; const x = arr[arr.length - 1]; try { return Memory.render(x.k, x.p); } catch (e) { return ''; } }
     function poll(w) { const M = S(w); const all = npcs(w); return Object.keys(ISSUES).map(k => { const v = all.map(a => M.op[a.agentId]?.[k] || 0); return { k, name: t(ISSUES[k][0]), avg: Math.round(v.reduce((s, x) => s + x, 0) / Math.max(1, v.length) * 10) / 10, pro: v.filter(x => x >= 0.5).length, con: v.filter(x => x <= -0.5).length }; }); }
-    return { ISSUES, AMB, S, opOf, shift, drift, affinity, stanceText, pickAmb, ambText, achieved, reviewAmb, ruleDiary, diaries, daily, onEvent, brief, lastDiary, poll };
+    return { ISSUES, AMB, craftLv, S, opOf, shift, drift, affinity, stanceText, pickAmb, ambText, achieved, reviewAmb, ruleDiary, diaries, daily, onEvent, brief, lastDiary, poll };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
