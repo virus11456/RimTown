@@ -12397,6 +12397,7 @@
         '莊家淨賺': 'house profit',
         '家破人亡': 'ruined',
         '跑路': 'fled',
+        '賭場「{s}」（老闆 {o}）': 'Casino "{s}" (owner {o})',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();
