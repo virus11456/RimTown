@@ -702,7 +702,7 @@ Object.assign(RimTownApp.prototype, {
     },
     async _judgeIntent(npc, key, text) {
         const llm = this.llmClient; if (!llm || !text || text.length < 2) return null;
-        const JUDGE_DAILY_CAP = this.world?.growth?.has('empath') ? 40 : 30; // 每人每天最多 30 次(知心 40),保護整站共用的免費額度
+        const JUDGE_DAILY_CAP = Infinity; // v9.7.0 拿掉每日 30 次(知心 40)上限
         if (this._judgeCount(0) >= JUDGE_DAILY_CAP) { if (!this._judgeCapNoticed) { this._judgeCapNoticed = true; this._showCornerNotice({ icon: '🧠', title: t('AI 判定'), name: '', desc: t('今天的 AI 判定次數用完了，改用規則判定') }); } return null; }
         const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
         const rel = npc.relationships?.relationships?.player || { affinity: 0, trust: 0 };
