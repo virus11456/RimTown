@@ -110,7 +110,23 @@ const WORLDCAL = (function () {
             panic: '😱 鎮外的路上看得到搖搖晃晃的人影。大家天一黑就把門閂上，有人在床底下藏了一把斧頭。',
             arrive: { averted: '🧪 解藥及時做出來了。第一批被咬的人打了針，燒退了，眼睛又看得見人了。{r}累得直接睡在實驗台上。', eased: '🧟 喪屍還是進了鎮，{s}人變成了喪屍。解藥只做出一半，大家輪班守夜，等研究員把它做完。', hit: '🧟 喪屍湧進了小鎮。{s}人被咬、變成了它們的一份子，{dead}在混亂裡喪命。剩下的人躲進屋裡，聽著外面的抓門聲。' },
             after: ['🔥 每天晚上鎮上都點著火把，守衛輪班從天黑站到天亮。', '🩹 家家戶戶都學會了怎麼看傷口：是抓傷還是咬痕，差別很大。', '🪦 墓園裡多了很多新墳，有些墳上放著他們生前最愛的東西。'] },
+        // v9.3.0 終局災厄:七種都撐過才會出現。太陽變暗,三條路線同時崩壞(電網、生命、以太),研究員要分頭救
+        blacksun: { path: 'all', icon: '🌑', name: '黑日', short: '太陽一天比一天暗，電網、生命、以太同時開始崩壞',
+            fix: { icon: '🕯️', name: '三線救亡', desc: '研究員分成三組，同時搶救電網、生命和以太：哪一線沒救起來，就會在那裡受重創' },
+            prep: { kind: 'wc_ark', icon: '🛖', name: '地下方舟', desc: '在地底下蓋一座方舟，囤糧、囤種子、留一盞以太燈：不管哪一線崩了，躲進去的人都會少受一點苦' },
+            omen: ['🌑 正午的太陽像隔了一層紗，影子淡得幾乎看不見。', '⚡ 電燈一閃一閃，發電廠說機器沒壞，是「電自己變少了」。', '🌱 剛發芽的麥子一夜之間全部垂下頭，像在對天空鞠躬。', '🔮 以太燈的光變成灰色，老煉金師說他一輩子沒見過這種顏色。'],
+            reveal: '🔬 {r}把三份報告攤在桌上——電網、生命、以太，三條線同時在往下掉，而且都指向同一個原因：太陽本身在熄滅。再過一陣子，這三樣東西會一起垮掉。',
+            rumor: ['🗣️ 聽說是因為人類把七次末日都躲過了，老天爺這次要一次收回來。', '🗣️ 有人說只要在屋頂上點滿蠟燭，太陽就會記得回來。', '🗣️ 傳言說王都已經在挖很深很深的洞，只讓有錢人下去。', '🗣️ 聽說以前撐過末日的人身上有記號，這次會被先找到。'],
+            panic: '😱 白天跟傍晚一樣暗。電燈一盞盞熄掉、田裡的作物一片片枯黃、以太燈只剩一點灰光。有人說這次是真的結束了。',
+            arrive: { averted: '🌅 三條線全部撐住了。那天早上，太陽慢慢亮了回來，大家站在廣場上，看自己的影子一點一點變深。{r}哭得像個孩子。', eased: '🌑 黑日來了。有的線撐住了，有的沒有：{dead}沒能等到天亮，{b}在黑暗裡毀了，{l}人往有光的地方逃去。', hit: '🌑 太陽整整暗了七天。電網燒了、田全枯了、以太燈一盞接一盞熄滅。{dead}在黑暗裡走了，{b}垮了，{l}人摸黑離開了小鎮。' },
+            after: ['🌤️ 太陽回來了，可是比以前淡一點。老人說，以後的夏天大概都會涼一些。', '🕯️ 家家戶戶都在窗台上留一根蠟燭，說是給那七天的自己。', '📜 史官在書的最後一頁寫：「八次末日，我們都還在。」'] },
     };
+    // v9.3.0 黑日的三條戰線
+    const FRONTS = { electro: { icon: '⚡', name: '重建電網', hit: '電網燒毀', only: ['ai_agent', 'quantum_computer', 'robotics', 'microelectronics', 'assembly_line'], target: ['power_plant', 'factory', 'workshop', 'launch_site'] },
+        bio: { icon: '🌱', name: '生命與種子庫', hit: '生命凋零', only: ['gene_editing', 'synthetic_life', 'myth_genome', 'life_extension'], target: [] },
+        steam: { icon: '🔮', name: '以太長明燈', hit: '以太熄滅', only: ['aether_engine', 'floating_city', 'philosopher_stone', 'homunculus'], target: ['refinery', 'airship_dock', 'alchemy_lab', 'sky_isle'] } };
+    const FJOB = { electro: ['engineer', 'worker', 'craftsman', 'blacksmith', 'researcher'], bio: ['farmer', 'doctor', 'herbalist', 'cook'], steam: ['alchemist', 'priest', 'merchant', 'carpenter'] };
+    const SEVEN = ['nukewar', 'aliens', 'ai', 'infertile', 'zombie', 'iceage', 'rift'];
     // v8.6.0 每種災厄的路線與權重(小鎮自己做了什麼)
     const WEIGHT = {
         nukewar: (w) => { const T = w.tech || {}; return (done(w, 'nuclear_weapons') ? 3 : 0.3) + (built(w, 'nuclear_plant') && !T.noNuke ? 1 : 0) + (done(w, 'rocketry') ? 0.5 : 0); },
@@ -120,6 +136,7 @@ const WORLDCAL = (function () {
         zombie: (w) => 0.5 + (done(w, 'synthetic_life') ? 1.2 : 0) + (done(w, 'life_extension') ? 0.8 : 0) + Math.min(1.5, (w.tech?.bio?.st?.leak || 0) * 0.5), // v9.2.0 造了人工生命、做過延壽、實驗室外洩過
         iceage: (w) => 0.6 + Math.min(2, (w.tech?.steam?.smog || 0) / 25) + (w.tech?.steam?.air ? -0.4 : 0), // 煤煙越多越可能
         rift: (w) => 0.4 + (done(w, 'aether_engine') ? 1.5 : 0) + (done(w, 'floating_city') ? 1 : 0),
+        blacksun: () => 0.4, // 七種都撐過以後,任何路線走到頂都可能遇上
     };
     for (const k of ['nukewar', 'aliens', 'ai']) KINDS[k].path = 'electro';
     const PHASES = ['omen', 'debate', 'rumor', 'panic', 'arrive', 'after'];
@@ -127,7 +144,7 @@ const WORLDCAL = (function () {
     const LEN = { omen: [8, 14], debate: [8, 14], rumor: [6, 10], panic: [8, 14], arrive: [3, 6], after: [10, 16] }; // 自然發生:總長 43～74 天
     const FAST = { omen: [2, 3], debate: [3, 4], rumor: [2, 3], panic: [3, 4], arrive: [1, 2], after: [3, 4] }; // 工坊發動:14～20 天
     const OUT = { averted: '化解了', eased: '減輕了', hit: '重創' };
-    const PATHN = { electro: '⚡ 電子機械', bio: '🧬 基因生物', steam: '⚙️ 蒸汽煉金' };
+    const PATHN = { electro: '⚡ 電子機械', bio: '🧬 基因生物', steam: '⚙️ 蒸汽煉金', all: '🌑 三條路線' };
     const LAB_COST = 80; const COOL = 720; const LS = 'rimtown_worldcal';
 
     function S(w) {
@@ -136,23 +153,26 @@ const WORLDCAL = (function () {
     }
     const lsGet = () => { try { return JSON.parse(localStorage.getItem(LS) || '[]'); } catch (e) { return []; } };
     const lsAdd = (k) => { try { const s = new Set(lsGet()); const had = s.has(k); s.add(k); localStorage.setItem(LS, JSON.stringify([...s])); if (!had && typeof window !== 'undefined') window.dispatchEvent?.(new Event('rimtown-unlock')); } catch (e) {} }; // v9.2.0 新解鎖 → 推上帳號
-    const unlocked = (k) => lsGet().includes(k);
+    const allSeven = () => { const u = lsGet(); return SEVEN.every(k => u.includes(k)); };
+    const unlocked = (k) => k === 'blacksun' ? allSeven() : lsGet().includes(k); // v9.3.0 黑日:七種都撐過才解鎖
     const active = (w) => !!w?.worldcal?.cur;
 
     // ---------- 會不會發生、是哪一種 ----------
     const era6Ratio = (w, P) => { try { return TECH.stageRatio(w.research, P, 6); } catch (e) { return 0; } };
-    const kindsOf = (P) => Object.keys(KINDS).filter(k => KINDS[k].path === P);
+    const kindsOf = (P) => Object.keys(KINDS).filter(k => KINDS[k].path === P || (KINDS[k].path === 'all' && P && allSeven()));
     function weights(w) { const P = w.tech?.path; const out = {}; for (const k of kindsOf(P)) { try { out[k] = Math.max(0.1, WEIGHT[k](w)); } catch (e) { out[k] = 0.1; } } return out; }
     function pickKind(w) { const Wt = weights(w); const ks = Object.keys(Wt); if (!ks.length) return null; const tot = Object.values(Wt).reduce((s, v) => s + v, 0); let r = Math.random() * tot; for (const [k, v] of Object.entries(Wt)) { r -= v; if (r <= 0) return k; } return ks[0]; }
     const era6 = (w) => Math.round(era6Ratio(w, w.tech?.path) * 100);
-    const eligible = (w) => w.observerMode !== false && kindsOf(w.tech?.path).length > 0 && era6Ratio(w, w.tech.path) >= 0.6 && adults(w).length >= 6; // 路線第六時代研究到六成
+    const eligible = (w) => w.observerMode !== false && kindsOf(w.tech?.path).some(k => KINDS[k].path !== 'all') && era6Ratio(w, w.tech.path) >= 0.6 && adults(w).length >= 6; // 路線第六時代研究到六成
 
     // ---------- 開始 ----------
     function begin(w, kind, src) {
         const X = S(w); if (X.cur || !KINDS[kind]) return null; const d = day(w); const R = src === 'lab' ? FAST : LEN;
         const len = {}; for (const p of PHASES) { const [a, b] = R[p]; len[p] = a + Math.floor(Math.random() * (b - a + 1)); }
         if (kind === 'zombie') len.after = Math.max(len.after, src === 'lab' ? 8 : 14); // 喪屍要鬧一陣子
+        if (kind === 'blacksun') { len.debate += src === 'lab' ? 2 : 4; len.panic += src === 'lab' ? 2 : 4; } // 三條線要救,給多一點時間
         X.cur = { kind, src: src || 'nature', d0: d, ph: 'omen', pd: d, len, prog: 0, fix: null, prep: null, deny: [], warn: [], log: [], used: {}, dead: 0, left: 0, out: null, fast: src === 'lab' ? 2.5 : 1 };
+        if (kind === 'blacksun') { X.cur.fronts = { electro: 0, bio: 0, steam: 0 }; X.cur.focus = null; }
         X.st.n++; note(w, 'omen'); onEnter(w, X.cur, 'omen'); return X.cur;
     }
     const note = (w, k, x) => { const c = w.worldcal?.cur; if (!c) return; c.log.push([day(w), k, x || '']); if (c.log.length > 14) c.log = c.log.slice(-14); };
@@ -167,6 +187,15 @@ const WORLDCAL = (function () {
         let v = (0.5 + 0.25 * Math.min(6, res)) * (c.fix ? 2 : 0.5) * c.fast; // 研究員多到六個以上也快不了多少
         if (done(w, 'space_station') || done(w, 'quantum_computer')) v *= 1.15; // 天上的研究室、量子電腦幫忙算
         if (c.kind === 'ai' && c.prep) v *= 1.3; // AI 拔掉了,它也沒辦法再搗亂
+        if (c.fronts) { // v9.3.0 黑日:研究員分三組。小鎮自己的路線熟一點;通過「先救哪一線」就偏重那一線
+            const P = w.tech?.path; const wt = {}; for (const f of Object.keys(FRONTS)) wt[f] = (f === P ? 1.4 : 1) * (c.focus ? (f === c.focus ? 2.4 : 0.6) : 1);
+            const tot = Object.values(wt).reduce((a, b) => a + b, 0);
+            for (const f of Object.keys(FRONTS)) c.fronts[f] = Math.min(100, Math.round((c.fronts[f] + v * 1.7 * wt[f] / tot * 3 / 1.15) * 10) / 10);
+            c.prog = Math.round(Object.values(c.fronts).reduce((a, b) => a + b, 0) / 3 * 10) / 10;
+            for (const f of Object.keys(FRONTS)) if (c.fronts[f] >= 100 && !c.used['fd_' + f]) { c.used['fd_' + f] = 1; log(w, '✅ {f}撐住了！這一線的研究員終於可以睡一覺。', { f: FRONTS[f].name }); note(w, 'front', FRONTS[f].name); }
+            if (Object.values(c.fronts).every(x => x >= 100) && !c.used.fixDone) { c.used.fixDone = 1; c.prog = 100; log(w, '✅ 三線救亡全部完成！電網、生命、以太都撐住了，剩下的只能等太陽自己決定。'); news(w, '✅ 三線救亡全部完成', {}, 10, []); note(w, 'fixdone'); }
+            return;
+        }
         c.prog = Math.min(100, Math.round((c.prog + v) * 10) / 10);
         if (c.prog >= 100 && !c.used.fixDone) { c.used.fixDone = 1; const K = KINDS[c.kind]; log(w, '✅ {f}完成了！研究員們熬了好多個晚上，終於趕在它來之前做出來。', { f: K.fix.name }); news(w, '✅ {f}完成了', { f: K.fix.name }, 9, []); note(w, 'fixdone'); }
     }
@@ -197,7 +226,11 @@ const WORLDCAL = (function () {
             else if (P.kind === 'wc_bank') propose(w, 'wc_bank', who, '精卵庫與人工子宮', '{who}提議趁現在把年輕人的精卵冷凍起來，研究員再試做人工子宮：就算最壞的情況，鎮上也還有機會有孩子。要用掉不少紙和研究員的時間，也有人覺得這樣違反天意。', {}, { cost: { paper: 15 } });
             else if (P.kind === 'wc_stock') propose(w, 'wc_stock', who, '囤糧囤柴', '{who}提議全鎮一起囤糧、囤木柴，蓋一間不透風的冬季倉庫：最冷的那幾個月，至少不會餓死凍死。要先拿出一批木頭和石頭。', {}, { cost: { wood: 40, stone: 20 } });
             else if (P.kind === 'wc_wall') propose(w, 'wc_wall', who, '築牆封鎖', '{who}提議在鎮的四周築牆、設拒馬，守衛排夜班巡守：喪屍真的來了，至少進不來。要用掉不少木頭和石頭，商隊也會少一點。', {}, { cost: { wood: 35, stone: 25 } });
+            else if (P.kind === 'wc_ark') propose(w, 'wc_ark', who, '地下方舟', '{who}提議在鎮的地底下蓋一座方舟：囤糧、囤種子、留一盞以太燈和一台手搖發電機。不管哪一線崩了，躲進去的人都能少受一點苦。要用掉很多木頭、石頭和糧食。', {}, { cost: { wood: 40, stone: 40, food: 30 } });
             else if (P.kind === 'wc_evac') propose(w, 'wc_evac', who, '遷離裂隙周邊', '{who}提議把住在裂隙底下的人家先搬到鎮的另一頭，空出來的房子先封起來：裂隙真的打開時，被吸進去的人會少很多。搬家的人得暫時擠一擠。', {});
+            // v9.3.0 黑日:有人提議先救最危險的那一線
+            if (c.fronts) { const weak = Object.keys(FRONTS).sort((a, b) => c.fronts[a] - c.fronts[b])[0]; const fw = best(w, a => (FJOB[weak].includes(a.job?.key) ? 3 : 0) + (c.warn.includes(a.agentId) ? 1 : 0) + Math.random());
+                propose(w, 'wc_focus', fw, '先救「{f}」', '{who}說三條線不可能全部救起來，提議研究員先集中救最危險的「{f}」，另外兩線只留少數人。救起來的那一線會快很多，其他兩線就要碰運氣。', { f: FRONTS[weak].name }, { front: weak }, { f: FRONTS[weak].name }); }
             // 有錢、膽小的人先走
             const rich = adults(w).filter(a => (hasT(a, 'neurotic') || hasT(a, 'pessimist') || c.warn.includes(a.agentId)) && wal(w, a) >= 80).sort((x, y) => wal(w, y) - wal(w, x)).slice(0, adults(w).length >= 30 && Math.random() < 0.5 ? 2 : 1);
             for (const a of rich) { if (adults(w).length <= 6) break; try { if (w.leaveTown?.(a.agentId, t('{name}要來了，先搬去遠一點的地方').replace('{name}', t(K.name)))) { c.left++; log(w, '🧳 {a}收拾了細軟，說要去遠方的親戚家「住一陣子」。', { a: a.name }); } } catch (e) {} }
@@ -243,7 +276,7 @@ const WORLDCAL = (function () {
     // ---------- 降臨 ----------
     const SAFE = /house|home|cottage|manor|apartment|well|town_hall|hall|cemetery|grave|granary/;
     const ONLY = { zombie: ['synthetic_life', 'gene_editing', 'life_extension', 'myth_genome'], ai: ['ai_agent', 'quantum_computer', 'robotics', 'microelectronics', 'assembly_line'], infertile: ['gene_editing', 'synthetic_life', 'myth_genome', 'life_extension'], rift: ['aether_engine', 'floating_city', 'philosopher_stone', 'homunculus'] };
-    const TARGET = { nukewar: ['nuclear_plant', 'launch_site', 'power_plant'], aliens: ['launch_site', 'observatory', 'power_plant'], ai: ['power_plant', 'factory', 'workshop'], iceage: ['airship_dock', 'gear_workshop', 'refinery'], rift: ['sky_isle', 'airship_dock', 'alchemy_lab', 'refinery'], infertile: [], zombie: [] };
+    const TARGET = { nukewar: ['nuclear_plant', 'launch_site', 'power_plant'], aliens: ['launch_site', 'observatory', 'power_plant'], ai: ['power_plant', 'factory', 'workshop'], iceage: ['airship_dock', 'gear_workshop', 'refinery'], rift: ['sky_isle', 'airship_dock', 'alchemy_lab', 'refinery'], infertile: [], zombie: [], blacksun: ['power_plant', 'factory', 'refinery', 'airship_dock', 'workshop'] };
     function wreck(w, kind, n) {
         const c = w.buildings?.completed || []; const out = [];
         const pickIdx = () => { let i = c.findIndex(b => TARGET[kind].includes(b.buildingKey || b.key)); if (i < 0) { const pool = c.map((b, j) => [b, j]).filter(([b]) => !SAFE.test(String(b.buildingKey || b.key || ''))); if (!pool.length) return -1; i = rnd(pool)[1]; } return i; };
@@ -278,6 +311,22 @@ const WORLDCAL = (function () {
                     const why = t('{name}之後想去外地碰運氣生孩子').replace('{name}', cause); let ok = false; try { ok = !!w.leaveTown?.(a.agentId, why); } catch (e) {} if (!ok) continue; leave.push(a); pairs++; if (b && !b.isDead && !b.isPlayer && w.agents[b.agentId]) { try { if (w.leaveTown?.(b.agentId, why)) leave.push(b); } catch (e) {} } }
                 c.pairs = pairs; }
             score = hit ? 18 : 8;
+        } else if (c.kind === 'blacksun') {
+            // v9.3.0 黑日:三條戰線各自算結果。方舟讓每一線的傷害都少一些
+            const ark = !!c.prep; const fo = c.frontOut = {}; const lost = [];
+            for (const f of Object.keys(FRONTS)) fo[f] = c.fronts[f] >= 100 ? 'averted' : c.fronts[f] >= 50 ? 'eased' : 'hit';
+            const hits = Object.values(fo).filter(x => x === 'hit').length, eases = Object.values(fo).filter(x => x === 'eased').length;
+            c.out = hits >= 2 ? 'hit' : (hits || eases) ? 'eased' : 'averted';
+            if (fo.electro !== 'averted') { wrecked = wrecked.concat(wreck(w, 'blacksun', fo.electro === 'hit' ? 2 : 1)); if (fo.electro === 'hit') lost.push(...FRONTS.electro.only); log(w, fo.electro === 'hit' ? '⚡ 電網整個燒掉了，工廠的機器一台一台停下來，再也沒有動。' : '⚡ 電網撐了一半，有幾區黑了好幾天才接回來。'); }
+            if (fo.bio !== 'averted') { const hit = fo.bio === 'hit'; const food = w.stockpile?.get?.('food') || 0; if (food > 0) w.stockpile.consume('food', Math.round(food * (hit ? 0.4 : 0.15) * (ark ? 0.6 : 1)), w.tickCount, t('黑日'), 'event');
+                for (const pl of (w.farm?.plots || [])) if (pl.state === 'growing' && Math.random() < (hit ? 0.8 : 0.4)) pl.state = 'withered';
+                if (hit) { dead = dead.concat(kill(w, Math.max(1, Math.round(pop0 * 0.04 * (ark ? 0.5 : 1))), cause, a => (a.age ?? 30) >= 60 || a.health?.sick)); S(w).sterile = { until: day(w) + 180, f: ark ? 0.6 : 0.4, blocked: 0 }; lost.push(...FRONTS.bio.only); }
+                log(w, hit ? '🌱 田裡的作物全枯了，連雞都不下蛋了。接下來半年，想生孩子的夫妻都要碰運氣。' : '🌱 作物枯了一半，倉庫裡的糧少了一截，但種子庫保住了。'); }
+            if (fo.steam !== 'averted') { const hit = fo.steam === 'hit'; c.winter = hit ? 2 : 1; if (hit) { const alive = shuffle(adults(w)); for (const a of alive.filter(x => !owner(w, x)).slice(0, Math.max(1, Math.round(alive.length * 0.06 * (ark ? 0.5 : 1))))) { if (adults(w).length <= 5) break; try { if (w.leaveTown?.(a.agentId, t('{name}之後往有光的地方去了').replace('{name}', cause))) leave.push(a); } catch (e) {} } lost.push(...FRONTS.steam.only); wrecked = wrecked.concat(wreck(w, 'blacksun', 1)); }
+                log(w, hit ? '🔮 以太燈全熄了，天冷得像冰河期，有人說要往南邊找有光的地方。' : '🔮 以太燈只剩一半亮著，晚上大家擠在燈下取暖。'); }
+            c.lostOnly = lost; score = hits * 18 + eases * 7 + (dead.length / Math.max(1, pop0)) * 120 + (leave.length / Math.max(1, pop0)) * 50 - (ark ? 10 : 0);
+            for (const a of dead) for (const f of famOf(w, a)) if (!f.isDead) { f.addThought?.('wc_grief', w); mem(w, f, '黑日那幾天，我的家人沒能等到天亮。', {}, 9); }
+            for (const a of here(w)) { a.moodModifier = (a.moodModifier || 0) + (c.out === 'averted' ? 6 : c.out === 'eased' ? -6 : -14); a.addThought?.(c.out === 'averted' ? 'wc_relief' : 'wc_fear', w); }
         } else if (c.kind === 'zombie') {
             // v9.2.0 喪屍:一部分人變成喪屍(不算死),之後每晚咬人;築了牆少一半;解藥做完全部變回來
             const hit = out === 'hit'; const wall = !!c.prep;
@@ -322,15 +371,15 @@ const WORLDCAL = (function () {
             for (const a of dead) for (const f of famOf(w, a)) if (!f.isDead) { f.addThought?.('wc_grief', w); mem(w, f, '{name}奪走了我的家人。', { name: K.name }, 9); }
             for (const a of here(w)) { a.moodModifier = (a.moodModifier || 0) - (hit ? 15 : 7); a.addThought?.('wc_fear', w); }
         }
-        c.dead += dead.length; c.left += leave.length; const X = S(w); X.st[out]++; X.st.dead += dead.length; X.st.left += c.left;
+        const out2 = c.out; c.dead += dead.length; c.left += leave.length; const X = S(w); X.st[out2]++; X.st.dead += dead.length; X.st.left += c.left;
         const p = { r: r?.name || t('研究員'), dead: dead.length ? names(dead) : t('沒有人'), s: sick, b: wrecked.length ? wrecked.map(b => t(b.name)).join(t('、')) : t('幾間屋子'), l: c.kind === 'infertile' ? (c.pairs || 1) : leave.length };
-        log(w, K.arrive[out], p, r?.name); news(w, K.arrive[out], p, 10, dead.map(a => a.name)); note(w, 'arrive_' + out + (c.kind === 'infertile' ? '_kid' : c.kind === 'rift' ? '_van' : c.kind === 'zombie' ? '_zb' : ''), String(c.kind === 'rift' ? leave.length : c.kind === 'zombie' ? sick : dead.length));
-        for (const a of here(w)) mem(w, a, K.arrive[out], p, out === 'averted' ? 8 : 9);
+        log(w, K.arrive[out2], p, r?.name); news(w, K.arrive[out2], p, 10, dead.map(a => a.name)); note(w, 'arrive_' + out2 + (c.kind === 'infertile' ? '_kid' : c.kind === 'rift' ? '_van' : c.kind === 'zombie' ? '_zb' : ''), String(c.kind === 'rift' ? leave.length : c.kind === 'zombie' ? sick : dead.length));
+        for (const a of here(w)) mem(w, a, K.arrive[out2], p, out2 === 'averted' ? 8 : 9);
         // 失傳的學問
-        try { if (score > 0 && typeof CALAMITY !== 'undefined' && CALAMITY.regress) CALAMITY.regress(w, cause, score, ONLY[c.kind] ? { only: ONLY[c.kind] } : {}); } catch (e) {}
+        try { if (score > 0 && typeof CALAMITY !== 'undefined' && CALAMITY.regress && !(c.kind === 'blacksun' && !c.lostOnly?.length)) CALAMITY.regress(w, cause, score, c.kind === 'blacksun' ? { only: c.lostOnly } : ONLY[c.kind] ? { only: ONLY[c.kind] } : {}); } catch (e) {} // 黑日:只有沒救起來的那幾線會失傳
         // 災後反應:互助、怪罪(怪當初說沒事、投反對票的人)
         const blameId = (c.fixNo || []).concat(c.deny).find(id => w.agents[id] && !w.agents[id].isDead && owner(w, w.agents[id])) || (c.fixNo || []).find(id => w.agents[id] && !w.agents[id].isDead) || null;
-        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'wc_' + c.kind, sev: out === 'hit' ? 3 : out === 'eased' ? 2 : 1, cause, who: dead, blame: out === 'averted' ? null : (blameId ? w.agents[blameId] : null) }); } catch (e) {}
+        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'wc_' + c.kind, sev: out2 === 'hit' ? 3 : out2 === 'eased' ? 2 : 1, cause, who: dead, blame: out2 === 'averted' ? null : (blameId ? w.agents[blameId] : null) }); } catch (e) {}
         if (c.kind === 'ai' && out !== 'averted') { c.ctrl = out === 'hit' ? 1 : 0; }
         if ((c.kind === 'nukewar' || c.kind === 'iceage') && out !== 'averted') c.winter = c.kind === 'iceage' && out === 'hit' ? 2 : 1;
     }
@@ -398,7 +447,10 @@ const WORLDCAL = (function () {
         }
         X.hist.unshift({ kind: c.kind, src: c.src, d0: c.d0, end: d, out: c.out, dead: c.dead, left: c.left, prog: Math.round(c.prog), prep: !!c.prep, fix: !!c.fix });
         X.hist = X.hist.slice(0, 8); X.cur = null; X.next = d + (c.src === 'lab' ? 60 : COOL); X.cool = d + 60;
-        X.surv = X.surv || {}; X.surv[c.kind] = (X.surv[c.kind] || 0) + 1; lsAdd(c.kind);
+        const had7 = allSeven(); X.surv = X.surv || {}; X.surv[c.kind] = (X.surv[c.kind] || 0) + 1; lsAdd(c.kind);
+        if (!had7 && allSeven()) { // v9.3.0 第七種也撐過了:黑日在這一刻被發現
+            log(w, '🌑 天文台的老人放下望遠鏡，說了一句沒有人聽懂的話：「七次了……這次輪到太陽自己。」那天中午，大家都覺得陽光好像淡了一點。'); news(w, '🌑 天文台：太陽好像變暗了', {}, 9, []);
+            try { w.onWorldCal?.(null, 'found', { kind: 'blacksun' }); } catch (e) {} }
         log(w, '🌍 小鎮撐過了{name}（{o}）。這件事寫進了災厄工坊。', { name: K.name, o: OUT[c.out] }); news(w, '🌍 小鎮撐過了{name}', fx, 9, []);
         try { w.onWorldCal?.(null, 'end', c); } catch (e) {}
     }
@@ -425,6 +477,10 @@ const WORLDCAL = (function () {
         if (p.kind === 'wc_bank') { c.prep = day(w); note(w, 'bank'); log(w, '🧊 精卵庫蓋好了，研究員在地下室養著第一個人工子宮。有人說這是希望，有人在門口畫十字。'); for (const a of adults(w)) if (devout(w, a) && Math.random() < 0.4) mem(w, a, '把孩子放在玻璃罐裡養，這真的是對的嗎？', {}, 5); return t('精卵庫蓋好了'); }
         if (p.kind === 'wc_stock') { c.prep = day(w); note(w, 'stock'); log(w, '🪵 冬季倉庫堆滿了木柴和醃菜，全鎮的人排隊把自家的存糧搬進去，連小孩都來幫忙。'); return t('冬季倉庫堆滿了'); }
         if (p.kind === 'wc_evac') { c.prep = day(w); note(w, 'evac'); const mv = adults(w).filter(() => Math.random() < 0.25).slice(0, 6); for (const a of mv) { a.moodModifier = (a.moodModifier || 0) - 2; mem(w, a, '為了躲裂隙，我們家暫時搬到鎮的另一頭。', {}, 6); } log(w, '🧳 住在裂隙底下的{n}戶人家搬到了鎮的另一頭，空房子用木板封了起來。', { n: Math.max(1, mv.length) }); return t('裂隙周邊的人家搬走了'); }
+        if (p.kind === 'wc_ark') { c.prep = day(w); note(w, 'ark'); log(w, '🛖 地下方舟蓋好了：一排排的糧袋、一箱箱的種子、一台手搖發電機，最裡面點著一盞小小的以太燈。'); return t('地下方舟蓋好了'); }
+        if (p.kind === 'wc_focus') { const f = FRONTS[p.front] ? p.front : null; if (!c.fronts || !f) return ''; c.focus = f; note(w, 'focus', FRONTS[f].name); log(w, '🎯 研究員決定先救「{f}」，另外兩線只留下幾個人。有人鬆了一口氣，有人說這是在賭命。', { f: FRONTS[f].name });
+            for (const a of adults(w)) if (FJOB[f].includes(a.job?.key)) a.moodModifier = (a.moodModifier || 0) + 2; else if (Object.entries(FJOB).some(([g, js]) => g !== f && js.includes(a.job?.key)) && Math.random() < 0.4) mem(w, a, '他們決定先救「{f}」，我們這一行的人只能自求多福。', { f: FRONTS[f].name }, 6);
+            return fill('研究員先救「{f}」', { f: FRONTS[f].name }); }
         if (p.kind === 'wc_wall') { c.prep = day(w); note(w, 'wall'); log(w, '🧱 鎮的四周築起了木牆和拒馬，守衛排了夜班表，每個路口都掛著火把。'); return t('圍牆築好了'); }
         if (p.kind === 'wc_shelter') { c.prep = day(w); note(w, 'shelter'); log(w, '🏚️ 防空洞挖好了，裡面堆滿了水和罐頭。孩子們覺得像祕密基地，大人看了心裡踏實一點。'); return t('防空洞挖好了'); }
         if (p.kind === 'wc_unplug') { c.prep = day(w); c.prog = Math.min(100, c.prog + 25); note(w, 'unplug'); dismantleAI(w); log(w, '🧯 AI 全智能體被拔掉了。工廠慢了下來，有些以前它做的活又回到人手上。'); for (const a of adults(w)) if (w.tech?.mk?.[a.agentId] === 'laid') { a.moodModifier = (a.moodModifier || 0) + 4; mem(w, a, 'AI 拔掉了，說不定我的工作會回來。', {}, 6); } return t('AI 全智能體關掉了'); }
@@ -441,6 +497,13 @@ const WORLDCAL = (function () {
         } else if (p.kind === 'wc_shelter') {
             s = 0.3 + (wn ? 2 : 0) + (kids ? 1.5 : 0) + (hasT(a, 'pessimist') || hasT(a, 'neurotic') ? 1 : 0) + (c.ph === 'panic' ? 1.5 : 0) - (dn ? 2.5 : 0) - (hasT(a, 'greedy') ? 0.6 : 0) - (k === 'carpenter' ? 0.3 : 0);
             why = s > 0 ? (kids ? 'wc_kids' : 'wc_fear') : (dn ? 'wc_deny' : 'wc_cost');
+        } else if (p.kind === 'wc_ark') { // 顧家的人、老人贊成;老闆和貪心的人嫌太花錢
+            s = 0.4 + (wn ? 2 : 0) + (kids ? 1.5 : 0) + ((a.age ?? 30) >= 60 ? 1 : 0) + (c.ph === 'panic' ? 1.5 : 0) - (dn ? 2.5 : 0) - (owner(w, a) ? 0.8 : 0) - (hasT(a, 'greedy') ? 0.8 : 0);
+            why = s > 0 ? (kids ? 'wc_kids' : 'wc_fear') : (dn ? 'wc_deny' : 'wc_cost');
+        } else if (p.kind === 'wc_focus') { // 自己這一行被救的贊成,別的線的人反對
+            const mine = FJOB[p.front]?.includes(k); const other = Object.entries(FJOB).some(([g, js]) => g !== p.front && js.includes(k));
+            s = 0.2 + (mine ? 2.2 : 0) - (other ? 1.6 : 0) + (wn ? 0.6 : 0) + (c.ph === 'panic' ? 0.8 : 0) - (dn ? 1.5 : 0);
+            why = s > 0 ? (mine ? 'wc_mine' : 'wc_fear') : (other ? 'wc_other' : dn ? 'wc_deny' : 'wc_cost');
         } else if (p.kind === 'wc_wall') { // 守衛、顧家的人贊成;開店的嫌生意少
             s = 0.4 + (wn ? 2 : 0) + (kids ? 1.2 : 0) + (k === 'guard' ? 1.5 : 0) + (c.ph === 'panic' ? 1.5 : 0) - (dn ? 2.5 : 0) - (owner(w, a) ? 0.8 : 0) - (k === 'merchant' ? 0.8 : 0);
             why = s > 0 ? (kids ? 'wc_kids' : 'wc_fear') : (dn ? 'wc_deny' : 'wc_cost');
@@ -478,13 +541,15 @@ const WORLDCAL = (function () {
 
     // ---------- 介面與 AI ----------
     function view(w) {
-        const X = S(w); const c = X.cur; const kinds = Object.entries(KINDS).map(([k, K]) => ({ key: k, path: K.path, pathName: t(PATHN[K.path] || ''), icon: K.icon, name: t(K.name), short: t(K.short), fix: t(K.fix.name), prep: K.prep ? K.prep.icon + ' ' + t(K.prep.name) : '', on: unlocked(k), can: canLab(w, k) }));
+        const X = S(w); const c = X.cur; const kinds = Object.entries(KINDS).map(([k, K]) => { const on = unlocked(k); const hid = K.path === 'all' && !on; // v9.3.0 黑日:七種都撐過才會被發現,之前只是一張蓋著的牌
+            return hid ? { key: k, path: K.path, pathName: '❔', icon: '❔', name: '？？？', short: t('還沒有人知道它是什麼'), fix: '？？？', prep: '', on: false, hidden: true, seven: SEVEN.filter(x => lsGet().includes(x)).length, can: { ok: false, why: 'hidden' } }
+                : { key: k, path: K.path, pathName: t(PATHN[K.path] || ''), icon: K.icon, name: t(K.name), short: t(K.short), fix: t(K.fix.name), prep: K.prep ? K.prep.icon + ' ' + t(K.prep.name) : '', on, can: canLab(w, k) }; });
         const Z = X.sterile && X.sterile.until > day(w) ? { f: Math.round(X.sterile.f * 100), left: X.sterile.until - day(w), blocked: X.sterile.blocked || 0 } : null;
         const base = { kinds, cost: LAB_COST, sterile: Z, hist: X.hist.map(h => ({ ...h, icon: KINDS[h.kind]?.icon || '', name: t(KINDS[h.kind]?.name || ''), outName: t(OUT[h.out] || '') })), st: X.st };
         if (!c) return base;
         const K = KINDS[c.kind]; const alive = (ids) => ids.filter(id => w.agents[id] && !w.agents[id].isDead).length;
         return Object.assign(base, { cur: { kind: c.kind, icon: K.icon, name: t(K.name), short: t(K.short), src: c.src, ph: c.ph, idx: PHASES.indexOf(c.ph), phases: PHASES.map(p => ({ key: p, icon: PH[p].icon, name: t(PH[p].name) })), day: day(w) - c.d0 + 1, left: leftDays(w, c),
-            prog: Math.round(c.prog), fix: !!c.fix, fixName: t(K.fix.name), fixIcon: K.fix.icon, prep: !!c.prep, prepName: t(K.prep.name), prepIcon: K.prep.icon, deny: alive(c.deny), warn: alive(c.warn), dead: c.dead, left2: c.left - (c.vanish?.length || 0), van: c.vanish?.length || 0, out: c.out, outName: c.out ? t(OUT[c.out]) : '', log: c.log.slice(-8), zb: c.zb ? { n: c.zb.ids.length, bit: Object.keys(c.zb.bit).length, killed: c.zb.st.killed, hid: c.zb.st.hid, cured: c.zb.st.cured } : null } });
+            prog: Math.round(c.prog), fix: !!c.fix, fixName: t(K.fix.name), fixIcon: K.fix.icon, prep: !!c.prep, prepName: t(K.prep.name), prepIcon: K.prep.icon, deny: alive(c.deny), warn: alive(c.warn), dead: c.dead, left2: c.left - (c.vanish?.length || 0), van: c.vanish?.length || 0, out: c.out, outName: c.out ? t(OUT[c.out]) : '', log: c.log.slice(-8), fronts: c.fronts ? Object.keys(FRONTS).map(f => ({ key: f, icon: FRONTS[f].icon, name: t(FRONTS[f].name), prog: Math.round(c.fronts[f]), out: c.frontOut?.[f] || null, outName: c.frontOut?.[f] ? t(OUT[c.frontOut[f]]) : '', focus: c.focus === f })) : null, zb: c.zb ? { n: c.zb.ids.length, bit: Object.keys(c.zb.bit).length, killed: c.zb.st.killed, hid: c.zb.st.hid, cured: c.zb.st.cured } : null } });
     }
     function townBrief(w) {
         const c = w?.worldcal?.cur; if (!c) { const h = w?.worldcal?.hist?.[0]; return h && day(w) - h.end <= 120 ? fill('不久前撐過了{name}（{o}）', { name: KINDS[h.kind]?.name || '', o: OUT[h.out] || '' }) : ''; }
@@ -501,7 +566,7 @@ const WORLDCAL = (function () {
         const K = KINDS[c.kind]; if (c.deny.includes(a.agentId)) return fill('我覺得{name}只是危言聳聽', { name: K.name }); if (c.warn.includes(a.agentId)) return fill('我很怕{name}，覺得要趕快準備', { name: K.name });
         return '';
     }
-    return { isZombie: isZ, zIds, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll } };
+    return { isZombie: isZ, zIds, FRONTS, SEVEN, allSeven, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll } };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
@@ -510,9 +575,9 @@ if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
     wc_relief: { mood: 8, opinion: 0, days: 5, label: t('世界末日沒有來') },
     wc_childless: { mood: -10, opinion: 0, days: 20, label: t('可能再也不會有孩子了') },
 });
-if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { wc_fix: { icon: '🔬', label: '全力研究主對策' }, wc_shelter: { icon: '🏚️', label: '蓋防空洞' }, wc_unplug: { icon: '🧯', label: '拔掉 AI 全智能體' }, wc_bank: { icon: '🧊', label: '精卵庫與人工子宮' }, wc_stock: { icon: '🪵', label: '囤糧囤柴' }, wc_evac: { icon: '🧳', label: '遷離裂隙周邊' }, wc_wall: { icon: '🧱', label: '築牆封鎖' } });
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { wc_fear: '怕世界末日真的來', wc_kids: '為了孩子', wc_deny: '覺得是危言聳聽', wc_cost: '代價太大' });
-if (typeof AFTERMATH !== 'undefined') Object.assign(AFTERMATH.CAUSE, { wc_nukewar: '核子世界大戰', wc_aliens: '外星文明入侵', wc_ai: 'AI 控制全人類', wc_infertile: '全球不孕', wc_iceage: '冰河期', wc_rift: '以太裂隙', wc_zombie: '喪屍危機' });
+if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { wc_fix: { icon: '🔬', label: '全力研究主對策' }, wc_shelter: { icon: '🏚️', label: '蓋防空洞' }, wc_unplug: { icon: '🧯', label: '拔掉 AI 全智能體' }, wc_bank: { icon: '🧊', label: '精卵庫與人工子宮' }, wc_stock: { icon: '🪵', label: '囤糧囤柴' }, wc_evac: { icon: '🧳', label: '遷離裂隙周邊' }, wc_wall: { icon: '🧱', label: '築牆封鎖' }, wc_ark: { icon: '🛖', label: '地下方舟' }, wc_focus: { icon: '🎯', label: '先救哪一線' } });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { wc_fear: '怕世界末日真的來', wc_kids: '為了孩子', wc_deny: '覺得是危言聳聽', wc_cost: '代價太大', wc_mine: '這一線跟我的工作有關', wc_other: '那我這一行怎麼辦' });
+if (typeof AFTERMATH !== 'undefined') Object.assign(AFTERMATH.CAUSE, { wc_nukewar: '核子世界大戰', wc_aliens: '外星文明入侵', wc_ai: 'AI 控制全人類', wc_infertile: '全球不孕', wc_iceage: '冰河期', wc_rift: '以太裂隙', wc_zombie: '喪屍危機', wc_blacksun: '黑日' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) WORLDCAL.daily(w); } catch (e) { console.warn('[WorldCal] daily', e); } return r; };

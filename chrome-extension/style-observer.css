@@ -994,3 +994,10 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 /* v9.2.1 手牌抽屜內容變多（世界級災厄區塊）時，標題列／篩選列不能被擠扁，只讓下面的內容捲動 */
 .rimtown-container .gh-tray > .gh-grab, .rimtown-container .gh-tray > .gh-head, .rimtown-container .gh-tray > .gh-filters { flex-shrink: 0; }
 .rimtown-container .gh-tray > .gh-body, .rimtown-container .gh-tray > .gh-track, .rimtown-container .gh-tray > .gh-lab { min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+/* v9.3.0 黑日:蓋著的牌、三條戰線 */
+.rimtown-container .gh-wcc.wc-p-all, .rimtown-container .gh-wcd.wc-p-all { --c: #8A7FB8; }
+.rimtown-container .gh-wcd.wc-hidden .gh-d-ic { filter: grayscale(1); }
+.rimtown-container .gh-wc-seven { display: flex; gap: 6px; flex-wrap: wrap; font-size: 1.1rem; }
+.rimtown-container .gh-wc-seven span { width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; border: 1px dashed var(--border); color: var(--text-muted); }
+.rimtown-container .gh-wc-seven span.on { border-style: solid; border-color: var(--accent); }
+.rimtown-container .wc-front.on > span:first-child { font-weight: 800; color: var(--accent); }

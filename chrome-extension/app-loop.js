@@ -351,7 +351,8 @@ Object.assign(RimTownApp.prototype, {
         w.onRelocate = (data) => this._doRelocate(data); // v5.90.0 搬家提案的決定
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
         w.onEventCard = (kind, e, npc, text) => this._onEventCard(kind, e, npc, text); // v6.38.0 事件卡
-        w.onWorldCal = (c, ph, endC) => { try { if (typeof WORLDCAL === 'undefined') return; const K = WORLDCAL.KINDS[(c || endC)?.kind]; if (!K) return; const P = WORLDCAL.PH[ph]; const D = { omen: '鎮上開始出現說不出的怪事。', debate: '學者算出了真相，鎮上分成兩派。', rumor: '消息傳遍全鎮，有人開始收拾行李。', panic: '大家越來越害怕。', arrive: '它來了。', after: '最難的時候過去了，大家開始收拾。', end: '小鎮撐過來了，這件事寫進了災厄工坊。' };
+        w.onWorldCal = (c, ph, endC) => { try { if (typeof WORLDCAL === 'undefined') return; const K = WORLDCAL.KINDS[(c || endC)?.kind]; if (!K) return; const P = WORLDCAL.PH[ph]; const D = { omen: '鎮上開始出現說不出的怪事。', debate: '學者算出了真相，鎮上分成兩派。', rumor: '消息傳遍全鎮，有人開始收拾行李。', panic: '大家越來越害怕。', arrive: '它來了。', after: '最難的時候過去了，大家開始收拾。', end: '小鎮撐過來了，這件事寫進了帳號，之後在任何城鎮都能從手牌打出來。' };
+            if (ph === 'found') { this._showCornerNotice({ icon: '🌑', title: t('發現了新的世界級災厄'), name: t(K.name), desc: t('七種末日都撐過了。這次，是太陽本身。它已經出現在手牌的世界級災厄區塊。') }); this._ghRefresh?.(); return; } // v9.3.0
             this._showCornerNotice({ icon: K.icon, title: ph === 'end' ? t('世界級災厄結束') : `${P?.icon || ''} ${t(P?.name || '')}`, name: t(K.name), desc: t(D[ph] || '') }); this._ghRefresh?.(); } catch (err) {} }; // v8.5.0
         w.onGodbook = (c) => { try { this._showCornerNotice({ icon: '📖', title: t('神之書多了一頁'), name: '', desc: `${(GODBOOK?.RAR?.[c.rar]?.icon) || ''}${c.icon} ${t(c.name)}${t('：')}${t(c.effect)}` }); this._ghRefresh?.(); } catch (err) {} }; // v8.4.0
         w.onCalamity = (kind, x) => { try { if (kind !== 'day' && x) this._showCornerNotice({ icon: x.icon, title: x.title, name: '', desc: x.desc }); this._ghRefresh?.(); } catch (err) {} }; // v7.9.0 災厄工坊
