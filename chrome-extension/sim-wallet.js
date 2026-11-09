@@ -238,10 +238,11 @@ const WALLET = (() => {
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
+const ESTATE_TAX = 0.3, ESTATE_EXEMPT = 200; // v9.7.4 遺產稅率、免稅額(會跟著工資指數漲)
 if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
-        let estate = 0, heirs = [], took = false;
+        let estate = 0, heirs = [], took = false, assets = 0;
         try {
             if (world.wallet && npc && !npc.isPlayer) {
                 estate = WALLET.get(world, npc); took = true;
@@ -249,13 +250,35 @@ if (typeof LifecycleSystem !== 'undefined') {
                 const B = world.bank, id = npc.agentId;
                 if (B && B.dep && B.dep[id] > 0) { const paid = Math.min(B.dep[id], Math.max(0, Math.floor(B.reserve || 0))); B.reserve -= paid; delete B.dep[id]; estate += paid; }
                 if (B && B.loans && B.loans[id] && estate > 0) { const L = B.loans[id]; const pay = Math.min(L.owed || 0, estate); estate = Math.round((estate - pay) * 100) / 100; B.reserve += pay; L.owed -= pay; if (L.owed <= 0) delete B.loans[id]; }
-                heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (['married', 'dating'].includes(a.relationships?.relationships?.[npc.agentId]?.status) || (a._parentNames || []).includes(npc.name)));
+                // v9.7.4 繼承人只算配偶和子女(交往中的不算);配偶排第一,再來年紀大的
+                const wed = (a) => a.relationships?.relationships?.[npc.agentId]?.status === 'married';
+                heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (wed(a) || (a._parentNames || []).includes(npc.name))).sort((x, y) => wed(y) - wed(x) || (y.age || 0) - (x.age || 0));
+                // v9.7.4 遺產稅要算進產業和房子的價值(這時還沒轉給繼承人)
+                try { if (typeof MARKET !== 'undefined' && MARKET.firmsOf) for (const f of MARKET.firmsOf(world, id)) assets += (MARKET.value(world, f.k) || 0) * (f.rival ? 0.6 : 1); } catch (e) {}
+                try { if (typeof ESTATE !== 'undefined' && world.estate) for (const u of ESTATE.ownsOf(world, id)) assets += ESTATE.valueOf(world, u) || 0; } catch (e) {}
             }
         } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         try {
             // 錢包已經算進遺產(或拿去還了貸款),不管剩不剩都要清掉;以前遺產剛好被貸款扣光就沒清,同一筆錢同時留在錢包又進了銀行
             if (took && world.wallet?.bal) delete world.wallet.bal[npc.agentId];
+            // v9.7.4 遺產稅:有家人繼承時,(現金＋產業＋房子)超過免稅額的部分課 30%,先從現金扣,不夠由主要繼承人補(補不出來的就免了)
+            if (heirs.length && took && world.observerMode) {
+                const W = world.wallet, rate = W.estateRate ?? ESTATE_TAX, exempt = Math.round(ESTATE_EXEMPT * (WALLET.wageIdx?.() || 1));
+                const due = Math.round(Math.max(0, estate + assets - exempt) * rate * 100) / 100;
+                if (due > 0) {
+                    const fromCash = Math.min(due, estate); estate = Math.round((estate - fromCash) * 100) / 100;
+                    const h0 = heirs[0]; const fromHeir = Math.min(Math.round((due - fromCash) * 100) / 100, Math.max(0, WALLET.get(world, h0)));
+                    if (fromHeir > 0) WALLET.take(world, h0, fromHeir);
+                    const paid = Math.round((fromCash + fromHeir) * 100) / 100;
+                    if (paid > 0) {
+                        world.stockpile?.add?.('silver', paid, world.tickCount, t('遺產稅'));
+                        W.estateTax = Math.round(((W.estateTax || 0) + paid) * 100) / 100; W.estateTaxN = (W.estateTaxN || 0) + 1;
+                        world.logMessageT?.('economy', '⚱️ {name}留下的遺產（現金加產業、房子約 {v} 銀幣）繳了 {n} 銀幣遺產稅給公庫，由{h}繼承。', { name: npc.name, v: Math.round(estate + fromCash + assets), n: Math.round(paid), h: h0.name }, h0.name);
+                        h0.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '{name}的遺產繳了 {n} 銀幣遺產稅。', { name: npc.name, n: Math.round(paid) }, 6, [npc.name]);
+                    }
+                }
+            }
             if (estate > 0) {
                 if (heirs.length) { const base = Math.floor(estate / heirs.length * 100 + 1e-6) / 100; const first = Math.round((estate - base * (heirs.length - 1)) * 100) / 100; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
                 else world.stockpile?.add?.('silver', Math.round(estate * 100) / 100, world.tickCount, t('無人繼承的遺產'));
