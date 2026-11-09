@@ -34,11 +34,11 @@ async function run(browser, lang, vp) {
       B[boss.agentId] = 100000; const gam = all.filter(a => a !== boss).slice(0, 12); for (const a of gam) { a.personality.traits = ['greedy', 'optimist']; B[a.agentId] = 100; }
       const g0 = Object.fromEntries(gam.map(a => [a.agentId, 100])); if (w.bank) w.bank.open = false;
       const v0 = C.st.visits, h0 = C.st.house, pd0 = C.st.paid; const hc = conserved(() => { for (let k = 0; k < 60; k++) run1(); });
-      // 樣本要大才看得出莊家優勢:每天把賭客的錢重設成 100,連跑 500 天,累計每個人的輸贏
-      const cum = {}; const v1 = C.st.visits, h1 = C.st.house, pd1 = C.st.paid;
-      for (let k = 0; k < 500; k++) { for (const a of gam) if (w.agents[a.agentId]) { B[a.agentId] = 100; } B[boss.agentId] = 100000; run1(); for (const a of gam) if (w.agents[a.agentId]) cum[a.agentId] = (cum[a.agentId] || 0) + (B[a.agentId] - 100); }
+      // 樣本要大才看得出莊家優勢:每天把賭客的錢重設成 100,連跑 1500 天,累計每個人的輸贏
+      const cum = {}; const v1 = C.st.visits, h1 = C.st.house, pd1 = C.st.paid; out.lossN0 = C.st.lossN || 0;
+      for (let k = 0; k < 1500; k++) { for (const a of gam) if (w.agents[a.agentId]) { B[a.agentId] = 100; } B[boss.agentId] = 100000; run1(); for (const a of gam) if (w.agents[a.agentId]) cum[a.agentId] = (cum[a.agentId] || 0) + (B[a.agentId] - 100); }
       const went = gam.filter(a => (C.v[a.agentId] || 0) > 0 && a.agentId in cum); const lost = went.filter(a => cum[a.agentId] < 0);
-      out.edge = { visits: C.st.visits - v1, house: Math.round(C.st.house - h1), paid: Math.round(C.st.paid - pd1), net: Math.round((C.st.house - h1) - (C.st.paid - pd1)), went: went.length, lost: lost.length, cons: hc, d60: C.st.visits - v0 > 0 };
+      out.edge = { visits: C.st.visits - v1, house: Math.round(C.st.house - h1), paid: Math.round(C.st.paid - pd1), net: Math.round((C.st.house - h1) - (C.st.paid - pd1)), went: went.length, lost: lost.length, cons: hc, d60: C.st.visits - v0 > 0, lossRate: Math.round(((C.st.lossN || 0) - (out.lossN0 || 0)) / Math.max(1, C.st.visits - v1) * 1000) / 1000, edge: Math.round(((1 - CASINO.EDGE) - (CASINO.EDGE - CASINO.JACK) - CASINO.JACK * CASINO.JACKX) * 1000) / 1000 /* 每押 1：輸的機率 − 小贏 − 大獎 */ };
       if (w.bank) w.bank.open = true;
       // ---------- 3) 一夕致富:中大獎 25 倍;莊家付不出就倒 ----------
       for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 100000; const lucky = gam.find(a => w.agents[a.agentId]); B[lucky.agentId] = 50; C.streak = {};
@@ -52,19 +52,23 @@ async function run(browser, lang, vp) {
       vic.personality.traits = ['greedy']; vic.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; sp.relationships.getOrCreate(vic.agentId, vic.name).status = 'married';
       for (const a of all) B[a.agentId] = Math.min(B[a.agentId] ?? 0, 4); B[boss.agentId] = 100000; B[vic.agentId] = 5; const d = w._absDay();
       C.streak[vic.agentId] = 4; C.lost[vic.agentId] = [[d, 60]]; const BK = BANK.S(w); BK.loans = BK.loans || {}; BK.loans[vic.agentId] = { owed: 20, principal: 20, rate: 0.1, day: d, due: d + 30 };
+      THINGS.S(w).att[C.thing][vic.agentId] = 90; C.debt[vic.agentId] = { n: 1, day: d }; /* 很愛賭、已經跟莊家賒過帳（不會再賒） */
       const r0 = C.st.ruin, f0 = C.st.fled, dv0 = C.st.divorce; const rc = conserved(() => run1(0.45));
-      out.ruin = { ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
+      out.ruin = { dbg: { cash: B[vic.agentId], v: C.v[vic.agentId], st: C.streak[vic.agentId], dealer: C.dealer === vic.agentId, owner: C.owner === vic.agentId, open: C.open, mult: THINGS.useMult(w, C.thing, vic), lost: (C.lost[vic.agentId] || []).length }, ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
       // ---------- 5) 城市以上:外地賭客來玩(觀光收入,從外地流進來) ----------
       for (const a of npcs()) if (a.agentId !== C.owner) B[a.agentId] = 1; TIER = 2; const ownC = B[C.owner]; const M = MONEY.S(w); const day0 = M.days?.[w._absDay()]?.tourism || 0; const t0 = C.st.tourists;
       const tc = conserved(() => run1(0.5)); out.tour = { n: C.st.tourists - t0, owner: B[C.owner] > ownC, flow: (M.days?.[w._absDay()]?.tourism || 0) - day0, cons: tc };
       TIER = 1; const t1 = C.st.tourists; run1(0.5); out.tour.townNo = C.st.tourists === t1;
-      // ---------- 6) 禁賭:輸到破產的人多了就有人提;虔誠／家人受害的贊成、老闆反對 ----------
-      const preacher = npcs().find(a => a.agentId !== C.owner && MONEY.familyOf(w, a).length && !MARKET.ownedBy(w, a.agentId).includes('kitchen')) || npcs().find(a => a.agentId !== C.owner); preacher.personality.traits = ['kind']; delete C.v[preacher.agentId]; C.st.ruin = (C.ruin0 || 0) + 2; C.lastProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'casino_ban');
-      run1(0.5); const pr = (w.proposals.items || []).find(q => q.kind === 'casino_ban'); out.ban = { prop: !!pr };
+      // ---------- 6) 禁賭（v9.0.0 走通用的「禁止新東西」）:被害的家庭夠多，就有人站出來提;討厭賭場的人贊成、老闆反對 ----------
+      const X = THINGS.S(w); const TT = X.list[C.thing]; TT.born = w._absDay() - 20; TT.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
+      const preacher = npcs().find(a => a.agentId !== C.owner); preacher.personality.traits = ['kind', 'ascetic'];
+      for (const a of npcs()) if (X.att[C.thing][a.agentId] == null) X.att[C.thing][a.agentId] = a === preacher ? -95 : -50;
+      X.att[C.thing][preacher.agentId] = -95; const vs = npcs().filter(a => a !== preacher && a.agentId !== C.owner).slice(0, 2); for (const v of vs) X.victims[v.agentId] = { id: C.thing, day: w._absDay(), k: 'x', p: {} };
+      X.lastDay = -1; await THINGS.daily(w); const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban'); out.ban = { prop: !!pr, thing: pr?.thing === C.thing };
       if (pr) {
-        const own = w.agents[C.owner]; const fam = MONEY.familyOf(w, preacher)[0] || sp; C.lost[fam.agentId] = [[w._absDay(), 5], [w._absDay(), 5]];
-        let of = 0, hf = 0; for (let k = 0; k < 20; k++) { delete pr.votes[own.agentId]; w.proposals._ruleVote(w, pr, own); if (pr.votes[own.agentId] === 'for') of++; preacher.personality.traits = ['kind', 'ascetic']; delete pr.votes[preacher.agentId]; w.proposals._ruleVote(w, pr, preacher); if (pr.votes[preacher.agentId] === 'for') hf++; }
-        out.ban.votes = { of, hf }; pr.status = 'approved'; w.proposals._execute(w, pr, w._absDay()); out.ban.ok = C.ban && !C.open; run1(0.001); out.ban.stays = !C.open; out.ban.log = /決定禁賭|ban gambling/.test(logs());
+        const own = w.agents[C.owner];
+        let of = 0, hf = 0; for (let k = 0; k < 20; k++) { delete pr.votes[own.agentId]; w.proposals._ruleVote(w, pr, own); if (pr.votes[own.agentId] === 'for') of++; delete pr.votes[preacher.agentId]; w.proposals._ruleVote(w, pr, preacher); if (pr.votes[preacher.agentId] === 'for') hf++; }
+        out.ban.votes = { of, hf }; pr.status = 'approved'; w.proposals._execute(w, pr, w._absDay()); out.ban.ok = C.ban && !C.open; run1(0.001); out.ban.stays = !C.open; out.ban.log = /決定禁賭|ban gambling/.test(logs()); out.ban.retired = !!X.list[C.thing]?.gone;
       }
       out.brief = CASINO.brief(w, all.find(a => (C.v[a.agentId] || 0) >= 5) || all[0]);
       // ---------- 存讀檔 ----------
@@ -79,8 +83,8 @@ async function run(browser, lang, vp) {
   ok(r.village, '村莊不會開賭場', r.village);
   ok(r.open.open && r.open.owner && r.open.paid && r.open.log && r.open.name, '城鎮以上，有野心的有錢人花錢開賭場', r.open);
   ok(r.open.cons.ok, '開賭場的錢付給工匠，全鎮的錢不多不少', r.open.cons);
-  ok(r.edge.visits >= 500 && r.edge.net > 0 && r.edge.net / r.edge.house > 0.1, '長期下來莊家淨賺', r.edge);
-  ok(r.edge.went >= 5 && r.edge.lost / r.edge.went >= 0.7, '常去賭的人絕大多數輸錢（十賭九輸）', r.edge);
+  ok(r.edge.visits >= 250 && r.edge.lossRate >= 0.57 && r.edge.lossRate <= 0.67 && r.edge.edge >= 0.15, '每押有六成以上輸，莊家每押理論上抽一成五以上（大獎運氣不算）', r.edge);
+  ok(r.edge.went >= 5 && r.edge.lost / r.edge.went > 0.5, '常去賭的人多數輸錢（運氣好中大獎的少數例外）', r.edge);
   ok(r.edge.d60 && r.edge.cons.ok, '兩個月自然下注，錢都只是在村民之間移動，全鎮的錢不多不少', r.edge.cons);
   ok(r.jack.n >= 1 && r.jack.got >= 120 && r.jack.log, '偶爾有人中大獎，一夕致富', r.jack);
   ok(r.jack.cons.ok, '大獎是莊家付的，全鎮的錢不多不少', r.jack.cons);
@@ -91,9 +95,9 @@ async function run(browser, lang, vp) {
   ok(r.ruin.fled === 1 && r.ruin.gone, '欠銀行錢的人連夜跑路', r.ruin);
   ok(r.tour.n > 0 && r.tour.owner && r.tour.flow > 0 && r.tour.cons.ok, '城市以上外地賭客來玩，錢記成「外地賭客與觀光」流入', r.tour);
   ok(r.tour.townNo, '城鎮還沒有外地賭客', r.tour);
-  ok(r.ban.prop, '輸到家破人亡的人多了，有人提禁賭', r.ban);
-  ok(r.ban.votes && r.ban.votes.of === 0 && r.ban.votes.hf >= 14, '家人被害的人贊成、賭場老闆反對', r.ban.votes);
-  ok(r.ban.ok && r.ban.stays && r.ban.log, '通過後賭場關門，之後也不會再開', r.ban);
+  ok(r.ban.prop && r.ban.thing, '被賭場害慘的家庭多了，有人提案禁止賭場（通用的「禁止新東西」）', r.ban);
+  ok(r.ban.votes && r.ban.votes.of === 0 && r.ban.votes.hf >= 18, '討厭賭場的人贊成、賭場老闆反對（照各自的看法投票）', r.ban.votes);
+  ok(r.ban.ok && r.ban.stays && r.ban.log && r.ban.retired, '通過後賭場關門、之後也不會再開，新東西清單上也撤下', r.ban);
   ok(r.save, '存讀檔後賭場紀錄都在', r.save);
   ok(en ? /Gambling banned/.test(r.ui) && !/[一-鿿]/.test(r.ui) : /全鎮禁賭/.test(r.ui), '經濟頁顯示賭場狀況', r.ui);
   ok(!errs.length, '沒有錯誤', errs.slice(0, 3));

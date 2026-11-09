@@ -1771,6 +1771,32 @@ class PixelTileMap {
         }
     }
 
+    // v9.0.0 世界新事物(賭場等)在地圖上蓋一棟:找一塊夠大的空地(靠近鎮中心優先),回傳左上角 tile
+    findFreeSite(tw, th, loose) {
+        if (!this.grid) return null;
+        if (!loose) { const s1 = this.findFreeSite(tw, th, 1); if (s1) return s1; return this.findFreeSite(tw, th, 2); } // 先嚴格、再放寬
+        const HW = tw + (loose === 1 ? 2 : 1), HH = th + (loose === 1 ? 3 : 2);
+        const plots = this._getFactoryPlots ? this._getFactoryPlots() : []; const maxF = (typeof FACTORIES !== 'undefined') ? Object.keys(FACTORIES).length : 7;
+        const nz = this.natureZones || {};
+        const rects = [
+            ...Object.values(this.buildingZones || {}).map(z => ({ x: z.x, y: z.y, w: z.w || 4, h: z.h || 4 })),
+            ...(loose === 1 ? plots : plots.slice(0, maxF)),
+            ...(this.constructionSites || []).map(p => ({ x: p.siteX, y: p.siteY, w: 2, h: 2 })),
+            ...(this.sitedCompleted || []).map(b => ({ x: b.siteX, y: b.siteY, w: 2, h: 2 })),
+            ...(loose === 1 ? Object.values(nz) : [nz.graveyard, nz.town_square].filter(Boolean)),
+        ];
+        const BAD = new Set([T.WATER, T.WATER2, T.PIER, T.SALT, T.NET, T.GRAVEL, T.CHASM, T.RAIL, T.ROOF, T.ROOF2, T.WALL_TOP, T.WALL_FRONT, T.FLOOR, T.FLOOR2, T.DOOR, T.WINDOW, T.STONE_PATH, T.BRIDGE, T.CROP1, T.CROP2, T.CROP3, T.FENCE_H, T.FENCE_V, T.WELL, T.ALTAR, T.STALL, T.SNOW, T.ROCK, T.DARK_FLOOR]);
+        if (loose === 1) BAD.add(T.DIRT); // 嚴格版連路也不壓
+        const sq = this.buildingZones?.town_square || this.natureZones?.town_square; const cx = sq ? sq.x + sq.w / 2 : this.cols / 2, cy = sq ? sq.y + sq.h / 2 : this.rows / 2;
+        let best = null, bestD = Infinity;
+        for (let y = 2; y < this.rows - HH - 2; y++) for (let x = 2; x < this.cols - HW - 2; x++) {
+            if (rects.some(z => x + HW > z.x && x < z.x + z.w && y + HH > z.y && y < z.y + z.h)) continue;
+            let ok = true; for (let yy = y; yy < y + HH && ok; yy++) for (let xx = x; xx < x + HW; xx++) if (BAD.has(this.grid[yy][xx])) { ok = false; break; }
+            if (!ok) continue; const d = (x + HW / 2 - cx) ** 2 + (y + HH / 2 - cy) ** 2; if (d < bestD) { bestD = d; best = { x: x + 1, y: y + 1 }; }
+        }
+        return best;
+    }
+
     _placeExtraHouse(hx, hy) {
         const house = TILE_BUILDING_TEMPLATES.house;
         if (hx + house.w >= this.cols || hy + house.h + 1 >= this.rows) return;

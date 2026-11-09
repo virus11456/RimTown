@@ -819,8 +819,26 @@ Object.assign(RimTownApp.prototype, {
         const W = (k) => !want || want.includes(k);
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         d = d || this.state?.proposals || { issues: [], traditions: [], landmarks: [], stats: { made: 0, approved: 0, rejected: 0, done: 0 } };
-        const B = { tier: '', legacy: '', dream: '', culture: '', politics: '', mind: '', civic: '', goods: '', biz: '', bank: '', press: '', diplo: '', tidings: '', faith: '', issues: '', cliques: '', lore: '', stats: '' };
+        const B = { things: '', tier: '', legacy: '', dream: '', culture: '', politics: '', mind: '', civic: '', goods: '', biz: '', bank: '', press: '', diplo: '', tidings: '', faith: '', issues: '', cliques: '', lore: '', stats: '' };
         if (!this.world) return B;
+        if (W('things')) {
+            // v9.0.0 鎮上的新東西：大家怎麼看（村民自己形成的好惡，不是規定好的）
+            try {
+                const tv = typeof THINGS !== 'undefined' ? THINGS.view(this.world).filter(x => x.n >= 3).sort((x, y) => ((y.protest ? 50 : 0) + y.love + y.hate * 1.5 + y.dislike) - ((x.protest ? 50 : 0) + x.love + x.hate * 1.5 + x.dislike)).slice(0, 4) : []; // 吵得最兇的排前面
+                if (tv.length) {
+                    B.things += `<div class="pp-issues pp-things"><h4 class="pp-h">🆕 ${t('鎮上的新東西：大家怎麼看')}</h4>`;
+                    for (const x of tv) {
+                        const seg = [['love', '#e8735a', t('很喜歡')], ['like', '#f2b26b', t('喜歡')], ['meh', '#8a8fa3', t('無所謂')], ['dislike', '#7fa6d9', t('不喜歡')], ['hate', '#4f6fb5', t('很討厭')]];
+                        const bar = `<div class="pp-things-bar" role="img" aria-label="${esc(seg.map(g => `${g[2]} ${x[g[0]]}`).join(t('、')))}">${seg.filter(g => x[g[0]]).map(g => `<i style="flex:${x[g[0]]};background:${g[1]}" title="${esc(g[2])} ${x[g[0]]}"></i>`).join('')}</div>`;
+                        const legend = seg.filter(g => x[g[0]]).map(g => `<span><b style="background:${g[1]}"></b>${esc(g[2])} ${x[g[0]]}</span>`).join('');
+                        const q = x.quotes.filter(z => z.s).map(z => `<div class="pp-things-q">${z.v >= 0 ? '👍' : '👎'} ${esc(z.who)}${t('：')}${t('「')}${esc(z.s)}${t('」')}</div>`).join('');
+                        const pr = x.protest ? `<div class="pp-things-q">📢 ${esc(t('{n} 人抗議過').replace('{n}', x.protest.n))}</div>` : '';
+                        B.things += `<div class="pp-issue pp-thing"><span>${x.icon} <strong>${esc(x.name)}</strong> <small>${esc(t('{n} 人有看法').replace('{n}', x.n))}</small>${bar}<span class="pp-things-legend">${legend}</span>${q}${pr}</span></div>`;
+                    }
+                    B.things += `</div>`;
+                }
+            } catch (e) {}
+        }
         if (W('tier')) {
             // v6.56.0 城鎮等級與升格進度
             try {
@@ -1098,8 +1116,8 @@ Object.assign(RimTownApp.prototype, {
             P += `<h4 class="pp-h">📚 ${t('已定案')} <span class="pp-count">${d.history.length}</span></h4>`; hist.forEach(p => { P += card(p, 'view'); });
             if (d.history.length > HN) P += `<button type="button" class="pp-more" data-pp-more="1">${showAll ? t('收起，只看最近 {n} 件').replace('{n}', HN) : t('顯示更早的 {n} 件').replace('{n}', d.history.length - HN)}</button>`;
         }
-        const B = this._townBlocks(d, ['issues', 'tier', 'politics', 'mind', 'civic', 'faith', 'cliques', 'dream', 'lore', 'stats']);
-        T = [B.issues, B.tier, this._councilHtml(), B.politics, B.mind, B.civic, B.faith, B.cliques, this._eventPieces(['factions']).factions, B.dream, B.lore, B.stats].join(''); // v7.3.0 急事放最上面;鎮史文化珍品→日報年表、外交報社外地消息→日報消息、店與銀行→小鎮產業
+        const B = this._townBlocks(d, ['issues', 'things', 'tier', 'politics', 'mind', 'civic', 'faith', 'cliques', 'dream', 'lore', 'stats']);
+        T = [B.issues, B.things, B.tier, this._councilHtml(), B.politics, B.mind, B.civic, B.faith, B.cliques, this._eventPieces(['factions']).factions, B.dream, B.lore, B.stats].join(''); // v7.3.0 急事放最上面;鎮史文化珍品→日報年表、外交報社外地消息→日報消息、店與銀行→小鎮產業
         // v6.51.0 只有你知道的真相:還沒被拆穿的謊言、陰謀,還沒解開的誤會
         try {
             const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
