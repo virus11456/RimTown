@@ -940,6 +940,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .wc-h { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin-bottom: 6px; }
 .rimtown-container .wc-h .gh-when { margin-left: auto; }
 .rimtown-container .wc-src { font-size: .72rem; padding: 1px 8px; border-radius: 999px; background: rgba(168, 85, 247, .18); }
+.rimtown-container .wc-path { font-size: .7rem; opacity: .75; font-weight: 400; }
+.rimtown-container .wc-sterile { border-left: 3px solid #f9a8d4; padding-left: 8px; }
 .rimtown-container .wc-steps { display: flex; flex-wrap: wrap; gap: 4px; margin: 4px 0 8px; }
 .rimtown-container .wc-step { font-size: .72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-muted); white-space: nowrap; }
 .rimtown-container .wc-step.past { opacity: .7; }
