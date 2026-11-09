@@ -17,6 +17,7 @@ const UI_UNLOCKS = [
     { key: 'industry', icon: '🏭', label: '產業', why: '鎮上出現了老闆和店家：在這裡看產業、股東、店鋪和銀行。', ok: (w, d, U) => d >= 20 || (w.research?.currentEra?.() || 1) >= 2 || (d >= 8 && bizN(w) > (U.__bz ?? Infinity)) }, // 開局幾天就會有人合股買下公營產業,太早打開反而看不懂,至少等一週
     { key: 'gh-track', icon: '🔭', label: '反應追蹤', why: '你打出了第一張事件卡：在這裡看村民怎麼反應、七天後變成怎樣。', ok: (w) => (w.eventCards?.stats?.played || 0) >= 1 || (w.eventCards?.played || []).length > 0 },
     { key: 'gh-lab', icon: '🧪', label: '災厄工坊', why: '小鎮撐過一季了：你可以在災厄工坊親手設計一場災難。', ok: (w, d) => d >= 28 || !!w.calamity?.cur || (w.calamity?.hist || []).length > 0 || !!w.worldcal?.cur || (w.worldcal?.hist || []).length > 0 },
+    { key: 'gh-wc', icon: '🌍', label: '世界級災厄', why: '世界級災厄跟手牌放在一起：小鎮撐過一次，就能在任何城鎮打出壓縮版。', ok: (w, d) => d >= 28 || !!w.worldcal?.cur || (w.worldcal?.hist || []).length > 0 || (typeof WORLDCAL !== 'undefined' && Object.keys(WORLDCAL.KINDS).some(k => WORLDCAL.unlocked(k))) },
 ];
 Object.assign(RimTownApp.prototype, {
     _uiAll() { try { return localStorage.getItem('rimtown_ui_all') === '1'; } catch (e) { return false; } },

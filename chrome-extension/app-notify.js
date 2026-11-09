@@ -95,9 +95,32 @@ Object.assign(RimTownApp.prototype, {
                 else localStorage.setItem('rimtown_npc_llm_budget', String(s.npc_llm_budget));
             }
             if (s.dialogue_lang === 'auto' || s.dialogue_lang === 'zh' || s.dialogue_lang === 'en') this._setDialogueLang(s.dialogue_lang); // v5.73.0
+            // v9.2.0 解鎖跟著帳號:帳號上的跟本機的合在一起;本機有帳號沒有的,推上去
+            try { if (this._mergeUnlocks(s.unlocks || {})) this._pushCloudSettings(); } catch (e) {}
             if (changed) console.log('[RimTown] AI settings synced from account');
             return changed;
         } catch (e) { console.log('[RimTown] cloud settings pull skipped:', e.message); return false; }
+    },
+
+    // v9.2.0 世界級災厄、神之書的解鎖:以前只存在這個瀏覽器,現在跟著帳號(換裝置、換城鎮都在)
+    _localUnlocks() {
+        const get = (k) => { try { const a = JSON.parse(localStorage.getItem(k) || '[]'); return Array.isArray(a) ? a.filter(x => typeof x === 'string') : []; } catch (e) { return []; } };
+        return { worldcal: get('rimtown_worldcal'), godbook: get('rimtown_godbook') };
+    },
+    // 帳號上的合進本機;回傳本機是否有帳號上沒有的(要推上去)
+    _mergeUnlocks(remote) {
+        const loc = this._localUnlocks(); let extra = false;
+        for (const [k, ls] of [['worldcal', 'rimtown_worldcal'], ['godbook', 'rimtown_godbook']]) {
+            const r = Array.isArray(remote?.[k]) ? remote[k].filter(x => typeof x === 'string' && /^[a-z0-9_]{1,40}$/.test(x)) : [];
+            if (loc[k].some(x => !r.includes(x))) extra = true;
+            const all = [...new Set([...loc[k], ...r])]; if (all.length !== loc[k].length) { try { localStorage.setItem(ls, JSON.stringify(all)); } catch (e) {} }
+        }
+        return extra;
+    },
+    // 玩的時候解鎖了新的(撐過災厄、神之書多一頁),等一下就推上帳號
+    _wireUnlockSync() {
+        if (this._unlockSyncWired) return; this._unlockSyncWired = true;
+        window.addEventListener('rimtown-unlock', () => { clearTimeout(this._unlockPushT); this._unlockPushT = setTimeout(() => this._pushCloudSettings(), 3000); });
     },
 
     // 本機設定推上帳號(fire-and-forget;端點不存在或未登入時靜默略過)
@@ -110,6 +133,7 @@ Object.assign(RimTownApp.prototype, {
         // v5.37.0 本機未設上限 → 推 -1(無上限),讓其他裝置也同步成無上限
         payload.npc_llm_budget = (budgetRaw !== null && budgetRaw !== '' && Number.isFinite(budget)) ? budget : -1;
         try { payload.dialogue_lang = localStorage.getItem('rimtown_dialogue_lang') || 'auto'; } catch (e) {} // v5.73.0
+        try { payload.unlocks = this._localUnlocks(); } catch (e) {} // v9.2.0
         this.auth.saveCloudSettings(payload).catch(e => console.log('[RimTown] cloud settings push skipped:', e.message));
     },
 

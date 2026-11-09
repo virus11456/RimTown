@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.1.2';
+const RIMTOWN_APP_VERSION = '9.2.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -429,6 +429,7 @@ class RimTownApp {
         }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
+        try { this._wireUnlockSync?.(); } catch (e) {} // v9.2.0 解鎖跟著帳號
         await this.loadSettings();
         // v5.62.1 一次性遷移:清掉城鎮列表裡同名的「第1天孤兒」重複條目
         try { await this._initLocalStore(); } catch (e) { console.warn('[RimTown] local store init', e); } // v6.76.1 其他鎮的本機副本搬去 IndexedDB

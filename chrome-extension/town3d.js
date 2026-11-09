@@ -1413,6 +1413,7 @@ class Town3D extends PixelTileMap {
                 if (m.userData.tool) m.userData.tool.visible = farming;
                 m.userData.farming = farming;
             }
+            if (agent.appear?.zb && !(sleeping && !walking)) { const sw = Math.sin(this.animFrame * 0.08 + (aid.charCodeAt(1) || 0)) * 0.12; for (const ch of m.children) if (ch.name === 'armL') ch.rotation.x = -1.45 + sw; else if (ch.name === 'armR') ch.rotation.x = -1.45 - sw; m.rotation.z = Math.sin(this.animFrame * 0.05 + (aid.charCodeAt(0) || 0)) * 0.08; } else if (m.rotation.z) m.rotation.z = 0; // v9.2.0 喪屍:手往前伸、走路搖搖晃晃
             if (m.userData.eyes && !m.userData.far) { const shut = (sleeping && !walking) || ((this.animFrame + (m.userData.blinkPh || 0)) % 230) < 7; m.userData.eyes.visible = !shut; m.userData.lids.visible = shut; } // v6.94.0 眨眼、睡覺閉眼
             m.rotation.x = sleeping && !walking ? -Math.PI / 2 * 0.9 : 0;
             if (sleeping && !walking) m.position.y = gy + 0.32;
@@ -1562,7 +1563,8 @@ class Town3D extends PixelTileMap {
             const sleeping = agent.activity === 'sleeping' && !this.agentPositions[aid]?.walking; // v6.44.2 還在走回家的路上不冒 zzz(看起來像夢遊)
             const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : m.userData.inIcon ? ` <i class="t3d-emo t3d-act">${m.userData.inIcon}</i>` : '';
             let office = ''; try { const W = window.rimtownApp?.world; const bd = W && typeof TIERS !== 'undefined' ? TIERS.badge(W, W.agents[aid]) : null; if (bd && bd.cls !== 'former') office = `<b class="t3d-office t3d-office-${bd.cls}">${bd.icon} ${this._esc(bd.text)}</b>`; } catch (e) {} // v6.56.0 官職標籤
-            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : ''), `${office}${this._esc(t3(agent.name || aid))}${extra}`);
+            const zb = agent.appear?.zb ? '🧟 ' : ''; // v9.2.0
+            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : '') + (zb ? ' is-zb' : ''), `${office}${zb}${this._esc(t3(agent.name || aid))}${extra}`);
             this._place(el, wx, gy + 0.3 + 1.85 * ((m.scale.y || 1.3) / 1.3), wz); // v6.92.0 小孩的名牌跟著放低
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
         }

@@ -28,6 +28,18 @@ module.exports = async (req, res) => {
         }
         // v5.73.0 AI 對話語言(auto=跟隨介面 / zh / en)隨帳號同步
         if (['auto', 'zh', 'en'].includes(b.dialogue_lang)) s.dialogue_lang = b.dialogue_lang;
+        // v9.2.0 解鎖跟著帳號:世界級災厄(撐過才能發動)、神之書的卡。只會增加(聯集),格式不對的丟掉
+        if (b.unlocks && typeof b.unlocks === 'object') {
+            const ok = (x) => typeof x === 'string' && /^[a-z0-9_]{1,40}$/.test(x);
+            const u = (prev.unlocks && typeof prev.unlocks === 'object') ? prev.unlocks : {};
+            const out = {};
+            for (const k of ['worldcal', 'godbook']) {
+                const set = new Set((Array.isArray(u[k]) ? u[k] : []).filter(ok));
+                for (const x of (Array.isArray(b.unlocks[k]) ? b.unlocks[k] : []).slice(0, 300)) if (ok(x)) set.add(x);
+                out[k] = [...set].slice(0, 300);
+            }
+            s.unlocks = out;
+        }
         s.updated_at = new Date().toISOString();
         await L.writeJson(path, s);
         return res.status(200).json({ success: true });
