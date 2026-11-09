@@ -141,7 +141,7 @@ class IdeaSystem {
             if (Math.random() >= p) continue;
             const list = JOB_INVENTIONS[a.job.key] || JOB_INVENTIONS._; const thing = list[Math.floor(Math.random() * list.length)];
             const R = w.research; let tech = null;
-            if (R?.current && R.projects?.[R.current]?.status === 'researching') { const pr = R.projects[R.current]; pr.progress += Math.round(pr.cost * 0.15); tech = R.current; }
+            if (R?.current && R.projects?.[R.current]?.status === 'researching') { const pr = R.projects[R.current]; pr.progress += Math.round(pr.cost * 0.15); tech = R.current; try { R._checkDone?.(w); } catch (e) {} }
             else w.stockpile?.add?.('research_points', 15, w.tickCount, t('發明'), 'research');
             const inv = { by: a.name, id: a.agentId, thing, job: a.job.key, tech, day };
             this.inventions.push(inv); this.inventions = this.inventions.slice(-30); this.lastInventDay = day;
