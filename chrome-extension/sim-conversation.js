@@ -1905,10 +1905,13 @@ ${t('- 最後另起一行寫：')}EFFECTS: {"affinity_change": ${t('數字')}(-3
 ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西')}`;
 
                 // v5.44.0 400→600:中文回覆容易撞上限被砍半句(「呃…最近我在算一個關於」),放寬並配合句尾收斂
-                const response = await this.llm.generate(prompt, 600, 0.9, true);
+                // v9.7.0 玩家本人的訊息走最高優先(不跟村民的背景 AI 搶每分鐘名額);失敗再試一次,不要馬上換成罐頭回覆
+                let response = await this.llm.generate(prompt, 600, 0.9, true, { human: true });
+                if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { await new Promise(r => setTimeout(r, 1500)); response = await this.llm.generate(prompt, 600, 0.9, true, { human: true }); }
+                if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { this.lastPlayerReplyFallback = (this.llm._quota && this.llm._quota.remaining === 0) ? 'quota' : 'busy'; }
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
-            } catch(e) { console.error('[RimTown] LLM player reply failed:', e); }
+            } catch(e) { console.error('[RimTown] LLM player reply failed:', e); this.lastPlayerReplyFallback = this.lastPlayerReplyFallback || 'busy'; }
         } else {
             console.log('[RimTown] No LLM client — using fallback for player chat');
         }
@@ -2369,7 +2372,7 @@ class LLMClient {
             if (strict || !isPlayerChat || !longPause || now < this._rateLimitedUntil - 30000) return false;
         }
         this._requestTimestamps = this._requestTimestamps.filter(t => now - t < 60000);
-        const limit = isPlayerChat ? this._maxRequestsPerMinute : Math.floor(this._maxRequestsPerMinute / 2);
+        const limit = isPlayerChat ? this._maxRequestsPerMinute - 4 : Math.floor(this._maxRequestsPerMinute / 2); /* v9.7.0 留 4 個名額給玩家本人的訊息 */
         return this._requestTimestamps.length < limit;
     }
 
@@ -2400,7 +2403,8 @@ class LLMClient {
             return this._generateWithGroqFallback(prompt, maxTokens, temperature);
         }
 
-        if (!this._canMakeRequest(isPlayerChat, strict)) {
+        const human = !!opts.human; // v9.7.0 玩家本人打的字:不受本機每分鐘上限與短暫停頓限制(額度用完時伺服器會回 429)
+        if (!human && !this._canMakeRequest(isPlayerChat, strict)) {
             // Rate limited locally — try fallback instead of returning empty
             if (this.fallbackGroqKey && this.provider !== 'groq') {
                 console.log('[RimTown LLM] Local rate limit — using Groq fallback');

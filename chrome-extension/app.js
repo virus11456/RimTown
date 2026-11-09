@@ -3014,6 +3014,7 @@ class RimTownApp {
         // v5.49.3 桌面版:聊天分頁進入對話時側欄加寬成雙欄(地圖 canvas 由 ResizeObserver 自動重排)
         document.querySelector('.rimtown-container')?.classList.toggle('chat-wide', this.activeTab === 'chat' && !!this.chatTarget);
         this._syncKairoLayout();
+        { const k = this.activeTab + '|' + (_sb?.className || ''); if (k !== this._ghLayoutKey) { this._ghLayoutKey = k; try { this._ghFab?.(); } catch (e) {} } } // v9.7.0 面板切換時 🃏 跟著讓位
         const content = document.getElementById('sidebar-content');
         const keep = this._snapDetails(content); // v6.76.5 側欄每秒重畫:記住哪些「展開明細」是打開的,畫完再還原
 
