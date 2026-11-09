@@ -69,7 +69,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // v6.50.1 關掉的抽屜不能再擋住底下的按鈕(村民卡的交談／詳情點不到)
     { await page.evaluate(() => { const app = window.rimtownApp; if (app._ghOpen) app._ghHide(); }); await page.waitForTimeout(350);
       await page.evaluate(() => { const app = window.rimtownApp; const id = Object.keys(app.state.agents).find(k => k !== 'player'); app._showNpcCard(id); }); await page.waitForTimeout(600); // 等卡片滑入動畫結束
-      const g = await page.evaluate(() => { const app = window.rimtownApp;
+      const g = await page.evaluate(() => { const app = window.rimtownApp; document.querySelectorAll('#achv-toast-host > *').forEach(e => e.remove()); // 剛好跳出的通知不算(這裡只測抽屜)
         const tr = document.getElementById('gh-tray'); const out = [...document.querySelectorAll('#npc-quick-card button')].map(b => { const r = b.getBoundingClientRect(); const el = document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2); return (el === b || b.contains(el)) ? true : String(el?.id || el?.className || el?.tagName).slice(0, 40) + '@' + Math.round(r.y) + '|' + (el?.textContent||'').trim().slice(0,12) + '|' + (el?.closest('[id]')?.id || '') + '|b:' + b.textContent.trim().slice(0,6); });
         app._hideNpcCard?.(); return { display: getComputedStyle(tr).display, ok: out.length > 0 && out.every(x => x === true), n: out.length, out, vh: innerHeight }; });
       ok(g.display === 'none' && g.ok, '關掉事件卡後,村民卡的按鈕都點得到(抽屜不會隱形擋住)', g); }

@@ -85,9 +85,8 @@ Object.assign(RimTownApp.prototype, {
             <div class="gh-head">
                 <div class="gh-title">🃏 ${t('事件卡')}<span class="gh-pw-top" title="${t('打牌、託夢、災厄工坊共用的神力')}">🔮 <b>${d.sandbox ? '∞' : d.power}</b>${d.sandbox ? '' : `/${d.powerCap}`}</span><span class="gh-left ${d.todayLeft ? '' : 'none'}">${t('今天還能打')} <b>${d.todayLeft}</b>/${d.perDay}</span></div>
                 <div class="gh-tabs" role="tablist">
-                    <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}</button>
+                    <button role="tab" aria-selected="${this._ghTab === 'hand'}" class="${this._ghTab === 'hand' ? 'on' : ''}" data-gh="tab" data-v="hand">${t('手牌')}${d.book ? ` <small title="${t('神之書')}">📖 ${d.book.have}/${d.book.total}</small>` : ''}</button>
                     <button role="tab" aria-selected="${this._ghTab === 'track'}" class="${this._ghTab === 'track' ? 'on' : ''}" data-gh="tab" data-v="track">${t('反應追蹤')}${newR ? `<span class="gh-badge">${newR}</span>` : ''}</button>
-                    <button role="tab" aria-selected="${this._ghTab === 'book'}" class="${this._ghTab === 'book' ? 'on' : ''}" data-gh="tab" data-v="book">📖 ${t('神之書')}${d.book ? ` <small>${d.book.have}/${d.book.total}</small>` : ''}</button>
                     ${typeof CALAMITY !== 'undefined' && CALAMITY.labOpen() ? `<button role="tab" aria-selected="${this._ghTab === 'lab'}" class="${this._ghTab === 'lab' ? 'on' : ''}" data-gh="tab" data-v="lab">🧪 ${t('災厄工坊')}${this.world?.calamity?.cur ? '<span class="gh-badge">🦠</span>' : ''}</button>` : ''}
                 </div>
                 <button class="gh-help${this._ghIntroOpen() ? ' on' : ''}" data-gh="help" aria-label="${t('事件卡是什麼？')}" aria-expanded="${this._ghIntroOpen()}" title="${t('事件卡是什麼？')}">?</button>
@@ -100,15 +99,15 @@ Object.assign(RimTownApp.prototype, {
                 <ul>
                     <li>🌪️ ${t('天災、🕳️ 人禍、🍀 機運、💞 人際四類；每張卡下方寫著會發生什麼')}</li>
                     <li>🔮 ${t('打牌花神力：⚪ 3、🔵 6、🟡 15、🟣 30；神力每天累積（小鎮興旺、虔誠的人多就更快），託夢和災厄工坊也用它')}</li>
-                    <li>📖 ${t('稀有、傳說、禁忌卡要小鎮發生過某些事，才會寫進「神之書」（換鎮也還在）')}</li>
+                    <li>📖 ${t('稀有、傳說、禁忌卡要小鎮發生過某些事，才會寫進「神之書」、出現在手牌（換鎮也還在）；手牌最下面看得到還差哪些')}</li>
                     <li>⏳ ${t('每天最多打 {n} 張，打過的卡要冷卻幾天才能再用').replace('{n}', d.perDay)}</li>
                     <li>💬 ${t('村民會聊這件事、記在心裡、跟著提出提案；「反應追蹤」會記下他們的反應和七天後的變化')}</li>
                 </ul>
                 <button class="gh-intro-ok" data-gh="help-ok">${t('知道了，看手牌')}</button>
             </div>`;
+        if (this._ghTab === 'book') this._ghTab = 'hand'; // v8.5.0 神之書併進手牌
         if (this._ghIntroOpen()) { tray.innerHTML = html; return; } // 說明頁取代手牌,不擠在一起
         if (this._ghTab === 'lab' && typeof CALAMITY !== 'undefined' && CALAMITY.labOpen()) { html += this._ghLabHtml(); tray.innerHTML = html; return; } // v7.9.0 災厄工坊
-        if (this._ghTab === 'book') { html += this._ghBookHtml(esc); tray.innerHTML = html; return; } // v8.4.0 神之書
         if (this._ghTab === 'track') {
             html += `<div class="gh-track">`;
             if (!d.played?.length) html += `<div class="gh-empty">📼 ${t('還沒打過事件卡。打出一張，村民接下來幾天的反應、提案和七天後的變化都會記在這裡。')}</div>`;
@@ -149,6 +148,7 @@ Object.assign(RimTownApp.prototype, {
                 <div class="gh-d-note">${esc(why)}</div>
             </div>`;
         }
+        html += this._ghLockedHtml(esc); // v8.5.0 神之書併進手牌:最下面列出還沒寫進書裡的卡
         html += `</div>`;
         tray.innerHTML = html;
     },
@@ -263,19 +263,27 @@ Object.assign(RimTownApp.prototype, {
         if (k === 'filter') { this._ghFilter = v; this._ghRender(); this._ghScrollSel(); return; }
         if (k === 'sel') { this._ghSel = v; this._ghRender(); document.querySelector('#gh-tray .gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); return; }
         if (k === 'play') return this._ghPlay(v);
+        if (k === 'locked') { this._ghLockedOpen = !this._ghLockedOpen; this._ghRender(); return; } // v8.5.0
         if (k && k.startsWith('lab-')) return this._ghLabClick(k, v, b);
         if (k === 'random') { const d = this._ghData(); const h = (d?.hand || []).filter(c => c.left <= 0 && !c.dailyFull && !c.noPower && !c.noCtx); if (h.length) this._ghPlay(h[Math.floor(Math.random() * h.length)].id); return; }
         if (k === 'agent') { this._ghHide(); try { this.selectedAgent = v; this._goLook?.({ agentId: v }); this.renderSidebar?.(); } catch (err) {} }
     },
     // v8.4.0 神之書:全部的卡,依稀有度分頁;還沒寫進書裡的只看得到怎麼解鎖
-    _ghBookHtml(esc) {
+    _ghLockedHtml(esc) {
         if (typeof GODBOOK === 'undefined' || !GODBOOK) return '';
-        const B = GODBOOK.book(this.world); let h = `<div class="gh-book"><div class="gh-lab-note">${t('稀有以上的卡要小鎮發生過某些事才會寫進書裡；寫進去的卡換鎮也還在。')}</div>`;
-        for (const g of B) { const n = g.cards.filter(c => c.on).length;
-            h += `<div class="gh-book-sec gh-rar-${g.rar}"><div class="gh-book-h">${g.icon} ${esc(g.label)} <small>🔮 ${g.cost} · ${n}/${g.cards.length}</small></div><div class="gh-book-grid">`;
-            for (const c of g.cards) h += c.on ? `<div class="gh-book-card on"><span class="gh-ic" aria-hidden="true">${c.icon}</span><div><b>${esc(c.name)}</b><div class="gh-book-fx">${esc(c.effect)}</div></div></div>`
-                : `<div class="gh-book-card off"><span class="gh-ic" aria-hidden="true">❔</span><div><b>${esc(c.name)}</b><div class="gh-book-fx">🔒 ${esc(c.hint)}</div></div></div>`;
-            h += `</div></div>`; }
+        const B = GODBOOK.book(this.world); const off = B.map(g => ({ ...g, cards: g.cards.filter(c => !c.on) })).filter(g => g.cards.length);
+        const n = off.reduce((s, g) => s + g.cards.length, 0); const tot = B.reduce((s, g) => s + g.cards.length, 0);
+        if (!n) return `<div class="gh-locked done">📖 ${t('神之書全部寫滿了（{n} 張）').replace('{n}', tot)}</div>`;
+        const open = !!this._ghLockedOpen;
+        let h = `<div class="gh-locked${open ? ' open' : ''}"><button class="gh-locked-sum" data-gh="locked" aria-expanded="${open}">📖 ${t('還沒寫進神之書的卡')} <b>${n}</b> <small>${t('收集 {a}/{b}').replace('{a}', tot - n).replace('{b}', tot)}</small><span class="gh-locked-arrow" aria-hidden="true">${open ? '▴' : '▾'}</span></button>`;
+        if (open) {
+            h += `<div class="gh-lab-note">${t('小鎮發生過某些事，這些卡才會寫進書裡、出現在手牌；寫進去的卡換鎮也還在。')}</div>`;
+            for (const g of off) {
+                h += `<div class="gh-book-sec gh-rar-${g.rar}"><div class="gh-book-h">${g.icon} ${esc(g.label)} <small>🔮 ${g.cost} · ${g.cards.length}</small></div><div class="gh-book-grid">`;
+                for (const c of g.cards) h += `<div class="gh-book-card off"><span class="gh-ic" aria-hidden="true">❔</span><div><b>${esc(c.name)}</b><div class="gh-book-fx">🔒 ${esc(c.hint)}</div></div></div>`;
+                h += `</div></div>`;
+            }
+        }
         return h + '</div>';
     },
     _ghPlay(id) {

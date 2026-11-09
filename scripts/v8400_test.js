@@ -81,8 +81,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 7) 介面
       reset(); C.power = 40; app._ghTab = 'hand'; app._ghShow(); await new Promise(r => setTimeout(r, 300));
       const tray = document.getElementById('gh-tray'); const tTxt = tray?.innerText || '';
-      out.ui = { open: !!tray && !tray.hidden, pw: !!tray?.querySelector('.gh-pw-top'), costs: tray ? tray.querySelectorAll('.gh-cost').length : 0, rar: !!tray?.querySelector('[class*="gh-rar-"]'), bookTab: !!tray?.querySelector('[data-v="book"]') };
-      app._ghTab = 'book'; app._ghRender(); await new Promise(r => setTimeout(r, 200));
+      out.ui = { open: !!tray && !tray.hidden, pw: !!tray?.querySelector('.gh-pw-top'), costs: tray ? tray.querySelectorAll('.gh-cost').length : 0, rar: !!tray?.querySelector('[class*="gh-rar-"]'), bookTab: !tray?.querySelector('[data-v="book"]'), sum: !!tray?.querySelector('.gh-locked-sum'), shut: !tray?.querySelector('.gh-locked .gh-book-card'), prog: /📖\s*\d+\/\d+/.test(tray?.querySelector('[data-v="hand"]')?.innerText || '') };
+      tray.querySelector('.gh-locked-sum')?.click(); await new Promise(r => setTimeout(r, 200)); // 打開「還沒寫進神之書的卡」
       const bTxt = tray?.innerText || ''; const secs = tray ? tray.querySelectorAll('.gh-book-sec').length : 0;
       out.ui.book = { secs, on: tray ? tray.querySelectorAll('.gh-book-card.on').length : 0, off: tray ? tray.querySelectorAll('.gh-book-card.off').length : 0, hint: /🔒\s*\S/.test(bTxt) };
       const all = tTxt + '\n' + bTxt; out.ui.undef = /undefined|NaN|\{[a-z]+\}/.test(all); out.ui.cjk = (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? (all.match(/[一-鿿]+/g) || []).slice(0, 6) : [];
@@ -105,8 +105,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.forget.ok && r.forget.half && r.forget.cold && r.flip.ok && r.flip.best && r.flip.worst, '集體失憶：感情減半、冷戰結束；顛倒人心：最好的一對變差、最差的一對變好', { f: r.forget, m: r.flip });
     ok(r.dream.poor === 'power' && r.dream.ok && r.dream.left === 7, '託夢也花神力（3 點），不夠就託不了', r.dream);
     ok(r.regen.g1 >= 1.5 && r.regen.g1 <= 2.5 && r.regen.gain === r.regen.g1, '神力每天回復 1.5 起跳（虔誠的人多回得快）', r.regen);
-    ok(r.ui.open && r.ui.pw && r.ui.costs >= 10 && r.ui.rar && r.ui.bookTab, `手牌：上方神力、每張卡標稀有度與花費、有神之書分頁（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
-    ok(r.ui.book.secs === 4 && r.ui.book.on >= 25 && r.ui.book.off >= 5 && r.ui.book.hint && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow && r.ui.inView, `神之書：四級分區、沒解鎖的看得到條件、不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.open && r.ui.pw && r.ui.costs >= 10 && r.ui.rar && r.ui.bookTab && r.ui.sum && r.ui.shut && r.ui.prog, `手牌：上方神力、每張卡標稀有度與花費；神之書併進手牌（分頁標收集進度、最下面一行收起來）（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.book.secs >= 1 && r.ui.book.secs <= 3 && r.ui.book.on === 0 && r.ui.book.off >= 5 && r.ui.book.hint && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow && r.ui.inView, `展開後只列還沒寫進書裡的卡（依稀有度分區、看得到條件），不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }

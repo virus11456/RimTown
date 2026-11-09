@@ -11941,6 +11941,12 @@
         '主對策在世界級災厄降臨前做完': 'Finish the countermeasure before a world calamity arrives',
         '末日由我開始': 'The end begins with me',
         '在災厄工坊發動一場世界級災厄': 'Unleash a world calamity from the disaster workshop',
+        // v8.5.0 神之書併進手牌
+        '神之書全部寫滿了（{n} 張）': 'The Book of Gods is complete ({n} cards)',
+        '還沒寫進神之書的卡': 'Cards not yet in the Book of Gods',
+        '收集 {a}/{b}': 'collected {a}/{b}',
+        '小鎮發生過某些事，這些卡才會寫進書裡、出現在手牌；寫進去的卡換鎮也還在。': 'These cards are written into the book, and join your hand, once the town has lived through certain things; pages you earn stay with you in every town.',
+        '稀有、傳說、禁忌卡要小鎮發生過某些事，才會寫進「神之書」、出現在手牌（換鎮也還在）；手牌最下面看得到還差哪些': 'Rare, Legendary and Forbidden cards join the Book of Gods, and your hand, only after the town has lived through certain things (they stay with you in every town); the bottom of your hand shows what\'s still missing',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();
