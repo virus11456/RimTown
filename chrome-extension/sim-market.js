@@ -44,15 +44,41 @@ const MARKET = (() => {
     const ownerOf = (w, k) => { const id = S(w).owners[k]; return present(w, id) ? id : null; };
     const workersOf = (w, k, all) => (all || npcs(w)).filter(a => JOB2S[a.job?.key] === k);
     const ownedBy = (w, id) => Object.keys(SECTORS).filter(k => S(w).owners[k] === id);
-    // v7.2.0 反壟斷法:第一次拆分通過後生效,已經擁有三家以上產業的人不能再買
-    const canBuy = (w, id) => !(w.cycle?.law && ownedBy(w, id).length >= 3);
+    // v9.7.0 同產業競爭:賺錢的產業會有人在對面開第二家(對手店),跟原本那家搶客人、搶工人
+    // 對手店存在 world.market.rival[產業] = { fid, owner, since, price, pay, emp:{工人:1}, rev, cost, hist, loss, n }
+    const rivalOf = (w, k) => { const R = S(w).rival?.[k]; return R && present(w, R.owner) && ownerOf(w, k) && R.owner !== S(w).owners[k] ? R : null; };
+    const isRivalEmp = (w, k, a) => { const R = rivalOf(w, k); return !!R && !!R.emp?.[a?.agentId]; };
+    // 一個人名下有幾家店(原本那家＋在別的產業開的對手店都算)
+    const firmsOf = (w, id) => { const out = ownedBy(w, id).map(k => ({ k, rival: false })); for (const [k, R] of Object.entries(S(w).rival || {})) if (R && R.owner === id && rivalOf(w, k)) out.push({ k, rival: true }); return out; };
+    // v7.2.0 反壟斷法:第一次拆分通過後生效,已經擁有三家以上產業的人不能再買;v9.7.0 鎮上可以再投票收緊到兩家(w.cycle.cap)
+    const capOf = (w) => (w.cycle?.law ? (w.cycle.cap || 3) : Infinity);
+    const canBuy = (w, id) => firmsOf(w, id).length < capOf(w);
     const payRate = (w, k) => { const v = S(w).pay[k]; return typeof v === 'number' ? v : 1; };
     // 有老闆的私人產業工人由老闆發薪;公職與公營產業由公庫發
     const privatePaid = (w, a) => { const k = JOB2S[a?.job?.key]; return !!k && !!ownerOf(w, k); };
 
     // ---------- 收錢 ----------
+    // v9.7.0 兩家搶客人:人手多、服務好、價錢便宜的那家分到比較多;老闆名下店太多、自己顧不到的,服務會變差
+    function quality(w, k, id, nWorkers) { const extra = Math.max(0, firmsOf(w, id).length - 2); return (1 + nWorkers) * Math.pow(0.85, extra); }
+    function shareOf(w, k) {
+        const R = rivalOf(w, k); if (!R) return 0; const M = S(w); const ws = workersOf(w, k);
+        const nr = ws.filter(a => R.emp?.[a.agentId]).length, ni = ws.length - nr;
+        const pi = M.price?.[k] ?? 1, pr = R.price ?? 1;
+        const ai = quality(w, k, M.owners[k], ni) / (pi * pi), ar = quality(w, k, R.owner, nr) / (pr * pr);
+        return Math.round(ar / Math.max(1e-6, ai + ar) * 1000) / 1000;
+    }
+    // 打折省下來的錢回到買東西的村民手上(隨機一位大人):這就是競爭的好處,錢不會憑空消失
+    function rebate(w, n) { if (!(n > 0)) return; const c = w._mkAdults && w._mkAdults.t === w.tickCount ? w._mkAdults.l : (w._mkAdults = { t: w.tickCount, l: npcs(w).filter(a => (a.age ?? 30) >= 16 && !String(a.agentId).startsWith('visit_')) }).l; /* 路過的訪客不算 */ const a = c[Math.floor(Math.random() * c.length)]; if (a) addId(w, a.agentId, n); else toTown(w, n, t('折扣')); const M = S(w); M.saved = Math.round(((M.saved || 0) + n) * 100) / 100; }
+    function sellTo(w, k, n, why, id, price, R) {
+        n = Math.round(n * 100) / 100; if (!(n > 0)) return; const M = S(w);
+        const kept = Math.round(n * Math.min(1, price) * 100) / 100; rebate(w, Math.round((n - kept) * 100) / 100);
+        if (R) R.rev = (R.rev || 0) + kept; else M.rev[k] = (M.rev[k] || 0) + kept;
+        const tax = Math.round(kept * TAX * 100) / 100; toTown(w, tax, t('營業稅')); addId(w, id, Math.round((kept - tax) * 100) / 100);
+    }
     function sell(w, k, n, why) {
-        n = Math.round(n * 100) / 100; if (!(n > 0)) return; const M = S(w); M.rev[k] = (M.rev[k] || 0) + n;
+        n = Math.round(n * 100) / 100; if (!(n > 0)) return; const M = S(w);
+        const R = rivalOf(w, k); if (R) { const nr = Math.round(n * shareOf(w, k) * 100) / 100; sellTo(w, k, Math.round((n - nr) * 100) / 100, why, M.owners[k], M.price?.[k] ?? 1, null); sellTo(w, k, nr, why, R.owner, R.price ?? 1, R); return; }
+        M.rev[k] = (M.rev[k] || 0) + n;
         const id = ownerOf(w, k); if (!id) { toTown(w, n, why || t('公營收入')); return; }
         const tax = Math.round(n * TAX * 100) / 100; toTown(w, tax, t('營業稅')); // v8.8.0 算到「分」,稅＋老闆實拿剛好等於客人付的錢 const Wl = W(w); if (Wl) Wl.stats.bizTax = Math.round(((Wl.stats.bizTax || 0) + tax) * 10) / 10;
         addId(w, id, n - tax);
@@ -79,8 +105,14 @@ const MARKET = (() => {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id];
             if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
             const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人沒工資
-            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
-            const rate = payRate(w, k);
+            const R = rivalOf(w, k); // v9.7.0 對手店的工人由對手老闆發薪
+            if (R) { const rws = workersOf(w, k, all).filter(a => R.emp?.[a.agentId] && a.agentId !== R.owner && !(jail && jail.has(a.agentId))); if (rws.length) payFirm(w, Wl, k, R.owner, rws, R.pay ?? 1, R); }
+            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(R && R.emp?.[a.agentId]) && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
+            payFirm(w, Wl, k, id, ws, payRate(w, k), null);
+        }
+    }
+    function payFirm(w, Wl, k, id, ws, rate, R) {
+        const M = S(w); const tax = Wl.tax || 0; const floorNet = Wl.minWage || 0; const boss = w.agents[id]; {
             const gross = ws.map(a => Math.max((WALLET.WAGE[a.job.key] || 4) * (a._wageMult || 1) * (a._edu ? 1.15 : 1) * (WALLET.wageIdx ? WALLET.wageIdx() : 1) * rate, floorNet > 0 ? floorNet / Math.max(0.01, 1 - tax) : 0));
             const total = gross.reduce((s, g) => s + g, 0); const have = bal(w, id);
             const ratio = have >= total ? 1 : Math.max(0, have / total);
@@ -88,7 +120,7 @@ const MARKET = (() => {
             let gs = gross.map(g => Math.round(g * ratio * 100) / 100); let tot = Math.round(gs.reduce((s, g) => s + g, 0) * 100) / 100;
             if (tot > have) { gs = gross.map(g => Math.floor(g * ratio * 100) / 100); tot = Math.round(gs.reduce((s, g) => s + g, 0) * 100) / 100; }
             if (!(tot > 0 && takeId(w, id, tot))) { gs = gs.map(() => 0); tot = 0; }
-            M.cost[k] = (M.cost[k] || 0) + tot;
+            if (R) R.cost = (R.cost || 0) + tot; else M.cost[k] = (M.cost[k] || 0) + tot;
             ws.forEach((a, i) => {
                 const g = gs[i]; const tx = Math.round(g * tax * 100) / 100; addId(w, a.agentId, Math.round((g - tx) * 100) / 100); toTown(w, tx, t('所得稅'));
                 Wl.stats.wages += g * (1 - tax); Wl.stats.taxes += g * tax;
@@ -102,7 +134,8 @@ const MARKET = (() => {
     function daily(w, Wl, all) {
         const M = S(w), d = day(w); if (M.lastDay === d) return; M.lastDay = d;
         // 記帳:每天的營收與工資支出,留七天
-        for (const k of Object.keys(SECTORS)) { const h = M.hist[k] = (M.hist[k] || []); h.push([Math.round((M.rev[k] || 0) * 10) / 10, Math.round((M.cost[k] || 0) * 10) / 10]); if (h.length > 7) h.shift(); M.rev[k] = 0; M.cost[k] = 0; }
+        for (const k of Object.keys(SECTORS)) { const h = M.hist[k] = (M.hist[k] || []); h.push([Math.round((M.rev[k] || 0) * 10) / 10, Math.round((M.cost[k] || 0) * 10) / 10]); if (h.length > 7) h.shift(); M.rev[k] = 0; M.cost[k] = 0;
+            const R = M.rival?.[k]; if (R) { R.hist = R.hist || []; R.hist.push([Math.round((R.rev || 0) * 10) / 10, Math.round((R.cost || 0) * 10) / 10]); if (R.hist.length > 7) R.hist.shift(); R.rev = 0; R.cost = 0; } }
         assign(w, all, d);
         if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d); risk(w, all); }
         endStrikes(w, all, d);
@@ -118,10 +151,13 @@ const MARKET = (() => {
         for (const k of Object.keys(SECTORS)) {
             const ws = workersOf(w, k, all); let id = ownerOf(w, k);
             if (M.owners[k] && !id) M.owners[k] = null; // 老闆搬走了
+            // v9.7.0 原本那家的老闆走了,對面的對手店接手成為鎮上這一行唯一的店
+            { const R = M.rival?.[k]; if (R && !id && present(w, R.owner)) { M.owners[k] = R.owner; M.pay[k] = R.pay ?? 1; M.price = M.price || {}; M.price[k] = R.price ?? 1; delete M.rival[k]; id = R.owner; log(w, '🏪 {s}原本的老闆不在了，{o}的店成了鎮上唯一的一家。', { s: name(k), o: w.agents[R.owner]?.name || '' }, w.agents[R.owner]?.name || ''); }
+              else if (R && !present(w, R.owner)) delete M.rival[k]; }
             // 週轉不靈:老闆沒錢、連欠三天以上 → 賣給出得起錢的人
             if (id && M.unpaid[id] >= 3 && bal(w, id) < 2) {
                 const price = value(w, k, all); const buyer = all.filter(a => a.agentId !== id && bal(w, a.agentId) >= price && canBuy(w, a.agentId)).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
-                if (buyer) { takeId(w, buyer.agentId, price); addId(w, id, price); M.owners[k] = buyer.agentId; M.pay[k] = has(buyer, 'greedy') ? 0.85 : 1; M.unpaid[id] = 0; const old = w.agents[id];
+                if (buyer) { takeId(w, buyer.agentId, price); addId(w, id, price); M.owners[k] = buyer.agentId; if (M.rival?.[k]?.owner === buyer.agentId) delete M.rival[k]; /* 對手買下原本那家:兩家併成一家 */ M.pay[k] = has(buyer, 'greedy') ? 0.85 : 1; M.unpaid[id] = 0; const old = w.agents[id];
                     log(w, '📉 {o}週轉不靈，把{s}以 {n} 銀幣賣給了{b}。', { o: old?.name || '', s: name(k), n: price, b: buyer.name }, buyer.name);
                     mem(w, old, '撐不下去了，只好把{s}賣給{b}。', { s: name(k), b: buyer.name }, 8); mem(w, buyer, '我用 {n} 銀幣買下了{s}。', { n: price, s: name(k) }, 7); }
                 continue;
@@ -168,7 +204,7 @@ const MARKET = (() => {
     function unrest(w, all, d) {
         const M = S(w); M.strike = M.strike || {};
         for (const k of Object.keys(SECTORS)) {
-            const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id); if (ws.length < 4) continue;
+            const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !isRivalEmp(w, k, a)); if (ws.length < 4) continue; // v9.7.0 對手店的工人不跟著罷工
             // v9.6.0 工資壓在七成以下超過三週,心情再好也忍不下去(以前要心情低於 48 才罷工,一整年幾乎沒人罷工,工資一直卡在五成)
             M.low = M.low || {}; if (payRate(w, k) > 0.7) { delete M.low[k]; continue; } if (M.low[k] == null) M.low[k] = d;
             const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if ((mood > 48 && d - M.low[k] < 21) || Math.random() > 0.5) continue;
@@ -263,7 +299,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
+    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {

@@ -4460,6 +4460,7 @@ body.landing-open { overflow: hidden; }
 .market-owner { font-weight: 600; }
 .market-num { color: var(--text-muted); flex-basis: 100%; overflow-wrap: anywhere; }
 .market-holders { flex-basis: 100%; font-size: 0.7rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.market-rival { flex-basis: 100%; font-size: 0.7rem; color: #f2a65a; overflow-wrap: anywhere; }
 .shares-hist { display: flex; flex-wrap: wrap; gap: 2px 10px; font-size: 0.68rem; color: var(--text-muted); margin: 2px 0 4px; }
 .market-detail p { font-size: 0.76rem; line-height: 1.5; margin: 0; overflow-wrap: anywhere; }
 
