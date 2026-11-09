@@ -55,7 +55,7 @@ const WALLET = (() => {
     // v8.7.0 錢包算到「分」(以前四捨五入到「角」,但其他地方的金額都算到分,每筆交易都會憑空多出或少掉幾分錢)
     const get = (w, a) => a ? Math.max(0, Math.round((S1(w, a).bal[a.agentId] || 0) * 100) / 100) : 0;
     const add = (w, a, n) => { if (!a || !(n > 0)) return; const W = S1(w, a); n = Math.round(n * 100) / 100; W.bal[a.agentId] = Math.round(((W.bal[a.agentId] || 0) + n) * 100) / 100; };
-    const take = (w, a, n) => { if (!a || !(n > 0)) return true; const W = S1(w, a); n = Math.round(n * 100) / 100; const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 100) / 100; return true; };
+    const take = (w, a, n) => { if (!(n > 0)) return true; if (!a) return false; /* 沒有付款人就不能扣款(以前回 true,配上一筆真的 add 會憑空生錢) */ const W = S1(w, a); n = Math.round(n * 100) / 100; const b = W.bal[a.agentId] || 0; if (b + 1e-6 < n) return false; W.bal[a.agentId] = Math.round((b - n) * 100) / 100; return true; };
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 100) / 100, w.tickCount, why); };
     // v6.81.0 營業稅:做生意賣東西的收入(開店、廚師賣餐、裁縫賣衣)先繳 15% 給公庫,剩下才進自己口袋
@@ -241,21 +241,22 @@ const WALLET = (() => {
 if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
-        let estate = 0, heirs = [];
+        let estate = 0, heirs = [], took = false;
         try {
             if (world.wallet && npc && !npc.isPlayer) {
-                estate = WALLET.get(world, npc);
+                estate = WALLET.get(world, npc); took = true;
                 // 銀行存款一起算進遺產,先還清欠銀行的錢
                 const B = world.bank, id = npc.agentId;
                 if (B && B.dep && B.dep[id] > 0) { const paid = Math.min(B.dep[id], Math.max(0, Math.floor(B.reserve || 0))); B.reserve -= paid; delete B.dep[id]; estate += paid; }
-                if (B && B.loans && B.loans[id] && estate > 0) { const L = B.loans[id]; const pay = Math.min(L.owed || 0, estate); estate -= pay; B.reserve += pay; L.owed -= pay; if (L.owed <= 0) delete B.loans[id]; }
+                if (B && B.loans && B.loans[id] && estate > 0) { const L = B.loans[id]; const pay = Math.min(L.owed || 0, estate); estate = Math.round((estate - pay) * 100) / 100; B.reserve += pay; L.owed -= pay; if (L.owed <= 0) delete B.loans[id]; }
                 heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (['married', 'dating'].includes(a.relationships?.relationships?.[npc.agentId]?.status) || (a._parentNames || []).includes(npc.name)));
             }
         } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         try {
+            // 錢包已經算進遺產(或拿去還了貸款),不管剩不剩都要清掉;以前遺產剛好被貸款扣光就沒清,同一筆錢同時留在錢包又進了銀行
+            if (took && world.wallet?.bal) delete world.wallet.bal[npc.agentId];
             if (estate > 0) {
-                if (world.wallet?.bal) delete world.wallet.bal[npc.agentId];
                 if (heirs.length) { const base = Math.floor(estate / heirs.length * 100 + 1e-6) / 100; const first = Math.round((estate - base * (heirs.length - 1)) * 100) / 100; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
                 else world.stockpile?.add?.('silver', Math.round(estate * 100) / 100, world.tickCount, t('無人繼承的遺產'));
             }

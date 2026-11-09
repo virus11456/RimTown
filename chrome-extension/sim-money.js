@@ -13,16 +13,16 @@ const MONEY = (() => {
     const r2 = (n) => Math.round(n * 100) / 100;
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who); } catch (e) {} };
     const mem = (w, a, k, p, imp) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'work', k, p || {}, imp || 4, []); } catch (e) {} };
-    const IN = ['export', 'merchant', 'factory', 'caravan', 'surplus', 'immigrant', 'loot', 'event', 'xloan', 'tourism'];
+    const IN = ['export', 'merchant', 'factory', 'caravan', 'surplus', 'immigrant', 'loot', 'event', 'xloan', 'tourism', 'mint'];
     const OUT = ['import_raw', 'import_goods', 'shop', 'works', 'orders', 'proposals', 'emigrant', 'xrepay', 'travel', 'school'];
-    const CAT = { tourism: '外地賭客與觀光', travel: '去外地旅遊', school: '送孩子去外地讀書', xloan: '向外地錢莊借錢（紓困）', xrepay: '還外地錢莊的紓困債', export: '商人出口', merchant: '來訪商人買賣', surplus: '賣出多餘的貨', immigrant: '移民帶來的積蓄', loot: '探險帶回', factory: '工廠產品外銷', caravan: '往來商隊', shop: '鎮上商店進貨與賣貨', proposals: '提案（外銷商隊、外地材料）', import_raw: '向外地買原料', import_goods: '外地奢侈品', works: '外地包商的工程款', orders: '向外地訂貨', emigrant: '搬走的人帶走', event: '神的手筆（事件卡）', other: '其他' };
+    const CAT = { mint: '黃金鑄成銀幣', tourism: '外地賭客與觀光', travel: '去外地旅遊', school: '送孩子去外地讀書', xloan: '向外地錢莊借錢（紓困）', xrepay: '還外地錢莊的紓困債', export: '商人出口', merchant: '來訪商人買賣', surplus: '賣出多餘的貨', immigrant: '移民帶來的積蓄', loot: '探險帶回', factory: '工廠產品外銷', caravan: '往來商隊', shop: '鎮上商店進貨與賣貨', proposals: '提案（外銷商隊、外地材料）', import_raw: '向外地買原料', import_goods: '外地奢侈品', works: '外地包商的工程款', orders: '向外地訂貨', emigrant: '搬走的人帶走', event: '神的手筆（事件卡）', other: '其他' };
     // 全鎮的錢:公庫＋每個人的錢包＋銀行準備金＋工會基金＋教團基金
     function total(w) { let s = (w.stockpile?.resources?.silver || 0) + (+w.bank?.reserve || 0) + (+w.union?.fund || 0); const B = w.wallet?.bal; if (B) for (const k in B) s += (+B[k] || 0); for (const R of (w.faith?.rels || [])) s += (+R.fund || 0); return s; }
     function S(w) { if (!w.money || typeof w.money !== 'object') w.money = {}; const M = w.money; M.days = M.days || {}; M.hist = M.hist || []; M.pend = M.pend || 0; M.st = M.st || { exportQty: 0, exportSale: 0, surplus: 0 }; return M; }
     function flow(w, cat, n) { if (!w || !(Math.abs(n) > 1e-6)) return; const M = S(w), d = day(w); const D = M.days[d] = M.days[d] || {}; D[cat] = r2((D[cat] || 0) + n); M.pend = r2(M.pend + n); }
     // 包一層:呼叫前後比對全鎮的錢,差額記到某一類(外地交易都經過這些地方)
     // 裡面已經記過的(例如外地包商的工程款、裡層的追蹤點)會扣掉,同一筆錢不會記兩次
-    function track(obj, name, cat) { const f = obj?.[name]; if (typeof f !== 'function' || f.__money) return; const g = function (...args) { const w = (args[0] && args[0].agents) ? args[0] : (this && this.agents ? this : (typeof window !== 'undefined' ? window.rimtownApp?.world : null)); const b = w ? total(w) : 0, p0 = w ? S(w).pend : 0; const r = f.apply(this, args); try { if (w) flow(w, cat, (total(w) - b) - (S(w).pend - p0)); } catch (e) {} return r; }; g.__money = true; obj[name] = g; }
+    function track(obj, name, cat) { const f = obj?.[name]; if (typeof f !== 'function' || f.__money) return; const g = function (...args) { const w = args.find(x => x && typeof x === 'object' && x.agents && x.stockpile) || (this && this.agents ? this : (typeof window !== 'undefined' ? window.rimtownApp?.world : null)); /* 世界不一定是第一個參數(例如 fulfillOrder(訂單, 世界)) */ const b = w ? total(w) : 0, p0 = w ? S(w).pend : 0; const r = f.apply(this, args); try { if (w) flow(w, cat, (total(w) - b) - (S(w).pend - p0)); } catch (e) {} return r; }; g.__money = true; obj[name] = g; }
     // 每天結帳:總數變化裡沒被記到的部分算「其他」;順便記下每天的總數與人口(看人均)
     function close(w) {
         const M = S(w), d = day(w); if (M.lastClose === d) return; const T = total(w), pop = npcs(w).length;
@@ -188,7 +188,7 @@ if (typeof ExplorationSystem !== 'undefined') MONEY.track(ExplorationSystem.prot
 if (typeof ProposalSystem !== 'undefined') MONEY.track(ProposalSystem.prototype, '_procure', 'orders');
 if (typeof World !== 'undefined') { MONEY.track(World.prototype, 'leaveTown', 'emigrant'); MONEY.track(World.prototype, '_caravanDaily', 'caravan'); }
 if (typeof VillagerAutonomy !== 'undefined') MONEY.track(VillagerAutonomy.prototype, '_shop', 'shop');
-if (typeof ProcessingSystem !== 'undefined') MONEY.track(ProcessingSystem.prototype, 'sellProduct', 'factory');
+if (typeof ProcessingSystem !== 'undefined') { MONEY.track(ProcessingSystem.prototype, 'sellProduct', 'factory'); MONEY.track(ProcessingSystem.prototype, 'fulfillOrder', 'factory'); } // 工坊交訂單拿到的貨款也是外地付的(以前沒記,整筆算進「其他」)
 if (typeof ProposalSystem !== 'undefined') MONEY.track(ProposalSystem.prototype, '_execute', 'proposals');
 // v9.6.0 提案「把多出來的貨賣掉」賣給外地商店的錢,也付給做貨的產業(錢從公庫轉給產業老闆,全鎮總數不變)
 if (typeof ShopSystem !== 'undefined' && !ShopSystem.prototype.sell.__v96) { const _sell = ShopSystem.prototype.sell; ShopSystem.prototype.sell = function (itemKey, amount, world) {
