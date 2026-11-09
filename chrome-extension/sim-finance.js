@@ -344,9 +344,10 @@ const CYCLE = (() => {
     }
     // 公共工程:公庫超過「每人 40 銀幣＋200」的部分,每週撥 8%(衰退時 15%),付給本地木作坊、礦場、鐵鋪(依工人數分;公營的錢回到公庫)
     function publicWorks(w, C, pop) {
-        if (typeof MARKET === 'undefined' || !w.market) return; const sp = w.stockpile; const silver = sp.get('silver') || 0; const excess = silver - (pop * 40 + 200); if (excess <= 0) return;
-        const n = Math.round(excess * (C.c < -0.2 ? 0.15 : 0.08)); if (n < 20) return; const all = npcs(w);
+        if (typeof MARKET === 'undefined' || !w.market) return; const sp = w.stockpile; const silver = sp.get('silver') || 0; const excess = silver - (pop * 25 + 150); if (excess <= 0) return; // v8.9.0 門檻放低(以前 40/人＋200),公庫的錢更常拿去蓋公共建設
+        const n = Math.round(excess * (C.c < -0.2 ? 0.2 : 0.12)); if (n < 20) return; /* v8.9.0 8%→12%:公庫錢多就多蓋公共建設 */ const all = npcs(w);
         const parts = [['timber', 0.4], ['mine', 0.3], ['forge', 0.3]].map(([k, f]) => [k, f * (MARKET.workersOf(w, k, all).length ? 1 : 0)]); const tot = parts.reduce((s, [, f]) => s + f, 0); if (!tot) return;
+        if (typeof WORKS !== 'undefined') { try { if (WORKS.tender(w, n, parts, tot, all, C)) return; } catch (e) { console.warn('[Works] tender', e); } } // v8.9.0 改成村民競標承包
         if (!sp.consume('silver', n, w.tickCount, t('公共工程'))) return;
         for (const [k, f] of parts) if (f) MARKET.sell(w, k, n * f / tot, t('公共工程款'));
         C.works = Math.round((C.works || 0) + n); C.worksN = (C.worksN || 0) + 1; for (const a of all) a.moodModifier = (a.moodModifier || 0) + 0.5;

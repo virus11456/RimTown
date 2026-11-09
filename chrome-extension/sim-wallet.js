@@ -77,7 +77,8 @@ const WALLET = (() => {
     }
     // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
-    const wageOf = (a) => (WAGE[a.job?.key] || 0) * (a._wageMult || 1); // v7.7.1 掌櫃薪水多三成
+    let WIDX = 1; const setWageIdx = (v) => { WIDX = +v > 0 ? +v : 1; }; const wageIdx = () => WIDX; // v8.9.0 工資指數(跟著物價慢慢漲,INFL 每天設定)
+    const wageOf = (a) => (WAGE[a.job?.key] || 0) * (a._wageMult || 1) * (a._edu ? 1.15 : 1) * WIDX; // v8.9.0 外地讀過書的人工資高一成五 // v7.7.1 掌櫃薪水多三成
     const netOf = (W, a) => Math.max(W.minWage || 0, wageOf(a) * (1 - W.tax));
     function payday(w, W, all) {
         // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)
@@ -103,7 +104,7 @@ const WALLET = (() => {
         // v7.7.0 小孩買衣服、柴火由家裡的大人出;家裡沒人出得起才用自己的錢
         const payBy = (a, n) => { if ((a.age ?? 30) >= 16) return take(w, a, n); try { const f = (typeof HEALTH !== 'undefined' ? HEALTH.family(w, a) : []).filter(o => (o.age ?? 30) >= 16 && get(w, o) >= n + 3).sort((x, y) => get(w, y) - get(w, x))[0]; if (f && take(w, f, n)) return true; } catch (e) {} return take(w, a, n); };
         // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
-        const px = (k) => (typeof PRICES !== 'undefined' && w.prices ? PRICES.idx(w, k) : 1);
+        const px = (k) => (typeof PRICES !== 'undefined' && w.prices ? PRICES.idx(w, k) : 1) * (typeof INFL !== 'undefined' ? INFL.p(w) : 1); // v8.9.0 再乘上通膨的物價水準
         const MEAL = Math.round(MEAL0 * px('food') * 100) / 100, CLOTHES = Math.round(CLOTHES0 * px('cloth') * 100) / 100, FIREWOOD = Math.round(FIREWOOD0 * px('fuel') * 100) / 100;
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
@@ -232,7 +233,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
