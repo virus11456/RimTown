@@ -43,11 +43,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.tax = { toTown: Math.round((sp.get('silver') - tr0) * 100) / 100, toFund: Math.round((R.fund - f0) * 100) / 100, drift: Math.round((money() - m1) * 100) / 100 };
       // 5) 宗教稅提案:基金多就有人提;虔誠信徒反對、不信教的人多半贊成;通過後生效,之後可提取消
       F.tax = false; F.lastTaxProp = -99; R.fund = 400; for (const x of F.rels.slice(1)) x.fund = 0;
-      const nb = npcs().filter(a => !F.of[a.agentId]?.rel); if (!nb.length) { const z = npcs()[1]; delete F.of[z.agentId]; }
+      const okH = (a) => a && !a.isDead && a.job?.key !== 'priest' && a.job?.key !== 'mayor'; let heath = npcs().find(a => !F.of[a.agentId]?.rel && okH(a)) || npcs().find(okH); const keepHeathen = () => { if (!okH(heath) || !w.agents[heath.agentId]) heath = npcs().find(okH); if (heath) F.of[heath.agentId] = { rel: null, piety: 0 }; }; /* 不能刪:FAITH.S() 會替沒資料的人重新分配信仰,「沒有信仰」要寫成 rel: null */ keepHeathen(); /* 測試期間固定留一個不信教的人(跑 20 天可能被傳教改宗,測試就找不到人提案和投票) */
       const P = w.proposals; P.items = P.items.filter(p => !String(p.kind).startsWith('faith')); sp.resources.silver = 100;
-      for (let i = 0; i < 20 && !P.items.some(p => p.kind === 'faith_tax'); i++) { F.lastDay = -50 - i; w.clock.day = 2 + i; const d = w._absDay(); const _ad = w._absDay; w._absDay = () => 7 * 100 + 2 + i * 5; F.lastDay = -1; FAITH.daily(w); w._absDay = _ad; }
+      for (let i = 0; i < 20 && !P.items.some(p => p.kind === 'faith_tax'); i++) { F.lastDay = -50 - i; w.clock.day = 2 + i; const d = w._absDay(); const _ad = w._absDay; w._absDay = () => 7 * 100 + 2 + i * 5; F.lastDay = -1; FAITH.daily(w); w._absDay = _ad; keepHeathen(); }
       const pr = P.items.find(p => p.kind === 'faith_tax'); out.prop = !!pr;
-      const pious = npcs().find(a => F.of[a.agentId]?.rel && a.job?.key !== 'priest'); if (pious) F.of[pious.agentId].piety = 95; const heathen = npcs().find(a => !F.of[a.agentId]?.rel);
+      const pious = npcs().find(a => F.of[a.agentId]?.rel && a.job?.key !== 'priest'); if (pious) F.of[pious.agentId].piety = 95; keepHeathen(); const heathen = heath && !F.of[heath.agentId]?.rel ? heath : npcs().find(a => !F.of[a.agentId]?.rel);
       const vt = (a, kind) => { let f = 0; for (let i = 0; i < 40; i++) if (FAITH.taxVote(w, { kind }, a).v === 'for') f++; return f; };
       out.vote = { piousFor: pious ? vt(pious, 'faith_tax') : -1, heathenFor: heathen ? vt(heathen, 'faith_tax') : -1, piousUntax: pious ? vt(pious, 'faith_untax') : -1 };
       out.set = FAITH.setTax(w, true); out.taxOn = F.tax === true; FAITH.setTax(w, false);
