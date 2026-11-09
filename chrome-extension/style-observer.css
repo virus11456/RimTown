@@ -958,3 +958,14 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .wc-kind .gh-play { flex: 0 0 auto; }
 .rimtown-container .wc-kind .gh-d-note { flex-basis: 100%; }
 .rimtown-container .wc-hist { margin-top: 6px; }
+
+/* v8.5.0 神之書併進手牌 */
+.rimtown-container .gh-body { overflow-y: auto; }
+.rimtown-container .gh-locked { grid-column: 1 / -1; border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 2px; display: flex; flex-direction: column; gap: 8px; }
+.rimtown-container .gh-locked.done { font-size: 0.8rem; color: var(--text-muted); }
+.rimtown-container .gh-locked-sum { display: flex; align-items: baseline; gap: 6px; width: 100%; min-height: 40px; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-primary); font: inherit; font-size: 0.84rem; cursor: pointer; text-align: left; }
+.rimtown-container .gh-locked-sum small { color: var(--text-muted); font-size: 0.74rem; }
+.rimtown-container .gh-locked-arrow { margin-left: auto; color: var(--text-muted); }
+.rimtown-container .gh-locked-sum:hover, .rimtown-container .gh-locked-sum:focus-visible { background: var(--bg-card, rgba(127,127,127,.12)); outline: none; }
+.rimtown-container .gh-tabs button small { font-size: 0.7em; opacity: 0.8; }
+@media (max-width: 768px) { .rimtown-container .gh-body > * { flex-shrink: 0; } }
