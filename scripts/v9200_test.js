@@ -66,7 +66,7 @@ async function apiTest() {
       restore(); const c = WORLDCAL.begin(w, 'zombie', 'nature'); const ph = (p) => { let g = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== p && g++ < 200) step(); };
       ph('rumor'); const wall = (w.proposals?.items || []).find(p => p.kind === 'wc_wall');
       out.rumor = { wall: !!wall, cost: !!wall?.extra?.cost || !!wall?.cost, vGuard: null };
-      const guard = people().find(a => a.job?.key === 'guard'); if (wall && guard) { const v = WORLDCAL.vote(w, wall, guard); out.rumor.vGuard = v.v; }
+      const guard = people().find(a => a.job?.key === 'guard' && !c.deny.includes(a.agentId)); if (wall && guard) { const R1 = Math.random; Math.random = () => 0.5; try { out.rumor.vGuard = WORLDCAL.vote(w, wall, guard).v; } finally { Math.random = R1; } } // 不是「說沒事」那派的守衛；固定亂數
       // 3) 降臨:重創(解藥沒做)
       c.prog = 0; c.prep = null; ph('arrive'); const zb = c.zb; const zIds = zb ? zb.ids.slice() : [];
       const z = zIds.length ? w.agents[zIds[0]] : null;
@@ -129,7 +129,7 @@ async function apiTest() {
       w.tech.path = p0; CALAMITY.S(w).power = pw0;
       return out;
     });
-    await page.waitForTimeout(3600);
+    for (let i = 0; i < 30 && !posts.some(p => (p.unlocks?.worldcal || []).includes('iceage')); i++) await page.waitForTimeout(500); // 新解鎖 3 秒後推；機器忙的時候會晚一點
     const zh = lang === 'zh';
     ok(r.weight.kinds.includes('zombie') && r.weight.w1 > r.weight.w0 && r.weight.w2 > r.weight.w1, '基因生物路線多了喪屍危機；造了人工生命、做過延壽、實驗室外洩過，越容易遇上', r.weight);
     ok(r.rumor.wall && r.rumor.vGuard !== 'against', '口耳相傳：有人提「築牆封鎖」（要木頭石頭），守衛贊成', r.rumor);
