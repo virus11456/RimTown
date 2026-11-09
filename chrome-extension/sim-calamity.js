@@ -485,7 +485,7 @@ if (typeof HEALTH !== 'undefined') {
 // 疫苗研究期間,研究員的研究點都拿去研究疫苗(平常的研究暫停)
 if (typeof ResearchManager !== 'undefined') {
     const RM = ResearchManager.prototype; const _du = RM.dailyUpdate;
-    RM.dailyUpdate = function (world) { const V = world?.calamity?.cur?.vax; if (V && !V.done) return; const r = _du.call(this, world); try { CALAMITY.rediscover(world); } catch (e) {} return r; };
+    RM.dailyUpdate = function (world) { const V = world?.calamity?.cur?.vax; if (V && !V.done) { try { this._checkDone?.(world); } catch (e) {} return; } const r = _du.call(this, world); try { CALAMITY.rediscover(world); } catch (e) {} return r; };
 }
 // 文明倒退:靠失傳科技開的建築停擺,效果先不算
 if (typeof BuildingManager !== 'undefined') {

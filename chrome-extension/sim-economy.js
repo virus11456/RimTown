@@ -631,10 +631,14 @@ class ResearchManager {
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40+(world.buildings?.getEffect?.('research_cap',0)||0)); // v7.4.0 研究院每天多用 40 // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)
         if(bonus>0) world.stockpile.consume('research_points',bonus,world.tickCount,'research');
         const carry=this._carry||0; this._carry=0;
-        if(pts+bonus+carry<=0) return;
-        p.progress+=pts+bonus+carry;
+        if(pts+bonus+carry>0) p.progress+=pts+bonus+carry;
+        this._checkDone(world);
+    }
+    // v8.6.0 進度滿了就完成(以前只有每天結算才檢查:發明家靈光加的進度會衝過 100%,研究暫停時就一直卡著)
+    _checkDone(world) {
+        const p=this.projects[this.current]; if(!p||p.status!=='researching') return false;
         if(p.progress>=p.cost) {
-            p.status='complete'; this.current=null;
+            p.progress=p.cost; p.status='complete'; this.current=null;
             try { if (typeof TECH!=='undefined') TECH.onComplete?.(world, p.key); } catch (e) {} // v7.8.0 精進改良再開下一級、重算跨路線成本
             world.buildings.recomputeEffects(world); // v6.43.1 研究效果併入效果表(倍率統一成增量)
             for(const op of Object.values(this.projects)) {
@@ -643,7 +647,9 @@ class ResearchManager {
             world.logMessageT('research', '研究完成：{p}！', { p: p.name });
             try { world.ideaSystem?.onResearchComplete?.(world, p.key); } catch (e) {} // v6.46.0 新觀念從研究員開始傳
             Object.values(world.agents).forEach(a=>{ a.moodModifier=(a.moodModifier||0)+3; });
+            return true;
         }
+        return false;
     }
     toDict() { return {current_research:this.current,projects:{...this.projects},eras:this.eraProgress(),era:this.currentEra()}; }
 }

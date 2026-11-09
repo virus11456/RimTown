@@ -423,7 +423,7 @@ Object.assign(RimTownApp.prototype, {
               pts: [[X('人類會自救', 'Humans fight back'), X('村民自己提案隔離、戴口罩、關店、封城、研究疫苗，跟疫情賽跑；有錢人會先逃，有人囤藥。你只能推一把讓它更糟，不能阻止。', 'Villagers propose quarantine, masks, closing shops, lockdowns and vaccine research, racing the outbreak; the rich flee first and some hoard medicine. You can only make it worse, never stop it.')],
                     [X('疫情裡的人情世故', 'People in an epidemic'), X('每天在酒館碰面的人互相傳染；關太久就有人偷溜、投贊成的人自己不守被抓包；鄰居把飯放在門口欠下人情；有人趁機賣萬靈藥；吃過虧的小鎮下次更早防疫，兩年後又慢慢忘了。', 'Regulars at the tavern infect each other; when rules drag on people sneak out, and those who voted for them get caught breaking them; neighbors leave food at the door and favors are owed; someone sells a miracle cure; a town that suffered reacts faster next time, then slowly forgets.')],
                     [X('大災之後文明倒退', 'Civilization slips back'), X('死的、逃的人越多，失傳的科技越多，從最高的時代開始；文書房、印刷坊、學堂、研究院能保住學問，失傳的只剩殘卷。', 'The more people die or flee, the more knowledge is lost, starting from the highest era. Archives, presses, schools and institutes help keep it; what is lost leaves only fragments.')],
-                    [X('之後的世界級災厄', 'World calamities to come'), X('核子大戰、外星入侵、AI 控制、冰河期、全球不孕都會進工坊；科技路線走到頂點會自然發生，撐過一次就能在工坊裡使用。', 'Nuclear war, alien invasion, AI takeover, an ice age and global infertility will all join the workshop. They strike naturally when a tech path reaches its peak; survive one and you can unleash it from the workshop.')]],
+                    [X('世界級災厄', 'World calamities'), X('每條科技路線走到頂點都有自己的末日：電子機械的核子大戰、外星入侵、AI 控制，基因生物的全球不孕，蒸汽煉金的冰河期與以太裂隙。會自然發生，撐過一次就能在工坊裡使用。', 'Every tech path has its own doomsday at the top: nuclear war, alien invasion and AI takeover on the electro path, global infertility on the bio path, and an ice age or aether rift on the steam path. They strike naturally; survive one and you can unleash it from the workshop.')]],
               log: [['07:30', X('醫生發現三個人同時發燒咳嗽，懷疑是新的病。', 'The doctor notices three people with fever and cough at once and suspects a new disease.')], ['15:10', X('得了說謊病的老謝又撒了一次謊，冒出一陣黑煙。', 'Old Xie, sick with the liar\'s fever, lies again and puffs out black smoke.')], ['20:00', X('投票支持關酒館的老周，被人撞見從後門溜進去喝酒。', 'Old Zhou, who voted to close the tavern, is spotted sneaking in through the back door for a drink.')]] },
             { id: 'culture', ic: '⛪', c: '#9aa7ff', k: X('信仰與文化', 'Faith and culture'),
               h: X('每座鎮都有自己的神、節日和傳言', 'Every town has its own gods, festivals and rumors'),
@@ -462,11 +462,10 @@ Object.assign(RimTownApp.prototype, {
         ];
         // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
         const roadmap = {
-            done: [['v8.5', X('世界級災厄', 'World calamities'), X('核子世界大戰、外星入侵、AI 接管，研究員要跟降臨倒數賽跑', 'Nuclear war, alien invasion and AI takeover, with researchers racing the countdown')],
-                ['v8.4', X('神之書', 'Book of Gods'), X('事件卡分四級稀有度；打牌、託夢、災厄工坊共用神力', 'Event cards in four rarities; cards, dreams and the workshop share one divine power')],
-                ['v8.3', X('成就大改版', 'Achievements remade'), X('九大類、約 50 個新成就，舊成就留作紀念', 'Nine categories and about 50 new ones; old ones kept as keepsakes')]],
-            next: [[X('另外兩條路線的世界級災厄', 'World calamities for the other two paths'), X('基因生物的全球不孕、蒸汽煉金的冰河期與以太裂隙', 'Global infertility on the bio path; an ice age and an aether rift on the steam path')],
-                [X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
+            done: [['v8.6', X('三條路線都有世界級災厄', 'World calamities on every path'), X('基因生物的全球不孕、蒸汽煉金的冰河期與以太裂隙', 'Global infertility on the bio path; an ice age and an aether rift on the steam path')],
+                ['v8.5', X('世界級災厄', 'World calamities'), X('核子世界大戰、外星入侵、AI 接管，研究員要跟降臨倒數賽跑', 'Nuclear war, alien invasion and AI takeover, with researchers racing the countdown')],
+                ['v8.4', X('神之書', 'Book of Gods'), X('事件卡分四級稀有度；打牌、託夢、災厄工坊共用神力', 'Event cards in four rarities; cards, dreams and the workshop share one divine power')]],
+            next: [[X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
                 [X('股份與合夥經營', 'Shares and partnerships'), X('村民合資開店、分紅，吵架了還會拆夥', 'Villagers pool money to open shops, split profits and sometimes fall out')]],
             ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
         };

@@ -310,7 +310,7 @@ Object.assign(RimTownApp.prototype, {
             html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)} · ${t('現在的時代')}${t('：')}${curEra.icon || ''} ${t(curEra.name || '')}</span></h3>`;
             if (currentKey && projects[currentKey]) {
                 const cur = projects[currentKey];
-                const pct = Math.round((cur.progress / cur.cost) * 100);
+                const pct = Math.min(100, Math.round((cur.progress / cur.cost) * 100));
                 html += `${t('<div class="research-current">研究中：<strong>')}${t(cur.name)}</strong>
                     <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
                     <span class="progress-text">${pct}%</span></div>`;

@@ -110,7 +110,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.brief.town && r.brief.town2 && r.brief.town2 !== r.brief.town && r.brief.mem !== '', 'AI 知道鎮上的狀況（徵兆時只覺得怪，之後知道是什麼）和自己是哪一派', r.brief);
     ok(!r.ach.length, '成就：撐過三種世界級災厄、化解於未然、在工坊發動', r.ach);
     ok(r.ui.box && r.ui.steps === 6 && r.ui.on && r.ui.bar && !r.ui.form && r.ui.tech, `介面：工坊與科技分頁顯示六段、目前階段、主對策進度；進行中不能設計病原體（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
-    ok(r.ui.kinds === 3 && r.ui.btn >= 1 && r.ui.hist && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：工坊列出三種世界級災厄、撐過的可以發動、過去的紀錄；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
+    ok(r.ui.kinds === 6 && r.ui.btn >= 1 && r.ui.hist && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：工坊列出六種世界級災厄、撐過的可以發動、過去的紀錄；不破版（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();
   }
