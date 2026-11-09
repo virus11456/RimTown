@@ -214,7 +214,7 @@ const BANK = (() => {
         if (yes) {
             const owed = Math.round(need * (1 + INTEREST));
             const D = B.debt || (B.debt = { owed: 0, borrowed: 0, paid: 0, since: d, late: 0, lastPay: null });
-            D.owed += owed; D.borrowed += need; B.reserve += need; B.bailouts = (B.bailouts || 0) + 1;
+            D.owed += owed; D.borrowed += need; B.reserve += need; B.bailouts = (B.bailouts || 0) + 1; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xloan', need); /* v8.8.0 從外地借進來的錢記帳 */
             log(w, '🏛️ {m}決定紓困：向外地錢莊借 {n} 銀幣救銀行，鎮公所背下 {o} 銀幣的債（含利息）。', { m: m.name, n: need, o: owed }, m.name);
             log(w, '🗣️ {m}：「{x}」', { m: m.name, x: why }, m.name);
             mem(w, m, '我決定以鎮公所的名義借錢救銀行，背了 {o} 銀幣的債。理由是：{x}', { o: owed, x: why }, 8);
@@ -233,7 +233,7 @@ const BANK = (() => {
         const D = B.debt; if (!D || D.owed <= 0 || D.lastPay === d) return; D.lastPay = d;
         const pay = Math.min(D.owed, Math.max(2, Math.ceil(D.owed * 0.03)));
         if (treasury(w) >= pay && w.stockpile.consume('silver', pay, w.tickCount, t('償還紓困債'), 'upkeep')) {
-            D.owed = Math.max(0, D.owed - pay); D.paid += pay; D.late = 0;
+            D.owed = Math.max(0, D.owed - pay); D.paid += pay; D.late = 0; if (typeof MONEY !== 'undefined') MONEY.flow(w, 'xrepay', -pay); /* v8.8.0 還給外地錢莊 */
             if (D.owed <= 0) { log(w, '🎉 鎮公所還清了紓困銀行的債，連本帶利一共 {n} 銀幣。', { n: Math.round(D.paid) }); (B.debtHist || (B.debtHist = [])).push({ since: D.since, done: d, paid: Math.round(D.paid) }); if (B.debtHist.length > 4) B.debtHist.shift(); B.debt = null; }
         } else {
             D.late++; D.owed = Math.ceil(D.owed * 1.01);

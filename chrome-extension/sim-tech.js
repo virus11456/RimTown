@@ -97,7 +97,7 @@ const TECH = (function () {
     // 學者自己挑:最早的時代、自己路線優先(以前完全隨機,工坊時代都開始了還有拓荒的沒研究)
     function autoPick(R, w) {
         const av = R.getAvailable(); if (!av.length) return null; const P = pathOf(w);
-        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 25 : 0) + Math.random() * 3; // 選了路線:先把自己路線研究完,別條路線的基礎科技排後面
+        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 50 : 0) + Math.random() * 3; // 選了路線:先把自己路線研究完,別條路線的基礎科技排後面(v8.8.0 25→50:以前別條路線的第二三時代會排在自己路線第六時代前面,賢者之石、以太引擎一直輪不到)
         return av.slice().sort((a, b) => score(a) - score(b))[0];
     }
     // 提案權重:別條路線的少提、早期的多提

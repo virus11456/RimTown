@@ -65,7 +65,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
         const vc = p ? fix(0.5, () => CALAMITY.vote(w, p, cook)) : null, vd = p ? fix(0.5, () => CALAMITY.vote(w, p, doc)) : null; cook.job = ck; doc.job = dk;
         const res = CALAMITY.enact(w, 'cal_reopen'); out.reopen = { made: !!p, cook: vc?.v, cookWhy: vc?.why, doc: vd?.v, res: !!res, open: !X.ms.close, log: /🍻/.test(logs()) }; }
       // 5) 送飯:欠人情,送飯的人也冒險
-      { const X = fresh(); const [s, h] = A().filter(a => a.agentId !== A()[0].agentId); X.st[s.agentId] = { s: 'I', d: d0, on: d0, end: d0 + 5 }; X.ms.quar = d0; traits(h, ['kind']); setAff(h, s, 95); X.pw.home = {};
+      { const X = fresh(); const s = A().filter(a => a.agentId !== A()[0].agentId)[0]; const famS = (MONEY.familyOf?.(w, s) || []).map(x => x.agentId); const h = A().filter(a => a.agentId !== A()[0].agentId && a !== s && !famS.includes(a.agentId) && !(a.personality?.traits || []).includes('pessimist'))[0]; /* 家人送飯不算,要挑非家人 */ X.st[s.agentId] = { s: 'I', d: d0, on: d0, end: d0 + 5 }; X.ms.quar = d0; traits(h, ['kind']); setAff(h, s, 95); X.pw.home = {};
         for (const o of A()) if (o !== h && o !== s) setAff(o, s, 0);
         const ow0 = WX.owe[s.agentId]?.[h.agentId] || 0; fix(0.01, () => T.foodDaily(w, X, d0));
         out.food = { n: X.pw.food, owe: (WX.owe[s.agentId]?.[h.agentId] || 0) - ow0, risk: !!X.st[h.agentId], log: /🍲/.test(logs()) }; }

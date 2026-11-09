@@ -26,10 +26,9 @@ Object.assign(RimTownApp.prototype, {
         const def = UI_UNLOCKS.find(u => u.key === key); if (!def) return true;
         const U = this.world?.uiUnlock; return !!(U && U[key] != null);
     },
-    // 每天檢查一次:新解鎖的跳提示
+    // 檢查有沒有新解鎖的分頁,有就跳提示
     _uiCheck() {
-        const w = this.world; if (!w || this.observerMode === false) return; const d = (w._absDay?.() ?? 0);
-        if (this._uiLastDay === d && w.uiUnlock) return; this._uiLastDay = d;
+        const w = this.world; if (!w || this.observerMode === false) return; const d = (w._absDay?.() ?? 0); // 每次重畫都檢查(很便宜):打出第一張牌、拆穿第一個秘密,馬上就解鎖,不用等到隔天
         const fresh = !w.uiUnlock; if (fresh) w.uiUnlock = { __tb: doneN(w), __bz: bizN(w) }; // 開局就有的研究和老闆不算
         const U = w.uiUnlock; const quiet = fresh && d >= 30; // 舊存檔:直接全部打開,不吵
         const news = [];

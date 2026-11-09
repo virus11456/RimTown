@@ -79,6 +79,7 @@ class FarmSystem {
         const seedCost = crop.sellPrice * 2;
         if (!world.stockpile.has('silver', seedCost)) return { ok: false, error: `${t('需要')} ${seedCost} ${t('銀幣買種子')}` };
         world.stockpile.consume('silver', seedCost, world.tickCount, `${crop.name}${t('種子')}`);
+        try { if (typeof MARKET !== 'undefined' && world.market && MARKET.sell) MARKET.sell(world, 'farm', seedCost, t('種子')); else if (typeof MONEY !== 'undefined') MONEY.flow(world, 'import_raw', -seedCost); } catch (e) {} // v8.8.0 種子向鎮上的農莊買(以前錢付出去就消失)
 
         plot.state = 'growing';
         plot.crop = cropKey;

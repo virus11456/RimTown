@@ -12257,6 +12257,8 @@
         '開店的材料與執照': 'Shop fittings and license',
         '店租與營業開銷': 'Shop rent and running costs',
         '修繕與賠償': 'Repairs and compensation',
+        '向外地錢莊借錢（紓困）': 'Borrowed from outside lenders (bailout)',
+        '還外地錢莊的紓困債': 'Bailout debt repaid to outside lenders',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

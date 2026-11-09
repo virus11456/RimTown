@@ -38,10 +38,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp, w = app.world, P = w.proposals; app._setPaused?.(true);
       const npcs = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
       WALLET.S(w); w.wallet.lastDay = null;
-      const worker = npcs.find(a => WALLET.WAGE[a.job?.key]); const before = WALLET.get(w, worker); const tr0 = w.stockpile.get('silver');
+      const worker = npcs.find(a => WALLET.WAGE[a.job?.key]); const tr0 = w.stockpile.get('silver');
+      { const MK = w.market; if (MK) { for (const k of Object.keys(MK.owners || {})) if (MK.owners[k] === worker.agentId) { MK.owners[k] = null; if (MK.shares) delete MK.shares[k]; } MK.lastDay = w._absDay(); } } /* v8.7 起合股常讓這個工人變老闆或出錢入股:先拿掉,這裡只量工資和三餐 */
+      const before = WALLET.get(w, worker);
       // 一個人身無分文
       const poor = npcs.find(a => a !== worker); /* v6.90 開局有家族,家人會接濟:先讓他孤身一人 */ for (const o of Object.values(w.agents)) { if (o === poor) continue; if ((o._parentNames || []).includes(poor.name)) o._parentNames = o._parentNames.filter(n => n !== poor.name); const rr = o.relationships?.relationships?.[poor.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; } poor._parentNames = []; for (const rr of Object.values(poor.relationships?.relationships || {})) if (['married', 'dating'].includes(rr.status)) rr.status = 'ex'; w.wallet.bal[poor.agentId] = 0; poor.needs.hunger = 80; const pj = poor.job; poor.job = null; // 沒工作就沒工資
-      WALLET.daily(w); poor.job = pj;
+      { const _md = MARKET.daily; MARKET.daily = () => {}; try { WALLET.daily(w); } finally { MARKET.daily = _md; } } poor.job = pj; /* 只量工資和三餐:市場結算(合股入股)先關掉 */
       const wage = WALLET.WAGE[worker.job.key] * 0.9;
       const after = WALLET.get(w, worker);
       const poorTh = (poor.thoughts || []).some(x => x.kind === 'broke_hungry'), poorHunger = poor.needs.hunger;

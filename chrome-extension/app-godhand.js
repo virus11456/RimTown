@@ -77,7 +77,7 @@ Object.assign(RimTownApp.prototype, {
         const tray = document.getElementById('gh-tray'); const d = this._ghData(); if (!tray || !d) return;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         const cats = (typeof EVENT_CARD_CATS !== 'undefined') ? EVENT_CARD_CATS : {};
-        const f = this._ghFilter || 'all';
+        const f = this._ghFilter || 'all'; try { this._uiCheck?.(); } catch (e) {} // v8.8.0 打出第一張牌後「反應追蹤」馬上出現
         const reacts = (d.played || []).reduce((s, e) => s + (e.reactions?.length || 0), 0);
         if (this._ghTab === 'track') this._ghSeenReacts = reacts;
         const newR = Math.max(0, reacts - (this._ghSeenReacts || 0));

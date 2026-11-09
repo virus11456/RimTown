@@ -419,7 +419,7 @@ class EventSystem {
                 const stolenFood = Math.min(world.stockpile.get('food'), randInt(10,30));
                 const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
                 if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
-                if(stolenSilver>0) world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
+                if(stolenSilver>0 && world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`)) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'event', -stolenSilver); } catch (e) {} } /* v8.8.0 被搶走的錢記到「事件」 */
                 world.logMessageT('raid', '{attacker}搶走了{stolenFood}食物和{stolenSilver}銀幣！', { attacker: rd.attacker, stolenFood, stolenSilver });
             }
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.key !== 'guard');
