@@ -82,7 +82,7 @@ async function run(lang) {
     ps.record = rec0;
     // 達成 → 人生故事
     cash[R.agentId] = 400; M.lastAmb = -99; MIND.daily(w); ad += 3; ARCS.daily(w);
-    out.done = { end: (M.story?.[R.agentId] || []).slice(-1)[0]?.end, recent: (M.recent || []).length };
+    out.done = { end: (M.story?.[R.agentId] || []).some(s => s.end === 'done') ? 'done' : (M.story?.[R.agentId] || []).map(s => s.end).join(','), recent: (M.recent || []).length }; // 達成後新抽的心願可能當場心碎,所以看整段人生故事
     // 介面
     const H = app._townBlocks(null, ['lives']); out.livesHtml = /pp-life-row/.test(H.lives) || /最近落幕|Recently ended/.test(H.lives);
     M.amb[R.agentId] = { key: 'rich', since: ad, st: 1, lg: [{ d: ad, k: '{s}', p: { s: '存下第一筆積蓄', g: '發大財' } }] };

@@ -320,7 +320,7 @@ const DARK = (() => {
                 loser.addThought?.(has(loser, 'jealous') ? 'jealous' : 'competitive', w, winner.agentId, winner.name);
                 rel(loser, winner)?.modifyAffinity?.(-(sore ? 6 : 3));
                 mem(w, loser, '今天的客人都跑去找{b}了，同樣是{job}，憑什麼？', { b: winner.name, job: t(loser.job?.title || '') }, 5);
-                log(w, 'social', '💼 {a}和{b}搶生意，{a}心裡很不是滋味。', { a: loser.name, b: winner.name }, loser.name);
+                { const dd = day(w), R = loser._rivLog || (loser._rivLog = {}); if (!(R[winner.agentId] > dd - 10)) { R[winner.agentId] = dd; log(w, 'social', '💼 {a}和{b}搶生意，{a}心裡很不是滋味。', { a: loser.name, b: winner.name }, loser.name); } } // v9.5.1 同一對十天內只報一次(心情與好感照扣)
             }
             if (opponents(w, a, b)) {
                 rel(a, b)?.modifyAffinity?.(-2); rel(b, a)?.modifyAffinity?.(-2);

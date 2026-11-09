@@ -974,7 +974,13 @@ class LifecycleSystem {
             } else {
                 // NPC-NPC couples: limited by total population
                 const currentPop = Object.values(world.agents).filter(a => !a.isPlayer).length;
-                if (currentPop >= Math.max(20, world.events?.TARGET_POPULATION || 20)) continue; // v6.81.0 以前滿 20 人就不生,現在跟著鎮上的人口上限
+                // v9.5.1 以前人口一到上限就不生,可是移民一直把人口補到上限,結果幾乎生不出孩子(120 天只有 3 個)
+                // 改成軟上限:超過目標人口一半機率,超過目標的 1.3 倍(再加 4 人)才不生;家裡已經三個孩子的少生一點
+                const tp = Math.max(20, world.events?.TARGET_POPULATION || 20);
+                if (currentPop >= Math.round(tp * 1.3) + 4) continue;
+                if (currentPop >= tp) birthChance *= 0.5;
+                const kids = Object.values(world.agents).filter(c => !c.isDead && (c._parentNames || []).includes(agent.name)).length;
+                if (kids >= 3) birthChance *= 0.3;
             }
 
             if (Math.random() < birthChance) {

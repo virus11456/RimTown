@@ -1151,7 +1151,7 @@ class World {
                             agent.addThought('jealous', this, luckyOne.agentId, luckyOne.name); // v5.15.0 嫉妒的煎熬
                             agent.moodModifier = (agent.moodModifier || 0) - 6;
                             rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
-                            { const dd = this._absDay(), J = agent._jealLog || (agent._jealLog = {}); if (!(J[other.agentId] > dd - 10)) { J[other.agentId] = dd; this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name); } } // v9.5.1 同一段單戀十天內只報一次
+                            { const dd = this._absDay(), J = agent._jealLog || (agent._jealLog = {}); if (!(J[other.agentId] > dd - 10) && !(this._jealLogDay > dd - 2)) { J[other.agentId] = dd; this._jealLogDay = dd; this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name); } } // v9.5.1 同一段單戀十天內只報一次
                             if (this.gossipNetwork && Math.random() < 0.4) this.gossipNetwork.createRelGossip(this, 'jealous', agent, luckyOne, other.name);
                         }
                     } else {
