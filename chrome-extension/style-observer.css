@@ -1069,3 +1069,14 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-wish .gh-play { margin-top: 2px; }
 .rimtown-container .gh-wish-last { border-top: 1px dashed var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem; line-height: 1.5; }
 .rimtown-container.observer.theme-day #gh-wish-in { background: #FFFFFF; }
+/* v9.16.0 鎮與鎮的競爭 */
+.rimtown-container .pp-rival { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.12); display: flex; flex-direction: column; gap: 6px; }
+.rimtown-container .pp-rival.good { border-color: #4FB286; } .rimtown-container .pp-rival.bad { border-color: #E06A5A; }
+.rimtown-container .pp-rv-h { font-size: 0.84rem; } .rimtown-container .pp-rv-h small { color: var(--text-muted); }
+.rimtown-container .pp-rv-bar { display: grid; grid-template-columns: minmax(48px, auto) 1fr 28px; align-items: center; gap: 8px; font-size: 0.76rem; }
+.rimtown-container .pp-rv-bar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
+.rimtown-container .pp-rv-bar b { text-align: right; }
+.rimtown-container .pp-rv-bar.us .progress-fill { background: var(--accent); } .rimtown-container .pp-rv-bar.them .progress-fill { background: #8A93B8; }
+.rimtown-container .pp-rv-st { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; }
+.rimtown-container .pp-rival .pp-rv-bad { color: var(--text-secondary); }
+.rimtown-container .pp-rival .pp-tid-item small { color: var(--text-muted); }
