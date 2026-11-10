@@ -51,17 +51,21 @@ const COMPETE = (() => {
             const score = (a) => (has(a, 'greedy') ? 2 : 0) + (has(a, 'hardworking') ? 1 : 0) + (has(a, 'charismatic') ? 1 : 0) + (hasV(a, '財富') ? 2 : 0) + (Mk.JOB2S[a.job?.key] === k ? 2 : 0) - (aff(a, boss) > 40 ? 2 : 0) + Math.random();
             const cand = all.filter(a => a.agentId !== id && (a.age ?? 30) >= 18 && bal(w, a) >= cost * 1.5 && Mk.canBuy(w, a.agentId) && !(w.civic?.jail?.[a.agentId] > d))
                 .map(a => [a, score(a)]).filter(([, s]) => s >= 2).sort((x, y) => y[1] - x[1])[0]?.[0];
-            if (!cand || !WALLET.take(w, cand, cost)) continue;
+            // v9.8.0 一個人出不起本錢:找朋友合夥(INVEST.partner 已經從每個人錢包扣好錢)
+            let deal = null, owner = cand;
+            if (!cand) { deal = (typeof INVEST !== 'undefined') ? INVEST.partner(w, all, k, cost, id, score) : null; if (!deal) continue; owner = deal.lead; }
+            else if (!WALLET.take(w, cand, cost)) continue;
             Mk.sell(w, 'timber', r2(cost * 0.6), t('開店裝修')); Mk.sell(w, 'mine', r2(cost * 0.4), t('開店裝修')); // 裝修錢付給本地木作坊、礦場
-            const R = M.rival[k] = { fid: 'F' + (++M.fn), owner: cand.agentId, since: d, price: 0.9, pay: Math.min(1.2, Math.round((Mk.payRate(w, k) + 0.1) * 100) / 100), emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
-            const pool = ws.filter(a => a.agentId !== id && a.agentId !== cand.agentId).sort((x, y) => aff(x, boss) - aff(y, boss));
-            const n = Math.max(1, Math.ceil(pool.length * 0.4)); pool.slice(0, n).forEach(a => { R.emp[a.agentId] = d; mem(w, a, '{a}開了新店，開的工資比{o}高，我跳槽過去了。', { a: cand.name, o: boss?.name || '' }, 6); });
+            const R = M.rival[k] = { fid: 'F' + (++M.fn), owner: owner.agentId, since: d, price: 0.9, pay: Math.min(1.2, Math.round((Mk.payRate(w, k) + 0.1) * 100) / 100), emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
+            const pool = ws.filter(a => a.agentId !== id && a.agentId !== owner.agentId).sort((x, y) => aff(x, boss) - aff(y, boss));
+            const n = Math.max(1, Math.ceil(pool.length * 0.4)); pool.slice(0, n).forEach(a => { R.emp[a.agentId] = d; mem(w, a, '{a}開了新店，開的工資比{o}高，我跳槽過去了。', { a: owner.name, o: boss?.name || '' }, 6); });
             M.good[k] = 0; M.cst.opened++;
-            log(w, '🏪 {a}看{o}的{s}生意好，自己也開了一家，挖走 {n} 個人、開幕打九折！', { a: cand.name, o: boss?.name || '', s: Mk.name(k), n }, cand.name);
-            news(w, '{a}在{o}的{s}對面開了新店，兩家要搶生意了', { a: cand.name, o: boss?.name || '', s: Mk.name(k) }, 7, [cand.name, boss?.name || '']);
-            mem(w, cand, '我看{o}的{s}那麼賺，花了 {n} 銀幣在對面開了一家，要跟他搶生意。', { o: boss?.name || '', s: Mk.name(k), n: cost }, 8);
-            mem(w, boss, '{a}在我的{s}對面開了一家，還挖走我 {n} 個人。', { a: cand.name, s: Mk.name(k), n }, 8);
-            bump(boss, cand, -8); bump(cand, boss, -3);
+            if (deal) INVEST.setup(w, k, R, deal);
+            log(w, '🏪 {a}看{o}的{s}生意好，自己也開了一家，挖走 {n} 個人、開幕打九折！', { a: owner.name, o: boss?.name || '', s: Mk.name(k), n }, owner.name);
+            news(w, '{a}在{o}的{s}對面開了新店，兩家要搶生意了', { a: owner.name, o: boss?.name || '', s: Mk.name(k) }, 7, [owner.name, boss?.name || '']);
+            mem(w, owner, '我看{o}的{s}那麼賺，花了 {n} 銀幣在對面開了一家，要跟他搶生意。', { o: boss?.name || '', s: Mk.name(k), n: cost }, 8);
+            mem(w, boss, '{a}在我的{s}對面開了一家，還挖走我 {n} 個人。', { a: owner.name, s: Mk.name(k), n }, 8);
+            bump(boss, owner, -8); bump(owner, boss, -3);
         }
     }
 
@@ -92,10 +96,12 @@ const COMPETE = (() => {
             if (lostR && Pr > 0 && !has(rv, 'greedy') && payR < 1.2) { R.pay = Math.min(1.2, Math.round((payR + 0.05) * 100) / 100); M.cst.raise++; }
             // 對手店的營所稅(原本那家由 MARKET.corpTax 收)
             if (Pr > 0 && rv) { const tax = Math.min(bal(w, rv), r2(Pr * CORP * (has(rv, 'greedy') ? 0.6 : 1))); if (tax > 0 && WALLET.take(w, rv, tax)) w.stockpile.add('silver', tax, w.tickCount, t('營利事業所得稅')); }
+            // v9.8.0 合夥開的店:稅後利潤的六成照股份分給合夥人
+            if (Pr > 0 && rv && R.sh && typeof INVEST !== 'undefined') { try { INVEST.rivalDividend(w, k, R, r2(Pr * (1 - CORP))); } catch (e) {} }
             // 倒閉與併購
             R.loss = Pr < 0 ? (R.loss || 0) + 1 : 0; M.loss[k] = Pi < 0 ? (M.loss[k] || 0) + 1 : 0;
             if (R.loss >= 3 && bal(w, rv) < 40) {
-                const n = empOf(w, k, R, all).length; delete M.rival[k]; M.cst.closed++;
+                const n = empOf(w, k, R, all).length; try { if (typeof INVEST !== 'undefined') INVEST.rivalClosed(w, k, R); } catch (e) {} delete M.rival[k]; M.cst.closed++;
                 log(w, '📉 {a}的{s}撐不下去，收攤了；{n} 個夥計回到{o}那邊。', { a: rv?.name || '', s: Mk.name(k), n, o: boss?.name || '' }, rv?.name || '');
                 news(w, '{a}的{s}收攤了', { a: rv?.name || '', s: Mk.name(k) }, 6, [rv?.name || '']); mem(w, rv, '我的{s}撐不下去，收攤了。', { s: Mk.name(k) }, 8); mem(w, boss, '{a}的店收攤了，客人又回到我這裡。', { a: rv?.name || '' }, 6);
                 continue;
@@ -104,7 +110,7 @@ const COMPETE = (() => {
                 const price = Math.round(Mk.value(w, k, all) * 0.5);
                 if (bal(w, rv) >= price && WALLET.take(w, rv, price)) {
                     WALLET.add(w, boss, price); M.owners[k] = R.owner; M.pay[k] = R.pay ?? 1; M.price[k] = R.price ?? 1; M.loss[k] = 0; delete M.rival[k]; M.cst.merged++;
-                    try { if (w.market.shares?.[k]) w.market.shares[k] = { [R.owner]: 100 }; } catch (e) {}
+                    try { if (!(typeof INVEST !== 'undefined' && INVEST.rivalMerged(w, k, R)) && w.market.shares?.[k]) w.market.shares[k] = { [R.owner]: 100 }; } catch (e) {} // v9.8.0 合夥人變成合併後那家的股東
                     log(w, '🤝 {o}的{s}撐不住，被對手{a}以 {n} 銀幣併購，兩家併成一家。', { o: boss?.name || '', s: Mk.name(k), a: rv?.name || '', n: price }, rv?.name || '');
                     news(w, '{a}併購了{o}的{s}', { a: rv?.name || '', o: boss?.name || '', s: Mk.name(k) }, 7, [rv?.name || '', boss?.name || '']);
                     mem(w, boss, '撐不下去了，只好把{s}賣給對手{a}。', { s: Mk.name(k), a: rv?.name || '' }, 8); mem(w, rv, '我把{o}的{s}買下來了，這一行現在是我的。', { o: boss?.name || '', s: Mk.name(k) }, 8);
@@ -171,7 +177,7 @@ const COMPETE = (() => {
         M.cst.divest++;
         if (f.rival) {
             if (buyer && WALLET.take(w, buyer, price)) { WALLET.add(w, o, price); M.rival[f.k].owner = buyer.agentId; log(w, '⚖️ 依反壟斷法，{o}把對面那家{s}以 {n} 銀幣賣給了{b}。', { o: o.name, s: Mk.name(f.k), n: price, b: buyer.name }, o.name); }
-            else { delete M.rival[f.k]; log(w, '⚖️ 依反壟斷法，{o}名下店太多，對面那家{s}沒人接手，只好收掉。', { o: o.name, s: Mk.name(f.k) }, o.name); }
+            else { try { if (typeof INVEST !== 'undefined') INVEST.rivalClosed(w, f.k, M.rival[f.k]); } catch (e) {} delete M.rival[f.k]; log(w, '⚖️ 依反壟斷法，{o}名下店太多，對面那家{s}沒人接手，只好收掉。', { o: o.name, s: Mk.name(f.k) }, o.name); }
             return;
         }
         if (buyer && WALLET.take(w, buyer, price)) { WALLET.add(w, o, price); M.owners[f.k] = buyer.agentId; if (M.rival[f.k]?.owner === buyer.agentId) delete M.rival[f.k]; try { if (w.market.shares?.[f.k]) w.market.shares[f.k] = { [buyer.agentId]: 100 }; } catch (e) {} log(w, '⚖️ 依反壟斷法，{o}把{s}以 {n} 銀幣賣給了{b}。', { o: o.name, s: Mk.name(f.k), n: price, b: buyer.name }, o.name); return; }
@@ -212,7 +218,7 @@ const COMPETE = (() => {
     }
     function row(w, k) {
         const Mk = MK(); const R = Mk.rivalOf(w, k); if (!R) return null; const M = S(w);
-        return { owner: t(w.agents[R.owner]?.name || ''), share: Math.round(Mk.shareOf(w, k) * 100), price: Math.round((R.price ?? 1) * 100), incPrice: Math.round((M.price[k] ?? 1) * 100), pay: Math.round((R.pay ?? 1) * 100), staff: empOf(w, k, R, npcs(w)).length, since: R.since };
+        return { owner: t(w.agents[R.owner]?.name || ''), share: Math.round(Mk.shareOf(w, k) * 100), price: Math.round((R.price ?? 1) * 100), incPrice: Math.round((M.price[k] ?? 1) * 100), pay: Math.round((R.pay ?? 1) * 100), staff: empOf(w, k, R, npcs(w)).length, since: R.since, partners: (typeof INVEST !== 'undefined') ? INVEST.partners(w, k) : '' };
     }
     function view(w) { const M = S(w); const X = C(w); return { st: M.cst, saved: Math.round(M.saved || 0), cap: X?.law ? (X.cap || 3) : 0, mgr: Object.entries(M.mgr).map(([key, id]) => ({ s: MK().name(key.split(':')[0]), m: t(w.agents[id]?.name || '') })) }; }
     function brief(w, a) {
