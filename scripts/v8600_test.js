@@ -119,7 +119,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(I.first.born === 1 && I.first.log && I.expired, '過了以後第一個嬰兒出生，全鎮來看；期限到自動解除', { f: I.first, e: I.expired });
     ok(I.bankF === 0.3 && I.easedF === 0.5 && I.easedOut === 'eased', '有精卵庫，重創也還有三成生得出來；做一半 → 減輕（一半）', { b: I.bankF, e: I.easedF });
     const A = r.ice, B = r.iceStock;
-    ok(A.out === 'hit' && A.lost >= 45 && A.dead >= 1 && A.oldDead >= 1 && A.withered >= Math.min(1, A.plots) && A.winter === 2 && A.left >= 1, '冰河期重創：糧食少一半、田凍死、老人先走、有人往南逃、之後還有長冬', A);
+    ok(A.out === 'hit' && A.lost >= 40 /* 冰河期扣一半，同一天還有收成和產出，量起來落在 44～50% */ && A.dead >= 1 && A.oldDead >= 1 && A.withered >= Math.min(1, A.plots) && A.winter === 2 && A.left >= 1, '冰河期重創：糧食少一半、田凍死、老人先走、有人往南逃、之後還有長冬', A);
     ok(B.lost < A.lost && B.dead <= A.dead && B.left <= A.left, '囤糧囤柴有用：糧食少損失、死的人和逃的人更少', { A, B });
     const X = r.rift, Y = r.riftEvac;
     ok(X.out === 'hit' && X.dead === 0 && X.van >= 1 && X.drop >= X.van && X.wrecked >= 2 && X.sky && X.viewVan === X.van, '以太裂隙重創：人被吸走（不是死）、浮空城區先被扭走、介面寫出被吸走幾人', X);
