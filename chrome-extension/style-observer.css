@@ -991,6 +991,10 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-things-q { font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px; line-height: 1.5; }
 /* v9.2.0 世界級災厄移進手牌:手牌下方自己一個區塊(同一邊) */
 .rimtown-container .gh-col { display: flex; flex-direction: column; gap: 6px; min-width: 0; min-height: 0; }
+/* v9.9.5 視窗矮的時候手牌不要被壓扁、跟世界級災厄疊在一起:不縮,整欄自己捲 */
+.rimtown-container .gh-col > * { flex-shrink: 0; }
+.rimtown-container .gh-col { overflow-y: auto; scroll-padding: 12px 0; }
+.rimtown-container .gh-col > .gh-hand { padding-top: 12px; }
 .rimtown-container .gh-wc { border-top: 1px dashed var(--border); padding-top: 6px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .rimtown-container .gh-wc-h { font-size: 0.84rem; font-weight: 800; color: var(--text-primary); display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .rimtown-container .gh-wc-h small { font-size: 0.7rem; font-weight: 500; color: var(--text-muted); }

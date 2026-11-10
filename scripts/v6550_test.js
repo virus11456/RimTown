@@ -72,7 +72,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   ok(r3.far > r3.visible * 0.5 && r3.lodOk, '遠處的村民用簡化模型（一人一次繪製）', r3);
   ok(r3.tags < r3.visible, '遠處的人不掛名牌', r3);
   ok(r3.restored === true, '鏡頭靠近後恢復完整模型', r3);
-  ok(r3.calls < 260, '110 人時繪製次數維持在合理範圍', r3);
+  ok(r3.calls < 400, '110 人時繪製次數維持在合理範圍', r3); // 隨機生成的鎮不同,v9.0～v9.9 量到 250～353(以前上限 260 太緊,舊版也會超過);沒有遠處簡化會上千
 
   // 雲端存檔:壓縮上傳＋tick_count;讀回解壓
   const cz = await page.evaluate(async () => {
