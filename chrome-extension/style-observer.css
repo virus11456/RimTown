@@ -197,7 +197,7 @@
     /* v6.80.1 iPhone Safari 的 vh 算進網址列後面的高度，86vh 會把標題列和「返回」推出螢幕外、回不去。
        改用看得到的高度(dvh)，並且永遠不超過容器(標題列一定留在畫面裡) */
     .rimtown-container.observer #kairo-card { height: 46dvh; max-height: calc(100% - 56px - env(safe-area-inset-bottom, 0px) - 12px); }
-    .rimtown-container.observer #kairo-card.tall { height: auto; top: calc(env(safe-area-inset-top, 0px) + 10px); }
+    .rimtown-container.observer #kairo-card.tall { height: auto; top: calc(env(safe-area-inset-top, 0px) + 52px); } /* v9.13.1 拉到最高時停在標題列(鎮名、暫停、倍速、選單)下面,不再半透明地蓋在標題列上 */
     .rimtown-container.observer #kairo-card-header { padding: 8px 12px; }
     .rimtown-container.observer #kairo-card-header::before { content: ''; position: absolute; left: 50%; top: 4px; width: 36px; height: 4px; border-radius: 2px; background: var(--border); transform: translateX(-50%); }
     .rimtown-container.observer #kairo-card-back { border-radius: 999px; }
@@ -1051,3 +1051,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .epic-nav button:disabled{opacity:.4;cursor:default}
 @media (prefers-reduced-motion:no-preference){.epic-page{animation:epicIn .22s ease-out}}
 @keyframes epicIn{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}
+
+/* v9.13.1 手機面板裡的分頁列(提案／鎮況／真相…):後面那條遮擋底色改成跟面板同色、左右撐滿面板,
+   以前用 --bg-primary(比面板深)而且左右沒到邊,看起來像一塊深色方塊壓在標題列下面 */
+.rimtown-container.observer #kairo-card .pp-tabs::before { left: 0; right: 0; background: #1E1B2A; box-shadow: 0 0 0 100vmax #1E1B2A, 0 6px 8px -6px rgba(0, 0, 0, 0.45); clip-path: inset(0 -100vmax -14px -100vmax); }
+.rimtown-container.observer.theme-day #kairo-card .pp-tabs::before { background: #FFFBF3; box-shadow: 0 0 0 100vmax #FFFBF3, 0 6px 8px -6px rgba(0, 0, 0, 0.18); }
