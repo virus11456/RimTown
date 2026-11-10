@@ -108,7 +108,7 @@ const COMPETE = (() => {
                 news(w, '{a}的{s}收攤了', { a: rv?.name || '', s: Mk.name(k) }, 6, [rv?.name || '']); mem(w, rv, '我的{s}撐不下去，收攤了。', { s: Mk.name(k) }, 8); mem(w, boss, '{a}的店收攤了，客人又回到我這裡。', { a: rv?.name || '' }, 6);
                 continue;
             }
-            if (boss && M.loss[k] >= 3 && bal(w, boss) < 40) { // 老闆出遠門(w.agents 找不到人)不能談併購:以前照樣從對手扣錢,錢卻加不到不在場的老闆身上,整筆消失
+            if (boss && rv && M.loss[k] >= 3 && bal(w, boss) < 40) { // v9.10.1 兩邊老闆都要在鎮上才談得成併購(老闆出遠門時以前會被當成沒錢、賣款付不出去就不見了)
                 const price = Math.round(Mk.value(w, k, all) * 0.5);
                 if (bal(w, rv) >= price && WALLET.take(w, rv, price)) {
                     WALLET.add(w, boss, price); M.owners[k] = R.owner; M.pay[k] = R.pay ?? 1; M.price[k] = R.price ?? 1; M.loss[k] = 0; delete M.rival[k]; M.cst.merged++;

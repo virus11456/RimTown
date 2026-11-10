@@ -78,7 +78,7 @@ const WALLET = (() => {
     // v6.87.0 最低工資(扣稅後至少 4.5:三餐 3＋衣服＋柴火平均約 4,再留一點)不是天生就有,要有人提案、投票通過才生效(W.minWage);沒通過就照市價,做滿一天也可能越過越窮
     const FLOOR = 4.5;
     let WIDX = 1; const setWageIdx = (v) => { WIDX = +v > 0 ? +v : 1; }; const wageIdx = () => WIDX; // v8.9.0 工資指數(跟著物價慢慢漲,INFL 每天設定)
-    const wageOf = (a) => (WAGE[a.job?.key] || 0) * (a._wageMult || 1) * (a._edu ? 1.15 : 1) * WIDX; // v8.9.0 外地讀過書的人工資高一成五 // v7.7.1 掌櫃薪水多三成
+    const wageOf = (a) => (WAGE[a.job?.key] || 0) * (a._wageMult || 1) * (a._edu ? 1.15 : 1) * (typeof MOBILITY !== 'undefined' && MOBILITY.isMaster(a) ? MOBILITY.MASTER_PAY : 1) * WIDX; // v9.10.1 名匠工資多兩成 // v8.9.0 外地讀過書的人工資高一成五 // v7.7.1 掌櫃薪水多三成
     const netOf = (W, a) => Math.max(W.minWage || 0, wageOf(a) * (1 - W.tax));
     function payday(w, W, all) {
         // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)

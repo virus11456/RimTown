@@ -892,6 +892,10 @@ Object.assign(RimTownApp.prototype, {
                     if (pg && pg.mat) { const lk = pg.matLack || {}; B.tier += `<div class="pp-tier-line">🏗️ ${t('擴建鎮公所要用')}${t('：')}${Object.entries(pg.mat).map(([r, n]) => `<span class="pp-tier-req${lk[r] ? '' : ' ok'}">${esc(this._resName ? this._resName(r) : r)} ${n}</span>`).join(' ')}${Object.keys(lk).length ? '' : ` · ${t('建材已備齊')}`}</div>`; } // v6.77.0
                     else B.tier += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
                     try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); B.tier += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
+                    try { const MV = typeof MOBILITY !== 'undefined' ? MOBILITY.view(this.world) : null; if (MV && MV.n) { // v9.10.0 階層流動:比出身爬上去／掉下來的人、學徒、最近的故事
+                        B.tier += `<div class="pp-tier-line">🪜 ${t('階層流動')}${t('：')}${t('比出身好 {u} 人、比出身差 {d} 人').replace('{u}', MV.up).replace('{d}', MV.down)}${MV.masters ? ` · 🏅 ${t('名匠 {n} 人').replace('{n}', MV.masters)}` : ''}${MV.appr ? ` · 🧑‍🏫 ${t('學徒 {n} 人').replace('{n}', MV.appr)}` : ''}${MV.st.rise ? ` · 🌱 ${t('白手起家')} ${MV.st.rise}` : ''}${MV.st.fall ? ` · 🍂 ${t('家道中落')} ${MV.st.fall}` : ''}</div>`;
+                        for (const h of MV.hist) B.tier += `<div class="pp-tier-line pp-mob-h">${h.k === 'rise' ? '🌱' : '🍂'} ${esc(t(h.name))}${t('：')}${esc(t(CLASS.NAMES[h.from].zh))} → ${esc(t(CLASS.NAMES[h.to].zh))}${h.k === 'rise' && h.how ? `${t('（')}${esc(t(h.how))}${t('）')}` : ''}${h.k === 'three' ? `${t('（')}${t('富不過三代')}${t('）')}` : ''}</div>`;
+                    } } catch (e) {}
                     try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
                         const DN = (k) => { const D = CROWN.DECREES[k]; return D ? `${D.icon} ${esc(t(D.zh))}` : ''; };
                         B.tier += `<div class="pp-crown">`;

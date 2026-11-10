@@ -110,7 +110,7 @@ const LONGEV = (function () {
             return give(w, L, king, 'king');
         }
         if (L.tried.length >= 3) { // 吵了三輪都沒結果:煉出它的研究員自己吞了
-            const r = researchers(w).filter(a => !isImm(w, a)).sort((x, y) => (y.skills?.get?.('研究')?.level || 0) - (x.skills?.get?.('研究')?.level || 0))[0] || all[0];
+            const r = researchers(w).filter(a => !isImm(w, a)).sort((x, y) => (y.skills?.get?.('智識')?.level || 0) - (x.skills?.get?.('智識')?.level || 0) /* v9.10.1 以前寫成不存在的「研究」,等於隨便挑 */)[0] || all[0];
             log(w, '🤫 大家為了賢者之石吵了好幾個禮拜。某天早上，石頭不見了——{a}的白頭髮一夜之間全黑了。', { a: r.name }, r.name);
             for (const a of all) if (a !== r && Math.random() < 0.4) { bump(a, r, -15); mem(w, a, '{a}偷偷把全鎮的賢者之石吞了。', { a: r.name }, 7); }
             try { WAYS?.loseFace?.(w, r, 20); } catch (e) {}

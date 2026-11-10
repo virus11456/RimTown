@@ -32,6 +32,7 @@ const CLASS = (() => {
         if ((a.job?.key === 'doctor' || a.job?.key === 'researcher' || a.job?.key === 'priest') && m >= 80) lv = Math.max(lv, 3);
         try { if (typeof GOODS !== 'undefined' && GOODS.prestige(w, a)) lv = Math.max(lv, 3); } catch (e) {} // v6.65.0 收藏藝術珍品的人算士紳
         try { if (typeof MYTHSOC !== 'undefined' && w.mythsoc && MYTHSOC.elite(w, a)) lv = Math.max(lv, 3); } catch (e) {} // v7.6.0 神裔世家
+        try { if (typeof MOBILITY !== 'undefined') lv = MOBILITY.adjust(w, a, lv); } catch (e) {} // v9.10.0 做生意、嫁娶、家裡的階層
         try { const r = w.dark?.rep?.[a.agentId]; if (r && (r.exposed || 0) >= 2) lv = Math.max(0, lv - 1); } catch (e) {}
         return lv;
     }
