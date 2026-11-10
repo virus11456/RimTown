@@ -55,7 +55,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       D.exposedCount[X.agentId] = 2; const s2 = DARK.secret(w, { kind: 'sabotage', culprit: X.agentId, victim: Y.agentId, k: '{a}偷偷破壞了{v}的工作', p: { a: X.name, v: Y.name } }); P.items = P.items.filter(p => !(p.kind === 'verdict' && p.status === 'open'));
       const R2 = Math.random; Math.random = () => 0.99; try { DARK.reveal(w, s2, ag[9]); } finally { Math.random = R2; }
       const vp2 = P.items.find(p => p.kind === 'verdict' && p.status === 'open' && p.culprit === X.agentId); out.exile = vp2?.pen;
-      if (vp2) { vp2.status = 'approved'; P._execute(w, vp2, d0 + 13); out.exiled = !w.agents[X.agentId]; }
+      if (vp2) { vp2.status = 'approved'; P._execute(w, vp2, d0 + 13); const _ff = (id) => { if (typeof EXILE === 'undefined' || !EXILE.pendingOf(w, id)) return false; EXILE.S(w).pending[id].until = w._absDay(); EXILE.S(w).lastDay = null; EXILE.daily(w); return true; }; out.grace = !!w.agents[X.agentId] && _ff(X.agentId); /* v9.9.4 限期 7 天才離開 */ out.exiled = !w.agents[X.agentId]; }
       // 6) 寵物:生寶寶分送鄰居、走失被找回、老了離開
       const S = PETS.ensure(w); const pet = S.list.find(p => p.owner && p.sp !== 'chicken' && w.agents[p.owner]);
       const owner = w.agents[pet.owner]; const others = S.list.filter(p => p !== pet); const live = () => ag.filter(a => w.agents[a.agentId]);
@@ -90,7 +90,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.rep.includes('gossip') && r.cred < 1, '名聲：愛八卦的人講的話大家打折聽', { rep: r.rep, cred: r.cred });
     ok(r.verdict.made && r.verdict.pen === 'fine' && r.verdict.votes > 5 && r.verdict.victimFor, '陰謀被拆穿後，全鎮提案審判（第一次是罰款道歉）並投票', r.verdict);
     ok(r.verdict.status === 'done' && r.verdict.silver >= 30 && r.verdict.punished && r.verdict.justice, '判決執行：被處罰的人心情大跌，受害者討回公道', r.verdict);
-    ok(r.exile === 'exile' && r.exiled, '一再被拆穿 → 投票逐出小鎮', { pen: r.exile, gone: r.exiled });
+    ok(r.exile === 'exile' && r.grace && r.exiled, '一再被拆穿 → 投票逐出小鎮（限期 7 天收拾後離開）', { pen: r.exile, grace: r.grace, gone: r.exiled });
     ok(r.litter.kids >= 1 && r.litter.adopters.every(Boolean) && r.litter.gift, '寵物生了小寶寶，分送給鄰居', r.litter);
     ok(r.lost.lost && r.lost.hidden && r.lost.thought, '寵物會走失（主人擔心、畫面上看不到）', r.lost);
     ok(r.found.back && r.found.thought, '大家幫忙找，找回來了', r.found);

@@ -105,7 +105,7 @@ const MYTH = (() => {
         else { const tgt = w.agents[p.refKey]; const r = a.relationships?.relationships?.[p.refKey]; s += (r ? -(r.affinity || 0) / 30 : 0) + (mine ? -2 : 0) + (devout(w, a) ? 1 : 0); if (tgt && ((a._parentNames || []).includes(tgt.name) || (tgt._parentNames || []).includes(a.name) || r?.status === 'married')) s -= 5; }
         return { v: s > 0 ? 'for' : 'against', why: p.kind === 'gene_ban' ? (devout(w, a) ? 'faith' : 'safety') : 'safety' };
     }
-    function exile(w, p) { const a = w.agents[p.refKey]; if (!a || a.isDead) return ''; S(w).st.exiled++; try { w.leaveTown?.(a.agentId, t('被全鎮投票驅逐（神話基因的副作用）')); } catch (e) {} return t('{a}被趕出了小鎮').replace('{a}', a.name); }
+    function exile(w, p) { const a = w.agents[p.refKey]; if (!a || a.isDead) return ''; S(w).st.exiled++; try { if (typeof EXILE !== 'undefined') EXILE.order(w, a, { crime: false, reason: t('被全鎮投票驅逐（神話基因的副作用）') }); else w.leaveTown?.(a.agentId, t('被全鎮投票驅逐（神話基因的副作用）')); } catch (e) {} /* v9.9.4 限期變賣,非本人過錯不沒收 */ return t('{a}被趕出了小鎮').replace('{a}', a.name); }
     function ban(w) { S(w).ban = true; log(w, '🚫 小鎮通過禁止基因編輯，想編的人只能去地下診所。', {}); return t('基因編輯從此禁止'); }
     // ---------- 每天 ----------
     function daily(w) {

@@ -673,7 +673,7 @@ class ProposalSystem {
                     break;
                 }
                 case 'relief': {
-                    const x = w.agents[p.refKey]; w.stockpile.consume('silver', 20, w.tickCount, t('救濟金'), 'proposal');
+                    const x = w.agents[p.refKey]; if (!x || x.isDead) { ok = false; result = t('對象已經不在鎮上'); break; } /* v9.9.4 先確認人還在,錢才不會白白消失 */ w.stockpile.consume('silver', 20, w.tickCount, t('救濟金'), 'proposal');
                     if (x && typeof WALLET !== 'undefined') WALLET.add(w, x, 20); // v6.87.0 救濟金真的發到人手上
                     if (x) { x.moodModifier = (x.moodModifier || 0) + 15; x.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '鎮上撥了救濟金給我，{who}幫我說話。', { who: p.proposerName }, 7, [p.proposerName]); const rel = x.relationships?.getOrCreate?.(p.proposerId, p.proposerName); rel?.modifyAffinity?.(8); }
                     ok = true; result = `${x?.name || ''}${t('心情好多了')}`; break;

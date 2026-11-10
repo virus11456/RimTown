@@ -112,7 +112,7 @@ const PETS = (() => {
         const alive = new Set(all.map(a => a.agentId));
         for (const p of S.list) {
             if (p.sp === 'chicken' || (p.lost !== undefined && p.lost !== null)) continue;
-            if (p.owner && !alive.has(p.owner)) { // 主人搬走或過世 → 變成流浪的
+            if (p.owner && !alive.has(p.owner) && !w.isAway?.(p.owner)) { // 主人搬走或過世 → 變成流浪的(v9.9.4 出遠門不算)
                 const nm = p.ownerName || '';
                 p.owner = null; p.home = 'town_square'; p.bond = 0;
                 w.logMessageT?.('social', '🐾 {pet}的主人不在了，牠在廣場徘徊，成了流浪{sp}。', { pet: petName(p), sp: spName(p.sp) });

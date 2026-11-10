@@ -24,6 +24,7 @@ const FAITH2 = (() => {
         const f = F(w); if (!f) return; f.heads = f.heads || {};
         for (const R of f.rels) {
             if (headOf(w, R) && f.of[f.heads[R.id]]?.piety >= 40) continue;
+            if (f.heads[R.id] && !w.agents[f.heads[R.id]] && w.isAway?.(f.heads[R.id])) continue; // v9.9.4 宗教領袖出遠門不換人
             const bs = FAITH.believers(w, R); if (!bs.length) { delete f.heads[R.id]; continue; }
             const c = bs.filter(a => a.job?.key === 'priest').sort((x, y) => FAITH.pietyOf(w, y) - FAITH.pietyOf(w, x))[0] || bs.filter(a => FAITH.pietyOf(w, a) >= 70 && a.age >= 25).sort((x, y) => FAITH.pietyOf(w, y) - FAITH.pietyOf(w, x))[0];
             if (!c) { delete f.heads[R.id]; continue; }

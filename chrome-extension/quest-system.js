@@ -1343,7 +1343,7 @@ class SeasonTrials {
             this.failStreak++; this.passStreak = 0;
             const declinedNow = world.multiEnding?.endingTriggered === 'decline'; const popNow = this._npcs(world).length; // v6.22.0 B23
             const maxLeave = popNow <= SeasonTrials.POP_FLOOR ? 0 : declinedNow ? SeasonTrials.DECLINED_LEAVERS : Math.min(Math.max(1, Math.round(popNow * 0.12)), Math.max(1, 2 + (this.failStreak >= 2 ? 1 : 0) - (world.growth?.has('grit') ? 1 : 0))); // v5.94.0 天賦:硬頸;v6.2.0 小鎮最多走 12%;v6.22.0 人口下限 8、衰敗後每季最多 1 人
-            const leavers = this._npcs(world).filter(a => a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(maxLeave, popNow - SeasonTrials.POP_FLOOR));
+            const leavers = this._npcs(world).filter(a => (a.age ?? 30) >= 16 /* v9.9.4 小孩不會自己離鎮 */ && a.job?.key !== 'mayor' && !(a.relationships?.relationships?.player?.status === 'married')).sort((a, b) => (a.mood || 50) - (b.mood || 50)).slice(0, Math.min(maxLeave, popNow - SeasonTrials.POP_FLOOR));
             const names = leavers.map(a => a.name);
             leavers.forEach(a => world.leaveTown?.(a.agentId, t('鎮上的日子過不下去')));
             Object.values(world.agents).forEach(a => { if (!a.isPlayer) a.moodModifier = (a.moodModifier || 0) - 10; });

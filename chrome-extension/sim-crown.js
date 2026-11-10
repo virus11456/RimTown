@@ -59,7 +59,7 @@ const CROWN = (() => {
         }
         if (C.regent) { const kk = king(w); if (kk) log(w, 'event', '👑 國王{k}回到王都，攝政結束。', { k: kk.name }, kk.name); C.regent = null; }
         const k = king(w);
-        if (!k && C.king) { const old = w.agents[C.king]; if (old) setRoyal(w, old, false); log(w, 'event', '🕯️ 國王{a}駕崩，王位空了出來。', { a: C.history[C.history.length - 1]?.name || '' }); C.king = null; }
+        if (!k && C.king) { const old = w.agents[C.king]; if (old) setRoyal(w, old, false); const gone = (w.movedOut || []).some(m => m.id === C.king); /* v9.9.4 被逐出或搬走的國王不是駕崩 */ log(w, 'event', gone ? '🚪 國王{a}離開了小鎮，王位空了出來。' : '🕯️ 國王{a}駕崩，王位空了出來。', { a: C.history[C.history.length - 1]?.name || '' }); C.king = null; }
         if (!k) { if (!C.crisis) startSuccession(w, C, d, !C.history.length); else resolveCrisis(w, C, d); return; }
         legitimacy(w, C, k);
         royalKids(w, k);

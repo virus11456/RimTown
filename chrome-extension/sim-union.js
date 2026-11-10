@@ -51,9 +51,9 @@ const UNION = (() => {
     }
     function membership(w, all, d) {
         const U = S(w); const lead = w.agents[U.leader];
-        const gone = []; for (const id of Object.keys(U.members)) { const a = w.agents[id]; if (!a || a.isDead || !sectorOf(w, a)) { delete U.members[id]; if (a && !a.isDead) gone.push(a); } }
+        const gone = []; for (const id of Object.keys(U.members)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門還是會員 */ if (!a || a.isDead || !sectorOf(w, a)) { delete U.members[id]; if (a && !a.isDead) gone.push(a); } }
         // 領袖不在了(過世、離鎮、當了老闆):會員裡最有號召力的人接手
-        if (!lead || lead.isDead || !U.members[U.leader]) {
+        if ((!lead && !w.isAway?.(U.leader)) || lead?.isDead || !U.members[U.leader]) { // v9.9.4 領袖出遠門不換人
             const pool = Object.keys(U.members).map(id => w.agents[id]).filter(Boolean);
             if (!pool.length) { U.on = false; U.leader = null; refund(w, gone); log(w, '🥀 {u}沒有會員了，就此解散。', { u: U.name }); U.history.push({ d, k: 'dissolve' }); return; }
             const nl = pool.sort((x, y) => leaderScore(w, y) - leaderScore(w, x))[0]; U.leader = nl.agentId;

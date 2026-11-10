@@ -154,14 +154,14 @@ const DARK = (() => {
         mem(w, c, '全鎮投票處置了我：{pen}。', { pen: t(PEN[p.pen]) }, 8);
         if (p.pen === 'fine') { if (typeof MONEY !== 'undefined' && MONEY.fine) MONEY.fine(w, c, 30, t('罰款')); else { const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null; const n = Wl ? Math.min(30, Math.max(0, Wl.get(w, c))) : 0; if (n > 0 && Wl.take(w, c, n)) w.stockpile?.add?.('silver', n, w.tickCount, t('罰款')); } /* v7.6.0 罰款從被告錢包出;v7.7.2 付不出的記成欠款,從工資分期扣 */ if (v) { rel(v, c)?.modifyAffinity?.(5); mem(w, v, '{a}當眾向我道歉了。', { a: c.name }, 6); } S(w).wrongs = S(w).wrongs.filter(x => !(x.by === c.agentId && x.to === v?.agentId)); }
         else if (p.pen === 'labor') { const D = S(w); D.labor = (D.labor || []).concat([{ id: c.agentId, until: day(w) + 7 }]); }
-        else if (p.pen === 'exile') { w.leaveTown?.(c.agentId, t('被全鎮投票逐出小鎮')); }
+        else if (p.pen === 'exile') { if (typeof EXILE !== 'undefined') EXILE.order(w, c, { crime: true, reason: t('被全鎮投票逐出小鎮') }); else w.leaveTown?.(c.agentId, t('被全鎮投票逐出小鎮')); } // v9.9.4 限期 7 天變賣,犯罪沒收五成
         log(w, 'council', '⚖️ 判決執行：{a}，{pen}。', { a: c.name, pen: t(PEN[p.pen]) }, c.name);
         w.dailyNews?.collectEvent?.('politics', fill('⚖️ 判決執行：{a}，{pen}。', { a: c.name, pen: t(PEN[p.pen]) }), 8, [c.name]);
         return fill('判決執行：{pen}', { pen: t(PEN[p.pen]) });
     }
     function laborDaily(w) {
         const D = S(w); if (!D.labor?.length) return; const today = day(w);
-        D.labor = D.labor.filter(x => { const a = w.agents[x.id]; if (!a || today > x.until) return false; w.stockpile?.add?.('wood', 3, w.tickCount, t('公共勞役')); w.stockpile?.add?.('stone', 2, w.tickCount, t('公共勞役')); if (a.needs) a.needs.rest = Math.max(0, a.needs.rest - 15); return true; });
+        D.labor = D.labor.filter(x => { const a = w.agents[x.id]; if (!a && w.isAway?.(x.id)) { x.until++; return true; } /* v9.9.4 出遠門回來接著做 */ if (!a || today > x.until) return false; w.stockpile?.add?.('wood', 3, w.tickCount, t('公共勞役')); w.stockpile?.add?.('stone', 2, w.tickCount, t('公共勞役')); if (a.needs) a.needs.rest = Math.max(0, a.needs.rest - 15); return true; });
     }
     // ---------- 道歉與原諒 ----------
     const APOLOGY = ['對不起，之前是我不對。', '那件事我一直很過意不去，真的很抱歉。', '我知道說什麼都晚了，但我還是想跟你道歉。'];

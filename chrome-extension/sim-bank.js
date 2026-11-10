@@ -47,7 +47,7 @@ const BANK = (() => {
         if (!W() || !w.wallet) return; const B = S(w), d = day(w); if (B.lastDay === d) return; B.lastDay = d;
         repayDebt(w, B, d); // v6.74.0 紓困債:銀行倒了也照樣要還
         if (!B.open) { if (tierLv(w) >= 1 && B.status !== 'failed') openBank(w, B); else if (B.status === 'failed' && d - (B.failDay || d) >= 30 && tierLv(w) >= 1) { B.status = 'ok'; openBank(w, B); } return; }
-        const banker = w.agents[B.banker]; if (!banker || banker.isDead) { const nb = pickBanker(w); if (nb) { B.banker = nb.agentId; log(w, '🏦 {a}接手經營銀行。', { a: nb.name }, nb.name); } }
+        const banker = w.agents[B.banker]; if ((!banker && !w.isAway?.(B.banker)) || banker?.isDead) { /* v9.9.4 銀行家出遠門不換人 */ const nb = pickBanker(w); if (nb) { B.banker = nb.agentId; log(w, '🏦 {a}接手經營銀行。', { a: nb.name }, nb.name); } }
         matureBonds(w, B, d); // v6.74.0 債券到期
         // v6.87.0 呆帳慢慢沖銷(約三週減半),以前只增不減,呆帳一過 40 就天天有擠兌風險
         B.bad = Math.max(0, Math.round(((B.bad || 0) * 0.97 - 0.5) * 10) / 10);
@@ -155,7 +155,7 @@ const BANK = (() => {
     }
     function matureBonds(w, B, d) {
         if (!B.bonds?.length) return;
-        for (const bd of B.bonds.filter(x => x.due <= d)) {
+        for (const bd of B.bonds.filter(x => x.due <= d && !(!w.agents[x.holder] && w.isAway?.(x.holder)))) { // v9.9.4 持有人出遠門:等回來再兌現
             const a = w.agents[bd.holder]; const owe = Math.round(bd.n * (1 + bd.rate)); B.bonds = B.bonds.filter(x => x !== bd); if (!a || a.isDead) continue; // v7.6.0 持有人不在了,錢不能憑空消失
             const paid = Math.min(owe, Math.floor(B.reserve)); B.reserve -= paid;
             WALLET.add(w, a, paid);
