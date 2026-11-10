@@ -68,7 +68,8 @@ async function apiTest() {
       out.rumor = { wall: !!wall, cost: !!wall?.extra?.cost || !!wall?.cost, vGuard: null };
       const guard = people().find(a => a.job?.key === 'guard' && !c.deny.includes(a.agentId)); if (wall && guard) { const R1 = Math.random; Math.random = () => 0.5; try { out.rumor.vGuard = WORLDCAL.vote(w, wall, guard).v; } finally { Math.random = R1; } } // 不是「說沒事」那派的守衛；固定亂數
       // 3) 降臨:重創(解藥沒做)
-      c.prog = 0; c.prep = null; ph('arrive'); const zb = c.zb; const zIds = zb ? zb.ids.slice() : [];
+      c.prep = null; { let g = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== 'arrive' && g++ < 200) { c.prog = 0; step(); } } // 解藥一直沒做出來(以前只在謠言期歸零,恐慌期又會累積到快 50,偶爾變成「減輕」)
+      const zb = c.zb; const zIds = zb ? zb.ids.slice() : [];
       const z = zIds.length ? w.agents[zIds[0]] : null;
       out.arrive = { out: c.out, n: zIds.length, alive: z && !z.isDead, notAdult: z ? !WORLDCAL._t && true : false };
       if (z) {

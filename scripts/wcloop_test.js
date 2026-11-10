@@ -28,7 +28,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const hour = () => w.clock?.hour ?? 12;
     // ---------- 喪屍:真實迴圈 ----------
     WORLDCAL.S(w).cool = 0; const c = WORLDCAL.begin(w, 'zombie', 'lab'); out.z = { began: !!c };
-    let g = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== 'after' && g++ < 40 * 96) tick(1);
+    let g = 0; while (w.worldcal.cur && w.worldcal.cur.ph !== 'after' && g++ < 40 * 96) { if (w.worldcal.cur.ph !== 'arrive') w.worldcal.cur.prog = Math.min(w.worldcal.cur.prog || 0, 30); tick(1); } // 解藥做不出來，災後才看得到喪屍(以前解藥偶爾做完,災後沒有喪屍可以看)
     const zb = w.worldcal.cur?.zb; out.z.ph = w.worldcal.cur?.ph; out.z.n = zb?.ids?.length || 0; out.z.everTurned = zb?.st?.turned || 0;
     const stat = { night: 0, nightSq: 0, day: 0, dayGrave: 0, wander: 0, obs: 0, inCrowd: 0, voters: 0 };
     let seenZ = new Set(zb?.ids || []);
