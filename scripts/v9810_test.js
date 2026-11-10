@@ -1,4 +1,4 @@
-// v9.8.1 手機聊天打字:聊天框貼在鍵盤正上方、不伸到狀態列底下、地圖不會從聊天框和鍵盤中間露出來;一般與 iPhone 主畫面 App(補 Home 條)兩種
+// v9.8.1 手機聊天打字(與 iOS 26 主畫面 App 狀態列下緣模糊帶):聊天框貼在鍵盤正上方、不伸到狀態列底下、地圖不會從聊天框和鍵盤中間露出來;一般與 iPhone 主畫面 App(補 Home 條)兩種
 // 鍵盤用假的 visualViewport 模擬(高度少 336px)。需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -21,7 +21,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     await page.goto(BASE + 'town.html'); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(1500);
     const before = await page.evaluate(async () => {
       const app = window.rimtownApp; const id = Object.keys(app.world.agents).find(k => !app.world.agents[k].isPlayer); app.startChatWith(id); app.renderSidebar?.(); await new Promise(r => setTimeout(r, 600));
-      const sb = document.getElementById('rimtown-sidebar'); return { open: sb.classList.contains('chat-open'), bottom: Math.round(sb.getBoundingClientRect().bottom), h: innerHeight };
+      const sb = document.getElementById('rimtown-sidebar'); return { open: sb.classList.contains('chat-open'), bottom: Math.round(sb.getBoundingClientRect().bottom), h: innerHeight, titleTop: Math.round(document.querySelector('.mobile-title').getBoundingClientRect().top) };
     });
     const r = await page.evaluate(async () => {
       const inp = document.getElementById('chat-input'); window.__kb = 336; inp.focus(); window.visualViewport.dispatchEvent(new Event('resize')); await new Promise(r => setTimeout(r, 700));
@@ -32,6 +32,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       return out;
     });
     ok(before.open, '點村民聊天打開聊天框', before);
+    if (mode === 'ios-app') ok(before.titleTop >= 64, 'iPhone 主畫面 App：標題列文字避開狀態列下緣的模糊帶（狀態列＋20px 以下）', before);
+    if (mode === 'ios-app') ok(r.sbTop >= 28, 'iPhone 主畫面 App：打字時聊天框頂端也避開模糊帶', r);
     ok(r.kb && Math.abs(r.sbBottom - r.kbTop) <= 2, '鍵盤打開：聊天框貼在鍵盤正上方（中間不露出地圖）', r);
     ok(r.inBottom <= r.kbTop && r.sbTop >= 0 && r.scrollY === 0, '輸入框看得到、聊天框沒有被推到畫面外、頁面沒有往上捲', r);
     ok(Math.abs(r.after - before.bottom) <= 2 && !r.vars.trim(), '鍵盤收起：聊天框回到原本位置', { before, r });

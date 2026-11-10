@@ -662,7 +662,7 @@ Object.assign(RimTownApp.prototype, {
         const c = document.querySelector('.rimtown-container'); if (!c) return;
         const r = c.getBoundingClientRect(); const kbTop = vv.offsetTop + vv.height; // 鍵盤上緣(以版面座標)
         const b = Math.max(0, Math.round(r.bottom - kbTop));
-        const top = Math.max(r.top, vv.offsetTop) + (vv.offsetTop > 0 ? 8 : safeTop() + 8); // 不要伸到狀態列底下
+        const top = Math.max(r.top, vv.offsetTop) + (vv.offsetTop > 0 ? 8 : safeTop() + (window.navigator.standalone === true || root.classList.contains('ios-standalone') ? 28 : 8)); // 不要伸到狀態列底下(iOS 26 主畫面 App 狀態列下緣還有一條模糊帶)
         root.style.setProperty('--kb-b', b + 'px');
         root.style.setProperty('--kb-mh', Math.max(160, Math.round(kbTop - top)) + 'px');
     };
