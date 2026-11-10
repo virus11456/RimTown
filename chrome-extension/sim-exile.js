@@ -192,7 +192,38 @@ const EXILE = (() => {
         const a = w.agents?.[id]; if (!a) return;
         for (const o of Object.values(w.agents)) { if (o === a) continue; const rel = o.relationships?.relationships?.[id]; if (rel && (rel.status === 'married' || rel.status === 'dating')) { const was = rel.status; rel.status = 'ex'; rel.statusSince = w.tickCount; if (!o.isPlayer && was === 'married') mem(w, o, '{a}離開了小鎮，我們的婚姻就這樣結束了。', { a: a.name }, 8); } }
     }
+    // v9.9.6 爸媽離開小鎮,16 歲以下的小孩:另一個爸媽還在鎮上就留下;犯罪被逐出時由鎮上的親戚收養;其他情況跟著走
+    const AGE_KID = 16;
+    function kids(w, id, crime) {
+        const a = w.agents?.[id]; if (!a || a.isPlayer) return; const out = { stay: [], adopted: [], follow: [] };
+        const pend = w.exile?.pending || {}; const alive = (o) => o && !o.isDead && !o.isPlayer && !pend[o.agentId] && o.agentId !== id;
+        const byName = (n) => Object.values(w.agents).find(o => o.name === n && alive(o));
+        const ch = Object.values(w.agents).filter(o => o !== a && !o.isPlayer && !o.isDead && (o.age ?? 30) < AGE_KID && (o._parentNames || []).includes(a.name));
+        if (!ch.length) return out; const X = S(w);
+        for (const c of ch) {
+            const other = (c._parentNames || []).filter(n => n !== a.name).map(byName).find(Boolean) || (c._parentNames || []).filter(n => n !== a.name).some(n => (w.events?._travellingAgents || []).some(tr => tr?.agentData?.name === n));
+            if (other) { out.stay.push(c.name); continue; }
+            if (crime) {
+                const pool = Object.values(w.agents).filter(o => alive(o) && o !== c && (o.age ?? 30) >= 20 && (
+                    (a._parentNames || []).includes(o.name) // 爺爺奶奶
+                    || (o._parentNames || []).some(n => (c._parentNames || []).includes(n)) // 成年的哥哥姊姊
+                    || (o._parentNames || []).some(n => (a._parentNames || []).includes(n)))); // 叔叔阿姨
+                const r = pool.sort((x, y) => (y.relationships?.relationships?.[c.agentId]?.affinity || 0) - (x.relationships?.relationships?.[c.agentId]?.affinity || 0) || (y.age || 0) - (x.age || 0))[0];
+                if (r) { c._parentNames = [...(c._parentNames || []), r.name]; c._guardian = r.agentId; out.adopted.push(c.name);
+                    log(w, '👪 {p}被逐出小鎮，{c}留了下來，由{r}收養。', { p: a.name, c: c.name, r: r.name }, r.name);
+                    mem(w, r, '{p}被趕出小鎮，我把{c}接來家裡養。', { p: a.name, c: c.name }, 8); mem(w, c, '{p}被趕出小鎮了，我留下來跟{r}一起住。', { p: a.name, r: r.name }, 9); c.moodModifier = (c.moodModifier || 0) - 10; X.st.adopted = (X.st.adopted || 0) + 1; continue; }
+            }
+            out.follow.push(c.name); X.st.kids = (X.st.kids || 0) + 1;
+            log(w, '🧒 {c}還小，跟著{p}一起離開了小鎮。', { c: c.name, p: a.name }, c.name);
+            try { w.leaveTown?.(c.agentId, t('跟著{p}一起搬走').replace('{p}', a.name)); } catch (e) { console.warn('[Exile] kid', e); }
+        }
+        return out;
+    }
     function beforeLeave(w, id) {
+        const crime = !!w.exile?.pending?.[id]?.crime;
+        try { beforeLeave0(w, id); } finally { try { kids(w, id, crime); } catch (e) { console.warn('[Exile] kids', e); } }
+    }
+    function beforeLeave0(w, id) {
         try { unpair(w, id); } catch (e) {}
         const a = w.agents?.[id]; if (!a || a.isPlayer || !w.observerMode || !W() || !w.wallet) return;
         const X = S(w); const P = X.pending[id];
@@ -204,7 +235,7 @@ const EXILE = (() => {
     }
     function view(w) { const X = w.exile; if (!X) return null; return { pending: Object.entries(X.pending).filter(([id]) => w.agents[id]).map(([id, P]) => ({ name: t(w.agents[id].name), left: Math.max(0, P.until - day(w)), crime: P.crime, n: assetsOf(w, w.agents[id]).length })), hist: X.hist.map(h => ({ ...h, name: t(h.name) })), st: X.st }; }
     function brief(w, a) { const P = pendingOf(w, a.agentId); if (!P) return ''; return t('你被逐出小鎮，{n} 天內要離開，正在變賣家當').replace('{n}', Math.max(0, P.until - day(w))); }
-    return { S, GRACE, CONFISCATE, order, daily, beforeLeave, assetsOf, valueOf, sellOne, settle, confiscate, pendingOf, view, brief };
+    return { S, GRACE, CONFISCATE, AGE_KID, order, daily, beforeLeave, kids, assetsOf, valueOf, sellOne, settle, confiscate, pendingOf, view, brief };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof World !== 'undefined' && World.prototype.leaveTown) {
@@ -224,14 +255,14 @@ if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
         let heir = null, shops = [], goods = null;
-        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsOf(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId)) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {}
+        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsAll(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId)) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         if (!npc || (world.agents?.[npc.agentId] && !npc.isDead)) return r; // 冥王之血復活了(過世的人會從小鎮移除)
         try {
             for (const s of shops) {
                 if (s.partner === npc.agentId) { s.partner = null; continue; }
                 const p = s.partner && world.agents[s.partner] && !world.agents[s.partner].isDead ? world.agents[s.partner] : null;
-                const to = p || (heir && world.agents[heir.agentId] && !BIZ.shopOf(world, heir) ? heir : null); if (!to) continue;
+                const to = p || (heir && (world.agents[heir.agentId] || world.isAway?.(heir.agentId)) && !BIZ.shopOf(world, heir) ? heir : null); if (!to) continue;
                 s.owner = to.agentId; s.partner = null; world.logMessageT?.('economy', '🏪 {o}走了，「{n}」由{h}接手。', { o: npc.name, n: s.name[0], h: to.name }, to.name);
                 to.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'economy', '我接手了{o}留下的店「{n}」。', { o: npc.name, n: s.name[0] }, 7, [npc.name]);
             }
@@ -239,7 +270,7 @@ if (typeof LifecycleSystem !== 'undefined') {
             for (const tr of (world.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d) continue; const rel = (d.relationships || []).find(x => (x.target_id || x.targetId) === npc.agentId); if (!rel) continue;
                 const was = rel.status; if (was === 'married' || was === 'dating') { rel.status = 'ex'; rel.statusSince = world.tickCount; }
                 if (was === 'married' || (d._parentNames || []).includes(npc.name)) { const k = was === 'married' ? '我出遠門的時候，{a}走了，連最後一面都沒見到。' : '我出遠門的時候，{a}過世了。'; (d.memories = d.memories || []).push({ tick: world.tickCount, time: world.clock?.timeStr || '', category: 'death', content: Memory.render(k, { a: npc.name }), importance: 9, related_agents: [npc.name], k, p: { a: npc.name } }); } }
-            if (goods && goods.length && heir && world.agents[heir.agentId] && world.goods?.owned) { const G = world.goods.owned; G[heir.agentId] = (G[heir.agentId] || []).concat(goods); delete G[npc.agentId]; }
+            if (goods && goods.length && heir && (world.agents[heir.agentId] || world.isAway?.(heir.agentId)) && world.goods?.owned) { const G = world.goods.owned; G[heir.agentId] = (G[heir.agentId] || []).concat(goods); delete G[npc.agentId]; }
         } catch (e) { console.warn('[Exile] death', e); }
         return r;
     };

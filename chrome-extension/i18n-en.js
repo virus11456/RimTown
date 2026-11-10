@@ -732,6 +732,12 @@
         '遺產稅': 'Inheritance tax',
         // v9.9.5 小修正
         '今天已託夢': 'Dream sent today',
+        // v9.9.6 小孩跟著爸媽走／親戚收養
+        '👪 {p}被逐出小鎮，{c}留了下來，由{r}收養。': '👪 {p} was banished from town. {c} stayed behind and was taken in by {r}.',
+        '{p}被趕出小鎮，我把{c}接來家裡養。': '{p} was driven out of town, so I took {c} into my home.',
+        '{p}被趕出小鎮了，我留下來跟{r}一起住。': '{p} was driven out of town. I stayed and now live with {r}.',
+        '🧒 {c}還小，跟著{p}一起離開了小鎮。': '🧒 {c} is still young and left town together with {p}.',
+        '跟著{p}一起搬走': 'moved away with {p}',
         '夢已經送到了，到動態看看他醒來怎麼解讀。': 'The dream has been sent. Check the feed to see how they read it when they wake.',
         '我出遠門的時候，{a}走了，連最後一面都沒見到。': '{a} passed away while I was travelling. I never got to say goodbye.',
         '我出遠門的時候，{a}過世了。': '{a} passed away while I was travelling.',

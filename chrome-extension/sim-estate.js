@@ -281,7 +281,7 @@ if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
         let own = [], heir = null;
-        try { if (world.estate && npc) { own = ESTATE.ownsOf(world, npc.agentId); if (own.length) heir = Object.values(world.agents).filter(o => o !== npc && !o.isDead && !o.isPlayer && (o.relationships?.relationships?.[npc.agentId]?.status === 'married' || ((o._parentNames || []).includes(npc.name) && (o.age || 0) >= 16))).sort((x, y) => (y.age || 0) - (x.age || 0))[0] || null; } } catch (e) {}
+        try { if (world.estate && npc) { own = ESTATE.ownsOf(world, npc.agentId); if (own.length) heir = typeof MARKET !== 'undefined' && MARKET.heirsAll ? (MARKET.heirsAll(world, npc)[0] || null) : Object.values(world.agents).filter(o => o !== npc && !o.isDead && !o.isPlayer && (o.relationships?.relationships?.[npc.agentId]?.status === 'married' || ((o._parentNames || []).includes(npc.name) && (o.age || 0) >= 16))).sort((x, y) => (y.age || 0) - (x.age || 0))[0] || null; } } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         try { for (const u of own) u.owner = heir ? heir.agentId : null; if (heir && own.length) heir.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '我繼承了{o}的 {n} 棟房子。', { o: npc.name, n: own.length }, 8, [npc.name]); if (world.estate?.servants) { delete world.estate.servants[npc.agentId]; for (const [s, m] of Object.entries(world.estate.servants)) if (m === npc.agentId) delete world.estate.servants[s]; } } catch (e) {}
         return r;
