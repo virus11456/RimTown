@@ -56,6 +56,26 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     { const B = BANK.S(w); const a = P.find(x => !w.myth?.g?.[x.agentId]) || P[3]; const id = a.agentId; const have = WALLET.get(w, a); if (have > 0) WALLET.take(w, a, have); WALLET.add(w, a, 20);
       if (B.dep) delete B.dep[id]; B.loans[id] = { owed: 30, principal: 28, rate: 0.08, day: w._absDay(), due: w._absDay() + 20, why: 'test' };
       out.deathLoan = leak(() => w.lifecycle._killNpc(w, a)); out.deathBal = w.wallet.bal[id]; out.deathOwed = B.loans[id]?.owed; out.dead = !w.agents[id]; }
+    // 同業競爭(每週一次,剛好在跨午夜那一格):只留一個產業來測,用完整個 market 還原
+    { const Mk = MARKET, Q = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18), d = w._absDay();
+      const k = Object.keys(Mk.SECTORS).find(s => Mk.workersOf(w, s).length >= 3); const [o, rv, p1, p2] = Q.slice(-4);
+      const keepMk = JSON.parse(JSON.stringify(w.market)), SECT = Mk.SECTORS, canBuy = Mk.canBuy, partner = INVEST.partner, away = w.isAway, ownAway = Object.prototype.hasOwnProperty.call(w, 'isAway'), rnd = Math.random;
+      const restore = () => { for (const x of Object.keys(w.market)) delete w.market[x]; Object.assign(w.market, keepMk); Mk.SECTORS = SECT; Mk.canBuy = canBuy; INVEST.partner = partner; if (ownAway) w.isAway = away; else delete w.isAway; Math.random = rnd; };
+      try {
+        Mk.SECTORS = { [k]: SECT[k] }; const M = COMPETE.S(w);
+        // 合夥湊到的本錢比開店成本少 0.3(INVEST.partner 允許差 0.5 以內):裝修錢照實際湊到的付(以前照成本付,多出 0.3)
+        M.owners[k] = o.agentId; delete M.rival[k]; M.good[k] = 5; M.hist[k] = [[1000, 0]]; Math.random = () => 0.1; Mk.canBuy = () => false;
+        WALLET.add(w, p1, 500); WALLET.add(w, p2, 500);
+        INVEST.partner = (w, all, kk, cost) => { const x = Math.round(cost * 0.6 * 100) / 100, y = Math.round((cost - 0.3 - x) * 100) / 100; WALLET.take(w, p1, x); WALLET.take(w, p2, y); return { lead: p1, parts: [[p1, x], [p2, y]] }; };
+        out.coopOpen = leak(() => COMPETE.entry(w, Q, d)); out.coopOpened = !!M.rival[k]; INVEST.partner = partner; Math.random = rnd;
+        // 原本那家的老闆出遠門(還算在鎮上,但 w.agents 找不到人):不能被併購(以前照樣從對手扣錢,錢卻付不到老闆手上,整筆消失)
+        M.owners[k] = 'away_t'; w.isAway = (id) => id === 'away_t' || away.call(w, id); w.wallet.bal.away_t = 0; WALLET.add(w, rv, 2000);
+        M.rival[k] = { fid: 'Ft', owner: rv.agentId, since: d, price: 1, pay: 1, emp: {}, rev: 0, cost: 0, hist: [[100, 0]], loss: 0 }; M.loss[k] = 5; M.hist[k] = [[0, 50]];
+        out.mergeAway = leak(() => COMPETE.weekly(w, Q, d)); out.mergeAwayKept = !!M.rival[k] && M.owners[k] === 'away_t'; delete w.wallet.bal.away_t;
+      } finally { restore(); } }
+    // 看病:身上只差 1 分(湊到只差 1 分就算付清),醫生與公庫照實際收到的錢分(以前照全額分,憑空多出 1 分)
+    { const Q = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18); const [pt, doc] = Q.slice(-2); const have = WALLET.get(w, pt); if (have > 0) WALLET.take(w, pt, have); WALLET.add(w, pt, 4.99);
+      const bio = w.tech?.bio?.price; if (bio) w.tech.bio.price = false; let res = null; out.medPay = leak(() => { res = HEALTH.pay(w, pt, 5, 'test', doc); }); out.medOk = !!res?.ok; if (bio) w.tech.bio.price = bio; }
     // 上面放進去的測試用銀幣沒有記帳:重新對帳,從現在開始算
     M.lastT = MONEY.total(w) - M.pend; delete (M.days[w._absDay()] || {}).other;
     return out;
@@ -71,6 +91,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(u.bankGone === 0, '搬走的人領存款:負的準備金不會被拉回 0', u.bankGone);
   ok(u.dead && u.deathLoan === 0 && u.deathBal === undefined && u.deathOwed === 10, '過世時遺產剛好被貸款扣光:錢包清掉,全鎮的錢不變', u);
   ok(u.faith.length && u.faith.every(x => x === 0), '宗教基金太多:修建與救濟分到的錢加起來一分不差', u.faith);
+  ok(u.coopOpened && u.coopOpen === 0, '合夥開店湊的錢比本錢少幾角:裝修錢照實際湊到的付,全鎮的錢不變', [u.coopOpened, u.coopOpen]);
+  ok(u.mergeAwayKept && u.mergeAway === 0, '原本那家的老闆出遠門:不會被併購,全鎮的錢不變', [u.mergeAwayKept, u.mergeAway]);
+  ok(u.medOk && u.medPay === 0, '看病錢只差 1 分也算付清:醫生與公庫照實際收到的分,全鎮的錢不變', [u.medOk, u.medPay]);
 
   // ---------- 2. 真正的遊戲迴圈跑幾百天 ----------
   await page.evaluate(() => {
