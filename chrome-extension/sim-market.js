@@ -278,6 +278,19 @@ const MARKET = (() => {
         return npcs(w).filter(o => o !== a && (o.relationships?.relationships?.[a.agentId]?.status === 'married' || ((o._parentNames || []).includes(a.name) && (o.age || 0) >= 16))) /* v9.7.4 交往中的不算繼承人 */
             .sort((x, y) => (y.relationships?.relationships?.[a.agentId]?.status === 'married') - (x.relationships?.relationships?.[a.agentId]?.status === 'married') || (y.age || 0) - (x.age || 0));
     }
+    // v9.9.6 繼承人也算出遠門的家人:產業記在他名下,回來就是他的;記憶寫進他的行李(以前出遠門的人分不到店、房子、股份)
+    function awayHeir(d, wed) {
+        return { agentId: d.agentId, name: d.name, age: d.age, _travel: true, _wed: wed, isDead: false,
+            memory: { addT(tick, time, cat, k, p, imp, rel) { try { (d.memories || (d.memories = [])).push({ tick, time, category: cat, content: Memory.render(k, p || {}), importance: imp || 5, related_agents: rel || [], k, p: p || {} }); } catch (e) {} } } };
+    }
+    function heirsAll(w, a) {
+        const out = ((typeof MARKET !== 'undefined' && MARKET.heirsOf) || heirsOf)(w, a).slice();
+        for (const tr of (w.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d?.agentId || w.agents?.[d.agentId] || !a) continue;
+            const st = (d.relationships || []).find(x => (x.target_id || x.targetId) === a.agentId)?.status;
+            if (st === 'married' || ((d._parentNames || []).includes(a.name) && (d.age || 0) >= 16)) out.push(awayHeir(d, st === 'married')); }
+        const wed = (o) => o._travel ? !!o._wed : o.relationships?.relationships?.[a.agentId]?.status === 'married';
+        return out.sort((x, y) => wed(y) - wed(x) || (y.age || 0) - (x.age || 0));
+    }
     function brief(w, a) {
         const out = []; const own = ownedBy(w, a.agentId).filter(k => S(w).owners[k]);
         if (own.length) { const n = own.reduce((s, k) => s + workersOf(w, k).filter(x => x.agentId !== a.agentId).length, 0); out.push(t('你是{s}的老闆，僱了 {n} 個人，工資開原本的 {p}%。').replace('{s}', own.map(name).join(t('、'))).replace('{n}', n).replace('{p}', Math.round(own.reduce((s, k) => s + payRate(w, k), 0) / own.length * 100))); }
@@ -301,7 +314,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
+    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
@@ -313,7 +326,7 @@ if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
         let own = [], heir = null, rivals = [];
-        try { if (world.market && npc) { own = MARKET.ownedBy(world, npc.agentId); rivals = Object.keys(world.market.rival || {}).filter(k => world.market.rival[k]?.owner === npc.agentId); if (own.length || rivals.length) heir = MARKET.heirsOf(world, npc)[0] || null; } } catch (e) {}
+        try { if (world.market && npc) { own = MARKET.ownedBy(world, npc.agentId); rivals = Object.keys(world.market.rival || {}).filter(k => world.market.rival[k]?.owner === npc.agentId); if (own.length || rivals.length) heir = MARKET.heirsAll(world, npc)[0] || null; } } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
         try {
             if (own.length) { const M = MARKET.S(world); for (const k of own) M.owners[k] = heir ? heir.agentId : null;

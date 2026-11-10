@@ -359,7 +359,7 @@ if (typeof MARKET !== 'undefined') {
 if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
-        let snap = null, heir = null; try { if (world.market?.shares && npc && Object.values(world.market.shares).some(s => s && npc.agentId in s)) { snap = JSON.parse(JSON.stringify(world.market.shares)); heir = (MARKET.heirsOf(world, npc) || [])[0] || null; } } catch (e) {} // 繼承人要在過世之前找好(過世後配偶的關係會改掉)
+        let snap = null, heir = null; try { if (world.market?.shares && npc && Object.values(world.market.shares).some(s => s && npc.agentId in s)) { snap = JSON.parse(JSON.stringify(world.market.shares)); heir = (MARKET.heirsAll(world, npc) || [])[0] || null; } } catch (e) {} // 繼承人要在過世之前找好(v9.9.6 出遠門的家人也算)(過世後配偶的關係會改掉)
         const r = _kill.call(this, world, npc, ...rest);
         if (npc && !npc.isDead && world.agents?.[npc.agentId]) return r; // v9.9.4 冥王之血復活了:不分遺產
         try { if (snap && npc) { world.market.shares = snap; SHARES.inherit(world, npc, heir); for (const k of Object.keys(MARKET.SECTORS)) { const s = world.market.shares[k]; if (s && Object.keys(s).length && (!world.market.owners[k] || !(world.market.owners[k] in s))) { const top = Object.keys(s).sort((a, b) => s[b] - s[a])[0]; if (top) world.market.owners[k] = top; } } } } catch (e) { console.warn('[Shares] inherit', e); }
