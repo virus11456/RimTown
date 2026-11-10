@@ -910,6 +910,9 @@ Object.assign(RimTownApp.prototype, {
         }
         if (W('legacy')) {
             // v6.73.0 鎮史:史書、傳說、家族、世仇
+            try { const EV = typeof EPIC !== 'undefined' ? EPIC.view(this.world) : null; if (EV && EV.n) { const L = EV.cantos[EV.cantos.length - 1]; // v9.13.0 世界史詩:最新一篇＋翻開史詩
+                B.legacy += `<div class="pp-issues pp-epic"><h4 class="pp-h">📜 ${t('史詩')} <small>${t('史詩 {n} 篇').replace('{n}', EV.total)}</small></h4><div class="pp-tier-line">${L.icon} ${t('〈')}${esc(L.title)}${t('〉')} <small>${esc(L.lines[0] || '')}</small></div><button class="pp-more" data-action="epic-open">📖 ${t('翻開史詩')}</button></div>`;
+            } } catch (e) {}
             try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length || V.lore?.length) {
                 B.legacy += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
                 for (const c of V.chapters) B.legacy += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
