@@ -110,7 +110,7 @@ const FREEPROP = (() => {
     // 給 AI 的鎮況補充:現有的傳統與地標
     function briefExtra(w) {
         const P = w.proposals; if (!P) return '';
-        const tr = (P.traditions || []).map(x => `${t('「')}${x.text}${t('」')}`).join(t('、'));
+        const tr = (P.traditions || []).map(x => `${t('「')}${t(x.text)}${t('」')}`).join(t('、'));
         const lm = (P.landmarks || []).map(x => `${x.icon}${x.name}`).join(t('、'));
         return (tr ? `${t('；')}${t('本鎮的規矩與傳統')}${t('：')}${tr}` : '') + (lm ? `${t('；')}${t('地標')}${t('：')}${lm}` : '');
     }
