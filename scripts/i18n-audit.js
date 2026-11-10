@@ -27,5 +27,5 @@ const fresh = [...missing].filter(k => !baseline.has(k));
 if (process.argv.includes('--update')) { fs.writeFileSync(basePath, JSON.stringify([...missing].sort(), null, 1)); console.log(`baseline updated: ${missing.size} missing strings`); }
 console.log(`i18n keys: ${keys.size}, duplicate keys: ${dups.length}, t() strings without English: ${missing.size} (baseline ${baseline.size}, new ${fresh.length})`);
 if (dups.length) console.log('duplicates:', dups.slice(0, 10).map(k => JSON.stringify(k)).join(', '));
-if (fresh.length) console.log('new strings without English:\n' + fresh.slice(0, 20).map(k => '  ' + k).join('\n'));
+if (fresh.length) console.log('new strings without English:\n' + fresh.slice(0, +process.env.N || 20).map(k => '  ' + k).join('\n'));
 process.exit(dups.length || fresh.length ? 1 : 0);

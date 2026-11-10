@@ -50,7 +50,7 @@ Object.assign(RimTownApp.prototype, {
     _ghShow() {
         this._ghEnsure(); const tray = document.getElementById('gh-tray'); if (!tray) return;
         this._ghOpen = true; this._ghTab = this._ghTab || 'hand';
-        const d = this._ghData(); if (!String(this._ghSel || '').startsWith('wc:') && (!this._ghSel || !d?.hand?.some(c => c.id === this._ghSel))) { /* v9.3.0 選著世界級災厄的話保留 */ const first = d?.hand?.find(c => c.left <= 0) || d?.hand?.[0]; this._ghSel = first?.id || null; }
+        const d = this._ghData(); if (!String(this._ghSel || '').startsWith('wc:') && this._ghSel !== 'wish' && (!this._ghSel || !d?.hand?.some(c => c.id === this._ghSel))) { /* v9.3.0 選著世界級災厄的話保留 */ const first = d?.hand?.find(c => c.left <= 0) || d?.hand?.[0]; this._ghSel = first?.id || null; }
         this._ghRender(); tray.hidden = false; this._ghPlace();
         requestAnimationFrame(() => { tray.classList.add('open'); tray.querySelector('.gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); });
         this._ghFab();
@@ -73,7 +73,7 @@ Object.assign(RimTownApp.prototype, {
         if (this._ghIsMobile()) { tray.style.left = ''; tray.style.width = ''; return; }
         const a = this._ghArea(); const w = Math.max(320, Math.min(920, a.width - 32)); tray.style.width = w + 'px'; tray.style.left = (a.left + Math.max(16, (a.width - w) / 2)) + 'px';
     },
-    _ghRefresh() { if (this._ghOpen) { this._ghRender(); } this._ghFab(); },
+    _ghRefresh() { if (this._ghOpen && document.activeElement?.id !== 'gh-wish-in') { this._ghRender(); } this._ghFab(); }, // v9.15.0 正在打字時不重畫
     _ghRender() {
         const tray = document.getElementById('gh-tray'); const d = this._ghData(); if (!tray || !d) return;
         const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -127,9 +127,11 @@ Object.assign(RimTownApp.prototype, {
         html += `<div class="gh-filters" role="toolbar"><button class="${f === 'all' ? 'on' : ''}" data-gh="filter" data-v="all">${t('全部')}</button>${Object.entries(cats).map(([k, c]) => `<button class="gh-f-${k} ${f === k ? 'on' : ''}" data-gh="filter" data-v="${k}">${c.icon} ${t(c.label)}</button>`).join('')}${WV ? `<button class="gh-f-wc ${f === 'wc' ? 'on' : ''}" data-gh="filter" data-v="wc">🌍 ${t('世界級')}</button>` : ''}<button class="gh-rand" data-gh="random" ${d.todayLeft ? '' : 'disabled'}>🎲 ${t('隨機打一張')}</button></div>`;
         const list = f === 'wc' ? [] : d.hand.filter(c => f === 'all' || c.cat === f);
         const wcOn = !!WV && (f === 'all' || f === 'wc');
+        const wishOn = typeof WISH !== 'undefined' && f === 'all'; // v9.15.0 自己打一句話當事件:放在手牌最前面
         const wcSel = wcOn && String(this._ghSel || '').startsWith('wc:') && WV.kinds.some(k => 'wc:' + k.key === this._ghSel);
-        if (!wcSel && !list.some(c => c.id === this._ghSel)) this._ghSel = (list.find(c => c.left <= 0) || list[0])?.id || (wcOn ? 'wc:' + ((WV.kinds.find(k => k.on) || WV.kinds[0])?.key || '') : null);
-        html += `<div class="gh-body"><div class="gh-col">${list.length ? `<div class="gh-hand" role="listbox" aria-label="${t('手牌')}">` : '<div class="gh-hand" hidden>'}`;
+        if (!wcSel && !(wishOn && this._ghSel === 'wish') && !list.some(c => c.id === this._ghSel)) this._ghSel = (list.find(c => c.left <= 0) || list[0])?.id || (wcOn ? 'wc:' + ((WV.kinds.find(k => k.on) || WV.kinds[0])?.key || '') : null);
+        html += `<div class="gh-body"><div class="gh-col">${list.length || wishOn ? `<div class="gh-hand" role="listbox" aria-label="${t('手牌')}">` : '<div class="gh-hand" hidden>'}`;
+        if (wishOn) { const sel = this._ghSel === 'wish', can = WISH.canCast(this.world); html += `<button class="gh-card gh-wish${sel ? ' sel' : ''}${can.ok ? '' : ' blocked'}" role="option" aria-selected="${sel}" data-gh="sel" data-v="wish"><span class="gh-band">✍️ ${t('自己寫')}</span><span class="gh-cost">🔮${WISH.COST}</span><span class="gh-ic" aria-hidden="true">✍️</span><span class="gh-nm">${t('寫一句話')}</span>${can.why === 'daily' ? `<span class="gh-cd">${t('明天')}</span>` : ''}</button>`; }
         for (const c of list) {
             const blocked = c.left > 0 || c.dailyFull || c.noPower || c.noCtx, sel = c.id === this._ghSel;
             html += `<button class="gh-card gh-${c.cat} gh-rar-${c.rar || 'common'}${sel ? ' sel' : ''}${blocked ? ' blocked' : ''}" role="option" aria-selected="${sel}" data-gh="sel" data-v="${c.id}">
@@ -144,7 +146,8 @@ Object.assign(RimTownApp.prototype, {
         html += `</div>`;
         const cur = list.find(c => c.id === this._ghSel);
         const wk = wcOn && String(this._ghSel || '').startsWith('wc:') ? WV.kinds.find(k => 'wc:' + k.key === this._ghSel) : null;
-        if (wk) html += this._wcDetail(WV, wk, esc);
+        if (wishOn && this._ghSel === 'wish') html += this._wishDetail(esc);
+        else if (wk) html += this._wcDetail(WV, wk, esc);
         else if (cur) {
             const blocked = cur.left > 0 || cur.dailyFull || cur.noPower || cur.noCtx;
             const why = cur.left > 0 ? t('冷卻中，還要 {n} 天').replace('{n}', cur.left) : cur.dailyFull ? t('今天的三張已經打完，明天再來') : cur.noCtx ? t('鎮上現在沒有這種事可以發生') : cur.noPower ? t('神力不夠（要 {n}）').replace('{n}', cur.cost) : t('打出後鏡頭會帶到現場；村民接下來幾天的反應會出現在「反應追蹤」。');
@@ -287,6 +290,7 @@ Object.assign(RimTownApp.prototype, {
     },
     _ghLabInput(e) {
         const el = e.target; if (!el) return;
+        if (el.id === 'gh-wish-in') { this._wishText = el.value; this._wishCount(); return; } // v9.15.0
         if (el.id === 'gh-lab-name') { this._ghLabSpec().name = el.value; return; } // 打字時不重畫,免得游標跳走
         if (el.id === 'gh-lab-zero') { this._ghLabZero = el.value || null; return; }
         if (el.id === 'gh-lab-sbx' && e.type === 'change') { try { localStorage.setItem('rimtown_god_sandbox', el.checked ? '1' : '0'); } catch (er) {} this._ghRender(); }
@@ -304,6 +308,8 @@ Object.assign(RimTownApp.prototype, {
         if (k === 'filter') { this._ghFilter = v; this._ghRender(); this._ghScrollSel(); return; }
         if (k === 'sel') { this._ghSel = v; this._ghRender(); document.querySelector('#gh-tray .gh-card.sel')?.focus({ preventScroll: true }); this._ghScrollSel(); return; }
         if (k === 'play') return this._ghPlay(v);
+        if (k === 'wish-ex') { this._wishText = v; const el = document.getElementById('gh-wish-in'); if (el) { el.value = v; el.focus(); } this._wishCount(); return; }
+        if (k === 'wish-go') return this._wishGo();
         if (k === 'wc-play') return this._wcPlay(v);
         if (k === 'locked') { this._ghLockedOpen = !this._ghLockedOpen; this._ghRender(); return; } // v8.5.0
         if (k && k.startsWith('lab-')) return this._ghLabClick(k, v, b);
@@ -334,11 +340,44 @@ Object.assign(RimTownApp.prototype, {
         this._ghFab();
     },
     _ghPlay(id) {
+        if (id === 'wish') { document.getElementById('gh-wish-in')?.focus(); return; }
         if (String(id || '').startsWith('wc:')) return this._wcPlay(id.slice(3));
         const before = this._ghData()?.todayLeft;
         this._playEventCard(id);
         const after = this._ghData()?.todayLeft;
         if (after < before) { this._ghHide(); } else this._ghRender();
+        this._ghFab();
+    },
+    // ---------- v9.15.0 自己打一句話當事件 ----------
+    _wishDetail(esc) {
+        const w = this.world; const W = WISH.S(w); const can = WISH.canCast(w); const txt = this._wishText || '';
+        const ai = !!w.conversationEngine?.llm?._canMakeRequest?.(true, true);
+        const why = W.busy ? t('命運正在寫…') : can.why === 'daily' ? t('今天已經寫過了，明天再來') : can.why === 'power' ? t('神力不夠（要 {n}）').replace('{n}', WISH.COST) : t('寫下的事會在鎮上真的發生，村民不知道是你寫的。接下來幾天的反應會出現在「反應追蹤」。');
+        const L = W.last;
+        return `<div class="gh-detail gh-wish">
+            <div class="gh-d-head"><span class="gh-d-ic" aria-hidden="true">✍️</span><div><div class="gh-d-nm">${t('寫一句話')}</div><div class="gh-d-meta">🔮 ${WISH.COST} · ${t('一天一次')} · ${ai ? t('AI 會把它寫成一件事') : t('依你寫的關鍵字發生')}</div></div></div>
+            <label class="gh-wish-lb" for="gh-wish-in">${t('今天鎮上會發生……')}</label>
+            <div class="gh-wish-box"><textarea id="gh-wish-in" maxlength="${WISH.MAXLEN}" rows="2" placeholder="${esc(t('例如：今晚下起流星雨'))}" ${W.busy ? 'disabled' : ''}>${esc(txt)}</textarea><span class="gh-wish-n" aria-hidden="true">${txt.length}/${WISH.MAXLEN}</span></div>
+            <button class="gh-play" data-gh="wish-go" ${can.ok ? '' : 'disabled aria-disabled="true"'}>✍️ ${W.busy ? t('命運正在寫…') : t('寫下（{n} 神力）').replace('{n}', WISH.COST)}</button>
+            <div class="gh-d-note" aria-live="polite">${esc(this._wishMsg || why)}</div>
+            <div class="gh-wish-ex" role="group" aria-label="${t('範例')}">${[0, 1, 2].map(i => WISH.EXAMPLES[(i + (w._absDay?.() || 0)) % WISH.EXAMPLES.length]).map(x => `<button class="gh-chip" data-gh="wish-ex" data-v="${esc(t(x))}">${esc(t(x))}</button>`).join('')}</div>
+            ${L ? `<div class="gh-wish-last"><div class="gh-d-meta">${t('上一次寫的')}${t('：')}「${esc(L.text)}」</div><div class="gh-wish-res"><b>${L.icon} ${esc(L.title)}</b> ${esc(L.story)}</div>${L.lines?.length ? `<div class="gh-d-fx">⚡ ${esc(L.lines.join(t('；')))}</div>` : ''}${(L.reactions || []).map(r => `<div class="gh-react"><b>${esc(t(r.name))}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : ''}
+        </div>`;
+    },
+    _wishCount() { const el = document.getElementById('gh-wish-in'), n = document.querySelector('#gh-tray .gh-wish-n'); if (el && n) n.textContent = `${el.value.length}/${WISH.MAXLEN}`; },
+    async _wishGo() {
+        const w = this.world; if (!w || typeof WISH === 'undefined') return;
+        const el = document.getElementById('gh-wish-in'); const text = String(el?.value ?? this._wishText ?? '').trim();
+        if (text.length < 2) { this._wishMsg = t('先寫一句話（至少兩個字）'); this._ghRender(); document.getElementById('gh-wish-in')?.focus(); this._wishMsg = null; return; }
+        this._wishText = text; const p = WISH.cast(w, text); this._ghRender(); // 等 AI 時顯示「命運正在寫…」
+        let r = null; try { r = await p; } catch (e) { r = { ok: false }; }
+        if (r?.ok) {
+            this._wishText = ''; try { this.state = w.getState(); } catch (e) {}
+            try { this._showCornerNotice?.({ icon: r.ev.icon, title: t('你寫下的事發生了'), name: r.ev.title, desc: r.ev.story }); } catch (e) {}
+            this._ghHide(); const id = r.ev.affected?.[0];
+            if (id) try { this.selectedAgent = id; this.selectedAgentId = id; this.tileMap?.followAgent?.(id); this._showNpcCard?.(id); } catch (e) {} // 鏡頭跟著當事人
+            try { this.renderSidebar?.(); } catch (e) {}
+        } else { this._wishMsg = r?.why === 'daily' ? t('今天已經寫過了，明天再來') : r?.why === 'power' ? t('神力不夠（要 {n}）').replace('{n}', WISH.COST) : null; this._ghRender(); this._wishMsg = null; }
         this._ghFab();
     },
     _ghKey(e) {
