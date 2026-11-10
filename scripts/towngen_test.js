@@ -11,13 +11,15 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   { // 純生成器
     global.t = x => x; global.localStorage = { _s: {}, getItem(k) { return this._s[k] ?? null; }, setItem(k, v) { this._s[k] = String(v); } };
     global.TOWN_THEMES = { frontier: { townName: '邊境鎮' } }; global.TOWN_NAME_THEME = [];
-    eval(fs.readFileSync('chrome-extension/sim-towngen.js', 'utf8').replace('const TownGen', 'global.TownGen'));
+    eval(fs.readFileSync('chrome-extension/sim-towngen.js', 'utf8').replace('const TownGen', 'global.TownGen').replace('const TOWN_SIZES', 'global.TOWN_SIZES'));
     const a = TownGen.card(12345), b = TownGen.card(12345);
     ok(JSON.stringify(a) === JSON.stringify(b), '同一個種子永遠產生同一個鎮', {});
     const all = []; for (let i = 0; i < 1000; i++) all.push(TownGen.card(TownGen.hash('p:' + i + ':0') || 1));
     const uniq = (k) => new Set(all.map(c => c[k])).size;
     ok(uniq('base') === 5 && uniq('temper') === 6 && uniq('policy') === 6 && uniq('era') === 3 && uniq('wealth') === 3, '1000 鎮涵蓋所有底圖／民風／政治／時代／貧富', { base: uniq('base'), temper: uniq('temper'), policy: uniq('policy'), era: uniq('era') });
-    const pops = all.map(c => c.pop); ok(Math.min(...pops) === 8 && Math.max(...pops) === 30, '人口 8～30', [Math.min(...pops), Math.max(...pops)]);
+    const vil = all.filter(c => !c.size).map(c => c.pop); ok(Math.min(...vil) === 8 && Math.max(...vil) === 30, '村莊人口 8～30', [Math.min(...vil), Math.max(...vil)]);
+    const badSz = all.filter(c => c.size > 0 && (c.pop < TOWN_SIZES[c.size].pop[0] || c.pop > TOWN_SIZES[c.size].pop[1])); /* v6.85.0 城鎮／城市／王都照級別人口 */
+    ok(all.some(c => c.size > 0) && !badSz.length && vil.length > all.length / 2, '城鎮／城市／王都人口照級別、村莊最多', { sized: all.filter(c => c.size > 0).length, bad: badSz.slice(0, 3).map(c => [c.size, c.pop]) });
     ok(new Set(all.map(c => c.name)).size > 700, '鎮名夠多樣(1000 抽超過 700 種)', new Set(all.map(c => c.name)).size);
     const mine = []; for (let i = 0; i < 30; i++) { const c = TownGen.discover('alice', { day: i }); if (c) mine.push(c); }
     ok(new Set(mine.map(c => c.name)).size === mine.length, '同一玩家發現的鎮不撞名', mine.map(c => c.name));
@@ -48,9 +50,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(coach.filter(x => /初次造訪|first visit/.test(x)).length === 7, '馬車站列出全部 7 個可初次造訪的鎮', coach);
     const seed = await page.evaluate(() => TownGen.cards()[0].seed);
     await page.evaluate((s) => window.rimtownApp._visitGenTown(s), seed); await page.waitForTimeout(6500);
-    const v = await page.evaluate(() => { const app = window.rimtownApp, w = app.world; const c = TownGen.cards()[0]; return { theme: w.townTheme, key: c.key, name: w.townName, cname: c.name, n: Object.values(w.agents).filter(a => !a.isPlayer).length, pop: c.pop, tid: c.townId, cur: app.currentTownId, culture: !!w.townCulture, base: app.tileMap.themeKey, cbase: c.base, roof: (app.tileMap.roofPalette || []).length, tech: Object.values(w.research.projects).filter(p => p.status === 'complete').length, ctech: c.techDone.length, title: app._townDisplayName(w.townName, w.townTheme), en: c.nameEn }; });
+    const v = await page.evaluate(() => { const app = window.rimtownApp, w = app.world; const c = TownGen.cards()[0]; return { theme: w.townTheme, key: c.key, name: w.townName, cname: c.name, n: Object.values(w.agents).filter(a => !a.isPlayer).length, pop: c.pop, tid: c.townId, cur: app.currentTownId, culture: !!w.townCulture, base: app.tileMap.themeKey, cbase: c.base, roof: (app.tileMap.roofPalette || []).length, tech: Object.values(w.research.projects).filter(p => p.status === 'complete').length, ctech: c.techDone.length, techAll: c.techDone.every(k => w.research.projects[k]?.status === 'complete'), spop: c.state?.pop ?? c.pop, title: app._townDisplayName(w.townName, w.townTheme), en: c.nameEn }; });
     ok(v.theme === v.key && v.name === v.cname && v.cur === v.tid, '初次造訪:建好存檔並抵達', v);
-    ok(v.n === v.pop && v.culture && v.base === v.cbase && v.roof === 6 && v.tech === v.ctech, '人口、民風、底圖、屋頂、科技都照城鎮卡', v);
+    ok(Math.abs(v.n - v.spop) <= 2 && v.culture && v.base === v.cbase && v.roof === 6 && v.techAll && v.tech >= v.ctech, '人口(照背景發展後的人口)、民風、底圖、屋頂、科技(卡上的都完成,大城再依時代補)都照城鎮卡', v); /* v6.85.0 ORIGIN.seed 依大小補人口與時代科技 */
     ok(lang === 'zh' ? v.title === v.cname : v.title === v.en, '鎮名依語言顯示', v.title);
     const re = await page.evaluate(() => { const blob = JSON.parse(JSON.stringify(window.rimtownApp.world.serialize())); const w2 = new World(); const okk = w2.loadSave(blob); return { okk: !!okk, theme: w2.townTheme, seed: w2.genSeed, reg: !!blob.genRegistry }; });
     ok(re.okk && /^g/.test(re.theme) && re.seed && re.reg, '存檔→讀檔還是同一座種子鎮', re);
