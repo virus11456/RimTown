@@ -477,6 +477,7 @@ Object.assign(RimTownApp.prototype, {
             } catch (e) {}
         }
         const nudged = this.world?.lifeGoals?.getGoal?.(agentId)?._nudged;
+        let dreamt = false; try { dreamt = typeof DREAM !== 'undefined' && (this.world._absDay?.() ?? 0) - DREAM.S(this.world).lastDream < 1; } catch (e) {} // v9.9.5 今天託過夢:按鈕直接寫「今天已託夢」(手機上看村民卡時角落通知會先排隊,卡上要看得到結果)
         const B = (ic, tx) => `<span class="nqc-ic" aria-hidden="true">${ic}</span><span class="nqc-tx">${tx}</span>`; // v7.7.1 圖示在上、文字在下,手機上不會折成兩行
         card.innerHTML = `
             <button class="nqc-close" data-nqc="close">✕</button>
@@ -491,18 +492,18 @@ Object.assign(RimTownApp.prototype, {
                 <button class="nqc-chat" data-nqc="chat">${B('💬', t('交談'))}</button>
                 ${goal && !goal.done && !this.world?.observerMode ? `<button class="nqc-detail" data-nqc="nudge" ${nudged ? 'disabled style="opacity:0.4"' : ''}>${B('✨', t('助夢'))}</button>` : ''}
                 ${this.tileMap?.followAgent ? `<button class="nqc-detail" data-nqc="cam">${B('🎥', this.tileMap.isFollowing?.(agentId) ? t('停止跟拍') : t('跟拍'))}</button>` : ''}
-                ${this.world?.observerMode && typeof DREAM !== 'undefined' ? `<button class="nqc-detail" data-nqc="dream">${B('🌙', t('託夢'))}</button>` : ''}
+                ${this.world?.observerMode && typeof DREAM !== 'undefined' ? (dreamt ? `<button class="nqc-detail" data-nqc="dream" disabled style="opacity:0.55">${B('🌙', t('今天已託夢'))}</button>` : `<button class="nqc-detail" data-nqc="dream">${B('🌙', t('託夢'))}</button>`) : ''}
                 <button class="nqc-detail" data-nqc="follow">${this._followSet().has(agentId) ? B('🔕', t('追蹤中')) : B('🔔', t('追蹤'))}</button>
                 <button class="nqc-detail" data-nqc="detail">${B('📋', t('詳情'))}</button>
             </div>`;
         card.onclick = (e) => {
-            const act = e.target?.dataset?.nqc;
+            const act = e.target?.closest?.('[data-nqc]')?.dataset?.nqc; // v9.9.5 按到按鈕裡的圖示或文字也算(以前 e.target 是 span,按了沒反應)
             if (act === 'close') this._hideNpcCard();
             else if (act === 'chat') { this._hideNpcCard(); this._walkToAndChat(agentId); }
             else if (act === 'nudge') { this._nudgeDream(agentId); }
             else if (act === 'dream') { // v6.72.0 託夢:你寫一句話,他醒來自己解讀
                 let tx = null; try { tx = window.prompt(t('想在夢裡對他說什麼？（一句話）')); } catch (e2) {}
-                if (tx && tx.trim()) DREAM.send(this.world, agentId, tx).then(r => { if (!r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: '', desc: r.why === 'cooldown' ? t('今天已經託過夢了，明天再來。') : r.why === 'power' ? t('神力不夠，託夢要 3 點神力。') : t('沒辦法託夢。') }); this.state = this.world.getState(); this._showNpcCard(agentId); });
+                if (tx && tx.trim()) DREAM.send(this.world, agentId, tx).then(r => { if (r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: this.world.agents[agentId]?.name || '', desc: t('夢已經送到了，到動態看看他醒來怎麼解讀。') }); /* v9.9.5 成功也要有回應(以前只有失敗才提示,看起來像按了沒用) */ if (!r.ok) this._showCornerNotice?.({ icon: '🌙', title: t('託夢'), name: '', desc: r.why === 'cooldown' ? t('今天已經託過夢了，明天再來。') : r.why === 'power' ? t('神力不夠，託夢要 3 點神力。') : t('沒辦法託夢。') }); this.state = this.world.getState(); this._showNpcCard(agentId); });
             }
             else if (act === 'follow') { this._toggleFollow(agentId); this._showNpcCard(agentId); } // v5.48.0 追蹤(重繪按鈕狀態)
             else if (act === 'cam') { const on = this.tileMap?.isFollowing?.(agentId); this.tileMap?.followAgent?.(on ? null : agentId); this.bgm?.sfx?.('click'); this._showNpcCard(agentId); } // v6.29.0 跟拍

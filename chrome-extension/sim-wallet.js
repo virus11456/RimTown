@@ -248,11 +248,15 @@ if (typeof LifecycleSystem !== 'undefined') {
                 estate = WALLET.get(world, npc); took = true;
                 // 銀行存款一起算進遺產,先還清欠銀行的錢
                 const B = world.bank, id = npc.agentId;
-                if (B && B.dep && B.dep[id] > 0) { const paid = Math.min(B.dep[id], Math.max(0, Math.floor(B.reserve || 0))); B.reserve -= paid; delete B.dep[id]; estate += paid; }
+                if (B && B.dep && B.dep[id] > 0) { const paid = Math.min(B.dep[id], Math.max(0, Math.floor(B.reserve || 0))); B.reserve -= paid; var depLeft = Math.round((B.dep[id] - paid) * 100) / 100; delete B.dep[id]; estate += paid; } // v9.9.5 銀行付不出的部分記下來,轉成繼承人的存款
                 if (B && B.loans && B.loans[id] && estate > 0) { const L = B.loans[id]; const pay = Math.min(L.owed || 0, estate); estate = Math.round((estate - pay) * 100) / 100; B.reserve += pay; L.owed -= pay; if (L.owed <= 0) delete B.loans[id]; }
                 // v9.7.4 繼承人只算配偶和子女(交往中的不算);配偶排第一,再來年紀大的
                 const wed = (a) => a.relationships?.relationships?.[npc.agentId]?.status === 'married';
-                heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (wed(a) || (a._parentNames || []).includes(npc.name))).sort((x, y) => wed(y) - wed(x) || (y.age || 0) - (x.age || 0));
+                heirs = Object.values(world.agents || {}).filter(a => a !== npc && !a.isPlayer && !a.isDead && (wed(a) || (a._parentNames || []).includes(npc.name)));
+                // v9.9.5 出遠門的配偶、子女也算繼承人(錢存進他的錢包,回來就看得到)
+                try { const W0 = world.wallet; for (const tr of (world.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d?.agentId || world.agents[d.agentId]) continue; const st = (d.relationships || []).find(x => (x.target_id || x.targetId) === id)?.status; if (st === 'married' || (d._parentNames || []).includes(npc.name)) { if (typeof W0.bal[d.agentId] !== 'number') W0.bal[d.agentId] = 0; heirs.push({ agentId: d.agentId, name: d.name, age: d.age, _travel: true, _wed: st === 'married', isDead: false }); } } } catch (e) {}
+                const wedOf = (a) => a._travel ? !!a._wed : wed(a);
+                heirs.sort((x, y) => wedOf(y) - wedOf(x) || (y.age || 0) - (x.age || 0));
                 // v9.7.4 遺產稅要算進產業和房子的價值(這時還沒轉給繼承人)
                 try { if (typeof MARKET !== 'undefined' && MARKET.firmsOf) for (const f of MARKET.firmsOf(world, id)) assets += (MARKET.value(world, f.k) || 0) * (f.rival ? 0.6 : 1); } catch (e) {}
                 try { if (typeof ESTATE !== 'undefined' && world.estate) for (const u of ESTATE.ownsOf(world, id)) assets += ESTATE.valueOf(world, u) || 0; } catch (e) {}
@@ -262,6 +266,7 @@ if (typeof LifecycleSystem !== 'undefined') {
         try {
             // 錢包已經算進遺產(或拿去還了貸款),不管剩不剩都要清掉;以前遺產剛好被貸款扣光就沒清,同一筆錢同時留在錢包又進了銀行
             if (took && world.wallet?.bal) delete world.wallet.bal[npc.agentId];
+            if (typeof depLeft !== 'undefined' && depLeft > 0 && world.bank?.dep) { const to = heirs[0]; if (to) world.bank.dep[to.agentId] = Math.round(((world.bank.dep[to.agentId] || 0) + depLeft) * 100) / 100; } // v9.9.5 銀行一時付不出來的存款,轉到繼承人名下(以前直接消失);沒有繼承人才算銀行少一筆負債
             // v9.7.4 遺產稅:有家人繼承時,(現金＋產業＋房子)超過免稅額的部分課 30%,先從現金扣,不夠由主要繼承人補(補不出來的就免了)
             if (heirs.length && took && world.observerMode) {
                 const W = world.wallet, rate = W.estateRate ?? ESTATE_TAX, exempt = Math.round(ESTATE_EXEMPT * (WALLET.wageIdx?.() || 1));

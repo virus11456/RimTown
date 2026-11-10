@@ -235,6 +235,10 @@ if (typeof LifecycleSystem !== 'undefined') {
                 s.owner = to.agentId; s.partner = null; world.logMessageT?.('economy', '🏪 {o}走了，「{n}」由{h}接手。', { o: npc.name, n: s.name[0], h: to.name }, to.name);
                 to.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'economy', '我接手了{o}留下的店「{n}」。', { o: npc.name, n: s.name[0] }, 7, [npc.name]);
             }
+            // v9.9.5 出遠門的配偶:改成前任、記得這件事(回來才不會還跟過世的人結婚)
+            for (const tr of (world.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d) continue; const rel = (d.relationships || []).find(x => (x.target_id || x.targetId) === npc.agentId); if (!rel) continue;
+                const was = rel.status; if (was === 'married' || was === 'dating') { rel.status = 'ex'; rel.statusSince = world.tickCount; }
+                if (was === 'married' || (d._parentNames || []).includes(npc.name)) { const k = was === 'married' ? '我出遠門的時候，{a}走了，連最後一面都沒見到。' : '我出遠門的時候，{a}過世了。'; (d.memories = d.memories || []).push({ tick: world.tickCount, time: world.clock?.timeStr || '', category: 'death', content: Memory.render(k, { a: npc.name }), importance: 9, related_agents: [npc.name], k, p: { a: npc.name } }); } }
             if (goods && goods.length && heir && world.agents[heir.agentId] && world.goods?.owned) { const G = world.goods.owned; G[heir.agentId] = (G[heir.agentId] || []).concat(goods); delete G[npc.agentId]; }
         } catch (e) { console.warn('[Exile] death', e); }
         return r;

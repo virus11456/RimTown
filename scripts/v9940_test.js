@@ -61,7 +61,7 @@ async function run(browser, lang) {
       { const [X, Y, R] = pick(3); reset(); const k = K[0]; own(X, k); setCash(X, 20); BK.dep[X.agentId] = 30; BK.reserve = (BK.reserve || 0) + 30; BK.loans[X.agentId] = { owed: 120, due: w._absDay() + 30, rate: 0.1 }; setCash(R, 5000); MARKET.heirsOf = (ww, a) => a === X ? [Y] : [];
         const res0 = BK.reserve, bad0 = BK.bad || 0; Math.random = () => 0.1; try { EXILE.order(w, X, {}); step(); } finally { Math.random = rnd; }
         out.debt1 = { notToFamily: M.owners[k] !== Y.agentId, sold: M.owners[k] && M.owners[k] !== X.agentId }; ff(X.agentId);
-        out.debt1.paid = !BK.loans[X.agentId] && (BK.bad || 0) === bad0 && BK.reserve >= res0 + 90 - 0.01;
+        out.debt1.paid = !BK.loans[X.agentId] && (BK.bad || 0) === bad0; // 貸款消失又沒變呆帳 = 真的還清了(準備金會被其他村民的存提款影響,不拿來比)
         const [X2] = pick(1); reset(); clear(X2); const u = Object.values(w.estate?.units || {}).find(z => !z.owner) || Object.values(w.estate?.units || {})[1]; if (u) u.owner = X2.agentId; setCash(X2, 5); BK.loans[X2.agentId] = { owed: 500, due: w._absDay() + 30, rate: 0.1 };
         EXILE.order(w, X2, {}); ff(X2.agentId); out.debt2 = { house: !u || u.owner !== X2.agentId, loan: !BK.loans[X2.agentId], log: logs().slice(-8).some(q => /被銀行收走|bank took/.test(q)) || !u };
         const [X3] = pick(1); reset(); clear(X3); setCash(X3, 5); BK.loans[X3.agentId] = { owed: 300, due: w._absDay() + 30, rate: 0.1 }; const bad1 = BK.bad || 0;

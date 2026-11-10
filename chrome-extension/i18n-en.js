@@ -730,6 +730,11 @@
         '工具品質': 'Tool quality',
         '研究速度': 'Research speed',
         '遺產稅': 'Inheritance tax',
+        // v9.9.5 小修正
+        '今天已託夢': 'Dream sent today',
+        '夢已經送到了，到動態看看他醒來怎麼解讀。': 'The dream has been sent. Check the feed to see how they read it when they wake.',
+        '我出遠門的時候，{a}走了，連最後一面都沒見到。': '{a} passed away while I was travelling. I never got to say goodbye.',
+        '我出遠門的時候，{a}過世了。': '{a} passed away while I was travelling.',
         // v9.9.4 驅逐與搬走的財產處理
         '對象已經不在鎮上': 'They are no longer in town',
         '🚪 國王{a}離開了小鎮，王位空了出來。': '🚪 King {a} has left the town; the throne stands empty.',
