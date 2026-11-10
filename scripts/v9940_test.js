@@ -82,6 +82,10 @@ async function run(browser, lang) {
       // L. 老闆過世:小店交給合夥人(以前跟著關掉)
       { const [X, P] = pick(2); reset(); const sh = { id: 'xd1', type: Object.keys(BIZ.TYPES)[0], name: ['過世測試鋪', 'Passing Test Shop'], owner: X.agentId, partner: P.agentId, price: 3, till: 0, week: 0, profit: 0, lossDays: 0, closed: false }; BIZ.S(w).shops.push(sh);
         X._deathCause = 'test'; w.lifecycle._killNpc(w, X); out.shopHeir = { owner: sh.owner === P.agentId, open: !sh.closed, log: logs().slice(-8).some(q => /接手|taken over/.test(q)) }; }
+      // M. 驅逐門檻:第 3 次勞役、第 5 次才逐出;兩個月沒再犯前科會淡
+      { const [X, Y, Z] = pick(3); const D = DARK.S ? DARK.S(w) : w.dark; D.exposedCount = D.exposedCount || {}; D.lastHeavy = D.lastHeavy || {}; const P = w.proposals; const pen = (cnt, ago) => { D.exposedCount[X.agentId] = cnt; D.lastHeavy[X.agentId] = w._absDay() - ago; P.items = (P.items || []).filter(q => !(q.kind === 'verdict' && q.status === 'open'));
+          const sc = DARK.secret(w, { kind: 'sabotage', culprit: X.agentId, victim: Y.agentId, k: '{a}偷偷破壞了{v}的工作', p: { a: X.name, v: Y.name } }); const R2 = Math.random; Math.random = () => 0.99; try { DARK.reveal(w, sc, Z); } finally { Math.random = R2; } return (P.items || []).find(q => q.kind === 'verdict' && q.status === 'open' && q.culprit === X.agentId)?.pen; };
+        out.thresh = { third: pen(2, 1), fifth: pen(4, 1), faded: pen(4, 200) }; }
     } finally { MARKET.heirsOf = heirs0; Math.random = rnd; }
     out.raw = logs().slice(-80).filter(s => /\{[a-z]\}|\[object Object\]/.test(s));
     return out;
@@ -104,6 +108,7 @@ async function run(browser, lang) {
   ok(r.unpair.st === 'ex' && !r.unpair.partner, `[${lang}] 配偶離開小鎮：留下的人改成前任，可以再婚`, r.unpair);
   ok(r.away.kept, `[${lang}] 出遠門不會把罰款一筆勾銷`, r.away);
   ok(r.shopHeir.owner && r.shopHeir.open && r.shopHeir.log, `[${lang}] 老闆過世：小店交給合夥人，不會跟著關掉`, r.shopHeir);
+  ok(r.thresh.third === 'labor' && r.thresh.fifth === 'exile' && r.thresh.faded === 'fine', `[${lang}] 驅逐門檻提高：第 3 次勞役、第 5 次才逐出，兩個月沒再犯前科會淡`, r.thresh);
   ok(!r.raw.length, `[${lang}] 日誌沒有沒填的 {x} 或 [object Object]`, r.raw.slice(0, 3));
   ok(!errs.length, `[${lang}] 沒有頁面錯誤`, errs.slice(0, 3));
   await ctx.close();

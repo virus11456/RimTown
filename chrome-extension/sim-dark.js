@@ -117,7 +117,10 @@ const DARK = (() => {
         if (v && heavy) { v.addThought?.('vindicated', w); mem(w, v, '真相終於大白，原來是{a}在搞鬼。', { a: c.name }, 8); for (const o of rnd(all.filter(x => x !== v), 4)) rel(o, v)?.modifyAffinity?.(4); }
         log(w, 'drama', '🔍 真相大白：{x}{by}', { x: truth, by: by ? fill('（被{b}看穿）', { b: by.name }) : '' }, c.name);
         w.dailyNews?.collectEvent?.('drama', `🔍 ${t('真相大白：')}${truth}`, 8, [c.name, v?.name].filter(Boolean));
-        const D = S(w); D.exposedCount[c.agentId] = (D.exposedCount[c.agentId] || 0) + (heavy ? 1 : 0);
+        const D = S(w);
+        // v9.9.4 前科會淡:兩個月沒再犯就減一次(以前一輩子累計,三次就趕走)
+        if (heavy) { D.lastHeavy = D.lastHeavy || {}; const last = D.lastHeavy[c.agentId]; if (last != null && D.exposedCount[c.agentId]) D.exposedCount[c.agentId] = Math.max(0, D.exposedCount[c.agentId] - Math.floor((day(w) - last) / 60)); D.lastHeavy[c.agentId] = day(w); }
+        D.exposedCount[c.agentId] = (D.exposedCount[c.agentId] || 0) + (heavy ? 1 : 0);
         bump(w, c, 'exposed');
         if (v) wrong(w, c, v, heavy ? 3 : 1, s.k, s.p);
         // v6.52.0 嚴重的事:全鎮提案審判(罰款／公共勞役／逐出小鎮),投票決定
@@ -129,7 +132,7 @@ const DARK = (() => {
         const P = w.proposals; if (!P?._createWith) return null;
         if ((P.items || []).some(p => p.kind === 'verdict' && p.status === 'open' && p.culprit === c.agentId)) return null;
         const n = S(w).exposedCount[c.agentId] || 1;
-        const pen = n >= 3 ? 'exile' : n >= 2 ? 'labor' : 'fine';
+        const pen = n >= 5 ? 'exile' : n >= 3 ? 'labor' : 'fine'; // v9.9.4 門檻提高:第 1～2 次罰款、第 3～4 次勞役、第 5 次才逐出(以前第 3 次就趕走,一年要趕走兩三成的人)
         const who = (v && !v.isDead && w.agents[v.agentId]) ? v : (by || v);
         const what = fill(s.k, s.p);
         const cand = { kind: 'verdict', key: 'verdict:' + s.id, jobs: [], make: () => ({ kind: 'verdict', key: 'verdict:' + s.id, culprit: c.agentId, victim: v.agentId, pen, tk: '處置{a}：{pen}', tp: { a: c.name, pen: t({ fine: '罰款道歉', labor: '公共勞役', exile: '逐出小鎮' }[pen]) }, dk: '{who}提議：因為{what}，{pen}。', dp: { who: who.name, what, pen: t(PEN[pen]) }, cost: {}, category: 'welfare', jobBias: ['guard', 'mayor'] }) };
