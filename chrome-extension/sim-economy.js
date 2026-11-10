@@ -105,7 +105,7 @@ function processDailyProduction(world) {
         // If this job's production is handled by industry system, reduce to 30% (NPC still does ancillary work)
         const isIndustryHandled = industryJobs[agent.job.key];
         const skill = agent.skills.get(recipe.skill);
-        let eff = 0.5 + ((skill?skill.level:0)/20)*2.0;
+        let eff = 1.8 + (skill?skill.level:0)*0.05; // v9.11.0 技能練得慢了:新手 1.8 倍、12 級 2.4、20 級 2.8(以前 0.5～2.5,一個月就人人 2.5)
         if (isIndustryHandled) eff *= 0.5;
         if (policy === 'extra') {
             // v5.52.0 加班要付津貼(銀幣 sink),v5.53.0 3→8:試玩回饋 3 銀幣在流水裡無感
@@ -398,7 +398,7 @@ class BuildingManager {
             if(p.status!=='building') return;
             Object.values(world.agents).forEach(a => {
                 if(a.isPlayer||!a.job) return;
-                if(['carpenter','miner','blacksmith'].includes(a.job.key)) { const sk=a.skills.get('建造'); p.workDone+=(1+Math.floor((sk?sk.level:0)/5))*(1+Math.max(-0.5,this.getEffect('build_speed',0))); } // v6.43.1 木工／建築學／工程學加快施工
+                if(['carpenter','miner','blacksmith'].includes(a.job.key)) { const sk=a.skills.get('建造'); p.workDone+=(3+Math.floor((sk?sk.level:0)/5))* /* v9.11.0 以前 1＋級/5(大家很快就是 5) */(1+Math.max(-0.5,this.getEffect('build_speed',0))); } // v6.43.1 木工／建築學／工程學加快施工
             });
             if(p.workDone>=p.workRequired) { p.status='complete'; done.push(p); }
         });
@@ -617,7 +617,7 @@ class ResearchManager {
     _scholarPts(world) {
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
-             const sk=a.skills.get('智識'); pts+=3+(sk?sk.level:0)*0.5; } });
+             const sk=a.skills.get('智識'); pts+=7+(sk?sk.level:0)*0.35; } }); // v9.11.0 以前 3＋級×0.5(大家很快就是 13)
         pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
         if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
         return pts;

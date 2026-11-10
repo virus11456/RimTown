@@ -1029,3 +1029,25 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-life-row:hover { background: rgba(233,69,96,0.08); }
 .rimtown-container .pp-life-row small { display: block; color: var(--text-secondary); margin-top: 2px; }
 .rimtown-container .pp-life-dots { color: #e9a645; letter-spacing: 1px; font-size: 0.8rem; }
+
+/* v9.13.0 史詩書:一頁一篇,可以翻;羊皮紙色 */
+.epic-book{position:fixed;inset:0;z-index:100050;background:rgba(10,8,20,.62);display:flex;align-items:center;justify-content:center;padding:16px;outline:none}
+.epic-page{position:relative;width:min(520px,100%);max-height:calc(100vh - 32px);overflow-y:auto;background:linear-gradient(#f6ecd2,#efe0bb);color:#3b2a14;border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.45);padding:20px 20px 14px}
+.epic-x{position:absolute;top:6px;right:6px;width:44px;height:44px;border:0;background:transparent;font-size:20px;color:#6b4f24;cursor:pointer;border-radius:22px}
+.epic-x:focus-visible,.epic-hero:focus-visible,.epic-nav button:focus-visible{outline:2px solid #8a5a1a;outline-offset:2px}
+.epic-head{font-size:13px;color:#7a5a2a;letter-spacing:.04em;padding-right:40px}
+.epic-head small{margin-left:6px;opacity:.85}
+.epic-canto{text-align:center;padding:8px 4px 4px}
+.epic-icon{font-size:40px;line-height:1.2}
+.epic-no{font-size:12px;color:#7a5a2a;margin-top:2px}
+.epic-title{font-size:22px;margin:6px 0 12px;color:#4a2f0e}
+.epic-line{font-size:16px;line-height:1.75;margin:4px 0}
+.epic-heroes{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px}
+.epic-hero{min-height:44px;padding:6px 14px;border-radius:22px;border:1px solid #c9a86a;background:#fff8e6;color:#4a2f0e;font-size:14px;cursor:pointer}
+.epic-hero.gone{opacity:.7}
+.epic-ai{font-size:12px;color:#7a5a2a;margin-top:8px}
+.epic-nav{display:flex;justify-content:space-between;gap:10px;margin-top:12px}
+.epic-nav button{flex:1;min-height:44px;border-radius:10px;border:1px solid #c9a86a;background:#f9efd6;color:#4a2f0e;font-size:15px;cursor:pointer}
+.epic-nav button:disabled{opacity:.4;cursor:default}
+@media (prefers-reduced-motion:no-preference){.epic-page{animation:epicIn .22s ease-out}}
+@keyframes epicIn{from{transform:translateY(12px);opacity:0}to{transform:none;opacity:1}}

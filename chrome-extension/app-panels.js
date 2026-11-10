@@ -910,6 +910,9 @@ Object.assign(RimTownApp.prototype, {
         }
         if (W('legacy')) {
             // v6.73.0 鎮史:史書、傳說、家族、世仇
+            try { const EV = typeof EPIC !== 'undefined' ? EPIC.view(this.world) : null; if (EV && EV.n) { const L = EV.cantos[EV.cantos.length - 1]; // v9.13.0 世界史詩:最新一篇＋翻開史詩
+                B.legacy += `<div class="pp-issues pp-epic"><h4 class="pp-h">📜 ${t('史詩')} <small>${t('史詩 {n} 篇').replace('{n}', EV.total)}</small></h4><div class="pp-tier-line">${L.icon} ${t('〈')}${esc(L.title)}${t('〉')} <small>${esc(L.lines[0] || '')}</small></div><button class="pp-more" data-action="epic-open">📖 ${t('翻開史詩')}</button></div>`;
+            } } catch (e) {}
             try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length || V.lore?.length) {
                 B.legacy += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
                 for (const c of V.chapters) B.legacy += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
@@ -940,6 +943,12 @@ Object.assign(RimTownApp.prototype, {
                 for (const x of V.songs) B.culture += `<div class="pp-tier-line">🎶 ${t('〈')}${esc(x.title)}${t('〉')} <small>${esc(x.by)}${x.lyric ? ' · ' + t('「') + esc(x.lyric) + t('」') : ''}</small></div>`;
                 for (const x of V.oracles) B.culture += `<div class="pp-tier-line">🔮 ${esc(x.by)}${t('：')}${t('「')}${esc(x.text)}${t('」')}</div>`;
                 B.culture += `</div>`; } } } catch (e) {}
+            try { const FV = typeof FADS !== 'undefined' ? FADS.view(this.world) : null; if (FV && (FV.items.length || FV.hist.length)) { // v9.12.0 文化演變:流行與習俗
+                B.culture += `<div class="pp-issues pp-fads"><h4 class="pp-h">👒 ${t('流行與習俗')}</h4>`;
+                for (const x of FV.items) B.culture += `<div class="pp-tier-line">${x.icon} ${esc(t(x.name))}${x.retro ? ` <small>🔁 ${t('復古')}</small>` : ''} · ${esc(t(x.phName))} · ${t('{n} 人跟').replace('{n}', x.n)} <small>${t('帶頭的人')} ${esc(t(x.by || ''))}</small></div>`;
+                if (FV.hist.length) B.culture += `<div class="pp-issue-hint">${t('流行過')}${t('：')}${FV.hist.map(h => `${h.icon} ${esc(t(h.name))}${t('（')}${h.cust ? '🏮 ' + t('成了習俗') : t('最多 {n} 人').replace('{n}', h.max)}${t('）')}`).join(t('；'))}</div>`;
+                B.culture += `<div class="pp-issue-hint">${t('流行會先在幾個人身上冒出來，年輕人學得快、大家愛學比自己階層高的人；跟的人太多，帶頭的人反而不玩了。消遣和吃食撐得夠久，就會留下來變成習俗。')}</div></div>`;
+            } } catch (e) {}
         }
         if (W('politics')) {
             // v6.69.0 政壇:辯論、議會人情、法庭
@@ -1068,7 +1077,7 @@ Object.assign(RimTownApp.prototype, {
             // v6.47.0 村民提案留下的傳統與地標
             if ((d.traditions || []).length || (d.landmarks || []).length) {
                 B.lore += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
-                for (const x of (d.traditions || []).slice().reverse()) B.lore += `<div class="pp-lore-row">📜 ${t('「')}${esc(x.text)}${t('」')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
+                for (const x of (d.traditions || []).slice().reverse()) B.lore += `<div class="pp-lore-row">📜 ${t('「')}${esc(t(x.text))}${t('」')} <small>${esc(t(x.by || ''))}${x.id ? ' · ' + esc(x.id) : ''}${x.fad ? ' · 👒 ' + t('流行變成的習俗') : ''}</small></div>`; // v9.12.0 流行變成的習俗也在這裡
                 for (const x of (d.landmarks || []).slice().reverse()) B.lore += `<div class="pp-lore-row">${esc(x.icon)} ${esc(typeof x.name === 'string' ? t(x.name) : '')} <small>${esc(t(x.by || ''))} · ${esc(x.id || '')}</small></div>`;
                 B.lore += `</div>`;
             }

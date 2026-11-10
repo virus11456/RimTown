@@ -1951,6 +1951,12 @@ class World {
         const nowMin = this.clock.absMinutes, T = this.tickCount, tsCache = new Map();
         const crowdSave = typeof CROWD !== 'undefined' && CROWD.pop(this) >= CROWD.TRIM_AT; // v6.87.0 人多時,排在後面的關係只存最近一筆共同回憶
         const tsAt = (tick) => { if (typeof tick !== 'number') return null; let v = tsCache.get(tick); if (v === undefined) { v = GameClock.timeStrAtMinutes(nowMin - (T - tick) * 15); tsCache.set(tick, v); } return v; };
+        // v9.10.2 存檔瘦身:數字留一位小數;閒聊記憶每人只存最近 15 則(重要的 8 分以上都留),其他種類的記憶照舊
+        const r1 = (x) => (typeof x === 'number' ? Math.round(x * 10) / 10 : x);
+        const slimMem = (L) => { let conv = 0; const keep = new Array(L.length); for (let i = L.length - 1; i >= 0; i--) { const m = L[i]; keep[i] = m.category !== 'conversation' || (m.importance || 0) >= 8 || (conv++ < 15); } return L.filter((m, i) => keep[i]); };
+        const closest = (L) => new Set(L.slice().sort((x, y) => relW(y[1]) - relW(x[1])).slice(0, 10).map(e => e[0])); // 最親的 10 段
+        const relW = (r) => (r.status ? 200 : 0) + Math.abs(r.affinity || 0) + (r.interactionCount || 0);
+        let rels = null, close = new Set();
         const serializeAgent = (a) => ({
             id:a.agentId, name:a.name, age:a.age, gender:a.gender, isPlayer:a.isPlayer,
             _isPlayerChild: a._isPlayerChild || false, _parentNames: a._parentNames || null,
@@ -1962,14 +1968,14 @@ class World {
             personality: { traits:a.personality.traits, background:a.personality.background, values:a.personality.values },
             needs: { hunger:a.needs.hunger, rest:a.needs.rest, social:a.needs.social, comfort:a.needs.comfort, recreation:a.needs.recreation, beauty:a.needs.beauty },
             skills: Object.fromEntries(Object.entries(a.skills.skills).map(([k,s])=>[k,{xp:s.xp,passion:s.passion}])),
-            relationships: Object.fromEntries((typeof CROWD !== 'undefined' ? CROWD.keepRels(this, a) : Object.entries(a.relationships.relationships)).map(([k,r],ri)=>[k,{ // v6.55.0 人多時只存有意義的關係(最多 40 段)
-                targetId:r.targetId, targetName:r.targetName, affinity:r.affinity || undefined, trust:r.trust || undefined, // v6.55.0 0 不存
-                romanticInterest:r.romanticInterest || undefined, interactionCount:r.interactionCount || undefined,
-                lastInteractionTick:r.lastInteractionTick || undefined, sharedMemories:r.sharedMemories.slice(!crowdSave || ri < 10 ? -3 : -1).map(x => typeof x === 'string' ? clipText(x, 100) : x), // v6.43.6 依字截斷,不切壞 emoji
+            relationships: Object.fromEntries((rels = (typeof CROWD !== 'undefined' ? CROWD.keepRels(this, a) : Object.entries(a.relationships.relationships)), close = closest(rels), rels).map(([k,r],ri)=>[k,{ // v6.55.0 人多時只存有意義的關係(最多 40 段)
+                targetId:r.targetId, targetName:r.targetName, affinity:r1(r.affinity) || undefined, trust:r1(r.trust) || undefined, // v6.55.0 0 不存;v9.10.2 小數只留一位(以前會存成 39.00000000000007)
+                romanticInterest:r1(r.romanticInterest) || undefined, interactionCount:r.interactionCount || undefined,
+                lastInteractionTick:r.lastInteractionTick || undefined, sharedMemories:[...new Set(r.sharedMemories)].slice(close.has(k) ? -2 : -1).map(x => typeof x === 'string' ? clipText(x, close.has(k) ? 80 : 50) : x), // v6.43.6 依字截斷,不切壞 emoji;v9.10.2 去掉重複,最親的 10 段留 2 句(其他 1 句)——自己的記憶裡本來就有
                 // v6.43.5 存提示詞會用到的最近 3 筆;英文句子長,每筆最多 100 字
                 status:r.status || undefined, statusSince:r.statusSince || undefined, isCheating:r.isCheating || undefined, isFeud:r.isFeud || undefined // v6.43.6 預設值不存(讀檔補回)
             }])),
-            memory: a.memory.entries.slice(-10000).map(m=>({tick:m.tick,...(m.timeStr === tsAt(m.tick) ? {} : { timeStr:m.timeStr }),category:m.category,importance:m.importance,relatedAgents:m.relatedAgents,...(m.k?{k:m.k,p:m.p}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content
+            memory: slimMem(a.memory.entries.slice(-10000)).map(m=>({tick:m.tick,...(m.timeStr === tsAt(m.tick) ? {} : { timeStr:m.timeStr }),category:m.category,importance:m.importance,...(m.relatedAgents && m.relatedAgents.length ? { relatedAgents:m.relatedAgents } : {}),...(m.k?{k:m.k,...(m.p && Object.keys(m.p).length ? { p:m.p } : {})}:{content:m.content})})), // v6.17.0 k/p;v6.19.0 有模板就不存 content;v9.10.2 空的關係人、參數不存(讀檔補回)
             chatHistory: a.isPlayer ? (a.chatHistory||[]).slice(-10000) : undefined,
             _lastInteractionTick: a._lastInteractionTick,
             _locationStayRemaining: a._locationStayRemaining || 0,
@@ -1994,7 +2000,7 @@ class World {
                 locations: Object.fromEntries(Object.entries(this.townMap.locations).map(([k,v])=>[k,{id:v.id,name:v.name,description:v.description,x:v.x,y:v.y,category:v.category,capacity:v.capacity}])) } : null,
             agents: Object.fromEntries(Object.entries(this.agents).map(([k,a])=>[k,serializeAgent(a)])),
             // v5.29.0 AI 對話紀錄以文字形式持久化(含每則對話全文),反思則隨 agent.memory 一起存
-            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-200).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })), // v6.43.5 300→200(英文存檔瘦身)
+            npcConversationLog: this.conversationEngine.npcConversationLog.slice(-120).map(c => ({ ...c, dialogue: (c.dialogue || []).map(d => ({ ...d })) })), // v6.43.5 300→200(英文存檔瘦身);v9.10.2 200→120(畫面只看最近 30 則)
             npcLlmUsedToday: this.npcLlmUsedToday || 0,
             feudCooldown: { ...(this._feudCooldown || {}) }, // v5.42.0 對嗆冷卻
             mediations: JSON.parse(JSON.stringify(this.mediations || {})), // v5.42.0 和解進度
@@ -2026,7 +2032,7 @@ class World {
                 _daysSinceDeparture: this.events._daysSinceDeparture,
                 _usedImmigrantNames: [...this.events._usedImmigrantNames],
             },
-            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.slice(-600) },
+            stockpile: { resources:{...this.stockpile.resources}, history:this.stockpile.history.filter(e => e.tick >= Math.floor((this.tickCount || 0) / 96) * 96).slice(-600) }, // v9.10.2 只存今天的(畫面只算今天的進出)
             buildings: { projects:this.buildings.projects.map(p=>({...p})), completed:this.buildings.completed.map(p=>({...p})), activeEffects:{...this.buildings.activeEffects}, _counter:this.buildings._counter, donations:{...(this.buildings.donations||{})} },
             townMoodBonus: this.townMoodBonus ? { ...this.townMoodBonus } : null, // v6.14.0
             trade: { merchant:this.trade.merchant?{...this.trade.merchant,offers:this.trade.merchant.offers.map(o=>({...o}))}:null, _daysSince:this.trade._daysSince, tradeHistory:this.trade.tradeHistory.slice(-10) },

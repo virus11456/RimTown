@@ -139,7 +139,7 @@ const HEALTH = (() => {
     // ---------- 治療 ----------
     function successRate(w, a, doc, sev) {
         const age = a.age || 30; const sk = doc?.skills?.get?.('醫療')?.level || 0;
-        let p = 0.42 + sk * 0.02 + (done(w, 'anatomy') ? 0.1 : 0) + (done(w, 'sanitation') ? 0.05 : 0) + (done(w, 'chemistry') ? 0.1 : 0) + (done(w, 'antibiotics') ? 0.1 : 0) + (built(w, 'hospital') ? 0.05 : 0) - sev * 0.08 - (age >= 60 ? 0.1 : 0) - (age >= 75 ? 0.1 : 0);
+        let p = 0.55 + sk * 0.015 + /* v9.11.0 以前 0.42＋級×0.02 */ (done(w, 'anatomy') ? 0.1 : 0) + (done(w, 'sanitation') ? 0.05 : 0) + (done(w, 'chemistry') ? 0.1 : 0) + (done(w, 'antibiotics') ? 0.1 : 0) + (built(w, 'hospital') ? 0.05 : 0) - sev * 0.08 - (age >= 60 ? 0.1 : 0) - (age >= 75 ? 0.1 : 0);
         return Math.max(0.1, Math.min(0.95, p));
     }
     function deathRisk(w, sev) { return Math.max(0.005, (0.12 - (done(w, 'chemistry') ? 0.07 : 0) - (done(w, 'antibiotics') ? 0.03 : 0)) * sev / 3); }
