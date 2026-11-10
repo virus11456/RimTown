@@ -844,7 +844,7 @@ Object.assign(RimTownApp.prototype, {
         if (W('things')) {
             // v9.0.0 鎮上的新東西：大家怎麼看（村民自己形成的好惡，不是規定好的）
             try {
-                const tv = typeof THINGS !== 'undefined' ? THINGS.view(this.world).filter(x => x.n >= 3).sort((x, y) => ((y.protest ? 50 : 0) + y.love + y.hate * 1.5 + y.dislike) - ((x.protest ? 50 : 0) + x.love + x.hate * 1.5 + x.dislike)).slice(0, 4) : []; // 吵得最兇的排前面
+                const tv = typeof THINGS !== 'undefined' ? THINGS.view(this.world).filter(x => x.n >= 3).sort((x, y) => ((y.protest ? 50 : 0) + (y.boycott ? 40 : 0) + y.love + y.hate * 1.5 + y.dislike) - ((x.protest ? 50 : 0) + (x.boycott ? 40 : 0) + x.love + x.hate * 1.5 + x.dislike)).slice(0, 4) : []; // 吵得最兇的排前面
                 if (tv.length) {
                     B.things += `<div class="pp-issues pp-things"><h4 class="pp-h">🆕 ${t('鎮上的新東西：大家怎麼看')}</h4>`;
                     for (const x of tv) {
@@ -852,7 +852,11 @@ Object.assign(RimTownApp.prototype, {
                         const bar = `<div class="pp-things-bar" role="img" aria-label="${esc(seg.map(g => `${g[2]} ${x[g[0]]}`).join(t('、')))}">${seg.filter(g => x[g[0]]).map(g => `<i style="flex:${x[g[0]]};background:${g[1]}" title="${esc(g[2])} ${x[g[0]]}"></i>`).join('')}</div>`;
                         const legend = seg.filter(g => x[g[0]]).map(g => `<span><b style="background:${g[1]}"></b>${esc(g[2])} ${x[g[0]]}</span>`).join('');
                         const q = x.quotes.filter(z => z.s).map(z => `<div class="pp-things-q">${z.v >= 0 ? '👍' : '👎'} ${esc(z.who)}${t('：')}${t('「')}${esc(z.s)}${t('」')}</div>`).join('');
-                        const pr = x.protest ? `<div class="pp-things-q">📢 ${esc(t('{n} 人抗議過').replace('{n}', x.protest.n))}</div>` : '';
+                        const pr = (x.protest ? `<div class="pp-things-q">📢 ${esc(t('{n} 人抗議過').replace('{n}', x.protest.n))}${x.protest.counter ? ` · 🙋 ${esc(t('{n} 人到場聲援').replace('{n}', x.protest.counter))}` : ''}</div>` : '')
+                            + (x.boycott ? `<div class="pp-things-q">🛒 ${esc(t('{a}帶頭抵制中，還有 {n} 天').replace('{a}', x.boycott.lead).replace('{n}', x.boycott.left))}</div>` : '')
+                            + (x.stance ? `<div class="pp-things-q">🎙️ ${esc(t(x.stance.side < 0 ? '首長{m}表態反對' : x.stance.side > 0 ? '首長{m}表態支持' : '首長{m}沒有明確表態').replace('{m}', x.stance.who))}</div>` : '')
+                            + (x.consensus ? `<div class="pp-things-q">🤝 ${esc(t(x.consensus > 0 ? '全鎮共識：幾乎人人喜歡' : '全鎮共識：幾乎人人反對'))}</div>` : '')
+                            + (x.silent ? `<div class="pp-things-q">🤐 ${esc(t('{n} 人不敢說出自己的看法（少數派）').replace('{n}', x.silent))}</div>` : ''); // v9.9.0 民意與派系
                         B.things += `<div class="pp-issue pp-thing"><span>${x.icon} <strong>${esc(x.name)}</strong> <small>${esc(t('{n} 人有看法').replace('{n}', x.n))}</small>${bar}<span class="pp-things-legend">${legend}</span>${q}${pr}</span></div>`;
                     }
                     B.things += `</div>`;

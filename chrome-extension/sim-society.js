@@ -112,13 +112,13 @@ class FactionSystem {
                     break;
             }
 
-            if (candidates.length >= 2 && Math.random() < 0.3) {
+            if (candidates.length >= 3 && Math.random() < 0.2) { // v9.9.0 2→3 人、0.3→0.2:以前一年成立 39 次、散掉 31 次,大多兩人小團體一下就散
                 // Check members not already in too many factions
                 const filtered = candidates.filter(a => {
                     const factionCount = Object.values(this.factions).filter(f => f.hasMember(a.agentId)).length;
                     return factionCount < 2; // max 2 factions per NPC
                 });
-                if (filtered.length >= 2) {
+                if (filtered.length >= 3) {
                     const faction = new Faction(`faction_${++this._counter}`, type, filtered[0].name);
                     faction.formedTick = world.tickCount;
                     filtered.forEach(a => faction.addMember(a.agentId));
@@ -188,6 +188,12 @@ class FactionSystem {
         // Pick two factions for interaction
         const [fA, fB] = shuffle(factionList).slice(0, 2);
         const roll = Math.random();
+        // v9.9.0 派系吵架要有理由:兩派對鎮上同一件新東西看法相反,就為那件事吵(民意與派系)
+        try { const iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null;
+            if (iss && roll < 0.7) { fA.rivalFactionId = fB.id; fB.rivalFactionId = fA.id; const pro = iss.a > 0 ? fA : fB, con = pro === fA ? fB : fA;
+                world.logMessageT('faction', '⚔️ 「{p}」和「{c}」為了{t}吵起來：一派說好，一派說不行。', { p: pro.name, c: con.name, t: iss.name });
+                for (const aId of fA.members) for (const bId of fB.members) { const a = world.agents[aId], b = world.agents[bId]; if (a && b) { a.relationships.getOrCreate(bId, b.name).modifyAffinity(-3); b.relationships.getOrCreate(aId, a.name).modifyAffinity(-3); } }
+                return; } } catch (e) {}
 
         if (roll < 0.4) {
             // Conflict between factions
@@ -265,7 +271,7 @@ class FactionSystem {
             // Remove members no longer in the world
             faction.members = faction.members.filter(mId => world.agents[mId]);
             if (faction.size < 2) {
-                if (faction.size === 1) {
+                if (faction.size === 1 && world.tickCount - (faction.formedTick || 0) >= 96 * 30) { // v9.9.0 撐不到一個月就散的不寫日誌(以前一年 31 則)
                     const lastAgent = world.agents[faction.members[0]];
                     if (lastAgent) {
                         world.logMessageT('faction', '「{faction}」因人數不足而解散。', { faction: faction.name }, lastAgent.name);

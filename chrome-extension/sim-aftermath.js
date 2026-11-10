@@ -145,6 +145,7 @@ const AFTERMATH = (() => {
             if (!n) return false; if ((cr.n.rumor || 0) < 2) log(w, '🗣️ {a}到處傳：{r}。', { a: a.name, r: fill(k, { c: cr.cause }) }, a.name);
         } else if (r === 'protest') {
             mem(w, a, '{c}之後，我跟大家一起上街，要鎮公所給個交代。', { c: cr.cause }, 6);
+            try { if (typeof THINGS !== 'undefined') THINGS.gather(w, { place: null }, [a]); } catch (e) {} // v9.9.0 上街的人真的走到廣場(跟新東西的抗議共用)
             if ((cr.n.protest || 0) + 1 === 3) { // 夠多人才變成集會,把相關提案提早推上議程
                 log(w, '📢 {c}之後，鎮民聚在廣場抗議，要鎮公所給個交代。帶頭的是{a}。', { c: cr.cause, a: a.name }, a.name); news(w, '📢 {c}之後，鎮民上街抗議', { c: cr.cause }, 8, [a.name]);
                 const T = w.tech; if (T) { if (cr.kind === 'meltdown' || cr.kind === 'leak') T.pendAbandon = d; if (T.bio && cr.kind === 'lableak') T.bio.pendHalt = d; if (T.bio && cr.kind === 'price_storm') T.bio.pendPrice = d; if (T.steam && cr.kind === 'boiler_burst' && !T.steam.factory) T.steam.pendFactory = d; if (T.steam && (cr.kind === 'smog_week' || cr.kind === 'great_smog') && !T.steam.air) T.steam.pendAir = d; } // v8.0.0 鍋爐爆炸→工廠法、黑霧→清潔空氣法
