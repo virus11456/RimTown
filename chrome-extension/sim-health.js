@@ -114,14 +114,15 @@ const HEALTH = (() => {
     function family(w, a) { const out = new Set(); const R = a.relationships?.relationships || {}; for (const id in R) { const r = R[id]; const o = w.agents[id]; if (o && !o.isDead && (r.status === 'married' || r.status === 'dating')) out.add(o); } for (const o of npcs(w)) if (o !== a && ((a._parentNames || []).includes(o.name) || (o._parentNames || []).includes(a.name))) out.add(o); return [...out]; }
     function pay(w, a, cost, why, doctor) {
         if (w?.tech?.bio?.price) cost = Math.round(cost * 0.75 * 10) / 10; // v7.9.0 藥價管制:打七五折
+        cost = Math.round(cost * 100) / 100; // 算到分:錢包、工會基金、公庫都是算到分的
         const Wl = WL(); const sp = w.stockpile; if (!Wl || cost <= 0) return { ok: true, by: [] };
         let need = cost; const got = []; // 每一筆是誰出的,湊不齊就原路退回
         const take = (who, n, kind) => { n = Math.min(n, Math.floor(Wl.get(w, who) * 100) / 100); if (n > 0.009 && Wl.take(w, who, n)) { need = Math.round((need - n) * 100) / 100; got.push({ kind, who, n }); return n; } return 0; };
         take(a, need, 'self');
         if (need > 0.01) for (const f of family(w, a).sort((x, y) => Wl.get(w, y) - Wl.get(w, x))) { const room = Wl.get(w, f) - 10; if (room < need * 0.5) continue; take(f, Math.min(need, room), 'family'); if (need <= 0.01) break; }
-        const U = w.union; if (need > 0.01 && U?.on && U.members?.[a.agentId] && (U.fund || 0) > 5) { const n = Math.min(need, cost * 0.5, U.fund - 2); if (n > 0) { U.fund = Math.round((U.fund - n) * 100) / 100; need = Math.round((need - n) * 100) / 100; got.push({ kind: 'union', n }); } } // 工會互助金(會員繳的會費)
+        const U = w.union; if (need > 0.01 && U?.on && U.members?.[a.agentId] && (U.fund || 0) > 5) { const n = Math.floor(Math.min(need, cost * 0.5, U.fund - 2) * 100 + 1e-6) / 100; if (n > 0) { U.fund = Math.round((U.fund - n) * 100) / 100; need = Math.round((need - n) * 100) / 100; got.push({ kind: 'union', n }); } } // 工會互助金(會員繳的會費)
         const H = S(w);
-        if (need > 0.01 && H.medaid && sp) { const n = Math.min(need, cost * 0.5, sp.get('silver') - 50); if (n > 0 && sp.consume('silver', n, w.tickCount, t('公費醫療補助'), 'medical')) { need = Math.round((need - n) * 100) / 100; got.push({ kind: 'aid', n }); } }
+        if (need > 0.01 && H.medaid && sp) { const n = Math.floor(Math.min(need, cost * 0.5, sp.get('silver') - 50) * 100 + 1e-6) / 100; if (n > 0 && sp.consume('silver', n, w.tickCount, t('公費醫療補助'), 'medical')) { need = Math.round((need - n) * 100) / 100; got.push({ kind: 'aid', n }); } }
         if (need > 0.01 && typeof BANK !== 'undefined' && w.bank) { const B = BANK.S(w); if (B.open && !B.loans?.[a.agentId]) { const lent = BANK.lend(w, B, a, Math.ceil(need) + 1, t('看病')); if (lent >= need) take(a, need, 'loan'); } }
         if (need > 0.01) { // 湊不齊:原路退回(借到的錢留在身上,照樣要還)
             for (const g of got) { if (g.who) Wl.add(w, g.who, g.n); else if (g.kind === 'union') U.fund = Math.round((U.fund + g.n) * 100) / 100; else if (g.kind === 'aid') sp.add('silver', g.n, w.tickCount, t('公費醫療補助'), 'medical'); }
@@ -129,8 +130,10 @@ const HEALTH = (() => {
         }
         for (const g of got) { if (g.kind === 'family') mem(w, g.who, '{a}看病要錢，我幫忙出了 {n} 銀幣。', { a: a.name, n: Math.round(g.n) }, 5); if (g.kind === 'aid') H.st.aid = Math.round(((H.st.aid || 0) + g.n) * 100) / 100; }
         // 收錢的人:看診醫生六成,其餘進公庫(醫院公營)。都在鎮內轉手
-        const docCut = doctor && !doctor.isDead ? Math.round(cost * 0.6 * 100) / 100 : 0;
-        if (docCut) Wl.add(w, doctor, docCut); if (sp) sp.add('silver', Math.round((cost - docCut) * 100) / 100, w.tickCount, `${t('醫療收入')}${t('：')}${t(why)}`, 'medical');
+        // 照實際收到的錢分(湊到只差 1 分就算付清;以前照全額分,憑空多出那 1 分)
+        const paid = Math.round((cost - Math.max(0, need)) * 100) / 100;
+        const docCut = doctor && !doctor.isDead ? Math.round(paid * 0.6 * 100) / 100 : 0;
+        if (docCut) Wl.add(w, doctor, docCut); if (sp) sp.add('silver', Math.round((paid - docCut) * 100) / 100, w.tickCount, `${t('醫療收入')}${t('：')}${t(why)}`, 'medical');
         return { ok: true, by: got.map(g => g.kind) };
     }
     // ---------- 治療 ----------

@@ -55,7 +55,9 @@ const COMPETE = (() => {
             let deal = null, owner = cand;
             if (!cand) { deal = (typeof INVEST !== 'undefined') ? INVEST.partner(w, all, k, cost, id, score) : null; if (!deal) continue; owner = deal.lead; }
             else if (!WALLET.take(w, cand, cost)) continue;
-            Mk.sell(w, 'timber', r2(cost * 0.6), t('開店裝修')); Mk.sell(w, 'mine', r2(cost * 0.4), t('開店裝修')); // 裝修錢付給本地木作坊、礦場
+            // 裝修錢付給本地木作坊、礦場;合夥湊的錢可能比本錢少幾角(INVEST.partner 允許最後差 0.5 以內),照實際湊到的付(以前照本錢付,憑空多出零頭)
+            const spent = deal ? r2(deal.parts.reduce((s, [, n]) => s + n, 0)) : cost, wood = r2(spent * 0.6);
+            Mk.sell(w, 'timber', wood, t('開店裝修')); Mk.sell(w, 'mine', r2(spent - wood), t('開店裝修'));
             const R = M.rival[k] = { fid: 'F' + (++M.fn), owner: owner.agentId, since: d, price: 0.9, pay: Math.min(1.2, Math.round((Mk.payRate(w, k) + 0.1) * 100) / 100), emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
             const pool = ws.filter(a => a.agentId !== id && a.agentId !== owner.agentId).sort((x, y) => aff(x, boss) - aff(y, boss));
             const n = Math.max(1, Math.ceil(pool.length * 0.4)); pool.slice(0, n).forEach(a => { R.emp[a.agentId] = d; mem(w, a, '{a}開了新店，開的工資比{o}高，我跳槽過去了。', { a: owner.name, o: boss?.name || '' }, 6); });
@@ -106,7 +108,7 @@ const COMPETE = (() => {
                 news(w, '{a}的{s}收攤了', { a: rv?.name || '', s: Mk.name(k) }, 6, [rv?.name || '']); mem(w, rv, '我的{s}撐不下去，收攤了。', { s: Mk.name(k) }, 8); mem(w, boss, '{a}的店收攤了，客人又回到我這裡。', { a: rv?.name || '' }, 6);
                 continue;
             }
-            if (M.loss[k] >= 3 && bal(w, boss) < 40) {
+            if (boss && M.loss[k] >= 3 && bal(w, boss) < 40) { // 老闆出遠門(w.agents 找不到人)不能談併購:以前照樣從對手扣錢,錢卻加不到不在場的老闆身上,整筆消失
                 const price = Math.round(Mk.value(w, k, all) * 0.5);
                 if (bal(w, rv) >= price && WALLET.take(w, rv, price)) {
                     WALLET.add(w, boss, price); M.owners[k] = R.owner; M.pay[k] = R.pay ?? 1; M.price[k] = R.price ?? 1; M.loss[k] = 0; delete M.rival[k]; M.cst.merged++;
