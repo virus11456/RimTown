@@ -730,6 +730,10 @@
         '工具品質': 'Tool quality',
         '研究速度': 'Research speed',
         '遺產稅': 'Inheritance tax',
+        // v9.9.1 整理
+        '🚫 小鎮投票決定讓「{n}」歇業，{o}只好收攤。': '🚫 The town voted to shut down "{n}"; {o} had to close up shop.',
+        '我的店「{n}」被鎮上投票勒令歇業了。': 'The town voted to shut down my shop "{n}".',
+        '勒令歇業': 'Ordered to close',
         // v9.9.0 民意與派系動員
         '大家好像都討厭{t}，我喜歡也不敢講。': 'Everyone seems to hate the {t}. I like it, but I didn\'t dare say so.',
         '大家好像都很喜歡{t}，我不喜歡也不好說什麼。': 'Everyone seems to love the {t}. I don\'t, but I kept quiet.',

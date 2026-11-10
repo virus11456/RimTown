@@ -207,6 +207,7 @@ const MARKET = (() => {
             const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !isRivalEmp(w, k, a)); if (ws.length < 4) continue; // v9.7.0 對手店的工人不跟著罷工
             // v9.6.0 工資壓在七成以下超過三週,心情再好也忍不下去(以前要心情低於 48 才罷工,一整年幾乎沒人罷工,工資一直卡在五成)
             M.low = M.low || {}; if (payRate(w, k) > 0.7) { delete M.low[k]; continue; } if (M.low[k] == null) M.low[k] = d;
+            if (typeof UNION !== 'undefined' && w.union?.on && ws.filter(a => UNION.isMember(w, a)).length >= Math.max(2, ws.length / 2)) continue; // v9.9.1 這一行過半是工會會員:交給工會談判、由工會罷工(以前兩套罷工會同時發生)
             const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if ((mood > 48 && d - M.low[k] < 21) || Math.random() > 0.5) continue;
             M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1; const boss = w.agents[id];
             log(w, '✊ {s}的 {n} 個工人罷工了，要求{o}加薪。', { s: name(k), n: ws.length, o: boss?.name || '' }, boss?.name || '');

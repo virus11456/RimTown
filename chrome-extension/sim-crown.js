@@ -105,6 +105,9 @@ const CROWN = (() => {
         if ((w.prosperity?.prosperity || 0) >= 80) delta += 0.6;
         try { const r = w.dark?.rep?.[k.agentId] || {}; delta -= (r.exposed || 0) * 0.5; } catch (e) {}
         const avg = npcs(w).reduce((s, a) => s + (a.mood || 50), 0) / Math.max(1, npcs(w).length); delta += (avg - 50) * 0.02;
+        // v9.9.1 村民心裡對國王的看法(意見系統 -2～+2)會推動民心;民心高低也會慢慢改變大家的看法(以前兩邊各算各的)
+        try { const M = w.mind; if (M?.op) { const v = npcs(w).map(a => M.op[a.agentId]?.king).filter(x => typeof x === 'number'); if (v.length) delta += (v.reduce((s, x) => s + x, 0) / v.length) * 0.3;
+            const tgt = (C.legit - 50) / 25; for (const a of npcs(w)) { const o = M.op[a.agentId]; if (o && typeof o.king === 'number') o.king = Math.max(-2, Math.min(2, Math.round((o.king + (tgt - o.king) * 0.01) * 1000) / 1000)); } } } catch (e) {}
         C.legit = Math.max(0, Math.min(100, C.legit + delta));
         try { C.poverty = (w.proposals?.issues?.poverty || w.proposals?.issues?.food) ? (C.poverty || 0) + 1 : 0; } catch (e) {}
     }
