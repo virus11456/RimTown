@@ -4625,3 +4625,19 @@ body.landing-open { overflow: hidden; }
     .lp-ch-bridge { margin-top: 10px; }
     .lp-ch-bridge a { padding: 6px 8px; }
 }
+
+/* v9.7.2 主畫面 App（standalone）：iOS 上 100dvh 會比螢幕矮（少了瀏海＋Home 條那一截），底下留一大片空白。
+   全螢幕 App 沒有網址列，直接用 100vh；iPhone 再由 app-mobile.js 量實際螢幕高度填進 --app-h。 */
+@media (display-mode: standalone) {
+    html, body.rimtown-page { height: var(--app-h, 100vh) !important; max-height: none !important; }
+    .rimtown-container { height: var(--app-h, 100vh) !important; max-height: none !important; }
+}
+html.ios-standalone, html.ios-standalone body.rimtown-page, html.ios-standalone .rimtown-container { height: var(--app-h, 100vh) !important; max-height: none !important; }
+#vp-diag { position: fixed; left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 64px); z-index: 99999; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.82); color: #fff; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
+/* v9.7.2 撐滿螢幕後補回 Home 條的高度(iOS 這時回報 0) */
+html.ios-gapfix .rimtown-container.observer #kairo-bar, html.ios-gapfix #kairo-bar { height: 90px !important; padding-bottom: 34px !important; }
+html.ios-gapfix .rimtown-container.observer #kairo-card { bottom: 90px !important; max-height: calc(100% - 102px) !important; }
+html.ios-gapfix .rimtown-container.observer #kairo-status { bottom: 90px !important; }
+html.ios-gapfix .rimtown-container .gh-fab { bottom: 166px !important; }
+html.ios-gapfix .rimtown-container.observer .rt-sidebar.chat-open { bottom: 90px !important; }
+html.ios-gapfix .rimtown-container .map-hint { bottom: 124px !important; }

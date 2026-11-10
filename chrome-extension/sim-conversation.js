@@ -1909,6 +1909,16 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 let response = await this.llm.generate(prompt, 600, 0.9, true, { human: true });
                 if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { await new Promise(r => setTimeout(r, 1500)); response = await this.llm.generate(prompt, 600, 0.9, true, { human: true }); }
                 if (!response || response === '__RATE_LIMITED__' || response === '__ERROR__') { this.lastPlayerReplyFallback = (this.llm._quota && this.llm._quota.remaining === 0) ? 'quota' : 'busy'; }
+                // v9.7.3 備援模型有時把自己上一句原封不動再講一次(答非所問):偵測到就提醒它再答一次
+                try {
+                    const norm = (x) => String(x || '').replace(/EFFECTS:[\s\S]*$/i, '').replace(new RegExp('^\\s*\\*{0,2}' + npc.name + '\\*{0,2}[：:]', 'gm'), '').replace(/[\s，。！？!?、…~～「」"'（）()]/g, '');
+                    const prevNpc = [...player.chatHistory].reverse().find(c => c.speaker === npc.name && c.target === player.name);
+                    const a = norm(response), b = prevNpc ? norm(prevNpc.text) : '';
+                    if (b.length >= 6 && a.length >= 6 && (a === b || a.startsWith(b) || b.startsWith(a))) {
+                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${prevNpc.text.slice(0, 60)}${t('」，不要重複，直接回應對方剛剛說的「')}${playerMessage.slice(0, 60)}${t('」。）')}`, 600, 1.0, true, { human: true });
+                        if (again && again !== '__RATE_LIMITED__' && again !== '__ERROR__' && norm(again) !== b) response = again;
+                    }
+                } catch (e) {}
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
                 return this._parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc);
             } catch(e) { console.error('[RimTown] LLM player reply failed:', e); this.lastPlayerReplyFallback = this.lastPlayerReplyFallback || 'busy'; }
