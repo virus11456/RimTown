@@ -38,7 +38,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     M.owners.farm = P[10].agentId; M.rival.farm = { fid: 'Fy', owner: o3.agentId, since: 0, price: 0.9, pay: 1.1, emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
     kill(o3); out.closed = !M.rival.farm;
     // 4. 繼承後超過反壟斷上限:有提醒,每週檢查會賣掉多的
-    const [o4, heir4] = P.slice(11, 13); heir4._parentNames = [o4.name]; heir4.age = 30; w.cycle = w.cycle || {}; w.cycle.law = true; w.cycle.cap = 2;
+    const [o4, heir4] = P.slice(11, 13); for (const a of all()) { const r = a.relationships.relationships[o4.agentId]; if (r && r.status === 'married') r.status = 'friend'; if ((a._parentNames || []).includes(o4.name)) a._parentNames = []; } /* 只留一個繼承人(隨機的鎮裡他可能已婚) */ heir4._parentNames = [o4.name]; heir4.age = 30; w.cycle = w.cycle || {}; w.cycle.law = true; w.cycle.cap = 2;
     M.owners.textile = heir4.agentId; M.owners.timber = heir4.agentId; M.owners.mine = o4.agentId;
     kill(o4); out.cap = { n: MARKET.firmsOf(w, heir4.agentId).length, log: w.messageLog.slice(-12).some(m => /反壟斷法的上限/.test(m.k || '')) };
     return out;

@@ -127,7 +127,7 @@ const TOWN_ISSUES = (() => {
         const idle = it.by ? 0 : (it.idle || 0), age = day - (it.since || day) + 1, x = text(it);
         const pick = (n) => rnd(all, n);
         const leave = (a, reason) => {
-            if (!a || all.length <= 6 || (day - (P.issueLeaveDay ?? -99)) < 3 || a.job?.key === 'mayor') return false;
+            if (!a || (a.age ?? 30) < 16 /* v9.9.4 小孩不會自己離鎮 */ || String(a.agentId).startsWith('visit_') || all.length <= 6 || (day - (P.issueLeaveDay ?? -99)) < 3 || a.job?.key === 'mayor') return false;
             P.issueLeaveDay = day; return w.leaveTown?.(a.agentId, reason);
         };
         switch (it.key.split(':')[0]) {

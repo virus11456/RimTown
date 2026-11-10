@@ -261,7 +261,7 @@ const WAYS = (function () {
         for (const [id, dd] of Object.entries(X.lobby)) if (d - dd > 40 || !w.agents[id]) delete X.lobby[id];
         X.trust += X.trust < 60 ? 0.25 : X.trust > 60 ? -0.1 : 0; // 不愉快會慢慢淡忘
         // 人情慢慢淡掉;互相欠人情的人越走越近
-        for (const [db, m] of Object.entries(X.owe)) { if (!w.agents[db] || w.agents[db].isDead) { delete X.owe[db]; continue; } for (const cr of Object.keys(m)) { m[cr] *= 0.99; if (m[cr] < 0.5 || !w.agents[cr]) delete m[cr]; } if (!Object.keys(m).length) delete X.owe[db]; }
+        for (const [db, m] of Object.entries(X.owe)) { if (!w.agents[db] && w.isAway?.(db)) continue; /* v9.9.4 出遠門人情還在 */ if (!w.agents[db] || w.agents[db].isDead) { delete X.owe[db]; continue; } for (const cr of Object.keys(m)) { m[cr] *= 0.99; if (m[cr] < 0.5 || (!w.agents[cr] && !w.isAway?.(cr))) delete m[cr]; } if (!Object.keys(m).length) delete X.owe[db]; }
         if (d % 7 === 0) for (const [db, m] of Object.entries(X.owe)) for (const cr of Object.keys(m)) if (m[cr] >= 2 && (X.owe[cr]?.[db] || 0) >= 2) { const a = w.agents[db], b = w.agents[cr]; if (a && b) { addAff(a, b, 1); addAff(b, a, 1); } }
         for (const h of X.hyp) if (!h.exp && d - h.d >= 3 && Math.random() < 0.02) expose(w, h);
         X.hyp = X.hyp.filter(h => !h.exp || d - h.exp < 120);

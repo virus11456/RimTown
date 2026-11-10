@@ -316,7 +316,7 @@ const CASINO = (() => {
     function collect(w, C, own, d) {
         if (!own) return; const px = INFL.p(w);
         for (const [id, D] of Object.entries(C.debt)) {
-            const a = w.agents[id]; if (!a || a.isDead) { delete C.debt[id]; continue; } if (d - D.day < 7) continue;
+            const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門不算賴掉 */ if (!a || a.isDead) { delete C.debt[id]; continue; } if (d - D.day < 7) continue;
             let got = Math.min(cash(w, a), D.n); if (got > 0 && WALLET.take(w, a, got)) { WALLET.add(w, own, got); D.n = r2(D.n - got); }
             // 家人代還（錢直接從家人付給賭場老闆）
             if (D.n > 0.5) { const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []).filter(o => o !== own && cash(w, o) >= D.n + 20 && Math.random() < 0.4)[0];

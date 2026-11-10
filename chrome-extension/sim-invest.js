@@ -266,6 +266,7 @@ if (typeof LifecycleSystem !== 'undefined') {
         let snap = null, heir = null;
         try { const RV = world.market?.rival || {}; for (const [k, R] of Object.entries(RV)) if (R && R.sh && npc && npc.agentId in R.sh) { (snap = snap || {})[k] = { owner: R.owner, sh: Object.assign({}, R.sh), R: JSON.parse(JSON.stringify(R)) }; } if (snap) heir = (MARKET.heirsOf(world, npc) || [])[0] || null; } catch (e) {}
         const r = _kill.call(this, world, npc, ...rest);
+        if (npc && !npc.isDead && world.agents?.[npc.agentId]) return r; // v9.9.4 冥王之血復活了:不分遺產
         try { if (snap) INVEST.onDeath(world, npc, snap, heir); } catch (e) { console.warn('[Invest] death', e); }
         return r;
     };

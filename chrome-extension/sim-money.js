@@ -137,7 +137,7 @@ const MONEY = (() => {
     function finesDaily(w) {
         const F = w.money?.fines; if (!F) return; const d = day(w); const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null;
         for (const [id, f] of Object.entries(F)) {
-            const a = w.agents[id]; if (!a || a.isDead) { delete F[id]; continue; } // 人走了或過世,欠款一筆勾銷
+            const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門不算一筆勾銷 */ if (!a || a.isDead) { delete F[id]; continue; } // 人走了或過世,欠款一筆勾銷
             if (f.labor) {
                 if (!inLabor(w, a)) { if (f.owed > 0.01) { mem(w, a, '勞役提前結束，欠的罰款也一筆勾銷了。', {}, 6); } delete F[id]; continue; } // 大赦等原因提前放人
                 f.owed = r2(Math.max(0, f.owed - FINE.laborValue)); if (f.owed <= 0.01) { for (const x of laborList(w)) if (x.id === id && x.fine) x.until = d; mem(w, a, '做完勞役，欠的罰款總算抵清了。', {}, 6); delete F[id]; }

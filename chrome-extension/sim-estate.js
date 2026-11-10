@@ -81,7 +81,7 @@ const ESTATE = (() => {
     // 新的一戶(長大、搬來、離婚)找房子;夫妻合住後空出的房子屋主可以出租
     function settle(w, hh) {
         const E = S(w);
-        for (const hid of Object.keys(E.home)) if (!hh.has(hid)) moveOut(w, hid);           // 這一戶不存在了(搬走、併入配偶家)
+        for (const hid of Object.keys(E.home)) if (!hh.has(hid) && !w.isAway?.(hid)) moveOut(w, hid);           // 這一戶不存在了(搬走、併入配偶家);v9.9.4 一個人住的出遠門,房子留著
         for (const hid of Object.keys(E.homeless)) if (!hh.has(hid)) delete E.homeless[hid];
         for (const [hid, members] of hh) {
             if (E.home[hid] || E.homeless[hid] !== undefined) continue;

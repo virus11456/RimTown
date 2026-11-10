@@ -55,7 +55,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 8) 驅逐提案:同一個神裔被認出來傷人兩次
       const d = w._absDay(); M.inc = [[d, 'wolf', A.agentId, 1], [d, 'wolf', A.agentId, 1]]; M.lastExile = -99; w.proposals.items = w.proposals.items.filter(p => !['myth_exile', 'gene_ban'].includes(p.kind)); M.lastDay = -1;
       Math.random = () => 0.99; MYTH.daily(w); Math.random = R0; const ex = w.proposals.items.find(p => p.kind === 'myth_exile');
-      out.exile = { prop: !!ex, ref: ex?.refKey === A.agentId }; if (ex) { MYTH.exile(w, ex); out.exile.gone = !w.agents[A.agentId] || w.agents[A.agentId].isDead || !!w.agents[A.agentId]._leftTown || !npcs().includes(A); }
+      out.exile = { prop: !!ex, ref: ex?.refKey === A.agentId }; if (ex) { MYTH.exile(w, ex); const _ff = (id) => { if (typeof EXILE === 'undefined' || !EXILE.pendingOf(w, id)) return false; EXILE.S(w).pending[id].until = w._absDay(); EXILE.S(w).lastDay = null; EXILE.daily(w); return true; }; out.exile.grace = !!w.agents[A.agentId] && _ff(A.agentId); out.exile.gone = !w.agents[A.agentId] || w.agents[A.agentId].isDead || !!w.agents[A.agentId]._leftTown || !npcs().includes(A); }
       // 9) 禁止提案,禁了以後只剩地下診所(貴一半,被抓罰款進公庫)
       M.inc.push([d, 'night', D.agentId, 1]); M.lastBan = -99; M.lastDay = -1; Math.random = () => 0.99; MYTH.daily(w); Math.random = R0; const bp = w.proposals.items.find(p => p.kind === 'gene_ban'); out.ban = { prop: !!bp };
       MYTH.ban(w); const U = all[9]; set(U, 5000); const u0 = inTown(); Math.random = (() => { let i = 0; return () => (i++ === 0 ? 0.5 : 0.1); })(); const ur = MYTH.edit(w, U, 'giant'); Math.random = R0;
@@ -78,7 +78,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.vamp.bites >= 1, '吸血鬼隔一週要吸血', r.vamp);
     ok(r.phoenix.ails === 0, '不死鳥之血：傷會自己好', r.phoenix);
     ok(r.hades.alive1 && r.hades.dead2, '冥王之血：死了活回來一次，第二次就真的走了', r.hades);
-    ok(r.exile.prop && r.exile.ref && r.exile.gone, '同一個神裔被認出來傷人兩次：有人提案驅逐，通過就離開小鎮', r.exile);
+    ok(r.exile.prop && r.exile.ref && r.exile.grace && r.exile.gone, '同一個神裔被認出來傷人兩次：有人提案驅逐，通過就離開小鎮', r.exile);
     ok(r.ban.prop && r.ban.under.res === 'ok' && r.ban.under.paid >= 1200 && r.ban.under.fined >= 1 && r.ban.under.drift === 0, '出事多了有人提案禁止；禁了只剩地下診所（貴一半、被抓罰款，守恆）', r.ban);
     ok(!!r.heir, '神裔的孩子會遺傳基因', r.heir);
     ok(r.look.gn === 'giant' && r.look.sig && r.look.scale > 1.25, '3D 外觀帶基因（巨人比較大）', r.look);
