@@ -4651,10 +4651,12 @@ html body.rt-kb-open .rimtown-container .rt-sidebar.chat-open { bottom: var(--kb
    主畫面 App 模式把頂端內容再往下讓 20px;env() 偶爾回報 0 時至少當 44px(瀏海機的狀態列高度)。 */
 html.ios-standalone { --ios-top: calc(max(env(safe-area-inset-top, 0px), 44px) + 20px); }
 html.ios-standalone .mobile-header { padding-top: var(--ios-top) !important; }
-html.ios-standalone .rimtown-container.observer #kairo-card.tall { top: calc(var(--ios-top) + 8px) !important; }
+html.ios-standalone .rimtown-container.observer #kairo-card.tall { top: calc(var(--ios-top) + 52px) !important; } /* v9.13.1 停在標題列下面(以前 +8px 蓋住標題列,按鈕從半透明的面板後面透出來) */
 html.ios-standalone .rimtown-container.observer #kairo-card { max-height: calc(100% - var(--ios-top) - 102px) !important; }
 /* 標題列變高 20px,上方的通知與選單跟著往下 */
 html.ios-standalone #achv-toast-host { top: calc(var(--ios-top) + 52px) !important; }
 html.ios-standalone body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(var(--ios-top) + 112px) !important; }
 html.ios-standalone .rimtown-container .account-menu-popup { top: calc(var(--ios-top) + 100px) !important; }
 html.ios-standalone .npc-quick-card { max-height: calc(100% - 152px - 56px - var(--ios-top)) !important; }
+/* v9.13.1 面板拉到最高時,畫面上沒有空位放角落通知(放哪都會蓋到「返回」或分頁列),先藏起來;面板放下就回來 */
+body:has(#kairo-card.tall:not(.hidden)) #achv-toast-host { visibility: hidden !important; }
