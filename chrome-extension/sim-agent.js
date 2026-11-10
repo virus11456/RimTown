@@ -354,6 +354,7 @@ const SKILL_CATEGORIES = ['射擊','近戰','建造','採礦','烹飪','種植',
 const PASSION_LEVELS = ['無能','無','微','大','狂熱'];
 const PASSION_XP_MULT = { '無能':0, '無':1, '微':1.5, '大':2.5, '狂熱':4 };
 
+const SKILL_PACE = 0.17; // v9.11.0 工作與日常活動的經驗倍率(拜師、事件、繼承照舊)
 function xpForLevel(level) { return level <= 0 ? 0 : Math.floor(100 * level * (1 + level * 0.2)); }
 
 class Skill {
@@ -751,20 +752,22 @@ class Agent {
     _gainSkillXp(world) {
         const xpb = 1 + (world.buildings?.getEffect?.('xp_bonus', 0) || 0) + (this.job?.key === 'guard' ? (world.buildings?.getEffect?.('guard_xp_bonus', 0) || 0) : 0); // v6.89.0 學堂、講堂、軍事學院
         const xp = Math.round(randInt(3,8) * (1 + (this.attr('wit') - 5) * 0.06) * xpb); // v5.26.0 智慧→技能成長快慢
+        // v9.11.0 技能慢慢練:以前大約一個月就練滿 20 級,人人都一樣;現在越高越難(第一年約 8 級、三年約 12、六年約 16、十年左右才 20)
+        const slow = (n, v) => { const l = this.skills.get(n)?.level || 0; const x = v * SKILL_PACE / (1 + 0.2 * l); const f = Math.floor(x); return f + (Math.random() < x - f ? 1 : 0); }; // 小數用機率進位(經驗是整數,直接捨去會永遠練不起來)
         if (this.activity === 'working' && this.job) {
             const map = JOB_SKILL_MAP[this.job.key];
             if (map) {
                 (map.primary||[]).forEach(n => {
-                    if(this.skills.addXp(n, xp*2)) {
+                    if(this.skills.addXp(n, slow(n, xp*2))) {
                         { const lv = this.skills.get(n).level; if (!world.observerMode || lv % 5 === 0) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: lv }, this.name); } // v9.5.1 觀察者模式只記 5、10、15、20 級(以前一天二十幾則洗掉其他紀錄)
                         this.currentThought = `${t(n)}${t('技能進步了！')}`;
                     }
                 });
-                (map.secondary||[]).forEach(n => this.skills.addXp(n, xp));
+                (map.secondary||[]).forEach(n => this.skills.addXp(n, slow(n, xp)));
             }
         } else {
             const actMap = ACTIVITY_SKILL_MAP[this.activity] || [];
-            actMap.forEach(n => { if(this.skills.addXp(n, xp)) { const lv = this.skills.get(n).level; if (!world.observerMode || lv % 5 === 0) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: lv }, this.name); } });
+            actMap.forEach(n => { if(this.skills.addXp(n, slow(n, xp))) { const lv = this.skills.get(n).level; if (!world.observerMode || lv % 5 === 0) world.logMessageT('skill_up', '{me}的{n}達到等級{level}！', { me: this.name, n, level: lv }, this.name); } });
         }
     }
     _decideActivity(hour) {

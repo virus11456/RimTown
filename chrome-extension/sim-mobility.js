@@ -8,9 +8,9 @@
 const MOBILITY = (() => {
     const CRAFT = ['blacksmith', 'carpenter', 'tailor', 'cook', 'trader', 'doctor', 'researcher'];
     const APPR_DAYS = 30, APPR_XP = 70, ADULT = 16, YOUNG = 25, STEADY = 7;
-    // v9.10.1 名匠:每一行(至少兩個人在做)經驗最深的那一位,本行技能要 15 級以上 → 工資多兩成、有錢人慕名來訂做(錢進自己口袋)、至少算工匠商人、收徒教得比較快
-    // (技能等級大約一年就練滿 20 級,所以看的是累積經驗,一行只有一位;名匠走了、改行了或被超越,由下一位接手)
-    const MASTER_LV = 15, MASTER_PAY = 1.2, MASTER_JOBS = ['farmer', 'miner', 'cook', 'blacksmith', 'carpenter', 'tailor', 'doctor', 'researcher', 'trader'];
+    // v9.10.1 名匠:每一行(至少兩個人在做)經驗最深的那一位,本行技能要 10 級以上(v9.11.0 起 15→10) → 工資多兩成、有錢人慕名來訂做(錢進自己口袋)、至少算工匠商人、收徒教得比較快
+    // (看的是累積經驗,一行只有一位;名匠走了、改行了或被超越,由下一位接手)
+    const MASTER_LV = 10, MASTER_PAY = 1.2, MASTER_JOBS = ['farmer', 'miner', 'cook', 'blacksmith', 'carpenter', 'tailor', 'doctor', 'researcher', 'trader'];
     const skillOfJob = (a) => { const k = a?.job?.key; const sk = (typeof JOB_SKILL_MAP !== 'undefined' && JOB_SKILL_MAP[k]?.primary?.[0]) || null; const s0 = sk ? a.skills?.get?.(sk) : null; return sk ? { sk, lv: s0?.level || 0, xp: s0?.xp || 0 } : null; };
     const curWorld = () => (typeof window !== 'undefined' ? window.rimtownApp?.world : null);
     const isMaster = (a, w) => { if (!a || a.isPlayer || !MASTER_JOBS.includes(a.job?.key)) return false; const W = w || curWorld(); return !!W?.mobility?.mst && W.mobility.mst[a.job.key] === a.agentId; };

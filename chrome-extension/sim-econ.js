@@ -81,6 +81,7 @@ const ECON = (() => {
     }
     function assignRoles(w) {
         const E = S(w); const F = npcs(w).filter(a => a.job?.key === 'farmer');
+        for (const a of npcs(w)) if (a.foodRole && a.job?.key !== 'farmer') delete a.foodRole; // v9.11.0 漁夫／獵人改行(拜師、轉職)後不再帶著舊角色(以前廚師身上還掛著「捕魚」)
         for (const id of Object.keys(E.roles)) if (!F.some(a => a.agentId === id)) delete E.roles[id];
         if (!F.length) return;
         const sh = shares(w), N = F.length, canFish = mult(w, 'fish') > 0;
