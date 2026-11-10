@@ -229,6 +229,7 @@ const MARKET = (() => {
             const id = ownerOf(w, k); if (!id || Math.random() > 0.04) continue; const boss = w.agents[id]; if (!boss) continue;
             const loss = Math.round(Math.min(bal(w, id) * 0.25, value(w, k, all) * 0.6)); if (loss < 5 || !takeId(w, id, loss)) continue;
             const ri = Math.floor(Math.random() * RISKS.length); log(w, RISKS[ri], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
+            if (ri === 0 && typeof LEGACY !== 'undefined' && LEGACY.incident) { try { const pl = typeof JOB_DEFINITIONS !== 'undefined' ? JOB_DEFINITIONS[SECTORS[k].jobs[0]]?.workplace : null; if (pl) LEGACY.incident(w, 'curse', pl, { p: typeof locName === 'function' ? locName(w, pl) : pl }); } catch (e) {} } // v9.9.2 失火的地方被說「不乾淨」
             // v8.8.0 賠掉的錢不會憑空消失:失火的修繕費給工匠、倒帳的錢留在欠債的客人手上、被偷的進了小偷口袋(都找不到人就進公庫)
             { const others = all.filter(a => a !== boss && !a.isDead && (a.age ?? 30) >= 16); const pick = (L) => L[Math.floor(Math.random() * L.length)];
               const to = ri === 0 ? pick(others.filter(a => ['builder', 'carpenter'].includes(a.job?.key))) : ri === 2 ? pick(others.filter(a => has(a, 'greedy') || a.dark?.liar)) || pick(others.slice().sort((x, y) => bal(w, x.agentId) - bal(w, y.agentId)).slice(0, 5)) : pick(others);
