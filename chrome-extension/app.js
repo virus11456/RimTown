@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.8.0';
+const RIMTOWN_APP_VERSION = '9.8.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2155,7 +2155,7 @@ class RimTownApp {
         sidebar.addEventListener('focusin', (e) => {
             if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') {
                 sidebar.classList.add('keyboard-open');
-                setTimeout(() => {
+                if (e.target.id !== 'chat-input') setTimeout(() => { // v9.8.1 聊天框改由 app-mobile.js 貼在鍵盤上方;這裡再捲會把整頁往上推
                     e.target.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 }, 300);
             }

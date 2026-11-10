@@ -4641,3 +4641,9 @@ html.ios-gapfix .rimtown-container.observer #kairo-status { bottom: 90px !import
 html.ios-gapfix .rimtown-container .gh-fab { bottom: 166px !important; }
 html.ios-gapfix .rimtown-container.observer .rt-sidebar.chat-open { bottom: 90px !important; }
 html.ios-gapfix .rimtown-container .map-hint { bottom: 124px !important; }
+/* v9.8.1 手機聊天打字:聊天框貼著鍵盤上緣(位置由 app-mobile.js 依 visualViewport 算成 --kb-b / --kb-mh)。
+   以前「鍵盤開著貼底」這條的優先度輸給觀察者版面(離底 56px)與 iPhone 補 Home 條(離底 90px),聊天框被鍵盤蓋住,
+   iOS 只好把整頁往上推:上面縮到狀態列底下、下面露出一截地圖。 */
+body.rt-kb-open .rimtown-container.observer .rt-sidebar.chat-open,
+html.ios-gapfix body.rt-kb-open .rimtown-container.observer .rt-sidebar.chat-open,
+html body.rt-kb-open .rimtown-container .rt-sidebar.chat-open { bottom: var(--kb-b, 0px) !important; max-height: var(--kb-mh, 55vh) !important; }

@@ -647,3 +647,27 @@ Object.assign(RimTownApp.prototype, {
     }, 800);
     if (/[?&]vp=1/.test(location.search)) { if (document.readyState === 'complete') diag(); else window.addEventListener('load', diag); }
 })();
+
+// v9.8.1 手機聊天打字時,讓聊天框貼在鍵盤正上方:iOS 鍵盤打開時版面高度不變、只有 visualViewport 變矮,
+// 聊天框原本貼著畫面底部,會被鍵盤蓋住,Safari 就把整頁往上捲。這裡量鍵盤上緣,把聊天框放上去,並把頁面捲回頂端。
+(function chatKeyboardFit() {
+    if (typeof window === 'undefined' || !window.visualViewport) return;
+    const vv = window.visualViewport; const root = document.documentElement; let raf = 0;
+    const safeTop = () => { try { const p = document.createElement('div'); p.style.cssText = 'position:fixed;top:0;padding-top:env(safe-area-inset-top);visibility:hidden'; document.body.appendChild(p); const v = parseFloat(getComputedStyle(p).paddingTop) || 0; p.remove(); return v || (window.navigator.standalone === true ? 47 : 0); } catch (e) { return 0; } };
+    const clear = () => { root.style.removeProperty('--kb-b'); root.style.removeProperty('--kb-mh'); };
+    const update = () => {
+        raf = 0;
+        if (!document.body.classList.contains('rt-kb-open') || window.innerWidth > 768) { clear(); return; }
+        if (window.scrollY || document.documentElement.scrollTop) window.scrollTo(0, 0); // Safari 自己往上捲的那一段捲回來
+        const c = document.querySelector('.rimtown-container'); if (!c) return;
+        const r = c.getBoundingClientRect(); const kbTop = vv.offsetTop + vv.height; // 鍵盤上緣(以版面座標)
+        const b = Math.max(0, Math.round(r.bottom - kbTop));
+        const top = Math.max(r.top, vv.offsetTop) + (vv.offsetTop > 0 ? 8 : safeTop() + 8); // 不要伸到狀態列底下
+        root.style.setProperty('--kb-b', b + 'px');
+        root.style.setProperty('--kb-mh', Math.max(160, Math.round(kbTop - top)) + 'px');
+    };
+    const later = () => { if (!raf) raf = requestAnimationFrame(update); };
+    vv.addEventListener('resize', later); vv.addEventListener('scroll', later);
+    document.addEventListener('focusin', (e) => { if (e.target?.id === 'chat-input') { later(); setTimeout(update, 350); } }); // 鍵盤動畫結束後再量一次
+    document.addEventListener('focusout', (e) => { if (e.target?.id === 'chat-input') setTimeout(() => { if (!document.body.classList.contains('rt-kb-open')) clear(); }, 200); });
+})();
