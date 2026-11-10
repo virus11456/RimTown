@@ -4641,3 +4641,20 @@ html.ios-gapfix .rimtown-container.observer #kairo-status { bottom: 90px !import
 html.ios-gapfix .rimtown-container .gh-fab { bottom: 166px !important; }
 html.ios-gapfix .rimtown-container.observer .rt-sidebar.chat-open { bottom: 90px !important; }
 html.ios-gapfix .rimtown-container .map-hint { bottom: 124px !important; }
+/* v9.8.1 手機聊天打字:聊天框貼著鍵盤上緣(位置由 app-mobile.js 依 visualViewport 算成 --kb-b / --kb-mh)。
+   以前「鍵盤開著貼底」這條的優先度輸給觀察者版面(離底 56px)與 iPhone 補 Home 條(離底 90px),聊天框被鍵盤蓋住,
+   iOS 只好把整頁往上推:上面縮到狀態列底下、下面露出一截地圖。 */
+body.rt-kb-open .rimtown-container.observer .rt-sidebar.chat-open,
+html.ios-gapfix body.rt-kb-open .rimtown-container.observer .rt-sidebar.chat-open,
+html body.rt-kb-open .rimtown-container .rt-sidebar.chat-open { bottom: var(--kb-b, 0px) !important; max-height: var(--kb-mh, 55vh) !important; }
+/* v9.8.1 iOS 26 主畫面 App:狀態列下緣有一條系統加的漸層模糊(約 20px),標題列文字、往上長的面板落在裡面會糊掉。
+   主畫面 App 模式把頂端內容再往下讓 20px;env() 偶爾回報 0 時至少當 44px(瀏海機的狀態列高度)。 */
+html.ios-standalone { --ios-top: calc(max(env(safe-area-inset-top, 0px), 44px) + 20px); }
+html.ios-standalone .mobile-header { padding-top: var(--ios-top) !important; }
+html.ios-standalone .rimtown-container.observer #kairo-card.tall { top: calc(var(--ios-top) + 8px) !important; }
+html.ios-standalone .rimtown-container.observer #kairo-card { max-height: calc(100% - var(--ios-top) - 102px) !important; }
+/* 標題列變高 20px,上方的通知與選單跟著往下 */
+html.ios-standalone #achv-toast-host { top: calc(var(--ios-top) + 52px) !important; }
+html.ios-standalone body:has(#mobile-menu-dropdown:not(.hidden)) #achv-toast-host { top: calc(var(--ios-top) + 112px) !important; }
+html.ios-standalone .rimtown-container .account-menu-popup { top: calc(var(--ios-top) + 100px) !important; }
+html.ios-standalone .npc-quick-card { max-height: calc(100% - 152px - 56px - var(--ios-top)) !important; }

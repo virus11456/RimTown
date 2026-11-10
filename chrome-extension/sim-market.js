@@ -321,7 +321,9 @@ if (typeof LifecycleSystem !== 'undefined') {
                 for (const k of rivals) { const R = M.rival?.[k]; if (!R) continue;
                     if (heir && M.owners[k] === heir.agentId) { delete M.rival[k]; world.logMessageT?.('economy', '🏪 {h}繼承了{o}在對面開的{s}，兩家併成一家。', { h: heir.name, o: npc.name, s: MARKET.name(k) }, heir.name); }
                     else if (heir) { R.owner = heir.agentId; world.logMessageT?.('economy', '🏪 {h}接手了{o}在對面開的{s}。', { h: heir.name, o: npc.name, s: MARKET.name(k) }, heir.name); heir.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '我接手了{o}開的{s}。', { o: npc.name, s: MARKET.name(k) }, 8, [npc.name]); }
-                    else { delete M.rival[k]; world.logMessageT?.('economy', '🏪 {o}過世後沒有家人接手，對面那家{s}關門了。', { o: npc.name, s: MARKET.name(k) }, npc.name); } } }
+                    else { const pt = Object.entries(R.sh || {}).filter(([id]) => id !== npc.agentId && world.agents[id] && id !== M.owners[k]).sort((a, b) => b[1] - a[1])[0]; // v9.8.0 合夥開的店:股份最多的合夥人接手
+                        if (pt) { R.owner = pt[0]; const a = world.agents[pt[0]]; world.logMessageT?.('economy', '🤝 {o}過世了，合夥的{a}接手了那家{s}，店繼續開。', { o: npc.name, a: a.name, s: MARKET.name(k) }, a.name); a.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '{o}走了，我接手我們合夥開的{s}。', { o: npc.name, s: MARKET.name(k) }, 8, [npc.name]); }
+                        else { delete M.rival[k]; world.logMessageT?.('economy', '🏪 {o}過世後沒有家人接手，對面那家{s}關門了。', { o: npc.name, s: MARKET.name(k) }, npc.name); } } } }
             // v9.7.4 繼承後超過反壟斷上限:照法律限期賣掉多的(實際出售由每週的反壟斷檢查處理)
             if (heir && (own.length || rivals.length) && world.cycle?.law && MARKET.firmsOf && MARKET.capOf) { const n = MARKET.firmsOf(world, heir.agentId).length, cap = MARKET.capOf(world); if (n > cap) world.logMessageT?.('economy', '⚖️ {h}繼承後名下有 {n} 家店，超過反壟斷法的上限 {c} 家，得限期賣掉多的。', { h: heir.name, n, c: cap }, heir.name); }
             if (world.market?.hungry) delete world.market.hungry[npc.agentId];

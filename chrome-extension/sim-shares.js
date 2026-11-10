@@ -36,8 +36,8 @@ const SHARES = (function () {
     const nm = (k) => M_().name(k);
     const nameOf = (w, id) => w.agents?.[id]?.name || '';
     const SEC = () => Object.keys(M_().SECTORS);
-    const MAXH = 4; // 一家最多四個股東(通過員工認股以後,自家工人另外可以認股,最多六個)
-    const maxH = (w) => (S(w).sh.law.staff ? 6 : MAXH);
+    const MAXH = 6; // v9.8.0 一家最多六個股東(以前四個;通過員工認股以後,自家工人另外可以認股,最多八個)
+    const maxH = (w) => (S(w).sh.law.staff ? 8 : MAXH);
 
     function S(w) {
         const M = M_().S(w); M.shares = M.shares && typeof M.shares === 'object' ? M.shares : {};
@@ -342,7 +342,7 @@ const SHARES = (function () {
     function row(w, k) { const s = stakes(w, k); const ks = Object.keys(s); if (ks.length < 2) return ''; return ks.sort((a, b) => s[b] - s[a]).map(h => `${t(nameOf(w, h))} ${s[h]}%`).join(t('・')); }
     function view(w) { const X = S(w).sh; return { st: X.st, hist: X.hist.map(([d, k, txt, p]) => ({ d, k, s: nm(k), txt: t(txt), a: t(p.a || ''), b: t(p.b || '') })), lastDiv: X.lastDiv }; }
 
-    return { S, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
+    return { S, maxH, note, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
 })();
 
 if (typeof MARKET !== 'undefined') {

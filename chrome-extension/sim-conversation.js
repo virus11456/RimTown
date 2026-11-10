@@ -1863,8 +1863,12 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
         if (this.llm) {
             console.log('[RimTown] Using LLM for player chat with', npc.name, '| provider:', this.llm.provider);
             try {
-                const recentChat = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name)
-                    .slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
+                // v9.8.1 對話記錄不含玩家剛送出的這句(下面另外寫一次,以前同一句會出現兩次)
+                const hist = player.chatHistory.filter(c => c.target === npc.name || c.speaker === npc.name);
+                const last = hist[hist.length - 1]; const histPrev = (last && last.speaker === player.name && last.text === playerMessage) ? hist.slice(0, -1) : hist;
+                const recentChat = histPrev.slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
+                // v9.8.1 自己最近說過的話:明講不要換句話再說一次(以前只擋一字不差的重複,換個說法講同一件事擋不到)
+                const myLast = histPrev.filter(c => c.speaker === npc.name).slice(-2).map(c => String(c.text || '').replace(/^[💭🤫]\s*\([^)]*\)\s*/u, '').slice(0, 80));
                 // v5.29.0 記憶流檢索:以玩家這句話為焦點,撈出最相關的記憶(而非只看最近 5 則)
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
@@ -1895,6 +1899,7 @@ ${t('- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、�
 ${t('- 根據你的性格回應：')}${pN.traits.includes(t('害羞')) ? t('你會說話結巴、簡短') : pN.traits.includes(t('健談')) ? t('你很愛聊天，會主動延伸話題') : pN.traits.includes(t('刻薄')) ? t('你說話帶刺但可能是關心的方式') : t('用你自己的方式說話')}
 ${t('- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」')}
 ${t('- 對話要有來有往——回應對方說的話，也可以反問或岔開新話題')}
+${myLast.length ? `${t('- 你前面已經說過：')}${myLast.map(x => t('「') + x + t('」')).join(t('、'))}${t('。這次絕對不要把同樣的內容、問題或邀約換句話再說一次；先直接回答對方剛剛這句「')}${playerMessage.slice(0, 60)}${t('」，再把話題往前推。')}` : ''}
 ${t('- 如果聊到你在意的事（')}${pN.values}${t('），你會特別有感觸')}
 
 ${t('【輸出格式】嚴格遵守！')}
@@ -1912,11 +1917,15 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 // v9.7.3 備援模型有時把自己上一句原封不動再講一次(答非所問):偵測到就提醒它再答一次
                 try {
                     const norm = (x) => String(x || '').replace(/EFFECTS:[\s\S]*$/i, '').replace(new RegExp('^\\s*\\*{0,2}' + npc.name + '\\*{0,2}[：:]', 'gm'), '').replace(/[\s，。！？!?、…~～「」"'（）()]/g, '');
-                    const prevNpc = [...player.chatHistory].reverse().find(c => c.speaker === npc.name && c.target === player.name);
-                    const a = norm(response), b = prevNpc ? norm(prevNpc.text) : '';
-                    if (b.length >= 6 && a.length >= 6 && (a === b || a.startsWith(b) || b.startsWith(a))) {
-                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${prevNpc.text.slice(0, 60)}${t('」，不要重複，直接回應對方剛剛說的「')}${playerMessage.slice(0, 60)}${t('」。）')}`, 600, 1.0, true, { human: true });
-                        if (again && again !== '__RATE_LIMITED__' && again !== '__ERROR__' && norm(again) !== b) response = again;
+                    // v9.8.1 換句話說也算重複:跟自己最近三句比「兩字一組」的重疊度,超過四成就重寫一次
+                    const grams = (x) => { const g = new Set(); for (let i = 0; i < x.length - 1; i++) g.add(x.slice(i, i + 2)); return g; };
+                    const sim = (x, y) => { const A = grams(x), B = grams(y); if (!A.size || !B.size) return 0; let n = 0; for (const k of A) if (B.has(k)) n++; return 2 * n / (A.size + B.size); };
+                    const prevs = player.chatHistory.filter(c => c.speaker === npc.name && c.target === player.name).slice(-3);
+                    const a = norm(response); const hit = prevs.find(c => { const b = norm(c.text); return b.length >= 6 && a.length >= 6 && (a === b || a.startsWith(b) || b.startsWith(a) || sim(a, b) >= 0.4); });
+                    if (hit && response !== '__RATE_LIMITED__' && response !== '__ERROR__') {
+                        this.lastRepeatRetry = (this.lastRepeatRetry || 0) + 1;
+                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${hit.text.slice(0, 60)}${t('」，不要重複，直接回應對方剛剛說的「')}${playerMessage.slice(0, 60)}${t('」。）')}`, 600, 1.0, true, { human: true });
+                        const b = norm(hit.text); if (again && again !== '__RATE_LIMITED__' && again !== '__ERROR__' && sim(norm(again), b) < 0.4) response = again;
                     }
                 } catch (e) {}
                 console.log('[RimTown] LLM response length:', response?.length, 'preview:', response?.slice(0, 80));
