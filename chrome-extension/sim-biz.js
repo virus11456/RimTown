@@ -54,7 +54,7 @@ const BIZ = (() => {
             if (s.closed) continue; const o = w.agents[s.owner]; if (!o && w.isAway?.(s.owner)) continue; if (!o || o.isDead) { close(w, s, 'gone'); continue; } // v6.87.0 老闆出遠門就先歇業,回來照開
             const same = B.shops.filter(x => !x.closed && x.type === s.type).length;
             let sales = 0;
-            for (const c of all) { if (c === o || cash(w, c) < s.price + 5) continue; const p = 0.08 / same * (6 / (s.price + 2)) * (1 + (has(o, 'charismatic') ? 0.3 : 0) + (aff(c, o) > 30 ? 0.3 : 0) - (aff(c, o) < -20 ? 0.6 : 0)); if (Math.random() < p && WALLET.take(w, c, s.price)) { s.till += s.price; sales++; } }
+            for (const c of all) { if (c === o || cash(w, c) < s.price + 5) continue; const p = 0.08 / same * (6 / (s.price + 2)) * (1 + (has(o, 'charismatic') ? 0.3 : 0) + (aff(c, o) > 30 ? 0.3 : 0) - (aff(c, o) < -20 ? 0.6 : 0)) * (typeof THINGS !== 'undefined' ? THINGS.buyMult(w, 'shop:' + s.id, c) : 1); /* v9.9.0 被抵制時討厭的人不來 */ if (Math.random() < p && WALLET.take(w, c, s.price)) { s.till += s.price; sales++; } }
             const upkeep = 2; s.till -= upkeep; s.week += sales * s.price - upkeep; s.profit += sales * s.price - upkeep;
             s.lossDays = s.till < 0 ? s.lossDays + 1 : 0;
             let paidOut = 0; if (s.till > 0) { const pay = (a, n) => (WALLET.bizIncome ? WALLET.bizIncome(w, a, n) : WALLET.add(w, a, n)); const pp = s.partner && w.agents[s.partner] && !w.agents[s.partner].isDead ? w.agents[s.partner] : null; pay(o, s.till * (pp ? 0.5 : 1)); if (pp) pay(pp, s.till * 0.5); paidOut = s.till; s.till = 0; }

@@ -166,7 +166,14 @@ const THINGS = (() => {
     }
     const quitting = (w, id, a) => (S(w).quit[id + '|' + a.agentId] || -1) >= day(w);
     // 想不想去用（各系統乘上自己的機率）：0.15～2 倍
-    function useMult(w, id, a) { if (quitting(w, id, a)) return 0; const v = att(w, id, a); if (v == null) return 0.5; return Math.max(0.15, Math.min(2, 1 + v / 70)); }
+    function useMult(w, id, a) { if (quitting(w, id, a)) return 0; const v = att(w, id, a); if (v == null) return 0.5 * buyMult(w, id, a); return Math.max(0.15, Math.min(2, 1 + v / 70)) * buyMult(w, id, a); }
+    // v9.9.0 抵制:討厭的人不去,跟帶頭的人交情好的也不好意思去
+    function buyMult(w, id, a) {
+        const T = S(w).list[id]; const B = T?.boycott; if (!B || day(w) > B.until || !a) return 1;
+        const v = S(w).att[id]?.[a.agentId]; if (v != null && v <= -20) return 0.15;
+        const lead = w.agents[B.lead]; if (lead && aff(a, lead) >= 30) return 0.6;
+        return 0.9;
+    }
     // ---------- 共用的行動 ----------
     const friendsOf = (w, a, min = 15, T) => here(w).filter(o => o !== a && aff(a, o) >= min && (!T || o.agentId !== T.owner));
     function recommend(w, X, T, a) {
@@ -174,7 +181,7 @@ const THINGS = (() => {
         const cur = X.att[T.id][f.agentId]; const sway = (has(a, 'charismatic') ? 1.4 : 1) * (0.5 + aff(f, a) / 100) * (has(f, 'stoic') ? 0.5 : 1);
         if (cur == null) { const R = ruleAtt(w, T, f); form(w, X, T, f, day(w), R.v + 15 * sway, { k: '{a}跟我推薦{t}，聽起來不錯。', p: { a: a.name, t: nm(T) } }, false); }
         else feel(w, T.id, f, 12 * sway, Math.random() < 0.5 ? '{a}一直跟我說{t}的好話。' : null, { a: a.name, t: nm(T) });
-        X.st.rec++; if (Math.random() < 0.2) log(w, '💬 {a}跟{b}說：「{t}真的不錯，你也去看看。」', { a: a.name, b: f.name, t: nm(T) }, a.name);
+        X.st.rec++; if (Math.random() < 0.2 && day(w) - (T.recLog ?? -99) >= 4) { T.recLog = day(w); log(w, '💬 {a}跟{b}說：「{t}真的不錯，你也去看看。」', { a: a.name, b: f.name, t: nm(T) }, a.name); }
     }
     function complain(w, X, T, a) {
         const f = pick(friendsOf(w, a, 5, T)); if (!f) return;
@@ -186,7 +193,7 @@ const THINGS = (() => {
         // 順便講常去的人的八卦
         const reg = HOOKS[T.kind]?.regulars?.(w, T) || []; const g = pick(reg.filter(id => id !== a.agentId && id !== f.agentId).map(id => w.agents[id]).filter(Boolean));
         if (g && Math.random() < 0.5) { bump(f, g, -3); mem(w, f, '聽{a}說，{g}最近常往{t}跑。', { a: a.name, g: g.name, t: nm(T) }, 4); if (Math.random() < 0.3) log(w, '🗣️ {a}跟{b}咬耳朵：「{g}最近天天往{t}跑，家裡都不管了。」', { a: a.name, b: f.name, g: g.name, t: nm(T) }, a.name); }
-        else if (Math.random() < 0.15) log(w, '🗣️ {a}跟{b}抱怨：「{t}遲早害死人。」', { a: a.name, b: f.name, t: nm(T) }, a.name);
+        else if (Math.random() < 0.15 && day(w) - (T.compLog ?? -99) >= 4) { T.compLog = day(w); log(w, '🗣️ {a}跟{b}抱怨：「{t}遲早害死人。」', { a: a.name, b: f.name, t: nm(T) }, a.name); } // v9.9.0 同一樣東西四天最多一則(以前一年 150～250 則一樣的抱怨洗版)
     }
     function persuade(w, X, T, a) {
         const reg = new Set(HOOKS[T.kind]?.regulars?.(w, T) || []);
@@ -208,6 +215,8 @@ const THINGS = (() => {
         if (crowd.length < 3) { for (const a of crowd) mem(w, a, '我想去{t}門口抗議，可是沒幾個人願意跟。', { t: nm(T) }, 4); return; }
         X.st.prot++; X.st.protN += crowd.length; T.protest = { day: d, n: crowd.length, who: crowd.map(a => a.agentId), lead: lead.agentId };
         gather(w, T, crowd);
+        counterRally(w, X, T, crowd, lead, d); // v9.9.0 分邊站:支持的人也到場
+        if (T.owner && w.agents[T.owner] && (T.kind === 'shop' || HOOKS[T.kind]?.boycott)) boycott(w, X, T, lead, crowd, d);
         if (T.place) log(w, '📢 {a}帶著 {n} 個鎮民到{t}門口抗議，舉著牌子喊「還我們安寧的小鎮」。', { a: lead.name, n: crowd.length, t: nm(T) }, lead.name); else log(w, '📢 {a}帶著 {n} 個鎮民在廣場集會，反對{t}。', { a: lead.name, n: crowd.length, t: nm(T) }, lead.name);
         news(w, `📢 ${lead.name}${t('帶著')} ${crowd.length} ${t('人到')}${nm(T)}${t('門口抗議')}`, 8, [lead.name]);
         for (const a of crowd) { mem(w, a, '我跟大家一起到{t}門口抗議。', { t: nm(T) }, 7); for (const b of crowd) if (a !== b) bump(a, b, 2); }
@@ -223,6 +232,120 @@ const THINGS = (() => {
         }
         // 抗議之後：人多就把禁止提案推上議程
         if (crowd.length >= 4) banPropose(w, X, T, lead, d, crowd.length);
+    }
+    // ---------- v9.9.0 民意與派系動員 ----------
+    // 兩邊各有多少人(只算還在鎮上的、看法夠明確的)
+    function camps(w, X, T) {
+        const A = Object.entries(X.att[T.id] || {}).filter(([id]) => w.agents[id] && id !== T.owner); const pro = A.filter(([, v]) => v >= 25).length, con = A.filter(([, v]) => v <= -25).length;
+        return { n: pro + con, pro, con, all: A.length };
+    }
+    const sign = (v) => (v > 0 ? 1 : v < 0 ? -1 : 0);
+    // 沉默螺旋:自己是少數(不到兩成五)、又沒有看法相同的朋友撐腰,多半就不說出口
+    function silent(w, X, T, a, v, cs) {
+        if (cs.n < 6 || Math.abs(v) >= 70) return false; const mine = v > 0 ? cs.pro : cs.con; if (mine / cs.n >= 0.25) return false;
+        if (friendsOf(w, a, 30, T).some(o => sign(X.att[T.id][o.agentId] || 0) === sign(v) && Math.abs(X.att[T.id][o.agentId]) >= 25)) return false;
+        if (Math.random() > 0.7) return false;
+        const sl = X.silent || (X.silent = {}); const k = T.id + '|' + a.agentId;
+        if (!sl[k]) { X.st.silent = (X.st.silent || 0) + 1; mem(w, a, v > 0 ? '大家好像都討厭{t}，我喜歡也不敢講。' : '大家好像都很喜歡{t}，我不喜歡也不好說什麼。', { t: nm(T) }, 4); }
+        sl[k] = day(w); return true;
+    }
+    const silentN = (w, X, T) => Object.entries(X.silent || {}).filter(([k, d]) => k.startsWith(T.id + '|') && day(w) - d <= 30 && w.agents[k.slice(T.id.length + 1)]).length;
+    const board = (w) => { try { return typeof PRESS !== 'undefined' && w.press ? (w.press.papers || []).find(x => x.st === 'board' && !x.banned) || null : null; } catch (e) { return null; } };
+    // 貼告示:帶頭的人在公告欄貼告示號召;看到告示、本來就不喜歡的人更容易跟來
+    function notice(w, X, T, org, d) {
+        X.st.notice = (X.st.notice || 0) + 1; T.notice = d;
+        const k = T.place ? '📌 {a}在公告欄貼了告示：「反對{t}，到門口集合，有志一同的一起來！」' : '📌 {a}在公告欄貼了告示：「反對{t}，到廣場集合，有志一同的一起來！」';
+        const P = board(w); let posted = false; if (P) { try { PRESS.story(w, P, 'notice', k, { a: org.name, t: nm(T) }); posted = true; } catch (e) {} }
+        if (!posted) log(w, k, { a: org.name, t: nm(T) }, org.name);
+        mem(w, org, '我在公告欄貼了告示，號召大家一起反對{t}。', { t: nm(T) }, 6);
+    }
+    // 支持的人也到場聲援(兩邊隔街對喊);支持者夠多才成形
+    function counterRally(w, X, T, crowd, lead, d) {
+        const own = w.agents[T.owner];
+        const fans = here(w).filter(o => !crowd.includes(o) && o.agentId !== T.owner && (X.att[T.id][o.agentId] ?? 0) >= 50 && Math.random() < 0.3 + (own && aff(o, own) >= 40 ? 0.25 : 0) + (has(o, 'abrasive') ? 0.1 : 0));
+        if (fans.length < 3) return;
+        const head = fans.slice().sort((x, y) => (has(y, 'charismatic') ? 1 : 0) - (has(x, 'charismatic') ? 1 : 0))[0];
+        gather(w, T, fans); X.st.counter = (X.st.counter || 0) + 1; T.protest.counter = fans.length;
+        log(w, '🙋 {b}帶著 {n} 個支持{t}的人也到場聲援，兩邊隔著街對喊。', { b: head.name, n: fans.length, t: nm(T) }, head.name);
+        news(w, fill('🙋 {t}吵成兩派：{a} 人抗議、{b} 人聲援', { t: nm(T), a: crowd.length, b: fans.length }), 7, [lead.name, head.name]);
+        for (const a of fans) { mem(w, a, '有人去{t}門口抗議，我也到場替它說話。', { t: nm(T) }, 6); for (const b of crowd) { if (Math.random() < 0.5) { bump(a, b, -4); bump(b, a, -4); } } }
+    }
+    // 抵制:有老闆、有人抗議過的店,帶頭的人號召大家兩週不去光顧;老闆看個性道歉或硬撐
+    function boycott(w, X, T, lead, crowd, d) {
+        if (T.boycott && d <= T.boycott.until) return; if (d - (T.boycott?.until ?? -99) < 30) return;
+        const own = w.agents[T.owner]; if (!own) return;
+        T.boycott = { from: d, until: d + 14, lead: lead.agentId, n: crowd.length };
+        X.st.boycott = (X.st.boycott || 0) + 1;
+        log(w, '🛒 {a}號召大家抵制{t}：兩個禮拜不去光顧，直到{o}給個交代。', { a: lead.name, t: nm(T), o: own.name }, lead.name);
+        mem(w, own, '{a}號召大家抵制我的{t}，這下生意要難做了。', { a: lead.name, t: nm(T) }, 8);
+    }
+    const WAYS_ = () => (typeof WAYS !== 'undefined' ? WAYS : null);
+    function boycottTick(w, X, T, d) {
+        const B = T.boycott; if (!B || B.done) return; const own = w.agents[T.owner]; if (!own) { B.done = true; return; }
+        // 心軟、會做人的老闆撐不到兩週就出來道歉
+        if (!B.answered && d - B.from >= 3 && d <= B.until && (has(own, 'kind') || has(own, 'generous') || has(own, 'charismatic')) && !has(own, 'stubborn') && Math.random() < 0.3) {
+            B.answered = 'sorry'; B.until = d; X.st.boycottWon = (X.st.boycottWon || 0) + 1;
+            log(w, '🙇 {o}出來跟大家道歉，答應會改進，{t}的抵制提早結束。', { o: own.name, t: nm(T) }, own.name);
+            for (const a of here(w)) { const v = X.att[T.id][a.agentId]; if (v != null && v < 0) feel(w, T.id, a, 12); }
+            try { WAYS_()?.loseFace?.(w, own, 6); } catch (e) {}
+        }
+        if (d > B.until && !B.done) {
+            B.done = true;
+            if (B.answered !== 'sorry') { const L = w.agents[B.lead]; log(w, '🛒 {t}被抵制了兩個禮拜，{o}硬撐過去，跟帶頭的{a}從此不說話。', { t: nm(T), o: own.name, a: L?.name || '' }, own.name); if (L) { bump(own, L, -15); bump(L, own, -8); } }
+        }
+    }
+    // 逼首長表態:吵到有人抗議、或反對的人很多又是鎮上熱門話題,首長就得出來說話
+    function mayorOf(w) { try { return w.proposals?._mayor?.(w) || w.election?.currentMayor?.(w) || null; } catch (e) { return null; } }
+    function hot(w, T) { try { if (typeof BUZZ === 'undefined') return false; const n = nm(T); return BUZZ.attended(w).some(x => String(x.text || '').includes(n)); } catch (e) { return false; } }
+    function pressMayor(w, X, T, d, cs) {
+        if (d - (T.stance?.day ?? -99) < 30 || cs.n < 6) return; const recent = T.protest && d - T.protest.day <= 2;
+        if (!recent && !(cs.con >= 6 && cs.con / cs.n >= 0.45 && hot(w, T))) return;
+        const m = mayorOf(w); if (!m || m.agentId === T.owner || !w.agents[m.agentId]) return;
+        const mv = X.att[T.id][m.agentId] ?? ruleAtt(w, T, m).v; const maj = cs.con > cs.pro ? -1 : 1;
+        const follow = (has(m, 'charismatic') || has(m, 'ambitious') ? 0.6 : 0.3) - (has(m, 'stubborn') ? 0.3 : 0);
+        const lean = mv * (1 - follow) + maj * 60 * follow; const dodge = Math.abs(lean) < 20 || ((has(m, 'shy') || has(m, 'neurotic')) && Math.random() < 0.4);
+        const side = dodge ? 0 : sign(lean); T.stance = { day: d, side, who: m.agentId }; X.st.stance = (X.st.stance || 0) + 1;
+        const k = side < 0 ? '🎙️ 首長{m}被問到{t}的事，公開表態：「我站在反對的鎮民這邊。」' : side > 0 ? '🎙️ 首長{m}被問到{t}的事，公開表態：「{t}對鎮上有好處，我支持。」' : '🎙️ 首長{m}被問到{t}的事，打了半天太極，誰都沒得罪、也誰都沒說服。';
+        log(w, k, { m: m.name, t: nm(T) }, m.name); news(w, fill(k, { m: m.name, t: nm(T) }), 8, [m.name]);
+        const P = board(w); if (P) { try { PRESS.story(w, P, 'stance', k, { m: m.name, t: nm(T) }); } catch (e) {} }
+        for (const a of here(w)) {
+            if (a === m) continue; const v = X.att[T.id][a.agentId]; if (v == null) continue;
+            if (side) {
+                if (sign(v) === side) bump(a, m, 4); else if (Math.abs(v) >= 25) bump(a, m, -6);
+                if (aff(a, m) >= 30 && sign(v) !== side) feel(w, T.id, a, side * 10); // 信任首長的人會被說動一些
+            } else if (Math.abs(v) >= 40) bump(a, m, -3);
+        }
+        mem(w, m, side ? '大家吵{t}吵到我得出面表態。' : '大家逼我對{t}表態，我不想得罪任何人。', { t: nm(T) }, 7);
+    }
+    // 派系(社團):同派系的人
+    const mates = (w, a) => { try { return (w.factions?.getAgentFactions?.(a.agentId) || []).flatMap(f => f.members).filter(id => id !== a.agentId); } catch (e) { return []; } };
+    // 兩群人對同一件東西看法相反(一邊平均 ≥30、一邊 ≤-30),回傳吵得最兇的那件
+    function splitIssue(w, A, B) {
+        const X = w.things; if (!X) return null; let best = null;
+        for (const T of Object.values(X.list || {})) { if (T.gone) continue; const at = X.att[T.id] || {}; const avg = (ids) => { const v = ids.map(id => at[id]).filter(x => x != null); return v.length ? v.reduce((s, x) => s + x, 0) / v.length : null; };
+            const a = avg(A), b = avg(B); if (a == null || b == null) continue; if (!((a >= 30 && b <= -30) || (a <= -30 && b >= 30))) continue; const gap = Math.abs(a - b); if (!best || gap > best.gap) best = { id: T.id, name: nm(T), a, b, gap }; }
+        return best;
+    }
+    // 同派系的人看法慢慢靠攏(每天往派系平均挪一點)
+    function factionPull(w, X, T) {
+        try { for (const f of Object.values(w.factions?.factions || {})) { const at = X.att[T.id]; const ids = f.members.filter(id => at[id] != null && w.agents[id]); if (ids.length < 2) continue; const avg = ids.reduce((s, id) => s + at[id], 0) / ids.length; for (const id of ids) at[id] = clamp(at[id] + (avg - at[id]) * 0.05); } } catch (e) {}
+    }
+    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(typeof b === 'string' ? t(b) : b); return s; };
+    // 輿論翻轉、全鎮共識
+    function tide(w, X, T, d, cs) {
+        if (cs.n < 6) return; const diff = cs.pro - cs.con; const maj = Math.abs(diff) / cs.n >= 0.2 ? sign(diff) : 0;
+        if (maj && T.maj && maj !== T.maj) {
+            X.st.flip = (X.st.flip || 0) + 1;
+            const k = maj > 0 ? '🔄 輿論翻轉：本來多數人反對{t}，現在支持的反而比較多（{p} 比 {c}）。' : '🔄 輿論翻轉：本來多數人支持{t}，現在反對的反而比較多（{c} 比 {p}）。';
+            log(w, k, { t: nm(T), p: cs.pro, c: cs.con }); news(w, fill(k, { t: nm(T), p: cs.pro, c: cs.con }), 8, []);
+        }
+        if (maj) T.maj = maj;
+        if (cs.pro >= 3 && cs.con >= 3) T.contested = true; // 吵過的事吵出結果才叫「共識」(沒爭議的新店不算,以前一年冒出二十幾次)
+        const top = Math.max(cs.pro, cs.con); if (T.contested && cs.n >= 8 && top / cs.n >= 0.8 && !T.consensus) {
+            T.consensus = cs.pro > cs.con ? 1 : -1; X.st.consensus = (X.st.consensus || 0) + 1;
+            const k = T.consensus > 0 ? '🤝 全鎮共識：幾乎所有人都喜歡{t}（{n} 人裡 {m} 人）。' : '🤝 全鎮共識：幾乎所有人都受不了{t}（{n} 人裡 {m} 人）。';
+            log(w, k, { t: nm(T), n: cs.n, m: top });
+        }
     }
     // 視覺：抗議的人實際走到那棟建築門口（地圖那邊讀 a._thingGo）
     function gather(w, T, who) { const now = w.tickCount; for (const a of who) a._thingGo = { place: T.place ? T.place + '_front' : 'town_square', from: now, until: now + 16, why: 'protest', id: T.id }; }
@@ -317,7 +440,8 @@ const THINGS = (() => {
             register(w, { kind: 'building', key, name: b.name, icon: '🏗️', facts: b.description || '鎮上新蓋好的建築。', tags: BLD_TAGS(b.buildingKey || b.id), ttl: 45 }); }
         for (const sh of (w.biz?.shops || [])) { if (sh.closed || seen.s[sh.id]) continue; seen.s[sh.id] = 1; if (first) continue; const nmz = Array.isArray(sh.name) ? sh.name : [sh.name, sh.name];
             register(w, { kind: 'shop', key: sh.id, name: nmz, icon: '🏪', facts: '鎮上新開的店。', owner: sh.owner, tags: SHOP_TAGS[sh.type] || { money: 0.5, jobs: 0.5 }, ttl: 45 }); }
-        const R = w.research?.projects || {}; const TI = typeof TECH_IDEAS !== 'undefined' ? TECH_IDEAS : {};
+        // v9.9.0 新科技的支持與反對由觀念傳播(IdeaSystem 保守派／革新派)負責,這裡不再重複登記一份
+        const R = {}; const TI = typeof TECH_IDEAS !== 'undefined' ? TECH_IDEAS : {};
         for (const [k, P] of Object.entries(R)) { if (P?.status !== 'complete' || seen.t[k]) continue; seen.t[k] = 1; if (first || !TI[k]) continue; const I = TI[k];
             register(w, { kind: 'tech', key: k, name: P.name || k, icon: '🔬', facts: I.idea || '新研究出來的技術。', tags: Object.assign({ novelty: 1 + (I.c || 0), tradition: -(I.c || 0) }, I.threat ? { jobs: -0.8 } : { jobs: 0.3 }), ttl: 45 }); }
     }
@@ -326,11 +450,12 @@ const THINGS = (() => {
         try { discover(w, X, d); } catch (e) {}
         for (const T of live(w)) {
             if (HOOKS[T.kind]?.alive && !HOOKS[T.kind].alive(w, T)) { retire(w, T.id); continue; }
-            if (T.ttl && d - T.born > T.ttl) { retire(w, T.id); continue; } // 新鮮感過了，變成日常的一部分
+            if (T.ttl && d - T.born > T.ttl && !(d - (T.protest?.day ?? -99) <= 30 || (T.boycott && d <= T.boycott.until))) { retire(w, T.id); continue; } // 新鮮感過了，變成日常的一部分(v9.9.0 還在吵、還在抵制的不算)
             learn(w, X, T, d);
-            const crowd = [];
+            const crowd = []; const cs = camps(w, X, T);
             for (const a of here(w)) {
                 const v = X.att[T.id][a.agentId]; if (v == null || a.agentId === T.owner) continue;
+                if (!X.intent?.[T.id + '|' + a.agentId] && silent(w, X, T, a, v, cs)) continue; // v9.9.0 沉默螺旋
                 let act = X.intent?.[T.id + '|' + a.agentId]; if (act) delete X.intent[T.id + '|' + a.agentId];
                 if (!act) { const p = Math.abs(v) / 100 * 0.18; if (Math.random() > p) continue; act = v > 0 ? (Math.random() < 0.7 ? 'use' : 'recommend') : (v <= -55 && d - (T.protest?.day ?? -99) >= 30 && Math.random() < 0.35 ? 'protest' : Math.random() < 0.5 ? 'persuade' : 'complain'); }
                 if (act === 'use') { X.st.use++; continue; } // 真的去用，交給各系統看 useMult
@@ -344,11 +469,14 @@ const THINGS = (() => {
             if (crowd.length && !(vict || (A0.length && hateN / A0.length >= 0.2))) { for (const a of crowd) complain(w, X, T, a); crowd.length = 0; }
             if (crowd.length && d - (T.protest?.day ?? -99) >= 30 && d - (X.lastProtest ?? -99) >= 7) { X.lastProtest = d;
                 // 帶頭的人去找看法相近的朋友、鄰居一起去；交情越好、越討厭的人越可能跟
-                const org = crowd[0]; const pool = here(w).filter(o => !crowd.includes(o) && o.agentId !== T.owner && (X.att[T.id][o.agentId] ?? 0) <= -30);
-                for (const o of pool) { const v = X.att[T.id][o.agentId]; const p = 0.15 + (-v - 30) / 140 + Math.max(0, Math.max(...crowd.map(c => aff(o, c)))) / 150 + (has(o, 'shy') ? -0.15 : 0) + (has(org, 'charismatic') ? 0.1 : 0); if (Math.random() < p) crowd.push(o); }
+                const org = crowd[0]; notice(w, X, T, org, d); // v9.9.0 先貼告示號召:不喜歡的人(-20 以下)看到告示也可能來
+                const pool = here(w).filter(o => !crowd.includes(o) && o.agentId !== T.owner && (X.att[T.id][o.agentId] ?? 0) <= -20);
+                const mob = new Set(crowd.flatMap(c => mates(w, c))); // v9.9.0 派系動員:同社團的人一起來
+                for (const o of pool) { const v = X.att[T.id][o.agentId]; const p = (mob.has(o.agentId) ? 0.25 : 0) + 0.15 + (-v - 30) / 140 + Math.max(0, Math.max(...crowd.map(c => aff(o, c)))) / 150 + (has(o, 'shy') ? -0.15 : 0) + (has(org, 'charismatic') ? 0.1 : 0); if (Math.random() < p) crowd.push(o); }
                 protest(w, X, T, crowd, d);
             }
             press(w, X, T, d); opinionBan(w, X, T, d);
+            try { factionPull(w, X, T); const cs2 = camps(w, X, T); boycottTick(w, X, T, d); pressMayor(w, X, T, d, cs2); tide(w, X, T, d, cs2); } catch (e) { console.warn('[Things] opinion', e); }
             for (const id of Object.keys(X.att[T.id])) if (!w.agents[id] && !w.isAway?.(id)) { delete X.att[T.id][id]; delete X.why[T.id][id]; }
         }
         rescue(w, X, d);
@@ -363,9 +491,9 @@ const THINGS = (() => {
     }
     function view(w) {
         const X = w.things; if (!X) return [];
-        return Object.values(X.list || {}).filter(T => !T.gone).map(T => { const A = Object.entries(X.att[T.id] || {}).filter(([id]) => w.agents[id]); const vs = A.map(x => x[1]); return { id: T.id, icon: T.icon, name: nm(T), love: vs.filter(v => v >= 40).length, like: vs.filter(v => v >= 10 && v < 40).length, meh: vs.filter(v => v > -10 && v < 10).length, dislike: vs.filter(v => v <= -10 && v > -40).length, hate: vs.filter(v => v <= -40).length, n: vs.length, protest: T.protest, quotes: A.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2).map(([id, v]) => { const why = X.why[T.id]?.[id]; let s = ''; try { s = why ? Memory.render(why.k, why.p) : ''; } catch (e) {} return { who: t(w.agents[id].name), v, s }; }) }; });
+        return Object.values(X.list || {}).filter(T => !T.gone).map(T => { const A = Object.entries(X.att[T.id] || {}).filter(([id]) => w.agents[id]); const vs = A.map(x => x[1]); return { id: T.id, icon: T.icon, name: nm(T), love: vs.filter(v => v >= 40).length, like: vs.filter(v => v >= 10 && v < 40).length, meh: vs.filter(v => v > -10 && v < 10).length, dislike: vs.filter(v => v <= -10 && v > -40).length, hate: vs.filter(v => v <= -40).length, n: vs.length, protest: T.protest, silent: silentN(w, X, T), boycott: T.boycott && day(w) <= T.boycott.until ? { lead: t(w.agents[T.boycott.lead]?.name || ''), left: T.boycott.until - day(w) } : null, stance: T.stance ? { side: T.stance.side, who: t(w.agents[T.stance.who]?.name || '') } : null, consensus: T.consensus || 0, flip: T.maj || 0, quotes: A.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2).map(([id, v]) => { const why = X.why[T.id]?.[id]; let s = ''; try { s = why ? Memory.render(why.k, why.p) : ''; } catch (e) {} return { who: t(w.agents[id].name), v, s }; }) }; });
     }
-    return { S, register, retire, get, live, att, feel, victim, useMult, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, goTonight, tick, syncMap, HOOKS, WHY };
+    return { S, register, retire, get, live, att, feel, victim, useMult, buyMult, camps, splitIssue, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, goTonight, tick, syncMap, HOOKS, WHY };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { thing_ban: { icon: '🚫', label: '禁止新東西' } });

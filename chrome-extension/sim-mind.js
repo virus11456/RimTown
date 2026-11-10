@@ -146,8 +146,7 @@ const MIND = (() => {
     function onEvent(w, kind) {
         const all = npcs(w);
         if (kind === 'tax_up') for (const a of all) shift(w, a, 'tax', -0.3);
-        if (kind === 'famine') for (const a of all) shift(w, a, 'king', -0.15);
-        if (kind === 'immigrant') for (const a of all) shift(w, a, 'out', has(a, 'kind') ? 0.1 : -0.05);
+        // v9.9.0 拿掉從來沒被呼叫的 famine／immigrant 分支
         if (kind === 'research') for (const a of all) shift(w, a, 'tech', (w.ideaSystem?.openness?.(w, a, '') || 0) > 0 ? 0.15 : -0.1);
     }
     function brief(w, a) { const parts = [stanceText(w, a)]; const A = w.mind?.amb?.[a.agentId]; if (A) parts.push(`${t('你的人生心願')}${t('：')}${ambText(w, A).replace(/^\S+ /, '')}`); return parts.filter(Boolean).join(t('；')); }
