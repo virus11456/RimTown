@@ -500,7 +500,7 @@ node scripts/map_ascii.js      # 五種主題版面 ASCII 快照比對;故意改
 # 選跑:cd chrome-extension && python3 -m http.server 8126 & ; node scripts/smoke_playwright.js  # 五鎮世界/英文標籤/鄰鎮/住房/商隊冒煙
 # 選跑:node scripts/memory_i18n_test.js # v6.17.0 記憶模板化(中英切換渲染、舊式記憶、存讀檔、舊存檔、效能;有斷言,失敗 exit 1)
 # 選跑:node scripts/trial_pacing_test.js # v6.22.0 B23 考驗失敗節奏(扣分有底、衰敗後搬走放緩、人口下限、撐過補回、復興、存讀檔;有斷言,失敗 exit 1)
-# 選跑:node scripts/growth2_test.js ; node scripts/revival_test.js   # v6.12.0/v6.13.0 旅人後期成長(天賦學完→屬性、最後一個天賦邊界、舊檔遷移)與小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)
+# 選跑:node scripts/revival_test.js   # v6.13.0 小鎮復興(衰敗→連撐兩季→中央卡/回顧/存讀檔)。舊的 growth2_test(旅人天賦成長)隨觀察者模式移除
 # 選跑:node scripts/walkthrough.js <zh|en> <desktop|mobile> <outdir>   # v6.11.0 新手走一遍:用 app 自己的迴圈真跑一季、關鍵時刻截圖,看圖抓版面/文案問題
 # 選跑:node scripts/soak_test.js [url] [days] [theme] [mode]   # mode=full|casual|idle(v6.2.0 平衡矩陣用);核心玩法迴圈浸泡:真 tick 跑 35 天、每天像玩家做委託/商隊/對話/天賦、每 10 天存檔讀檔接著跑(v5.96.0 起;改核心迴圈必跑五主題)
 ```

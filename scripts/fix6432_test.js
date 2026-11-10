@@ -69,17 +69,18 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     R.dailyUpdate(w); const d1 = R.current; R.dailyUpdate(w); const d2 = R.current;
     w.stockpile.add?.('research_points', 50) ?? (w.stockpile.resources.research_points = (w.stockpile.resources.research_points || 0) + 50);
     const p = R.projects[R.current]; const p0 = p.progress, rp0 = w.stockpile.get('research_points');
-    R.dailyUpdate(w); return { key, d1, d2, used: Math.round(rp0 - w.stockpile.get('research_points')) }; });
+    const cap = 40 + (w.buildings?.getEffect?.('research_cap', 0) || 0);
+    R.dailyUpdate(w); return { key, d1, d2, cap, rp0, used: Math.round(rp0 - w.stockpile.get('research_points')) }; });
   ok(!r.d1 && !!r.d2, '沒人提研究時空 2 天就由學者自己挑', r);
-  ok(r.used === 10, '研究點每天最多用 10', r);
+  ok(r.used === Math.min(r.cap, r.rp0), '研究點每天最多用 40(v6.91.0 起;研究院再加)', r);
   console.log('天數換算一致:提案政令、新鎮長施政');
   r = await ev(() => { const w = window.rimtownApp.world, c = w.council, P = w.proposals;
     w.clock.year = 1; w.clock.season = '夏季'; w.clock.day = 3;
     c._formed = true; c.activeDecrees = [];
     P._addDecree(w, { id: 'L999', effects: { mood_modifier: 2 }, kind: 'policy', title: 'x' }, 15);
-    const alive = []; for (let i = 0; i < 16; i++) { c.dailyUpdate(w); alive.push(c.activeDecrees.some(d => d.id === 'prop_L999') ? 1 : 0); w.clock.day++; if (w.clock.day > 15) { w.clock.day = 1; w.clock.season = '秋季'; } }
+    const alive = []; for (let i = 0; i < 16; i++) { c.dailyUpdate(w); c.refreshDecrees(w); alive.push(c.activeDecrees.some(d => d.id === 'prop_L999') ? 1 : 0); w.clock.day++; if (w.clock.day > 15) { w.clock.day = 1; w.clock.season = '秋季'; } }
     // 舊檔:舊算法多 60 天的到期日會被扣回來
-    w.clock.season = '夏季'; w.clock.day = 3; c.activeDecrees = [{ id: 'old', title: 'old', effects: {}, expiresDay: w._absDay() + 60 + 20 }]; c.dailyUpdate(w);
+    w.clock.season = '夏季'; w.clock.day = 3; c.activeDecrees = [{ id: 'old', title: 'old', effects: {}, expiresDay: w._absDay() + 60 + 20 }]; c.refreshDecrees(w); /* v6.87.0 到期與校正搬到 refreshDecrees */
     const oldLeft = c.activeDecrees[0] ? c.activeDecrees[0].expiresDay - w._absDay() : null;
     // 新鎮長施政公告:隔天新聞更新後還在
     const el = w.election; w.news.bulletins = []; el.candidates = [{ name: 'A', agentId: 'a' }]; el._applyPolicyEffects('economy', w);

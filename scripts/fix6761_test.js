@@ -41,7 +41,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 存檔只序列化一次;有城鎮 id 時不再另存 rimtown_save
       let n = 0; const _s = w.serialize; w.serialize = function () { n++; return _s.call(this); };
       await app.saveGame(); w.serialize = _s; out.serializeOnce = n === 1;
-      const _li = app.auth.loggedIn; app.auth.loggedIn = false; localStorage.setItem('rimtown_save', 'x'); await app.saveGame(); app.auth.loggedIn = _li; out.noDupSlot = localStorage.getItem('rimtown_save') === null;
+      localStorage.removeItem('rimtown_save'); await app.saveGame(); out.noDupSlot = localStorage.getItem('rimtown_save') === null; /* v7.7.1 移除訪客模式後 saveGame 不再寫 rimtown_save 這個舊槽 */
       // 八卦上限
       const G = w.gossipNetwork; for (let i = 0; i < 1200; i++) G.activeGossip.push({ about: 'x', content: 'g' + i }); const a0 = Object.values(w.agents).find(a => !a.isPlayer), b0 = Object.values(w.agents).filter(a => !a.isPlayer)[1];
       w.serialize(); out.gossipMem = G.activeGossip.length <= 400; // 存檔時也把記憶體裡的清單裁短
