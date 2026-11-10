@@ -365,7 +365,7 @@ class Skill {
         const cur = xpForLevel(l), nxt = xpForLevel(l+1);
         return nxt===cur ? 1 : (this.xp - cur)/(nxt - cur);
     }
-    get isIncapable() { return this.passion === t('無能'); }
+    get isIncapable() { return this.passion === '無能'; } // v9.10.1 存的是中文原字(以前比 t('無能'),英文介面永遠不成立:無能的技能照樣長經驗、找工作不扣分)
     addXp(amount) {
         if (this.isIncapable) return false;
         const old = this.level;

@@ -8,6 +8,12 @@
 const MOBILITY = (() => {
     const CRAFT = ['blacksmith', 'carpenter', 'tailor', 'cook', 'trader', 'doctor', 'researcher'];
     const APPR_DAYS = 30, APPR_XP = 70, ADULT = 16, YOUNG = 25, STEADY = 7;
+    // v9.10.1 名匠:每一行(至少兩個人在做)經驗最深的那一位,本行技能要 15 級以上 → 工資多兩成、有錢人慕名來訂做(錢進自己口袋)、至少算工匠商人、收徒教得比較快
+    // (技能等級大約一年就練滿 20 級,所以看的是累積經驗,一行只有一位;名匠走了、改行了或被超越,由下一位接手)
+    const MASTER_LV = 15, MASTER_PAY = 1.2, MASTER_JOBS = ['farmer', 'miner', 'cook', 'blacksmith', 'carpenter', 'tailor', 'doctor', 'researcher', 'trader'];
+    const skillOfJob = (a) => { const k = a?.job?.key; const sk = (typeof JOB_SKILL_MAP !== 'undefined' && JOB_SKILL_MAP[k]?.primary?.[0]) || null; const s0 = sk ? a.skills?.get?.(sk) : null; return sk ? { sk, lv: s0?.level || 0, xp: s0?.xp || 0 } : null; };
+    const curWorld = () => (typeof window !== 'undefined' ? window.rimtownApp?.world : null);
+    const isMaster = (a, w) => { if (!a || a.isPlayer || !MASTER_JOBS.includes(a.job?.key)) return false; const W = w || curWorld(); return !!W?.mobility?.mst && W.mobility.mst[a.job.key] === a.agentId; };
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
     const day = (w) => (w._absDay ? w._absDay() : Math.floor((w.tickCount || 0) / 96));
     const en = () => typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
@@ -36,6 +42,7 @@ const MOBILITY = (() => {
     function adjust(w, a, lv) {
         if (!w || !a || !w.observerMode) return lv;
         if (ownsFirm(w, a)) lv = Math.max(lv, 3); else if (ownsShop(w, a)) lv = Math.max(lv, 2); // 做生意
+        if (isMaster(a, w)) lv = Math.max(lv, 2); // v9.10.1 名匠靠手藝也算工匠商人
         const C = typeof CLASS !== 'undefined' ? CLASS.S(w) : null; if (!C) return lv;
         const sp = spouseOf(w, a); if (sp && C.lv[sp.agentId] != null) lv = Math.max(lv, Math.min(4, C.lv[sp.agentId]) - 1); // 嫁娶:配偶拉一把,最多到配偶的下一階
         const age = a.age ?? 30;
@@ -57,6 +64,7 @@ const MOBILITY = (() => {
             else if ((M.pk[id] || 0) >= 3 && cur <= M.pk[id] - 2 && T !== 'fall') { fall(w, a, M.pk[id], cur); M.told[id] = 'fall'; told++; }
         }
         for (const id of Object.keys(M.o)) if (!w.agents[id] && !w.isAway?.(id)) { delete M.o[id]; delete M.pk[id]; delete M.h[id]; delete M.told[id]; delete M.ap[id]; delete M.done[id]; }
+        masters(w, all, d);
         apprentice(w, all, d);
         if (d % 3 === 0) spree(w, all, d);
     }
@@ -64,7 +72,7 @@ const MOBILITY = (() => {
         const sp = spouseOf(w, a), C = CLASS.S(w), T = C.titles?.[a.agentId], M = S(w);
         if (T?.bought) return '花錢買了頭銜'; if (T) return '立功受封';
         if (ownsFirm(w, a) || ownsShop(w, a)) return '做生意';
-        if (M.done[a.agentId]) return '拜師學了一身手藝';
+        if (isMaster(a, w)) return '練成一身好手藝'; if (M.done[a.agentId]) return '拜師學了一身手藝';
         if (sp && (C.lv[sp.agentId] ?? 0) >= lvOf(w, a)) return '嫁娶進了好人家';
         return '一點一滴攢錢';
     }
@@ -95,24 +103,53 @@ const MOBILITY = (() => {
             const a = w.agents[id], m = w.agents[P.m]; if (!a) { if (!w.isAway?.(id)) delete M.ap[id]; continue; }
             if (!m || m.isDead) { delete M.ap[id]; mem(w, a, '師父不在了，我的學徒生涯就這樣斷了。', {}, 6); continue; }
             if (w.isAway?.(P.m)) continue; // 師父出遠門:先停課
-            const sk = (typeof JOB_SKILL_MAP !== 'undefined' && JOB_SKILL_MAP[P.k]?.primary?.[0]) || null; if (sk) a.skills?.addXp?.(sk, APPR_XP);
-            if (d - P.d0 >= APPR_DAYS) { delete M.ap[id]; M.done[id] = P.k; M.st.grad = (M.st.grad || 0) + 1;
+            const sk = (typeof JOB_SKILL_MAP !== 'undefined' && JOB_SKILL_MAP[P.k]?.primary?.[0]) || null; if (sk) a.skills?.addXp?.(sk, P.fast ? Math.round(APPR_XP * 1.5) : APPR_XP);
+            if (d - P.d0 >= (P.fast ? 20 : APPR_DAYS)) { delete M.ap[id]; M.done[id] = P.k; M.st.grad = (M.st.grad || 0) + 1; const days = P.fast ? 20 : APPR_DAYS;
                 if (a.job?.key !== P.k && typeof Job !== 'undefined') { try { a.job = new Job(P.k); } catch (e) {} }
                 a.relationships?.getOrCreate?.(m.agentId, m.name)?.modifyAffinity?.(10); m.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(6);
-                log(w, '🎓 {a}跟著{m}學了一個月，出師當上了{j}。', { a: a.name, m: m.name, j: t(jt(P.k)) }, a.name);
+                log(w, '🎓 {a}跟著{m}學了 {n} 天，出師當上了{j}。', { a: a.name, m: m.name, n: days, j: t(jt(P.k)) }, a.name);
                 mem(w, a, '我跟{m}學成出師，以後就是{j}了。', { m: m.name, j: t(jt(P.k)) }, 8); mem(w, m, '我帶出來的徒弟{a}出師了。', { a: a.name }, 6); }
         }
         if (d % 7 !== 0 || Object.keys(M.ap).length >= 2 || Math.random() > 0.4) return;
         const free = (a) => !M.ap[a.agentId] && !Object.values(M.ap).some(P => P.m === a.agentId) && !w.isAway?.(a.agentId) && !w.exile?.pending?.[a.agentId];
         const cand = all.filter(a => free(a) && (a.age ?? 30) >= ADULT && (a.age ?? 30) <= 35 && lvOf(w, a) <= 1 && !CRAFT.includes(a.job?.key) && a.job?.key !== 'mayor' && !M.done[a.agentId] && (has(a, 'hardworking', 'creative', 'perfectionist') || Math.random() < 0.3));
         for (const a of cand.sort(() => Math.random() - 0.5)) {
-            const m = all.filter(o => o !== a && free(o) && CRAFT.includes(o.job?.key) && lvOf(w, o) >= 2 && (rel(o, a)?.affinity ?? -1) >= 0).sort((x, y) => (rel(y, a)?.affinity || 0) - (rel(x, a)?.affinity || 0))[0];
+            const lvJ = (o) => skillOfJob(o)?.xp || 0; // v9.10.1 先找名匠,再看手藝(經驗),最後看交情(以前只看交情)
+            const m = all.filter(o => o !== a && free(o) && CRAFT.includes(o.job?.key) && (lvOf(w, o) >= 2 || isMaster(o, w)) && (rel(o, a)?.affinity ?? -1) >= 0).sort((x, y) => (isMaster(y, w) - isMaster(x, w)) || (lvJ(y) - lvJ(x)) || ((rel(y, a)?.affinity || 0) - (rel(x, a)?.affinity || 0)))[0];
             if (!m) continue;
             const fee = Math.min(15, Math.floor(money(w, a) * 0.2)); if (fee > 0 && typeof WALLET !== 'undefined') WALLET.pay(w, a, m, fee, t('拜師'));
-            M.ap[a.agentId] = { m: m.agentId, k: m.job.key, d0: d }; M.st.appr = (M.st.appr || 0) + 1;
-            log(w, '🧑‍🏫 {a}拜{m}為師，要學當{j}。', { a: a.name, m: m.name, j: t(jt(m.job.key)) }, a.name);
+            const fast = isMaster(m, w); M.ap[a.agentId] = { m: m.agentId, k: m.job.key, d0: d, ...(fast ? { fast: 1 } : {}) }; M.st.appr = (M.st.appr || 0) + 1;
+            log(w, fast ? '🧑‍🏫 {a}拜名匠{m}為師，要學當{j}。' : '🧑‍🏫 {a}拜{m}為師，要學當{j}。', { a: a.name, m: m.name, j: t(jt(m.job.key)) }, a.name);
             mem(w, a, '我拜了{m}為師，想學一門手藝，不要一輩子這樣過。', { m: m.name }, 8); mem(w, m, '{a}來拜我為師，我收下了。', { a: a.name }, 5);
             return; // 一週最多一個
+        }
+    }
+    // 名匠:每天看每一行誰的經驗最深;換人時全鎮知道。每週有錢人慕名來訂做,錢直接付給名匠(銀幣守恆)
+    function masters(w, all, d) {
+        const M = S(w); const first = M.mstV !== 2; if (first) { M.mst = {}; M.mstV = 2; } // 第一次(新版本、舊存檔):直接記下,不洗版
+        for (const k of MASTER_JOBS) {
+            const ppl = all.filter(a => a.job?.key === k && (a.age ?? 30) >= ADULT); const cur = M.mst[k] ? (w.agents[M.mst[k]] || null) : null; const away = M.mst[k] && !cur && w.isAway?.(M.mst[k]);
+            if (away) continue; // 出遠門:名號留著
+            const best = ppl.map(a => ({ a, x: skillOfJob(a) })).filter(o => o.x && o.x.lv >= MASTER_LV).sort((p, q) => q.x.xp - p.x.xp)[0];
+            const keep = cur && cur.job?.key === k && !cur.isDead && (skillOfJob(cur)?.lv || 0) >= MASTER_LV && (!best || best.a === cur || best.x.xp < (skillOfJob(cur)?.xp || 0) * 1.15); // 被超越一成五以上才換人,不會天天換
+            if (keep) continue;
+            const prev = cur && cur.job?.key === k ? cur : null; const prevName = M.mstN?.[k] || '';
+            if (!best || ppl.length < 2) { delete M.mst[k]; continue; } // 這一行只有一個人做,談不上名匠
+            M.mst[k] = best.a.agentId; M.mstN = M.mstN || {}; M.mstN[k] = best.a.name; if (first) continue;
+            M.st.master = (M.st.master || 0) + 1; const a = best.a, x = best.x;
+            if (prev) log(w, '🏅 {a}的手藝超越了{p}，成了鎮上新的{j}名匠。', { a: a.name, p: prev.name, j: t(jt(k)) }, a.name);
+            else if (prevName) log(w, '🏅 {p}之後，{a}接下了鎮上{j}名匠的名號。', { a: a.name, p: prevName, j: t(jt(k)) }, a.name);
+            else log(w, '🏅 {a}的{s}練得爐火純青，成了鎮上有名的{j}名匠。', { a: a.name, s: x.sk, j: t(jt(k)) }, a.name);
+            news(w, `${a.name}${t('成了名匠')}`, [a.name]); mem(w, a, '大家都說我是鎮上手藝最好的{j}，這些年的苦沒有白吃。', { j: t(jt(k)) }, 9); a.moodModifier = (a.moodModifier || 0) + 10;
+            if (prev) { mem(w, prev, '{a}的手藝已經比我好了，名匠的名號換人了。', { a: a.name }, 6); prev.moodModifier = (prev.moodModifier || 0) - 4; }
+        }
+        if (d % 7 !== 3 || typeof WALLET === 'undefined' || !w.wallet) return;
+        for (const a of all) { if (!isMaster(a, w) || w.isAway?.(a.agentId) || Math.random() > 0.3) continue;
+            const b = all.filter(o => o !== a && (o.age ?? 30) >= ADULT && !isMaster(o, w) && money(w, o) >= 150 && lvOf(w, o) >= 2 && !w.isAway?.(o.agentId)).sort(() => Math.random() - 0.5)[0]; if (!b) continue;
+            const fee = Math.min(40, 10 + (skillOfJob(a)?.lv || 0)); if (!WALLET.pay(w, b, a, fee, t('名匠訂做'))) continue;
+            M.st.comm = (M.st.comm || 0) + 1; M.st.commN = Math.round((M.st.commN || 0) + fee);
+            a.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(3); b.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(3);
+            if (Math.random() < 0.2) log(w, '💰 {b}慕名請名匠{a}出手，付了 {n} 銀幣。', { b: b.name, a: a.name, n: fee }, a.name);
         }
     }
     // 敗家:出身好、手頭寬、又懶散愛玩的人隔三差五揮霍,錢付給鎮上的店家(沒有店家就進公庫)
@@ -130,6 +167,7 @@ const MOBILITY = (() => {
     }
 
     // ---------- 給觀察者與 AI ----------
+    function masterTag(w, a) { if (!isMaster(a, w)) return null; return { text: `🏅 ${t('{j}名匠').replace('{j}', t(jt(a.job.key)))}`, cls: 'nqc-master' }; }
     function tag(w, a) {
         if (!w.mobility || !a) return null; const M = w.mobility, id = a.agentId;
         if (M.ap?.[id]) { const m = w.agents[M.ap[id].m]; return { text: `🧑‍🏫 ${t('學徒')}${m ? t('（') + t('師父') + t('：') + t(m.name) + t('）') : ''}`, cls: 'nqc-appr' }; }
@@ -139,16 +177,17 @@ const MOBILITY = (() => {
     }
     function brief(w, a) {
         if (!w.mobility || !a || (a.age ?? 30) < ADULT) return ''; const M = w.mobility, id = a.agentId, o = M.o?.[id], cur = lvOf(w, a);
+        const mb = isMaster(a, w) ? t('你是鎮上公認的{j}名匠，工資比別人高，常有人慕名找你').replace('{j}', t(jt(a.job.key))) : '';
         if (M.ap?.[id]) { const m = w.agents[M.ap[id].m]; return t('你正在跟{m}當學徒，學當{j}').replace('{m}', m ? t(m.name) : '').replace('{j}', t(jt(M.ap[id].k))); }
-        if (o == null || o === cur) return '';
-        return (cur > o ? t('你出身{f}，靠自己成了{t}') : t('你出身{f}，現在家道中落成了{t}')).replace('{f}', t(cname(o))).replace('{t}', t(cname(cur)));
+        if (o == null || o === cur) return mb;
+        return (mb ? mb + t('；') : '') + (cur > o ? t('你出身{f}，靠自己成了{t}') : t('你出身{f}，現在家道中落成了{t}')).replace('{f}', t(cname(o))).replace('{t}', t(cname(cur)));
     }
     function view(w) {
         const M = w.mobility; if (!M) return null; const all = npcs(w).filter(a => (a.age ?? 30) >= ADULT);
         let up = 0, down = 0; for (const a of all) { const o = M.o?.[a.agentId]; if (o == null) continue; const c = lvOf(w, a); if (c > o) up++; else if (c < o) down++; }
-        return { up, down, n: all.length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
+        return { up, down, n: all.length, masters: npcs(w).filter(a => isMaster(a, w)).length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
     }
-    return { S, CRAFT, APPR_DAYS, adjust, daily, apprentice, spree, tag, brief, view, how };
+    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, masters, spree, tag, masterTag, brief, view, how };
 })();
 
 if (typeof CLASS !== 'undefined') { const _d = CLASS.daily; CLASS.daily = function (w, ...rest) { const r = _d.call(this, w, ...rest); try { MOBILITY.daily(w); } catch (e) { console.warn('[Mobility] daily', e); } return r; }; }
