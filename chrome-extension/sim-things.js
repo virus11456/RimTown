@@ -522,4 +522,11 @@ if (typeof World !== 'undefined') {
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.things = (data?.things && typeof data.things === 'object') ? data.things : null; } catch (e) {} return r; };
 }
+// v9.9.1 新開的店:抗議到最後可以提案勒令歇業(以前只有賭場能被禁,其他店的禁止提案永遠提不出來)
+THINGS.HOOKS.shop = {
+    alive: (w, T) => { try { return (w.biz?.shops || []).some(s => 'shop:' + s.id === T.id && !s.closed); } catch (e) { return true; } },
+    ban: (w, T) => { try { const sh = (w.biz?.shops || []).find(s => 'shop:' + s.id === T.id && !s.closed); if (!sh || typeof BIZ === 'undefined') return ''; BIZ.close(w, sh, 'banned'); const o = w.agents[sh.owner];
+        w.logMessageT?.('social', '🚫 小鎮投票決定讓「{n}」歇業，{o}只好收攤。', { n: sh.name[0], o: o?.name || '' }, o?.name || ''); if (o) { o.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '我的店「{n}」被鎮上投票勒令歇業了。', { n: sh.name[0] }, 9, []); o.moodModifier = (o.moodModifier || 0) - 10; }
+        return `${t('勒令歇業')}${t('：')}${sh.name[0]}`; } catch (e) { return ''; } },
+};
 if (typeof globalThis !== 'undefined') globalThis.THINGS = THINGS;

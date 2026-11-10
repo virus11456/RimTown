@@ -906,12 +906,13 @@ Object.assign(RimTownApp.prototype, {
         }
         if (W('legacy')) {
             // v6.73.0 鎮史:史書、傳說、家族、世仇
-            try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length) {
+            try { if (typeof LEGACY !== 'undefined' && this.world.legacy) { const V = LEGACY.view(this.world); if (V.chapters.length || V.legends.length || V.families.length || V.lore?.length) {
                 B.legacy += `<div class="pp-issues pp-legacy"><h4 class="pp-h">📚 ${t('鎮史')}</h4>`;
                 for (const c of V.chapters) B.legacy += `<details class="pp-chap"><summary>📖 ${esc(c.title)} <small>${t('史官')} ${esc(c.by)}</small></summary><div class="pp-tier-line">${esc(c.text)}</div></details>`;
                 if (V.legends.length) B.legacy += `<div class="pp-tier-line">🏛️ ${t('傳說人物')}${t('：')}${V.legends.map(l => `${esc(l.name)}${t('（')}${esc(l.role)}${t('）')}${l.statue ? ' 🗽' : ''}`).join(t('、'))}</div>`;
                 if (V.families.length) B.legacy += `<div class="pp-tier-line">🏠 ${t('家族')}${t('：')}${V.families.map(f => `${esc(f.name)} ×${f.n} ${t('「')}${esc(f.motto)}${t('」')}`).join(' · ')}</div>`;
                 if (V.feuds.length) B.legacy += `<div class="pp-tier-line">⚔️ ${t('世仇')}${t('：')}${V.feuds.map(esc).join(' · ')}</div>`;
+                for (const x of (V.lore || [])) B.legacy += `<div class="pp-tier-line">${x.icon} ${t('「')}${esc(x.text)}${t('」')} <small>${t('聽過')} ${x.heard} · ${t('相信')} ${x.believe} · ${t('不信')} ${x.doubt}${x.rite ? ` · ${t('辦過儀式')}` : ''}${x.hit ? ` · ${t('應驗')} ×${x.hit}` : ''}${x.done ? ` · ${t('沒人提了')}` : ''}</small></div>`; // v9.9.2 傳說
                 B.legacy += `</div>`; } } } catch (e) {}
         }
         if (W('dream')) {

@@ -207,6 +207,7 @@ const MARKET = (() => {
             const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !isRivalEmp(w, k, a)); if (ws.length < 4) continue; // v9.7.0 對手店的工人不跟著罷工
             // v9.6.0 工資壓在七成以下超過三週,心情再好也忍不下去(以前要心情低於 48 才罷工,一整年幾乎沒人罷工,工資一直卡在五成)
             M.low = M.low || {}; if (payRate(w, k) > 0.7) { delete M.low[k]; continue; } if (M.low[k] == null) M.low[k] = d;
+            if (typeof UNION !== 'undefined' && w.union?.on && ws.filter(a => UNION.isMember(w, a)).length >= Math.max(2, ws.length / 2)) continue; // v9.9.1 這一行過半是工會會員:交給工會談判、由工會罷工(以前兩套罷工會同時發生)
             const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if ((mood > 48 && d - M.low[k] < 21) || Math.random() > 0.5) continue;
             M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1; const boss = w.agents[id];
             log(w, '✊ {s}的 {n} 個工人罷工了，要求{o}加薪。', { s: name(k), n: ws.length, o: boss?.name || '' }, boss?.name || '');
@@ -228,6 +229,7 @@ const MARKET = (() => {
             const id = ownerOf(w, k); if (!id || Math.random() > 0.04) continue; const boss = w.agents[id]; if (!boss) continue;
             const loss = Math.round(Math.min(bal(w, id) * 0.25, value(w, k, all) * 0.6)); if (loss < 5 || !takeId(w, id, loss)) continue;
             const ri = Math.floor(Math.random() * RISKS.length); log(w, RISKS[ri], { o: boss.name, s: name(k), n: loss }, boss.name); mem(w, boss, '{s}出了事，賠了 {n} 銀幣。', { s: name(k), n: loss }, 7);
+            if (ri === 0 && typeof LEGACY !== 'undefined' && LEGACY.incident) { try { const pl = typeof JOB_DEFINITIONS !== 'undefined' ? JOB_DEFINITIONS[SECTORS[k].jobs[0]]?.workplace : null; if (pl) LEGACY.incident(w, 'curse', pl, { p: typeof locName === 'function' ? locName(w, pl) : pl }); } catch (e) {} } // v9.9.2 失火的地方被說「不乾淨」
             // v8.8.0 賠掉的錢不會憑空消失:失火的修繕費給工匠、倒帳的錢留在欠債的客人手上、被偷的進了小偷口袋(都找不到人就進公庫)
             { const others = all.filter(a => a !== boss && !a.isDead && (a.age ?? 30) >= 16); const pick = (L) => L[Math.floor(Math.random() * L.length)];
               const to = ri === 0 ? pick(others.filter(a => ['builder', 'carpenter'].includes(a.job?.key))) : ri === 2 ? pick(others.filter(a => has(a, 'greedy') || a.dark?.liar)) || pick(others.slice().sort((x, y) => bal(w, x.agentId) - bal(w, y.agentId)).slice(0, 5)) : pick(others);
