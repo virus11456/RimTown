@@ -1564,7 +1564,8 @@ class Town3D extends PixelTileMap {
             const extra = sleeping ? ' <i class="t3d-zzz">z z z</i>' : emote ? ` <i class="t3d-emo">${emote}</i>` : m.userData.inIcon ? ` <i class="t3d-emo t3d-act">${m.userData.inIcon}</i>` : '';
             let office = ''; try { const W = window.rimtownApp?.world; const bd = W && typeof TIERS !== 'undefined' ? TIERS.badge(W, W.agents[aid]) : null; if (bd && bd.cls !== 'former') office = `<b class="t3d-office t3d-office-${bd.cls}">${bd.icon} ${this._esc(bd.text)}</b>`; } catch (e) {} // v6.56.0 官職標籤
             const zb = agent.appear?.zb ? '🧟 ' : ''; // v9.2.0
-            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : '') + (zb ? ' is-zb' : ''), `${office}${zb}${this._esc(t3(agent.name || aid))}${extra}`);
+            const hxi = String(agent.appear?.hx || ''); const hz = hxi.includes('k') ? '🤒 ' : /[bs]/.test(hxi) ? '🩹 ' : ''; // v9.14.0 生病、受傷的人名牌前面多一個圖示
+            const el = this._ov('ag:' + aid, 't3d-tag' + (isSel ? ' is-sel' : '') + (aid === 'player' ? ' is-player' : '') + (office ? ' has-office' : '') + (zb ? ' is-zb' : ''), `${office}${zb}${hz}${this._esc(t3(agent.name || aid))}${extra}`);
             this._place(el, wx, gy + 0.3 + 1.85 * ((m.scale.y || 1.3) / 1.3), wz); // v6.92.0 小孩的名牌跟著放低
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
         }

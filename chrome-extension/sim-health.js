@@ -345,3 +345,19 @@ if (typeof World !== 'undefined') {
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.health = (data?.health && typeof data.health === 'object') ? data.health : null; } catch (e) {} return r; };
 }
+
+// v9.14.0 看得出來的病痛:LOOK 多帶一個 hx(健康外觀代碼),3D 人物依它畫眼鏡、拐杖、義肢、人工心肺、繃帶、吊臂帶、病容
+//  g 眼鏡  c 拐杖  a 義手  l 義腿  h 人工心肺  b 頭上繃帶(受傷)  s 吊臂帶(手受傷)  k 病容(風寒或重病)
+if (typeof LOOK !== 'undefined') {
+    const _of = LOOK.of, _sig = LOOK.sig;
+    HEALTH.lookOf = function (w, a) {
+        const H = w?.health; if (!H || !a) return '';
+        const ax = H.aid?.[a.agentId] || [], al = H.a?.[a.agentId] || []; let s = '';
+        if (ax.includes('glasses')) s += 'g'; if (ax.includes('crutch')) s += 'c'; if (ax.includes('arm')) s += 'a'; if (ax.includes('leg')) s += 'l'; if (ax.includes('heart') || ax.includes('lung')) s += 'h';
+        const inj = al.filter(x => x.k === 'injury'); if (inj.some(x => x.p === 'h')) s += 's'; if (inj.some(x => x.p !== 'h')) s += 'b';
+        if (al.some(x => x.k === 'fever' || (x.k === 'disease' && x.s >= 2))) s += 'k';
+        return s;
+    };
+    LOOK.of = function (w, a) { const r = _of(w, a); try { const x = HEALTH.lookOf(w, a); if (r && x) r.hx = x; } catch (e) {} return r; };
+    LOOK.sig = (p) => _sig(p) + (p?.hx ? 'H' + p.hx : '');
+}
