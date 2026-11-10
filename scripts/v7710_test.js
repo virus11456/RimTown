@@ -33,8 +33,8 @@ const fake = (page) => page.route('**/api/**', r => r.fulfill({ status: 200, con
       WALLET.S(w).bal[O.agentId] = 5000; const a0 = WALLET.get(w, A), b0 = WALLET.get(w, B); MARKET.payroll(w, WALLET.S(w), npcs());
       out.pay = { a: Math.round((WALLET.get(w, A) - a0) * 100) / 100, b: Math.round((WALLET.get(w, B) - b0) * 100) / 100 };
       MARKET.S(w).owners.trade = null; MONEY.S(w).mgr = null; MONEY.tradeRoles(w);
-      const pubMgr = [O, A, B, C].find(x => x.job.title === t('掌櫃')); const pubClerk = [O, A, B, C].find(x => x !== pubMgr);
-      out.pub = { mgrs: [O, A, B, C].filter(x => x.job.title === t('掌櫃')).length, owners: [O, A, B, C].filter(x => x.job.title === t('東家')).length, net: Math.round(WALLET.netOf(WALLET.S(w), pubMgr) / Math.max(0.01, WALLET.netOf(WALLET.S(w), pubClerk)) * 100) / 100 };
+      const mf = (a) => (typeof MOBILITY !== 'undefined' && MOBILITY.isMaster(a) ? MOBILITY.MASTER_PAY : 1); const pubMgr = [O, A, B, C].find(x => x.job.title === t('掌櫃')); const pubClerk = [O, A, B, C].find(x => x !== pubMgr);
+      out.pub = { mgrs: [O, A, B, C].filter(x => x.job.title === t('掌櫃')).length, owners: [O, A, B, C].filter(x => x.job.title === t('東家')).length, net: Math.round((WALLET.netOf(WALLET.S(w), pubMgr) / mf(pubMgr)) / Math.max(0.01, WALLET.netOf(WALLET.S(w), pubClerk) / mf(pubClerk)) * 100) / 100 }; // v9.10.1 名匠另外多兩成,這裡只比掌櫃的三成
       // 3) 存讀檔:讀回來稱呼、掌櫃都還在
       MARKET.S(w).owners.trade = O.agentId; MONEY.tradeRoles(w);
       const mgrId = MONEY.S(w).mgr; const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); const A2 = w2.agents[mgrId], O2 = w2.agents[O.agentId];
