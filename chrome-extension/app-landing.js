@@ -559,13 +559,14 @@ Object.assign(RimTownApp.prototype, {
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
-        const roadmap = {
-            done: [['v9.2', X('喪屍危機', 'Zombie outbreak'), X('基因生物的第二種世界級災厄：被咬的人變成喪屍，家人瞞著傷口、守衛清剿、研究員趕解藥；世界級災厄移到手牌，解鎖跟著帳號', 'A second Bio world calamity: the bitten turn into zombies while families hide wounds, guards hunt and researchers race for a cure. World calamities now sit in your hand, and unlocks follow your account')],
-                ['v9.1', X('拉近看屋裡', 'Look inside'), X('拉遠有屋頂，拉近換成剖面；屋裡的人睡床、坐著吃飯、在工作台做事；首頁改成一條從一個人到整個世界的故事線', 'Roofs from afar, a cutaway up close; people indoors sleep in beds, sit down to eat and work at their benches. The homepage now tells one story from a single person to a whole world')],
-                ['v9.0', X('鎮上的新東西', 'Something new in town'), X('新東西出現，村民自己決定喜不喜歡，並用同一套行動跟它互動：去用、推薦、抱怨、勸家人、門口抗議、提案禁止', 'When something new appears, villagers decide for themselves how they feel and act on it the same way every time: use it, recommend it, complain, urge family, protest at the door, propose a ban')]],
-            next: [[X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
-                [X('世界史詩', 'World epic'), X('AI 依你的世界真實發生的事寫成史詩，每個玩家都不一樣', 'The AI writes an epic from what actually happened in your world, different for every player')]],
-            ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
+        const roadmap = { // v9.13.2 待辦照目前的順序更新(下一步＝正在做、構想＝還沒排時程)
+            done: [['v9.13', X('世界史詩', 'World epic'), X('小鎮走到轉折點（新時代、加冕、王冠落地、世界級災厄、賢者之石、傳說…）就寫成史詩的一篇，用你這個世界真實的人名和年份；可以翻頁，點人名鏡頭跟過去', 'At every turning point (a new age, a coronation, the fall of a crown, a world calamity, the Philosopher’s Stone, a legend…) the bard writes a canto with your world’s real names and years. Flip through it and click a name to follow that villager')],
+                ['v9.12', X('流行與習俗', 'Fads and customs'), X('圍巾、口頭禪、消遣、吃食會在鎮上流行起來、退流行、復古；年輕人學得快、大家愛學比自己高的人；撐得夠久的變成鎮上的習俗', 'Scarves, catchphrases, pastimes and snacks catch on, fade and come back; the young adopt first and people copy those above them. The ones that last become town customs')],
+                ['v9.11', X('技能慢慢練', 'Skills take years'), X('第一年約 8 級、十年左右才練滿；老手和新手看得出差別，名匠真的難得', 'About level 8 after a year and 20 only after a decade, so veterans stand out and master craftsmen are rare')]],
+            next: [[X('看得出來的病痛', 'Health you can see'), X('生病、受傷、拄拐杖、戴眼鏡、裝義肢的村民，在地圖上一眼就看得出來', 'Sick, injured and disabled villagers (crutches, glasses, prosthetics) look different on the map')],
+                [X('自己打一句話當事件', 'Type a sentence to make an event'), X('寫下「今晚下起流星雨」之類的一句話，AI 把它變成鎮上真的會發生的事，村民各自反應', 'Write something like “a meteor shower falls tonight” and the AI turns it into a real event that villagers react to')],
+                [X('鎮與鎮的競爭', 'Rivalry between towns'), X('鄰鎮搶生意、搶人才、互相依賴物資，關係會變好也會變壞', 'Neighbouring towns compete for trade and talent and depend on each other’s goods; relations can warm or sour')]],
+            ideas: [X('更多世界級災厄（神裔戰爭、生態崩潰、人造人叛亂）', 'More world calamities (demigod war, ecological collapse, android revolt)'), X('災厄工坊進階（突變、世界瘟疫）', 'Advanced calamity workshop (mutation, world plague)'), X('災後重建分得更細', 'More detailed aftermaths'), X('新科技帶來新行業', 'New trades from new tech'), X('民間出資研究', 'Privately funded research'), X('財團與財閥', 'Conglomerates and tycoons'), X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
         };
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
         const sky = (() => {

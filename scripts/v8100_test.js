@@ -57,12 +57,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       app.state = w.getState(); const vw0 = WAYS.view(w); const tr2 = X.trust; const f2 = WAYS.faceOf(w, hy); if (X.hyp[0]) WAYS.expose(w, X.hyp[0]);
       out.hyp = { made: vw0.hyp.length === 1, trust: X.trust - tr2, face: WAYS.faceOf(w, hy) - f2, log: /被人撞見|was caught/.test(logs()) };
       // 信任低:大家比較多疑
-      X.trust = 22; const tp = { kind: 'feast', proposerId: A[13].agentId, votes: {}, why: {} }; let df = 0; for (let i = 0; i < 40; i++) { const v = A[14 + (i % 5)]; setAff(v, A[13], 0); X.owe[v.agentId] = {}; tp.votes[v.agentId] = 'for'; WAYS.vote(w, tp, v); if (tp.votes[v.agentId] === 'against') df++; } out.hyp.distrust = df; X.trust = 60;
+      X.trust = 22; const tp = { kind: 'feast', proposerId: A[13].agentId, votes: {}, why: {} }; let df = 0; for (let i = 0; i < 160; i++) { const v = A[14 + (i % 5)]; setAff(v, A[13], 0); X.owe[v.agentId] = {}; tp.votes[v.agentId] = 'for'; WAYS.vote(w, tp, v); if (tp.votes[v.agentId] === 'against') df++; } out.hyp.distrust = df; X.trust = 60;
       // 5) 跟鄰居比:翻修讓鄰居眼紅,手頭緊的去借錢
       { const Hs = HOUSING.S(w); const homes = {}; for (const a of npcs()) { const h = HOUSING.houseOf(w, a); if (h) (homes[h] || (homes[h] = [])).push(a); } const hk = Object.keys(homes); for (const h of hk) Hs.lv[h] = 0;
         if (hk.length >= 3) { Hs.lv[hk[0]] = 1; X.envy = {}; fix(0.1, () => WAYS.onRenovate(w, hk[0], homes[hk[0]][0])); out.reno = { envy: Object.keys(X.envy).length }; } else out.reno = { envy: 2, skip: 1 }; }
       // 6) 懷舊:老人比較反對新東西
-      const old = A[15]; old.age = 70; const rp = { kind: 'research', proposerId: A[0].agentId, votes: {}, why: {} }; let ov = 0; for (let i = 0; i < 80; i++) { rp.votes[old.agentId] = 'for'; X.trust = 60; WAYS.vote(w, rp, old); if (rp.votes[old.agentId] === 'against') ov++; } out.old = { flips: ov };
+      const old = A[15]; old.age = 70; const rp = { kind: 'research', proposerId: A[0].agentId, votes: {}, why: {} }; let ov = 0; for (let i = 0; i < 320; i++) { rp.votes[old.agentId] = 'for'; X.trust = 60; WAYS.vote(w, rp, old); if (rp.votes[old.agentId] === 'against') ov++; } out.old = { flips: ov };
       const young = A[16]; young.age = 35; let yv = 0; for (let i = 0; i < 40; i++) { rp.votes[young.agentId] = 'for'; WAYS.vote(w, rp, young); if (rp.votes[young.agentId] === 'against') yv++; } out.old.young = yv;
       setDay(Math.ceil(d0 / 7) * 7 + 3); fix(0.1, () => WAYS.nostalgia(w)); out.old.log = /又在說|is at it again/.test(logs());
       // 7) 日常習慣:常碰面變熟;兩天沒出現有人來敲門
@@ -96,9 +96,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.owe.flips >= 6 && r.owe.why === 'owe', '人情帳：欠了人情不好意思反對（改投贊成、還一點人情）', r.owe);
     ok(r.gift.stingy < 14 && r.gift.generous >= 10 && r.gift.aff < 0 && r.gift.owe, '禮金：收過的禮要包回去；小氣的包太少被記住、大方的包回去', r.gift);
     ok(r.bad.trust <= 58 && r.bad.said && r.bad.blame >= 1 && r.bad.failedTrust === 0 && r.bad.outcome.bad && !r.bad.outcome.noise, '嘴硬：成效很差時多半怪提案的人（「我當初就覺得怪怪的」）、信任下降；缺料作罷和小起伏不算', r.bad);
-    ok(r.hyp.made && r.hyp.trust <= -5 && r.hyp.face <= -20 && r.hyp.log && r.hyp.distrust >= 3, '說一套做一套：私下違反、真相頁先看得到；被撞見名聲重挫、信任下降，大家對提案更多疑', r.hyp);
+    ok(r.hyp.made && r.hyp.trust <= -5 && r.hyp.face <= -20 && r.hyp.log && r.hyp.distrust >= 8, /* v9.13.2 160 票、機率約 0.19 → 期望約 30;以前 40 票門檻 3,約 2% 機會差一票失敗 */ '說一套做一套：私下違反、真相頁先看得到；被撞見名聲重挫、信任下降，大家對提案更多疑', r.hyp);
     ok(r.reno.envy >= 1, '跟鄰居比：有人翻修，鄰居眼紅', r.reno);
-    ok(r.old.flips >= 12 && r.old.young === 0 && r.old.log, '懷舊：老人比較反對新研究、懷念以前；年輕人不會', r.old);
+    ok(r.old.flips >= 48 && /* v9.13.2 320 次、機率 0.25～0.40 → 期望 80 以上;以前 80 次門檻 12 */ r.old.young === 0 && r.old.log, '懷舊：老人比較反對新研究、懷念以前；年輕人不會', r.old);
     ok(r.rt.nod >= 10 && r.rt.aff > 0 && r.rt.check, '日常習慣：常碰面的人慢慢變熟；兩天沒出現，街坊去敲門', r.rt);
     ok(r.cold.on && r.cold.noTalk && r.cold.table && r.cold.ended, '冷戰：吵架後不聊天；婚宴被排同一桌；時間到了和好或不往來', r.cold);
     ok(r.save.ok && r.brief.length > 0, '存讀檔：人情帳與信任存得住；AI 知道自己欠誰人情、每天去哪', { save: r.save, brief: r.brief });
