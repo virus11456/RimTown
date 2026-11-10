@@ -113,7 +113,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
   console.log('存檔省略可推回的欄位,讀檔後完全一樣');
   r = await page.evaluate(() => { const w = window.rimtownApp.world; window.rimtownApp._setPaused?.(true);
     for (let i = 0; i < 300; i++) { w.paused = false; w.tick(); } w.paused = true;
-    const snap = () => Object.values(w.agents).filter(a => !a.isPlayer).map(a => ({ id: a.agentId, mem: a.memory.entries.map(m => `${m.tick}|${m.timeStr}|${m.category}`).join('\n'), rel: JSON.stringify(Object.values(a.relationships.relationships).map(r => [r.targetId, r.affinity, r.trust, r.romanticInterest || 0, r.status || null, r.statusSince || 0, !!r.isCheating, !!r.isFeud])) }));
+    const r1 = (x) => Math.round((x || 0) * 10) / 10; // v9.10.2 存檔的關係數字只留一位小數、閒聊記憶只存最近 15 則:比對存檔真正保證的部分
+    const snap = () => Object.values(w.agents).filter(a => !a.isPlayer).map(a => ({ id: a.agentId, mem: a.memory.entries.filter(m => m.category !== 'conversation').map(m => `${m.tick}|${m.timeStr}|${m.category}`).join('\n'), rel: JSON.stringify(Object.values(a.relationships.relationships).map(r => [r.targetId, r1(r.affinity), r1(r.trust), r1(r.romanticInterest), r.status || null, r.statusSince || 0, !!r.isCheating, !!r.isFeud])) }));
     // 一筆時間被「跳過」的記憶(推不回來):要照存
     const a0 = Object.values(w.agents).find(a => !a.isPlayer); a0.memory.add(w.tickCount, '第 9 年冬季 第 9 天 09:09', 'daily', '時間對不上的記憶', 3, []);
     const before = snap(); const blob = JSON.parse(JSON.stringify(w.serialize()));
