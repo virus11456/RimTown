@@ -619,7 +619,7 @@ Object.assign(RimTownApp.prototype, {
                     <dl class="lp-points">${b.pts.map(p => `<div><dt>${p[0]}</dt><dd>${p[1]}</dd></div>`).join('')}</dl>
                 </details>
             </article>`;
-        const tiersHtml = () => `<div class="lp-ch-tiers"><div class="lp-scene-head">${X('城鎮四級', 'Four town tiers')}</div><ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-req">${x[2]}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${X('人口、繁榮或時代掉下來，城鎮也會降級。', 'If population, prosperity or era drops, the town is demoted.')}</p></div>`;
+        const tiersHtml = () => `<div class="lp-ch-tiers"><div class="lp-scene-head">${X('城鎮四級', 'Four town tiers')}</div><ol class="lp-tiers">${tiers.map((x, i) => `<li><span class="lp-tier-ic" aria-hidden="true">${x[0]}</span><h3>${x[1]}</h3><span class="lp-tier-reqs">${String(x[2]).split(/\s*[＋+]\s*/).map(q => `<span class="lp-tier-req">${q}</span>`).join('')}</span><p>${x[3]}</p>${i < tiers.length - 1 ? '<span class="lp-tier-arrow" aria-hidden="true">→</span>' : ''}</li>`).join('')}</ol><p class="lp-note">${X('人口、繁榮或時代掉下來，城鎮也會降級。', 'If population, prosperity or era drops, the town is demoted.')}</p></div>`;
         const chapter = (c, i) => {
             const ts = c.topics.map(id => B[id]).filter(Boolean);
             const scene = ts.map(b => b.log[0]).filter(Boolean).sort((a, b) => a[0].localeCompare(b[0])).slice(0, 3);

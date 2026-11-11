@@ -4627,12 +4627,24 @@ body.landing-open { overflow: hidden; }
 .lp-ch-tiers .lp-tiers li { padding: 10px 12px; text-align: left; display: grid; grid-template-columns: auto 1fr; column-gap: 8px; align-items: center; }
 .lp-ch-tiers .lp-tier-ic { font-size: 1.3rem; grid-row: span 2; }
 .lp-ch-tiers .lp-tiers h3 { margin: 0; font-size: 0.92rem; }
-.lp-ch-tiers .lp-tier-req { justify-self: start; font-size: 0.66rem; padding: 2px 7px; }
+.lp-ch-tiers .lp-tier-req { font-size: 0.66rem; padding: 2px 7px; }
+/* v9.20.0 升級條件一項一顆標籤:窄螢幕在標籤之間換行,不會把「第一時代」切成兩行 */
+.lp-tier-reqs { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-width: 0; }
+.lp-tier-req { white-space: nowrap; }
+.lp-ch-tiers .lp-tier-reqs { justify-content: flex-start; }
 .lp-ch-tiers .lp-tiers p { display: none; }
 .lp-ch-tiers .lp-note { margin-top: 8px; }
 @media (max-width: 960px) {
     .lp-pillars { grid-template-columns: 1fr; gap: 10px; }
     .lp-ch-tiers .lp-tiers { grid-template-columns: repeat(2, 1fr) !important; }
+}
+@media (max-width: 600px) {
+    /* 手機:四級一列一級,圖示、名稱、條件排成一行 */
+    .lp-ch-tiers .lp-tiers { grid-template-columns: 1fr !important; gap: 8px; }
+    .lp-ch-tiers .lp-tiers li { grid-template-columns: auto auto 1fr; column-gap: 10px; }
+    .lp-ch-tiers .lp-tier-ic { grid-row: auto; }
+    .lp-ch-tiers .lp-tier-reqs { justify-content: flex-end; }
+    .lp-ch-tiers .lp-tier-req { font-size: 0.75rem; padding: 3px 8px; }
 }
 @media (max-width: 600px) {
     .lp-pillar { padding: 14px 14px 12px; }

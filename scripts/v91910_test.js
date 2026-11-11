@@ -40,6 +40,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.over.length === 0, '沒有超出區塊或被截掉的內容', r.over);
       ok(r.small.length === 0, '字不小於 12px', r.small);
       ok(r.sw <= r.cw + 1 && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
+      // v9.20.0 城鎮四級:升級條件一項一顆標籤,標籤裡不換行、不超出卡片(以前手機上「第一時代」被切成兩行)
+      const tr = await page.evaluate(() => { const T = document.querySelector('.lp-ch-tiers'); if (!T) return null; const cards = [...T.querySelectorAll('.lp-tiers li')];
+        return { cards: cards.length, chips: T.querySelectorAll('.lp-tier-req').length, wrap: [...T.querySelectorAll('.lp-tier-req')].filter(c => c.getBoundingClientRect().height > parseFloat(getComputedStyle(c).fontSize) * 2.4).map(c => c.textContent),
+          over: cards.filter(li => { const r = li.getBoundingClientRect(); return [...li.querySelectorAll('.lp-tier-req')].some(c => c.getBoundingClientRect().right > r.right + 0.5 || c.getBoundingClientRect().left < r.left - 0.5); }).length, plus: /[＋+]/.test(T.querySelector('.lp-tiers').textContent) }; });
+      ok(tr && tr.cards === 4 && tr.chips === 11 && !tr.plus, '城鎮四級：四張卡、升級條件拆成 11 顆標籤', tr);
+      ok(tr && tr.wrap.length === 0 && tr.over === 0, '城鎮四級：標籤裡的字不換行、不超出卡片', tr);
       ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
       await ctx.close();
     }
