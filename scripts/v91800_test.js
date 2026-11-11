@@ -94,6 +94,9 @@ async function run(browser, lang) {
       // 真相：數字格＋每條有狀態標籤；提案流程；考驗卡；年表回顧
       await go('proposals', 'truth'); const tr = document.querySelector('.pp-secrets'); out.truth = tr ? { grid: tr.querySelectorAll('.ic-g').length, rows: tr.querySelectorAll('.pg-truth').length, chips: tr.querySelectorAll('.pg-truth .ic-chip').length, hint: !!tr.querySelector('.pp-issue-hint') } : 'none';
       await go('proposals', 'props'); out.flow = document.querySelectorAll('.pg-flow .pg-step').length;
+      // v9.18.1：報社／店家老闆不在了，名字不能是空的「（）」；數字格收進等寬格線
+      try { if (w.press?.papers?.length) { const Pp = w.press.papers[0]; const old = Pp.owner; Pp.owner = 'ghost_owner_xyz'; out.owner = { paper: POWER.view(w).owned.map(x => x[1]) }; Pp.owner = old; } if (typeof BIZ !== 'undefined') { const B = BIZ.S(w); B.shops.push({ id: 'Btest', type: Object.keys(BIZ.TYPES || {})[0] || 'grocer', owner: 'ghost_owner_xyz', partner: null, name: ['測試店', 'Test'], price: 4, till: 0, profit: 0, week: 0, opened: 0, lossDays: 0, closed: false }); try { out.owner = Object.assign(out.owner || {}, { shop: BIZ.view(w).shops.find(x => x.name === '測試店' || x.name === 'Test')?.owner }); } catch (e) { out.owner = Object.assign(out.owner || {}, { shopErr: e.message }); } B.shops.pop(); } } catch (e) { out.owner = { err: e.message }; }
+      await go('industry'); out.stg = { grids: document.querySelectorAll('.pg-stg').length, loose: document.querySelectorAll('.pg-dots > .pg-st').length };
       await go('quest'); out.trial = { card: !!document.querySelector('#ic-qs-trial'), chip: !!document.querySelector('#ic-qs-trial .ic-chip'), oldDecl: [...document.querySelectorAll('.econ-section h3')].filter(h => /🍂/.test(h.textContent)).length, season: document.querySelectorAll('.pg-season').length, grade: document.querySelectorAll('.pg-season .pg-grade').length };
     } catch (e) { out.err = String(e && e.stack || e).slice(0, 700); }
     return out;
@@ -120,6 +123,8 @@ async function run(browser, lang) {
   ok(r.toggles >= 3 && r.cbWidth > 0 && r.cbWidth <= 48, `${tag} 設定的勾選框／開關是小的（不再撐滿半行）`, { n: r.toggles, w: r.cbWidth });
   ok(r.set2 && r.set2.q === 3 && r.set2.qOn === 1 && r.set2.qDesc === 3 && r.set2.roster === 2 && r.set2.rows >= 3 && r.set2.lines >= 3 && r.set2.help, `${tag} 設定：畫質／開局村民改成選項卡（每個都寫說明）、開關一列一項、長說明一句一列`, r.set2);
   ok(r.truth === 'none' || (r.truth.rows >= 1 && r.truth.chips === r.truth.rows && r.truth.grid >= 1 && r.truth.hint), `${tag} 真相：上面一排數字、每條都有狀態標籤`, r.truth);
+  ok(r.owner && !r.owner.err && (!r.owner.paper || r.owner.paper.every(n => n && n.trim())) && (r.owner.shop === undefined || (r.owner.shop && r.owner.shop.trim())), `${tag} 報社／店家老闆不在了，名字也不會是空的`, r.owner);
+  ok(r.stg && r.stg.grids >= 1 && r.stg.loose === 0, `${tag} 數字格都收進等寬格線，不跟長文字擠同一行`, r.stg);
   ok(r.flow >= 3, `${tag} 提案說明改成流程步驟`, r.flow);
   ok(r.trial && r.trial.card && r.trial.chip && r.trial.oldDecl === 0 && r.trial.grade === r.trial.season, `${tag} 本季考驗改成資訊卡、衰敗不重複、每季回顧有評等徽章`, r.trial);
   ok(r.theme && !r.theme.day && !r.theme.stored && !r.theme.select, `${tag} 白底版本拿掉了：只有一套配色，設定沒有配色選項，舊的設定值清掉`, r.theme);

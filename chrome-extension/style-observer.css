@@ -1400,3 +1400,10 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pg-flow .pg-step.last + .pg-arr, .rimtown-container .pg-flow .pg-arr:has(+ .pg-step.last) { visibility: hidden; width: 4px; }
 .rimtown-container .pg-flow .pg-step:not(.last) i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); font-size: .62rem; font-weight: 700; }
 .rimtown-container .set-toggle.set-fa { flex-wrap: nowrap; } .rimtown-container .set-toggle.set-fa .set-switch { margin-left: auto; }
+/* v9.18.1 數字格等寬格線；長文字單獨一行 */
+.rimtown-container .pg-dots > .pg-stg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; flex: 1 1 100%; width: 100%; }
+.rimtown-container .pg-stg > .pg-st { min-width: 0; display: flex; }
+.rimtown-container .pg-stg > .pg-st > span { white-space: normal; overflow: visible; }
+.rimtown-container .pg-dot.wide { flex: 1 1 100%; border-radius: 10px; padding: 6px 10px; line-height: 1.45; }
+.rimtown-container .pg-owners { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
+.rimtown-container .pg-owners-h { font-size: .78rem; color: var(--text-secondary); font-weight: 700; flex: 1 1 100%; }

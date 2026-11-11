@@ -13186,7 +13186,7 @@
         '翻開史詩': 'Open the epic', '史詩 {n} 篇': '{n} cantos',
         // v9.18.0 全介面改版
         '還沒公布': 'Not announced yet', '已達標': 'Target met', '目標': 'Target', '還剩': 'Left', '每季第 5 天公布這一季的考驗': 'Each season\'s trial is announced on day 5', '季末結算：撐過有永久加成': 'Settled at season end: pass it for a permanent bonus', '沒撐過會有人搬走': 'Fail it and some people move away', '過去的考驗': 'Past trials',
-        '單位：{u}': 'Unit: {u}', '產業上限': 'Industry cap', '已開啟': 'Opened', '正在設局': 'Schemes', '謊言': 'Lies', '善意謊言': 'White lies', '誤會': 'Misunderstandings',
+        '單位：{u}': 'Unit: {u}', '（已不在鎮上）': ' (no longer in town)', '（出遠門）': ' (away)', '當年辯論的票數': 'Votes in the path debate', '目前票數': 'Current votes', '產業上限': 'Industry cap', '已開啟': 'Opened', '正在設局': 'Schemes', '謊言': 'Lies', '善意謊言': 'White lies', '誤會': 'Misunderstandings',
         '今天的故事': 'Today’s story',
         '八點檔與頭條': 'Episode and headlines',
         '身體不適': 'Unwell',
