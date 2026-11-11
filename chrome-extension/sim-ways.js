@@ -227,11 +227,33 @@ const WAYS = (function () {
             const [x, y] = k.split('|'); const a = w.agents[x], b = w.agents[y]; if (!a || !b || a.isDead || b.isDead) { delete X.cold[k]; continue; }
             if (c.until <= d) {
                 if (c.done) { if (d - c.until > 60) delete X.cold[k]; continue; } c.done = 1;
-                if (Math.random() < 0.6) { addAff(a, b, 8); addAff(b, a, 8); bump(X, 'thaw'); log(w, '🫖 冷戰了 {n} 天，{a}和{b}在井邊碰到，終於開口打了招呼。', { n: c.until - c.d, a: a.name, b: b.name }, a.name, b.name); }
+                // v9.20.0 村民自己拿主意時,要不要先開口由本人決定(決策核心「跟某人冷戰中」);拖到最後都沒人開口,就看兩人心裡還剩多少情分,不擲骰
+                const soft = byChoice(w) ? (aff(a, b) >= -50 && aff(b, a) >= -50) : Math.random() < 0.6;
+                if (soft) { addAff(a, b, 8); addAff(b, a, 8); bump(X, 'thaw'); log(w, '🫖 冷戰了 {n} 天，{a}和{b}在井邊碰到，終於開口打了招呼。', { n: c.until - c.d, a: a.name, b: b.name }, a.name, b.name); }
                 else { addAff(a, b, -5); addAff(b, a, -5); bump(X, 'apart'); log(w, '🧊 {a}和{b}冷戰到最後，從此不再往來。', { a: a.name, b: b.name }, a.name, b.name); }
             } else if (aff(a, b) >= 10 && aff(b, a) >= 10 && d - c.d >= 2) { c.until = d; c.done = 1; bump(X, 'thaw'); log(w, '🤝 {a}和{b}終於和好了，冷戰結束。', { a: a.name, b: b.name }, a.name, b.name); }
         }
     }
+    // ---------- v9.20.0 冷戰的三種收場(決策核心用):先開口 → 對方點頭和好／裝作沒看到;或乾脆不往來 ----------
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const coldRec = (w, a, b) => { const c = S(w).cold[key2(a.agentId, b.agentId)]; return c && c.until > day(w) ? c : null; };
+    function reach(w, a, b) { const c = coldRec(w, a, b); if (!c) return false; c.by = a.agentId; mem(w, a, '冷戰這麼久，我決定先跟{b}開口。', { b: b.name }, 5); if (typeof DECIDE !== 'undefined') DECIDE.enqueue(w, b, 'reached', { a: a.agentId }); return true; }
+    function thaw(w, a, b) { // a 先開口,b 點頭
+        const X = S(w); const c = coldRec(w, a, b); if (!c) return false; const d = day(w); const n = Math.max(1, d - c.d); c.until = d; c.done = 1; addAff(a, b, 8); addAff(b, a, 8); bump(X, 'thaw');
+        mem(w, b, '{a}先開口跟我說話，我們和好了。', { a: a.name }, 6); mem(w, a, '我先開口，{b}點了頭，我們和好了。', { b: b.name }, 6);
+        log(w, '🫖 冷戰了 {n} 天，{a}先開口，{b}點了點頭，兩人和好了。', { n, a: a.name, b: b.name }, a.name, b.name); return true;
+    }
+    function snub(w, a, b) { // a 先開口,b 裝作沒看到
+        const X = S(w); const c = coldRec(w, a, b); if (!c) return false; c.until = Math.min(c.d + 60, c.until + 4); c.snub = (c.snub || 0) + 1; addAff(a, b, -3); loseFace(w, a, 4); bump(X, 'snub');
+        mem(w, a, '我先開口跟{b}打招呼，他裝作沒看到。', { b: b.name }, 6); mem(w, b, '{a}想跟我說話，我還不想理他。', { a: a.name }, 4);
+        log(w, '🧊 {a}先開口打招呼，{b}裝作沒看到。', { a: a.name, b: b.name }, a.name, b.name); return true;
+    }
+    function apart(w, a, b) { // a 決定不再往來
+        const X = S(w); const c = coldRec(w, a, b); if (!c) return false; c.until = day(w); c.done = 1; addAff(a, b, -5); addAff(b, a, -5); bump(X, 'apart');
+        mem(w, a, '我決定不再跟{b}往來了。', { b: b.name }, 6);
+        log(w, '🧊 {a}和{b}冷戰到最後，從此不再往來。', { a: a.name, b: b.name }, a.name, b.name); return true;
+    }
+    const coldList = (w, a) => { const d = day(w); const out = []; for (const [k, c] of Object.entries(S(w).cold)) { if (c.until <= d) continue; const [x, y] = k.split('|'); const o = x === a.agentId ? y : y === a.agentId ? x : null; if (o && w.agents[o]) out.push({ b: w.agents[o], c, days: d - c.d }); } return out; };
     // 婚禮上冷戰的兩個人被排在同一桌
     function weddingGuests(w, guests, c) {
         const X = S(w); if (!guests?.length) return; const d = day(w);
@@ -291,7 +313,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });

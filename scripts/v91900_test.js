@@ -28,7 +28,7 @@ async function run(browser, lang, vp) {
     const all = npcs(); const [A, Bb, C, D2, E, F, G] = all;
     const logs = (n = 40) => (w.messageLog || []).slice(-n).map(m => String(m.content || '')).join('\n');
     const lastLog = (a) => (X.log[a.agentId] || []).slice(-1)[0] || null;
-    const reset = () => { for (const a of all) { B[a.agentId] = 30; delete X.log[a.agentId]; delete X.plan[a.agentId]; } X.cool = {}; X.q = []; if (w.dark?.debts) w.dark.debts = []; if (w.infl) { w.infl.p = 1; w.infl.wage = 1; } };
+    const reset = () => { for (const a of all) { B[a.agentId] = 30; delete X.log[a.agentId]; delete X.plan[a.agentId]; } X.cool = {}; /* 這支只測錢的決定：v9.20.0 加的人際選擇點（scripts/v92000_test.js 在測）先全部冷卻，不然會多問 AI、多寫紀錄 */ for (const a of all) for (const k of ['owe', 'sorry', 'forgive', 'grudge', 'vent', 'makeup', 'reached']) X.cool[a.agentId + '|' + k] = w._absDay() + 99; X.q = []; if (w.dark?.debts) w.dark.debts = []; if (w.infl) { w.infl.p = 1; w.infl.wage = 1; } };
     const today = () => { X.lastDay = -1; DECIDE.daily(w); };
 
     // ---------- 1) 帳本 ----------

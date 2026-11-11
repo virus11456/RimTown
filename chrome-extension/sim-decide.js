@@ -40,6 +40,7 @@ const DECIDE = (() => {
     const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
+    const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
         if (!w.decide || typeof w.decide !== 'object') w.decide = { log: {}, cool: {}, nw: {}, plan: {}, q: [], pick: {}, lastDay: null, st: { offer: 0, ai: 0, rule: 0, free: 0, aiMiss: 0 } };
@@ -219,9 +220,9 @@ const DECIDE = (() => {
     const whenOf = (w, a, K) => { try { return K.when(w, a) || null; } catch (e) { return null; } };
 
     function record(w, X, a, K, op, why, res, src, d) {
-        const L = X.log[a.agentId] || (X.log[a.agentId] = []);
         const e = { d, kind: K.key, id: op.id, what: op.say || op.text, why: why || null, res: res || null, ai: src === 'ai' ? 1 : 0 }; if (op.free) e.free = 1;
-        L.push(e); if (L.length > LOG_CAP) L.splice(0, L.length - LOG_CAP);
+        // mute:「先不動」這類選項,照個性推估時不寫進紀錄(天天都是「放在心裡，不說」會把真正的決定擠掉);AI 自己想的照樣記(他有說理由)
+        if (!(op.mute && src !== 'ai')) { const L = X.log[a.agentId] || (X.log[a.agentId] = []); L.push(e); if (L.length > LOG_CAP) L.splice(0, L.length - LOG_CAP); }
         const key = String(op.id).split(':')[0]; X.pick[K.key + '.' + key] = (X.pick[K.key + '.' + key] || 0) + 1;
         if (src === 'ai') X.st.ai++; else X.st.rule++;
         return e;
@@ -315,8 +316,10 @@ ${t('如果選 z（其他），再加 "do":"想做的事（30 字內）" 和 "fx
     function dispatch(w, X, offers, d) {
         const ai = aiOn(w); const P0 = pend(X); const groups = {};
         for (const o of offers) {
-            if (ai && X._asked < AI_MAX && !P0.has(o.a.agentId)) { X._asked++; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
-            else if (!P0.has(o.a.agentId) || !o.K.scan) resolveRule(w, X, o, d); // 別人找上門的事（例如來借錢）不能因為他正在等 AI 想別的事就沒下文
+            // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
+            const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
+            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && (!cur || bump)) { X._asked++; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
+            else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);
         if (!batches.length) return;
@@ -375,7 +378,9 @@ ${t('如果選 z（其他），再加 "do":"想做的事（30 字內）" 和 "fx
     }
     function stats(w) { const X = S(w); return { ...X.st, pick: { ...X.pick } }; }
 
-    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH };
+    // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
+    const on = (w) => !!(w?.observerMode && W() && w.wallet);
+    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
