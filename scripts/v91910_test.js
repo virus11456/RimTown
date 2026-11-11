@@ -32,7 +32,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.steps === 5, '五個步驟', r.steps);
       ok(r.picks === 3, '同一筆閒錢三種選擇', r.picks);
       ok(r.points === 3, '在遊戲裡哪裡看得到：三處', r.points);
-      ok(r.prog === 3 && r.done.length === 2 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships'), '做到哪了：三格，「錢的事」「人際」標成已上線（v9.20.0）；政治還沒做，不能寫成做完', { prog: r.prog, done: r.done });
+      ok(r.prog === 3 && r.done.length === 3 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships') && r.done[2] === (lang === 'zh' ? '政治' : 'Politics'), '做到哪了：三格「錢的事」「人際」「政治」都標成已上線（v9.21.0）', { prog: r.prog, done: r.done });
       ok(lang === 'zh' ? /示意/.test(r.txt) : /illustrations/.test(r.txt), '三種選擇有標明是示意', null);
       ok(lang === 'zh' ? /每天最多 10 人/.test(r.txt) : /up to 10 people a day/.test(r.txt), '寫出 AI 每天最多決定 10 人（跟 sim-decide.js 的 AI_MAX 一致）', null);
       ok(!/憑空變多|守恆/.test(r.txt), '不說錢「守恆」（旅遊、外地讀書的錢會流到鎮外）', null);
