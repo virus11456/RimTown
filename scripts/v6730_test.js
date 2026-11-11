@@ -24,7 +24,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 史書(規則)
       w.logMessageT('event', '⚔️ 政變成功！{a}推翻舊王，自立為王，建立{d}。', { a: all[0].name, d: '金冠王朝' });
       const c1 = await LEGACY.chapter(w, L, 1, '春季'); out.chapter = !!c1 && c1.n >= 1 && logHas(/鎮史|town history/);
-      let restore = stubAI({ title: '王冠落地', text: '這一季，舊王倒台，新王登基，鎮上人心惶惶。' }); const c2 = await LEGACY.chapter(w, L, 1, '夏季'); restore(); out.aiChapter = Memory.render(c2.title.k, c2.title.p) === '王冠落地';
+      // AI 寫的標題原樣存進這一章、畫面上也原樣顯示。假標題不能剛好是翻譯字典裡的詞:以前用「王冠落地」,v9.13.0 世界史詩把它加進字典後,英文介面會顯示成 The Crown Falls,這裡就對不上了
+      const AI_TITLE = '舊王倒台記事'; out.aiTitleKey = t(AI_TITLE) !== AI_TITLE; // 萬一哪天又被加進字典,這一格會是 true,一看就知道要換假標題
+      let restore = stubAI({ title: AI_TITLE, text: '這一季，舊王倒台，新王登基，鎮上人心惶惶。' }); const c2 = await LEGACY.chapter(w, L, 1, '夏季'); restore(); out.aiChapter = c2.title.k === '{x}' && c2.title.p.x === AI_TITLE && /舊王倒台，新王登基/.test(c2.text.p.x || '') && Memory.render(c2.title.k, c2.title.p) === AI_TITLE && LEGACY.view(w).chapters[0].title === AI_TITLE;
       // 換季自動寫
       const n0 = L.chapters.length; const _ad = w._absDay; let D = 31; w._absDay = () => D; L.lastSeason = 1; L.lastDay = null; await LEGACY.daily(w); out.autoChapter = L.chapters.length === n0 + 1;
       // 名人與傳說
