@@ -20,10 +20,11 @@ Object.assign(RimTownApp.prototype, {
     _icShort(x) { const s = String(x ?? ''); const m = s.match(/^([^\d-]*)(-?[\d,]+)$/); if (!m) return ''; const v = Number(m[2].replace(/,/g, '')); if (!isFinite(v) || Math.abs(v) < 10000) return '';
         const a = Math.abs(v); const f = (n, u) => (n >= 100 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, '')) + u; return m[1] + (v < 0 ? '-' : '') + (a >= 1e6 ? f(a / 1e6, 'M') : f(a / 1000, 'k')); },
     _icFit(root) {
-        for (const b of (root || document).querySelectorAll('.ic-kpi b[data-s], .ic-kpi b[data-su]')) {
+        for (const b of (root || document).querySelectorAll('.ic-kpi b')) {
             if (b.scrollWidth <= b.clientWidth + 1) continue; const tn = b.firstChild;
             if (b.dataset.s && tn && tn.nodeType === 3) tn.nodeValue = b.dataset.s;
             if (b.dataset.su && b.scrollWidth > b.clientWidth + 1) { const sm = b.querySelector('small'); if (sm) sm.textContent = b.dataset.su; }
+            if (b.scrollWidth > b.clientWidth + 1) b.classList.add('ic-fit'); // v9.23.0 縮寫以後還放不下(例如 26.2k/400)：字小一級，不讓它被截掉
         }
     },
     // o: { id, icon, title, chip:{t,tone}, sum, kpis:[{v,u,l,tone}], alert:{t,tone,act,val,go}, body, detail, info, defOpen }

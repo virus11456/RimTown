@@ -210,9 +210,33 @@ async function run(browser, lang) {
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }
+// v9.23.0 電腦版側欄的資訊卡比手機窄：大數字後面跟著容量（26,212/400）也要完整顯示，不能被截成「26.2…」
+async function kpi(browser) {
+  console.log('— 資訊卡大數字（電腦版側欄、手機）');
+  for (const [W, H, mob] of [[1280, 800, false], [390, 844, true]]) {
+    const ctx = await browser.newContext({ viewport: { width: W, height: H }, serviceWorkers: 'block', isMobile: mob, hasTouch: mob });
+    const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+    await page.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: true, user: { id: 1, username: 'tester' } } : { saves: [], reply: '' }) }));
+    await page.addInitScript(({ jwt }) => { localStorage.setItem('rimtown-lang', 'zh'); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_ui_all', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); }, { jwt });
+    await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(400);
+    const r = await page.evaluate(async () => {
+      const app = window.rimtownApp, w = app.world; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const out = {};
+      const show = async (food) => { w.stockpile.resources.food = food; w.stockpile.resources.silver = 1937; app.state = w.getState(); app._openKairoTab('economy'); await new Promise(r => setTimeout(r, 350));
+        const card = document.getElementById('ic-keyres'); if (card && !card.classList.contains('open')) { card.querySelector('.ic-hd').click(); await new Promise(r => setTimeout(r, 250)); }
+        const bs = [...card.querySelectorAll('.ic-kpi b')]; const all = [...document.querySelectorAll('.ic-card .ic-kpi b')].filter(b => b.clientWidth > 0);
+        return { txt: bs.map(b => b.textContent), cut: bs.filter(b => b.scrollWidth > b.clientWidth + 1).length, allCut: all.filter(b => b.scrollWidth > b.clientWidth + 1).map(b => b.textContent), wide: card.scrollWidth > card.clientWidth + 1 }; };
+      out.a = await show(26212); out.b = await show(1299890); out.c = await show(300); return out; });
+    ok(r.a.txt[0] === '26,212/400' && r.a.cut === 0 && r.a.allCut.length === 0 && !r.a.wide, `${W}px：食物 26,212、容量 400 完整顯示，沒有被截掉`, r.a);
+    ok(r.b.cut === 0 && !r.b.wide && /^(1,299,890|1\.3M)\/400$/.test(r.b.txt[0]), `${W}px：數字大到放不下才改縮寫（1.3M/400），一樣不被截掉`, r.b);
+    ok(r.c.txt[0] === '300/400' && r.c.cut === 0 && !r.c.wide, `${W}px：小數字照舊`, r.c);
+    ok(errs.length === 0, `${W}px：沒有頁面錯誤`, errs.slice(0, 3));
+    await ctx.close();
+  }
+}
 (async () => {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   for (const lang of ['zh', 'en']) await run(browser, lang);
+  await kpi(browser);
   await browser.close();
   console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
