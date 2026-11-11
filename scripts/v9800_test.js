@@ -13,7 +13,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   await page.goto(BASE + 'town.html'); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
   const r = await page.evaluate(() => {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {}; app._showCornerNotice = () => {};
-    const w = app.world; w.observerMode = true; for (let i = 0; i < 96 * 2; i++) { w.paused = false; w.tick(); }
+    const w = app.world; w.observerMode = true; w.fullAgentMode = false; /* 這裡驗的是照個性推估的版本(AI 版會等回話) */ for (let i = 0; i < 96 * 2; i++) { w.paused = false; w.tick(); }
     const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); const T = () => Math.round(MONEY.total(w) * 100) / 100;
     const P = all().filter(a => (a.age ?? 30) >= 18); for (const a of all()) WALLET.get(w, a);
     const M = MARKET.S(w); const X = SHARES.S(w).sh; const IV = INVEST.S(w);
@@ -31,7 +31,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     tr(boss, ['greedy']); tr(inv, ['ambitious']); setCash(inv, 800);
     const y = INVEST.perPct(w, 'kitchen') * 10 / INVEST.askPrice(w, 'kitchen', 10, boss);
     // v9.19.0 誰要入股改由決策核心挑(傾向版:算每個選項的分數,挑最高的);這裡把當天的心情起伏固定住
-    const decide = (a) => { const K = DECIDE.KINDS.spare; const ctx = K.when(w, a); if (!ctx) return null; const ops = K.options(w, a, ctx).filter(o => o.id === 'keep' || o.id.startsWith('invest:')); /* 只比「留著」和「入股」:這個人有沒有更想請客、接濟誰,不是這裡要驗的 */ const Ln = DECIDE.lean(w, a); const best = ops.slice().sort((x, y) => DECIDE.score(Ln, y) - DECIDE.score(Ln, x))[0]; if (best) best.run(w, a, ctx); return best ? best.id : null; };
+    const decide = (a) => { const K = DECIDE.KINDS.spare; const ctx = K.when(w, a); if (!ctx) return null; const ops = K.options(w, a, ctx).filter(o => o.id === 'keep' || o.id.startsWith('invest:')); /* 只比「留著」和「入股」:這個人有沒有更想請客、接濟誰,不是這裡要驗的 */ const Ln = DECIDE.lean(w, a); const best = ops.slice().sort((x, y) => DECIDE.score(Ln, y) - DECIDE.score(Ln, x))[0]; if (best) best.run(w, a, ctx); /* v9.22.0 賣不賣由當家自己決定:把「有人來談入股」交給他回答 */ DECIDE.drain(w, DECIDE.S(w), w._absDay()); return best ? best.id : null; };
     Math.random = () => 0.1; out.buyPick = decide(inv); Math.random = rnd;
     out.buy = { pick: out.buyPick, y, stake: SHARES.pctOf(w, 'kitchen', inv.agentId), bossStake: SHARES.pctOf(w, 'kitchen', boss.agentId), st: IV.st.buy, log: w.messageLog.slice(-6).some(m => /銀行存款一週才/.test(m.k || '')), mem: inv.memory.entries.slice(-5).some(m => /比銀行利息/.test(JSON.stringify(m))) };
     // 2. 分紅比銀行差就不買:把利潤壓低、銀行利息調高

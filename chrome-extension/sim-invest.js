@@ -26,11 +26,14 @@ const INVEST = (() => {
     const cash = (w, a) => (a && typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const dep = (w, a) => (a && w.bank?.open ? (w.bank.dep?.[a.agentId] || 0) : 0);
     const MK = () => MARKET, SH = () => SHARES;
+    // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算。擲骰的版本留給直接呼叫(沒有決策核心)的情況
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const nm = (k) => MK().name(k);
 
     function S(w) {
         const M = MK().S(w); const X = M.inv = M.inv && typeof M.inv === 'object' ? M.inv : {};
-        X.st = X.st || { buy: 0, out: 0, refuse: 0, coop: 0, coopDiv: 0, coopLost: 0 }; X.low = X.low || {}; X.lastPaid = X.lastPaid ?? null;
+        X.st = X.st || { buy: 0, out: 0, refuse: 0, coop: 0, coopDiv: 0, coopLost: 0 }; X.low = X.low || {}; X.ask = X.ask || {}; X.lastPaid = X.lastPaid ?? null;
         return X;
     }
 
@@ -93,15 +96,15 @@ const INVEST = (() => {
         }
         return out;
     }
-    // 成交:當家賣不賣看他自己(缺錢、貪心的爽快;固執、守舊的不太肯;交情好的比較好說話)。回傳 { ok, refused, k, p, price }
-    function buy(w, a, k) {
-        const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
-        const { p, price, boss, by } = q; const bossId = boss.agentId;
-        const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
-        if (Math.random() > yes) {
-            X.st.refuse++; log(w, '🙅 {a}想用存款入股{s}，{o}不肯賣。', { a: a.name, s: nm(k), o: boss.name }, boss.name); bump(a, boss, -2);
-            return { ok: false, refused: true, k, p, price, boss };
-        }
+    // 成交:當家賣不賣看他自己(缺錢、貪心的爽快;固執、守舊的不太肯;交情好的比較好說話)。回傳 { ok, refused, asked, k, p, price }
+    // v9.22.0 ch = 交給當家本人決定：先記下「有人來談入股」，當家拿了主意再由 answer() 結算(回傳 asked)
+    function refuse(w, a, q) {
+        const X = S(w); const { k, p, price, boss } = q;
+        X.st.refuse++; log(w, '🙅 {a}想用存款入股{s}，{o}不肯賣。', { a: a.name, s: nm(k), o: boss.name }, boss.name); bump(a, boss, -2);
+        return { ok: false, refused: true, k, p, price, boss };
+    }
+    function close(w, a, q) {
+        const X = S(w); const { k, p, price, boss, by } = q; const bossId = boss.agentId;
         if (!fund(w, a, price) || !SH().transfer(w, k, bossId, a.agentId, p, price)) return { ok: false };
         X.st.buy++; SH().S(w).sh.st.buy++;
         const by1 = pct1(by), y1 = pct1(q.y);
@@ -112,26 +115,63 @@ const INVEST = (() => {
         try { SH().note?.(w, k, '看利息入股', { a: a.name }); } catch (e) {}
         return { ok: true, k, p, price, boss };
     }
+    function buy(w, a, k, ch) {
+        const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
+        const { p, price, boss } = q;
+        if (ch && byChoice(w) && here(w, boss)) {
+            if (X.ask[k] && day(w) - X.ask[k].d <= 3) return { ok: false, busy: true, k, boss }; // 已經有人在跟當家談了
+            X.ask[k] = { by: a.agentId, d: day(w) }; try { DECIDE.enqueue(w, boss, 'sell', { k, by: a.agentId, src: 'inv' }); } catch (e) { delete X.ask[k]; return { ok: false }; }
+            return { ok: false, asked: true, k, p, price, boss };
+        }
+        const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
+        if (Math.random() > yes) return refuse(w, a, q);
+        return close(w, a, q);
+    }
+    // 有人來談入股：現在的報價(買的人、幾成、多少錢)。談的那個人不在了、錢不夠了就回傳 null
+    function askInfo(w, k) { const X = S(w); const ask = X.ask[k]; const a = ask && w.agents[ask.by]; const q = a && here(w, a) ? quotes(w, a).find(x => x.k === k) : null; return q ? { a, q } : null; }
+    // 當家拿了主意：yes 賣、不然回絕。回傳 'sold'／'no'／'gone'(談的人已經不買了)
+    function answer(w, k, yes) {
+        const X = S(w); if (!X.ask[k]) return null; const I = askInfo(w, k); delete X.ask[k]; if (!I) return 'gone';
+        if (!yes) { refuse(w, I.a, I.q); return 'no'; }
+        return close(w, I.a, I.q).ok ? 'sold' : 'gone';
+    }
 
     // ---------- 2. 退股存銀行 ----------
-    function cashOuts(w, all, d) {
+    // 這個股東現在退得掉嗎：誰接手、多少錢(當家手頭夠就當家接，不然找鎮上有錢、也覺得這家划算的人)
+    function outDeal(w, all, k, h) {
+        const M = SH().S(w); const bossId = M.owners[k]; const boss = w.agents[bossId]; const a = w.agents[h]; if (!boss || !a || h === bossId) return null;
+        const p = SH().pctOf(w, k, h); if (!(p > 0)) return null; const price = SH().priceOf(w, k, p, 0.9);
+        const buyer = cash(w, boss) >= price + 10 ? boss : all.filter(o => o.agentId !== h && o.agentId !== bossId && cash(w, o) >= price + 30 && firmYield(w, k) >= bankYield(w)).sort((x, z) => cash(w, z) - cash(w, x))[0];
+        return buyer ? { a, boss, p, price, buyer } : null;
+    }
+    function cashOut(w, all, k, h) {
+        const X = S(w); const D = outDeal(w, all, k, h); if (!D) return null; const { a, boss, p, price, buyer } = D; const y = firmYield(w, k), by = bankYield(w);
+        if (!SH().transfer(w, k, h, buyer.agentId, p, price)) return null;
+        const put = BANK.deposit(w, w.bank, a, price);
+        X.st.out++; delete X.low[k + '|' + h];
+        log(w, '🏦 {a}算來算去，{s}的分紅一週不到 {y}%，還不如銀行的 {r}%，把 {p}% 股份以 {n} 銀幣賣給{b}，錢存進銀行。', { a: a.name, s: nm(k), y: pct1(y) || 0, r: pct1(by), p, n: price, b: buyer.name }, a.name);
+        mem(w, a, '{s}的分紅比銀行利息還差，我把股份賣了，錢存銀行比較實在。', { s: nm(k) }, 6);
+        if (buyer !== boss) mem(w, buyer, '我接手了{a}在{s}的 {p}% 股份。', { a: a.name, s: nm(k), p }, 5);
+        if (put > 0 && Math.random() < 0.3) mem(w, a, '我把 {n} 銀幣存進銀行，放著也會生利息。', { n: put }, 4);
+        try { SH().note?.(w, k, '退股存銀行', { a: a.name, b: buyer.name }); } catch (e) {}
+        return D;
+    }
+    // 這個人手上哪一家的分紅已經連三週不如銀行、而且現在退得掉(給決策核心問他「要不要退」)
+    function lowOf(w, a) {
+        const X = S(w); if (typeof BANK === 'undefined' || !w.bank?.open || !(bankYield(w) > 0)) return null; const all = npcs(w);
+        for (const k of Object.keys(MK().SECTORS)) { if ((X.low[k + '|' + a.agentId] || 0) < 3) continue; const D = outDeal(w, all, k, a.agentId); if (D) return { k, weeks: X.low[k + '|' + a.agentId], y: firmYield(w, k), by: bankYield(w), ...D }; }
+        return null;
+    }
+    // ch = 交給股東本人決定：這裡只記「連續幾週不如銀行」，不擲骰
+    function cashOuts(w, all, d, ch) {
         const X = S(w); const M = SH().S(w); const by = bankYield(w); if (!(by > 0) || typeof BANK === 'undefined') return;
         for (const k of Object.keys(MK().SECTORS)) {
             const bossId = M.owners[k]; const boss = w.agents[bossId]; if (!boss) continue; const y = firmYield(w, k);
             for (const h of Object.keys(SH().stakes(w, k))) {
                 if (h === bossId) continue; const a = w.agents[h]; if (!a) continue; const key = k + '|' + h;
                 X.low[key] = y < by * 0.8 ? (X.low[key] || 0) + 1 : 0;
-                if (X.low[key] < 3 || Math.random() > 0.5) continue;
-                const p = SH().pctOf(w, k, h); const price = SH().priceOf(w, k, p, 0.9);
-                const buyer = cash(w, boss) >= price + 10 ? boss : all.filter(o => o.agentId !== h && o.agentId !== bossId && cash(w, o) >= price + 30 && firmYield(w, k) >= bankYield(w)).sort((x, z) => cash(w, z) - cash(w, x))[0];
-                if (!buyer || !SH().transfer(w, k, h, buyer.agentId, p, price)) continue;
-                const put = BANK.deposit(w, w.bank, a, price);
-                X.st.out++; delete X.low[key];
-                log(w, '🏦 {a}算來算去，{s}的分紅一週不到 {y}%，還不如銀行的 {r}%，把 {p}% 股份以 {n} 銀幣賣給{b}，錢存進銀行。', { a: a.name, s: nm(k), y: pct1(y) || 0, r: pct1(by), p, n: price, b: buyer.name }, a.name);
-                mem(w, a, '{s}的分紅比銀行利息還差，我把股份賣了，錢存銀行比較實在。', { s: nm(k) }, 6);
-                if (buyer !== boss) mem(w, buyer, '我接手了{a}在{s}的 {p}% 股份。', { a: a.name, s: nm(k), p }, 5);
-                if (put > 0 && Math.random() < 0.3) mem(w, a, '我把 {n} 銀幣存進銀行，放著也會生利息。', { n: put }, 4);
-                try { SH().note?.(w, k, '退股存銀行', { a: a.name, b: buyer.name }); } catch (e) {}
+                if (X.low[key] < 3 || ch || Math.random() > 0.5) continue;
+                cashOut(w, all, k, h);
             }
         }
     }
@@ -225,7 +265,7 @@ const INVEST = (() => {
         if (!w.observerMode || !w.market || typeof WALLET === 'undefined' || !w.wallet || typeof SHARES === 'undefined') return;
         const X = S(w); const d = day(w); if (X.day === d) return; X.day = d;
         trackBank(w); const all = npcs(w);
-        try { cashOuts(w, all, d); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
+        try { cashOuts(w, all, d, byChoice(w)); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
     }
 
     // ---------- 給 AI 與觀察者 ----------
@@ -247,7 +287,7 @@ const INVEST = (() => {
     function partners(w, k) { const R = MK().rivalOf(w, k); const s = R && sh(w, R); if (!s) return ''; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(id => `${t(w.agents[id]?.name || '')} ${s[id]}%`).join(t('・')); }
     function view(w) { const X = S(w); return { st: X.st, bank: pct1(bankYield(w)), best: (() => { try { const M = SH().S(w); return Object.keys(MK().SECTORS).filter(k => M.owners[k] && perPct(w, k) > 0).map(k => ({ s: nm(k), y: Math.round(perPct(w, k) * 10) / 10 })).sort((a, b) => b.y - a.y).slice(0, 3); } catch (e) { return []; } })() }; }
 
-    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, cashOuts, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
+    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, askInfo, answer, cashOuts, cashOut, lowOf, byChoice, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
 })();
 if (typeof window !== 'undefined') window.INVEST = INVEST;
 

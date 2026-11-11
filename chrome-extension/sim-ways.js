@@ -141,6 +141,9 @@ const WAYS = (function () {
         }
         if (X.reno.length === 3 && payer) log(w, '🏠 本來沒人在意屋頂是什麼顏色，直到{a}家先翻修。這個月已經是第三戶了。', { a: payer.name }, payer.name);
     }
+    // v9.22.0 這戶人家是不是正眼紅鄰居翻修(三十天內)；借錢翻修了就記一筆、不再眼紅(給決策核心用)
+    function envied(w, h) { const X = S(w); const dd = X.envy[h]; if (dd == null) return false; if (day(w) - dd > 30) { delete X.envy[h]; return false; } return true; }
+    function envyBorrowed(w, h) { const X = S(w); bump(X, 'borrow'); delete X.envy[h]; }
     // 眼紅的人家手頭不夠:去銀行借錢也要翻修
     function envyBorrow(w) {
         const X = S(w); const d = day(w); if (typeof HOUSING === 'undefined' || typeof BANK === 'undefined' || !w.bank || typeof WALLET === 'undefined') return;
@@ -293,7 +296,7 @@ const WAYS = (function () {
             const who = A.filter(a => !sil.includes(a.agentId)).sort((x, y) => ((hasT(y, 'kind') ? 2 : 0) + (hasT(y, 'charismatic') ? 2 : 0) + (hasV(y, '社群') ? 1 : 0)) - ((hasT(x, 'kind') ? 2 : 0) + (hasT(x, 'charismatic') ? 2 : 0) + (hasV(x, '社群') ? 1 : 0)))[0];
             if (who) { X.lastForum = d; TECH.propose(w, 'ways_forum', 'ways', who, '辦一場鄰里茶會', '{who}說最近大家都不太敢開口提事情了，提議辦一場鄰里茶會：每個人都能說說自己的想法，說錯了也沒關係。只花一點茶點錢。', {}, 'culture'); }
         }
-        envyBorrow(w); nostalgia(w); routines(w); coldDaily(w);
+        if (!(typeof HOUSING !== 'undefined' && HOUSING.byChoice?.(w))) envyBorrow(w); /* v9.22.0 眼紅鄰居、要不要借錢翻修，改由本人決定 */ nostalgia(w); routines(w); coldDaily(w);
     }
 
     // ================= 給介面與 AI =================
@@ -313,7 +316,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });

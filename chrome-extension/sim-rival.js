@@ -66,6 +66,27 @@ const RIVAL = (() => {
     }
 
     // ---------- 一件一件的事 ----------
+    // ---------- 挖角的結算(留下／被挖走) ----------
+    // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)；擲骰的版本留給直接呼叫 event() 的情況
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
+    const canLeave = (w) => npcs(w).length >= 12; // 人太少的小村不會真的被挖空
+    function poachStay(w, V, p, a, skill) {
+        a.moodModifier = (a.moodModifier || 0) + 3; mem(w, a, '{p}開高薪找我過去，我沒答應——這裡是我的家。', { p: pname(p) }, 8); a.currentThought = R('{p}開的價是不錯，但我不走。', { p: pname(p) });
+        for (const o of npcs(w).filter(o => o !== a && Math.random() < 0.4)) mem(w, o, '{p}想挖走{a}，{a}婉拒了。', { p: pname(p), a: a.name }, 4);
+        V.st.kept++; bump(w, p.id, -3); note(w, V, 'talent', '🙅 {p}開高薪想挖走{a}（{s}好手），{a}婉拒了。', { p: pname(p), a: a.name, s: skill }, true, a.name);
+    }
+    function poachGo(w, V, p, a, skill) {
+        const name = a.name; V.st.lost++; V.them = clamp(V.them + 2, 5, 95); bump(w, p.id, -6);
+        for (const o of npcs(w).filter(o => o !== a)) { const close = (o._parentNames || []).includes(name) || (a._parentNames || []).includes(o.name) || (o.relationships?.relationships?.[a.agentId]?.affinity || 0) >= 40; mem(w, o, '{a}被{p}高薪挖走了。', { a: name, p: pname(p) }, close ? 8 : 4); if (close) o.moodModifier = (o.moodModifier || 0) - 3; }
+        note(w, V, 'talent', '💼 {p}開高薪挖走了{a}（{s}好手）。', { p: pname(p), a: name, s: skill }, false, name);
+        try { w.leaveTown?.(a.agentId, R('被{p}高薪挖走', { p: pname(p) })); } catch (e) {}
+    }
+    // 給決策核心：來挖角的是哪個鎮、兩邊誰比較興旺、他走不走得了
+    function poachInfo(w, pid) { const V = w.rival; const p = V && placeOf(w); if (!p || p.id !== pid) return null; return { p, name: pname(p), us: usOf(w), them: Math.round(V.them), rel: relOf(w, p.id), canLeave: canLeave(w) }; }
+    // 本人拿了主意。回傳 'stay'／'gone'
+    function poachAnswer(w, a, pid, skill, go) { const I = poachInfo(w, pid); if (!I || !here(w, a)) return null; const V = S(w); if (go && I.canLeave) { poachGo(w, V, I.p, a, skill); return 'gone'; } poachStay(w, V, I.p, a, skill); return 'stay'; }
+
     const EV = {
         // 搶生意:我們最多的那樣貨,對手賣得比較便宜
         trade(w, V, p) {
@@ -84,22 +105,15 @@ const RIVAL = (() => {
             return true;
         },
         // 挖角:開高薪挖我們最厲害的人
-        talent(w, V, p) {
+        talent(w, V, p, ch) {
             const lead = leaderIds(w); const pool = adults(w).filter(a => !lead.has(a.agentId) && (a.age ?? 30) <= 60);
             const tgt = pool.map(a => ({ a, s: topSkill(a) })).filter(x => x.s && x.s.level >= 2).sort((x, y) => y.s.level - x.s.level)[0]; if (!tgt) return false;
             const a = tgt.a, skill = tgt.s.category; const rel = relOf(w, p.id);
+            // v9.22.0 ch = 走不走交給本人決定：先記下「有人來挖角」，他拿了主意再結算
+            if (ch && here(w, a)) { try { DECIDE.enqueue(w, a, 'poach', { pid: p.id, skill }); V.st.asked = (V.st.asked || 0) + 1; return true; } catch (e) {} }
             let stay = 0.5 + (a.relationships?.getPartner?.() ? 0.2 : 0) + ((a.mood ?? 50) >= 60 ? 0.12 : 0) - ((a.mood ?? 50) < 35 ? 0.2 : 0) + (rel <= -30 ? 0.15 : 0) - (V.them > usOf(w) + 10 ? 0.12 : 0) + (has(a, 'stoic') ? 0.1 : 0) - (has(a, 'jealous') ? 0.08 : 0);
-            if (npcs(w).length < 12) stay = 1; // 人太少的小村不會真的被挖空
-            if (Math.random() < stay) {
-                a.moodModifier = (a.moodModifier || 0) + 3; mem(w, a, '{p}開高薪找我過去，我沒答應——這裡是我的家。', { p: pname(p) }, 8); a.currentThought = R('{p}開的價是不錯，但我不走。', { p: pname(p) });
-                for (const o of npcs(w).filter(o => o !== a && Math.random() < 0.4)) mem(w, o, '{p}想挖走{a}，{a}婉拒了。', { p: pname(p), a: a.name }, 4);
-                V.st.kept++; bump(w, p.id, -3); note(w, V, 'talent', '🙅 {p}開高薪想挖走{a}（{s}好手），{a}婉拒了。', { p: pname(p), a: a.name, s: skill }, true, a.name);
-            } else {
-                const name = a.name; V.st.lost++; V.them = clamp(V.them + 2, 5, 95); bump(w, p.id, -6);
-                for (const o of npcs(w).filter(o => o !== a)) { const close = (o._parentNames || []).includes(name) || (a._parentNames || []).includes(o.name) || (o.relationships?.relationships?.[a.agentId]?.affinity || 0) >= 40; mem(w, o, '{a}被{p}高薪挖走了。', { a: name, p: pname(p) }, close ? 8 : 4); if (close) o.moodModifier = (o.moodModifier || 0) - 3; }
-                note(w, V, 'talent', '💼 {p}開高薪挖走了{a}（{s}好手）。', { p: pname(p), a: name, s: skill }, false, name);
-                try { w.leaveTown?.(a.agentId, R('被{p}高薪挖走', { p: pname(p) })); } catch (e) {}
-            }
+            if (!canLeave(w)) stay = 1; // 人太少的小村不會真的被挖空
+            if (Math.random() < stay) poachStay(w, V, p, a, skill); else poachGo(w, V, p, a, skill);
             return true;
         },
         // 人才投奔:我們比較興旺,對手鎮的人搬過來
@@ -158,18 +172,18 @@ const RIVAL = (() => {
         if (V.them < 30 && rel >= 25) L.push(['aid', 2.5]);
         const sum = L.reduce((s, x) => s + x[1], 0); let r = Math.random() * sum; for (const [k, wt] of L) { r -= wt; if (r <= 0) return k; } return 'trade';
     }
-    function event(w, kind) {
+    function event(w, kind, ch) {
         const V = S(w); const p = ensure(w); if (!p) return null;
-        const k = kind || choose(w, V, p); let ok = false; try { ok = EV[k]?.(w, V, p); } catch (e) { console.warn('[Rival]', k, e); }
+        const k = kind || choose(w, V, p); let ok = false; try { ok = EV[k]?.(w, V, p, ch); } catch (e) { console.warn('[Rival]', k, e); }
         if (!ok && !kind) { try { ok = EV.contest(w, V, p); } catch (e) {} return ok ? 'contest' : null; }
         return ok ? k : null;
     }
-    function daily(w) {
+    function daily(w, ch) {
         const V = S(w), d = day(w); if (V.lastDay === d) return; V.lastDay = d;
         const p = ensure(w); if (!p) return;
         // 對手鎮自己的發展:落後會拚命追、領先太多會鬆懈
         const gap = usOf(w) - V.them; V.them = clamp(V.them + (Math.random() - 0.5) * 1.2 + gap * 0.04, 5, 95);
-        if (d - (V.lastEv ?? d) >= 7) { V.lastEv = d - Math.floor(Math.random() * 2); event(w); }
+        if (d - (V.lastEv ?? d) >= 7) { V.lastEv = d - Math.floor(Math.random() * 2); event(w, undefined, ch); }
         effects(w, V);
     }
 
@@ -193,12 +207,12 @@ const RIVAL = (() => {
         const L = (typeof TIERS !== 'undefined' && TIERS.LV) ? TIERS.LV : [{ icon: '🏡' }, { icon: '🏘️' }, { icon: '🏙️' }, { icon: '🏰' }];
         return { name: t(pname(p)), icon: L[p.lv ?? 1]?.icon || '🏘️', us: usOf(w), them: Math.round(V.them), rel, stance: t(stanceOf(rel)), st: V.st, dep: V.dep || 0, log: V.log.slice(-4).reverse().map(x => ({ text: R(x.k, x.p), good: x.good, ago: day(w) - x.d })) };
     }
-    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf };
+    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf, poachInfo, poachAnswer, byChoice };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) RIVAL.daily(w); } catch (e) { console.warn('[Rival] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) RIVAL.daily(w, RIVAL.byChoice(w)); } catch (e) { console.warn('[Rival] daily', e); } return r; };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype; const _fb = CE._fallbackConversation;

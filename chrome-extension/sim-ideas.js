@@ -88,9 +88,13 @@ class IdeaSystem {
     // 立場:接受多 → 革新,抗拒多 → 保守
     stance(w, a) {
         let s = 0; for (const x of Object.values(this.ideas)) { if (x.a.includes(a.agentId)) s += 1; if (x.r.includes(a.agentId)) s -= 1.4; }
-        return s + this.openness(w, a, '') * 0.4;
+        return s + this.openness(w, a, '') * 0.4 + this._mind(w, a) * 0.5;
     }
-    stanceLabel(w, a) { const s = this.stance(w, a); return s >= 1.5 ? 'progressive' : s <= -0.8 ? 'conservative' : 'moderate'; }
+    // v9.22.0 村民對新科技只有一份態度：這裡的「革新／保守」跟意見系統(sim-mind.js)的「新科技」立場連在一起——
+    // 立場算進這裡的分數；接受或抗拒一個新觀念，也會推動那邊的立場。兩邊明顯相反時(嘴上反對新科技卻被標成革新派)一律算中間。
+    _mind(w, a) { return w.mind?.op?.[a.agentId]?.tech || 0; }
+    _lean(w, a, n) { try { if (typeof MIND !== 'undefined' && w.mind?.op?.[a.agentId]) MIND.shift(w, a, 'tech', n); } catch (e) {} }
+    stanceLabel(w, a) { const s = this.stance(w, a), m = this._mind(w, a); const L = s >= 1.5 ? 'progressive' : s <= -0.8 ? 'conservative' : 'moderate'; return (L === 'progressive' && m <= -1) || (L === 'conservative' && m >= 1) ? 'moderate' : L; }
     _refreshStances(w) { for (const a of this._npcs(w)) a.techStance = this.stanceLabel(w, a); }
     // 每天:觀念靠聊天傳開;偶爾有人靈光一閃
     daily(w) {
@@ -112,11 +116,11 @@ class IdeaSystem {
                 const op = this.openness(w, o, key);
                 if (side === 'a') {
                     const p = Math.max(0.05, Math.min(0.85, 0.28 + op * 0.12 + aff / 300 - def.c * 0.15));
-                    if (Math.random() < p) { x.a.push(o.agentId); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}說服了我：{idea}', { who: sp.name, idea: def.idea }, 5, [sp.name]); }
-                    else if (Math.random() < def.c * 0.45 + Math.max(0, -op) * 0.15) { x.r.push(o.agentId); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}一直講「{idea}」，我才不信那一套', { who: sp.name, idea: def.idea }, 5, [sp.name]); }
+                    if (Math.random() < p) { x.a.push(o.agentId); this._lean(w, o, 0.2); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}說服了我：{idea}', { who: sp.name, idea: def.idea }, 5, [sp.name]); }
+                    else if (Math.random() < def.c * 0.45 + Math.max(0, -op) * 0.15) { x.r.push(o.agentId); this._lean(w, o, -0.25); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}一直講「{idea}」，我才不信那一套', { who: sp.name, idea: def.idea }, 5, [sp.name]); }
                 } else {
                     const p = Math.max(0, Math.min(0.5, 0.08 + def.c * 0.12 - op * 0.06 + aff / 400));
-                    if (Math.random() < p) { x.r.push(o.agentId); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}說「{idea}」根本是胡扯，聽起來也有道理', { who: sp.name, idea: def.idea }, 4, [sp.name]); }
+                    if (Math.random() < p) { x.r.push(o.agentId); this._lean(w, o, -0.25); o.memory?.addT?.(w.tickCount, w.clock.timeStr, 'idea', '{who}說「{idea}」根本是胡扯，聽起來也有道理', { who: sp.name, idea: def.idea }, 4, [sp.name]); }
                 }
             }
             // 里程碑:一半、全鎮

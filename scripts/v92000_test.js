@@ -102,7 +102,8 @@ async function run(browser, lang) {
     ce.fullAgentOk = () => true; ce._askJson = async (p) => { prompts.push(p); return typeof reply === 'function' ? reply(p) : reply; };
     const today = () => { X.lastDay = -1; DECIDE.daily(w); };
     // 只讓指定的人今天遇到事(其他人全部冷卻)，AI 的名額才不會被別人用掉
-    const only = (...keep) => { const ids = new Set(keep.map(a => a.agentId)); for (const a of all) if (!ids.has(a.agentId)) for (const k of Object.keys(K)) X.cool[a.agentId + '|' + k] = d0() + 9; };
+    const LATER = ['cashout', 'renovate', 'tithe', 'scheme', 'startup']; // v9.22.0 之後才有的選擇點(開店、翻修…)：這裡驗的是人際，不讓它們搶先
+    const only = (...keep) => { const ids = new Set(keep.map(a => a.agentId)); for (const a of all) { if (!ids.has(a.agentId)) for (const k of Object.keys(K)) X.cool[a.agentId + '|' + k] = d0() + 9; else for (const k of LATER) X.cool[a.agentId + '|' + k] = d0() + 9; } };
     clean(); w.fullAgentMode = true; { const x = wrong(A, B, 2); only(A, B); /* B 自己也有一件事在等 AI(心裡有口氣)：A 來道歉時，那件先擱下、改問這一件 */
       reply = (p) => /來跟你道歉|come to apologize to you/.test(p) ? [{ n: 1, pick: 'a', why: 'W-FORGIVE' }] : /還沒跟|not apologized/.test(p) ? [{ n: 1, pick: 'b', why: 'W-SORRY', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const ea = lastLog(A), eb = lastLog(B); const pS = prompts.find(p => /還沒跟|not apologized/.test(p)) || ''; const pF = prompts.find(p => /來跟你道歉|come to apologize to you/.test(p)) || '';
