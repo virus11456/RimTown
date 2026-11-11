@@ -103,6 +103,41 @@ Object.assign(RimTownApp.prototype, {
         hero.after(tabs);
         const want = this._pgState().dtTab; this._dtApplyTab(container, count(want) ? want : 'now');
     },
+    // ---------- 建設頁(v9.18.0 整頁重做):以前「已完成」是一長串名字＋星星，佔滿整頁又看不出重點 ----------
+    //   最上面四個大數字 → 施工中(進度條) → 已蓋好(兩欄小方塊、圖示、等級圓點) → 可升級／可以蓋／相鄰組合(收合，材料小格子，缺的標紅)
+    _BLD_IC: [[/倉庫/, '📦'], [/穀|糧/, '🌾'], [/磨坊|風車/, '🌬️'], [/染|紡|布/, '🧵'], [/井|水/, '💧'], [/鍛|鐵|爐/, '⚒️'], [/藥|草/, '🌿'], [/牆|城/, '🧱'], [/診|醫|病/, '🏥'], [/市集|商業|廣場|市場/, '🏪'], [/倉/, '📦'], [/文書|圖書|史/, '📜'], [/軍械|兵|訓練/, '🛡️'], [/酒/, '🍺'], [/路|道/, '🛣️'], [/講堂|學|教/, '🎓'], [/地圖/, '🗺️'], [/田|農|灌/, '🚜'], [/商隊|驛/, '🐪'], [/印刷/, '🖨️'], [/瞭望|塔/, '🗼'], [/浴|澡/, '🛁'], [/工坊|作坊|廠/, '🏭'], [/神|廟|教堂|祠/, '⛩️'], [/劇|雕|藝/, '🎭'], [/天文/, '🔭'], [/銀行|錢/, '🏦'], [/議事|鎮公所|政/, '🏛️']],
+    _bldIcon(name) { const n = String(name || ''); for (const [re, ic] of this._BLD_IC) if (re.test(n)) return ic; return '🏠'; },
+    _bldCost(costs) {
+        const res = this.state?.stockpile?.resources || {}; const icons = { salt: '🧂', paper: '📄', food: '🌾', wood: '🪵', stone: '🪨', metal: '⚙️', cloth: '🧵', herbs: '🌿', silver: '💰', meals: '🍲', tools: '🔧', clothing: '👕', medicine: '💊', furniture: '🪑', research_points: '📚' };
+        return `<span class="pg-costs">${Object.entries(costs || {}).map(([r, a]) => `<span class="pg-cost${(res[r] || 0) < a ? ' short' : ''}" title="${this._icEsc(this._resName ? this._resName(r) : r)} ${Math.floor(res[r] || 0)}/${a}">${icons[r] || ''}${a}</span>`).join('')}</span>`;
+    },
+    _pips(lv, max = 3) { return `<span class="pg-pips" aria-label="Lv.${lv}">${Array.from({ length: max }, (_, i) => `<i class="${i < lv ? 'on' : ''}"></i>`).join('')}</span>`; },
+    _buildV2() {
+        const esc = (x) => this._icEsc(x); const B = this.state.buildings || {}; const W = this.world.buildings;
+        const prog = B.in_progress || [], done = (B.completed || []).slice().sort((a, b) => (b.level || 1) - (a.level || 1));
+        let up = [], av = []; try { up = W.getUpgradeable(this.world); } catch (e) {} try { av = W.getAvailable(this.world); } catch (e) {}
+        const upKeys = new Set(up.map(u => u.buildingKey));
+        let h = this._ic({ id: 'bld-sum', icon: '🏗️', title: t('鎮上的建築'), defOpen: true, chip: prog.length ? { t: t('{n} 項施工中').replace('{n}', prog.length), tone: 'y' } : null,
+            kpis: [{ v: done.length, u: t('棟'), l: t('已蓋好') }, { v: prog.length, l: t('施工中'), tone: prog.length ? 'y' : '' }, { v: up.length, l: t('可升級') }, { v: av.length, l: t('可以蓋') }] });
+        // 施工中
+        const pRows = prog.map(p => { const pct = Math.max(0, Math.min(100, Math.round((p.workDone / Math.max(1, p.workRequired)) * 100))); return `<div class="pg-prog"><span class="pg-prog-ic">${this._bldIcon(p.name)}</span><div class="pg-prog-m"><div class="pg-prog-t"><b>${esc(t(p.name))}</b>${p.upgradeKey ? `<small>${t('升級到 Lv.{n}').replace('{n}', p.targetLevel || '')}</small>` : ''}<span>${pct}%</span></div><div class="ic-bar"><i style="width:${Math.max(2, pct)}%"></i></div></div></div>`; }).join('');
+        h += this._ic({ id: 'bld-prog', icon: '🚧', title: t('施工中'), defOpen: true, sum: prog.length ? `<b>${prog.length}</b>` : '', body: pRows || `<div class="ic-note">${t('目前沒有在蓋的工程。村民提案通過後才會開工。')}</div>` });
+        // 已蓋好:小方塊
+        const tiles = done.map(b => { const lv = b.level || 1; const canUp = upKeys.has(b.buildingKey); return `<div class="pg-tile${canUp ? ' up' : ''}" title="${esc(b.description || '')}"><span class="pg-tile-ic">${this._bldIcon(b.name)}</span><span class="pg-tile-m"><b>${esc(t(b.name))}</b>${this._pips(lv)}</span>${canUp ? `<span class="pg-tile-up" title="${esc(t('可升級'))}">⬆</span>` : ''}</div>`; }).join('');
+        h += this._ic({ id: 'bld-done', icon: '🏘️', title: t('已蓋好'), defOpen: true, sum: `<b>${done.length}</b>`, body: tiles ? `<div class="pg-tiles">${tiles}</div><div class="pg-legend">${this._pips(1)} Lv.1　${this._pips(3)} Lv.3　<span class="pg-tile-up">⬆</span> ${t('可升級')}</div>` : `<div class="ic-note">${t('還沒有蓋好的建築。')}</div>` });
+        // 可升級
+        if (up.length) h += this._ic({ id: 'bld-up', icon: '⬆️', title: t('可升級'), defOpen: false, sum: `<b>${up.length}</b>`, body: up.map(u => `<div class="pg-opt${u.can_afford ? '' : ' cant'}"><div class="pg-opt-t"><span>${this._bldIcon(u.name)}</span><b>${esc(t(u.name))}</b><small>Lv.${u.currentLevel} → ${u.nextLevel}</small></div><div class="pg-opt-d">${esc(u.description || '')}</div><div class="pg-opt-f">${this._bldCost(u.costs)}${Object.entries(u.effects || {}).map(([k, v]) => `<span class="pg-eff">${esc(this._upEffText ? this._upEffText(k, v) : k)}</span>`).join('')}</div></div>`).join('') });
+        // 可以蓋
+        if (av.length) h += this._ic({ id: 'bld-av', icon: '📐', title: t('可以蓋'), defOpen: false, sum: `<b>${av.length}</b>`, body: av.map(p => `<div class="pg-opt${p.can_afford ? '' : ' cant'}"><div class="pg-opt-t"><span>${this._bldIcon(p.name)}</span><b>${esc(t(p.name))}</b>${p.can_afford ? `<small class="ok">${t('材料夠')}</small>` : `<small>${t('材料不夠')}</small>`}</div><div class="pg-opt-d">${esc(p.description || '')}</div><div class="pg-opt-f">${this._bldCost(p.costs)}</div></div>`).join('') + `<div class="ic-note">${t('紅色的材料是公庫目前還不夠的。')}</div>` });
+        // 相鄰組合
+        if (typeof COMBO_DEFS !== 'undefined') {
+            const found = new Set(this.world?.combosFound || []); const F = COMBO_DEFS.filter(c => found.has(c.id));
+            h += this._ic({ id: 'bld-combo', icon: '✨', title: t('相鄰組合'), defOpen: false, sum: `<b>${F.length}/${COMBO_DEFS.length}</b>`, info: t('把相配的建築和裝飾放在附近(4格內)會觸發組合,提升美觀與繁榮!組合配方要自己摸索'),
+                body: (F.length ? `<div class="ic-rows">${F.map(c => `<div class="ic-row"><span>${c.icon} ${esc(c.name)}</span><small>${esc(c.desc)}</small></div>`).join('')}</div>` : '') + (COMBO_DEFS.length - F.length ? `<div class="ic-note">❓ ${t('還有 {n} 種組合沒發現').replace('{n}', COMBO_DEFS.length - F.length)}</div>` : '') });
+        }
+        return `<div class="ic-wrap pg-build">${h}</div>`;
+    },
+
     // ---------- 通用:每個分頁畫完後整理一次 ----------
     // 1. 區塊(econ-section、pp-issues…)的標題列變成可以點的收合鈕，收起時只剩一行標題＋數量；開關記得住
     // 2. 一行裡用「 · 」接了三項以上的文字，拆成一格一格的小格子(以前一整串擠在一起很難讀)
@@ -216,6 +251,8 @@ Object.assign(RimTownApp.prototype, {
     const P = RimTownApp.prototype;
     const _rl = P.renderResidentsList;
     P.renderResidentsList = function (container) { if (this.world?.observerMode) { try { return this._residentsV2(container); } catch (e) { console.warn('[pages] residents', e); } } return _rl.call(this, container); };
+    const _re = P.renderEconomy;
+    P.renderEconomy = function (container) { if (this.activeTab === 'econ-build' && this.world?.observerMode && this.state) { try { container.innerHTML = `<div class="economy-panel">${this._buildV2()}</div>`; return; } catch (e) { console.warn('[pages] build', e); } } return _re.call(this, container); };
     const _ad = P.renderAgentDetail;
     P.renderAgentDetail = function (container) { const r = _ad.call(this, container); try { this._dtEnhance(container); } catch (e) { console.warn('[pages] detail', e); } return r; };
 })();

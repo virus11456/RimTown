@@ -45,7 +45,7 @@ async function run(browser, lang) {
       out.dt.visRel = [...new Set(visible())];
       await go('detail'); out.dt.remember = document.querySelector('.pg-tab.on')?.dataset.val;
       click(document.querySelector('.pg-tab[data-val="now"]')); await sleep(40);
-      const dupes = []; document.querySelectorAll('.detail-section').forEach(sec => { let prev = ''; sec.querySelectorAll(':scope > .memory-item').forEach(it => { const tx = (it.lastChild?.textContent || '').replace(/^\s*\d{1,2}:\d{2}\s*/, '').trim(); if (tx && tx === prev) dupes.push(tx); prev = tx; }); });
+      const dupes = []; document.querySelectorAll('.detail-section').forEach(sec => { let prev = ''; const seen = {}; sec.querySelectorAll(':scope > .memory-item').forEach(it => { const c = it.cloneNode(true); c.querySelectorAll('.pg-x, .memory-time').forEach(x => x.remove()); const tx = c.textContent.trim(); if (tx && seen[tx]) dupes.push(tx); seen[tx] = 1; }); });
       out.dt.dupes = dupes.slice(0, 3); out.dt.merged = document.querySelectorAll('.pg-x').length;
       if (lang === 'en') out.dt.leak = [...document.querySelectorAll('.pg-tab, .pg-dt-kpis span')].map(e => e.textContent).flatMap(cjk).slice(0, 5);
       // 提案 › 鎮況:區塊收合、記得住
@@ -57,6 +57,9 @@ async function run(browser, lang) {
       out.town.opened = closed?.classList.contains('open');
       out.town.hiddenWhenClosed = (() => { const b = blks.find(x => !x.classList.contains('open')); if (!b) return null; const kid = [...b.children].find(c => !c.classList.contains('pg-bh')); return kid ? getComputedStyle(kid).display === 'none' : null; })();
       await go('proposals', 'town'); out.town.remember = !!([...document.querySelectorAll('.pg-blk')].find(b => b.dataset.pgb === key)?.classList.contains('open'));
+      // 建設頁:大數字、施工中、已蓋好的小方塊
+      await go('econ-build'); out.bld = { kpis: document.querySelectorAll('#ic-bld-sum .ic-kpi').length, tiles: document.querySelectorAll('#ic-bld-done .pg-tile').length, done: (app.state.buildings?.completed || []).length, prog: !!document.querySelector('#ic-bld-prog'), old: document.querySelectorAll('.completed-building-item').length, overflow: (() => { const e = document.querySelector('.pg-build'); return e ? e.scrollWidth > e.clientWidth + 2 : null; })() };
+      if (lang === 'en') out.bld.leak = [...document.querySelectorAll('.pg-build .ic-tt, .pg-build .ic-kpi span')].map(e => e.textContent).flatMap(cjk).slice(0, 5);
       // 產業:長串「·」變小格子
       await go('industry'); out.dots = document.querySelectorAll('.pg-dots .pg-dot').length;
       // 科技:已完成／還沒解鎖收成一行
@@ -98,6 +101,7 @@ async function run(browser, lang) {
   ok(r.dt && r.dt.vis0.join() === 'now' && r.dt.visRel.join() === 'rel' && r.dt.remember === 'rel', `${tag} 切分頁只顯示那一類，重畫後記得在哪一頁`, r.dt);
   ok(r.dt && !r.dt.dupes.length && r.dt.merged >= 1, `${tag} 重複的紀錄合併成「×N」`, { dupes: r.dt?.dupes, merged: r.dt?.merged });
   ok(r.town && r.town.n >= 4 && r.town.open < r.town.n && r.town.opened && r.town.hiddenWhenClosed && r.town.remember, `${tag} 鎮況每一區可以收合、收起只剩標題、重畫後記得`, r.town);
+  ok(r.bld && r.bld.kpis === 4 && r.bld.prog && r.bld.tiles === r.bld.done && r.bld.old === 0 && r.bld.overflow === false && !(r.bld.leak || []).length, `${tag} 建設頁：四個大數字、施工中、已蓋好改成小方塊（不再是一長串名字＋星星）`, r.bld);
   ok(r.dots > 3, `${tag} 產業頁的長串「·」拆成小格子`, r.dots);
   ok(r.tech && r.tech.folds >= 1 && r.tech.hidden0 >= 2 && r.tech.hidden1 === 0, `${tag} 科技：已完成／還沒解鎖收成一行，點開才看`, r.tech);
   ok(r.ach && r.ach.chips === 3 && r.ach.bars >= 3 && r.ach.lockedShown === 0, `${tag} 成就：全部／已達成／還沒達成篩選＋每類進度條`, r.ach);

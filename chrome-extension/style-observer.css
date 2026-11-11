@@ -1202,3 +1202,33 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-card.pg-mini .pp-title { padding-right: 70px; }
 .rimtown-container .pg-ppt { display: block; width: 100%; min-height: 36px; margin-top: 4px; border: 0; border-top: 1px dashed var(--border); background: none; color: var(--accent); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
 .rimtown-container .pg-ppt .pg-c, .rimtown-container .pp-card.pg-mini .pg-ppt .pg-o { display: inline; } .rimtown-container .pg-ppt .pg-o, .rimtown-container .pp-card.pg-mini .pg-ppt .pg-c { display: none; }
+/* v9.18.0 建設頁 */
+.rimtown-container .pg-prog { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-prog:last-child { border-bottom: 0; }
+.rimtown-container .pg-prog-ic, .rimtown-container .pg-tile-ic { font-size: 1.25rem; width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--ic-tile); border-radius: 10px; }
+.rimtown-container .pg-prog-m { flex: 1; min-width: 0; }
+.rimtown-container .pg-prog-t { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; font-size: 0.88rem; }
+.rimtown-container .pg-prog-t b { color: var(--text-primary); } .rimtown-container .pg-prog-t small { color: var(--text-muted); font-size: 0.74rem; }
+.rimtown-container .pg-prog-t span { margin-left: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 520px) { .rimtown-container .pg-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rimtown-container .pg-tile { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 10px; background: var(--ic-tile); border: 1px solid transparent; min-width: 0; }
+.rimtown-container .pg-tile.up { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.rimtown-container .pg-tile .pg-tile-ic { width: 30px; height: 30px; font-size: 1.05rem; background: color-mix(in srgb, var(--bg-card) 70%, transparent); }
+.rimtown-container .pg-tile-m { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rimtown-container .pg-tile-m b { font-size: 0.84rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-tile-up { color: var(--accent); font-size: 0.8rem; font-weight: 800; }
+.rimtown-container .pg-tile > .pg-tile-up { position: absolute; top: 4px; right: 7px; }
+.rimtown-container .pg-pips { display: inline-flex; gap: 3px; } .rimtown-container .pg-pips i { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--text-muted) 35%, transparent); }
+.rimtown-container .pg-pips i.on { background: var(--accent); }
+.rimtown-container .pg-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); }
+.rimtown-container .pg-opt { padding: 9px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-opt:last-of-type { border-bottom: 0; }
+.rimtown-container .pg-opt-t { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+.rimtown-container .pg-opt-t b { color: var(--text-primary); } .rimtown-container .pg-opt-t small { margin-left: auto; font-size: 0.74rem; color: var(--ic-r); font-weight: 700; } .rimtown-container .pg-opt-t small.ok { color: var(--ic-g); }
+.rimtown-container .pg-opt-t small:not(.ok):not([class]) { color: var(--text-muted); }
+.rimtown-container .pg-opt-d { font-size: 0.78rem; color: var(--text-secondary); margin: 3px 0 6px; }
+.rimtown-container .pg-opt-f, .rimtown-container .pg-costs { display: flex; flex-wrap: wrap; gap: 5px; }
+.rimtown-container .pg-cost, .rimtown-container .pg-eff { font-size: 0.76rem; padding: 2px 7px; border-radius: 7px; background: var(--ic-tile); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-cost.short { background: var(--ic-rb); color: var(--ic-r); font-weight: 700; }
+.rimtown-container .pg-eff { background: var(--ic-gb); color: var(--ic-g); }
