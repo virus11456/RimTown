@@ -876,23 +876,31 @@ class ElectionSystem {
         return { ok: true };
     }
 
+    // 出來選的本錢:口才、人緣、心情、政績(不含運氣)
+    _runScore(world, a) {
+        let score = (a.skills?.skills?.社交?.level || 0) * 2;
+        score += (a.personality.socialModifier || 0) * 3;
+        score += (a.mood + 50) / 20;
+        if (a.personality.traits.includes('charismatic')) score += 8;
+        if (a.personality.traits.includes('shy')) score -= 5;
+        if (a.job?.key === 'mayor') score += 5;
+        { const rec = world.proposals?.record?.(a.agentId); if (rec) score += Math.min(10, (rec.done || 0) * 2.5) - Math.min(4, (rec.rejected || 0)); } // v6.30.0 提案落實多的人更有資格出來選
+        return score;
+    }
     _startElection(world, opts = {}) {
         const eligible = this._residents(world).filter(a => this._canServe(world, a)); // v6.42.0 排除外鎮訪客、出遠門的人;v9.4.0 國王和坐牢的人不參選
         if (eligible.length < 2) return;
         this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
         this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {}; this._campPending = false;
+        // v9.21.0 決策核心階段 3:選前幾天問過「要不要出來選」的人,說要選的排最前面、說不選的排最後(沒被問到的照聲望);補選來不及問,照舊
+        const will = (!opts.byElection && typeof DECIDE !== 'undefined' && DECIDE.pol && DECIDE.on?.(world) && DECIDE.runIntent) ? DECIDE.runIntent(world) : null;
         const scored = eligible.map(a => {
-            let score = (a.skills?.skills?.社交?.level || 0) * 2;
-            score += (a.personality.socialModifier || 0) * 3;
-            score += (a.mood + 50) / 20;
-            if (a.personality.traits.includes('charismatic')) score += 8;
-            if (a.personality.traits.includes('shy')) score -= 5;
-            if (a.job?.key === 'mayor') score += 5;
-            { const rec = world.proposals?.record?.(a.agentId); if (rec) score += Math.min(10, (rec.done || 0) * 2.5) - Math.min(4, (rec.rejected || 0)); } // v6.30.0 提案落實多的人更有資格出來選
-            score += Math.random() * 6;
+            let score = this._runScore(world, a) + Math.random() * 6;
+            if (will) score += will[a.agentId] === 1 ? 100 : will[a.agentId] === -1 ? -100 : 0;
             return { agent: a, score };
         }).sort((a, b) => b.score - a.score);
-        const numCandidates = Math.min(eligible.length, 2 + (eligible.length >= 8 ? 1 : 0) + (eligible.length >= 12 ? 1 : 0));
+        const said = will ? eligible.filter(a => will[a.agentId] === 1).length : 0;
+        const numCandidates = said >= 2 ? Math.min(said, 4) : Math.min(eligible.length, 2 + (eligible.length >= 8 ? 1 : 0) + (eligible.length >= 12 ? 1 : 0));
         this.candidates = scored.slice(0, numCandidates).map(({ agent }) => {
             const policy = this._pickPolicy(agent);
             return { agentId: agent.agentId, name: agent.name, policy: policy.id, policyLabel: policy.label, policyIcon: policy.icon, votes: 0, speech: this._generateSpeech(agent, policy) };

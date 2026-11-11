@@ -40,33 +40,54 @@ const POWER = (() => {
     }
 
     // ---------- 一、政治獻金 ----------
+    // v9.21.0 決策核心階段 3:捐不捐、捐給誰、收不收,交給本人決定(sim-decide-pol.js);這裡只留「誰捐得起、可以捐給誰」和「錢怎麼過手」
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.pol && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const here = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
+    // 現在可以捐給誰:選舉期間是候選人(依聲勢排),平常是首長和議員
+    function targetsOf(w) {
+        const E = w.election; const campaign = !!(E?.active && (E.phase === 'campaign' || E.phase === 'voting'));
+        const list = campaign ? (E.candidates || []).slice().sort((x, y) => (y.votes || 0) - (x.votes || 0)).map(c => w.agents[c.agentId]).filter(Boolean) : politicians(w);
+        return { campaign, list };
+    }
+    // 金主的門檻:有產業的老闆(手頭 60 以上),或鎮上最有錢的前 8%(至少 100)
+    let _top = { w: null, d: -1, v: 100 };
+    function richLine(w) { const d = day(w); if (_top.w === w && _top.d === d) return _top.v; const all = npcs(w); const rich = all.map(a => cash(w, a)).sort((x, y) => y - x); _top = { w, d, v: Math.max(100, rich[Math.floor(all.length * 0.08)] || 100) }; return _top.v; }
+    const canDonate = (w, a) => tierLv(w) >= 1 && !!WL() && ((isOwner(w, a) && cash(w, a) >= 60) || cash(w, a) >= richLine(w));
+    const giftSize = (w, dn) => Math.max(5, Math.min(80, Math.round(cash(w, dn) * 0.08)));
+    // 錢過手(擲骰版和本人決定共用)
+    function give(w, dn, tg, n, campaign, d = day(w)) {
+        const P = S(w); const Wl = WL(); if (!Wl || !dn || !tg || tg === dn || n < 1 || !Wl.take(w, dn, n)) return false; Wl.add(w, tg, n);
+        const m = P.inf[tg.agentId] = P.inf[tg.agentId] || {}; m[dn.agentId] = (m[dn.agentId] || 0) + n;
+        if (campaign) P.camp[tg.agentId] = (P.camp[tg.agentId] || 0) + n;
+        P.stats.donated += n; P.stats.gifts++;
+        mem(w, tg, '{d}給了我 {n} 銀幣的政治獻金，這份人情得記著。', { d: dn.name, n }, 6); mem(w, dn, '我捐了 {n} 銀幣給{p}，以後有事好說話。', { n, p: tg.name }, 6);
+        rel(tg, dn)?.modifyAffinity?.(5);
+        // 私下的錢記在真相頁(同一對金主、政治人物一個月記一筆)
+        const key = tg.agentId + ':' + dn.agentId; P.secretDay = P.secretDay || {};
+        if ((P.secretDay[key] || -99) < d - 30 && typeof DARK !== 'undefined') { P.secretDay[key] = d; try { DARK.secret(w, { kind: 'donation', culprit: tg.agentId, victim: null, donor: dn.agentId, k: '{p}私下收了{d}{n} 銀幣的政治獻金', p: { p: tg.name, d: dn.name, n } }); } catch (e) {} }
+        return true;
+    }
+    function turnDown(w, dn, tg, n) { const P = S(w); P.stats.refused++; mem(w, tg, '{d}想塞 {n} 銀幣給我當政治獻金，我拒絕了。', { d: dn.name, n }, 6); mem(w, dn, '我想捐錢給{p}，被拒絕了。', { p: tg.name }, 5); }
+    // 金主開口:本人決定時交給對方(選擇點 gift),隔天有答案;否則照個性擲骰
+    function offer(w, dn, tg, n, campaign, dice) {
+        if (!dn || !tg || tg === dn) return null;
+        if (!dice && byChoice(w) && here(w, tg)) { try { DECIDE.enqueue(w, tg, 'gift', { dn: dn.agentId, n, camp: campaign ? 1 : 0 }); return 'asked'; } catch (e) {} }
+        const honest = (has(tg, 'kind') && !has(tg, 'greedy') && Math.random() < 0.6) || (!has(tg, 'greedy') && Math.random() < 0.15);
+        if (honest) { turnDown(w, dn, tg, n); return 'refused'; }
+        return give(w, dn, tg, n, campaign) ? 'given' : null;
+    }
     function donations(w, d) {
-        if (tierLv(w) < 1) return; const P = S(w); const Wl = WL(); if (!Wl) return;
-        const E = w.election; const campaign = E?.active && (E.phase === 'campaign' || E.phase === 'voting');
-        const targets = campaign ? (E.candidates || []).map(c => w.agents[c.agentId]).filter(Boolean) : politicians(w);
-        if (!targets.length) return;
-        // 金主:有產業的老闆(手頭 60 以上),或鎮上最有錢的前 8%(至少 100)
-        const all = npcs(w); const rich = all.map(a => cash(w, a)).sort((x, y) => y - x); const top = Math.max(100, rich[Math.floor(all.length * 0.08)] || 100);
-        const donors = all.filter(a => !targets.includes(a) && ((isOwner(w, a) && cash(w, a) >= 60) || cash(w, a) >= top));
+        if (tierLv(w) < 1 || !WL()) return;
+        const E = w.election; const { campaign, list: targets } = targetsOf(w); if (!targets.length) return;
+        const donors = npcs(w).filter(a => !targets.includes(a) && canDonate(w, a));
         for (const dn of donors) {
             if (Math.random() > (has(dn, 'greedy') ? 0.55 : 0.35)) continue;
             // 押寶:選舉時押聲勢最好的(偶爾兩邊都捐),平常捐給首長或議員
             let tg = targets[0];
-            if (campaign) { const sc = (E.candidates || []).slice().sort((x, y) => (y.votes || 0) - (x.votes || 0)); tg = w.agents[(Math.random() < 0.7 ? sc[0] : sc[Math.floor(Math.random() * sc.length)])?.agentId] || tg; }
+            if (campaign) tg = (Math.random() < 0.7 ? targets[0] : targets[Math.floor(Math.random() * targets.length)]) || tg;
             else if (Math.random() > 0.6) tg = targets[Math.floor(Math.random() * targets.length)];
             if (!tg || tg === dn) continue;
-            const n = Math.max(5, Math.min(80, Math.round(cash(w, dn) * 0.08)));
-            const honest = (has(tg, 'kind') && !has(tg, 'greedy') && Math.random() < 0.6) || (!has(tg, 'greedy') && Math.random() < 0.15);
-            if (honest) { P.stats.refused++; mem(w, tg, '{d}想塞 {n} 銀幣給我當政治獻金，我拒絕了。', { d: dn.name, n }, 6); mem(w, dn, '我想捐錢給{p}，被拒絕了。', { p: tg.name }, 5); continue; }
-            if (!Wl.take(w, dn, n)) continue; Wl.add(w, tg, n);
-            const m = P.inf[tg.agentId] = P.inf[tg.agentId] || {}; m[dn.agentId] = (m[dn.agentId] || 0) + n;
-            if (campaign) P.camp[tg.agentId] = (P.camp[tg.agentId] || 0) + n;
-            P.stats.donated += n; P.stats.gifts++;
-            mem(w, tg, '{d}給了我 {n} 銀幣的政治獻金，這份人情得記著。', { d: dn.name, n }, 6); mem(w, dn, '我捐了 {n} 銀幣給{p}，以後有事好說話。', { n, p: tg.name }, 6);
-            rel(tg, dn)?.modifyAffinity?.(5);
-            // 私下的錢記在真相頁(同一對金主、政治人物一個月記一筆)
-            const key = tg.agentId + ':' + dn.agentId; P.secretDay = P.secretDay || {};
-            if ((P.secretDay[key] || -99) < d - 30 && typeof DARK !== 'undefined') { P.secretDay[key] = d; try { DARK.secret(w, { kind: 'donation', culprit: tg.agentId, victim: null, donor: dn.agentId, k: '{p}私下收了{d}{n} 銀幣的政治獻金', p: { p: tg.name, d: dn.name, n } }); } catch (e) {} }
+            offer(w, dn, tg, giftSize(w, dn), campaign, true);
         }
     }
 
@@ -202,7 +223,7 @@ const POWER = (() => {
         for (const id of Object.keys(P.scandal)) { P.scandal[id] = Math.max(0, P.scandal[id] - 0.02); if (P.scandal[id] === 0) delete P.scandal[id]; } // 醜聞慢慢被淡忘
         for (const [k, until] of Object.entries(P.pressure)) if (until < d) delete P.pressure[k];
         if (!w.election?.active) P.camp = {};
-        if (d % 7 === 5) donations(w, d);
+        if (d % 7 === 5 && !byChoice(w)) donations(w, d); // v9.21.0 觀察者模式下捐不捐由金主自己決定(選擇點 donate)
         if (d % 7 === 1) { watchdog(w, d); buyPapers(w, d); }
         recall(w, d);
         if (P.log.length > 30) P.log = P.log.slice(-30);
@@ -233,7 +254,8 @@ const POWER = (() => {
         return { gifts: P.stats.gifts || 0, donated: Math.round(P.stats.donated || 0), refused: P.stats.refused || 0, exposed: P.stats.exposed || 0, spiked: P.stats.spiked || 0, fired: P.stats.fired || 0, bought: P.stats.bought || 0, recalls: P.stats.recalls || 0, sued: P.stats.sued || 0, raised: P.stats.raised || 0, withdrawn: P.stats.withdrawn || 0,
             owned: (R?.papers || []).filter(Pp => Pp.owner).map(Pp => { const id = Pp.owner; const a = w.agents[id]; const nm = (a && !a.isDead && a.name) || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || ''; const gone = !nm; const nm2 = nm || a?.name || w.departedNames?.[id] || w._nameCache?.[id] || ''; return [t(Pp.name[0]), nm2 ? t(nm2) + (gone ? t('（已不在鎮上）') : '') : t('已不在鎮上的人')]; }) }; // v9.18.1 老闆過世或搬走時,以前名字會變成空的「（）」
     }
-    return { S, daily, donations, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed };
+    return { S, daily, donations, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
+        byChoice, targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { outraged: { mood: -4, opinion: 0, days: 2, label: t('看了新聞很憤怒') } });
