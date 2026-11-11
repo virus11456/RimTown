@@ -35,7 +35,9 @@ async function run(browser, lang) {
         MB.day = null; CLASS.daily(w); const w1 = WALLET.wageOf(X); w.wallet.bal[X.agentId] = 0; const nm = [X.name, t(X.name)]; const hit = (s) => /名匠|master/i.test(s) && nm.some(n => s.includes(n)); const n1 = logs().slice(L0).filter(hit).length; MB.day = null; CLASS.daily(w); const n2 = logs().slice(L0).filter(hit).length;
         out.master = { was, now: MOBILITY.isMaster(X), pay: Math.round(w1 / w0 * 100) / 100, n1, n2, lv: CLASS.level(w, X), brief: MOBILITY.brief(w, X) };
         app._showNpcCard?.(X.agentId); out.master.card = /名匠|Master/.test(document.querySelector('#npc-quick-card')?.innerText || ''); app._hideNpcCard?.();
-        const B = app._townBlocks(null, ['tier']); out.master.panel = /名匠 \d+ 人|\d+ masters/.test(B.tier || '');
+        // v9.18.0 起鎮況的階層流動改成一格一格(數字一格、說明一格),人數還在,只是不再跟「名匠」寫在同一段字裡:找到「名匠」那一格,讀裡面的數字,要跟實際名匠人數一樣
+        const B = app._townBlocks(null, ['tier']); const box = document.createElement('div'); box.innerHTML = B.tier || ''; const cell = [...box.querySelectorAll('.pg-mob .ic-g')].find(g => /名匠|Master/i.test(g.querySelector('span')?.textContent || ''));
+        const shown = cell ? parseInt(cell.querySelector('b')?.textContent || '', 10) : NaN; const real = MOBILITY.view(w).masters; out.master.panelN = [shown, real]; out.master.panel = real >= 1 && shown === real;
         // 慕名訂做:錢從有錢人付給名匠,全鎮總數不變
         const rich = adults().filter(o => o !== X && !MOBILITY.isMaster(o)); for (const o of rich.slice(0, 3)) { w.wallet.bal[o.agentId] = 1000; o.job = o.job || new Job('farmer'); }
         const c0 = WALLET.get(w, X), t0 = MONEY.total(w); const d3 = Math.ceil((w._absDay() - 3) / 7) * 7 + 3; fix(0.1, () => MOBILITY.masters(w, all(), d3));

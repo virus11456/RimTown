@@ -20,12 +20,12 @@ Object.assign(RimTownApp.prototype, {
     _ic(o) {
         const S = this._icState(); const esc = (x) => this._icEsc(x);
         const tone = o.chip?.tone || ''; const hot = !!o.alert || tone === 'r' || tone === 'y';
-        const open = o.id in S.open ? !!S.open[o.id] : (o.defOpen ?? hot); const more = !!S.more[o.id];
+        const open = o.id in S.open ? !!S.open[o.id] : (o.defOpen ?? hot); const more = !!S.more[o.id]; const info = !!(o.info && S.info[o.id]); // v9.18.2 ⓘ 說明打開了也要記住(只記這一次開著的期間),不然側欄每秒重畫就自己收起來
         if (this._icAlerts && (o.alert || o.brief)) this._icAlerts.push({ id: o.id, tone: o.alert?.tone || tone || 'y', t: o.brief || o.alert.t, icon: o.icon, title: o.title }); // 只有真的有事才進「今天要注意」
         const chip = o.chip?.t ? `<span class="ic-chip ic-${tone || 'n'}">${esc(o.chip.t)}</span>` : '';
         const sum = o.sum != null && o.sum !== '' ? `<span class="ic-sum${o.sumTone ? ' ic-t-' + o.sumTone : ''}">${o.sum}</span>` : '';
         // 全部內容都畫出來,收合／展開只換 class(點了馬上反應、不用整頁重畫)
-        let h = `<section class="ic-card${o.cls ? ' ' + o.cls : ''}${open ? ' open' : ''}${more ? ' more' : ''}" id="ic-${o.id}" data-ic="${o.id}">`;
+        let h = `<section class="ic-card${o.cls ? ' ' + o.cls : ''}${open ? ' open' : ''}${more ? ' more' : ''}${info ? ' info' : ''}" id="ic-${o.id}" data-ic="${o.id}">`;
         h += `<button type="button" class="ic-hd" data-action="ic-toggle" data-val="${o.id}" aria-expanded="${open}"><span class="ic-ic" aria-hidden="true">${o.icon}</span><span class="ic-tt">${esc(o.title)}</span>${chip}${sum}<span class="ic-arr" aria-hidden="true"></span></button><div class="ic-main">`;
         if (o.info) h += `<div class="ic-info">${o.info}<button type="button" class="ic-info-x" data-action="ic-info" data-val="${o.id}">${t('知道了')}</button></div>`;
         if (o.top) h += `<div class="ic-body">${o.top}</div>`;
@@ -48,7 +48,7 @@ Object.assign(RimTownApp.prototype, {
         const S = this._icState(); const el = document.getElementById('ic-' + v);
         if (k === 'ic-toggle') { const on = !(el?.classList.contains('open')); S.open[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('open', on); el.querySelector('.ic-hd')?.setAttribute('aria-expanded', String(on)); } }
         else if (k === 'ic-more') { const on = !(el?.classList.contains('more')); S.more[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('more', on); el.querySelector('.ic-more')?.setAttribute('aria-expanded', String(on)); } }
-        else if (k === 'ic-info') { if (el) el.classList.toggle('info'); }
+        else if (k === 'ic-info') { const on = !(el?.classList.contains('info')); S.info[v] = on ? 1 : 0; if (el) el.classList.toggle('info', on); } // v9.18.2 記在 S.info(不存 localStorage,重新整理就收起),重畫時照著還原
         else if (k === 'ic-go') { S.open[v] = 1; this._icSave(); if (el) { el.classList.add('open'); el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('ic-flash'); setTimeout(() => el.classList.remove('ic-flash'), 1200); } }
     },
     _icBrief(list) {
