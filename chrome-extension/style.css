@@ -4352,6 +4352,29 @@ body.landing-open { overflow: hidden; }
 .lp-tiers p { margin: 10px 0 0; font-size: 0.84rem; color: var(--lp-ink2); line-height: 1.65; }
 .lp-tier-arrow { position: absolute; right: -16px; top: 50%; transform: translateY(-50%); color: var(--lp-accent); font-weight: 900; font-size: 1.1rem; z-index: 1; }
 .lp-note { margin: 14px 0 0; font-size: 0.8rem; color: var(--lp-ink3); }
+/* v9.19.1 首頁:村民自己拿主意(決策核心)介紹 */
+.lp-decide .lp-ch-lead { margin-bottom: 22px; }
+.lp-ba { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 28px; }
+.lp-ba > div { padding: 18px; border-radius: 16px; background: var(--lp-bg2); border: 1px solid var(--lp-line); }
+.lp-ba > div.now { background: var(--lp-card); border-left: 3px solid var(--lp-accent); }
+.lp-ba b { display: block; font-size: 0.78rem; letter-spacing: 0.08em; color: var(--lp-ink2); margin-bottom: 8px; }
+.lp-ba .now b { color: var(--lp-accent2); }
+.lp-ba p { margin: 0; color: var(--lp-ink2); font-size: 0.95rem; line-height: 1.75; }
+.lp-ba .now p { color: var(--lp-ink); }
+.lp .lp-steps.lp-steps-5 { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+.lp-sub-h { margin: 34px 0 14px; font-size: 1.15rem; font-weight: 800; }
+.lp-picks, .lp-prog { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.lp-picks li { padding: 16px; background: var(--lp-bg2); border-radius: 14px; border-left: 3px solid var(--lp-accent); }
+.lp-picks .who { font-size: 0.78rem; font-weight: 800; color: var(--lp-accent2); letter-spacing: 0.04em; }
+.lp-picks h4, .lp-prog h4 { margin: 6px 0 4px; font-size: 1rem; }
+.lp-picks p, .lp-prog p { margin: 0; color: var(--lp-ink2); font-size: 0.88rem; line-height: 1.65; }
+.lp-prog li { padding: 14px 16px; border-radius: 14px; border: 1px solid var(--lp-line); background: var(--lp-card); }
+.lp-prog li.done { border-color: rgba(143, 214, 163, 0.5); }
+.lp-prog .st { font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; color: var(--lp-ink2); }
+.lp-prog li.done .st { color: #8fd6a3; }
+@media (max-width: 1100px) { .lp .lp-steps.lp-steps-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 960px) { .lp .lp-steps.lp-steps-5 { grid-template-columns: repeat(2, 1fr) !important; } }
+@media (max-width: 600px) { .lp-ba, .lp-picks, .lp-prog { grid-template-columns: 1fr; } .lp .lp-steps.lp-steps-5 { grid-template-columns: 1fr !important; } }
 .lp-ai { grid-template-columns: repeat(2, 1fr) !important; gap: 16px !important; }
 .lp-ai .landing-card { background: var(--lp-card) !important; border: 1px solid var(--lp-line) !important; border-left: 3px solid var(--lp-accent) !important; border-radius: 16px !important; padding: 20px !important; }
 .lp-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 16px; }

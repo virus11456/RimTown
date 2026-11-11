@@ -1419,3 +1419,64 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pg-dot.wide { flex: 1 1 100%; border-radius: 10px; padding: 6px 10px; line-height: 1.45; }
 .rimtown-container .pg-owners { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; }
 .rimtown-container .pg-owners-h { font-size: .78rem; color: var(--text-secondary); font-weight: 700; flex: 1 1 100%; }
+
+/* v9.19.1 產業頁改成資訊卡:一家一格(名稱＋老闆、帶說明的小數字、股東、對手);農田兩欄、有進度條;細項收進「展開詳細」 */
+.rimtown-container.observer .pg-ind .ic-body > * + * { margin-top: 8px; }
+.rimtown-container.observer .pg-ind .ic-body > * + .ic-sub, .rimtown-container.observer .pg-ind .ic-detail > * + .ic-sub { margin-top: 14px; }
+.rimtown-container.observer .pg-ind .ic-sub:last-child { margin-bottom: 4px; }
+.rimtown-container.observer .pg-ind .pg-firms { display: flex; flex-direction: column; gap: 6px; }
+.rimtown-container.observer .pg-ind .pg-firm { display: block !important; background: var(--ic-tile); border: 0; border-radius: 10px; padding: 9px 10px; margin: 0; min-width: 0; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary); }
+.rimtown-container.observer .pg-ind .pg-firm-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
+.rimtown-container.observer .pg-ind .pg-firm-h .market-name { flex: 1 1 auto; min-width: 0; font-size: 0.9rem; font-weight: 700; color: var(--text-primary); overflow-wrap: anywhere; }
+.rimtown-container.observer .pg-ind .pg-firm-h .ic-pill { flex: none; max-width: 58%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rimtown-container.observer .pg-ind .pg-firm-h .market-owner { margin: 0; font-size: inherit; color: inherit; font-weight: inherit; }
+.rimtown-container .ic-pill.pg-own { background: color-mix(in srgb, var(--accent) 18%, transparent); color: var(--accent); border-color: transparent; font-weight: 700; }
+.rimtown-container .ic-pill.pg-g, .rimtown-container .ic-pill.pg-y, .rimtown-container .ic-pill.pg-r { font-weight: 700; }
+.rimtown-container.observer .pg-ind .market-row .market-num { display: block; margin-top: 0; flex-basis: auto; }
+.rimtown-container .pg-nums { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0; margin-top: 8px; }
+.rimtown-container .pg-nums.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .rimtown-container .pg-nums.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rimtown-container .pg-nums.n1 { grid-template-columns: 1fr; }
+.rimtown-container .pg-nums > span { display: flex; flex-direction: column; min-width: 0; padding: 0 8px; border-left: 1px solid color-mix(in srgb, var(--border) 70%, transparent); }
+.rimtown-container .pg-nums > span:first-child { padding-left: 0; border-left: 0; }
+.rimtown-container .pg-nums b { font-size: 0.95rem; font-weight: 800; line-height: 1.3; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-nums i { font-style: normal; font-size: 0.7rem; line-height: 1.35; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container.observer .pg-ind .pg-firm-x { display: flex !important; flex-direction: column; gap: 5px; margin-top: 8px; font-size: 0.78rem; color: var(--text-secondary); }
+.rimtown-container.observer .pg-ind .pg-firm-k { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); }
+.rimtown-container.observer .pg-ind .market-rival .pg-firm-k { color: #f2a65a; }
+.rimtown-container.observer .pg-ind .pg-firm .ic-pills { margin-top: 0; gap: 5px; }
+.rimtown-container.observer .pg-ind .pg-firm > .ic-pills { margin-top: 8px; }
+.rimtown-container.observer .pg-ind .pg-firm .ic-pill { background: color-mix(in srgb, var(--bg-card) 70%, transparent); }
+.rimtown-container.observer .pg-ind .pg-firm .ic-pill.pg-own { background: color-mix(in srgb, var(--accent) 18%, transparent); } .rimtown-container.observer .pg-ind .pg-firm .ic-pill.pg-g { background: var(--ic-gb); } .rimtown-container.observer .pg-ind .pg-firm .ic-pill.pg-y { background: var(--ic-yb); } .rimtown-container.observer .pg-ind .pg-firm .ic-pill.pg-r { background: var(--ic-rb); color: var(--ic-r); border-color: transparent; }
+.rimtown-container.observer .pg-ind .pg-firm > .ic-note { margin-top: 4px; }
+.rimtown-container.observer .pg-ind .pg-firm > .ic-bar { margin-top: 8px; }
+.rimtown-container.observer .pg-ind .pg-firm .pg-stage { margin-top: 8px; grid-template-columns: 5em 1fr 2.8em; }
+.rimtown-container.observer .pg-ind .pg-kv > span:first-child { min-width: 5em; }
+.rimtown-container.observer .pg-ind .pg-kv > span:last-child:not(.ic-pills) { padding-top: 5px; }
+.rimtown-container .pg-short, .rimtown-container .pg-short b { color: var(--ic-r); }
+.rimtown-container .pg-on { color: var(--ic-g); font-weight: 700; } .rimtown-container .pg-off { opacity: 0.75; }
+.rimtown-container.observer .pg-ind .pg-plots { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container.observer .pg-ind .pg-plot .pg-firm-h .market-name { font-size: 0.84rem; }
+.rimtown-container.observer .pg-ind .pg-plot-c { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 6px; font-size: 0.8rem; color: var(--text-primary); }
+.rimtown-container.observer .pg-ind .pg-plot-c .ic-pill { font-size: 0.7rem; padding: 2px 7px; }
+.rimtown-container.observer .pg-ind .pg-plot .pg-stage { grid-template-columns: 3.6em 1fr 2.6em; gap: 6px; font-size: 0.74rem; margin-top: 6px; }
+.rimtown-container.observer .pg-ind .pg-water .ic-bar i { background: #6FB7E8; }
+.rimtown-container.observer .pg-ind .pg-water.low .ic-bar i { background: var(--ic-r); } .rimtown-container.observer .pg-ind .pg-water.low b { color: var(--ic-r); }
+.rimtown-container.observer .pg-ind .pg-hist { display: flex; flex-direction: column; flex-wrap: nowrap; gap: 5px; margin: 8px 0 0; font-size: 0.8rem; color: var(--text-secondary); }
+.rimtown-container.observer .pg-ind .pg-hist b { color: var(--text-primary); } .rimtown-container.observer .pg-ind .pg-hist small { color: var(--text-muted); margin-left: 4px; }
+.rimtown-container.observer .pg-ind .pg-more-n { text-align: center; }
+.rimtown-container.observer .pg-ind .pg-owners { display: block; margin-top: 12px; }
+.rimtown-container.observer .pg-ind .ic-grid + .ic-note, .rimtown-container.observer .pg-ind .ic-rows + .ic-grid, .rimtown-container.observer .pg-ind .ic-rows + .ic-rows { margin-top: 8px; }
+.rimtown-container.observer .pg-ind .ic-row small { margin-left: 4px; }
+@media (min-width: 700px) { .rimtown-container.observer .pg-ind .pg-plots { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* 收起來的區塊:標題列四個角都是圓的(以前下面是直角加一條線,看起來像被切掉一半) */
+.rimtown-container.observer .pg-blk:not(.open) > .pg-bh { border-radius: 11px !important; }
+/* v9.19.1 科技頁:支持與反對的比例條、發明名人堂 */
+.rimtown-container .pg-ideas { margin-top: 8px; }
+.rimtown-container .pg-split { display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; background: transparent; }
+.rimtown-container .pg-split i { display: block; min-width: 3px; border-radius: 2px; }
+.rimtown-container .pg-split i.a { background: var(--ic-g); } .rimtown-container .pg-split i.m { background: color-mix(in srgb, var(--text-muted) 55%, transparent); } .rimtown-container .pg-split i.c { background: var(--ic-y); }
+.rimtown-container.observer .pg-ideas .ic-sub .ic-pills { margin-top: 0; }
+.rimtown-container.observer .pg-ideas .pg-inv .market-name { font-size: 0.86rem; }
+/* 產業頁:說明文字放不下就換行(英文比較長),不再截成「…」 */
+.rimtown-container.observer .pg-ind .pg-nums i, .rimtown-container.observer .pg-ind .ic-kpi span, .rimtown-container.observer .pg-ind .ic-g span { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: anywhere; }
+.rimtown-container.observer .pg-ind .pg-nums { align-items: start; }
+.rimtown-container.observer .pg-ind .pg-hist small, .rimtown-container.observer .pg-ind .ic-row small, .rimtown-container.observer .pg-ind .ic-sub-h small, .rimtown-container.observer .pg-ind .ic-note small { font-size: 0.72rem; }

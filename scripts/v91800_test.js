@@ -62,7 +62,7 @@ async function run(browser, lang) {
       await go('econ-build'); out.bld = { kpis: document.querySelectorAll('#ic-bld-sum .ic-kpi').length, tiles: document.querySelectorAll('#ic-bld-done .pg-tile').length, done: (app.state.buildings?.completed || []).length, prog: !!document.querySelector('#ic-bld-prog'), old: document.querySelectorAll('.completed-building-item').length, overflow: (() => { const e = document.querySelector('.pg-build'); return e ? e.scrollWidth > e.clientWidth + 2 : null; })() };
       if (lang === 'en') out.bld.leak = [...document.querySelectorAll('.pg-build .ic-tt, .pg-build .ic-kpi span')].map(e => e.textContent).flatMap(cjk).slice(0, 5);
       // 產業:長串「·」變小格子
-      await go('industry'); out.dots = document.querySelectorAll('.pg-dots .pg-dot').length;
+      await go('industry'); out.dots = document.querySelectorAll('.pg-dots .pg-dot, .pg-ind .pg-nums > span, .pg-ind .ic-kpi').length; /* v9.19.1 產業頁整頁改成資訊卡:數字在卡片的小格子裡,不再靠自動拆「·」 */
       // 科技:已完成／還沒解鎖收成一行
       await go('econ-tech');
       const folds = [...document.querySelectorAll('.pg-fold')]; const f0 = folds[0]; const k0 = f0?.dataset.val;
@@ -96,7 +96,7 @@ async function run(browser, lang) {
       await go('proposals', 'props'); out.flow = document.querySelectorAll('.pg-flow .pg-step').length;
       // v9.18.1：報社／店家老闆不在了，名字不能是空的「（）」；數字格收進等寬格線
       try { if (w.press?.papers?.length) { const Pp = w.press.papers[0]; const old = Pp.owner; Pp.owner = 'ghost_owner_xyz'; out.owner = { paper: POWER.view(w).owned.map(x => x[1]) }; Pp.owner = old; } if (typeof BIZ !== 'undefined') { const B = BIZ.S(w); B.shops.push({ id: 'Btest', type: Object.keys(BIZ.TYPES || {})[0] || 'grocer', owner: 'ghost_owner_xyz', partner: null, name: ['測試店', 'Test'], price: 4, till: 0, profit: 0, week: 0, opened: 0, lossDays: 0, closed: false }); try { out.owner = Object.assign(out.owner || {}, { shop: BIZ.view(w).shops.find(x => x.name === '測試店' || x.name === 'Test')?.owner }); } catch (e) { out.owner = Object.assign(out.owner || {}, { shopErr: e.message }); } B.shops.pop(); } } catch (e) { out.owner = { err: e.message }; }
-      await go('industry'); out.stg = { grids: document.querySelectorAll('.pg-stg').length, loose: document.querySelectorAll('.pg-dots > .pg-st').length };
+      await go('industry'); out.stg = { grids: document.querySelectorAll('.pg-stg, .pg-ind .pg-nums, .pg-ind .ic-kpis, .pg-ind .ic-grid').length, loose: document.querySelectorAll('.pg-dots > .pg-st').length }; /* v9.19.1 產業頁的數字在資訊卡的格線裡 */
       await go('quest'); out.trial = { card: !!document.querySelector('#ic-qs-trial'), chip: !!document.querySelector('#ic-qs-trial .ic-chip'), oldDecl: [...document.querySelectorAll('.econ-section h3')].filter(h => /🍂/.test(h.textContent)).length, season: document.querySelectorAll('.pg-season').length, grade: document.querySelectorAll('.pg-season .pg-grade').length };
     } catch (e) { out.err = String(e && e.stack || e).slice(0, 700); }
     return out;
@@ -112,7 +112,7 @@ async function run(browser, lang) {
   ok(r.dt && !r.dt.dupes.length && r.dt.merged >= 1, `${tag} 重複的紀錄合併成「×N」`, { dupes: r.dt?.dupes, merged: r.dt?.merged });
   ok(r.town && r.town.n >= 4 && r.town.open < r.town.n && r.town.opened && r.town.hiddenWhenClosed && r.town.remember, `${tag} 鎮況每一區可以收合、收起只剩標題、重畫後記得`, r.town);
   ok(r.bld && r.bld.kpis === 4 && r.bld.prog && r.bld.tiles === r.bld.done && r.bld.old === 0 && r.bld.overflow === false && !(r.bld.leak || []).length, `${tag} 建設頁：四個大數字、施工中、已蓋好改成小方塊（不再是一長串名字＋星星）`, r.bld);
-  ok(r.dots > 3, `${tag} 產業頁的長串「·」拆成小格子`, r.dots);
+  ok(r.dots > 3, `${tag} 產業頁的數字一格一格（v9.19.1 起是資訊卡）`, r.dots);
   ok(r.tech && r.tech.folds >= 1 && r.tech.hidden0 >= 2 && r.tech.hidden1 === 0, `${tag} 科技：已完成／還沒解鎖收成一行，點開才看`, r.tech);
   ok(r.ach && r.ach.chips === 3 && r.ach.bars >= 3 && r.ach.lockedShown === 0, `${tag} 成就：全部／已達成／還沒達成篩選＋每類進度條`, r.ach);
   ok(r.pp && r.pp.minis >= 1 && r.pp.opened, `${tag} 已定案的提案收成一行，點「看全文」展開`, r.pp);

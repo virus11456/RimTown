@@ -416,8 +416,9 @@ Object.assign(RimTownApp.prototype, {
                 html += `<div class="tech-era"><div class="tech-era-head">⚠️ ${t('新技術帶來的問題')}</div>` + TV.inc.map(x => `<div class="tech-desc">${LV[x.lv] || ''} ${x.icon} ${t(EVN[x.id] || x.id)} · ${x.ago ? t('{n} 天前').replace('{n}', x.ago) : t('今天')}</div>`).join('') + '</div>';
             }
             // v6.46.0 革新派／保守派、發明名人堂
-            const IS = this.world?.ideaSystem;
-            if (IS) {
+            const IS = this.world?.ideaSystem; let ideaCards = '';
+            if (IS && this.world?.observerMode && this._techIdeaCards) { try { ideaCards = this._techIdeaCards(IS, projects); } catch (e) { console.warn('[tech] ideas', e); } } // v9.19.1 支持與反對、發明名人堂改成資訊卡(放在科技樹後面)
+            if (IS && !ideaCards) {
                 const fx = IS.factions(this.world); const nm = (arr) => arr.map(n => t(n)).join(t('、')) || t('（沒有）');
                 html += `<div class="tech-era"><div class="tech-era-head">⚖️ ${t('新技術的支持與反對')}</div>
                     <div class="tech-desc">🚀 ${t('革新派')} ${fx.progressive.length}${t('：')}${nm(fx.progressive)}</div>
@@ -427,7 +428,7 @@ Object.assign(RimTownApp.prototype, {
                 const inv = (IS.inventions || []).slice(-8).reverse();
                 html += `<div class="tech-era"><div class="tech-era-head">✨ ${t('發明名人堂')} <span>${(IS.inventions || []).length}</span></div>` + (inv.length ? inv.map(v => `<div class="tech-desc">${t('「')}${t('{name}式{thing}').replace('{name}', t(v.by)).replace('{thing}', t(v.thing))}${t('」')}${v.tech && projects[v.tech] ? ` · ${t('推進了')}${t(projects[v.tech].name)}` : ''}${v.disputedBy ? ` · 😤 ${t('{who}說是他先想到的').replace('{who}', t(v.disputedBy))}` : ''}</div>`).join('') : `<div class="tech-desc" style="color:var(--text-muted)">${t('還沒有人靈光一閃。有創意、勤快的村民工作時偶爾會想出新東西。')}</div>`) + '</div>';
             }
-            html += '</div>';
+            html += '</div>' + ideaCards;
         } if (S === 'goods') {
             // v4.0: Shop system — card grid layout
             // v9.18.0 商店:公庫銀幣大數字、最近買賣一列一筆、物價板依類別成格

@@ -650,6 +650,43 @@ Object.assign(RimTownApp.prototype, {
                     <ol>${chain.map(([cid, txt]) => `<li style="--c:${CH[cid].c}"><a class="lp-chain-tag" href="#lp-ch-${cid}" data-lp-jump="lp-ch-${cid}">${num(CH[cid].n)} ${CH[cid].scale}</a><span>${txt}</span></li>`).join('')}</ol>
                 </div>
             </section>`;
+        // v9.19.1 村民自己拿主意(決策核心)的完整介紹:改前改後、五個步驟、同一件事三種選擇、在遊戲裡哪裡看、做到哪
+        const dSteps = [
+            ['📒', X('先看自己的處境', 'Look at their own situation'), X('此刻的心情和身體、身上的錢和債、對鎮上大事的立場、家人朋友和處不來的人、最近發生的事，還有自己以前做過的決定。', 'How they feel right now, their money and debts, where they stand on town issues, family, friends and people they can\'t stand, what happened lately, and the decisions they made before.')],
+            ['🔔', X('遇到要拿主意的事', 'Something comes up'), X('手上有閒錢、手頭很緊、有人來借錢。遊戲只列出「現在做得到的選項」，不替他選。', 'Spare money on hand, running short, or someone asking for a loan. The game only lists what is possible right now. It does not choose for them.')],
+            ['🤔', X('自己選，說出理由', 'Choose, and say why'), X('AI 依他自己的處境挑一個，用他的口吻說為什麼。也可以選「其他」，做一件選單上沒有的事。', 'The AI picks one from that villager\'s own situation and gives the reason in their voice. It can also pick "something else" and do a thing that is not on the list.')],
+            ['⚖️', X('真的發生', 'It really happens'), X('錢真的從一個人到另一個人手上，交情真的變好或變壞。每一筆錢都有來源和去處，不會憑空多出來。', 'Money really moves from one person to another, and relationships really warm or cool. Every coin has a source and a destination; none appears from nowhere.')],
+            ['🧠', X('記住結果', 'Remember how it went'), X('決定、理由、結果都記下來；下次再遇到事，他看得到自己上次怎麼選、後來怎樣，還會留下「接下來的打算」。', 'The decision, the reason and the outcome are all kept. Next time something comes up they can see what they chose before and how it went, and they leave themselves a plan for what comes next.')],
+        ];
+        const dPicks = [
+            [X('愛冒險的獵人', 'An adventurous hunter'), X('去外地玩幾天', 'Takes a few days\' trip out of town'), X('「辛苦這麼久，想出去走走看看。」', '"After all this hard work, I want to get out and see things."')],
+            [X('顧家的農夫', 'A family-minded farmer'), X('送孩子去外地讀書', 'Sends a child to school out of town'), X('「再苦也要讓孩子讀書。」', '"However hard it gets, the child must get schooling."')],
+            [X('克己的守衛', 'A frugal guard'), X('存進銀行', 'Puts it in the bank'), X('「錢放銀行比較安心，還能生利息。」', '"It\'s safer in the bank, and it earns interest."')],
+        ];
+        const dProg = [
+            ['done', X('✅ 已上線', '✅ Live'), X('錢的事', 'Money'), X('花、存、入股、旅遊、宴客、送孩子讀書、接濟親友、借錢與被借錢。', 'Spending, saving, buying shares, travel, feasts, schooling, helping people close to them, borrowing and being asked for a loan.')],
+            ['', X('🔜 下一步', '🔜 Next'), X('人際', 'Relationships'), X('借的錢還不還、要不要原諒、要不要報復、要不要在背後講壞話。', 'Whether to repay a loan, forgive, retaliate, or talk behind someone\'s back.')],
+            ['', X('🔜 再來', '🔜 After that'), X('政治', 'Politics'), X('要不要加入工會、捐政治獻金、出來參選；立場會跟著日子過得好不好改變。', 'Whether to join the union, fund a campaign or run for office, with views that shift as life gets better or worse.')],
+        ];
+        const decide = `<section class="landing-section lp-sec lp-decide" id="landing-decide"><div class="lp-sec-head"><span class="lp-kicker">${X('v9.19 大更新・村民的大腦', 'v9.19 major update · the villager brain')}</span><h2>${X('村民開始自己拿主意', 'Villagers now make up their own minds')}</h2></div>
+                <p class="lp-ch-lead">${X('以前，誰去旅遊、誰請客、誰跟誰借錢，是遊戲每天替他們擲骰決定的。現在改成：村民遇到事情時，先看自己的處境，再自己選，說得出理由，也記得後來怎樣。', 'Before, who travelled, who hosted a feast and who borrowed from whom was decided by the game rolling dice for them every day. Now, when something comes up, a villager looks at their own situation, chooses for themselves, can say why, and remembers how it turned out.')}</p>
+                <div class="lp-ba">
+                    <div><b>${X('以前', 'Before')}</b><p>${X('「身上超過 100 銀幣的人，每天有 2% 的機率去旅遊。」', '"Anyone with more than 100 silver has a 2% chance each day of taking a trip."')}</p></div>
+                    <div class="now"><b>${X('現在', 'Now')}</b><p>${X('「我手上有 600 銀幣，孩子還小，上次入股又被拒絕。這次先存起來。」', '"I have 600 silver, my child is still small, and my last offer to buy shares was turned down. This time I\'ll save it."')}</p></div>
+                </div>
+                <ol class="lp-steps lp-steps-5">${dSteps.map((x, i) => `<li class="lp-step"><span class="lp-step-num" aria-hidden="true">${i + 1}</span><div class="lp-step-ic" aria-hidden="true">${x[0]}</div><h3>${x[1]}</h3><p>${x[2]}</p></li>`).join('')}</ol>
+                <h3 class="lp-sub-h">${X('同樣一筆閒錢，三個人三種選擇', 'The same spare money, three people, three choices')}</h3>
+                <ul class="lp-picks">${dPicks.map(x => `<li><span class="who">${x[0]}</span><h4>${x[1]}</h4><p>${x[2]}</p></li>`).join('')}</ul>
+                <p class="lp-note">${X('以上是示意。實際上每個人的錢、家人、交情和記憶都不一樣，換一局結果就不同。', 'These are illustrations. In play, everyone\'s money, family, friendships and memories differ, so each game turns out differently.')}</p>
+                <h3 class="lp-sub-h">${X('在遊戲裡哪裡看得到', 'Where to see it in the game')}</h3>
+                <dl class="lp-points" style="--c:var(--lp-accent)">
+                    <div><dt>🪪 ${X('村民卡的「最近的決定」', '"Recent decisions" on the villager card')}</dt><dd>${X('遇到什麼事、選了什麼、為什麼、結果怎樣，還有他接下來的打算。每一筆會標出是 AI 自己想的，還是依個性推估的。', 'What came up, what they chose, why, how it went, and what they plan next. Each entry says whether the AI decided or it was estimated from personality.')}</dd></div>
+                    <div><dt>🧭 ${X('動態裡的決定', 'Decisions in the feed')}</dt><dd>${X('「某某想了想，決定……」是 AI 選的；「💭 某某自己拿了主意……」是他做了選單以外的事。', '"So-and-so thought it over and decided to..." is the AI\'s choice; "💭 So-and-so made up their own mind..." means they did something that was not on the list.')}</dd></div>
+                    <div><dt>⚙️ ${X('設定裡的「完整智能體模式」', '"Full agent mode" in Settings')}</dt><dd>${X('開著時由 AI 決定，每天最多 10 人；其他人，或 AI 沒回話的時候，依他的個性和處境推估，不再是固定機率。', 'When on, the AI decides for up to 10 people a day. Everyone else, and anyone the AI doesn\'t answer for, is estimated from their personality and situation rather than fixed odds.')}</dd></div>
+                </dl>
+                <h3 class="lp-sub-h">${X('做到哪了', 'How far along this is')}</h3>
+                <ul class="lp-prog">${dProg.map(x => `<li class="${x[0]}"><span class="st">${x[1]}</span><h4>${x[2]}</h4><p>${x[3]}</p></li>`).join('')}</ul>
+            </section>`;
         const chnav = `<nav class="lp-chnav" aria-label="${X('章節', 'Chapters')}"><div class="lp-chnav-in"><span class="lp-chnav-k">${X('從一個人到整個世界', 'From one person to a whole world')}</span><ol>${chapters.map((c, i) => `<li style="--c:${c.c}"><a href="#lp-ch-${c.id}" data-lp-jump="lp-ch-${c.id}"><b>${num(i + 1)}</b>${c.scale}</a></li>`).join('')}</ol></div></nav>`;
         el.innerHTML = `<div class="lp">
             <header class="lp-hero">${sky}
@@ -672,6 +709,7 @@ Object.assign(RimTownApp.prototype, {
             <div class="landing-inner">
                 <ul class="lp-stats" aria-label="${X('遊戲規模', 'Game scale')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
                 ${core}
+                ${decide}
             </div>
             ${chnav}
             <div id="landing-features" class="lp-chapters">${chapters.map(chapter).join('')}</div>
