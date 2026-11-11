@@ -574,22 +574,30 @@ Object.assign(RimTownApp.prototype, {
     _renderSeasonTrial() {
         const tr = this.state?.trials; if (!tr) return '';
         const esc = (x) => this._escapeHtml(String(x));
-        let html = `<div class="econ-section"><h3>⚖️ ${t('本季考驗')}${tr.failStreak ? ` <span style="font-size:0.7rem;color:var(--negative);font-weight:400">${t('已連續失敗')} ${tr.failStreak} ${t('季')}</span>` : ''}</h3>`;
-        if (tr.declined) html += `<div style="font-size:0.78rem;color:#f0b35a;margin-bottom:6px">🍂 <b>${t('衰敗中')}</b>${t('：')}${t('連續撐過兩季考驗就能復興')}${t('（')}${tr.passStreak || 0}/2${t('）')}</div>`; // v6.13.0
-        else if (tr.revivals) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🌅 ${t('復興過 {n} 次').replace('{n}', tr.revivals)}</div>`;
-        if (tr.current) {
-            const c = tr.current; const col = c.pct >= 100 ? 'var(--positive, #4ade80)' : c.pct >= 60 ? 'var(--accent)' : 'var(--negative, #f87171)';
-            html += `<div style="font-size:0.82rem">${c.icon} <b>${esc(c.title)}</b> · ${t('剩')} ${c.daysLeft} ${t('天')}</div>
-                <div style="font-size:0.75rem;color:var(--text-secondary);margin:3px 0">${esc(c.goal)}</div>
-                <div class="bar" style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden"><div style="width:${c.pct}%;height:100%;background:${col}"></div></div>
-                <div style="font-size:0.72rem;color:var(--text-secondary);margin-top:3px">${c.value} / ${c.target} ${esc(c.unit)} · ${t('撐過可得「{t}」：').replace('{t}', esc(c.perkName))}${esc(c.perkDesc)}</div>`;
+        // v9.18.0 本季考驗改成資訊卡：標籤寫剩幾天／達標，大進度條＋三格數字（進度／目標／剩幾天），獎勵一列；沒公布時三個圖示說明規則；已得到與歷史改成小膠囊
+        const c = tr.current;
+        let chip = { t: t('還沒公布'), tone: 'n' };
+        if (c) chip = c.pct >= 100 ? { t: t('已達標'), tone: 'g' } : { t: t('剩 {n} 天').replace('{n}', c.daysLeft), tone: c.pct >= 60 ? 'y' : 'r' };
+        let top = '', body = '';
+        if (tr.declined) top += `<div class="ic-alert ic-y"><span>🍂 <b>${t('衰敗中')}</b>${t('：')}${t('連續撐過兩季考驗就能復興')}${t('（')}${tr.passStreak || 0}/2${t('）')}</span></div>`; // v6.13.0
+        else if (tr.revivals) top += this._icPills([`🌅 ${t('復興過 {n} 次').replace('{n}', tr.revivals)}`]);
+        if (tr.failStreak) top += `<div class="ic-alert ic-r"><span>❌ ${t('已連續失敗')} ${tr.failStreak} ${t('季')}</span></div>`;
+        if (c) {
+            const tone = c.pct >= 100 ? 'g' : c.pct >= 60 ? 'y' : 'r';
+            top += `<div class="pg-trial-h">${c.icon} <b>${esc(c.title)}</b></div><div class="ic-note">${esc(c.goal)}</div>`;
+            top += `<div class="ic-bar big pg-trial-bar ic-t-${tone}"><i style="width:${Math.max(2, Math.min(100, c.pct))}%"></i></div>`;
+            top += this._icGrid([{ v: c.value, l: t('目前'), tone }, { v: c.target, l: t('目標') }, { v: c.daysLeft, u: ' ' + t('天'), l: t('還剩'), tone: c.daysLeft <= 3 && c.pct < 100 ? 'r' : '' }]);
+            if (c.unit) top += `<div class="ic-note pg-trial-unit">📏 ${t('單位：{u}').replace('{u}', esc(c.unit))}</div>`;
+            top += `<div class="pg-trial-perk">🎁 <span>${t('撐過可得「{t}」：').replace('{t}', `<b>${esc(c.perkName)}</b>`)}${esc(c.perkDesc)}</span></div>`;
         } else {
-            html += `<div class="muted-text" style="font-size:0.78rem">${t('每季第 5 天公布這一季的考驗，季末結算：撐過有永久加成，沒撐過會有人搬走。')}</div>`;
+            top += `<div class="pg-rules"><span>📅 ${t('每季第 5 天公布這一季的考驗')}</span><span>🏅 ${t('季末結算：撐過有永久加成')}</span><span>🧳 ${t('沒撐過會有人搬走')}</span></div>`;
         }
-        if (tr.perks.length) html += `<div style="font-size:0.72rem;margin-top:6px">🏅 ${t('已得到：')}${tr.perks.map(p => `<b>${esc(p.name)}</b>`).join(t('、'))}</div>`;
-        if (tr.history.length) html += `<div style="font-size:0.72rem;color:var(--text-secondary);margin-top:4px">${tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`).join(' · ')}</div>`;
-        if (this.state?.recap?.last) { const rl = this.state.recap.last; html += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}${t('：')}${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; html += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
-        return html + '</div>';
+        if (tr.perks.length) body += this._icSub('🏅 ' + t('已得到：').replace(/[：:]\s*$/, ''), this._icPills(tr.perks.map(p => `<b>${esc(p.name)}</b>`)));
+        if (tr.history.length) body += this._icSub('📜 ' + t('過去的考驗'), this._icPills(tr.history.map(h => `${h.status === 'passed' ? '✅' : '❌'} ${esc(h.title)} ${h.value}/${h.target}`)));
+        let html = '';
+        if (this.state?.recap?.last) { const rl = this.state.recap.last; body += `<button class="trade-btn" data-action="recap-open" style="width:100%;padding:6px;margin-top:8px;font-size:0.78rem">📜 ${t('上一季回顧')}${t('：')}${esc(rl.title)} · ${t('評等')} ${esc(rl.grade)}</button>`; if (rl.advice?.[0]) { const a0 = rl.advice[0]; body += `<div style="display:flex;gap:6px;align-items:center;margin-top:4px"><div style="flex:1;font-size:0.72rem;color:var(--text-secondary)">🧭 ${esc(a0.text)}</div>${a0.go ? `<button class="trade-btn" data-action="recap-go" data-val="${esc(a0.go)}" style="flex:none;padding:3px 8px;font-size:0.7rem;white-space:nowrap">${esc(a0.goLabel || t('去做'))}</button>` : ''}</div>`; } } // v5.98.0 / v6.4.0 第一條建議
+        html += this._ic({ id: 'qs-trial', cls: 'pg-trial', icon: '⚖️', title: t('本季考驗'), chip, defOpen: true, top, body });
+        return html;
     },
     _requestAct(id) {
         const rb = this.world?.requests; if (!rb) return;

@@ -51,7 +51,7 @@ async function run(browser, lang, vp) {
     localStorage.removeItem('rimtown_ui_all');
     // 設定頁:開關＋還沒解鎖清單
     if (innerWidth <= 768 && app._openKairoTab) app._openKairoTab('settings'); else { app.activeTab = 'settings'; app.renderSidebar(); } await sleep(150);
-    const cb = document.getElementById('settings-uiall'); out.cb = !!cb; out.cbText = cb ? cb.closest('.setting-group').textContent.replace(/\s+/g, ' ').trim() : '';
+    const cb = document.getElementById('settings-uiall'); out.cb = !!cb; out.cbText = cb ? (cb.closest('.set-row') || cb.closest('.setting-group')).textContent.replace(/\s+/g, ' ').trim() : '';
     // 點下開關後分頁立刻出現
     if (cb) { cb.click(); await sleep(150); } out.cbSet = localStorage.getItem('rimtown_ui_all'); out.afterCb = await subTabs('economy'); localStorage.removeItem('rimtown_ui_all');
     // 目前所在分頁沒解鎖也要顯示(例如從別處直接跳過去)

@@ -109,6 +109,8 @@ class Needs {
 // --- Memory ---
 // v6.19.0 模板物件:{k, p},給 Memory.addT／logMessageT 當巢狀參數用;建立當下的文字用 Memory.render 算
 function tpl(k, p = {}) { return { k, p }; }
+// v9.18.0 地點代碼沒有自訂名稱時的中文名（介面與作息共用）
+const LOC_FALLBACK = { town_hall: '鎮公所', clinic: '診所', workshop: '工坊', farm: '農場', tavern: '酒館', guardpost: '哨站', chapel: '教堂', library: '圖書館', general_store: '雜貨店', quarry: '礦場', town_square: '廣場', park: '公園', well: '水井', residential_north: '北區住宅', residential_south: '南區住宅', residential_east: '東區住宅', exploration: '探險中', graveyard: '墓園', forest: '森林', river: '河邊', hill: '山丘', cave: '洞穴', lake: '湖邊', meadow: '草原', market: '市集', school: '學堂', bank: '銀行' };
 // v6.19.0 地點顯示名(中文原文,顯示時再 t()):主題鎮專屬名 → 通用對照表 → id 去底線
 const LOC_LABELS = { town_hall:'鎮公所', clinic:'診所', workshop:'工坊', farm:'農場', tavern:'酒館', guardpost:'哨站', chapel:'教堂', library:'圖書館', general_store:'雜貨店', market:'市集', park:'公園', mine:'礦場', residential_east:'東區住宅', residential_west:'西區住宅', residential_north:'北區住宅', residential_south:'南區住宅', warehouse:'倉庫', school:'學堂', blacksmith:'鐵匠鋪', bakery:'麵包坊', dock:'碼頭', lighthouse:'燈塔', plaza:'廣場' };
 function locName(world, id) {
@@ -1153,13 +1155,13 @@ class Agent {
 
     // ===== v5.30.0 人物狀態頁(移植 generative_agents 的 persona state) =====
     // 生活作息:由性格與職業推出的固定節奏(對應原版 lifestyle)
-    getLifestyleText() {
+    getLifestyleText(world) {
         const isNightOwl = this.personality.traits.includes('night_owl');
         const isEarlyBird = this.personality.traits.includes('early_bird');
         const sleepStart = isNightOwl ? 2 : (isEarlyBird ? 20 : 22);
         const sleepEnd = isNightOwl ? 9 : (isEarlyBird ? 5 : 6);
         let s = `${t('約')} ${sleepStart}:00 ${t('上床睡覺,')} ${sleepEnd}:00 ${t('起床')}`;
-        if (this.job) s += `${t('；')}${this.job.workHours[0]}:00–${this.job.workHours[1]}:00 ${t('在')}${this.job.workplace.replace(/_/g,' ')}${t('工作')}`;
+        if (this.job) s += `${t('；')}` + t('{a}–{b} 在{w}工作').replace('{a}', this.job.workHours[0] + ':00').replace('{b}', this.job.workHours[1] + ':00').replace('{w}', `${(world || this._world)?.townMap?.locations?.[this.job.workplace]?.name || (typeof LOC_FALLBACK !== 'undefined' && LOC_FALLBACK[this.job.workplace] ? t(LOC_FALLBACK[this.job.workplace]) : this.job.workplace.replace(/_/g,' '))}`); // v9.18.0 以前顯示 town hall 這種代碼
         if (isNightOwl) s += t('。是個夜貓子,深夜才有精神');
         if (isEarlyBird) s += t('。習慣早睡早起');
         return s + t('。');

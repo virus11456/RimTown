@@ -77,7 +77,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 議員名單顯示
       w.council._formCouncil(w);
       app.activeTab = 'proposals'; app._ppTab = 'town'; app.renderSidebar(); await new Promise(r => setTimeout(r, 300));
-      out.councilLine = ([...document.querySelectorAll('.pp-tier-line')].map(e => e.textContent).find(x => x.includes('🏛️')) || '').replace(/\s+/g, ' ');
+      out.councilLine = ([...document.querySelectorAll('.pp-tier-line, .pp-gov .ic-row')].map(e => e.textContent).find(x => x.includes('🏛️')) || '').replace(/\s+/g, ' ');
       // 10) 存讀檔
       const data = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); let loadErr = null; try { w2.loadSave(data); } catch (e) { loadErr = e.message; } out.load = !loadErr && w2.council?.members?.length > 0;
       return out;

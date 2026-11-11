@@ -88,8 +88,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         if (mob && app._openKairoTab) app._openKairoTab('proposals'); else { document.querySelector('.rt-sidebar-tabs > button[data-tab="proposals"]')?.click(); app.activeTab = 'proposals'; }
         app._ppTab = 'town'; app.renderSidebar();
         const mayor = w.election?._officeHolder?.(w);
-        const line = [...document.querySelectorAll('.pp-tier-line')].map(x => x.textContent).find(x => /現任|Current/.test(x)) || '';
-        const btn = document.querySelector('.pp-tier-line .pp-mayor-name');
+        const line = [...document.querySelectorAll('.pp-tier-line, .pp-gov .ic-row')].map(x => x.textContent).find(x => /現任|Current/.test(x)) || '';
+        const btn = document.querySelector('.pp-gov .ic-row:last-child .pp-mayor-name, .pp-tier-line .pp-mayor-name');
         return { line, mayor: mayor ? mayor.agentId : null, btn: btn ? btn.dataset.val : null, title: typeof TIERS !== 'undefined' ? TIERS.leaderTitle(w) : '' };
       }, mob);
       ok(r4.line && (r4.mayor ? r4.btn === r4.mayor : /從缺|Vacant/.test(r4.line)) && r4.line.includes(r4.title), '鎮況卡寫出現任首長(名字可點開村民卡)', r4);

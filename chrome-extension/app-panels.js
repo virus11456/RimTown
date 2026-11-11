@@ -694,7 +694,7 @@ Object.assign(RimTownApp.prototype, {
             try {
                 const plan = liveAgent.generateDailyPlan(this.world);
                 const status = liveAgent.getPersonaStatus(this.world);
-                const lifestyle = liveAgent.getLifestyleText();
+                const lifestyle = liveAgent.getLifestyleText(this.world);
                 const timeline = liveAgent.getTodayTimeline(this.world, 12);
                 const timeOf = (s) => (String(s).match(/(\d{2}:\d{2})\s*$/) || [])[1] || '';
                 const nowLine = `<div class="memory-item"><span class="memory-time">${t('現在')}</span>${liveAgent.activityLabel} @ ${this._locationLabel(liveAgent.currentLocation)}</div>`;
@@ -870,12 +870,12 @@ Object.assign(RimTownApp.prototype, {
                     const I = TIERS.info(this.world), pg = TIERS.progress(this.world); const L = TIERS.LV;
                     const bar = (v, m) => `<span class="pp-tier-req${v >= m ? ' ok' : ''}">${v}/${m}</span>`;
                     B.tier += `<div class="pp-issues pp-tier"><h4 class="pp-h">${I.icon} ${esc(TIERS.name(this.world))} <span class="pp-tier-steps">${L.map((x, i) => `<i class="${i <= TIERS.level(this.world) ? 'on' : ''}" title="${esc(t(x.zh))}">${x.icon}</i>`).join('')}</span></h4>`;
-                    B.tier += `<div class="pp-tier-line">${t('首長')}${t('：')}${esc(TIERS.leaderTitle(this.world))} · ${t('議會')}${t('：')}${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}</div>`;
+                    const GOV = [[t('首長'), esc(TIERS.leaderTitle(this.world))], [t('議會'), `${esc(t(I.council))} ${TIERS.seats(this.world)} ${t('席')}`]]; // v9.18.0 首長／議會／議員／現任改成一列一項
                     { // v6.81.0 寫出現任議員(點名字開村民卡);沒坐滿就寫還空幾席
                         const ms = (this.world.council?.members || []).map(id => this.world.agents[id]).filter(Boolean);
                         const btn = (a) => `<button type="button" class="pp-mayor-name" data-action="select-agent" data-val="${esc(a.agentId)}">${esc(t(a.name))}</button>`;
                         const empty = Math.max(0, TIERS.seats(this.world) - ms.length);
-                        B.tier += `<div class="pp-tier-line">🏛️ ${esc(t(I.member))}${t('：')}${ms.length ? ms.map(btn).join(t('、')) : t('還沒成立')}${ms.length && empty ? `${t('（')}${t('空 {n} 席').replace('{n}', empty)}${t('）')}` : ''}</div>`;
+                        GOV.push([`🏛️ ${esc(t(I.member))}`, `${ms.length ? ms.map(btn).join(t('、')) : t('還沒成立')}${ms.length && empty ? `${t('（')}${t('空 {n} 席').replace('{n}', empty)}${t('）')}` : ''}`]);
                     }
                     { // v6.78.1 現任首長是誰(人不在鎮上時寫出代理人);點名字開村民卡
                         const E = this.world.election, title = esc(TIERS.leaderTitle(this.world));
@@ -886,14 +886,16 @@ Object.assign(RimTownApp.prototype, {
                         else if (holder && acting && cur === acting) line = `${who(holder)}${t('（')}${E.acting.reason === 'explore' ? t('出去探險') : t('出遠門')}${t('，')}${who(acting)}${t('代理')}${t('）')}`;
                         else if (!holder && acting && cur === acting) line = `${t('從缺')}${t('（')}${who(acting)}${t('代理')}${t('）')}`;
                         else line = t('從缺');
-                        B.tier += `<div class="pp-tier-line">👤 ${t('現任{title}').split('{title}').join(title)}${t('：')}${line}</div>`;
+                        GOV.push([`👤 ${t('現任{title}').split('{title}').join(title)}`, line]);
+                        B.tier += `<div class="ic-rows pp-gov">${GOV.map(([k, v]) => `<div class="ic-row"><span>${k}</span><b>${v}</b></div>`).join('')}</div>`;
                     }
-                    if (pg) B.tier += `<div class="pp-tier-line">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}${t('：')}${t('人口')} ${bar(pg.pop[0], pg.pop[1])} · ${t('繁榮')} ${bar(pg.pros[0], pg.pros[1])} · ${t('時代')} ${bar(pg.era[0], pg.era[1])}${pg.streak ? ` · ${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}` : ''}</div>`;
+                    if (pg) { const pb = (lab, v, m) => `<div class="pg-stage${v >= m ? ' ok' : ''}"><span>${lab}</span><div class="ic-bar"><i style="width:${Math.max(2, Math.min(100, Math.round(v / Math.max(1, m) * 100)))}%"></i></div>${bar(v, m)}</div>`; // v9.18.0 升格條件改成三條進度條
+                        B.tier += `<div class="pp-tier-line pg-up"><div class="ic-sub-h">${t('升格為{n}還差').replace('{n}', `${pg.next.icon} ${esc(t(pg.next.zh))}`)}</div><div class="pg-stages">${pb(t('人口'), pg.pop[0], pg.pop[1])}${pb(t('繁榮'), pg.pros[0], pg.pros[1])}${pb(t('時代'), pg.era[0], pg.era[1])}</div>${pg.streak ? `<div class="ic-note">${t('已連續達標 {n}／{m} 天').replace('{n}', pg.streak).replace('{m}', pg.need)}</div>` : ''}</div>`; }
                     if (pg && pg.mat) { const lk = pg.matLack || {}; B.tier += `<div class="pp-tier-line">🏗️ ${t('擴建鎮公所要用')}${t('：')}${Object.entries(pg.mat).map(([r, n]) => `<span class="pp-tier-req${lk[r] ? '' : ' ok'}">${esc(this._resName ? this._resName(r) : r)} ${n}</span>`).join(' ')}${Object.keys(lk).length ? '' : ` · ${t('建材已備齊')}`}</div>`; } // v6.77.0
                     else B.tier += `<div class="pp-tier-line">${t('已經是最高等級。')}</div>`;
-                    try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); B.tier += `<div class="pp-tier-line">${t('社會階層')}${t('：')}${CLASS.NAMES.map((n, i) => py[i] ? `${n.icon} ${esc(t(n.zh))} ${py[i]}` : '').filter(Boolean).join(' · ')}</div>`; } } catch (e) {} // v6.58.0
+                    try { if (typeof CLASS !== 'undefined' && this.world.classes) { const py = CLASS.pyramid(this.world); const tot = py.reduce((a, b) => a + (b || 0), 0) || 1; B.tier += `<div class="pp-tier-line pg-classes"><div class="ic-sub-h">${t('社會階層')}</div><div class="pg-stack">${CLASS.NAMES.map((n, i) => py[i] ? `<i style="flex:${py[i]}" class="pgc${i}" title="${esc(t(n.zh))} ${py[i]}"></i>` : '').join('')}</div><div class="pg-legend2">${CLASS.NAMES.map((n, i) => py[i] ? `<span><i class="pgc${i}"></i>${n.icon} ${esc(t(n.zh))} <b>${py[i]}</b><small>${Math.round(py[i] / tot * 100)}%</small></span>` : '').join('')}</div></div>`; /* v9.18.0 社會階層改成比例長條 */ } } catch (e) {} // v6.58.0
                     try { const MV = typeof MOBILITY !== 'undefined' ? MOBILITY.view(this.world) : null; if (MV && MV.n) { // v9.10.0 階層流動:比出身爬上去／掉下來的人、學徒、最近的故事
-                        B.tier += `<div class="pp-tier-line">🪜 ${t('階層流動')}${t('：')}${t('比出身好 {u} 人、比出身差 {d} 人').replace('{u}', MV.up).replace('{d}', MV.down)}${MV.masters ? ` · 🏅 ${t('名匠 {n} 人').replace('{n}', MV.masters)}` : ''}${MV.appr ? ` · 🧑‍🏫 ${t('學徒 {n} 人').replace('{n}', MV.appr)}` : ''}${MV.st.rise ? ` · 🌱 ${t('白手起家')} ${MV.st.rise}` : ''}${MV.st.fall ? ` · 🍂 ${t('家道中落')} ${MV.st.fall}` : ''}</div>`;
+                        B.tier += `<div class="pp-tier-line pg-mob"><div class="ic-sub-h">🪜 ${t('階層流動')}</div>${this._icGrid([{ v: MV.up, u: t('人'), l: t('比出身好'), tone: 'g' }, { v: MV.down, u: t('人'), l: t('比出身差'), tone: MV.down ? 'y' : '' }, MV.masters ? { v: MV.masters, u: t('人'), l: '🏅 ' + t('名匠') } : null, MV.appr ? { v: MV.appr, u: t('人'), l: '🧑‍🏫 ' + t('學徒') } : null, MV.st.rise ? { v: MV.st.rise, l: '🌱 ' + t('白手起家') } : null, MV.st.fall ? { v: MV.st.fall, l: '🍂 ' + t('家道中落') } : null])}</div>`; // v9.18.0
                         for (const h of MV.hist) B.tier += `<div class="pp-tier-line pp-mob-h">${h.k === 'rise' ? '🌱' : '🍂'} ${esc(t(h.name))}${t('：')}${esc(t(CLASS.NAMES[h.from].zh))} → ${esc(t(CLASS.NAMES[h.to].zh))}${h.k === 'rise' && h.how ? `${t('（')}${esc(t(h.how))}${t('）')}` : ''}${h.k === 'three' ? `${t('（')}${t('富不過三代')}${t('）')}` : ''}</div>`;
                     } } catch (e) {}
                     try { const V = typeof CROWN !== 'undefined' ? CROWN.view(this.world) : null; if (V && (V.king || V.crisis || V.republic)) { // v6.59.0 王室
@@ -1169,11 +1171,18 @@ Object.assign(RimTownApp.prototype, {
             const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null;
             if (dv && (dv.secrets.length || dv.mis.length)) {
                 const MIS = { cold: '{a}以為{b}很冷漠（其實只是害羞）', jealous: '{a}以為{b}劈腿（其實只是普通朋友）', overheard: '{a}以為{b}在說自己壞話（其實不是）', price: '{a}以為{b}賣東西坑人（其實是原料漲價）' };
+                // v9.18.0 真相改版：上面一排數字（設局／謊言／說一套做一套／善意謊言／誤會），每一條改成「圖示＋內容＋狀態標籤」，急的（正在籌劃）排最前面
+                let hyp = []; try { const vw = typeof WAYS !== 'undefined' ? WAYS.view(this.world) : null; hyp = vw?.hyp || []; } catch (e) {} // v8.1.0 說一套做一套
+                const plans = dv.secrets.filter(s => s.plan), whites = dv.secrets.filter(s => !s.plan && s.kind === 'white'), lies = dv.secrets.filter(s => !s.plan && s.kind !== 'white');
+                const row = (ic, txt, st, tone) => `<div class="pp-issue pg-truth"><span class="pg-tr-ic" aria-hidden="true">${ic}</span><span class="pg-tr-tx">${txt}</span><span class="ic-chip ic-${tone}">${st}</span></div>`;
                 S += `<div class="pp-issues pp-secrets"><h4 class="pp-h">🕵️ ${t('只有你知道的真相')} <span class="pp-count">${dv.secrets.length + dv.mis.length}</span></h4>`;
-                try { const vw = typeof WAYS !== 'undefined' ? WAYS.view(this.world) : null; for (const h of (vw?.hyp || [])) S += `<div class="pp-issue">🤫 <span>${esc(t('{a}投票支持「{t}」，私下卻{d}').replace('{a}', t(h.name)).replace('{t}', h.t).replace('{d}', t(h.deed)))}<small>${t('還沒被撞見')}</small></span></div>`; } catch (e) {} // v8.1.0 說一套做一套
-                for (const s of dv.secrets) S += `<div class="pp-issue">${s.plan ? '🕵️' : s.kind === 'white' ? '💗' : '🎭'} <span>${esc(s.text)}<small>${s.plan ? t('正在籌劃') : t('村民還不知道')}</small></span></div>`;
-                for (const m of dv.mis) S += `<div class="pp-issue">😶 <span>${esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b)))}<small>${t('誤會還沒解開')}</small></span></div>`;
-                S += `<div class="pp-issue-hint">${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
+                S += this._icGrid([{ v: plans.length, l: '🕵️ ' + t('正在設局'), tone: 'r' }, { v: lies.length, l: '🎭 ' + t('謊言'), tone: 'y' }, { v: hyp.length, l: '🤫 ' + t('說一套做一套') }, { v: whites.length, l: '💗 ' + t('善意謊言') }, { v: dv.mis.length, l: '😶 ' + t('誤會') }].filter(x => x.v > 0));
+                for (const s of plans) S += row('🕵️', esc(s.text), t('正在籌劃'), 'r');
+                for (const s of lies) S += row('🎭', esc(s.text), t('村民還不知道'), 'y');
+                for (const h of hyp) S += row('🤫', esc(t('{a}投票支持「{t}」，私下卻{d}').replace('{a}', t(h.name)).replace('{t}', h.t).replace('{d}', t(h.deed))), t('還沒被撞見'), 'y');
+                for (const s of whites) S += row('💗', esc(s.text), t('村民還不知道'), 'n');
+                for (const m of dv.mis) S += row('😶', esc(t(MIS[m.kind] || '').replace('{a}', t(m.a)).replace('{b}', t(m.b))), t('誤會還沒解開'), 'n');
+                S += `<div class="pp-issue-hint">👁️ ${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
             }
         } catch (e) {}
         const nIss = (d.issues || []).length, hot = (d.issues || []).some(x => x.sev >= 3 || (!x.by && x.idle >= 3));
@@ -1183,7 +1192,12 @@ Object.assign(RimTownApp.prototype, {
         let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}">${icon} ${t(label)}${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
         let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}</div>`;
-        html += `<div class="pp-tabhint">${t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab])}</div>`;
+        { // v9.18.0 提案流程說明改成一步一格的流程（文字一字不少），鎮況／真相維持一行
+            const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab]);
+            if (tab === 'props') { const steps = hint.split(/(?<=[，。])|(?<=[,.])\s+/).map(x => x.trim().replace(/[，。,.]$/, '')).filter(Boolean);
+                html += `<div class="pp-tabhint pg-flow" title="${esc(hint)}">${steps.map((x, i) => `<span class="pg-step${i === steps.length - 1 && steps.length > 1 ? ' last' : ''}"><i aria-hidden="true">${i === steps.length - 1 && steps.length > 1 ? '👁️' : i + 1}</i>${esc(x)}</span>`).join('<b class="pg-arr" aria-hidden="true">›</b>')}</div>`; }
+            else html += `<div class="pp-tabhint">${hint}</div>`;
+        }
         html += tab === 'town' ? T : tab === 'truth' ? S : P;
         if (tab === 'props') for (const k of stampShown) this._stampSeen.add(k);
         html += '</div>';
@@ -1261,7 +1275,9 @@ Object.assign(RimTownApp.prototype, {
         } else if (el.electionHistory?.length) {
             const last = el.electionHistory[el.electionHistory.length - 1];
             const pol = (typeof ELECTION_POLICIES_LABELS !== 'undefined' && ELECTION_POLICIES_LABELS[last.winner.policy]) || last.winner.policy;
-            html += `<div class="el-last">🏛️ ${last.byElection ? t('上次補選') : t('上次選舉')}${t('：')}${nm(last.winner.name)} ${t('當選')}${t('（')}${esc(pol)}${t('，')}${last.winner.votes}/${last.totalVotes} ${t('票')}${t('）')}${t('。')}${t('下次選舉在秋季第 1 天。')}</div>`;
+            // v9.18.0 上次選舉改成小卡：誰當選放大，政見／得票／下次選舉改成膠囊
+            const vp = last.totalVotes ? Math.round(last.winner.votes / last.totalVotes * 100) : 0;
+            html += `<div class="el-last pg-el"><div class="pg-el-h">🏛️ ${last.byElection ? t('上次補選') : t('上次選舉')}</div><div class="pg-el-w"><b>${nm(last.winner.name)}</b><span class="ic-chip ic-g">${t('當選')}</span></div>${this._icPills([esc(pol), `🗳️ ${last.winner.votes}/${last.totalVotes} ${t('票')}${vp ? `${t('（')}${vp}%${t('）')}` : ''}`, `📅 ${t('下次選舉在秋季第 1 天。').replace(/[。.]\s*$/, '')}`])}</div>`;
         } else {
             html += `<div class="el-last">🏛️ ${t('鎮長每年秋季第 1 天改選；鎮長永久離開小鎮會馬上補選。')}</div>`;
         }
@@ -1269,6 +1285,11 @@ Object.assign(RimTownApp.prototype, {
         return html;
     },
 
+    // v9.18.0 設定頁長說明拆成一句一列（中文依「。；」、英文依句點分號），內容一字不少
+    _setLines(str) {
+        const parts = String(str || '').split(/(?<=[。；])|(?<=[.;])\s+/).map(x => x.trim()).filter(Boolean);
+        return parts.length > 1 ? `<ul class="set-lines-ul">${parts.map(x => `<li>${x}</li>`).join('')}</ul>` : String(str || '');
+    },
     renderSettings(container) {
         // Preserve unsaved form values from existing DOM inputs (prevents
         // renderSidebar() calls from wiping user-typed/pasted API keys)
@@ -1295,55 +1316,32 @@ Object.assign(RimTownApp.prototype, {
         // v6.54.0 速度只在上方控制列調(倍率),設定頁不再重複
         // v6.27.0 3D 畫質:自動(卡頓就降)／高／低;2D 開關已移除(WebGL 不可用時自動退回)
         let qPref = 'auto'; try { qPref = localStorage.getItem('rimtown_3d_quality') || 'auto'; if (qPref === 'low' && localStorage.getItem('rimtown_3d_q_by') !== 'user') qPref = 'auto'; } catch (e) {} // v6.43.3 自動降級留下的 low 不算玩家選的
-        html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('3D 畫質')}</label>
-            <select id="settings-quality" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{if(this.value==='auto'){localStorage.removeItem('rimtown_3d_quality');localStorage.removeItem('rimtown_3d_q_by')}else{localStorage.setItem('rimtown_3d_quality',this.value);localStorage.setItem('rimtown_3d_q_by','user')}}catch(e){};location.reload()">
-                <option value="auto"${qPref==='auto'?' selected':''}>${t('自動（手機 1.5 倍解析度，卡頓就自動降低）')}</option>
-                <option value="high"${qPref==='high'?' selected':''}>${t('高（陰影、抗鋸齒、原生解析度）')}</option>
-                <option value="low"${qPref==='low'?' selected':''}>${t('低（無陰影、1x 解析度，省電）')}</option>
-            </select>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
+        // v9.18.0 設定改版：3D 畫質改成三張選項卡（名稱＋說明各自看得到）、開關改成「圖示＋標題＋一行說明＋右邊開關」、開局村民兩張選項卡各寫清楚
+        const qOpt = (v, ic, full) => { const L = t(full); const i = L.search(/[（(]/); const name = i > 0 ? L.slice(0, i).trim() : L; const desc = i > 0 ? L.slice(i + 1).replace(/[）)]\s*$/, '') : ''; return `<button type="button" class="set-opt${qPref === v ? ' on' : ''}" aria-pressed="${qPref === v}" data-q="${v}" onclick="try{if(this.dataset.q==='auto'){localStorage.removeItem('rimtown_3d_quality');localStorage.removeItem('rimtown_3d_q_by')}else{localStorage.setItem('rimtown_3d_quality',this.dataset.q);localStorage.setItem('rimtown_3d_q_by','user')}}catch(e){};location.reload()"><span class="set-opt-ic">${ic}</span><b>${name}</b><small>${desc}</small></button>`; };
+        html += `<div class="setting-group set-blk"><div class="set-blk-h">🖥️ ${t('3D 畫質')}</div>
+            <div class="set-opts n3" id="settings-quality" role="group" aria-label="${t('3D 畫質')}">${qOpt('auto', '⚙️', '自動（手機 1.5 倍解析度，卡頓就自動降低）')}${qOpt('high', '✨', '高（陰影、抗鋸齒、原生解析度）')}${qOpt('low', '🔋', '低（無陰影、1x 解析度，省電）')}</div>
+            <div class="set-help">↻ ${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
         </div>`;
-        // v6.29.0 介面配色與自動帶鏡頭
-        let themePref = 'night'; try { themePref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {} // v6.41.1 拿掉「自動」
+        // v6.29.0 自動帶鏡頭(v9.18.0 拿掉介面配色選項,只剩一套)
         let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
         let idlecam = true; try { idlecam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) {} // v6.32.0
-        html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
-            <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
-                <option value="night"${themePref!=='day'?' selected':''}>${t('夜色')}</option>
-                <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
-            </select>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-autocam" ${autocam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}"> ${t('事件發生時自動帶鏡頭')}</label>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('新提案、搬來、商隊進城、考驗公布時鏡頭自動飛過去；關掉的話通知上仍有「去看」鈕。')}</div>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-idlecam" ${idlecam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}"> ${t('閒置時鏡頭慢慢環繞小鎮')}</label>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。')}</div>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-uiall" ${this._uiAll?.() ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_ui_all',this.checked?'1':'0')}catch(e){};if(window.rimtownApp)window.rimtownApp.renderSidebar()"> ${t('一開始就顯示全部功能')}</label>
-            <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('不勾的話，分頁會隨著小鎮發展慢慢解鎖。')}${(() => { const p = this._uiPending?.() || []; return p.length && !this._uiAll?.() ? ' ' + t('還沒解鎖') + t('：') + p.map(x => x.icon + ' ' + x.label).join(t('、')) : ''; })()}</div>
-        </div>`;
+        const sw = (ic, id, on, onchange, title, help) => `<label class="set-toggle set-row" for="${id}"><span class="set-row-ic" aria-hidden="true">${ic}</span><span class="set-row-tx"><b>${title}</b><small>${help}</small></span><span class="set-switch"><input type="checkbox" role="switch" id="${id}" ${on ? 'checked' : ''} onchange="${onchange}"><i aria-hidden="true"></i></span></label>`;
+        const pend = (() => { const p = this._uiPending?.() || []; return p.length && !this._uiAll?.() ? ' ' + t('還沒解鎖') + t('：') + p.map(x => x.icon + ' ' + x.label).join(t('、')) : ''; })();
+        html += `<div class="set-rows">${sw('🎥', 'settings-autocam', autocam, `try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}`, t('事件發生時自動帶鏡頭'), t('新提案、搬來、商隊進城、考驗公布時鏡頭自動飛過去；關掉的話通知上仍有「去看」鈕。'))}${sw('🌀', 'settings-idlecam', idlecam, `try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}`, t('閒置時鏡頭慢慢環繞小鎮'), t('45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。'))}${sw('🧩', 'settings-uiall', this._uiAll?.(), `try{localStorage.setItem('rimtown_ui_all',this.checked?'1':'0')}catch(e){};if(window.rimtownApp)window.rimtownApp.renderSidebar()`, t('一開始就顯示全部功能'), t('不勾的話，分頁會隨著小鎮發展慢慢解鎖。') + pend)}</div>`;
         // v5.59.2 背景音樂開關搬進設定分頁(原本只在無入口的舊版彈窗裡,玩家關不掉音樂)
-        html += `<div style="margin-top:8px">
-            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🎵 ${t('背景音樂')}</div>
-            <div style="display:flex;align-items:center;gap:8px">
-                <button class="trade-btn" data-action="settings-bgm-mute" style="padding:6px 12px">${this.bgm?.muted ? '🔇 ' + t('已靜音') : '🔊 ' + t('播放中')}</button>
-                <input id="settings-bgm-volume" type="range" min="0" max="100" value="${Math.round((this.bgm?.volume ?? 0.2) * 100)}" style="flex:1">
+        html += `<div class="set-blk"><div class="set-blk-h">🎵 ${t('背景音樂')}</div>
+            <div class="set-bgm">
+                <button class="trade-btn" data-action="settings-bgm-mute">${this.bgm?.muted ? '🔇 ' + t('已靜音') : '🔊 ' + t('播放中')}</button>
+                <input id="settings-bgm-volume" type="range" min="0" max="100" value="${Math.round((this.bgm?.volume ?? 0.2) * 100)}" aria-label="${t('背景音樂')}">
             </div>
         </div>`;
         // v5.27.0 肉鴿:開新局的卡司模式
         const rosterMode = (localStorage.getItem('rimtown_roster_mode') === 'random') ? 'random' : 'scripted';
-        html += `<div style="margin-top:4px">
-            <div style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:4px">🎲 ${t('開新局的村民')}</div>
-            <div class="speed-controls">
-                <button class="btn-speed${rosterMode==='scripted'?' active':''}" data-action="settings-roster" data-val="scripted">📖 ${t('劇本卡司')}</button>
-                <button class="btn-speed${rosterMode==='random'?' active':''}" data-action="settings-roster" data-val="random">🎲 ${t('隨機卡司')}</button>
+        html += `<div class="set-blk"><div class="set-blk-h">🎲 ${t('開新局的村民')}</div>
+            <div class="set-opts n2">
+                <button type="button" class="set-opt${rosterMode==='scripted'?' on active':''}" aria-pressed="${rosterMode==='scripted'}" data-action="settings-roster" data-val="scripted"><span class="set-opt-ic">📖</span><b>${t('劇本卡司')}</b><small>${t('用陳偉、林美等固定劇本村民與開局關係網')}</small></button>
+                <button type="button" class="set-opt${rosterMode==='random'?' on active':''}" aria-pressed="${rosterMode==='random'}" data-action="settings-roster" data-val="random"><span class="set-opt-ic">🎲</span><b>${t('隨機卡司')}</b><small>${t('每開一張新地圖都隨機抽一批全新村民與愛恨關係,每局故事都不同')}</small></button>
             </div>
-            <div style="font-size:0.68rem;color:var(--text-muted);margin-top:3px">${rosterMode==='random'?t('每開一張新地圖都隨機抽一批全新村民與愛恨關係,每局故事都不同'):t('用陳偉、林美等固定劇本村民與開局關係網')}</div>
         </div>`;
         html += `<div style="display:flex;gap:6px;flex-wrap:wrap">
             <button class="trade-btn" data-action="show-towns">📋 ${t('城鎮列表')}</button>
@@ -1354,11 +1352,8 @@ Object.assign(RimTownApp.prototype, {
         // --- Account & Save Section (merged) ---
         html += t('<div class="econ-section"><h3>💾 帳號與存檔</h3>');
         if (loggedIn) {
-            html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-                <span style="color:var(--positive)">● ${t('已登入')}</span>
-                <strong>${this._escapeHtml(username)}</strong>
-            </div>
-            <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('存檔會自動同步至雲端，在任何裝置登入即可讀取。')}</p>
+            html += `<div class="set-acct"><span class="set-acct-av" aria-hidden="true">👤</span><strong>${this._escapeHtml(username)}</strong><span class="ic-chip ic-g">● ${t('已登入')}</span></div>
+            <div class="set-help set-cloud">☁️ ${t('存檔會自動同步至雲端，在任何裝置登入即可讀取。')}</div>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
                 <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
                 <button class="trade-btn" data-action="settings-export" title="${t('把目前這個小鎮的存檔下載成一個檔案')}">💾 ${t('匯出存檔')}</button>
@@ -1369,7 +1364,7 @@ Object.assign(RimTownApp.prototype, {
                 <button class="trade-btn btn-accent" data-action="settings-save-game">${t('儲存遊戲')}</button>
                 <button class="trade-btn" data-action="settings-export" title="${t('把目前這個小鎮的存檔下載成一個檔案')}">💾 ${t('匯出存檔')}</button>
             </div>
-            <p style="font-size:0.72rem;color:var(--text-secondary);margin-bottom:8px">${t('登入後存檔會自動同步至雲端，在任何裝置都能讀取。')}</p>
+            <div class="set-help set-cloud">☁️ ${t('登入後存檔會自動同步至雲端，在任何裝置都能讀取。')}</div>
             <div style="display:flex;gap:6px">
                 <button class="trade-btn" data-action="settings-login">${t('登入')}</button>
                 <button class="trade-btn" data-action="settings-register">${t('註冊')}</button>
@@ -1388,8 +1383,8 @@ Object.assign(RimTownApp.prototype, {
         {
             const q = this.llmClient?._quota; const today = new Date().toISOString().slice(0, 10);
             const quotaLine = (q && q.limit && q.day === today) ? t('今天的 AI 額度：剩 {r}／{l} 則').replace('{r}', Math.max(0, q.remaining)).replace('{l}', q.limit) : t('登入玩家沒有每日次數上限');
-            const li = (x) => `<li>${x}</li>`;
-            if (isServerAI) html += `<div class="set-card"><div class="set-card-title">🏘️ ${t('內建小鎮 AI 已啟用，免填金鑰')}</div><ul class="set-list">${li(quotaLine)}${li(t('金鑰由小鎮伺服器統一保管，你不會看到任何金鑰欄位'))}${li(t('對話、行程、反思與完整智能體決策先走 Claude；故障時依序改用 GPT、Groq'))}</ul></div>`;
+            const li = (x, ic) => `<li${ic ? ' class="set-li-ic"' : ''}>${ic ? `<span aria-hidden="true">${ic}</span>` : ''}<span>${x}</span></li>`; // v9.18.0 條列加圖示
+            if (isServerAI) html += `<div class="set-card"><div class="set-card-title">🏘️ ${t('內建小鎮 AI 已啟用，免填金鑰')}</div><ul class="set-list">${li(quotaLine, '📊')}${li(t('金鑰由小鎮伺服器統一保管，你不會看到任何金鑰欄位'), '🔐')}${li(t('對話、行程、反思與完整智能體決策先走 Claude；故障時依序改用 GPT、Groq'), '🔁')}</ul></div>`;
             else html += `<div class="set-card"><div class="set-card-title">💤 ${t('此站沒有內建 AI 代理端點，村民對話走內建模擬')}</div></div>`;
         }
         // v6.39.0 完整智能體模式
@@ -1398,8 +1393,8 @@ Object.assign(RimTownApp.prototype, {
             const on = this._fullAgentOn ? this._fullAgentOn() : false; const auto = fa !== '1' && fa !== '0';
             const capNote = this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
             html += `<div class="set-card set-toggle-card">
-            <label class="set-toggle" for="settings-fullagent"><input type="checkbox" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}</label>
-            <div class="set-help">${t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由；AI 失敗時才用規則版墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1 次。')}${capNote}</div>
+            <label class="set-toggle set-fa" for="settings-fullagent"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}<span class="set-switch"><input type="checkbox" role="switch" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><i aria-hidden="true"></i></span></label>
+            <div class="set-help set-lines">${this._setLines(t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由；AI 失敗時才用規則版墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1 次。') + capNote)}</div>
             </div>`;
         }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)
@@ -1426,7 +1421,7 @@ Object.assign(RimTownApp.prototype, {
                 <input type="number" id="settings-tab-npcbudget" class="set-input set-input-num" value="${this._escapeHtml(String(npcBudget))}" placeholder="${t('無上限')}" min="0" max="9999" inputmode="numeric">
                 <span class="set-meta">${t('今日已用')} ${npcUsed} ${t('次')}</span>
             </div>
-            <div class="set-help">${t('留空＝無上限，填 0＝完全關閉。村民的每日行程、鏡頭附近的村民對話與夜間反思會用到 AI；遠處對話改用內建模擬，照樣寫進記憶。你和村民的聊天、事件卡反應不算在內。')}</div>
+            <div class="set-help set-lines">${this._setLines(t('留空＝無上限，填 0＝完全關閉。村民的每日行程、鏡頭附近的村民對話與夜間反思會用到 AI；遠處對話改用內建模擬，照樣寫進記憶。你和村民的聊天、事件卡反應不算在內。'))}</div>
         </div>`;
         html += '</div>';
 
@@ -1707,14 +1702,15 @@ Object.assign(RimTownApp.prototype, {
             const travelling = this.state.travelling_agents || [];
             if (travelling.length) {
                 E.happen += t('<div class="travelling-section"><h4>外出中的居民</h4>');
-                travelling.forEach(_tw => { E.happen += `<div class="travelling-item">${t(_tw.name)} — ${_tw.reason}</div>`; });
+                E.happen += `<div class="ic-rows">${travelling.map(_tw => `<div class="ic-row travelling-item"><span>🧳 ${t(_tw.name)}</span><b>${_tw.reason}</b></div>`).join('')}</div>`; // v9.18.0 一人一列
                 E.happen += '</div>';
             }
             const events = (this.state.recent_events || []).slice().reverse();
             if (events.length) { // v7.3.0 鎮上發生的事:合成一張卡、一行一件(以前一件一張大卡,還露出英文類別)
                 const sevIc = { danger: '🔴', warning: '🟡', good: '🟢', positive: '🟢', info: '🔵' };
                 E.happen += `<div class="news-section"><h4>📌 ${t('鎮上發生的事')} <span class="pp-count">${events.length}</span></h4>`;
-                events.slice(0, 12).forEach(evt => { E.happen += `<div class="pp-tier-line">${sevIc[evt.severity] || '•'} <b>${t(evt.name)}</b>${t('：')}${evt.description} <small>${evt.time || ''}</small></div>`; });
+                const sevT = { danger: 'r', warning: 'y', good: 'g', positive: 'g', info: 'b' };
+                E.happen += `<div class="pg-tl">${events.slice(0, 12).map(evt => `<div class="pp-tier-line pg-ev"><i class="pg-ev-dot ${sevT[evt.severity] || 'n'}" title="${sevIc[evt.severity] || ''}"></i><div class="pg-ev-m"><b>${t(evt.name)}</b><span>${evt.description}</span><small>${evt.time || ''}</small></div></div>`).join('')}</div>`; // v9.18.0 時間軸:事件名粗體、說明一行、時間小字
                 E.happen += '</div>';
             }
         }
@@ -1772,7 +1768,7 @@ Object.assign(RimTownApp.prototype, {
             const discovered = Object.entries(exploreData.discoveredZones || {});
             const expeditions = exploreData.activeExpeditions || [];
             if (discovered.length || expeditions.length) {
-                E.explore += t('<div class="explore-section"><h4>🗺️ 探索區域</h4>');
+                E.explore += t('<div class="explore-section"><h4>🗺️ 探索區域</h4>') + (this.world.observerMode ? `<div class="ic-note" style="margin-bottom:6px">${t('要不要派人探險由村民提案決定')}</div>` : ''); // v9.18.0 說明只寫一次
                 if (expeditions.length) {
                     E.explore += t('<div class="expedition-active"><strong>進行中的探險：</strong>');
                     expeditions.forEach(e => {
@@ -1793,8 +1789,8 @@ Object.assign(RimTownApp.prototype, {
                         <div class="zone-header">${zoneDef.icon} <strong>${t(zoneDef.name)}</strong>
                             <span class="zone-diff">${t('難度：')}${'⭐'.repeat(zoneDef.difficulty)}</span></div>
                         <div class="zone-desc">${zoneDef.description}</div>
-                        <div class="zone-stats">${t('已探索')} ${info.timesExplored} ${t('次')}</div>
-                        ${this.world.observerMode ? (canSend ? `<div class="zone-stats">${t('要不要派人探險由村民提案決定')}</div>` : t('<div class="zone-busy">探險進行中...</div>')) : canSend ? `<div class="zone-send">
+                        <div class="zone-stats"><span class="pg-st${info.timesExplored ? '' : ' zero'}"><b>${info.timesExplored}<small>${t('次')}</small></b><span>${t('已探索')}</span></span></div>
+                        ${this.world.observerMode ? (canSend ? '' : t('<div class="zone-busy">探險進行中...</div>')) : canSend ? `<div class="zone-send">
                             <select class="explore-select" id="explore-select-${zoneId}" multiple size="3">
                                 ${availableNpcs.map(([id, a]) => `<option value="${id}">${t(a.name)} (${a.job?.title||t('無')})</option>`).join('')}
                             </select>

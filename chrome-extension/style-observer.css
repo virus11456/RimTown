@@ -1,9 +1,9 @@
 /* ============================================================
    RimTown v6.25.0 觀察者沙盒 UI 殼（design-system/rimtown-3d/MASTER.md 夜色票）
    疊在 style.css 之後，只在 .rimtown-container.observer 下生效；
-   v6.29.0 起加 .theme-day 日光色票；v6.41.1 起不再跟遊戲時間自動切，只在設定選「日光」時套用。
+   v9.18.0 起只有這一套配色（淺色版拿掉了）。
    ============================================================ */
-/* 色票變數同時掛在通知容器 #achv-toast-host 上（它在 body 下、不在容器裡；app._applyTheme 會同步 observer／theme-day class） */
+/* 色票變數同時掛在通知容器 #achv-toast-host 上（它在 body 下、不在容器裡；app._applyTheme 會補上 observer class） */
 .rimtown-container.observer, #achv-toast-host.observer {
     --bg-primary: #1E1B2A;
     --bg-secondary: #26223A;
@@ -265,41 +265,6 @@
 .rimtown-container .map-hint.fade { opacity: 0; }
 @media (max-width: 768px) { .rimtown-container .map-hint { bottom: calc(90px + env(safe-area-inset-bottom, 0px)); font-size: 0.66rem; left: 10px; right: 10px; text-align: center; } }
 
-/* ---------- v6.29.0 日光色票（design-system/rimtown-3d/MASTER.md 日間） ---------- */
-.rimtown-container.observer.theme-day, #achv-toast-host.observer.theme-day {
-    --bg-primary: #FFF8EC;
-    --bg-secondary: #F6EBD6;
-    --bg-card: #FFFDF7;
-    --accent: #E8732A;
-    --accent-light: #F28C4A;
-    --text-primary: #2B2118;
-    --text-secondary: #6B5E52;
-    --text-muted: #8E8275;
-    --border: #EADFCB;
-    --positive: #3C8C6E;
-    --negative: #C9463D;
-    --warning: #D9A020;
-    --info: #3B7DD8;
-    --ob-card: rgba(255, 251, 243, 0.94);
-    --ob-card-solid: #FFF8EC;
-    --ob-bubble: rgba(255, 253, 247, 0.97);
-    --ob-on-accent: #FFF8EC;
-    --ob-shadow: 0 8px 24px rgba(74, 52, 30, 0.18);
-}
-.rimtown-container.observer.theme-day { background: #FFF8EC; }
-.rimtown-container.observer.theme-day .header .controls .speed-controls .btn-speed.active,
-.rimtown-container.observer.theme-day .pp-btn.primary,
-.rimtown-container.observer.theme-day .nqc-chat { color: #FFF8EC !important; }
-.rimtown-container.observer.theme-day .npc-quick-card,
-.rimtown-container.observer.theme-day .loc-quick-card { background: var(--ob-card-solid); box-shadow: var(--ob-shadow); }
-.rimtown-container.observer.theme-day .npc-quick-card .nqc-rel { color: var(--text-primary); }
-.rimtown-container.observer.theme-day .npc-quick-card .nqc-intent-v { color: var(--text-primary); }
-.rimtown-container.observer.theme-day .npc-quick-card .nqc-attr-bar { background: rgba(43, 33, 24, 0.1); }
-.rimtown-container.observer.theme-day .npc-quick-card .nqc-btns button { color: var(--text-primary); }
-.rimtown-container.observer.theme-day #kairo-card,
-.rimtown-container.observer.theme-day #kairo-status,
-.rimtown-container.observer.theme-day .mobile-header { color: var(--text-primary); }
-.rimtown-container.observer.theme-day .mobile-kairo-bar button.active { color: var(--accent); }
 
 /* ---------- v6.29.0 建築資訊卡（沿用 .npc-quick-card 外框） ---------- */
 .rimtown-container .loc-quick-card { max-height: min(60vh, 440px); overflow-y: auto; -webkit-overflow-scrolling: touch; }
@@ -1055,7 +1020,6 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 /* v9.13.1 手機面板裡的分頁列(提案／鎮況／真相…):後面那條遮擋底色改成跟面板同色、左右撐滿面板,
    以前用 --bg-primary(比面板深)而且左右沒到邊,看起來像一塊深色方塊壓在標題列下面 */
 .rimtown-container.observer #kairo-card .pp-tabs::before { left: 0; right: 0; background: #1E1B2A; box-shadow: 0 0 0 100vmax #1E1B2A, 0 6px 8px -6px rgba(0, 0, 0, 0.45); clip-path: inset(0 -100vmax -14px -100vmax); }
-.rimtown-container.observer.theme-day #kairo-card .pp-tabs::before { background: #FFFBF3; box-shadow: 0 0 0 100vmax #FFFBF3, 0 6px 8px -6px rgba(0, 0, 0, 0.18); }
 /* v9.15.0 自己打一句話當事件 */
 .rimtown-container .gh-card.gh-wish, .rimtown-container .gh-detail.gh-wish { --c: #E0A84E; }
 .rimtown-container .gh-wish-lb { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
@@ -1068,7 +1032,6 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .gh-wish-ex .gh-chip { font-size: 0.74rem; }
 .rimtown-container .gh-wish .gh-play { margin-top: 2px; }
 .rimtown-container .gh-wish-last { border-top: 1px dashed var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem; line-height: 1.5; }
-.rimtown-container.observer.theme-day #gh-wish-in { background: #FFFFFF; }
 /* v9.16.0 鎮與鎮的競爭 */
 .rimtown-container .pp-rival { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.12); display: flex; flex-direction: column; gap: 6px; }
 .rimtown-container .pp-rival.good { border-color: #4FB286; } .rimtown-container .pp-rival.bad { border-color: #E06A5A; }
@@ -1080,3 +1043,360 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pp-rv-st { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; }
 .rimtown-container .pp-rival .pp-rv-bad { color: var(--text-secondary); }
 .rimtown-container .pp-rival .pp-tid-item small { color: var(--text-muted); }
+/* v9.17.0 資訊卡:標題列＋狀態標籤、大數字、警示列、展開詳細、ⓘ說明、今天要注意 */
+.rimtown-container .ic-wrap { --ic-tile: rgba(0,0,0,0.18); --ic-r: #FF9A91; --ic-y: #F2C14E; --ic-g: #6FCF97; --ic-rb: rgba(229,115,107,0.16); --ic-yb: rgba(242,193,78,0.15); --ic-gb: rgba(111,207,151,0.15); display: flex; flex-direction: column; gap: 10px; }
+.rimtown-container .ic-brief { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 14%, var(--bg-card)), var(--bg-card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border)); border-radius: 14px; padding: 10px 12px; }
+.rimtown-container .ic-brief.ok { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; color: var(--text-secondary); background: var(--bg-card); border-color: var(--border); }
+.rimtown-container .ic-brief-h { font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 2px; }
+.rimtown-container .ic-brief-row { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 40px; padding: 6px 0; border: 0; border-top: 1px solid color-mix(in srgb, var(--border) 70%, transparent); background: none; color: var(--text-primary); font: inherit; font-size: 0.9rem; text-align: left; cursor: pointer; }
+.rimtown-container .ic-brief-row:first-of-type { border-top: 0; }
+.rimtown-container .ic-brief-t { flex: 1; min-width: 0; }
+.rimtown-container .ic-go { margin-left: auto; font-size: 0.78rem; color: var(--text-muted); white-space: nowrap; }
+.rimtown-container .ic-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+.rimtown-container .ic-dot.r { background: var(--ic-r); } .rimtown-container .ic-dot.y { background: var(--ic-y); } .rimtown-container .ic-dot.g { background: var(--ic-g); }
+.rimtown-container .ic-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; scroll-margin-top: 8px; transition: box-shadow .3s ease; }
+.rimtown-container .ic-card.ic-flash { box-shadow: 0 0 0 2px var(--accent); }
+.rimtown-container .ic-hd { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; padding: 10px 12px; border: 0; background: none; color: var(--text-primary); font: inherit; text-align: left; cursor: pointer; }
+.rimtown-container .ic-hd:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; border-radius: 14px; }
+.rimtown-container .ic-ic { font-size: 1.1rem; line-height: 1; }
+.rimtown-container .ic-tt { font-size: 0.98rem; font-weight: 700; }
+.rimtown-container .ic-chip { margin-left: auto; font-size: 0.74rem; font-weight: 700; padding: 3px 9px; border-radius: 999px; white-space: nowrap; background: var(--ic-tile); color: var(--text-secondary); }
+.rimtown-container .ic-chip.ic-r { background: var(--ic-rb); color: var(--ic-r); } .rimtown-container .ic-chip.ic-y { background: var(--ic-yb); color: var(--ic-y); } .rimtown-container .ic-chip.ic-g { background: var(--ic-gb); color: var(--ic-g); }
+.rimtown-container .ic-sum { font-size: 0.86rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rimtown-container .ic-chip + .ic-sum { margin-left: 8px; } .rimtown-container .ic-tt + .ic-sum { margin-left: auto; }
+.rimtown-container .ic-arr { color: var(--text-muted); font-size: 0.72rem; margin-left: 6px; }
+.rimtown-container .ic-card:not(.open) .ic-chip { margin-left: auto; }
+.rimtown-container .ic-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 12px 10px; }
+.rimtown-container .ic-kpis.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rimtown-container .ic-kpis.n1 { grid-template-columns: 1fr; }
+.rimtown-container .ic-kpi, .rimtown-container .ic-g { background: var(--ic-tile); border-radius: 10px; padding: 8px 10px; min-width: 0; }
+.rimtown-container .ic-kpi b { display: block; font-size: 1.25rem; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .ic-kpi b small, .rimtown-container .ic-g b small { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
+.rimtown-container .ic-kpi span, .rimtown-container .ic-g span { display: block; font-size: 0.72rem; color: var(--text-muted); line-height: 1.35; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rimtown-container .ic-kpi[role="button"] { cursor: pointer; }
+.rimtown-container .ic-t-r b, .rimtown-container b.ic-t-r { color: var(--ic-r); } .rimtown-container .ic-t-y b, .rimtown-container b.ic-t-y { color: var(--ic-y); } .rimtown-container .ic-t-g b, .rimtown-container b.ic-t-g { color: var(--ic-g); }
+.rimtown-container .ic-sum.ic-t-g { color: var(--ic-g); } .rimtown-container .ic-sum.ic-t-r { color: var(--ic-r); }
+.rimtown-container .ic-alert { display: flex; align-items: center; gap: 8px; margin: 0 12px 10px; padding: 8px 10px; border-radius: 10px; font-size: 0.88rem; background: var(--ic-rb); border-left: 3px solid var(--ic-r); }
+.rimtown-container .ic-alert.ic-y { background: var(--ic-yb); border-left-color: var(--ic-y); }
+.rimtown-container .ic-alert[role="button"] { cursor: pointer; }
+.rimtown-container .ic-alert .ic-go { color: var(--ic-r); font-weight: 700; }
+.rimtown-container .ic-body { padding: 0 12px 10px; }
+.rimtown-container .ic-detail { padding: 10px 12px 6px; border-top: 1px solid var(--border); }
+.rimtown-container .ic-foot { display: flex; border-top: 1px solid var(--border); }
+.rimtown-container .ic-more, .rimtown-container .ic-ibtn { flex: 1; min-height: 44px; border: 0; background: none; font: inherit; font-size: 0.86rem; font-weight: 700; color: var(--accent); cursor: pointer; }
+.rimtown-container .ic-ibtn { flex: 0 0 auto; padding: 0 14px; color: var(--text-muted); font-weight: 600; border-left: 1px solid var(--border); }
+.rimtown-container .ic-foot .ic-ibtn:only-child { flex: 1; border-left: 0; }
+.rimtown-container .ic-info { margin: 0 12px 10px; padding: 8px 10px; border-radius: 10px; background: var(--ic-tile); font-size: 0.78rem; line-height: 1.6; color: var(--text-secondary); }
+.rimtown-container .ic-info-x { display: block; margin-top: 4px; border: 0; background: none; color: var(--accent); font: inherit; font-size: 0.76rem; font-weight: 700; cursor: pointer; padding: 4px 0; }
+.rimtown-container .ic-bar { height: 6px; border-radius: 3px; background: var(--ic-tile); overflow: hidden; }
+.rimtown-container .ic-bar.big { height: 8px; }
+.rimtown-container .ic-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--accent), color-mix(in srgb, var(--accent) 60%, #FFE2B8)); border-radius: inherit; }
+.rimtown-container .ic-split { display: flex; justify-content: space-between; font-size: 0.74rem; color: var(--text-muted); margin-bottom: 4px; }
+.rimtown-container .ic-dims { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 12px; }
+.rimtown-container .ic-dim { display: grid; grid-template-columns: 4.2em 1fr 1.8em; align-items: center; gap: 6px; font-size: 0.74rem; }
+.rimtown-container .ic-dim b { text-align: right; color: var(--text-secondary); font-weight: 600; font-variant-numeric: tabular-nums; }
+.rimtown-container .ic-prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.rimtown-container .ic-pr { border-radius: 10px; padding: 8px 10px; background: var(--ic-tile); border: 1px solid var(--border); min-width: 0; }
+.rimtown-container .ic-pr-n { display: block; font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .ic-pr b { display: block; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rimtown-container .ic-pr-w { font-size: 0.74rem; font-weight: 700; color: var(--text-secondary); }
+.rimtown-container .ic-pr-lo { border-color: color-mix(in srgb, var(--ic-g) 50%, transparent); } .rimtown-container .ic-pr-lo .ic-pr-w { color: var(--ic-g); }
+.rimtown-container .ic-pr-mid { border-color: color-mix(in srgb, var(--ic-y) 50%, transparent); } .rimtown-container .ic-pr-mid .ic-pr-w { color: var(--ic-y); }
+.rimtown-container .ic-pr-hi { border-color: color-mix(in srgb, var(--ic-r) 55%, transparent); } .rimtown-container .ic-pr-hi .ic-pr-w { color: var(--ic-r); }
+.rimtown-container .ic-sub { margin-bottom: 12px; }
+.rimtown-container .ic-sub-h { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+.rimtown-container .ic-sub-h small { font-weight: 500; color: var(--text-muted); }
+.rimtown-container .ic-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container .ic-g b { display: block; font-size: 1.02rem; font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rimtown-container .ic-rows { display: flex; flex-direction: column; }
+.rimtown-container .ic-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 0.84rem; color: var(--text-secondary); border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .ic-row:last-child { border-bottom: 0; }
+.rimtown-container .ic-row b { color: var(--text-primary); font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rimtown-container .ic-row small { color: var(--text-muted); }
+.rimtown-container .ic-pills, .rimtown-container .ic-jobs { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.rimtown-container .ic-pill { font-size: 0.76rem; padding: 4px 9px; border-radius: 999px; background: var(--ic-tile); border: 1px solid var(--border); color: var(--text-secondary); }
+.rimtown-container .ic-job { font-size: 0.76rem; padding: 4px 9px; border-radius: 999px; background: var(--ic-tile); border: 1px solid var(--border); color: var(--text-secondary); }
+.rimtown-container .ic-job b { color: var(--text-primary); font-weight: 700; }
+.rimtown-container .ic-job.open { border-color: color-mix(in srgb, var(--ic-g) 55%, transparent); } .rimtown-container .ic-job.over { border-color: color-mix(in srgb, var(--ic-r) 55%, transparent); }
+.rimtown-container .ic-legend { display: flex; gap: 6px; margin-top: 6px; } .rimtown-container .ic-legend .ic-job { font-size: 0.68rem; padding: 2px 8px; }
+.rimtown-container .ic-empty, .rimtown-container .ic-note { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+.rimtown-container .ic-log { font-size: 0.82rem; color: var(--text-secondary); padding: 6px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); line-height: 1.5; }
+.rimtown-container .ic-log:last-child { border-bottom: 0; }
+.rimtown-container .ic-forecast { display: flex; align-items: center; gap: 8px; font-size: 0.86rem; } .rimtown-container .ic-forecast span:first-child { font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .ic-body .festival-section, .rimtown-container .ic-body .quest-section { margin: 8px 0 0; }
+.rimtown-container .ic-lb { min-height: 44px; border: 1px dashed var(--border); border-radius: 12px; background: none; color: var(--text-secondary); font: inherit; font-size: 0.86rem; cursor: pointer; }
+.rimtown-container .ic-body .hb-tags { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .rimtown-container .ic-card { transition: none; } }
+.rimtown-container .ic-grid.c2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rimtown-container .ic-body + .ic-kpis { margin-top: -2px; }
+.rimtown-container .ic-card:not(.open) .ic-main { display: none; }
+.rimtown-container .ic-card .ic-sum { display: none; } .rimtown-container .ic-card:not(.open) .ic-sum { display: inline; }
+.rimtown-container .ic-card:not(.more) .ic-detail { display: none; }
+.rimtown-container .ic-card .ic-more-c, .rimtown-container .ic-card.more .ic-more-o { display: none; } .rimtown-container .ic-card.more .ic-more-c { display: inline; }
+.rimtown-container .ic-card:not(.info) .ic-info { display: none; } .rimtown-container .ic-card.info .ic-ibtn { display: none; } .rimtown-container .ic-card.info .ic-foot .ic-more { border-right: 0; }
+.rimtown-container .ic-card .ic-arr::before { content: '▾'; } .rimtown-container .ic-card.open .ic-arr::before { content: '▴'; }
+.rimtown-container .ic-main { padding-top: 0; }
+.rimtown-container .ic-hd .ic-tt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rimtown-container .ic-hd .ic-chip, .rimtown-container .ic-card:not(.open) .ic-chip { margin-left: 0; }
+.rimtown-container .ic-hd .ic-sum { margin-left: 8px; }
+/* v9.18.0 全介面改版:資訊卡的顏色變數放到整個容器(村民、提案、科技…都用得到) */
+.rimtown-container { --ic-tile: rgba(0,0,0,0.18); --ic-r: #FF9A91; --ic-y: #F2C14E; --ic-g: #6FCF97; --ic-rb: rgba(229,115,107,0.16); --ic-yb: rgba(242,193,78,0.15); --ic-gb: rgba(111,207,151,0.15); }
+.rimtown-container .pg-wrap { display: flex; flex-direction: column; gap: 10px; }
+.rimtown-container .pg-wrap > .town-info-bar { margin: 0; }
+.rimtown-container .pg-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding: 2px 0; -webkit-overflow-scrolling: touch; }
+.rimtown-container .pg-chips::-webkit-scrollbar { display: none; }
+.rimtown-container .pg-chip { flex: none; min-height: 36px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-secondary); font: inherit; font-size: 0.82rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.rimtown-container .pg-chip b { font-weight: 700; color: var(--text-muted); margin-left: 2px; font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-chip.on { background: var(--accent); border-color: var(--accent); color: #fff; } .rimtown-container .pg-chip.on b { color: rgba(255,255,255,0.85); }
+.rimtown-container .pg-chip:focus-visible, .rimtown-container .pg-tab:focus-visible, .rimtown-container .pg-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .pg-list { display: flex; flex-direction: column; background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+.rimtown-container .resident-card.pg-row { display: flex; align-items: center; gap: 10px; margin: 0; padding: 10px 12px; min-height: 60px; border: 0; border-bottom: 1px solid var(--border); border-radius: 0; background: none; cursor: pointer; }
+.rimtown-container .resident-card.pg-row:last-child { border-bottom: 0; }
+.rimtown-container .resident-card.pg-row.selected { background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.rimtown-container .pg-row .pp-avatar { width: 38px; height: 38px; }
+.rimtown-container .pg-row-main { flex: 1; min-width: 0; }
+.rimtown-container .pg-row-t { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.rimtown-container .pg-row-t b { font-size: 0.95rem; color: var(--text-primary); white-space: nowrap; }
+.rimtown-container .pg-g { font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .pg-job { font-size: 0.76rem; color: var(--accent); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-row-s { font-size: 0.78rem; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.rimtown-container .pg-row-q { font-size: 0.74rem; color: var(--text-muted); font-style: italic; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.rimtown-container .pg-mood { margin-left: 0 !important; flex: none; }
+.rimtown-container .resident-card .chat-with-btn.pg-chat { flex: none; width: 40px; height: 40px; min-height: 40px; margin: 0; padding: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+.rimtown-container .pg-add { min-height: 44px; border-radius: 12px; border: 1px dashed var(--border); background: none; color: var(--text-secondary); font: inherit; font-size: 0.86rem; cursor: pointer; }
+.rimtown-container .pg-add:disabled { opacity: 0.5; cursor: default; }
+.rimtown-container .pg-hint { font-size: 0.74rem; color: var(--text-muted); text-align: center; line-height: 1.5; }
+.rimtown-container .ic-sum-t { font-weight: 500; color: var(--text-muted); font-size: 0.8rem; }
+/* 村民詳情:分頁 */
+.rimtown-container .detail-section.pg-hero .pg-dt-kpis { padding: 10px 0 0; }
+.rimtown-container .pg-tabs { display: flex; gap: 4px; padding: 4px; margin: 0 0 10px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; position: sticky; top: 0; z-index: 2; }
+.rimtown-container .pg-tab { flex: 1; min-height: 40px; border: 0; border-radius: 9px; background: none; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.rimtown-container .pg-tab.on { background: var(--accent); color: #fff; }
+.rimtown-container .detail-panel .pg-hide { display: none !important; }
+.rimtown-container .pg-x { margin-left: 6px; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); background: var(--ic-tile); border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
+.rimtown-container .ic-kpis.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .rimtown-container .ic-kpis.n4 .ic-kpi { padding: 7px 8px; } .rimtown-container .ic-kpis.n4 .ic-kpi b { font-size: 1.1rem; }
+/* v9.18.0 通用區塊收合＋小格子 */
+.rimtown-container .pg-blk > .pg-bh { display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 40px; margin-bottom: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+.rimtown-container .pg-blk.open > .pg-bh { margin-bottom: 8px; }
+.rimtown-container .pg-blk > .pg-bh:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 8px; }
+.rimtown-container .pg-arr { margin-left: auto; color: var(--text-muted); font-size: 0.72rem; flex: none; }
+.rimtown-container .pg-arr::before { content: '▾'; } .rimtown-container .pg-blk.open > .pg-bh .pg-arr::before { content: '▴'; }
+.rimtown-container .pg-bn { font-size: 0.72rem; font-weight: 700; color: var(--text-muted); background: var(--ic-tile); border-radius: 999px; padding: 1px 8px; margin-left: auto; }
+.rimtown-container .pg-bn + .pg-arr { margin-left: 4px; }
+.rimtown-container .pg-blk:not(.open) > :not(.pg-bh) { display: none !important; }
+.rimtown-container .pg-blk:not(.open) { padding-bottom: 4px; }
+.rimtown-container .pg-dots { display: flex !important; flex-wrap: wrap; gap: 5px 6px; align-items: center; line-height: 1.4; }
+.rimtown-container .pg-dot { display: inline-flex; align-items: center; gap: 3px; padding: 3px 8px; border-radius: 8px; background: var(--ic-tile); font-size: 0.8rem; color: var(--text-secondary); max-width: 100%; }
+.rimtown-container .pg-dot b, .rimtown-container .pg-dot strong { color: var(--text-primary); }
+.rimtown-container .pg-blk:not(.open) { padding-bottom: 0 !important; }
+.rimtown-container .pg-blk:not(.open) > .pg-bh { margin-bottom: 0 !important; border-bottom-color: transparent !important; }
+.rimtown-container .pg-fold { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; margin: 4px 0; padding: 0 12px; border: 1px dashed var(--border); border-radius: 10px; background: none; color: var(--text-secondary); font: inherit; font-size: 0.84rem; font-weight: 600; cursor: pointer; text-align: left; }
+.rimtown-container .pg-fold .pg-arr::before { content: '▾'; } .rimtown-container .pg-fold.open .pg-arr::before { content: '▴'; }
+.rimtown-container .pg-hide2 { display: none !important; }
+.rimtown-container .achievements-panel .pg-chips { margin: 4px 0 10px; }
+.rimtown-container .achievements-panel.pg-f-on .ach-card.locked, .rimtown-container .achievements-panel.pg-f-off .ach-card.unlocked { display: none; }
+.rimtown-container .pg-achbar { margin: -2px 0 8px; height: 5px; }
+.rimtown-container .pg-blk.ach-category:not(.open) > .pg-achbar { display: block !important; margin-top: 6px; }
+.rimtown-container .pp-card.pg-mini > :not(.pp-head):not(.pp-title):not(.pp-result):not(.pg-ppt):not(.pp-stamp) { display: none !important; }
+.rimtown-container .pp-card.pg-mini { padding-bottom: 4px; }
+.rimtown-container .pp-card.pg-mini .pp-stamp { transform: scale(0.62) rotate(-8deg); transform-origin: top right; opacity: 0.85; }
+.rimtown-container .pp-card.pg-mini .pp-title { padding-right: 70px; }
+.rimtown-container .pg-ppt { display: block; width: 100%; min-height: 36px; margin-top: 4px; border: 0; border-top: 1px dashed var(--border); background: none; color: var(--accent); font: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.rimtown-container .pg-ppt .pg-c, .rimtown-container .pp-card.pg-mini .pg-ppt .pg-o { display: inline; } .rimtown-container .pg-ppt .pg-o, .rimtown-container .pp-card.pg-mini .pg-ppt .pg-c { display: none; }
+/* v9.18.0 建設頁 */
+.rimtown-container .pg-prog { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-prog:last-child { border-bottom: 0; }
+.rimtown-container .pg-prog-ic, .rimtown-container .pg-tile-ic { font-size: 1.25rem; width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--ic-tile); border-radius: 10px; }
+.rimtown-container .pg-prog-m { flex: 1; min-width: 0; }
+.rimtown-container .pg-prog-t { display: flex; align-items: baseline; gap: 6px; margin-bottom: 5px; font-size: 0.88rem; }
+.rimtown-container .pg-prog-t b { color: var(--text-primary); } .rimtown-container .pg-prog-t small { color: var(--text-muted); font-size: 0.74rem; }
+.rimtown-container .pg-prog-t span { margin-left: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+@media (min-width: 520px) { .rimtown-container .pg-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rimtown-container .pg-tile { position: relative; display: flex; align-items: center; gap: 8px; padding: 7px 8px; border-radius: 10px; background: var(--ic-tile); border: 1px solid transparent; min-width: 0; }
+.rimtown-container .pg-tile.up { border-color: color-mix(in srgb, var(--accent) 45%, transparent); }
+.rimtown-container .pg-tile .pg-tile-ic { width: 30px; height: 30px; font-size: 1.05rem; background: color-mix(in srgb, var(--bg-card) 70%, transparent); }
+.rimtown-container .pg-tile-m { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rimtown-container .pg-tile-m b { font-size: 0.84rem; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-tile-up { color: var(--accent); font-size: 0.8rem; font-weight: 800; }
+.rimtown-container .pg-tile > .pg-tile-up { position: absolute; top: 4px; right: 7px; }
+.rimtown-container .pg-pips { display: inline-flex; gap: 3px; } .rimtown-container .pg-pips i { width: 7px; height: 7px; border-radius: 50%; background: color-mix(in srgb, var(--text-muted) 35%, transparent); }
+.rimtown-container .pg-pips i.on { background: var(--accent); }
+.rimtown-container .pg-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 8px; font-size: 0.72rem; color: var(--text-muted); }
+.rimtown-container .pg-opt { padding: 9px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-opt:last-of-type { border-bottom: 0; }
+.rimtown-container .pg-opt-t { display: flex; align-items: center; gap: 6px; font-size: 0.9rem; }
+.rimtown-container .pg-opt-t b { color: var(--text-primary); } .rimtown-container .pg-opt-t small { margin-left: auto; font-size: 0.74rem; color: var(--ic-r); font-weight: 700; } .rimtown-container .pg-opt-t small.ok { color: var(--ic-g); }
+.rimtown-container .pg-opt-t small:not(.ok):not([class]) { color: var(--text-muted); }
+.rimtown-container .pg-opt-d { font-size: 0.78rem; color: var(--text-secondary); margin: 3px 0 6px; }
+.rimtown-container .pg-opt-f, .rimtown-container .pg-costs { display: flex; flex-wrap: wrap; gap: 5px; }
+.rimtown-container .pg-cost, .rimtown-container .pg-eff { font-size: 0.76rem; padding: 2px 7px; border-radius: 7px; background: var(--ic-tile); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-cost.short { background: var(--ic-rb); color: var(--ic-r); font-weight: 700; }
+.rimtown-container .pg-eff { background: var(--ic-gb); color: var(--ic-g); }
+/* v9.18.0 第二輪:物資頁 */
+.rimtown-container .ic-dot.n { background: color-mix(in srgb, var(--text-muted) 55%, transparent); }
+.rimtown-container .pg-kv { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; font-size: 0.8rem; }
+.rimtown-container .pg-kv > span:first-child { flex: none; color: var(--text-muted); padding-top: 5px; min-width: 4.5em; }
+.rimtown-container .pg-kv .ic-pills { margin-top: 0; }
+.rimtown-container .ic-pill b { color: var(--text-primary); }
+.rimtown-container .ic-pill.pg-g { background: var(--ic-gb); color: var(--ic-g); border-color: transparent; } .rimtown-container .ic-pill.pg-y { background: var(--ic-yb); color: var(--ic-y); border-color: transparent; } .rimtown-container .ic-pill.pg-r { background: var(--ic-rb); color: var(--ic-r); border-color: transparent; }
+.rimtown-container .pg-stat { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.rimtown-container .pg-stat-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; }
+.rimtown-container .pg-stat-row .ic-dot { margin-top: 6px; }
+.rimtown-container .pg-stat-row.ic-t-r { color: var(--ic-r); } .rimtown-container .pg-stat-row.ic-t-g { color: var(--text-primary); }
+.rimtown-container .pg-flow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-flow:last-child { border-bottom: 0; }
+.rimtown-container .pg-flow-ic { font-size: 1.2rem; width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--ic-tile); border-radius: 10px; }
+.rimtown-container .pg-flow.down .pg-flow-ic { box-shadow: inset 0 0 0 1px var(--ic-r); }
+.rimtown-container .pg-flow-m { flex: 1; min-width: 0; }
+.rimtown-container .pg-flow-t { display: flex; align-items: baseline; gap: 6px; min-width: 0; } .rimtown-container .pg-flow-t b { font-size: 0.9rem; color: var(--text-primary); white-space: nowrap; }
+.rimtown-container .pg-flow-t small { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-flow-n { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 2px; font-size: 0.78rem; color: var(--text-secondary); }
+.rimtown-container .pg-flow-n small { color: var(--text-muted); font-size: 0.72rem; }
+.rimtown-container .pg-flow-s { flex: none; text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+.rimtown-container .pg-flow-s b { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.1; } .rimtown-container .pg-flow-s small { font-size: 0.68rem; color: var(--text-muted); }
+.rimtown-container .resource-item.ic-t-r { box-shadow: inset 0 0 0 1px var(--ic-r); } .rimtown-container .resource-item.ic-t-r .res-amount { color: var(--ic-r); }
+.rimtown-container .resource-item.ic-t-y { box-shadow: inset 0 0 0 1px var(--ic-y); } .rimtown-container .resource-item.ic-t-y .res-amount { color: var(--ic-y); }
+.rimtown-container .pg-offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container .pg-offer { display: grid; grid-template-columns: 1fr auto; gap: 1px 6px; padding: 7px 9px; border-radius: 10px; background: var(--ic-tile); font-size: 0.8rem; border-left: 3px solid var(--ic-g); }
+.rimtown-container .pg-offer.sell { border-left-color: var(--ic-y); }
+.rimtown-container .pg-offer-a { grid-column: 1 / -1; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); }
+.rimtown-container .pg-offer-r { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .rimtown-container .pg-offer-n { color: var(--text-muted); text-align: right; }
+.rimtown-container .pg-offer b { grid-column: 1 / -1; font-size: 1rem; color: var(--text-primary); font-variant-numeric: tabular-nums; } .rimtown-container .pg-offer b small { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.rimtown-container .pg-bs { display: flex; justify-content: center; gap: 8px; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; } .rimtown-container .pg-bs b { color: var(--text-primary); }
+.rimtown-container .ic-card .resource-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container .ic-card .resource-item { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 10px; background: var(--ic-tile); border: 0; min-width: 0; }
+.rimtown-container .ic-card .resource-item .res-icon { font-size: 1rem; } .rimtown-container .ic-card .resource-item .res-label { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rimtown-container .ic-card .resource-item .res-amount { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-inl { display: inline-flex; margin: 4px 0 0; } .rimtown-container .pg-sm { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+.rimtown-container .pg-st { display: inline-flex; flex-direction: column; justify-content: center; min-width: 64px; max-width: 100%; padding: 5px 9px; border-radius: 9px; background: var(--ic-tile); line-height: 1.2; }
+.rimtown-container .pg-st b { font-size: 1rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rimtown-container .pg-st b small { font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
+.rimtown-container .pg-st > span { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-st.zero { opacity: 0.55; } .rimtown-container .pg-st.zero b { font-weight: 700; color: var(--text-secondary); }
+/* 產業列:一個產業一張小卡 */
+.rimtown-container.observer .market-row { display: block !important; padding: 9px 10px; margin: 6px 0; border-radius: 12px; background: var(--ic-tile); border: 0; }
+.rimtown-container.observer .market-row .market-name { font-weight: 700; color: var(--text-primary); font-size: 0.92rem; }
+.rimtown-container.observer .market-row .market-owner { margin-left: 8px; font-size: 0.78rem; color: var(--accent); font-weight: 600; }
+.rimtown-container.observer .market-row .market-num, .rimtown-container.observer .market-row .market-holders, .rimtown-container.observer .market-row .market-rival { display: flex; margin-top: 6px; font-size: 0.78rem; }
+.rimtown-container.observer .market-row .pg-st { background: color-mix(in srgb, var(--bg-card) 75%, transparent); }
+/* v9.18.0 科技頁 */
+.rimtown-container .pg-rc { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; padding: 0; border: 0; background: none; font-size: 0.86rem; color: var(--text-muted); }
+.rimtown-container .pg-rc strong { font-size: 1.05rem; color: var(--text-primary); } .rimtown-container .pg-rc b { margin-left: auto; font-size: 1.15rem; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rimtown-container .research-card .ic-body:first-of-type { padding-top: 2px; }
+.rimtown-container .pg-paths { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 8px 0; }
+@media (min-width: 560px) { .rimtown-container .pg-paths { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rimtown-container .pg-path { padding: 9px 10px; border-radius: 12px; background: var(--ic-tile); border: 1px solid transparent; }
+.rimtown-container .pg-path.lean { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.rimtown-container .pg-path-h { display: flex; align-items: center; gap: 6px; } .rimtown-container .pg-path-h > b { font-size: 0.95rem; color: var(--text-primary); flex: 1; }
+.rimtown-container .pg-path-h .pg-st { min-width: 0; padding: 3px 8px; align-items: flex-end; }
+.rimtown-container .pg-path-d { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 6px; line-height: 1.5; }
+.rimtown-container .pg-path-pc { display: flex; flex-direction: column; gap: 4px; font-size: 0.76rem; line-height: 1.45; }
+.rimtown-container .pg-path-pc span { padding: 3px 7px; border-radius: 7px; } .rimtown-container .pg-path-pc .pg-g { background: var(--ic-gb); color: var(--text-primary); } .rimtown-container .pg-path-pc .pg-y { background: var(--ic-yb); color: var(--text-primary); }
+.rimtown-container .pg-stages { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.rimtown-container .pg-stage { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); }
+.rimtown-container .pg-stage b { text-align: right; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.rimtown-container.observer .tech-era { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-content: start; }
+.rimtown-container.observer .tech-era > * { grid-column: 1 / -1; min-width: 0; }
+.rimtown-container.observer .tech-era > .tech-node.tech-open, .rimtown-container.observer .tech-era > .tech-node.tech-locked:not(.pg-hide2), .rimtown-container.observer .tech-era > .tech-node.tech-done:not(.pg-hide2) { grid-column: auto; margin: 0; }
+.rimtown-container.observer .tech-era > .tech-node .tech-node-head { flex-wrap: wrap; gap: 2px 6px; }
+.rimtown-container.observer .tech-era > .tech-node .tech-desc, .rimtown-container.observer .tech-era > .tech-node .tech-need { font-size: 0.74rem; line-height: 1.45; }
+.rimtown-container.observer details.tech-era { display: block; }
+.rimtown-container .pg-list2 { display: flex !important; flex-direction: column; gap: 3px; }
+.rimtown-container .pg-li { display: block; position: relative; padding: 4px 0 4px 12px; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary); border-bottom: 1px dashed color-mix(in srgb, var(--border) 70%, transparent); }
+.rimtown-container .pg-li:last-child { border-bottom: 0; } .rimtown-container .pg-li::before { content: ''; position: absolute; left: 2px; top: 11px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+.rimtown-container .pp-gov { margin: 4px 0 8px; } .rimtown-container .pp-gov .ic-row b { white-space: normal; text-align: right; font-weight: 600; }
+.rimtown-container .pg-up, .rimtown-container .pg-classes, .rimtown-container .pg-mob { display: block; margin: 8px 0; }
+.rimtown-container .pg-stage.ok b, .rimtown-container .pg-stage.ok .pp-tier-req { color: var(--ic-g); }
+.rimtown-container .pg-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--ic-tile); gap: 2px; }
+.rimtown-container .pg-stack i, .rimtown-container .pg-legend2 i { display: block; }
+.rimtown-container .pg-legend2 { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 0.76rem; color: var(--text-secondary); }
+.rimtown-container .pg-legend2 span { display: inline-flex; align-items: center; gap: 4px; } .rimtown-container .pg-legend2 b { color: var(--text-primary); } .rimtown-container .pg-legend2 small { color: var(--text-muted); }
+.rimtown-container .pg-legend2 i { width: 8px; height: 8px; border-radius: 2px; }
+.rimtown-container .pgc0 { background: #7A6F86; } .rimtown-container .pgc1 { background: #8FA3B8; } .rimtown-container .pgc2 { background: #6FCF97; } .rimtown-container .pgc3 { background: #F2C14E; } .rimtown-container .pgc4 { background: #F28C4A; } .rimtown-container .pgc5 { background: #E5736B; }
+.rimtown-container .pg-tl { display: flex; flex-direction: column; position: relative; }
+.rimtown-container .pg-ev { display: flex !important; gap: 10px; padding: 6px 0; position: relative; }
+.rimtown-container .pg-ev::before { content: ''; position: absolute; left: 4px; top: 18px; bottom: -6px; width: 1px; background: var(--border); }
+.rimtown-container .pg-ev:last-child::before { display: none; }
+.rimtown-container .pg-ev-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: var(--text-muted); position: relative; z-index: 1; }
+.rimtown-container .pg-ev-dot.r { background: var(--ic-r); } .rimtown-container .pg-ev-dot.y { background: var(--ic-y); } .rimtown-container .pg-ev-dot.g { background: var(--ic-g); } .rimtown-container .pg-ev-dot.b { background: #6FA8F2; }
+.rimtown-container .pg-ev-m { display: flex; flex-direction: column; min-width: 0; font-size: 0.82rem; line-height: 1.45; }
+.rimtown-container .pg-ev-m b { color: var(--text-primary); } .rimtown-container .pg-ev-m span { color: var(--text-secondary); } .rimtown-container .pg-ev-m small { color: var(--text-muted); font-size: 0.7rem; }
+.rimtown-container .explore-zone .zone-stats { margin-top: 6px; }
+/* v9.18.0 真相：圖示＋內容＋狀態標籤 */
+.rimtown-container .pp-secrets .ic-grid { margin: 4px 0 8px; }
+.rimtown-container .pp-issue.pg-truth { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--ic-bg2, rgba(255,255,255,.04)); margin-bottom: 6px; }
+.rimtown-container .pg-truth .pg-tr-ic { font-size: 1.1rem; flex: none; }
+.rimtown-container .pg-truth .pg-tr-tx { flex: 1; min-width: 0; font-size: .82rem; line-height: 1.45; }
+.rimtown-container .pg-truth .ic-chip { flex: none; white-space: nowrap; }
+/* v9.18.0 本季考驗 */
+.rimtown-container .pg-trial-h { font-size: 1rem; margin-bottom: 2px; }
+.rimtown-container .pg-trial-bar { margin: 8px 0; }
+.rimtown-container .ic-bar.ic-t-g i { background: var(--positive, #4ade80); }
+.rimtown-container .ic-bar.ic-t-y i { background: var(--accent); }
+.rimtown-container .ic-bar.ic-t-r i { background: var(--negative, #f87171); }
+.rimtown-container .pg-trial-perk { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--ic-tile); font-size: .8rem; line-height: 1.45; }
+.rimtown-container .pg-rules { display: grid; gap: 6px; }
+.rimtown-container .pg-rules > span { display: block; padding: 8px 10px; border-radius: 10px; background: var(--ic-tile); font-size: .8rem; }
+.rimtown-container .pg-trial .ic-alert { margin: 0 0 8px; }
+/* v9.18.0 歷季回顧小卡 */
+.rimtown-container .pg-season { margin-top: 8px; padding: 10px 12px; }
+.rimtown-container .pg-season-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rimtown-container .pg-grade { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--gc) 18%, transparent); color: var(--gc); white-space: nowrap; }
+.rimtown-container .pg-grade b { font-size: 1.05rem; } .rimtown-container .pg-grade small { font-size: .7rem; }
+.rimtown-container .pg-season-rows { margin-top: 6px; }
+.rimtown-container .pg-season .pg-li { display: flex; gap: 8px; padding-left: 0; color: var(--text-primary, inherit); }
+.rimtown-container .pg-season .pg-li::before { display: none; }
+.rimtown-container .pg-season .pg-li-ic { flex: none; width: 1.3em; text-align: center; }
+/* v9.18.0 上次選舉小卡 */
+.rimtown-container .pg-el { padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); }
+.rimtown-container .pg-el-h { font-size: .74rem; color: var(--text-muted); }
+.rimtown-container .pg-el-w { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.rimtown-container .pg-el-w b { font-size: 1.05rem; }
+/* v9.18.0 設定：選項卡、開關列 */
+.rimtown-container .set-blk { margin: 4px 0 12px; }
+.rimtown-container .set-blk-h { font-size: .78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+.rimtown-container .set-help { font-size: .7rem; color: var(--text-muted); margin-top: 6px; }
+.rimtown-container .set-opts { display: grid; gap: 6px; }
+.rimtown-container .set-opts.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rimtown-container .set-opts.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rimtown-container .set-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 44px; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--ic-tile); color: var(--text-primary); text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.rimtown-container .set-opt:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.rimtown-container .set-opt.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--ic-tile)); box-shadow: inset 0 0 0 1px var(--accent); }
+.rimtown-container .set-opt-ic { font-size: 1.2rem; line-height: 1; margin-bottom: 2px; }
+.rimtown-container .set-opt b { font-size: .86rem; }
+.rimtown-container .set-opt small { font-size: .68rem; color: var(--text-muted); line-height: 1.4; }
+.rimtown-container .set-rows { display: grid; gap: 6px; margin: 4px 0 12px; }
+.rimtown-container .set-toggle.set-row { display: flex !important; flex-wrap: nowrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); min-height: 52px; }
+.rimtown-container .set-row-ic { font-size: 1.2rem; flex: none; width: 1.6em; text-align: center; }
+.rimtown-container .set-row-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rimtown-container .set-row-tx b { font-size: .86rem; color: var(--text-primary); }
+.rimtown-container .set-row-tx small { font-size: .7rem; color: var(--text-muted); line-height: 1.4; }
+.rimtown-container .set-switch { position: relative; flex: none; width: 44px; height: 26px; }
+.rimtown-container .set-switch input[type="checkbox"] { position: absolute; inset: 0; width: 100% !important; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.rimtown-container .set-switch i { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--text-muted) 40%, transparent); transition: background .2s; }
+.rimtown-container .set-switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.rimtown-container .set-switch input:checked + i { background: var(--accent); }
+.rimtown-container .set-switch input:checked + i::after { transform: translateX(18px); }
+.rimtown-container .set-switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .set-bgm { display: flex; align-items: center; gap: 10px; }
+.rimtown-container .set-bgm input[type="range"] { flex: 1; accent-color: var(--accent); }
+@media (max-width: 380px) { .rimtown-container .set-opts.n3 { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .rimtown-container .set-switch i, .rimtown-container .set-switch i::after { transition: none; } }
+.rimtown-container .set-lines-ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.rimtown-container .set-lines-ul li { position: relative; padding-left: 12px; line-height: 1.45; }
+.rimtown-container .set-lines-ul li::before { content: ''; position: absolute; left: 2px; top: .55em; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: .7; }
+.rimtown-container .set-list li.set-li-ic { list-style: none; display: flex; gap: 8px; align-items: flex-start; margin-left: -1.1em; }
+.rimtown-container .set-list li.set-li-ic > span:first-child { flex: none; width: 1.3em; text-align: center; }
+.rimtown-container .set-acct { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); margin-bottom: 8px; }
+.rimtown-container .set-acct-av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.rimtown-container .set-acct strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .set-cloud { margin: 0 0 8px; }
+/* v9.18.0 提案流程 */
+.rimtown-container .pp-tabhint.pg-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rimtown-container .pg-flow .pg-step { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--ic-tile); color: var(--text-secondary); font-size: .72rem; }
+.rimtown-container .pg-flow .pg-step i { font-style: normal; }
+.rimtown-container .pg-flow .pg-step.last { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 700; }
+.rimtown-container .pg-flow .pg-arr { color: var(--text-muted); font-weight: 400; }
+.rimtown-container .pg-flow .pg-step.last + .pg-arr, .rimtown-container .pg-flow .pg-arr:has(+ .pg-step.last) { visibility: hidden; width: 4px; }
+.rimtown-container .pg-flow .pg-step:not(.last) i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); font-size: .62rem; font-weight: 700; }
+.rimtown-container .set-toggle.set-fa { flex-wrap: nowrap; } .rimtown-container .set-toggle.set-fa .set-switch { margin-left: auto; }
