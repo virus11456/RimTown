@@ -19,9 +19,11 @@ async function run(browser, lang, vp) {
     const logs = () => (w.messageLog || []).slice(-15).map(m => String(m.content || '')).join('\n');
     // 1) 開店:手上 20、找不到合夥人 → 跟銀行借
     const a = npcs().find(x => x.agentId !== B.banker && (x.age ?? 30) >= 20 && !BIZ.shopOf(w, x)); for (const o of npcs()) { o.relationships.getOrCreate(a.agentId, a.name).affinity = 0; }
-    w.wallet.bal[a.agentId] = 20; const T0 = MONEY.total(w); const n0 = BIZ.S(w).shops.length; const d = w._absDay();
+    w.wallet.bal[a.agentId] = 20; const T0 = MONEY.total(w); const K0 = new Set(Object.keys(w.wallet.bal || {}));
+    // 等店名 AI 的空檔可能剛好有人搬來（大人搬來會帶自己的積蓄，這是規則），比總額時不算新出現的錢包
+    const totalOld = () => MONEY.total(w) - Object.entries(w.wallet.bal || {}).filter(([k]) => !K0.has(k)).reduce((x, [, v]) => x + (+v || 0), 0); const n0 = BIZ.S(w).shops.length; const d = w._absDay();
     const s = await BIZ.open(w, BIZ.S(w), a, d); const L = B.loans[a.agentId];
-    out.shop = { opened: !!s && BIZ.S(w).shops.length === n0 + 1, loan: !!L, kind: L?.kind, due: L ? L.due - d : null, bizLent: B.bizLent, cons: Math.abs(MONEY.total(w) - T0) < 0.01, log: /借了.*開店|to open a shop/.test(logs()) };
+    out.shop = { opened: !!s && BIZ.S(w).shops.length === n0 + 1, loan: !!L, kind: L?.kind, due: L ? L.due - d : null, bizLent: B.bizLent, cons: Math.abs(totalOld() - T0) < 0.01, log: /借了.*開店|to open a shop/.test(logs()) };
     // 2) 已經有欠款的人不能再借;銀行沒錢可放也不借
     const b = npcs().find(x => x !== a && x.agentId !== B.banker && !BIZ.shopOf(w, x)); B.loans[b.agentId] = { owed: 10, principal: 10, rate: 0.1, day: d, due: d + 20 };
     out.noTwice = BIZ.bizLoan(w, b, 50, '開店') === 0; delete B.loans[b.agentId];
