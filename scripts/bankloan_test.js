@@ -44,7 +44,7 @@ async function run(browser, lang, vp) {
     const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.save = w2.bank?.loans?.[a.agentId]?.kind === 'biz' && w2.bank.bizLent === B.bizLent;
     // 6) 面板
     if (innerWidth <= 768 && app._openKairoTab) app._openKairoTab('industry'); else { app.activeTab = 'industry'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 300));
-    out.panel = [...document.querySelectorAll('.pp-tier-line')].map(e => e.textContent).find(x => /創業與蓋房貸款|Business and building loans/.test(x)) || '';
+    out.panel = [...document.querySelectorAll('.pp-tier-line, .pp-bank .ic-row')] /* v9.19.1 銀行改成資訊卡,一列一項 */.map(e => e.textContent).find(x => /創業與蓋房貸款|Business and building loans/.test(x)) || '';
     return out;
   });
   ok(r.shop.opened && r.shop.loan && r.shop.kind === 'biz', '找不到合夥人時跟銀行借本錢開店', r.shop);

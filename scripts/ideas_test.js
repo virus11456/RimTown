@@ -53,7 +53,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.rt.ideas === r.rt.n && r.rt.inv >= 1, '存檔→讀檔保留觀念與發明', r.rt);
     await page.evaluate(() => { const app = window.rimtownApp; app.state = app.world.getState(); app._goTab?.('economy'); app.activeTab = 'econ-tech'; app.renderSidebar?.(); }); // v7.8.0 科技獨立分頁
     await page.waitForTimeout(600);
-    const panel = await page.evaluate(() => ({ ideas: document.querySelectorAll('.tech-idea').length, heads: [...document.querySelectorAll('.tech-era-head')].map(e => e.innerText.replace(/\s+/g, ' ')) }));
+    const panel = await page.evaluate(() => ({ ideas: document.querySelectorAll('.tech-idea').length, heads: [...document.querySelectorAll('.tech-era-head, .pg-ideas .ic-tt')].map(e => e.innerText.replace(/\s+/g, ' ')) }));
     ok(panel.ideas >= 3 && panel.heads.some(h => /發明名人堂|Hall of inventions/.test(h)) && panel.heads.some(h => /支持與反對|For and against/.test(h)), '科技面板顯示觀念傳播條、派系、發明名人堂', panel);
     ok(!errs.length, lang + ' 沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

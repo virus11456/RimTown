@@ -2,7 +2,7 @@
 // v9.17／v9.18 起小鎮概況與物資頁改成資訊卡(app-cards.js 的 _ic):原料倉庫的「展開明細」<details> 變成卡片上的「展開詳細」按鈕,
 //   開合狀態記在 app._icState()(展開詳細／整張卡收合存 localStorage,ⓘ 說明只記這一次開著的期間)。這支測試改成對著新的卡片檢查同一件事;
 //   還在用 <details> 的地方(日報的「逐筆紀錄」)也照舊檢查,那邊靠 _snapDetails／_restoreDetails。
-// v9.19.1 一併補上:ⓘ「怎麼算的」打開後,重畫也不會自己收起來。
+// v9.19.2 一併補上:ⓘ「怎麼算的」打開後,重畫也不會自己收起來。
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
