@@ -1016,7 +1016,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         const mem = (a.memory?.entries || []).slice(-10).sort((x, y) => (y.importance || 0) - (x.importance || 0)).slice(0, 3).map(e => e.content).filter(Boolean);
         let rel = '';
         if (other && other.agentId !== a.agentId) { const r = a.relationships?.relationships?.[other.agentId]; if (r) rel = `${t('對')}${t(other.name)}${t('：好感')} ${Math.round(r.affinity || 0)}${t('、信任')} ${Math.round(r.trust || 0)}`; }
-        return { name: (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(a.name, true) : a.name, age: a.age, job: a.job?.title || '', traits, values, mood: Math.round(a.mood || 50), mem, rel };
+        return { name: (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(a.name, true) : a.name, age: a.age, job: a.job?.title ? t(a.job.title) : '' /* v9.20.0 漁夫／獵人的職稱是之後才換上的原文字，英文版要翻 */, traits, values, mood: Math.round(a.mood || 50), mem, rel };
     }
     _townBrief(world) {
         const npcs = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead);

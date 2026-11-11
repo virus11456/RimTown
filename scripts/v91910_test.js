@@ -32,7 +32,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.steps === 5, '五個步驟', r.steps);
       ok(r.picks === 3, '同一筆閒錢三種選擇', r.picks);
       ok(r.points === 3, '在遊戲裡哪裡看得到：三處', r.points);
-      ok(r.prog === 3 && r.done.length === 1 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money'), '做到哪了：三格，只有「錢的事」標成已上線（人際、政治還沒做，不能寫成做完）', { prog: r.prog, done: r.done });
+      ok(r.prog === 3 && r.done.length === 2 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships'), '做到哪了：三格，「錢的事」「人際」標成已上線（v9.20.0）；政治還沒做，不能寫成做完', { prog: r.prog, done: r.done });
       ok(lang === 'zh' ? /示意/.test(r.txt) : /illustrations/.test(r.txt), '三種選擇有標明是示意', null);
       ok(lang === 'zh' ? /每天最多 10 人/.test(r.txt) : /up to 10 people a day/.test(r.txt), '寫出 AI 每天最多決定 10 人（跟 sim-decide.js 的 AI_MAX 一致）', null);
       ok(!/憑空變多|守恆/.test(r.txt), '不說錢「守恆」（旅遊、外地讀書的錢會流到鎮外）', null);
@@ -40,6 +40,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.over.length === 0, '沒有超出區塊或被截掉的內容', r.over);
       ok(r.small.length === 0, '字不小於 12px', r.small);
       ok(r.sw <= r.cw + 1 && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
+      // v9.20.0 城鎮四級:升級條件一項一顆標籤,標籤裡不換行、不超出卡片(以前手機上「第一時代」被切成兩行)
+      const tr = await page.evaluate(() => { const T = document.querySelector('.lp-ch-tiers'); if (!T) return null; const cards = [...T.querySelectorAll('.lp-tiers li')];
+        return { cards: cards.length, chips: T.querySelectorAll('.lp-tier-req').length, wrap: [...T.querySelectorAll('.lp-tier-req')].filter(c => c.getBoundingClientRect().height > parseFloat(getComputedStyle(c).fontSize) * 2.4).map(c => c.textContent),
+          over: cards.filter(li => { const r = li.getBoundingClientRect(); return [...li.querySelectorAll('.lp-tier-req')].some(c => c.getBoundingClientRect().right > r.right + 0.5 || c.getBoundingClientRect().left < r.left - 0.5); }).length, plus: /[＋+]/.test(T.querySelector('.lp-tiers').textContent) }; });
+      ok(tr && tr.cards === 4 && tr.chips === 11 && !tr.plus, '城鎮四級：四張卡、升級條件拆成 11 顆標籤', tr);
+      ok(tr && tr.wrap.length === 0 && tr.over === 0, '城鎮四級：標籤裡的字不換行、不超出卡片', tr);
       ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
       await ctx.close();
     }
