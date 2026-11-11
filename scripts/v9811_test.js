@@ -24,7 +24,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const reply = await CE.generatePlayerReply(player, npc, msg, w);
     out.calls = n; out.reply = JSON.stringify(reply).slice(0, 200); out.fresh = JSON.stringify(reply).includes('去年選輸了');
     out.hint = prompts[0].includes('你前面已經說過') && prompts[0].includes('不要把同樣的內容'); out.prevQuoted = prompts[0].includes('旅人啊，你還問我怎麼不當鎮長了');
-    out.msgOnce = prompts[0].split(player.name + ': ' + msg).length - 1; out.retryHint = /不要重複，直接回應對方剛剛說的/.test(prompts[1] || '');
+    out.msgOnce = prompts[0].split(player.name + ': ' + msg).length - 1; out.retryHint = /不要重複，也不要複述對方的話/.test(prompts[1] || '');
     // 2. 正常回答不會被誤判、不會多叫一次 AI
     n = 0; prompts.length = 0; player.chatHistory.push({ speaker: player.name, target: npc.name, text: '那你現在過得好嗎？', time: '' });
     CE.llm = { provider: 'test', generate: async (p) => { prompts.push(p); n++; return '還行吧，守夜雖然冷，但星星很漂亮。\nEFFECTS: {"affinity_change": 1}'; } };

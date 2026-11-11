@@ -74,6 +74,7 @@ const VILLAGER3D = (() => {
         const gn = ap?.gn || ''; // v7.5.0 神話基因的外觀
         if (gn === 'night') c.skin = '#E8E2EC'; else if (gn === 'wolf') c.hair = '#77797C'; else if (gn === 'sun') c.hair = '#E8B13A'; else if (gn === 'hades') { c.body = '#2E2A3A'; c.bodyDk = '#221F2B'; } else if (gn === 'giant') c.skin = shade(c.skin, 0.92);
         const zb = !!ap?.zb; if (zb) { c.skin = '#8FAF7A'; c.body = shade(mix(c.body, '#5E6B52', 0.6), 0.8); c.bodyDk = shade(c.body, 0.8); c.pants = shade(mix(c.pants, '#4E4A40', 0.5), 0.8); } // v9.2.0 喪屍:灰綠皮膚、髒衣服
+        const hx = String(ap?.hx || ''); if (hx.includes('k') && !zb) c.skin = mix(c.skin, '#C2D4AE', 0.55); // v9.14.0 病容:臉色發青發白
         const skinDk = shade(c.skin, 0.86), hairDk = shade(c.hair, 0.8), bodyLt = shade(c.body, 1.18);
         // v6.96.0 每個人長得不一樣:用名字當種子,穩定決定髮型、眼型、眉毛、嘴型、雀斑、鬍子、小配件、衣服花樣、身材
         const nm = String(agent.name || aid); let hs = 2166136261; for (let i = 0; i < nm.length; i++) { hs ^= nm.charCodeAt(i); hs = (hs * 16777619) >>> 0; }
@@ -178,6 +179,14 @@ const VILLAGER3D = (() => {
         else if (gn === 'owl') { B(0.5, 0.05, 0.02, '#D9A520', 0, HY + 0.17, F + 0.01); } // 金色額飾
         else if (gn === 'sun') { B(0.56, 0.04, 0.56, '#FFD24D', 0, T + 0.12, 0); } // 光環
         else if (gn === 'night') { B(0.04, 0.05, 0.02, '#FFFFFF', -0.05, HY - 0.12, F + 0.01); B(0.04, 0.05, 0.02, '#FFFFFF', 0.05, HY - 0.12, F + 0.01); } // 尖牙
+        if (hx) { const EYh = HY - 0.01, MET = '#9AA3AD', WH = '#F4F1EA'; // v9.14.0 看得出來的病痛
+            if (hx.includes('g')) { for (const x of [-0.11, 0.11]) { B(0.13, 0.018, 0.02, '#2B2B2B', x, EYh + 0.065, F + 0.022); B(0.13, 0.018, 0.02, '#2B2B2B', x, EYh - 0.065, F + 0.022); B(0.018, 0.13, 0.02, '#2B2B2B', x - 0.065, EYh, F + 0.022); B(0.018, 0.13, 0.02, '#2B2B2B', x + 0.065, EYh, F + 0.022); } B(0.07, 0.018, 0.02, '#2B2B2B', 0, EYh + 0.03, F + 0.022); } // 眼鏡
+            if (hx.includes('k')) for (const x of [-0.11, 0.11]) B(0.08, 0.022, 0.02, '#8A7A99', x, EYh - 0.075, F + 0.009); // 病容:黑眼圈
+            if (hx.includes('b')) { B(0.58, 0.1, 0.54, WH, 0, HY + 0.17, 0.01); B(0.07, 0.06, 0.02, '#C0392B', 0.13, HY + 0.17, 0.285); } // 頭上纏繃帶
+            if (hx.includes('s')) { B(0.3, 0.13, 0.04, WH, 0.02, 0.64, zf + 0.025); B(0.04, 0.32, 0.03, WH, -0.12, 0.76, zf + 0.018); } // 吊臂帶
+            if (hx.includes('c')) { B(0.045, 0.8, 0.045, '#8B6B3E', 0.4, 0.4, 0.08); B(0.15, 0.045, 0.07, '#6B4F2E', 0.4, 0.8, 0.08); B(0.06, 0.04, 0.05, '#4A3B2E', 0.4, 0.02, 0.08); } // 拐杖
+            if (hx.includes('h')) { B(0.08, 0.08, 0.02, '#5FE0FF', 0.08, 0.72, zf + 0.014); B(0.04, 0.04, 0.025, '#E8FBFF', 0.08, 0.72, zf + 0.018); } // 人工心肺:胸口的小燈
+        }
         m.add(P(body)); const lodParts = body.slice(); // 遠處簡化網格用的零件清單
         // 眼睛(睜眼＋反光)與閉眼線各一個網格:會眨眼,睡覺時閉眼
         // 眼型:一般、大亮眼、小豆眼、睏睏眼、長睫毛;眼珠顏色也有幾種
@@ -196,10 +205,10 @@ const VILLAGER3D = (() => {
         m.userData.blinkPh = Math.floor(hash2(aid.length * 7, (aid.charCodeAt(0) || 1) * 13) * 200);
         // 四肢(各自一個網格,掛在樞紐上擺動):腿＋靴＋鞋底、手臂＋袖口＋手
         const limb = (name, x, pivotY, boxes) => { const g = new THREE.Group(); g.position.set(x, pivotY, 0); g.name = name; g.add(P(boxes)); m.add(g); for (const b of boxes) lodParts.push([b[0], b[1], b[2], b[3], b[4] + x, b[5] + pivotY, b[6]]); return g; };
-        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.4, [[0.16, 0.3, 0.17, c.pants, 0, -0.15, 0], [0.19, 0.1, 0.22, c.boots, 0, -0.33, 0.02], [0.2, 0.03, 0.23, shade(c.boots, 0.6), 0, -0.385, 0.02], ...(poor && x > 0 ? [[0.09, 0.08, 0.02, mix(c.pants, '#A08C6E', 0.6), 0, -0.12, 0.095]] : [])]);
+        const leg = (x) => limb(x < 0 ? 'legL' : 'legR', x, 0.4, [[0.16, 0.3, 0.17, c.pants, 0, -0.15, 0], [0.19, 0.1, 0.22, c.boots, 0, -0.33, 0.02], [0.2, 0.03, 0.23, shade(c.boots, 0.6), 0, -0.385, 0.02], ...(poor && x > 0 ? [[0.09, 0.08, 0.02, mix(c.pants, '#A08C6E', 0.6), 0, -0.12, 0.095]] : []), ...(hx.includes('l') && x > 0 ? [[0.17, 0.16, 0.18, '#9AA3AD', 0, -0.2, 0], [0.18, 0.03, 0.19, '#6E7680', 0, -0.12, 0]] : [])]); // v9.14.0 義腿
         leg(-0.11); leg(0.11);
         const ax0 = 0.22 * bw + 0.07;
-        const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.84, [[0.13, 0.32, 0.14, c.body, 0, -0.16, 0], [0.14, 0.05, 0.15, c.bodyDk, 0, -0.3, 0], [0.12, 0.1, 0.12, c.skin, 0, -0.37, 0]]);
+        const arm = (x) => limb(x < 0 ? 'armL' : 'armR', x, 0.84, [[0.13, 0.32, 0.14, c.body, 0, -0.16, 0], [0.14, 0.05, 0.15, c.bodyDk, 0, -0.3, 0], [0.12, 0.1, 0.12, (hx.includes('a') && x > 0) ? '#9AA3AD' : c.skin, 0, -0.37, 0], ...(hx.includes('a') && x > 0 ? [[0.14, 0.03, 0.15, '#6E7680', 0, -0.33, 0]] : [])]); // v9.14.0 義手:金屬手
         arm(-ax0); const armR = arm(ax0);
         const tool = new THREE.Group(); tool.name = 'tool'; tool.visible = false; tool.position.set(0, -0.37, 0.1); armR.add(tool);
         tool.add(P([[0.06, 0.95, 0.06, '#8B6914', 0, 0.2, 0], [0.22, 0.06, 0.08, '#8A8A8A', 0, 0.66, 0.04]]));

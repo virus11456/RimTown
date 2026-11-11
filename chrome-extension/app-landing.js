@@ -559,13 +559,13 @@ Object.assign(RimTownApp.prototype, {
             [X('有英文版嗎？', 'Is there an English version?'), X('有。右上角切換中文／English，村民對話、日報、介面都會換。', 'Yes. Switch 中文／English at the top right; dialogue, the daily paper and the interface all change.')],
         ];
         // v8.5.0 路線圖改成時間軸:已上線只留最近三版(更早的看更新紀錄)、下一步是主角、構想是小標籤
-        const roadmap = {
-            done: [['v9.2', X('喪屍危機', 'Zombie outbreak'), X('基因生物的第二種世界級災厄：被咬的人變成喪屍，家人瞞著傷口、守衛清剿、研究員趕解藥；世界級災厄移到手牌，解鎖跟著帳號', 'A second Bio world calamity: the bitten turn into zombies while families hide wounds, guards hunt and researchers race for a cure. World calamities now sit in your hand, and unlocks follow your account')],
-                ['v9.1', X('拉近看屋裡', 'Look inside'), X('拉遠有屋頂，拉近換成剖面；屋裡的人睡床、坐著吃飯、在工作台做事；首頁改成一條從一個人到整個世界的故事線', 'Roofs from afar, a cutaway up close; people indoors sleep in beds, sit down to eat and work at their benches. The homepage now tells one story from a single person to a whole world')],
-                ['v9.0', X('鎮上的新東西', 'Something new in town'), X('新東西出現，村民自己決定喜不喜歡，並用同一套行動跟它互動：去用、推薦、抱怨、勸家人、門口抗議、提案禁止', 'When something new appears, villagers decide for themselves how they feel and act on it the same way every time: use it, recommend it, complain, urge family, protest at the door, propose a ban')]],
-            next: [[X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('每個鎮有自己的錢，商隊跨鎮做生意要換匯', 'Each town has its own money, and caravans exchange it when trading')],
-                [X('世界史詩', 'World epic'), X('AI 依你的世界真實發生的事寫成史詩，每個玩家都不一樣', 'The AI writes an epic from what actually happened in your world, different for every player')]],
-            ideas: [X('自由輸入一句話當事件', 'Type a sentence to make an event'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
+        const roadmap = { // v9.13.2 待辦照目前的順序更新(下一步＝正在做、構想＝還沒排時程)
+            done: [['v9.16', X('鎮與鎮的競爭', 'Rivalry between towns'), X('鄰鎮裡有一個對手鎮：搶生意、開高薪挖角、人才投奔、缺貨時互相換、友誼賽、遭災送糧；兩鎮關係跟著變好或變壞，鎮況看得到兩鎮比較', 'One neighbouring town is your rival: they undercut your trade, poach your best people, send settlers your way, swap goods when you run short, hold friendly contests and send food after disasters. Relations warm or sour, and the town panel compares the two towns')],
+                ['v9.15', X('自己打一句話當事件', 'Write a line, make it happen'), X('在事件卡最前面寫下「今晚下起流星雨」之類的一句話，它就在鎮上真的發生；村民不知道是你寫的，各自反應、記住、討論', 'At the front of your event cards, write something like “a meteor shower falls tonight” and it really happens in town; villagers never know you wrote it, and they react, remember and talk about it')],
+                ['v9.14', X('看得出來的病痛', 'Health you can see'), X('戴眼鏡、拄拐杖、裝義肢、頭上纏繃帶、手吊著、臉色發青的村民，在地圖上一眼就看得出來，名牌前面還有 🤒／🩹', 'Glasses, crutches, prosthetics, bandages, slings and a sickly face now show on the map, with 🤒 or 🩹 before the name')]],
+            next: [[X('新科技帶來新行業', 'New trades from new tech'), X('研究出新東西，鎮上就多出做這行的人、開這種店的老闆，舊行業的人可能失業', 'New inventions create new jobs and new kinds of shops, and people in old trades may lose work')],
+                [X('民間出資研究', 'Privately funded research'), X('有錢人自己出錢請研究員、搶先拿到新技術的好處，公家研究跟民間研究互相競爭', 'The wealthy hire researchers with their own money to get new tech first, competing with public research')]],
+            ideas: [X('更多世界級災厄（神裔戰爭、生態崩潰、人造人叛亂）', 'More world calamities (demigod war, ecological collapse, android revolt)'), X('災厄工坊進階（突變、世界瘟疫）', 'Advanced calamity workshop (mutation, world plague)'), X('災後重建分得更細', 'More detailed aftermaths'), X('財團與財閥', 'Conglomerates and tycoons'), X('鎮與鎮之間的貨幣與匯率', 'Currencies between towns'), X('玩家之間互訪城鎮', 'Visit other players\' towns'), X('手機 App 版', 'Mobile app')],
         };
         // 主視覺背景:手繪低多邊形夜景(月亮、星星、山丘、亮著燈的房子)
         const sky = (() => {

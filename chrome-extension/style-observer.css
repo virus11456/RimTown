@@ -1056,3 +1056,27 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
    以前用 --bg-primary(比面板深)而且左右沒到邊,看起來像一塊深色方塊壓在標題列下面 */
 .rimtown-container.observer #kairo-card .pp-tabs::before { left: 0; right: 0; background: #1E1B2A; box-shadow: 0 0 0 100vmax #1E1B2A, 0 6px 8px -6px rgba(0, 0, 0, 0.45); clip-path: inset(0 -100vmax -14px -100vmax); }
 .rimtown-container.observer.theme-day #kairo-card .pp-tabs::before { background: #FFFBF3; box-shadow: 0 0 0 100vmax #FFFBF3, 0 6px 8px -6px rgba(0, 0, 0, 0.18); }
+/* v9.15.0 自己打一句話當事件 */
+.rimtown-container .gh-card.gh-wish, .rimtown-container .gh-detail.gh-wish { --c: #E0A84E; }
+.rimtown-container .gh-wish-lb { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
+.rimtown-container .gh-wish-box { position: relative; }
+.rimtown-container #gh-wish-in { width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical; padding: 10px 12px 22px; border-radius: 10px; border: 1.5px solid var(--border); background: rgba(0,0,0,0.18); color: var(--text-primary); font: inherit; font-size: 16px; line-height: 1.45; }
+.rimtown-container #gh-wish-in:focus { outline: none; border-color: var(--c); box-shadow: 0 0 0 3px color-mix(in srgb, var(--c) 30%, transparent); }
+.rimtown-container #gh-wish-in:disabled { opacity: 0.6; }
+.rimtown-container .gh-wish-n { position: absolute; right: 10px; bottom: 7px; font-size: 0.66rem; color: var(--text-muted); pointer-events: none; }
+.rimtown-container .gh-wish-ex { display: flex; flex-wrap: wrap; gap: 6px; }
+.rimtown-container .gh-wish-ex .gh-chip { font-size: 0.74rem; }
+.rimtown-container .gh-wish .gh-play { margin-top: 2px; }
+.rimtown-container .gh-wish-last { border-top: 1px dashed var(--border); padding-top: 8px; display: flex; flex-direction: column; gap: 3px; font-size: 0.8rem; line-height: 1.5; }
+.rimtown-container.observer.theme-day #gh-wish-in { background: #FFFFFF; }
+/* v9.16.0 鎮與鎮的競爭 */
+.rimtown-container .pp-rival { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--border); background: rgba(0,0,0,0.12); display: flex; flex-direction: column; gap: 6px; }
+.rimtown-container .pp-rival.good { border-color: #4FB286; } .rimtown-container .pp-rival.bad { border-color: #E06A5A; }
+.rimtown-container .pp-rv-h { font-size: 0.84rem; } .rimtown-container .pp-rv-h small { color: var(--text-muted); }
+.rimtown-container .pp-rv-bar { display: grid; grid-template-columns: minmax(48px, auto) 1fr 28px; align-items: center; gap: 8px; font-size: 0.76rem; }
+.rimtown-container .pp-rv-bar span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 96px; }
+.rimtown-container .pp-rv-bar b { text-align: right; }
+.rimtown-container .pp-rv-bar.us .progress-fill { background: var(--accent); } .rimtown-container .pp-rv-bar.them .progress-fill { background: #8A93B8; }
+.rimtown-container .pp-rv-st { font-size: 0.72rem; color: var(--text-secondary); line-height: 1.5; }
+.rimtown-container .pp-rival .pp-rv-bad { color: var(--text-secondary); }
+.rimtown-container .pp-rival .pp-tid-item small { color: var(--text-muted); }

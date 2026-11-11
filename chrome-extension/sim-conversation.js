@@ -1899,7 +1899,8 @@ ${t('- 像真人說話，不要文縐縐的。可以用語助詞（啊、啦、�
 ${t('- 根據你的性格回應：')}${pN.traits.includes(t('害羞')) ? t('你會說話結巴、簡短') : pN.traits.includes(t('健談')) ? t('你很愛聊天，會主動延伸話題') : pN.traits.includes(t('刻薄')) ? t('你說話帶刺但可能是關心的方式') : t('用你自己的方式說話')}
 ${t('- 不要直接說「我很累」「我心情不好」這種報告式的話。如果你累了，可能會打哈欠或說「唉今天腰都快斷了」')}
 ${t('- 對話要有來有往——回應對方說的話，也可以反問或岔開新話題')}
-${myLast.length ? `${t('- 你前面已經說過：')}${myLast.map(x => t('「') + x + t('」')).join(t('、'))}${t('。這次絕對不要把同樣的內容、問題或邀約換句話再說一次；先直接回答對方剛剛這句「')}${playerMessage.slice(0, 60)}${t('」，再把話題往前推。')}` : ''}
+${myLast.length ? `${t('- 你前面已經說過：')}${myLast.map(x => t('「') + x + t('」')).join(t('、'))}${t('。這次絕對不要把同樣的內容、問題或邀約換句話再說一次；先直接回答對方剛剛那句話，再把話題往前推。')}` : ''}
+${t('- 不要重複或改寫對方剛說的話，也不要拿對方的句子當開頭，直接接著回答')}
 ${t('- 如果聊到你在意的事（')}${pN.values}${t('），你會特別有感觸')}
 
 ${t('【輸出格式】嚴格遵守！')}
@@ -1924,7 +1925,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                     const a = norm(response); const hit = prevs.find(c => { const b = norm(c.text); return b.length >= 6 && a.length >= 6 && (a === b || a.startsWith(b) || b.startsWith(a) || sim(a, b) >= 0.4); });
                     if (hit && response !== '__RATE_LIMITED__' && response !== '__ERROR__') {
                         this.lastRepeatRetry = (this.lastRepeatRetry || 0) + 1;
-                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${hit.text.slice(0, 60)}${t('」，不要重複，直接回應對方剛剛說的「')}${playerMessage.slice(0, 60)}${t('」。）')}`, 600, 1.0, true, { human: true });
+                        const again = await this.llm.generate(prompt + `\n\n${t('（注意：你上一句已經說過「')}${hit.text.slice(0, 60)}${t('」，不要重複，也不要複述對方的話，直接回應對方剛剛那句。）')}`, 600, 1.0, true, { human: true });
                         const b = norm(hit.text); if (again && again !== '__RATE_LIMITED__' && again !== '__ERROR__' && sim(norm(again), b) < 0.4) response = again;
                     }
                 } catch (e) {}
@@ -1935,6 +1936,23 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             console.log('[RimTown] No LLM client — using fallback for player chat');
         }
         return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);
+    }
+
+    // v9.16.1 回覆開頭是在複述玩家剛說的話(「你不是要找我聊天嗎？啊……」)→ 剪掉那一兩句,後面夠長才剪
+    _stripEcho(reply, msg) {
+        const norm = (x) => String(x || '').toLowerCase().replace(/[\s，。！？!?、…~～「」『』"'“”‘’（）().,;；:：—\-]/g, '');
+        const m = norm(msg); if (m.length < 2 || !reply) return reply;
+        const grams = (x) => { const g = new Set(); for (let i = 0; i < x.length - 1; i++) g.add(x.slice(i, i + 2)); return g; };
+        const sim = (x, y) => { const A = grams(x), B = grams(y); if (!A.size || !B.size) return 0; let n = 0; for (const k of A) if (B.has(k)) n++; return 2 * n / (A.size + B.size); };
+        let out = String(reply);
+        for (let k = 0; k < 2; k++) {
+            const mt = out.match(/^(.+?[，。！？!?…～~,.;；]+)\s*/); if (!mt) break;
+            const c = norm(mt[1]), rest = out.slice(mt[0].length).trim();
+            if (c.length < 2 || norm(rest).length < 4) break;
+            if (!(m.includes(c) || (c.length >= 3 && c.includes(m)) || (c.length >= 4 && sim(c, m) >= 0.5))) break;
+            out = rest;
+        }
+        return out;
     }
 
     _parsePlayerReply(response, player, npc, world, playerMessage, relPlayer, relNpc) {
@@ -1995,6 +2013,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
             const m = npcReply.match(/^[\s\S]*[。！？!?…～~」』)）]/);
             if (m && m[0].length >= 8) npcReply = m[0];
         }
+        npcReply = this._stripEcho(npcReply, playerMessage); // v9.16.1 模型照著玩家的句子開頭回答(鸚鵡學話)時,把開頭複述的那一段剪掉
         if (!npcReply) {
             // Parsing yielded nothing → use fallback
             return this._fallbackPlayerReply(player, npc, world, playerMessage, relPlayer, relNpc);

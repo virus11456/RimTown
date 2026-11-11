@@ -1021,6 +1021,14 @@ Object.assign(RimTownApp.prototype, {
                 for (const p of V.places) B.diplo += `<span class="pp-tid-place pp-dip${p.rel >= 40 ? ' good' : p.rel <= -30 ? ' bad' : ''}">${p.icon} ${esc(p.name)} <b>${p.rel > 0 ? '+' : ''}${p.rel}</b> <small>${esc(p.status)}${p.wed ? ' · 💍 ' + esc(p.wed) : ''}</small></span>`;
                 B.diplo += `</div>`; for (const x of V.log) B.diplo += `<div class="pp-tid-item">${esc(x)}</div>`;
                 if (V.why) B.diplo += `<div class="pp-issue-hint">${t('首長的想法')}${t('：')}${esc(V.why)}</div>`;
+                try { const RV = typeof RIVAL !== 'undefined' && this.world.rival ? RIVAL.view(this.world) : null; if (RV) { // v9.16.0 鎮與鎮的競爭
+                    const bar = (lb, n, cls) => `<div class="pp-rv-bar ${cls}"><span>${lb}</span><div class="progress-bar"><div class="progress-fill" style="width:${Math.max(3, Math.min(100, n))}%"></div></div><b>${n}</b></div>`;
+                    const S = RV.st || {}; const st = [S.tw || S.tl ? `🏪 ${t('搶生意')} ${S.tw || 0}${t('勝')} ${S.tl || 0}${t('敗')}` : '', S.kept || S.lost ? `💼 ${t('挖角')} ${t('留住 {a}・被挖走 {b}').replace('{a}', S.kept || 0).replace('{b}', S.lost || 0)}` : '', S.gained ? `🧳 ${t('投奔我們 {n} 人').replace('{n}', S.gained)}` : '', S.cw || S.cl ? `🏆 ${t('比賽')} ${S.cw || 0}${t('勝')} ${S.cl || 0}${t('敗')}` : '', S.swap ? `🔁 ${t('換貨 {n} 次').replace('{n}', S.swap)}` : ''].filter(Boolean);
+                    B.diplo += `<div class="pp-rival${RV.rel >= 40 ? ' good' : RV.rel <= -30 ? ' bad' : ''}"><div class="pp-rv-h">⚔️ ${t('對手鎮')}${t('：')}<b>${RV.icon} ${esc(RV.name)}</b> <small>${esc(RV.stance)} · ${t('關係')} ${RV.rel > 0 ? '+' : ''}${RV.rel}</small></div>`
+                        + bar(t('我們'), RV.us, 'us') + bar(esc(RV.name), RV.them, 'them')
+                        + (st.length ? `<div class="pp-rv-st">${st.join(' · ')}</div>` : '')
+                        + RV.log.map(x => `<div class="pp-tid-item${x.good ? '' : ' pp-rv-bad'}">${esc(x.text)} <small>${x.ago <= 0 ? t('今天') : t('{n} 天前').replace('{n}', x.ago)}</small></div>`).join('') + `</div>`;
+                } } catch (e) {}
                 B.diplo += `</div>`; } } } catch (e) {}
         }
         if (W('tidings')) {
