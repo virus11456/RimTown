@@ -1031,7 +1031,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 
 /* v9.13.1 手機面板裡的分頁列(提案／鎮況／真相…):後面那條遮擋底色改成跟面板同色、左右撐滿面板,
    以前用 --bg-primary(比面板深)而且左右沒到邊,看起來像一塊深色方塊壓在標題列下面 */
-.rimtown-container.observer #kairo-card .pp-tabs::before { left: 0; right: 0; background: #1E1B2A; box-shadow: 0 0 0 100vmax #1E1B2A, 0 6px 8px -6px rgba(0, 0, 0, 0.45); clip-path: inset(0 -100vmax -14px -100vmax); }
+/* v9.23.1 底色只往左右延伸(以前用四面外擴,連下方 14px 也整片蓋住,分頁列底下第一行會被切掉上半) */
+.rimtown-container.observer #kairo-card .pp-tabs::before { left: 0; right: 0; background: #1E1B2A; box-shadow: -60px 0 0 0 #1E1B2A, 60px 0 0 0 #1E1B2A, 0 6px 8px -6px rgba(0, 0, 0, 0.45); clip-path: inset(0 -100vmax -14px -100vmax); }
 /* v9.15.0 自己打一句話當事件 */
 .rimtown-container .gh-card.gh-wish, .rimtown-container .gh-detail.gh-wish { --c: #E0A84E; }
 .rimtown-container .gh-wish-lb { font-size: 0.8rem; font-weight: 700; color: var(--text-secondary); }
@@ -1406,13 +1407,15 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .set-acct strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .rimtown-container .set-cloud { margin: 0 0 8px; }
 /* v9.18.0 提案流程 */
-.rimtown-container .pp-tabhint.pg-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.rimtown-container .pg-flow .pg-step { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--ic-tile); color: var(--text-secondary); font-size: .72rem; }
-.rimtown-container .pg-flow .pg-step i { font-style: normal; }
-.rimtown-container .pg-flow .pg-step.last { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 700; }
-.rimtown-container .pg-flow .pg-arr { color: var(--text-muted); font-weight: 400; }
-.rimtown-container .pg-flow .pg-step.last + .pg-arr, .rimtown-container .pg-flow .pg-arr:has(+ .pg-step.last) { visibility: hidden; width: 4px; }
-.rimtown-container .pg-flow .pg-step:not(.last) i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); font-size: .62rem; font-weight: 700; }
+.rimtown-container .pp-tabhint.pp-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rimtown-container .pp-flow .pp-step { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--ic-tile); color: var(--text-secondary); font-size: .72rem; }
+.rimtown-container .pp-flow .pp-step i { font-style: normal; }
+.rimtown-container .pp-flow .pp-step.last { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 700; }
+.rimtown-container .pp-flow .pp-sep { color: var(--text-muted); font-weight: 400; }
+.rimtown-container .pp-flow .pp-step.last + .pp-sep, .rimtown-container .pp-flow .pp-sep:has(+ .pp-step.last) { visibility: hidden; width: 4px; }
+.rimtown-container .pp-flow .pp-step:not(.last) i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); font-size: .62rem; font-weight: 700; }
+/* v9.23.1 分頁列底下那行說明往下讓一點,不被分頁列後面的遮擋底色切到 */
+.rimtown-container .pp-tabs + .pp-tabhint { margin-top: 14px; }
 .rimtown-container .set-toggle.set-fa { flex-wrap: nowrap; } .rimtown-container .set-toggle.set-fa .set-switch { margin-left: auto; }
 /* v9.18.1 數字格等寬格線；長文字單獨一行 */
 .rimtown-container .pg-dots > .pg-stg { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 6px; flex: 1 1 100%; width: 100%; }

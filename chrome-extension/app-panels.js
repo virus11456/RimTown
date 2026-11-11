@@ -1195,7 +1195,7 @@ Object.assign(RimTownApp.prototype, {
         { // v9.18.0 提案流程說明改成一步一格的流程（文字一字不少），鎮況／真相維持一行
             const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab]);
             if (tab === 'props') { const steps = hint.split(/(?<=[，。])|(?<=[,.])\s+/).map(x => x.trim().replace(/[，。,.]$/, '')).filter(Boolean);
-                html += `<div class="pp-tabhint pg-flow" title="${esc(hint)}">${steps.map((x, i) => `<span class="pg-step${i === steps.length - 1 && steps.length > 1 ? ' last' : ''}"><i aria-hidden="true">${i === steps.length - 1 && steps.length > 1 ? '👁️' : i + 1}</i>${esc(x)}</span>`).join('<b class="pg-arr" aria-hidden="true">›</b>')}</div>`; }
+                html += `<div class="pp-tabhint pp-flow" title="${esc(hint)}">${steps.map((x, i) => `<span class="pp-step${i === steps.length - 1 && steps.length > 1 ? ' last' : ''}"><i aria-hidden="true">${i === steps.length - 1 && steps.length > 1 ? '👁️' : i + 1}</i>${esc(x)}</span>`).join('<b class="pp-sep" aria-hidden="true">›</b>')}</div>`; } // v9.23.1 類別改名:以前借用 pg-flow／pg-arr,被金流卡與收合箭頭的樣式蓋到(多出 ▾、箭頭被推到最右、底下多一條虛線)
             else html += `<div class="pp-tabhint">${hint}</div>`;
         }
         html += tab === 'town' ? T : tab === 'truth' ? S : P;

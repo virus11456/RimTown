@@ -4,6 +4,7 @@
 // 壞天氣＋天災＋負面政令（或貿易加成一路疊上去）加起來超過 100% 時，農夫／礦工的產量、研究點、商人的賣價與收購價以前會變成負的
 // （農夫越種糧越少、賣東西給商人反而倒貼）。現在產量與研究點最多歸零、商人折扣最多打到四折、收購價最低四成。
 // 驗：極端情況不出現負數、平常的數字沒有被動到、中英文
+// 另外：提案分頁的流程說明（1 村民自己提案 › 2 … › 你只看）以前上半被分頁列蓋住、箭頭多一個 ▾ 又被推到最右邊、底下多一條虛線
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -112,9 +113,43 @@ async function run(browser, lang) {
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }
+// 提案分頁：分頁列底下的流程說明不被切到、箭頭緊跟在前一格後面
+async function flow(browser, width, lang) {
+  console.log(`— 流程說明 ${width}px ${lang}`);
+  const ctx = await browser.newContext({ viewport: { width, height: width < 600 ? 844 : 860 }, isMobile: width < 600, hasTouch: width < 600, serviceWorkers: 'block' });
+  const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
+  await page.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: true, user: { id: 1, username: 'tester' } } : { saves: [], reply: '' }) }));
+  await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_gh_intro', '1'); localStorage.setItem('rimtown_ui_all', '1'); localStorage.setItem('rimtown_3d', '1'); localStorage.setItem('rimtown_pp_tab', 'props'); }, { jwt, lang });
+  await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(400);
+  await page.evaluate(() => { const app = window.rimtownApp; app._gameAlert = () => {}; app._showCornerNotice = () => {}; const w = app.world; w.observerMode = true; for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } app._setPaused?.(true);
+    const b = [...document.querySelectorAll('button, [role=tab], [data-tab]')].find(x => /提案|Proposals/.test(x.textContent) && x.offsetParent); b && b.click(); });
+  await page.waitForSelector('.pp-tabhint.pp-flow', { timeout: 15000 }); await page.waitForTimeout(500);
+  const r = await page.evaluate(() => {
+    const tabs = document.querySelector('.pp-tabs').getBoundingClientRect(); const hint = document.querySelector('.pp-tabhint.pp-flow'); const H = hint.getBoundingClientRect(); const cs = getComputedStyle(hint);
+    const steps = [...hint.querySelectorAll('.pp-step')]; const seps = [...hint.querySelectorAll('.pp-sep')];
+    const rects = steps.map(e => { const b = e.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; });
+    const near = seps.filter(e => getComputedStyle(e).visibility !== 'hidden').map(e => { const prev = e.previousElementSibling.getBoundingClientRect(), b = e.getBoundingClientRect(); return Math.round(b.left - prev.right); });
+    return { n: steps.length, rects, gap: Math.round(H.top - tabs.bottom), near, mark: seps.map(e => getComputedStyle(e, '::before').content), border: cs.borderBottomStyle, pad: cs.paddingTop, fits: steps.every(e => e.getBoundingClientRect().right <= H.right + 1), old: document.querySelectorAll('.pp-tabhint.pg-flow, .pp-tabhint .pg-arr, .pp-tabhint .pg-step').length, text: hint.textContent.replace(/\s+/g, '') };
+  });
+  ok(r.n >= 4 && r.old === 0, '流程說明每一步各一格，不再借用別的元件的類別', r);
+  // 看實際畫面（截一張圖，在頁面裡讀像素）：每一格最上面那一列是格子的底色，要跟格子正上方 3px（面板底色）不一樣；
+  // 被分頁列後面的底色蓋住的話，兩處會是同一個顏色
+  const R = r.rects, x0 = Math.min(...R.map(b => b.x)), y0 = Math.min(...R.map(b => b.y)) - 6, x1 = Math.max(...R.map(b => b.x + b.w)), y1 = Math.max(...R.map(b => b.y + b.h));
+  const shot = (await page.screenshot({ clip: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } })).toString('base64');
+  const px = await page.evaluate(async ({ shot, R, x0, y0 }) => { const im = new Image(); im.src = 'data:image/png;base64,' + shot; await im.decode(); const k = im.width / (Math.max(...R.map(b => b.x + b.w)) - x0); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
+    const at = (x, y) => [...g.getImageData(Math.round((x - x0) * k), Math.round((y - y0) * k), 1, 1).data].slice(0, 3); return R.map(b => ({ inside: at(b.x + b.w / 2, b.y + 2), above: at(b.x + b.w / 2, b.y - 3) })); }, { shot, R, x0, y0 });
+  const seen = px.map(p => p.inside.some((v, i) => Math.abs(v - p.above[i]) > 3));
+  ok(seen.every(Boolean) && r.gap >= 12, '每一格的上緣都看得到，沒有被分頁列蓋住', [seen, r.gap, px]);
+  ok(r.near.length >= 2 && r.near.every(g => g >= 0 && g <= 8), '箭頭緊跟在前一格後面（沒被推到最右邊）', r.near);
+  ok(r.mark.every(m => m === 'none' || m === 'normal') && r.border === 'none' && r.pad === '0px', '沒有多出來的 ▾ 和底下的虛線', [r.mark, r.border, r.pad]);
+  ok(r.fits && (lang === 'en' ? /Youjustwatch/.test(r.text) : /你只看/.test(r.text)), '每一格都在面板寬度內、文字一字不少', r.text);
+  ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
+  await ctx.close();
+}
 (async () => {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   for (const lang of ['zh', 'en']) await run(browser, lang);
+  await flow(browser, 390, 'zh'); await flow(browser, 390, 'en'); await flow(browser, 1280, 'zh');
   await browser.close();
   console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
 })();
