@@ -413,9 +413,18 @@ Object.assign(RimTownApp.prototype, {
                 for (const s of x.secrets.slice(0, 2)) inner.push(`🎭 ${t('只有你知道：')}${s}`); }
         } catch (e) {}
         const esc2 = (x) => this._escapeHtml ? this._escapeHtml(String(x)) : String(x);
+        // v9.19.0 最近的決定:這個人遇到什麼事、選了什麼、為什麼、結果怎樣(AI 自己想的,或 AI 不在時依個性推估的)
+        let decHtml = '';
+        try {
+            const ag = this.world?.agents?.[agentId]; const dv = ag && typeof DECIDE !== 'undefined' && this.world.decide ? DECIDE.view(this.world, ag) : null;
+            if (dv && (dv.rows.length || dv.plan)) decHtml = `<details class="nqc-more nqc-decide"><summary>🧭 ${t('最近的決定')} (${dv.rows.length}) ▾</summary>`
+                + (dv.plan ? `<div class="nqc-dec-plan">📌 ${t('打算')}${t('：')}${esc2(dv.plan)}</div>` : '')
+                + dv.rows.map(r => `<div class="nqc-dec"><div class="nqc-dec-h"><span class="nqc-dec-when">${r.ago <= 0 ? t('今天') : t('{n} 天前').replace('{n}', r.ago)}</span>${r.kind ? `<span class="nqc-dec-kind">${esc2(r.kind)}</span>` : ''}<span class="nqc-dec-src${r.ai ? ' ai' : ''}">${r.ai ? '🤖 ' + t('AI 自己想的') : t('依個性推估')}</span></div><div class="nqc-dec-what">${r.free ? '💭 ' : ''}${esc2(r.what)}</div>${r.why ? `<div class="nqc-dec-why">「${esc2(r.why)}」</div>` : ''}${r.res ? `<div class="nqc-dec-res">→ ${esc2(r.res)}</div>` : ''}</div>`).join('')
+                + `</details>`;
+        } catch (e) {}
         const relHtml = (lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`)
             + (chips.length ? `<div class="nqc-chips">${chips.map(c => typeof c === 'string' ? `<span class="nqc-chip">${esc2(c)}</span>` : `<span class="nqc-chip ${c.cls || ''}">${esc2(c.text)}</span>`).join('')}</div>` : '')
-            + (inner.length ? `<details class="nqc-more"><summary>${inner.some(l => l.startsWith('🎭')) ? '🎭' : '💭'} ${t('心事')} (${inner.length}) ▾</summary>${inner.map(l => `<div class="nqc-rel">${esc2(l)}</div>`).join('')}</details>` : '');
+            + (inner.length ? `<details class="nqc-more"><summary>${inner.some(l => l.startsWith('🎭')) ? '🎭' : '💭'} ${t('心事')} (${inner.length}) ▾</summary>${inner.map(l => `<div class="nqc-rel">${esc2(l)}</div>`).join('')}</details>` : '') + decHtml;
         // v5.4.0 人生夢想進度
         const goal = this.state?.lifeGoals?.[agentId];
         let goalHtml = '';

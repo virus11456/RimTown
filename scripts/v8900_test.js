@@ -46,14 +46,15 @@ async function run(browser, lang, vp) {
     for (const o of all.slice(2, 6)) { rich.relationships.getOrCreate(o.agentId, o.name).affinity = 60; }
     for (const a of all.slice(2)) a.personality.traits = (a.personality.traits || []).filter(x => x !== 'creative' && x !== 'charismatic');
     const st0 = { ...X.st };
-    out.spendCons = conserved(() => fix(0.001, () => { X.lastDay = -1; SPEND.daily(w); }));
+    // v9.19.0 宴客、畫像、旅遊改由決策核心在村民「手上有閒錢」時挑;這裡直接驗結算(誰會去做由 v91900_test 驗)
+    out.spendCons = conserved(() => fix(0.001, () => { X.lastDay = -1; SPEND.daily(w); SPEND.feast(w, rich); SPEND.art(w, rich); SPEND.trip(w, rich); }));
     out.spend = { show: (X.st.showN || 0) > (st0.showN || 0), feast: (X.st.feastN || 0) > (st0.feastN || 0), art: (X.st.artN || 0) > (st0.artN || 0), trip: (X.st.tripN || 0) > (st0.tripN || 0), travelFlow: (MONEY.S(w).days[w._absDay()]?.travel || 0) < 0, perfGot: B[perf.agentId] > 30, logs: ['🎭', '🍷', '🖼️', '🧳'].filter(s => logs().includes(s)) };
     // 外地讀書:家裡繳學費(流出鎮外),每 30 天再繳一次,繳不出就輟學;讀完長大工資高一成五
     const kid = Object.values(w.agents).find(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 8 && (a.age ?? 30) < 16) || (() => { const k = all[7]; k.age = 12; return k; })();
     const parent = all.find(a => a !== kid && a !== perf && a !== rich && (a.age ?? 30) >= 18); kid._parentNames = [parent.name]; parent.personality.values = ['知識']; B[parent.agentId] = 300;
     delete X.school[kid.agentId]; delete X.edu[kid.agentId]; if (X.drop) delete X.drop[kid.agentId];
     for (const o of all) if (o !== parent && (o.age ?? 30) >= 18) B[o.agentId] = Math.min(B[o.agentId] || 0, 20);
-    const sc0 = X.st.feeN || 0; out.schoolCons = conserved(() => fix(0.001, () => { X.lastDay = -1; SPEND.daily(w); }));
+    const sc0 = X.st.feeN || 0; out.schoolCons = conserved(() => fix(0.001, () => { X.lastDay = -1; SPEND.daily(w); SPEND.enrol(w, parent, kid.agentId); }));
     out.school = { went: X.school[kid.agentId] != null, feeN: (X.st.feeN || 0) - sc0, flow: (MONEY.S(w).days[w._absDay()]?.school || 0) < 0 };
     X.paid[kid.agentId] = w._absDay() - 31; const b1 = B[parent.agentId]; fix(0.99, () => { X.lastDay = -1; SPEND.daily(w); }); out.school.again = B[parent.agentId] < b1 - 20;
     X.paid[kid.agentId] = w._absDay() - 31; for (const o of Object.values(w.agents)) if (B[o.agentId] != null) B[o.agentId] = Math.min(B[o.agentId], 5); fix(0.99, () => { X.lastDay = -1; SPEND.daily(w); }); out.school.drop = !!X.drop?.[kid.agentId];

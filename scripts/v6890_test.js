@@ -49,6 +49,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 6) 家人接濟飯錢
       const kid = all.find(a => a !== rich && a !== buyer && a.age >= 16); const par = all.find(a => a !== kid && a !== rich && a !== buyer);
       kid._parentNames = [par.name, 'x']; Wl.bal[kid.agentId] = 0; Wl.bal[par.agentId] = 50;
+      for (const r of Object.values(kid.relationships.relationships || {})) if (r.status === 'married' && r.targetId !== par.agentId && Wl.bal[r.targetId] != null) Wl.bal[r.targetId] = 0; // 這個人如果剛好有個更有錢的伴侶,出飯錢的會是伴侶:把前置條件固定成「家裡只有這位長輩有錢」
       const fedBy = MARKET.feed(w, kid, 3); out.familyFed = fedBy === par && bal(par) === 47;
       // 7) 沒人幫就挨餓:沒力氣、餓死
       const lone = all.find(a => ![rich, buyer, kid, par].includes(a) && a.age >= 20 && a.age < 60); kid._parentNames = [];

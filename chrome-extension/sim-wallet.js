@@ -131,38 +131,39 @@ const WALLET = (() => {
         }
         W.hungryToday = hungryToday; // v6.89.0 今天沒錢吃飯的人數(公共倉庫的餐食只算吃得起的人)
     }
+    // ---------- v9.19.0 朋友借錢、接濟、捐公庫、請客:拆成動作,由決策核心(sim-decide.js)在村民自己拿主意時呼叫 ----------
+    // 以前在 social() 裡擲骰決定誰跟誰借、誰接濟誰;現在這裡只管結算(錢從誰到誰、交情怎麼變),不決定誰會去做。
+    const loanSize = (w, l) => Math.min(30, Math.max(10, Math.round(get(w, l) * 0.15 / 5) * 5));
+    // 朋友之間借錢:真的給錢;一週後到期,還不還接上恩怨系統
+    function lendTo(w, l, r) {
+        const n = loanSize(w, l); if (!pay(w, l, r, n)) return 0; const today = day(w);
+        r.addThought?.('helped_out', w, l.agentId, l.name);
+        try { const D = DARK.S(w); D.debts = D.debts || []; D.debts.push({ l: l.agentId, r: r.agentId, n, day: today, due: today + 7, cash: true }); } catch (e) {}
+        mem(w, l, '{r}手頭緊，跟我借了 {n} 銀幣。', { r: r.name, n }, 4); mem(w, r, '跟{l}借了 {n} 銀幣週轉，一週後要還。', { l: l.name, n }, 5);
+        log(w, 'social', '🤝 {r}手頭緊，跟{l}借了 {n} 銀幣。', { r: r.name, l: l.name, n }, r.name);
+        return n;
+    }
+    function refuseLoan(w, l, r) { rel(r, l)?.modifyAffinity?.(-4); mem(w, r, '跟{l}借錢被拒絕了，原來交情就這樣。', { l: l.name }, 4); }
+    // 接濟:直接給,不用還
+    function giveTo(w, g, needy, n = 15) {
+        if (!g || !needy || g === needy || !pay(w, g, needy, n)) return 0;
+        needy.addThought?.('helped_out', w, g.agentId, g.name); g.addThought?.('generous_joy', w); rel(needy, g)?.modifyAffinity?.(10);
+        mem(w, needy, '{g}塞了 {n} 銀幣給我，說先拿去吃飯。', { g: g.name, n }, 6); log(w, 'social', '💝 {g}接濟了手頭很緊的{n}。', { g: g.name, n: needy.name }, g.name);
+        try { DARK.bump(w, g, 'helped'); } catch (e) {}
+        return n;
+    }
+    function donateTown(w, g, n = 40) {
+        if (!pay(w, g, null, n, t('{a}捐給公庫').replace('{a}', g.name))) return 0; g.addThought?.('generous_joy', w);
+        log(w, 'economy', '🏛️ 公庫快空了，{g}捐了 {n} 銀幣。', { g: g.name, n }, g.name); try { DARK.bump(w, g, 'helped'); } catch (e) {}
+        return n;
+    }
+    function treat(w, g, x, n = 8) {
+        if (!g || !x || g === x || !pay(w, g, null, n, t('酒館'))) return 0;
+        x.addThought?.('treated', w, g.agentId, g.name); rel(x, g)?.modifyAffinity?.(5); rel(g, x)?.modifyAffinity?.(3);
+        log(w, 'social', '🍻 {g}請{x}吃了一頓好的。', { g: g.name, x: x.name }, g.name);
+        return n;
+    }
     function social(w, W, all, today) {
-        const rich = all.filter(a => get(w, a) >= 120), poor = all.filter(a => get(w, a) < 6);
-        // 借錢:窮的人找交情不錯、手頭寬裕的朋友週轉(真的給錢;到期在恩怨系統裡還或賴帳)
-        for (const r of poor.slice(0, 2)) {
-            if (Math.random() > 0.5) continue;
-            const l = all.filter(x => x !== r && get(w, x) >= 40 && aff(x, r) >= 10).sort((x, y) => aff(y, r) - aff(x, r))[0];
-            if (!l) continue;
-            if (trait(l, 'greedy') || (value(l, '財富') && Math.random() < 0.5)) { rel(r, l)?.modifyAffinity?.(-4); mem(w, r, '跟{l}借錢被拒絕了，原來交情就這樣。', { l: l.name }, 4); continue; }
-            const n = Math.min(30, Math.max(10, Math.round(get(w, l) * 0.15 / 5) * 5));
-            pay(w, l, r, n); r.addThought?.('helped_out', w, l.agentId, l.name);
-            try { const D = DARK.S(w); D.debts = D.debts || []; D.debts.push({ l: l.agentId, r: r.agentId, n, day: today, due: today + 7, cash: true }); } catch (e) {}
-            mem(w, l, '{r}手頭緊，跟我借了 {n} 銀幣。', { r: r.name, n }, 4); mem(w, r, '跟{l}借了 {n} 銀幣週轉，一週後要還。', { l: l.name, n }, 5);
-            log(w, 'social', '🤝 {r}手頭緊，跟{l}借了 {n} 銀幣。', { r: r.name, l: l.name, n }, r.name);
-        }
-        // 有錢又大方:請客、接濟窮人、公庫快空時捐錢
-        for (const g of rich) {
-            const kindish = trait(g, 'kind') || trait(g, 'charismatic') || value(g, '社群');
-            if (!kindish || Math.random() > 0.25) continue;
-            const needy = poor.filter(x => x !== g)[0];
-            if (needy && Math.random() < 0.5) {
-                pay(w, g, needy, 15); needy.addThought?.('helped_out', w, g.agentId, g.name); g.addThought?.('generous_joy', w); rel(needy, g)?.modifyAffinity?.(10);
-                mem(w, needy, '{g}塞了 15 銀幣給我，說先拿去吃飯。', { g: g.name }, 6); log(w, 'social', '💝 {g}接濟了手頭很緊的{n}。', { g: g.name, n: needy.name }, g.name);
-                try { DARK.bump(w, g, 'helped'); } catch (e) {}
-            } else if (treasury(w) < 40 && get(w, g) >= 160) {
-                const n = 40; pay(w, g, null, n, t('{a}捐給公庫').replace('{a}', g.name)); g.addThought?.('generous_joy', w);
-                log(w, 'economy', '🏛️ 公庫快空了，{g}捐了 {n} 銀幣。', { g: g.name, n }, g.name); try { DARK.bump(w, g, 'helped'); } catch (e) {}
-            } else {
-                const f = all.filter(x => x !== g && aff(g, x) >= 20); if (!f.length) continue; const x = pick(f);
-                pay(w, g, null, 8, t('酒館')); x.addThought?.('treated', w, g.agentId, g.name); rel(x, g)?.modifyAffinity?.(5); rel(g, x)?.modifyAffinity?.(3);
-                log(w, 'social', '🍻 {g}請{x}吃了一頓好的。', { g: g.name, x: x.name }, g.name);
-            }
-        }
         // 眼紅:窮又愛比較的人看到鎮上最有錢的人
         const top = all.slice().sort((x, y) => get(w, y) - get(w, x))[0];
         if (top && get(w, top) >= 150) for (const e of all.filter(a => a !== top && get(w, a) < 20 && (trait(a, 'neurotic') || trait(a, 'pessimist') || trait(a, 'jealous'))).slice(0, 2)) {
@@ -234,7 +235,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失

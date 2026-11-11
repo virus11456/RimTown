@@ -30,12 +30,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     M.owners.kitchen = boss.agentId; M.shares.kitchen = { [boss.agentId]: 100 }; M.hist.kitchen = Array.from({ length: 7 }, () => [60, 10]);
     tr(boss, ['greedy']); tr(inv, ['ambitious']); setCash(inv, 800);
     const y = INVEST.perPct(w, 'kitchen') * 10 / INVEST.askPrice(w, 'kitchen', 10, boss);
-    Math.random = () => 0.1; INVEST.buyIns(w, all(), w._absDay()); Math.random = rnd;
-    out.buy = { y, stake: SHARES.pctOf(w, 'kitchen', inv.agentId), bossStake: SHARES.pctOf(w, 'kitchen', boss.agentId), st: IV.st.buy, log: w.messageLog.slice(-6).some(m => /銀行存款一週才/.test(m.k || '')), mem: inv.memory.entries.slice(-5).some(m => /比銀行利息/.test(JSON.stringify(m))) };
+    // v9.19.0 誰要入股改由決策核心挑(傾向版:算每個選項的分數,挑最高的);這裡把當天的心情起伏固定住
+    const decide = (a) => { const K = DECIDE.KINDS.spare; const ctx = K.when(w, a); if (!ctx) return null; const ops = K.options(w, a, ctx).filter(o => o.id === 'keep' || o.id.startsWith('invest:')); /* 只比「留著」和「入股」:這個人有沒有更想請客、接濟誰,不是這裡要驗的 */ const Ln = DECIDE.lean(w, a); const best = ops.slice().sort((x, y) => DECIDE.score(Ln, y) - DECIDE.score(Ln, x))[0]; if (best) best.run(w, a, ctx); return best ? best.id : null; };
+    Math.random = () => 0.1; out.buyPick = decide(inv); Math.random = rnd;
+    out.buy = { pick: out.buyPick, y, stake: SHARES.pctOf(w, 'kitchen', inv.agentId), bossStake: SHARES.pctOf(w, 'kitchen', boss.agentId), st: IV.st.buy, log: w.messageLog.slice(-6).some(m => /銀行存款一週才/.test(m.k || '')), mem: inv.memory.entries.slice(-5).some(m => /比銀行利息/.test(JSON.stringify(m))) };
     // 2. 分紅比銀行差就不買:把利潤壓低、銀行利息調高
     M.hist.kitchen = Array.from({ length: 7 }, () => [10, 10]); IV.bankY = 0.03; const inv2 = rest[0]; tr(inv2, ['ambitious']); setCash(inv2, 800); const b0 = IV.st.buy;
-    Math.random = () => 0.1; INVEST.buyIns(w, all(), w._absDay()); Math.random = rnd;
-    out.noBuy = { y: INVEST.perPct(w, 'kitchen'), stake: SHARES.pctOf(w, 'kitchen', inv2.agentId), buys: IV.st.buy - b0 };
+    Math.random = () => 0.1; const pick2 = decide(inv2); Math.random = rnd;
+    out.noBuy = { y: INVEST.perPct(w, 'kitchen'), stake: SHARES.pctOf(w, 'kitchen', inv2.agentId), buys: IV.st.buy - b0, pick: pick2 };
     // 謹慎的人門檻比較高:同樣的分紅率,敢衝的人買、謹慎的人不買
     out.hurdle = { cautious: INVEST.hurdle({ personality: { traits: ['thrifty'] } }), bold: INVEST.hurdle({ personality: { traits: ['greedy'] } }) };
     // 3. 退股存銀行:連三週分紅比銀行差,小股東把股份賣回給當家、錢存進銀行
@@ -52,6 +54,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     M.hist.forge = Array.from({ length: 7 }, () => [nWs * 20, 5]); COMPETE.S(w).good.forge = 5;
     tr(lead, ['greedy', 'hardworking']); setCash(lead, Math.round(cost * 0.6)); for (const f of [f1, f2]) { tr(f, ['kind']); setCash(f, cost); }
     for (const [a, b] of [[f1, lead], [f2, lead], [lead, f1], [lead, f2]]) a.relationships.getOrCreate(b.agentId, b.name).affinity = 70;
+    for (const f of [f1, f2, lead]) f.relationships.getOrCreate(forgeBoss.agentId, forgeBoss.name).affinity = 0; // 跟原老闆交情太好的人不會去對面合夥:開局幾天的隨機交情要固定住,不然偶爾會失敗
     const tA = T(); Math.random = () => 0.1; COMPETE.entry(w, all(), w._absDay()); Math.random = rnd;
     const R = M.rival.forge;
     out.coop = { opened: !!R, owner: R?.owner === lead.agentId, sh: R?.sh ? Object.keys(R.sh).length : 0, cost, leadLeft: Math.round(WALLET.get(w, lead)), conserved: Math.abs(T() - tA) < 0.05, log: w.messageLog.slice(-6).some(m => /一起合夥/.test(m.k || '')), row: COMPETE.row(w, 'forge')?.partners || '' };
