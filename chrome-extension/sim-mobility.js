@@ -65,7 +65,7 @@ const MOBILITY = (() => {
         }
         for (const id of Object.keys(M.o)) if (!w.agents[id] && !w.isAway?.(id)) { delete M.o[id]; delete M.pk[id]; delete M.h[id]; delete M.told[id]; delete M.ap[id]; delete M.done[id]; }
         masters(w, all, d);
-        apprentice(w, all, d);
+        apprentice(w, all, d, byChoice(w));
         if (d % 3 === 0) spree(w, all, d);
     }
     function how(w, a) {
@@ -97,7 +97,7 @@ const MOBILITY = (() => {
         const sp = spouseOf(w, a); if (sp) mem(w, sp, '家裡的日子大不如前了。', {}, 6);
     }
     // 拜師:沒什麼出路的年輕人跟熟識的師傅學一個月手藝,出師就換到工匠的工作(工資高 → 慢慢存錢往上爬)
-    function apprentice(w, all, d) {
+    function apprentice(w, all, d, ch) {
         const M = S(w);
         for (const [id, P] of Object.entries(M.ap)) {
             const a = w.agents[id], m = w.agents[P.m]; if (!a) { if (!w.isAway?.(id)) delete M.ap[id]; continue; }
@@ -110,20 +110,38 @@ const MOBILITY = (() => {
                 log(w, '🎓 {a}跟著{m}學了 {n} 天，出師當上了{j}。', { a: a.name, m: m.name, n: days, j: t(jt(P.k)) }, a.name);
                 mem(w, a, '我跟{m}學成出師，以後就是{j}了。', { m: m.name, j: t(jt(P.k)) }, 8); mem(w, m, '我帶出來的徒弟{a}出師了。', { a: a.name }, 6); }
         }
+        if (ch) return; // v9.23.0 要不要拜師交給本人決定(sim-decide-work.js「要不要拜師學手藝」)
         if (d % 7 !== 0 || Object.keys(M.ap).length >= 2 || Math.random() > 0.4) return;
-        const free = (a) => !M.ap[a.agentId] && !Object.values(M.ap).some(P => P.m === a.agentId) && !w.isAway?.(a.agentId) && !w.exile?.pending?.[a.agentId];
-        const cand = all.filter(a => free(a) && (a.age ?? 30) >= ADULT && (a.age ?? 30) <= 35 && lvOf(w, a) <= 1 && !CRAFT.includes(a.job?.key) && a.job?.key !== 'mayor' && !M.done[a.agentId] && (has(a, 'hardworking', 'creative', 'perfectionist') || Math.random() < 0.3));
+        const cand = all.filter(a => canLearn(w, a) && (has(a, 'hardworking', 'creative', 'perfectionist') || Math.random() < 0.3));
         for (const a of cand.sort(() => Math.random() - 0.5)) {
-            const lvJ = (o) => skillOfJob(o)?.xp || 0; // v9.10.1 先找名匠,再看手藝(經驗),最後看交情(以前只看交情)
-            const m = all.filter(o => o !== a && free(o) && CRAFT.includes(o.job?.key) && (lvOf(w, o) >= 2 || isMaster(o, w)) && (rel(o, a)?.affinity ?? -1) >= 0).sort((x, y) => (isMaster(y, w) - isMaster(x, w)) || (lvJ(y) - lvJ(x)) || ((rel(y, a)?.affinity || 0) - (rel(x, a)?.affinity || 0)))[0];
-            if (!m) continue;
-            const fee = Math.min(15, Math.floor(money(w, a) * 0.2)); if (fee > 0 && typeof WALLET !== 'undefined') WALLET.pay(w, a, m, fee, t('拜師'));
-            const fast = isMaster(m, w); M.ap[a.agentId] = { m: m.agentId, k: m.job.key, d0: d, ...(fast ? { fast: 1 } : {}) }; M.st.appr = (M.st.appr || 0) + 1;
-            log(w, fast ? '🧑‍🏫 {a}拜名匠{m}為師，要學當{j}。' : '🧑‍🏫 {a}拜{m}為師，要學當{j}。', { a: a.name, m: m.name, j: t(jt(m.job.key)) }, a.name);
-            mem(w, a, '我拜了{m}為師，想學一門手藝，不要一輩子這樣過。', { m: m.name }, 8); mem(w, m, '{a}來拜我為師，我收下了。', { a: a.name }, 5);
+            const m = masterFor(w, a, all); if (!m) continue;
+            takeOn(w, a, m, d);
             return; // 一週最多一個
         }
     }
+    // v9.23.0 擲骰版與本人決定共用的三段：誰可以去學、找誰學、拜師
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const freeOf = (w, a) => { const M = S(w); return !M.ap[a.agentId] && !Object.values(M.ap).some(P => P.m === a.agentId) && !w.isAway?.(a.agentId) && !w.exile?.pending?.[a.agentId]; };
+    // 沒什麼出路的年輕人：18～35 歲、階層不高、不是工匠、還沒出師過
+    const canLearn = (w, a) => { const M = S(w); return freeOf(w, a) && (a.age ?? 30) >= ADULT && (a.age ?? 30) <= 35 && lvOf(w, a) <= 1 && !CRAFT.includes(a.job?.key) && a.job?.key !== 'mayor' && !M.done[a.agentId]; };
+    function masterFor(w, a, all) {
+        const lvJ = (o) => skillOfJob(o)?.xp || 0; // v9.10.1 先找名匠,再看手藝(經驗),最後看交情(以前只看交情)
+        return all.filter(o => o !== a && freeOf(w, o) && CRAFT.includes(o.job?.key) && (lvOf(w, o) >= 2 || isMaster(o, w)) && (rel(o, a)?.affinity ?? -1) >= 0).sort((x, y) => (isMaster(y, w) - isMaster(x, w)) || (lvJ(y) - lvJ(x)) || ((rel(y, a)?.affinity || 0) - (rel(x, a)?.affinity || 0)))[0] || null;
+    }
+    function takeOn(w, a, m, d) {
+        const M = S(w);
+        const fee = Math.min(15, Math.floor(money(w, a) * 0.2)); if (fee > 0 && typeof WALLET !== 'undefined') WALLET.pay(w, a, m, fee, t('拜師'));
+        const fast = isMaster(m, w); M.ap[a.agentId] = { m: m.agentId, k: m.job.key, d0: d, ...(fast ? { fast: 1 } : {}) }; M.st.appr = (M.st.appr || 0) + 1;
+        log(w, fast ? '🧑‍🏫 {a}拜名匠{m}為師，要學當{j}。' : '🧑‍🏫 {a}拜{m}為師，要學當{j}。', { a: a.name, m: m.name, j: t(jt(m.job.key)) }, a.name);
+        mem(w, a, '我拜了{m}為師，想學一門手藝，不要一輩子這樣過。', { m: m.name }, 8); mem(w, m, '{a}來拜我為師，我收下了。', { a: a.name }, 5);
+        return M.ap[a.agentId];
+    }
+    // 給決策核心：他現在可以拜誰為師(同時最多兩個學徒)
+    function learnInfo(w, a) {
+        const M = S(w); if (typeof CLASS === 'undefined' || Object.keys(M.ap).length >= 2 || !canLearn(w, a)) return null; const m = masterFor(w, a, npcs(w)); if (!m) return null;
+        return { m, job: jt(m.job.key), fast: isMaster(m, w), days: isMaster(m, w) ? 20 : APPR_DAYS, fee: Math.min(15, Math.floor(money(w, a) * 0.2)) };
+    }
+    function learnBy(w, a) { const I = learnInfo(w, a); return I ? takeOn(w, a, I.m, day(w)) : null; }
     // 名匠:每天看每一行誰的經驗最深;換人時全鎮知道。每週有錢人慕名來訂做,錢直接付給名匠(銀幣守恆)
     function masters(w, all, d) {
         const M = S(w); const first = M.mstV !== 2; if (first) { M.mst = {}; M.mstV = 2; } // 第一次(新版本、舊存檔):直接記下,不洗版
@@ -187,7 +205,7 @@ const MOBILITY = (() => {
         let up = 0, down = 0; for (const a of all) { const o = M.o?.[a.agentId]; if (o == null) continue; const c = lvOf(w, a); if (c > o) up++; else if (c < o) down++; }
         return { up, down, n: all.length, masters: npcs(w).filter(a => isMaster(a, w)).length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
     }
-    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, masters, spree, tag, masterTag, brief, view, how };
+    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, byChoice, masters, spree, tag, masterTag, brief, view, how };
 })();
 
 if (typeof CLASS !== 'undefined') { const _d = CLASS.daily; CLASS.daily = function (w, ...rest) { const r = _d.call(this, w, ...rest); try { MOBILITY.daily(w); } catch (e) { console.warn('[Mobility] daily', e); } return r; }; }

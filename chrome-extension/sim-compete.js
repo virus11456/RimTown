@@ -38,41 +38,91 @@ const COMPETE = (() => {
     const incOf = (w, k, R, all) => MK().workersOf(w, k, all).filter(a => a.agentId !== w.market.owners[k] && !(R && R.emp?.[a.agentId]));
 
     // ---------- 1. 有人在對面開店 ----------
-    function entry(w, all, d) {
+    // v9.23.0 要不要在對面開店、要不要跳槽，交給本人決定(sim-decide-work.js)；這裡只剩「誰夠格」和結算。擲骰的版本留給直接呼叫 entry()／weekly() 的情況
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const openCost = (w, k, all) => Math.round(30 + MK().workersOf(w, k, all).length * 8);
+    // 這個人有多想、多適合在這一行開店(不含當天的運氣)
+    const drive = (w, a, k, boss) => (has(a, 'greedy') ? 2 : 0) + (has(a, 'hardworking') ? 1 : 0) + (has(a, 'charismatic') ? 1 : 0) + (hasV(a, '財富') ? 2 : 0) + (MK().JOB2S[a.job?.key] === k ? 2 : 0) - (aff(a, boss) > 40 ? 2 : 0);
+    const canOpen = (w, a, k, cost, d) => a.agentId !== MK().ownerOf(w, k) && (a.age ?? 30) >= 18 && bal(w, a) >= cost * 1.5 && MK().canBuy(w, a.agentId) && !(w.civic?.jail?.[a.agentId] > d);
+    // 開張：付裝修錢、挖走四成跟老闆交情最淺的工人、開幕打九折。deal = 朋友合夥(INVEST.partner 已經扣好錢)
+    function openShop(w, all, k, owner, d, deal) {
+        const M = S(w); const Mk = MK(); const id = Mk.ownerOf(w, k); const boss = w.agents[id]; const ws = Mk.workersOf(w, k, all); const cost = openCost(w, k, all);
+        // 裝修錢付給本地木作坊、礦場;合夥湊的錢可能比本錢少幾角(INVEST.partner 允許最後差 0.5 以內),照實際湊到的付(以前照本錢付,憑空多出零頭)
+        const spent = deal ? r2(deal.parts.reduce((s, [, n]) => s + n, 0)) : cost, wood = r2(spent * 0.6);
+        Mk.sell(w, 'timber', wood, t('開店裝修')); Mk.sell(w, 'mine', r2(spent - wood), t('開店裝修'));
+        const R = M.rival[k] = { fid: 'F' + (++M.fn), owner: owner.agentId, since: d, price: 0.9, pay: Math.min(1.2, Math.round((Mk.payRate(w, k) + 0.1) * 100) / 100), emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
+        const pool = ws.filter(a => a.agentId !== id && a.agentId !== owner.agentId).sort((x, y) => aff(x, boss) - aff(y, boss));
+        const n = Math.max(1, Math.ceil(pool.length * 0.4)); pool.slice(0, n).forEach(a => { R.emp[a.agentId] = d; mem(w, a, '{a}開了新店，開的工資比{o}高，我跳槽過去了。', { a: owner.name, o: boss?.name || '' }, 6); });
+        M.good[k] = 0; M.cst.opened++;
+        if (deal) INVEST.setup(w, k, R, deal);
+        log(w, '🏪 {a}看{o}的{s}生意好，自己也開了一家，挖走 {n} 個人、開幕打九折！', { a: owner.name, o: boss?.name || '', s: Mk.name(k), n }, owner.name);
+        news(w, '{a}在{o}的{s}對面開了新店，兩家要搶生意了', { a: owner.name, o: boss?.name || '', s: Mk.name(k) }, 7, [owner.name, boss?.name || '']);
+        mem(w, owner, '我看{o}的{s}那麼賺，花了 {n} 銀幣在對面開了一家，要跟他搶生意。', { o: boss?.name || '', s: Mk.name(k), n: cost }, 8);
+        mem(w, boss, '{a}在我的{s}對面開了一家，還挖走我 {n} 個人。', { a: owner.name, s: Mk.name(k), n }, 8);
+        bump(boss, owner, -8); bump(owner, boss, -3);
+        return R;
+    }
+    // 給決策核心：這個人現在可以在哪一行對面開店(那一行連兩週好賺、還沒有對手、他出得起本錢、也有那個心)
+    function openInfo(w, a) {
+        const M = S(w); const Mk = MK(); const d = day(w); const all = npcs(w); let best = null;
+        for (const k of Object.keys(Mk.SECTORS)) {
+            const id = Mk.ownerOf(w, k); if (!id || Mk.rivalOf(w, k) || (M.good[k] || 0) < 2) continue; const boss = w.agents[id]; if (!boss) continue;
+            const cost = openCost(w, k, all); if (!canOpen(w, a, k, cost, d)) continue; const s = drive(w, a, k, boss); if (s < 2) continue;
+            if (!best || s > best.s) best = { k, cost, s, boss, weeks: M.good[k], profit: Math.round(profit(M.hist[k])), staff: Mk.workersOf(w, k, all).length };
+        }
+        return best;
+    }
+    // 本人決定開(由決策核心呼叫)
+    function openBy(w, a, k) {
+        const Mk = MK(); const d = day(w); const all = npcs(w); const I = openInfo(w, a); if (!I || I.k !== k || Mk.rivalOf(w, k)) return null;
+        if (!WALLET.take(w, a, I.cost)) return null; return openShop(w, all, k, a, d, null);
+    }
+    // ch = 交給本人決定：這裡只記「這一行連幾週好賺」；一個人開不起、要找朋友合夥的那種照舊
+    function entry(w, all, d, ch) {
         const M = S(w); const Mk = MK();
         for (const k of Object.keys(Mk.SECTORS)) {
             const id = Mk.ownerOf(w, k); if (!id || Mk.rivalOf(w, k)) { if (!id) M.good[k] = 0; continue; }
             if (M.rival[k]) delete M.rival[k];
             const ws = Mk.workersOf(w, k, all); if (ws.length < 3) { M.good[k] = 0; continue; }
             const P = profit(M.hist[k]); M.good[k] = P > Math.max(20, ws.length * 5) ? (M.good[k] || 0) + 1 : 0;
-            if (M.good[k] < 2 || Math.random() > 0.5) continue;
-            const cost = Math.round(30 + ws.length * 8);
+            if (M.good[k] < 2) continue;
+            const cost = openCost(w, k, all);
             const boss = w.agents[id];
-            const score = (a) => (has(a, 'greedy') ? 2 : 0) + (has(a, 'hardworking') ? 1 : 0) + (has(a, 'charismatic') ? 1 : 0) + (hasV(a, '財富') ? 2 : 0) + (Mk.JOB2S[a.job?.key] === k ? 2 : 0) - (aff(a, boss) > 40 ? 2 : 0) + Math.random();
-            const cand = all.filter(a => a.agentId !== id && (a.age ?? 30) >= 18 && bal(w, a) >= cost * 1.5 && Mk.canBuy(w, a.agentId) && !(w.civic?.jail?.[a.agentId] > d))
+            if (ch && all.some(a => canOpen(w, a, k, cost, d) && drive(w, a, k, boss) >= 2)) continue; // 有人自己開得起：等他拿主意
+            if (Math.random() > 0.5) continue;
+            const score = (a) => drive(w, a, k, boss) + Math.random();
+            const cand = all.filter(a => canOpen(w, a, k, cost, d))
                 .map(a => [a, score(a)]).filter(([, s]) => s >= 2).sort((x, y) => y[1] - x[1])[0]?.[0];
             // v9.8.0 一個人出不起本錢:找朋友合夥(INVEST.partner 已經從每個人錢包扣好錢)
             let deal = null, owner = cand;
             if (!cand) { deal = (typeof INVEST !== 'undefined') ? INVEST.partner(w, all, k, cost, id, score) : null; if (!deal) continue; owner = deal.lead; }
             else if (!WALLET.take(w, cand, cost)) continue;
-            // 裝修錢付給本地木作坊、礦場;合夥湊的錢可能比本錢少幾角(INVEST.partner 允許最後差 0.5 以內),照實際湊到的付(以前照本錢付,憑空多出零頭)
-            const spent = deal ? r2(deal.parts.reduce((s, [, n]) => s + n, 0)) : cost, wood = r2(spent * 0.6);
-            Mk.sell(w, 'timber', wood, t('開店裝修')); Mk.sell(w, 'mine', r2(spent - wood), t('開店裝修'));
-            const R = M.rival[k] = { fid: 'F' + (++M.fn), owner: owner.agentId, since: d, price: 0.9, pay: Math.min(1.2, Math.round((Mk.payRate(w, k) + 0.1) * 100) / 100), emp: {}, rev: 0, cost: 0, hist: [], loss: 0 };
-            const pool = ws.filter(a => a.agentId !== id && a.agentId !== owner.agentId).sort((x, y) => aff(x, boss) - aff(y, boss));
-            const n = Math.max(1, Math.ceil(pool.length * 0.4)); pool.slice(0, n).forEach(a => { R.emp[a.agentId] = d; mem(w, a, '{a}開了新店，開的工資比{o}高，我跳槽過去了。', { a: owner.name, o: boss?.name || '' }, 6); });
-            M.good[k] = 0; M.cst.opened++;
-            if (deal) INVEST.setup(w, k, R, deal);
-            log(w, '🏪 {a}看{o}的{s}生意好，自己也開了一家，挖走 {n} 個人、開幕打九折！', { a: owner.name, o: boss?.name || '', s: Mk.name(k), n }, owner.name);
-            news(w, '{a}在{o}的{s}對面開了新店，兩家要搶生意了', { a: owner.name, o: boss?.name || '', s: Mk.name(k) }, 7, [owner.name, boss?.name || '']);
-            mem(w, owner, '我看{o}的{s}那麼賺，花了 {n} 銀幣在對面開了一家，要跟他搶生意。', { o: boss?.name || '', s: Mk.name(k), n: cost }, 8);
-            mem(w, boss, '{a}在我的{s}對面開了一家，還挖走我 {n} 個人。', { a: owner.name, s: Mk.name(k), n }, 8);
-            bump(boss, owner, -8); bump(owner, boss, -3);
+            openShop(w, all, k, owner, d, deal);
         }
+    }
+    // ---------- 跳槽 ----------
+    // 這個工人現在的處境：在哪一家、對面是誰、兩邊工資差多少(對面高一成以上才算有得跳)
+    function hopInfo(w, a) {
+        const Mk = MK(); const M = S(w); const all = npcs(w);
+        for (const k of Object.keys(Mk.SECTORS)) {
+            const R = Mk.rivalOf(w, k); if (!R) continue; const id = M.owners[k]; if (a.agentId === id || a.agentId === R.owner) continue;
+            if (!Mk.workersOf(w, k, all).includes(a)) continue; const atR = !!R.emp[a.agentId];
+            const payI = Mk.payRate(w, k), payR = R.pay ?? 1; const mine = atR ? payR : payI, other = atR ? payI : payR; if (other - mine < 0.1) return null;
+            return { k, atR, mine, other, from: w.agents[atR ? R.owner : id] || null, to: w.agents[atR ? id : R.owner] || null };
+        }
+        return null;
+    }
+    // 換過去(由決策核心呼叫)。被挖走的那邊下次每週結算時可能加薪
+    function hop(w, a, k) {
+        const I = hopInfo(w, a); if (!I || I.k !== k) return false; const M = S(w); const R = MK().rivalOf(w, k); const d = day(w);
+        if (I.atR) { delete R.emp[a.agentId]; R.hopR = (R.hopR || 0) + 1; } else { R.emp[a.agentId] = d; R.hopI = (R.hopI || 0) + 1; }
+        M.cst.poach++; mem(w, a, '{o}那邊工資比較高，我換過去做了。', { o: I.to?.name || '' }, 5);
+        if (d - (R.poachLog || -99) >= 14) { R.poachLog = d; log(w, '🔀 {s}的工人跳槽：{n} 個人換到工資比較高的那一家。', { s: MK().name(k), n: 1 }); }
+        return true;
     }
 
     // ---------- 每週:調價、搶工人、繳稅、倒閉與併購 ----------
-    function weekly(w, all, d) {
+    function weekly(w, all, d, ch) {
         const M = S(w); const Mk = MK();
         for (const k of Object.keys(Mk.SECTORS)) {
             const R = Mk.rivalOf(w, k); if (!R) continue; const id = M.owners[k]; const boss = w.agents[id], rv = w.agents[R.owner];
@@ -85,14 +135,15 @@ const COMPETE = (() => {
             M.price[k] = Math.round(pi * 100) / 100; R.price = Math.round(pr * 100) / 100;
             if (pi < pi0 && pr < pr0 && d - (R.warLog || -99) >= 21) { R.warLog = d; M.cst.wars++; log(w, '💥 {o}和{a}的{s}打起價格戰，一個降到 {p}%、一個降到 {q}%，村民樂得撿便宜。', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k), p: Math.round(pi * 100), q: Math.round(pr * 100) }, rv?.name || ''); news(w, '{o}和{a}的{s}打起價格戰', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k) }, 6, [boss?.name || '', rv?.name || '']); }
             // 搶工人:對面工資高一成以上就可能跳槽
-            const payI = Mk.payRate(w, k), payR = R.pay ?? 1; let lostI = 0, lostR = 0;
+            const payI = Mk.payRate(w, k), payR = R.pay ?? 1; let lostI = R.hopI || 0, lostR = R.hopR || 0; delete R.hopI; delete R.hopR; // 這一週自己決定換過去的人(ch)也算進來
             for (const a of Mk.workersOf(w, k, all)) {
+                if (ch) break; // 跳不跳槽交給本人決定
                 if (a.agentId === id || a.agentId === R.owner) continue; const atR = !!R.emp[a.agentId];
                 const mine = atR ? payR : payI, other = atR ? payI : payR; if (other - mine < 0.1 || Math.random() > 0.3) continue;
                 if (atR) { delete R.emp[a.agentId]; lostR++; } else { R.emp[a.agentId] = d; lostI++; }
                 M.cst.poach++; mem(w, a, '{o}那邊工資比較高，我換過去做了。', { o: (atR ? boss : rv)?.name || '' }, 5);
             }
-            if (lostI + lostR && d - (R.poachLog || -99) >= 14) { R.poachLog = d; log(w, '🔀 {s}的工人跳槽：{n} 個人換到工資比較高的那一家。', { s: Mk.name(k), n: lostI + lostR }); }
+            if (!ch && lostI + lostR && d - (R.poachLog || -99) >= 14) { R.poachLog = d; log(w, '🔀 {s}的工人跳槽：{n} 個人換到工資比較高的那一家。', { s: Mk.name(k), n: lostI + lostR }); }
             // 被挖走人、還有賺錢的老闆加薪(吝嗇的不加)
             if (lostI && Pi > 0 && !has(boss, 'greedy') && payI < 1.2) { M.pay[k] = Math.min(1.2, Math.round((payI + 0.05) * 100) / 100); M.cst.raise++; }
             if (lostR && Pr > 0 && !has(rv, 'greedy') && payR < 1.2) { R.pay = Math.min(1.2, Math.round((payR + 0.05) * 100) / 100); M.cst.raise++; }
@@ -214,7 +265,7 @@ const COMPETE = (() => {
         const all = npcs(w);
         try { manage(w, all, d); } catch (e) { console.warn('[Compete] manage', e); }
         try { lobby(w, d); } catch (e) { console.warn('[Compete] lobby', e); }
-        if (d % 7 === 2) { try { entry(w, all, d); weekly(w, all, d); capProposal(w, d); divest(w, all, d); } catch (e) { console.warn('[Compete] weekly', e); } }
+        if (d % 7 === 2) { try { const ch = byChoice(w); entry(w, all, d, ch); weekly(w, all, d, ch); capProposal(w, d); divest(w, all, d); } catch (e) { console.warn('[Compete] weekly', e); } }
         // 沒有對手的那一行,價錢慢慢回到原價
         for (const k of Object.keys(M.price)) if (!MK().rivalOf(w, k) && M.price[k] < 1 && d % 7 === 2) M.price[k] = Math.min(1, Math.round((M.price[k] + 0.05) * 100) / 100);
     }
@@ -246,7 +297,7 @@ const COMPETE = (() => {
         for (const [key, id] of Object.entries(w.market?.mgr || {})) if (id === a.agentId) out.push(fill('{s}的掌櫃', { s: Mk.name(key.split(':')[0]) }));
         return out.join(t('；'));
     }
-    return { S, daily, entry, weekly, manage, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
+    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, byChoice, manage, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
 })();
 if (typeof window !== 'undefined') window.COMPETE = COMPETE;
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.antitrust_cap = { icon: '⚖️', label: '反壟斷' };

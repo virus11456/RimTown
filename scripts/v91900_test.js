@@ -144,7 +144,7 @@ async function run(browser, lang, vp) {
   ok(r.free.gave === 200 && r.free.left === 200 && r.free.aff >= 8 && r.free.total, '給錢的效果落地（最多給一半）、對人更好；不在白名單的「憑空變錢」沒有發生', r.free);
   ok(r.freeCons && r.free.log, '自由行動：銀幣守恆、日誌有 💭', r.free);
   ok(/AIDO/.test(r.dream.plan) && r.dream.same && r.dream.res, '遊戲裡做不到的事（挖地道）不會憑空發生，留成「打算」', r.dream);
-  ok(r.bad.decided && !r.bad.ai && r.bad.miss === 1 && r.nul.decided && !r.nul.ai, 'AI 亂選或沒回 → 照個性決定，不會卡住', { bad: r.bad, nul: r.nul });
+  ok(r.bad.decided && !r.bad.ai && r.bad.miss >= 1 && r.bad.miss <= 2 /* v9.22.0 他若決定去談入股，當家也會被問一次(同樣答非所問、同樣照個性決定) */ && r.nul.decided && !r.nul.ai, 'AI 亂選或沒回 → 照個性決定，不會卡住', { bad: r.bad, nul: r.nul });
   ok(r.slow.pending && ((r.slow.decided && !r.slow.ai) || r.slow.gone) && r.slow.late, 'AI 一直不回話：隔天先照個性決定，晚到的回話不算', r.slow);
   ok(r.cap.asked <= r.cap.max && r.cap.asked >= 1 && r.cap.everyone >= r.cap.asked, '一天問 AI 的人數有上限，其餘的人照個性決定', r.cap);
   ok(r.vote.has, '原本的 AI 投票也看得到帳本（【錢】）', r.vote);
