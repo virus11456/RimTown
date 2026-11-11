@@ -123,7 +123,9 @@ async function flow(browser, width, lang) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(400);
   await page.evaluate(() => { const app = window.rimtownApp; app._gameAlert = () => {}; app._showCornerNotice = () => {}; const w = app.world; w.observerMode = true; for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } app._setPaused?.(true);
     const b = [...document.querySelectorAll('button, [role=tab], [data-tab]')].find(x => /提案|Proposals/.test(x.textContent) && x.offsetParent); b && b.click(); });
-  await page.waitForSelector('.pp-tabhint.pp-flow', { timeout: 15000 }); await page.waitForTimeout(500);
+  await page.waitForSelector('.pp-tabhint.pp-flow', { timeout: 15000 });
+  // 面板滑進來的動畫結束、位置不再變了才量（機器忙的時候動畫會拖比較久）
+  { let last = '', same = 0; for (let i = 0; i < 40 && same < 3; i++) { await page.waitForTimeout(200); const cur = await page.evaluate(() => { const b = document.querySelector('.pp-tabhint.pp-flow')?.getBoundingClientRect(); return b ? [b.left, b.top, b.width, b.height].map(Math.round).join(',') : ''; }); same = cur && cur === last ? same + 1 : 0; last = cur; } }
   const r = await page.evaluate(() => {
     const tabs = document.querySelector('.pp-tabs').getBoundingClientRect(); const hint = document.querySelector('.pp-tabhint.pp-flow'); const H = hint.getBoundingClientRect(); const cs = getComputedStyle(hint);
     const steps = [...hint.querySelectorAll('.pp-step')]; const seps = [...hint.querySelectorAll('.pp-sep')];
@@ -134,8 +136,10 @@ async function flow(browser, width, lang) {
   ok(r.n >= 4 && r.old === 0, '流程說明每一步各一格，不再借用別的元件的類別', r);
   // 看實際畫面（截一張圖，在頁面裡讀像素）：每一格最上面那一列是格子的底色，要跟格子正上方 3px（面板底色）不一樣；
   // 被分頁列後面的底色蓋住的話，兩處會是同一個顏色
-  const R = r.rects, x0 = Math.min(...R.map(b => b.x)), y0 = Math.min(...R.map(b => b.y)) - 6, x1 = Math.max(...R.map(b => b.x + b.w)), y1 = Math.max(...R.map(b => b.y + b.h));
-  const shot = (await page.screenshot({ clip: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } })).toString('base64');
+  // 量位置 → 截圖 → 再量一次；中間版面有動（側欄上方冒出提示之類）就重來，確保截到的圖跟量到的位置是同一個畫面
+  const tops = () => page.evaluate(() => [...document.querySelectorAll('.pp-tabhint.pp-flow .pp-step')].map(e => { const b = e.getBoundingClientRect(); return { x: Math.round(b.left), y: Math.round(b.top), w: Math.round(b.width), h: Math.round(b.height) }; }));
+  let R, x0, y0, shot; for (let i = 0; i < 8; i++) { R = await tops(); x0 = Math.min(...R.map(b => b.x)); y0 = Math.min(...R.map(b => b.y)) - 6; const x1 = Math.max(...R.map(b => b.x + b.w)), y1 = Math.max(...R.map(b => b.y + b.h));
+    shot = (await page.screenshot({ clip: { x: x0, y: y0, width: x1 - x0, height: y1 - y0 } })).toString('base64'); if (JSON.stringify(await tops()) === JSON.stringify(R)) break; await page.waitForTimeout(300); }
   const px = await page.evaluate(async ({ shot, R, x0, y0 }) => { const im = new Image(); im.src = 'data:image/png;base64,' + shot; await im.decode(); const k = im.width / (Math.max(...R.map(b => b.x + b.w)) - x0); const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const g = c.getContext('2d'); g.drawImage(im, 0, 0);
     const at = (x, y) => [...g.getImageData(Math.round((x - x0) * k), Math.round((y - y0) * k), 1, 1).data].slice(0, 3); return R.map(b => ({ inside: at(b.x + b.w / 2, b.y + 2), above: at(b.x + b.w / 2, b.y - 3) })); }, { shot, R, x0, y0 });
   const seen = px.map(p => p.inside.some((v, i) => Math.abs(v - p.above[i]) > 3));
