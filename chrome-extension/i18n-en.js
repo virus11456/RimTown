@@ -13437,6 +13437,13 @@
         '獻金總額': 'Total donated',
         '工會正在罷工': 'The union is on strike',
         '📛 {n} 位村民的名字後面帶著編號，已經換成正式的名字：{list}。存檔已修正。': '📛 {n} villagers had a number tacked onto their name and now have proper names: {list}. The save has been fixed.',
+        // v9.23.1 作物停止生長（氣溫低於 0 度或極端氣候）
+        '🥶 氣溫降到零度以下，田裡的作物停止生長。': '🥶 The temperature has dropped below freezing. Crops in the fields have stopped growing.',
+        '🥀 天氣太惡劣，田裡的作物停止生長。': '🥀 The weather is too harsh. Crops in the fields have stopped growing.',
+        '🌱 天氣回穩，田裡的作物又開始長了。': '🌱 The weather has settled. Crops in the fields are growing again.',
+        '氣溫低於 0°C，作物停止生長（打魚打獵不受影響）': 'Below 0°C: crops have stopped growing (fishing and hunting are unaffected)',
+        '極端氣候，作物停止生長（打魚打獵不受影響）': 'Extreme weather: crops have stopped growing (fishing and hunting are unaffected)',
+        '停止': 'Halted',
         // v9.23.0 決策核心批次 A（生計與去留）：要不要搬走、跳槽、拜師、在對面開店、拆夥
         '開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由。村民遇到錢的事（手上有閒錢、手頭很緊、有人來借錢）、人際的事（借的錢到期、要不要道歉或原諒、心裡有口氣、看人不順眼、冷戰）、政治的事（組工會、加入或退出、罷工、老闆要不要加薪、政治獻金、要不要出來選、重新想自己的立場）、自己的事（賣不賣股份、退不退股、翻修房子、奉獻、要不要對仇人動手、開店、被挖角走不走）和生計的事（要不要搬走、跳槽、拜師、在對面開店、拆夥）時，也由 AI 依他自己的錢、立場和人際決定怎麼做，還可以自己想出選項以外的事（每天最多問 10 人，其餘的人照個性推估）。AI 失敗或太慢時用個性推估墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 2～8 次。': 'When on, votes, whether to propose and what, and the mayor\'s approvals are all reasoned out by the AI from each villager\'s memories, personality, relationships and the state of the town, with reasons given. When a villager faces a money matter (spare cash, running short, someone asking for a loan), a matter between people (a loan coming due, whether to apologize or forgive, a grievance, someone they can\'t stand, a silent feud), a political one (starting, joining or leaving a union, a strike, whether a boss grants a raise, political donations, whether to run for office, rethinking their own views), a personal one (selling shares, cashing out a stake, rebuilding the house, giving an offering, moving against a rival, opening a shop, leaving for another town) or one about making a living (moving away, switching employers, taking up an apprenticeship, opening a rival shop, ending a partnership), the AI also decides from that villager\'s own money, stance and relationships, and can come up with something outside the options (up to 10 people a day; the rest are estimated from personality). If the AI fails or is too slow, the personality estimate is used. Each proposal adds about 2 to 4 AI calls, plus 2 to 8 more per day.',
         '沒有工作': 'out of work',

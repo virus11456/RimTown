@@ -984,7 +984,7 @@ class World {
             eventChoice: this.eventChoice.toDict(),
             npcHelp: this.npcHelp.toDict(),
             reputationSystem: this.reputationSystem.toDict(),
-            weather: this.weather.toDict(),
+            weather: this.weather.toDict(this),
             autonomy: this.autonomy ? this.autonomy.toDict() : null, // v6.37.0 村民自主日誌
             eventCards: this.eventCards ? this.eventCards.toDict(this) : null, // v6.38.0 事件卡手牌與反應追蹤
             council: (() => { const cd = this.council.toDict(); cd.memberNames = this.council.members.map(id => this.agents[id]?.name || '?'); return cd; })(),

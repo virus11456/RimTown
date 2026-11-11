@@ -179,14 +179,14 @@ Object.assign(RimTownApp.prototype, {
     },
     _icEnv() {
         const s = this.state; const wt = s?.weather; if (!wt) return ''; const esc = (x) => this._icEsc(x);
-        const E = this._eventPieces(['festival', 'mods']); const farm = Math.round((wt.farmModifier || 0) * 100), mood = wt.moodModifier || 0;
+        const E = this._eventPieces(['festival', 'mods']); const farm = Math.max(-100, Math.round((wt.farmModifier || 0) * 100)), mood = wt.moodModifier || 0;
         const dis = wt.activeDisaster, warn = wt.disasterWarning;
         const alert = dis ? { t: `${t(dis.name)}${t('（')}${t('剩餘')} ${dis.daysLeft} ${t('天')}${t('）')}`, tone: 'r' } : warn ? { t: `${t('災害預警')}${t('：')}${warn.type === 'drought_severe' ? t('嚴重乾旱') : warn.type === 'blizzard_severe' ? t('極端暴風雪') : t('洪水')}${warn.daysUntil > 0 ? ` (${warn.daysUntil} ${t('天後')})` : ''}`, tone: 'y' } : null;
-        const fest = s.festivals?.activeFestival;
-        const body = (wt.forecast?.length ? `<div class="ic-forecast"><span>${t('預報')}</span>${wt.forecast.map(f => `<span title="${esc(t(f.name))}">${f.icon}</span>`).join('')}</div>` : '') + E.festival;
+        const fest = s.festivals?.activeFestival; const stop = wt.cropStop; // v9.23.1 作物停止生長
+        const body = (stop ? `<div class="ic-note">🥀 ${t(stop === 'cold' ? '氣溫低於 0°C，作物停止生長（打魚打獵不受影響）' : '極端氣候，作物停止生長（打魚打獵不受影響）')}</div>` : '') + (wt.forecast?.length ? `<div class="ic-forecast"><span>${t('預報')}</span>${wt.forecast.map(f => `<span title="${esc(t(f.name))}">${f.icon}</span>`).join('')}</div>` : '') + E.festival;
         return this._ic({ id: 'env', icon: wt.icon || '🌤️', title: t('天氣與加成'), chip: alert ? { t: alert.tone === 'r' ? t('災害中') : t('預警'), tone: alert.tone } : fest ? { t: `${fest.icon} ${t(fest.name)}`, tone: 'g' } : null,
             sum: `${esc(t(wt.name))} · ${wt.temperature}°`, defOpen: false, alert,
-            kpis: [{ v: wt.temperature, u: '°C', l: `${t(wt.name)}・💧${wt.humidity}%` }, { v: (farm >= 0 ? '+' : '') + farm, u: '%', l: '🌾 ' + t('農業'), tone: farm > 0 ? 'g' : farm < 0 ? 'r' : '' }, { v: (mood >= 0 ? '+' : '') + mood, l: '😊 ' + t('心情'), tone: mood > 0 ? 'g' : mood < 0 ? 'r' : '' }],
+            kpis: [{ v: wt.temperature, u: '°C', l: `${t(wt.name)}・💧${wt.humidity}%` }, stop ? { v: t('停止'), l: '🌾 ' + t('農業'), tone: 'r' } : { v: (farm >= 0 ? '+' : '') + farm, u: '%', l: '🌾 ' + t('農業'), tone: farm > 0 ? 'g' : farm < 0 ? 'r' : '' }, { v: (mood >= 0 ? '+' : '') + mood, l: '😊 ' + t('心情'), tone: mood > 0 ? 'g' : mood < 0 ? 'r' : '' }],
             body, detail: (wt.desc ? `<div class="ic-note">${esc(wt.desc)}</div>` : '') + E.mods });
     },
     _icAuto() {
