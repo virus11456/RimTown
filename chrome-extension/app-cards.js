@@ -20,7 +20,7 @@ Object.assign(RimTownApp.prototype, {
     _ic(o) {
         const S = this._icState(); const esc = (x) => this._icEsc(x);
         const tone = o.chip?.tone || ''; const hot = !!o.alert || tone === 'r' || tone === 'y';
-        const open = o.id in S.open ? !!S.open[o.id] : (o.defOpen ?? hot); const more = !!S.more[o.id]; const info = !!(o.info && S.info[o.id]); // v9.18.2 ⓘ 說明打開了也要記住(只記這一次開著的期間),不然側欄每秒重畫就自己收起來
+        const open = o.id in S.open ? !!S.open[o.id] : (o.defOpen ?? hot); const more = !!S.more[o.id]; const info = !!(o.info && S.info[o.id]); // v9.19.1 ⓘ 說明打開了也要記住(只記這一次開著的期間),不然側欄每秒重畫就自己收起來
         if (this._icAlerts && (o.alert || o.brief)) this._icAlerts.push({ id: o.id, tone: o.alert?.tone || tone || 'y', t: o.brief || o.alert.t, icon: o.icon, title: o.title }); // 只有真的有事才進「今天要注意」
         const chip = o.chip?.t ? `<span class="ic-chip ic-${tone || 'n'}">${esc(o.chip.t)}</span>` : '';
         const sum = o.sum != null && o.sum !== '' ? `<span class="ic-sum${o.sumTone ? ' ic-t-' + o.sumTone : ''}">${o.sum}</span>` : '';
@@ -48,7 +48,7 @@ Object.assign(RimTownApp.prototype, {
         const S = this._icState(); const el = document.getElementById('ic-' + v);
         if (k === 'ic-toggle') { const on = !(el?.classList.contains('open')); S.open[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('open', on); el.querySelector('.ic-hd')?.setAttribute('aria-expanded', String(on)); } }
         else if (k === 'ic-more') { const on = !(el?.classList.contains('more')); S.more[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('more', on); el.querySelector('.ic-more')?.setAttribute('aria-expanded', String(on)); } }
-        else if (k === 'ic-info') { const on = !(el?.classList.contains('info')); S.info[v] = on ? 1 : 0; if (el) el.classList.toggle('info', on); } // v9.18.2 記在 S.info(不存 localStorage,重新整理就收起),重畫時照著還原
+        else if (k === 'ic-info') { const on = !(el?.classList.contains('info')); S.info[v] = on ? 1 : 0; if (el) el.classList.toggle('info', on); } // v9.19.1 記在 S.info(不存 localStorage,重新整理就收起),重畫時照著還原
         else if (k === 'ic-go') { S.open[v] = 1; this._icSave(); if (el) { el.classList.add('open'); el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('ic-flash'); setTimeout(() => el.classList.remove('ic-flash'), 1200); } }
     },
     _icBrief(list) {

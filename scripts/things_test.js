@@ -40,7 +40,7 @@ async function run(browser, lang, vp) {
       g.personality = sv[0]; p.personality = sv[1];
       // ---------- AI 版看法：完整智能體模式交給 AI（模擬回覆），拿得到這東西的事實 ----------
       { const ce = w.conversationEngine; const sOk = ce.fullAgentOk, sAsk = ce._askJson; let prompt = ''; const NB = typeof CROWD !== 'undefined' ? CROWD.notable : null;
-        w.fullAgentMode = true; ce.fullAgentOk = () => true; const nmz = Array.isArray(Th.name) ? Th.name : [Th.name, Th.name]; ce._askJson = async (pr) => { if (/鎮上出現了新東西|Something new has appeared/.test(pr) && (pr.includes(nmz[0]) || pr.includes(nmz[1]))) prompt = pr; return [{ v: 2, why: 'AI 說我就愛這一味', act: 'recommend' }, { v: -2, why: 'AI 說這會毀了我們家', act: 'complain' }]; };
+        w.fullAgentMode = true; ce.fullAgentOk = () => true; const nmz = Array.isArray(Th.name) ? Th.name : [Th.name, Th.name]; ce._askJson = async (pr) => { { const head = pr.split('\n')[0]; /* v9.19.0 只認開頭那一行:村民的帳本裡也可能提到這東西(他對它的看法) */ if (/鎮上出現了新東西|Something new has appeared/.test(head) && (head.includes(nmz[0]) || head.includes(nmz[1]))) prompt = pr; } return [{ v: 2, why: 'AI 說我就愛這一味', act: 'recommend' }, { v: -2, why: 'AI 說這會毀了我們家', act: 'complain' }]; };
         if (NB) CROWD.notable = () => new Set(all.map(a => a.agentId));
         for (const a of all) if (a !== boss) delete X.att[id][a.agentId];
         const ai0 = X.st.ai; try { await daily(0.3); /* 0.3：都聽說了，但還不到會出手推薦或抱怨的機率 */ await THINGS.flush(); } finally { ce.fullAgentOk = sOk; ce._askJson = sAsk; w.fullAgentMode = false; if (NB) CROWD.notable = NB; }

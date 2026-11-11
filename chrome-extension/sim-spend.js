@@ -96,6 +96,58 @@ const SPEND = (() => {
     }
     const thrift = (a) => (has(a, 'ascetic') || has(a, 'stoic') ? 0.4 : 1) * (has(a, 'greedy') ? 0.6 : 1) * (has(a, 'glutton') || has(a, 'optimist') || has(a, 'romantic') || has(a, 'generous') ? 1.4 : 1); // 克己的人少花、貪心的人捨不得、愛享受的人多花
     const townName = (w) => { const L = (w.otherTowns || []).map(x => x?.name || x?.townName).filter(Boolean); return L.length ? t(L[Math.floor(Math.random() * L.length)]) : t('王都'); };
+    // ---------- v9.19.0 花錢的動作(由決策核心呼叫) ----------
+    // 每個動作分兩半:xxxPlan(w, a) 只回答「現在做得到嗎、要花多少、跟誰」(不動任何東西);xxx(w, a) 真的結算。
+    // 誰會去做、什麼時候做,不在這裡決定。
+    function feastPlan(w, a) {
+        const c = cash(w, a), px = P(w); if (c < 150 * px) return null;
+        const guests = here(w).filter(o => o !== a && aff(a, o) >= 20).sort((x, y) => aff(a, y) - aff(a, x)).slice(0, 5); if (guests.length < 2) return null;
+        return { cost: r2(Math.min(c * 0.08, 25 * px + c * 0.03)), guests };
+    }
+    function feast(w, a) {
+        const pl = feastPlan(w, a); if (!pl || !WALLET.take(w, a, pl.cost)) return null; const X = S(w), { cost, guests } = pl;
+        if (typeof MARKET !== 'undefined' && w.market) { MARKET.sell(w, 'kitchen', r2(cost * 0.6), t('宴客')); MARKET.sell(w, 'farm', r2(cost - r2(cost * 0.6)), t('宴客')); } else w.stockpile?.add?.('silver', cost, w.tickCount, t('宴客'));
+        for (const g of guests) { bump(g, a, 4); bump(a, g, 2); g.moodModifier = (g.moodModifier || 0) + 2; }
+        X.st.feast = r2((X.st.feast || 0) + cost); X.st.feastN = (X.st.feastN || 0) + 1;
+        log(w, '🍷 {a}花了 {n} 銀幣在食堂擺了一桌，請{g}吃飯。', { a: a.name, n: Math.round(cost), g: guests.slice(0, 3).map(x => x.name).join(t('、')) }, a.name);
+        mem(w, a, '我請朋友吃了一頓好的，花了 {n} 銀幣。', { n: Math.round(cost) }, 4);
+        return pl;
+    }
+    function artPlan(w, a) {
+        const c = cash(w, a), px = P(w), X = S(w); if (c < 250 * px || X.edu['art_' + a.agentId] > day(w) - 120) return null;
+        const painter = here(w).filter(o => o !== a && has(o, 'creative'))[0]; if (!painter) return null;
+        return { cost: r2(25 * px + c * 0.02), painter };
+    }
+    function art(w, a) {
+        const pl = artPlan(w, a); if (!pl || !WALLET.take(w, a, pl.cost)) return null; const X = S(w), { cost: fee, painter: pt } = pl;
+        if (WALLET.bizIncome) WALLET.bizIncome(w, pt, fee); else WALLET.add(w, pt, fee); X.edu['art_' + a.agentId] = day(w); X.st.art = r2((X.st.art || 0) + fee); X.st.artN = (X.st.artN || 0) + 1;
+        log(w, '🖼️ {a}花 {n} 銀幣請{p}畫了一張像，掛在家裡最顯眼的地方。', { a: a.name, n: Math.round(fee), p: pt.name }, a.name); mem(w, a, '我請{p}畫了一張像，以後子孫看得到我。', { p: pt.name }, 6); mem(w, pt, '{a}請我畫像，給了 {n} 銀幣。', { a: a.name, n: Math.round(fee) }, 5);
+        return pl;
+    }
+    function tripPlan(w, a) {
+        const c = cash(w, a), px = P(w); if (c < 100 * px || a.job?.key === 'mayor') return null; // 首長走不開
+        return { cost: r2(Math.min(c * 0.2, 40 * px + c * 0.08)) };
+    }
+    function trip(w, a) {
+        const pl = tripPlan(w, a); if (!pl || !WALLET.take(w, a, pl.cost)) return null; const X = S(w), cost = pl.cost; out(w, 'travel', cost);
+        const where = townName(w); a.moodModifier = (a.moodModifier || 0) + 6; X.st.trip = r2((X.st.trip || 0) + cost); X.st.tripN = (X.st.tripN || 0) + 1;
+        log(w, '🧳 {a}去{t}玩了幾天，花了 {n} 銀幣，回來逢人就說那裡的見聞。', { a: a.name, t: where, n: Math.round(cost) }, a.name);
+        mem(w, a, '我去{t}玩了一趟，花了 {n} 銀幣，大開眼界。', { t: where, n: Math.round(cost) }, 6);
+        { const sore = here(w).filter(o => o !== a && aff(o, a) > 30 && cash(w, o) < 30)[0]; if (sore) mem(w, sore, '{a}又去外地玩了，我連一頓好的都吃不起。', { a: a.name }, 4); } // 手頭緊的熟人看在眼裡
+        pl.where = where; return pl;
+    }
+    // 這個人可以替哪些孩子出學費:家裡 8～15 歲、還沒去讀書的孩子,而且他是那個家裡手頭最寬的大人(一個孩子只有一個人拿主意)
+    function enrolPlan(w, a) {
+        const px = P(w), X = S(w); if ((a.age ?? 30) < 18 || cash(w, a) < 100 * px) return null; const fam = (o) => (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, o) : []);
+        const kids = npcs(w).filter(k => { const age = k.age ?? 30; if (k === a || age < 8 || age >= 16 || X.school[k.agentId] != null) return false; const ad = fam(k).filter(o => o !== k && (o.age ?? 30) >= 18 && !o.isDead); return ad.includes(a) && ad.every(o => cash(w, o) <= cash(w, a)); });
+        return kids.length ? { cost: r2(40 * px), again: r2(30 * px), kids } : null;
+    }
+    function enrol(w, a, kidId) {
+        const pl = enrolPlan(w, a); const k = pl && (pl.kids.find(x => x.agentId === kidId) || pl.kids[0]); if (!k || !WALLET.take(w, a, pl.cost)) return null; const X = S(w), d = day(w), fee = pl.cost; out(w, 'school', fee);
+        X.school[k.agentId] = d; X.paid = X.paid || {}; X.paid[k.agentId] = d; X.st.fee = r2((X.st.fee || 0) + fee); X.st.feeN = (X.st.feeN || 0) + 1;
+        log(w, '🎓 {a}花 {n} 銀幣送{k}去{t}讀書。', { a: a.name, n: Math.round(fee), k: k.name, t: townName(w) }, a.name); mem(w, a, '我把錢省下來送{k}去外地讀書，希望他將來有出息。', { k: k.name }, 7); mem(w, k, '我要去外地讀書了。', {}, 7);
+        return { cost: fee, kid: k };
+    }
     function daily(w) {
         if (!W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d;
         const all = here(w); if (!all.length) return; const px = P(w);
@@ -108,41 +160,7 @@ const SPEND = (() => {
                 if (n >= 3 && Math.random() < 0.35) log(w, '🎭 {p}在廣場{x}，{n} 個人圍著看，丟了 {s} 銀幣賞錢。', { p: pf.name, x: has(pf, 'creative') ? t('說書唱曲') : t('變戲法'), n, s: Math.round(got) }, pf.name);
                 if (n >= 4 && Math.random() < 0.3) mem(w, pf, '今天在廣場表演，{n} 個人丟賞錢給我。', { n }, 5); }
         }
-        // 2) 宴客:有錢人請朋友吃一頓(錢付給食堂和農莊)
-        for (const a of all) {
-            const c = cash(w, a); if (c < 150 * px || Math.random() > 0.02 * thrift(a)) continue;
-            const cost = r2(Math.min(c * 0.08, 25 * px + c * 0.03)); const guests = all.filter(o => o !== a && aff(a, o) >= 20).sort((x, y) => aff(a, y) - aff(a, x)).slice(0, 5); if (guests.length < 2 || !WALLET.take(w, a, cost)) continue;
-            if (typeof MARKET !== 'undefined' && w.market) { MARKET.sell(w, 'kitchen', r2(cost * 0.6), t('宴客')); MARKET.sell(w, 'farm', r2(cost - r2(cost * 0.6)), t('宴客')); } else w.stockpile?.add?.('silver', cost, w.tickCount, t('宴客'));
-            for (const g of guests) { bump(g, a, 4); bump(a, g, 2); g.moodModifier = (g.moodModifier || 0) + 2; }
-            X.st.feast = r2((X.st.feast || 0) + cost); X.st.feastN = (X.st.feastN || 0) + 1;
-            if (Math.random() < 0.5) log(w, '🍷 {a}花了 {n} 銀幣在食堂擺了一桌，請{g}吃飯。', { a: a.name, n: Math.round(cost), g: guests.slice(0, 3).map(x => x.name).join(t('、')) }, a.name);
-            mem(w, a, '我請朋友吃了一頓好的，花了 {n} 銀幣。', { n: Math.round(cost) }, 4); break; // 一天最多一場
-        }
-        // 3) 請畫師畫像(錢給有才藝的人)
-        { const painters = all.filter(a => has(a, 'creative')); if (painters.length) for (const a of all) {
-            const c = cash(w, a); if (c < 250 * px || X.edu['art_' + a.agentId] > d - 120 || Math.random() > 0.006 * thrift(a)) continue;
-            const pt = painters.filter(o => o !== a)[0]; if (!pt) continue; const fee = r2(25 * px + c * 0.02); if (!WALLET.take(w, a, fee)) continue;
-            if (WALLET.bizIncome) WALLET.bizIncome(w, pt, fee); else WALLET.add(w, pt, fee); X.edu['art_' + a.agentId] = d; X.st.art = r2((X.st.art || 0) + fee); X.st.artN = (X.st.artN || 0) + 1;
-            log(w, '🖼️ {a}花 {n} 銀幣請{p}畫了一張像，掛在家裡最顯眼的地方。', { a: a.name, n: Math.round(fee), p: pt.name }, a.name); mem(w, a, '我請{p}畫了一張像，以後子孫看得到我。', { p: pt.name }, 6); mem(w, pt, '{a}請我畫像，給了 {n} 銀幣。', { a: a.name, n: Math.round(fee) }, 5); break;
-        } }
-        // 4) 去外地旅遊(錢流出鎮外)
-        for (const a of all) {
-            const c = cash(w, a); if (c < 100 * px || Math.random() > 0.02 * thrift(a) * Math.min(2, c / (200 * px)) || a.job?.key === 'mayor') continue; // 越有錢越常出門
-            const cost = r2(Math.min(c * 0.2, 40 * px + c * 0.08)); if (!WALLET.take(w, a, cost)) continue; out(w, 'travel', cost);
-            const where = townName(w); a.moodModifier = (a.moodModifier || 0) + 6; X.st.trip = r2((X.st.trip || 0) + cost); X.st.tripN = (X.st.tripN || 0) + 1;
-            if (Math.random() < 0.5) log(w, '🧳 {a}去{t}玩了幾天，花了 {n} 銀幣，回來逢人就說那裡的見聞。', { a: a.name, t: where, n: Math.round(cost) }, a.name);
-            mem(w, a, '我去{t}玩了一趟，花了 {n} 銀幣，大開眼界。', { t: where, n: Math.round(cost) }, 6);
-            for (const o of all) if (o !== a && aff(o, a) > 30 && cash(w, o) < 30 && Math.random() < 0.15) mem(w, o, '{a}又去外地玩了，我連一頓好的都吃不起。', { a: a.name }, 4);
-            break;
-        }
-        // 5) 送孩子去外地讀書(學費流出鎮外;讀完回來,長大後工資高一成五)
-        for (const k of npcs(w)) {
-            const age = k.age ?? 30; if (age < 8 || age >= 16 || X.school[k.agentId] != null) continue;
-            const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, k) : []).filter(o => o !== k && (o.age ?? 30) >= 18 && !o.isDead);
-            const payer = fam.sort((x, y) => cash(w, y) - cash(w, x))[0]; if (!payer || cash(w, payer) < 100 * px || Math.random() > 0.02 * (has(payer, 'ascetic') ? 0.5 : 1) * (payer.personality?.values || []).concat([]).reduce((m, v) => m * (v === '知識' || v === t('知識') ? 2.5 : 1), 1)) continue;
-            const fee = r2(40 * px); if (!WALLET.take(w, payer, fee)) continue; out(w, 'school', fee); X.school[k.agentId] = d; X.paid = X.paid || {}; X.paid[k.agentId] = d; X.st.fee = r2((X.st.fee || 0) + fee); X.st.feeN = (X.st.feeN || 0) + 1;
-            log(w, '🎓 {a}花 {n} 銀幣送{k}去{t}讀書。', { a: payer.name, n: Math.round(fee), k: k.name, t: townName(w) }, payer.name); mem(w, payer, '我把錢省下來送{k}去外地讀書，希望他將來有出息。', { k: k.name }, 7); mem(w, k, '我要去外地讀書了。', {}, 7);
-        }
+        // v9.19.0 宴客、畫像、旅遊、送孩子讀書不再在這裡擲骰:由決策核心(sim-decide.js)在村民「手上有閒錢」時自己挑,結算用下面的 feast／art／trip／enrol
         // 讀書期間每 30 天繳一次學費;家裡繳不出來就只好輟學回家
         X.paid = X.paid || {}; for (const k of npcs(w)) { const id = k.agentId; if (X.school[id] == null || X.edu[id] || X.drop?.[id] || (k.age ?? 0) >= 16 || d - (X.paid[id] ?? X.school[id]) < 30) continue;
             const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, k) : []).filter(o => o !== k && (o.age ?? 30) >= 18 && !o.isDead); const payer = fam.sort((x, y) => cash(w, y) - cash(w, x))[0]; const fee = r2(30 * px);
@@ -153,7 +171,7 @@ const SPEND = (() => {
     }
     function view(w) { const X = S(w); return { ...X.st, edu: Object.keys(X.edu).filter(k => !k.startsWith('art_')).length, studying: Object.keys(X.school).filter(id => !X.edu[id] && !X.drop?.[id]).length, drop: Object.keys(X.drop || {}).length }; }
     function brief(w, a) { const X = w.spend; if (!X) return ''; if (X.edu?.[a.agentId]) return t('你小時候家裡送你去外地讀過書，工資比別人高一些。'); if (X.school?.[a.agentId] != null) return t('家裡花錢送你去外地讀書。'); return ''; }
-    return { S, daily, view, brief };
+    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, thrift };
 })();
 
 const WORKS = (() => {

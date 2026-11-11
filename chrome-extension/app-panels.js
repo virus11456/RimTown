@@ -1394,7 +1394,7 @@ Object.assign(RimTownApp.prototype, {
             const capNote = this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
             html += `<div class="set-card set-toggle-card">
             <label class="set-toggle set-fa" for="settings-fullagent"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}<span class="set-switch"><input type="checkbox" role="switch" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><i aria-hidden="true"></i></span></label>
-            <div class="set-help set-lines">${this._setLines(t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由；AI 失敗時才用規則版墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1 次。') + capNote)}</div>
+            <div class="set-help set-lines">${this._setLines(t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由。村民手上有閒錢、手頭很緊、有人來借錢時，也由 AI 依他自己的錢、立場和人際決定怎麼做，還可以自己想出選項以外的事（每天最多問 10 人，其餘的人照個性推估）。AI 失敗或太慢時用個性推估墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 1～3 次。') + capNote)}</div>
             </div>`;
         }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)

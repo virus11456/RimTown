@@ -51,6 +51,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.wallet.lastDay = null; const lender = npcs.filter(a => a !== poor).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0]; w.wallet.bal[lender.agentId] = 200; lender.personality.traits = (lender.personality.traits || []).filter(x => x !== 'greedy');
       poor.relationships.getOrCreate(lender.agentId, lender.name).affinity = 60; lender.relationships.getOrCreate(poor.agentId, poor.name).affinity = 60; w.wallet.bal[poor.agentId] = 0;
       const _r = Math.random; Math.random = () => 0.01; try { WALLET.daily(w); } finally { Math.random = _r; }
+      // v9.19.0 借不借由兩個人自己決定:手頭很緊的人開口(選項裡有這位朋友)、朋友答應
+      { const K = DECIDE.KINDS.pinch; const op = K.options(w, poor, K.when(w, poor)).find(o => o.id === 'borrow:' + lender.agentId); if (op) { op.run(w, poor); const R = Math.random; Math.random = () => 0.5; try { DECIDE.drain(w, DECIDE.S(w), w._absDay()); } finally { Math.random = R; } } }
       const debt = (w.dark?.debts || []).find(d => d.cash && d.r === poor.agentId);
       // 提案出資
       const cands = P._candidates(w, P._abs(w)); const rich = npcs.find(a => a !== poor); w.wallet.bal[rich.agentId] = 5000;

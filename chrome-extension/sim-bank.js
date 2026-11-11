@@ -56,15 +56,14 @@ const BANK = (() => {
         if (B.status === 'run') { bankRun(w, B, d); return; }
         if (B.reserve < totalDep(B) * 0.35 && totalDep(B) >= 40 && !B.bonds.length && d - (B.lastIssue ?? -99) >= 20 && Math.random() < 0.3) issueBonds(w, B, d, 80, false);
         const all = npcs(w);
-        // 存款:寬裕又謹慎的人
-        for (const a of all) { const c = cash(w, a); const prudent = has(a, 'stoic') || has(a, 'hardworking') || has(a, 'ascetic') || has(a, 'perfectionist'); if (c > 80 && Math.random() < (prudent ? 0.25 : 0.08)) { const n = deposit(w, B, a, c * 0.5); if (n && Math.random() < 0.3) mem(w, a, '我把 {n} 銀幣存進銀行，放著也會生利息。', { n }, 4); } }
+        // v9.19.0 存款不再在這裡擲骰:村民「手上有閒錢」時由決策核心(sim-decide.js)自己決定要不要存、存多少
         // 需要錢的人提款
         for (const a of all) if ((B.dep[a.agentId] || 0) > 0 && cash(w, a) < 5) withdraw(w, B, a, 15);
         // 借錢:手頭緊有工作的人周轉;想翻修房子的人
         for (const a of all) {
             if (B.loans[a.agentId]) continue; const c = cash(w, a);
-            if (c < 3 && a.job && Math.random() < 0.15) BANK.lend(w, B, a, 25, '周轉');
-            else if (typeof HOUSING !== 'undefined' && w.housing && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
+            /* v9.19.0 周轉貸款改由決策核心在村民「手頭很緊」時自己決定 */
+            if (typeof HOUSING !== 'undefined' && w.housing && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
         }
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {

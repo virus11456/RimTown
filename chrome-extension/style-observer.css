@@ -569,6 +569,18 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .nqc-more summary { cursor: pointer; color: var(--accent); list-style: none; padding: 2px 0; }
 .rimtown-container .nqc-more summary::-webkit-details-marker { display: none; }
 .rimtown-container .nqc-more[open] summary { margin-bottom: 2px; }
+/* v9.19.0 村民卡:最近的決定(遇到什麼事、選了什麼、理由、結果) */
+.rimtown-container .nqc-decide summary { min-height: 28px; display: flex; align-items: center; }
+.rimtown-container .nqc-dec { padding: 6px 8px; margin: 4px 0; border-radius: 8px; background: var(--ic-tile, rgba(255,255,255,.05)); border: 1px solid var(--border); }
+.rimtown-container .nqc-dec-h { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: 0.7rem; color: var(--text-muted); }
+.rimtown-container .nqc-dec-kind { padding: 0 6px; border-radius: 999px; border: 1px solid var(--border); color: var(--text-secondary); }
+.rimtown-container .nqc-dec-src { margin-left: auto; white-space: nowrap; }
+.rimtown-container .nqc-dec-src.ai { color: var(--accent); }
+.rimtown-container .nqc-dec-what { margin-top: 2px; font-size: 0.82rem; color: var(--text-primary); overflow-wrap: anywhere; }
+.rimtown-container .nqc-dec-what::first-letter { text-transform: uppercase; }
+.rimtown-container .nqc-dec-why { font-size: 0.76rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.rimtown-container .nqc-dec-res { font-size: 0.76rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.rimtown-container .nqc-dec-plan { padding: 4px 8px; margin: 4px 0; border-left: 3px solid var(--accent); font-size: 0.78rem; color: var(--text-primary); overflow-wrap: anywhere; }
 .rimtown-container .pp-issues { margin: 6px 0 10px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-card); }
 .rimtown-container .pp-issue { display: flex; gap: 6px; align-items: flex-start; font-size: 0.8rem; line-height: 1.5; padding: 3px 0; color: var(--text-primary); }
 .rimtown-container .pp-issue small { display: block; color: var(--text-muted); font-size: 0.72rem; }

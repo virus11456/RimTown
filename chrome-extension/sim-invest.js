@@ -76,40 +76,41 @@ const INVEST = (() => {
     }
 
     // ---------- 1. 看利息入股 ----------
-    function buyIns(w, all, d) {
-        const X = S(w); const M = SH().S(w); const by = bankYield(w); let deals = 0;
-        const firms = Object.keys(MK().SECTORS).filter(k => M.owners[k] && w.agents[M.owners[k]] && perPct(w, k) > 0).map(k => [k, perPct(w, k)]).sort((a, b) => b[1] - a[1]);
-        if (!firms.length) return;
-        const pool = all.filter(a => (a.age ?? 30) >= 18 && cash(w, a) + dep(w, a) >= 60 && !(w.civic?.jail?.[a.agentId] > d)).sort(() => Math.random() - 0.5);
-        for (const a of pool) {
-            if (deals >= 2) break; if (Math.random() > 0.35) continue;
-            const savings = cash(w, a) + dep(w, a);
-            for (const [k, pp] of firms) {
-                const s = SH().stakes(w, k); const bossId = M.owners[k]; const boss = w.agents[bossId];
-                if (!boss || s[a.agentId] || bossId === a.agentId || Object.keys(s).length >= SH().maxH(w)) continue;
-                const budget = savings * (has(a, 'thrifty') ? 0.3 : 0.5);
-                let p = Math.min(20, (s[bossId] || 0) - 40); if (p < 5) continue;
-                while (p >= 5 && askPrice(w, k, p, boss) > budget) p -= 5; if (p < 5) continue;
-                const price = askPrice(w, k, p, boss); const y = pp * p / price; // 照開價算,一週分紅是本錢的幾 %
-                const seen = trusts(w, k, a) ? y : y * 0.6;
-                if (seen < by + hurdle(a)) continue;
-                // 當家賣不賣:缺錢、貪心的爽快;固執、守舊的不太肯;交情好的比較好說話
-                const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
-                if (Math.random() > yes) {
-                    X.st.refuse++; if (Math.random() < 0.4) { log(w, '🙅 {a}想用存款入股{s}，{o}不肯賣。', { a: a.name, s: nm(k), o: boss.name }, boss.name); bump(a, boss, -2); }
-                    break;
-                }
-                if (!fund(w, a, price) || !SH().transfer(w, k, bossId, a.agentId, p, price)) break;
-                X.st.buy++; SH().S(w).sh.st.buy++; deals++;
-                const by1 = pct1(by), y1 = pct1(seen);
-                log(w, '📊 {a}算了一下：{s}一週分紅大約 {y}%，銀行存款一週才 {r}%，就拿 {n} 銀幣向{o}買了 {p}% 股份。', { a: a.name, s: nm(k), y: y1, r: by1, n: price, o: boss.name, p }, a.name);
-                mem(w, a, '我算過，{s}一週分紅大約 {y}%，比銀行利息 {r}% 好，就買了 {p}% 股份。', { s: nm(k), y: y1, r: by1, p }, 7);
-                mem(w, boss, '{a}用存款買了{s} {p}% 的股份。', { a: a.name, s: nm(k), p }, 5);
-                if (deals === 1 && Math.random() < 0.5) news(w, '📊 {a}把存款拿去入股{s}', { a: a.name, s: nm(k) }, 5, [a.name]);
-                try { SH().note?.(w, k, '看利息入股', { a: a.name }); } catch (e) {}
-                break;
-            }
+    // v9.19.0 誰要入股、入哪一家,改由決策核心(sim-decide.js)在村民「手上有閒錢」時自己挑;這裡只報價(quotes)和成交(buy)。
+    // 報價:這個人現在買得起、也還有股份可賣的產業,各開一個價;y 是照開價算一週分紅大約是本錢的幾 %(當家被抓過做假帳的打六折看)
+    function quotes(w, a) {
+        if (!a || (a.age ?? 30) < 18 || typeof SHARES === 'undefined' || !w.market || (w.civic?.jail?.[a.agentId] > day(w))) return [];
+        const M = SH().S(w); const savings = cash(w, a) + dep(w, a); if (savings < 60) return []; const by = bankYield(w); const out = [];
+        const firms = Object.keys(MK().SECTORS).filter(k => M.owners[k] && w.agents[M.owners[k]] && perPct(w, k) > 0).map(k => [k, perPct(w, k)]).sort((x, y) => y[1] - x[1]);
+        for (const [k, pp] of firms) {
+            const s = SH().stakes(w, k); const bossId = M.owners[k]; const boss = w.agents[bossId];
+            if (!boss || s[a.agentId] || bossId === a.agentId || Object.keys(s).length >= SH().maxH(w)) continue;
+            const budget = savings * (has(a, 'thrifty') ? 0.3 : 0.5);
+            let p = Math.min(20, (s[bossId] || 0) - 40); if (p < 5) continue;
+            while (p >= 5 && askPrice(w, k, p, boss) > budget) p -= 5; if (p < 5) continue;
+            const price = askPrice(w, k, p, boss); const y = pp * p / price;
+            out.push({ k, p, price, y: trusts(w, k, a) ? y : y * 0.6, by, boss });
         }
+        return out;
+    }
+    // 成交:當家賣不賣看他自己(缺錢、貪心的爽快;固執、守舊的不太肯;交情好的比較好說話)。回傳 { ok, refused, k, p, price }
+    function buy(w, a, k) {
+        const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
+        const { p, price, boss, by } = q; const bossId = boss.agentId;
+        const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
+        if (Math.random() > yes) {
+            X.st.refuse++; log(w, '🙅 {a}想用存款入股{s}，{o}不肯賣。', { a: a.name, s: nm(k), o: boss.name }, boss.name); bump(a, boss, -2);
+            return { ok: false, refused: true, k, p, price, boss };
+        }
+        if (!fund(w, a, price) || !SH().transfer(w, k, bossId, a.agentId, p, price)) return { ok: false };
+        X.st.buy++; SH().S(w).sh.st.buy++;
+        const by1 = pct1(by), y1 = pct1(q.y);
+        log(w, '📊 {a}算了一下：{s}一週分紅大約 {y}%，銀行存款一週才 {r}%，就拿 {n} 銀幣向{o}買了 {p}% 股份。', { a: a.name, s: nm(k), y: y1, r: by1, n: price, o: boss.name, p }, a.name);
+        mem(w, a, '我算過，{s}一週分紅大約 {y}%，比銀行利息 {r}% 好，就買了 {p}% 股份。', { s: nm(k), y: y1, r: by1, p }, 7);
+        mem(w, boss, '{a}用存款買了{s} {p}% 的股份。', { a: a.name, s: nm(k), p }, 5);
+        news(w, '📊 {a}把存款拿去入股{s}', { a: a.name, s: nm(k) }, 5, [a.name]);
+        try { SH().note?.(w, k, '看利息入股', { a: a.name }); } catch (e) {}
+        return { ok: true, k, p, price, boss };
     }
 
     // ---------- 2. 退股存銀行 ----------
@@ -224,7 +225,7 @@ const INVEST = (() => {
         if (!w.observerMode || !w.market || typeof WALLET === 'undefined' || !w.wallet || typeof SHARES === 'undefined') return;
         const X = S(w); const d = day(w); if (X.day === d) return; X.day = d;
         trackBank(w); const all = npcs(w);
-        try { cashOuts(w, all, d); buyIns(w, all, d); } catch (e) { console.warn('[Invest] weekly', e); }
+        try { cashOuts(w, all, d); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
     }
 
     // ---------- 給 AI 與觀察者 ----------
@@ -246,7 +247,7 @@ const INVEST = (() => {
     function partners(w, k) { const R = MK().rivalOf(w, k); const s = R && sh(w, R); if (!s) return ''; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(id => `${t(w.agents[id]?.name || '')} ${s[id]}%`).join(t('・')); }
     function view(w) { const X = S(w); return { st: X.st, bank: pct1(bankYield(w)), best: (() => { try { const M = SH().S(w); return Object.keys(MK().SECTORS).filter(k => M.owners[k] && perPct(w, k) > 0).map(k => ({ s: nm(k), y: Math.round(perPct(w, k) * 10) / 10 })).sort((a, b) => b.y - a.y).slice(0, 3); } catch (e) { return []; } })() }; }
 
-    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, buyIns, cashOuts, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
+    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, cashOuts, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
 })();
 if (typeof window !== 'undefined') window.INVEST = INVEST;
 
