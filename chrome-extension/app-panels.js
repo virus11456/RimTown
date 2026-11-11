@@ -1394,7 +1394,7 @@ Object.assign(RimTownApp.prototype, {
             const capNote = this.llmClient?._quota?.limit ? ' ' + t('內建 AI 設了每日上限時，剩不到三成會先改用規則版，把額度留給你的聊天與事件卡；隔天恢復。') : '';
             html += `<div class="set-card set-toggle-card">
             <label class="set-toggle set-fa" for="settings-fullagent"><span class="set-toggle-title">🧠 ${t('完整智能體模式')}</span>${auto ? `<span class="set-chip">${t('預設開')}</span>` : ''}<span class="set-switch"><input type="checkbox" role="switch" id="settings-fullagent" ${on ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_full_agent',this.checked?'1':'0')}catch(e){};window.rimtownApp?._applyFullAgent?.()"><i aria-hidden="true"></i></span></label>
-            <div class="set-help set-lines">${this._setLines(t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由。村民遇到錢的事（手上有閒錢、手頭很緊、有人來借錢）、人際的事（借的錢到期、要不要道歉或原諒、心裡有口氣、看人不順眼、冷戰）、政治的事（組工會、加入或退出、罷工、老闆要不要加薪、政治獻金、要不要出來選、重新想自己的立場）和自己的事（賣不賣股份、退不退股、翻修房子、奉獻、要不要對仇人動手、開店、被挖角走不走）時，也由 AI 依他自己的錢、立場和人際決定怎麼做，還可以自己想出選項以外的事（每天最多問 10 人，其餘的人照個性推估）。AI 失敗或太慢時用個性推估墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 2～8 次。') + capNote)}</div>
+            <div class="set-help set-lines">${this._setLines(t('開啟後，村民投票、要不要提案與提什麼、鎮長批准與否，都由 AI 依各自的記憶、性格、交情與鎮況推理並說明理由。村民遇到錢的事（手上有閒錢、手頭很緊、有人來借錢）、人際的事（借的錢到期、要不要道歉或原諒、心裡有口氣、看人不順眼、冷戰）、政治的事（組工會、加入或退出、罷工、老闆要不要加薪、政治獻金、要不要出來選、重新想自己的立場）、自己的事（賣不賣股份、退不退股、翻修房子、奉獻、要不要對仇人動手、開店、被挖角走不走）和生計的事（要不要搬走、跳槽、拜師、在對面開店、拆夥）時，也由 AI 依他自己的錢、立場和人際決定怎麼做，還可以自己想出選項以外的事（每天最多問 10 人，其餘的人照個性推估）。AI 失敗或太慢時用個性推估墊底。每件提案約多 2～4 次 AI 呼叫，每天另多 2～8 次。') + capNote)}</div>
             </div>`;
         }
         // v5.73.0 AI 對話語言:跟隨介面 / 繁體中文 / English(村民台詞、行程、反思、日報)

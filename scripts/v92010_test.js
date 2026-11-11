@@ -88,7 +88,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp; const f = (x) => app._icShort(x);
       const short = { a: f('25,512'), b: f('/20000'), c: f('2471'), d: f('221.9'), e: f('1,234,567'), g: f('-15,300'), h: f('100,400'), i: f('9999') };
       const host = document.createElement('div'); host.className = 'rimtown-container observer'; host.style.cssText = 'position:fixed;left:0;top:0;width:330px;z-index:99999';
-      host.innerHTML = app._ic({ id: 't_kpi', icon: '💎', title: 'T', defOpen: true, kpis: [{ v: app._icNum(25512), u: '/20000', l: 'food' }, { v: app._icNum(2471), l: 'silver' }, { v: '221.9', l: 'per' }] }) + app._ic({ id: 't_kpi2', icon: '💎', title: 'T', defOpen: true, kpis: [{ v: app._icNum(25512), l: 'wide' }] });
+      /* v9.23.0 欄寬改成照內容分：手機寬度已經放得下 25,512/20000，這裡包一層 300px 的窄框驗「真的放不下才縮寫」 */ host.innerHTML = '<div style="width:300px">' + app._ic({ id: 't_kpi', icon: '💎', title: 'T', defOpen: true, kpis: [{ v: app._icNum(25512), u: '/20000', l: 'food' }, { v: app._icNum(2471), l: 'silver' }, { v: '221.9', l: 'per' }] }) + app._ic({ id: 't_kpi2', icon: '💎', title: 'T', defOpen: true, kpis: [{ v: app._icNum(25512), l: 'wide' }] }) + '</div>';
       document.body.appendChild(host); for (const c of host.querySelectorAll('.ic-card')) c.classList.add('open');
       const bs = [...host.querySelectorAll('.ic-kpi b')]; const before = bs.map(b => b.textContent); const cut0 = bs.map(b => b.scrollWidth > b.clientWidth + 1);
       app._icFit(host); const after = bs.map(b => b.textContent); const cut1 = bs.map(b => b.scrollWidth > b.clientWidth + 1); const title = bs.map(b => b.getAttribute('title'));

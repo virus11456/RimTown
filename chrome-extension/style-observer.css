@@ -1078,8 +1078,10 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .ic-chip + .ic-sum { margin-left: 8px; } .rimtown-container .ic-tt + .ic-sum { margin-left: auto; }
 .rimtown-container .ic-arr { color: var(--text-muted); font-size: 0.72rem; margin-left: 6px; }
 .rimtown-container .ic-card:not(.open) .ic-chip { margin-left: auto; }
-.rimtown-container .ic-kpis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 0 12px 10px; }
-.rimtown-container .ic-kpis.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .rimtown-container .ic-kpis.n1 { grid-template-columns: 1fr; }
+/* v9.23.0 欄寬照內容分：數字長的那一格拿多一點、短的讓出來(以前三格等寬，電腦版側欄比手機窄，「26,212/400」就被截掉)。全部放得下時多的空間還是平均分 */
+.rimtown-container .ic-kpis { display: grid; grid-template-columns: repeat(3, auto); gap: 8px; padding: 0 12px 10px; }
+.rimtown-container .ic-kpis.n2 { grid-template-columns: repeat(2, auto); } .rimtown-container .ic-kpis.n1 { grid-template-columns: 1fr; }
+.rimtown-container .ic-kpi b.ic-fit { font-size: 1rem; } .rimtown-container .ic-kpi b.ic-fit small { font-size: 0.62rem; margin-left: 1px; } /* 縮寫以後還放不下：字再小一級 */
 .rimtown-container .ic-kpi, .rimtown-container .ic-g { background: var(--ic-tile); border-radius: 10px; padding: 8px 10px; min-width: 0; }
 .rimtown-container .ic-kpi b { display: block; font-size: 1.25rem; font-weight: 800; line-height: 1.2; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rimtown-container .ic-kpi b small, .rimtown-container .ic-g b small { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
@@ -1185,7 +1187,7 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pg-tab.on { background: var(--accent); color: #fff; }
 .rimtown-container .detail-panel .pg-hide { display: none !important; }
 .rimtown-container .pg-x { margin-left: 6px; font-size: 0.7rem; font-weight: 700; color: var(--text-muted); background: var(--ic-tile); border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
-.rimtown-container .ic-kpis.n4 { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } .rimtown-container .ic-kpis.n4 .ic-kpi { padding: 7px 8px; } .rimtown-container .ic-kpis.n4 .ic-kpi b { font-size: 1.1rem; }
+.rimtown-container .ic-kpis.n4 { grid-template-columns: repeat(4, auto); gap: 6px; } .rimtown-container .ic-kpis.n4 .ic-kpi { padding: 7px 8px; } .rimtown-container .ic-kpis.n4 .ic-kpi b { font-size: 1.1rem; }
 /* v9.18.0 通用區塊收合＋小格子 */
 .rimtown-container .pg-blk > .pg-bh { display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 40px; margin-bottom: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
 .rimtown-container .pg-blk.open > .pg-bh { margin-bottom: 8px; }

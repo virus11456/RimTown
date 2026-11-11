@@ -97,7 +97,7 @@ const TOWN_ISSUES = (() => {
     const ACTIVE = ['open', 'shelved', 'approved'];
 
     // ---------- 每天 ----------
-    function daily(w, P, day) {
+    function daily(w, P, day, ch) {
         const I = P.issues || (P.issues = {});
         const now = detect(w), seen = new Set();
         const all = npcs(w); if (!all.length) return;
@@ -109,7 +109,7 @@ const TOWN_ISSUES = (() => {
             // 處理中的提案被否決/失敗,或做完了問題還在 → 又變成沒人管
             if (it.by) { const q = (P.items || []).find(x => x.id === it.by); if (!q || !ACTIVE.includes(q.status)) it.by = null; }
             if (!it.by) it.idle = (it.idle || 0) + 1;
-            try { effect(w, P, it, day, all); } catch (e) { console.warn('[Issues] effect', e); }
+            try { effect(w, P, it, day, all, ch); } catch (e) { console.warn('[Issues] effect', e); }
         }
         // 過去了
         for (const k of Object.keys(I)) {
@@ -123,11 +123,31 @@ const TOWN_ISSUES = (() => {
         }
     }
     // 真的發生在村民身上的事
-    function effect(w, P, it, day, all) {
+    // v9.23.0 鎮上的事拖著沒人管時，要不要搬走交給本人決定(sim-decide-work.js「想不想離開這個鎮」)；這裡只剩「誰會動這個念頭」和結算。擲骰的版本留給直接呼叫 daily() 的情況
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // 這個人現在走得了嗎(小孩、鎮長不會自己走；鎮上只剩六個人不走；三天內已經有人為了這種事走了就先不走)
+    const canLeave = (w, P, a, day, all) => !!a && (a.age ?? 30) >= 16 /* v9.9.4 小孩不會自己離鎮 */ && !String(a.agentId).startsWith('visit_') && all.length > 6 && (day - (P.issueLeaveDay ?? -99)) >= 3 && a.job?.key !== 'mayor';
+    const LEAVE_WHY = { food: '鎮上沒東西吃', misery: '覺得沒人在乎自己', gloom: '鎮上氣氛太差' };
+    // 這個人是不是正被鎮上的事逼得想走：缺糧嚴重、氣氛太差拖了五天以上(心情最差的三個人)；自己過得很慘、拖了七天沒人關心(本人)
+    function leaveWhy(w, a) {
+        const P = w.proposals; const I = P?.issues; if (!I || !a) return null; const day = P._abs ? P._abs(w) : 0; const all = npcs(w); if (!canLeave(w, P, a, day, all)) return null;
+        const low = all.slice().sort((p, q) => (p.mood || 0) - (q.mood || 0)).slice(0, 3).includes(a);
+        for (const it of Object.values(I)) { const idle = it.by ? 0 : (it.idle || 0); const k = String(it.key).split(':')[0];
+            if (k === 'food' && it.sev >= 3 && idle >= 5 && low) return { key: 'food', idle, x: text(it) };
+            if (k === 'misery' && it.who?.[0] === a.agentId && idle >= 7) return { key: 'misery', idle, x: text(it) };
+            if (k === 'gloom' && idle >= 5 && low) return { key: 'gloom', idle, x: text(it) }; }
+        return null;
+    }
+    // 本人決定搬走(由決策核心呼叫)
+    function leaveBy(w, a, key) {
+        const P = w.proposals; if (!P || !LEAVE_WHY[key]) return false; const day = P._abs ? P._abs(w) : 0; if (!canLeave(w, P, a, day, npcs(w))) return false;
+        P.issueLeaveDay = day; return !!w.leaveTown?.(a.agentId, t(LEAVE_WHY[key]));
+    }
+    function effect(w, P, it, day, all, ch) {
         const idle = it.by ? 0 : (it.idle || 0), age = day - (it.since || day) + 1, x = text(it);
         const pick = (n) => rnd(all, n);
         const leave = (a, reason) => {
-            if (!a || (a.age ?? 30) < 16 /* v9.9.4 小孩不會自己離鎮 */ || String(a.agentId).startsWith('visit_') || all.length <= 6 || (day - (P.issueLeaveDay ?? -99)) < 3 || a.job?.key === 'mayor') return false;
+            if (ch || !canLeave(w, P, a, day, all)) return false;
             P.issueLeaveDay = day; return w.leaveTown?.(a.agentId, reason);
         };
         switch (it.key.split(':')[0]) {
@@ -213,7 +233,7 @@ const TOWN_ISSUES = (() => {
             .map(x => t(x.label) + (x.targetName ? `${t('（')}${name({ name: x.targetName })}${t('）')}` : '')).filter((x, i, arr) => arr.indexOf(x) === i);
         return t('我現在：') + s.join(t('、')) + (feel.length ? `${t('；')}${t('心裡掛著：')}${feel.join(t('、'))}` : '');
     }
-    return { detect, daily, keysFor, claim, list, brief, promptBlock, selfState, text, status };
+    return { detect, daily, keysFor, claim, list, brief, promptBlock, selfState, text, status, leaveWhy, leaveBy, byChoice };
 })();
 
 // ---- 提案系統掛勾 ----
@@ -221,7 +241,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;
     PS.daily = function (w) {
-        try { if (w.observerMode) { const day = this._abs(w); if (this._issueDay !== day) { this._issueDay = day; TOWN_ISSUES.daily(w, this, day); } } } catch (e) { console.warn('[Issues] daily', e); }
+        try { if (w.observerMode) { const day = this._abs(w); if (this._issueDay !== day) { this._issueDay = day; TOWN_ISSUES.daily(w, this, day, TOWN_ISSUES.byChoice(w)); } } } catch (e) { console.warn('[Issues] daily', e); }
         return _daily.call(this, w);
     };
     const _createWith = PS._createWith;
