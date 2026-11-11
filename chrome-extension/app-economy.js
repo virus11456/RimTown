@@ -412,7 +412,7 @@ Object.assign(RimTownApp.prototype, {
             }
             // v7.8.0 路線帶來的問題(最近)
             if (TV?.inc?.length) {
-                const LV = { minor: '🟡', mid: '🟠', big: '🔴' }; const EVN = { injury: '機器夾傷', blackout: '停電', oldhand: '老師傅跟不上', waste: '工坊廢水', radio: '收音機吵架', alarm: '核電廠警報', layoff: '自動化裁員', smash: '砸機器', leak: '輻射外洩', watch: 'AI 監控爭議', meltdown: '核災' };
+                const LV = { minor: '🟡', mid: '🟠', big: '🔴' }; const EVN = { injury: '機器夾傷', blackout: '停電', oldhand: '老師傅跟不上', waste: '工坊廢水', radio: '收音機吵架', alarm: '核電廠警報', layoff: '自動化裁員', smash: '砸機器', leak: '輻射外洩', watch: 'AI 監控爭議', meltdown: '核災', /* v9.20.1 基因生物、蒸汽煉金路線的事件也要有名稱(以前直接顯示代碼 breed_fail、scald…) */ pharma_waste: '藥廠廢水', lab_escape: '實驗動物跑出來', gene_discrim: '遺傳檢查惹出的歧視', side_effect: '新藥副作用', breed_fail: '育種失敗', quack: '延壽祕藥騙局', omen: '新生兒變少', caste: '基因階級衝突', black_clinic: '地下診所出事', price_storm: '藥價飆漲', superbug: '抗藥性病菌', lableak: '實驗室外洩', scald: '蒸汽燙傷', soot: '煤灰弄髒衣服', cough: '煤煙咳嗽', tube_mix: '氣動管道送錯信', child_labor: '童工', alch_smell: '煉金工坊的臭煙', airship_ride: '飛艇試乘', boiler_burst: '鍋爐爆炸', smog_week: '煤煙罩鎮一星期', gold_fever: '點鉛成銀騙局', mech_rampage: '機甲失控', homun_ask: '人造人想要名字', great_smog: '大煙霧' };
                 html += `<div class="tech-era"><div class="tech-era-head">⚠️ ${t('新技術帶來的問題')}</div>` + TV.inc.map(x => `<div class="tech-desc">${LV[x.lv] || ''} ${x.icon} ${t(EVN[x.id] || x.id)} · ${x.ago ? t('{n} 天前').replace('{n}', x.ago) : t('今天')}</div>`).join('') + '</div>';
             }
             // v6.46.0 革新派／保守派、發明名人堂

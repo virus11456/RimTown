@@ -315,6 +315,50 @@ function uniqueVillagerName(world, name, opts = {}) {
     return name || (S0[0] + givens[0]);
 }
 if (typeof window !== 'undefined') window.uniqueVillagerName = uniqueVillagerName;
+// v9.20.1 舊存檔修正:v6.81～v7.5 同名的人會被加上「二／三…」或數字(蔡文五、蔡文2);v7.6.0 起不再這樣取名,但舊存檔裡的人還叫那個名字。
+// 讀檔時把這些人換成同姓、沒人用過的真名;記憶、日誌、關係、家譜、墓園、編號裡的舊名字一起換(直接改 data,回傳 [[舊名, 新名], …])
+function fixNumberedNames(data) {
+    try {
+        if (!data || typeof data !== 'object' || !data.agents || typeof data.agents !== 'object') return [];
+        const S0 = typeof RANDOM_SURNAMES !== 'undefined' ? RANDOM_SURNAMES : [], GM = typeof RANDOM_GIVEN_MALE !== 'undefined' ? RANDOM_GIVEN_MALE : [], GF = typeof RANDOM_GIVEN_FEMALE !== 'undefined' ? RANDOM_GIVEN_FEMALE : [];
+        const pool = new Set((typeof IMMIGRANT_POOL !== 'undefined' ? IMMIGRANT_POOL : []).map(x => x.name));
+        const reserved = (n) => typeof RESERVED_NAMES !== 'undefined' && RESERVED_NAMES.has(n);
+        const real = (n) => reserved(n) || pool.has(n) || (S0.includes(n[0]) && (GM.includes(n.slice(1)) || GF.includes(n.slice(1))));
+        const people = [];
+        for (const a of Object.values(data.agents)) if (a && typeof a.name === 'string') people.push([a.name, a.gender]);
+        for (const tr of (data.events?._travellingAgents || [])) if (tr?.agentData && typeof tr.agentData.name === 'string') people.push([tr.agentData.name, tr.agentData.gender]);
+        for (const g of (data.lifecycle?.graveyard || [])) if (g && typeof g.name === 'string') people.push([g.name, g.gender]);
+        const used = new Set(); for (const [n] of people) { used.add(n); used.add(n.split('・').pop()); }
+        const enOk = (n) => { try { return typeof I18N === 'undefined' || !I18N.localizeName || I18N.localizeName(n) !== n; } catch (e) { return true; } };
+        const map = new Map();
+        for (const [full, gender] of people) {
+            const old = full.split('・').pop(); if (map.has(old)) continue;
+            const m = old.match(/^(.{2,}?)([二三四五六]|\d{1,2})$/); if (!m || real(old)) continue;
+            const root = m[1]; if (!(real(root) || used.has(root))) continue; // 去掉尾巴之後是個真的名字,才算被加了編號
+            const givens = (gender === 'female' ? GF : gender === 'male' ? GM : GM.concat(GF)).slice().sort(() => Math.random() - 0.5);
+            const sn = S0.includes(root[0]) ? [root[0]] : []; let nn = '';
+            for (const s0 of sn.concat(S0.slice().sort(() => Math.random() - 0.5))) { for (const g of givens) { const c = s0 + g; if (!used.has(c) && !reserved(c) && !pool.has(c) && enOk(c)) { nn = c; break; } } if (nn) break; }
+            if (!nn) continue; used.add(nn); map.set(old, nn);
+        }
+        if (!map.size) return [];
+        const esc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        // 長的先比對(蔡文21 在 蔡文2 前面);數字結尾的後面不能再接數字或量詞(「蔡文2 天前」是蔡文＋兩天前,不是蔡文2)
+        const olds = [...map.keys()].sort((x, y) => y.length - x.length);
+        const re = new RegExp(olds.map(o => esc(o) + (/\d$/.test(o) ? '(?!\\d)(?!\\s?[天歲年次個人銀點倍席票%])' : '(?![天次年歲個])')).join('|'), 'g');
+        const rep = (x) => { re.lastIndex = 0; if (!re.test(x)) return x; re.lastIndex = 0; return x.replace(re, (h) => map.get(h) || h); };
+        const walk = (node, depth) => {
+            if (!node || typeof node !== 'object' || depth > 14) return;
+            if (Array.isArray(node)) { for (let i = 0; i < node.length; i++) { const v = node[i]; if (typeof v === 'string') node[i] = rep(v); else walk(v, depth + 1); } return; }
+            for (const k of Object.keys(node)) {
+                const v = node[k]; if (typeof v === 'string') node[k] = rep(v); else walk(v, depth + 1);
+                const k2 = rep(k); if (k2 !== k && !(k2 in node)) { node[k2] = node[k]; delete node[k]; }
+            }
+        };
+        walk(data, 0);
+        return [...map.entries()];
+    } catch (e) { console.warn('[RimTown] fixNumberedNames', e); return []; }
+}
+if (typeof window !== 'undefined') window.fixNumberedNames = fixNumberedNames;
 
 const IMMIGRANT_POOL = [
     {name:'周明',age:27,gender:'male',traits:['hardworking','optimist'],job:'farmer',background:'來自鄰村的開朗年輕農夫。'},
