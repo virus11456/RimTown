@@ -82,16 +82,30 @@ const BIZ = (() => {
         if (why === 'broke' && o) { log(w, '🏚️ 「{n}」撐不下去，倒閉了。', { n: s.name[0] }, o.name); mem(w, o, '我的店「{n}」倒了，好不甘心。', { n: s.name[0] }, 8); o.moodModifier = (o.moodModifier || 0) - 8; }
         const B = S(w); B.closed.push({ name: s.name, type: s.type, profit: Math.round(s.profit), day: day(w) }); if (B.closed.length > 6) B.closed.shift(); B.shops = B.shops.filter(x => !x.closed);
     }
-    function daily(w) {
+    function daily(w, ch) {
         if (!W() || !w.wallet) return; const B = S(w), d = day(w); if (B.lastDay === d) return; B.lastDay = d;
         trade(w, B, d);
-        // 有人想創業
-        if (B.shops.length < Math.max(2, Math.floor(npcs(w).length / 6))) {
-            const amb = w.mind?.amb || {};
-            const c = npcs(w).filter(a => (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= ((w.bank?.open && typeof BANK !== 'undefined' && BANK.lendable(w.bank) >= 80) ? 15 : 30)); // v8.8.0 銀行借得到錢,手頭少一點也敢創業
+        // 有人想創業(ch = 交給本人決定，見 sim-decide-life.js「想不想自己開店」)
+        if (!ch && room(w, B)) {
+            const c = npcs(w).filter(a => canOpen(w, a));
             const a = c.sort(() => Math.random() - 0.5)[0]; if (a && Math.random() < 0.15) open(w, B, a, d);
         }
     }
+    // 鎮上還容得下新店嗎(每六個人一家，最少兩家)
+    const room = (w, B) => B.shops.length < Math.max(2, Math.floor(npcs(w).length / 6));
+    // 這個人是會想創業、也湊得出本錢的人嗎(銀行借得到錢，手頭少一點也敢)
+    function canOpen(w, a) {
+        const amb = w.mind?.amb || {};
+        return (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= ((w.bank?.open && typeof BANK !== 'undefined' && BANK.lendable(w.bank) >= 80) ? 15 : 30); // v8.8.0 銀行借得到錢,手頭少一點也敢創業
+    }
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // 給決策核心：他現在開得成店嗎 → { type(店的種類), cost, partner(本錢不夠時找得到的合夥人), loan(要跟銀行借) }
+    function startInfo(w, a) {
+        if (!W() || !w.wallet || !a) return null; const B = S(w); if (!room(w, B) || !canOpen(w, a)) return null;
+        const k = typeFor(a); const short = cash(w, a) < 60; const partner = short ? npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0] || null : null;
+        return { type: TYPES[k].zh, cost: 60, partner, loan: short && !partner };
+    }
+    function start(w, a) { if (!startInfo(w, a)) return null; const B = S(w); const n0 = B.shops.length; const pr = open(w, B, a, day(w)); try { pr?.catch?.(() => {}); } catch (e) {} return B.shops.length > n0 ? B.shops[B.shops.length - 1] : null; }
     // 討價還價
     function haggle(w, buyer, price) { if (!buyer || buyer === 'town') return { price, saved: 0 }; const skill = (has(buyer, 'charismatic') ? 0.08 : 0) + (has(buyer, 'perfectionist') ? 0.04 : 0) + (has(buyer, 'shy') ? -0.03 : 0) + Math.random() * 0.05; const cut = Math.max(0, Math.min(0.15, skill)); const np = Math.round(price * (1 - cut)); return { price: np, saved: price - np }; }
     // 銀行家審核
@@ -105,11 +119,11 @@ const BIZ = (() => {
     const whoName = (w, id) => { const a = w.agents[id]; if (a && !a.isDead && a.name) return t(a.name); const tr = (w.events?._travellingAgents || []).find(x => x?.agentData?.agentId === id)?.agentData?.name; if (tr) return t(tr) + t('（出遠門）'); const nm = a?.name || w.departedNames?.[id] || w._nameCache?.[id]; return nm ? t(nm) + t('（已不在鎮上）') : t('已不在鎮上的人'); };
     function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: TYPES[s.type].icon, name: en() ? s.name[1] : s.name[0], type: t(TYPES[s.type].zh), owner: whoName(w, s.owner), partner: s.partner ? whoName(w, s.partner) : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
     function chip(w, a) { const s = shopOf(w, a); if (!s) return ''; return `${TYPES[s.type].icon} ${s.owner === a.agentId ? t('老闆') : t('合夥人')}${t('：')}${en() ? s.name[1] : s.name[0]}`; }
-    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan };
+    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan, startInfo, start, byChoice };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) BIZ.daily(w); } catch (e) { console.warn('[Biz] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) BIZ.daily(w, BIZ.byChoice(w)); } catch (e) { console.warn('[Biz] daily', e); } return r; };
 }
 // 珍品殺價
 if (typeof GOODS !== 'undefined') {

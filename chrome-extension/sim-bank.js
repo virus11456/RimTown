@@ -63,7 +63,8 @@ const BANK = (() => {
         for (const a of all) {
             if (B.loans[a.agentId]) continue; const c = cash(w, a);
             /* v9.19.0 周轉貸款改由決策核心在村民「手頭很緊」時自己決定 */
-            if (typeof HOUSING !== 'undefined' && w.housing && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
+            /* v9.22.0 借錢翻修改由住戶本人決定(sim-decide-life.js「家裡的房子舊了」) */
+            if (typeof HOUSING !== 'undefined' && w.housing && !HOUSING.byChoice?.(w) && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
         }
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {

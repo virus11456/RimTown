@@ -38,12 +38,15 @@ const SHARES = (function () {
     const SEC = () => Object.keys(M_().SECTORS);
     const MAXH = 6; // v9.8.0 一家最多六個股東(以前四個;通過員工認股以後,自家工人另外可以認股,最多八個)
     const maxH = (w) => (S(w).sh.law.staff ? 8 : MAXH);
+    // v9.22.0 有人眼紅想入股時，當家賣不賣交給本人決定(sim-decide-life.js)；擲骰的版本留給直接呼叫 weekly() 的情況
+    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
 
     function S(w) {
         const M = M_().S(w); M.shares = M.shares && typeof M.shares === 'object' ? M.shares : {};
         if (!M.sh || typeof M.sh !== 'object') M.sh = {};
         const X = M.sh; X.st = X.st || { syn: 0, sold: 0, buy: 0, out: 0, cheat: 0, caught: 0, div: 0, split: 0, inh: 0 };
-        X.cheat = X.cheat || {}; X.angry = X.angry || {}; X.dry = X.dry || {}; X.lastDiv = X.lastDiv || {}; X.hist = X.hist || []; X.basis = X.basis || {}; X.law = X.law || {};
+        X.cheat = X.cheat || {}; X.angry = X.angry || {}; X.dry = X.dry || {}; X.lastDiv = X.lastDiv || {}; X.hist = X.hist || []; X.basis = X.basis || {}; X.law = X.law || {}; X.ask = X.ask || {};
         return M;
     }
     // 某家產業的持股({ id: 百分比 }),當家一定在裡面;舊存檔或剛被整家買下的產業 = 當家一人 100%
@@ -162,7 +165,31 @@ const SHARES = (function () {
     }
 
     // ---------- 每週:分紅、做假帳、入股、賣股、拆夥、奪權 ----------
-    function weekly(w, all, d) {
+    // ---------- 眼紅入股的結算(當家答應／回絕) ----------
+    function envySell(w, k, fan, b2, pct, price) {
+        const X = S(w).sh; const s2 = stakes(w, k); const cur = b2.agentId; const p = Math.min(pct, (s2[cur] || 0) - 30);
+        if (!(p > 0) || !transfer(w, k, cur, fan.agentId, p, price)) return false;
+        X.st.buy++; log(w, '📈 {b}看{s}生意好，出 {n} 銀幣向{o}買了 {p}% 的股份。', { b: fan.name, s: nm(k), n: price, o: b2.name, p: pct }, fan.name);
+        mem(w, fan, '我入股了{s}，以後每週有分紅。', { s: nm(k) }, 7); mem(w, b2, '{b}出高價買了{s}的一部分股份。', { b: fan.name, s: nm(k) }, 5); note(w, k, '入股', { a: fan.name });
+        return true;
+    }
+    function envyNo(w, k, fan, b2) {
+        log(w, '🙅 {b}想入股{s}，{o}說：「這是我一手做起來的，不賣。」', { b: fan.name, s: nm(k), o: b2.name }, b2.name); bump(fan, b2, -4); mem(w, fan, '{o}不肯讓我入股{s}，小氣。', { o: b2.name, s: nm(k) }, 4);
+    }
+    // 有人眼紅想入股、當家還沒回話：現在還談得成嗎(那個人還在、錢還夠、當家股份還夠賣)
+    function askInfo(w, k) {
+        const M = S(w); const ask = M.sh.ask[k]; if (!ask) return null; const fan = w.agents[ask.by]; const b2 = w.agents[M.owners[k]]; const s2 = stakes(w, k);
+        if (!here(w, fan) || !b2 || s2[fan.agentId] || (s2[b2.agentId] || 0) < 40 || bal(w, fan.agentId) < ask.price) return null;
+        return { fan, boss: b2, pct: ask.pct, price: ask.price, mine: s2[b2.agentId] || 0 };
+    }
+    // 當家拿了主意。回傳 'sold'／'no'／'gone'
+    function answerBuy(w, k, yes) {
+        const X = S(w).sh; if (!X.ask[k]) return null; const I = askInfo(w, k); delete X.ask[k]; if (!I) return 'gone';
+        if (!yes) { envyNo(w, k, I.fan, I.boss); return 'no'; }
+        return envySell(w, k, I.fan, I.boss, I.pct, I.price) ? 'sold' : 'gone';
+    }
+
+    function weekly(w, all, d, ch) {
         const M = S(w); const X = M.sh;
         for (const k of SEC()) {
             const id = M.owners[k]; if (!id) continue; const boss = w.agents[id]; if (!boss) continue; const s = stakes(w, k); const others = Object.keys(s).filter(h => h !== id && present(w, h));
@@ -214,14 +241,13 @@ const SHARES = (function () {
                 const amb = w.mind?.amb || {};
                 const fan = all.filter(a => !s2[a.agentId] && a.agentId !== cur && bal(w, a.agentId) >= price + 25 && (has(a, 'jealous') || has(a, 'greedy') || amb[a.agentId]?.key === 'rich' || a.job?.key === 'trader' || aff(a, b2) >= 40))
                     .sort((x, y) => (aff(y, b2) - aff(x, b2)) + (bal(w, y.agentId) - bal(w, x.agentId)) * 0.1)[0];
-                if (fan) {
+                if (fan && ch && here(w, b2)) {
+                    // v9.22.0 當家自己決定賣不賣：先記下有人來談，等他拿主意(三天沒下文就當沒這回事)
+                    if (!(X.ask[k] && d - X.ask[k].d <= 3)) { X.ask[k] = { by: fan.agentId, pct, price, d }; try { DECIDE.enqueue(w, b2, 'sell', { k, by: fan.agentId, src: 'envy' }); } catch (e) { delete X.ask[k]; } }
+                } else if (fan) {
                     const yes = bal(w, cur) < 30 || has(b2, 'greedy') ? 0.8 : (has(b2, 'stubborn') || hasV(b2, '傳統')) ? 0.15 : aff(b2, fan) >= 30 ? 0.6 : 0.35;
-                    if (Math.random() < yes && transfer(w, k, cur, fan.agentId, Math.min(pct, (s2[cur] || 0) - 30), price)) {
-                        X.st.buy++; log(w, '📈 {b}看{s}生意好，出 {n} 銀幣向{o}買了 {p}% 的股份。', { b: fan.name, s: nm(k), n: price, o: b2.name, p: pct }, fan.name);
-                        mem(w, fan, '我入股了{s}，以後每週有分紅。', { s: nm(k) }, 7); mem(w, b2, '{b}出高價買了{s}的一部分股份。', { b: fan.name, s: nm(k) }, 5); note(w, k, '入股', { a: fan.name });
-                    } else if (Math.random() < 0.5) {
-                        log(w, '🙅 {b}想入股{s}，{o}說：「這是我一手做起來的，不賣。」', { b: fan.name, s: nm(k), o: b2.name }, b2.name); bump(fan, b2, -4); mem(w, fan, '{o}不肯讓我入股{s}，小氣。', { o: b2.name, s: nm(k) }, 4);
-                    }
+                    if (Math.random() < yes) { if (!envySell(w, k, fan, b2, pct, price) && Math.random() < 0.5) envyNo(w, k, fan, b2); }
+                    else if (Math.random() < 0.5) envyNo(w, k, fan, b2);
                 }
             }
         }
@@ -308,7 +334,7 @@ const SHARES = (function () {
         if (ran && w.wallet) { try { departures(w); rescue(w, all); syndicate(w, all, d); } catch (e) { console.warn('[Shares] pre', e); } }
         const before = {}; for (const k of SEC()) before[k] = { own: M.owners[k], s: M.shares[k] ? JSON.parse(JSON.stringify(M.shares[k])) : null };
         const r = orig.apply(M_(), args);
-        if (ran && w.wallet) { try { reconcile(w, before); if (d % 7 === 0) weekly(w, all, d); } catch (e) { console.warn('[Shares] post', e); } }
+        if (ran && w.wallet) { try { reconcile(w, before); if (d % 7 === 0) weekly(w, all, d, byChoice(w)); } catch (e) { console.warn('[Shares] post', e); } }
         return r;
     }
 
@@ -342,7 +368,7 @@ const SHARES = (function () {
     function row(w, k) { const s = stakes(w, k); const ks = Object.keys(s); if (ks.length < 2) return ''; return ks.sort((a, b) => s[b] - s[a]).map(h => `${t(nameOf(w, h))} ${s[h]}%`).join(t('・')); }
     function view(w) { const X = S(w).sh; return { st: X.st, hist: X.hist.map(([d, k, txt, p]) => ({ d, k, s: nm(k), txt: t(txt), a: t(p.a || ''), b: t(p.b || '') })), lastDiv: X.lastDiv }; }
 
-    return { S, maxH, note, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
+    return { S, maxH, note, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, envySell, envyNo, askInfo, answerBuy, byChoice, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
 })();
 
 if (typeof MARKET !== 'undefined') {

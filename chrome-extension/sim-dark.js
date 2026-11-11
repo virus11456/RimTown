@@ -170,6 +170,7 @@ const DARK = (() => {
     const APOLOGY = ['對不起，之前是我不對。', '那件事我一直很過意不去，真的很抱歉。', '我知道說什麼都晚了，但我還是想跟你道歉。'];
     // v9.20.0 村民自己拿主意時由決策核心決定(sim-decide-soc.js)；這裡只剩「怎麼結算」。下面擲骰的版本留給沒有決策核心的情況
     const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const byLife = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.22.0 陰謀陷害交給本人決定
     const wrongById = (w, id) => (S(w).wrongs || []).find(x => x.id === id) || null;
     const wrongId = (w, x) => { const D = S(w); if (!x.id) { D.wn = (D.wn || 0) + 1; x.id = D.wn; } return x.id; };
     // 這筆帳是什麼事(給決策核心看的一句話)。who 做的人、vName 受害的人;整句已經寫好人名的(被拆穿的秘密)就照原句
@@ -558,29 +559,43 @@ const DARK = (() => {
     }
 
     // ---------- 陰謀:籌劃 → 動手 → 可能被拆穿 ----------
-    function schemes(w) {
+    function schemes(w, ch) {
         const D = S(w), today = day(w), all = npcs(w);
-        const P = w.proposals;
         // 動手(籌劃一兩天後)
         for (const s of D.secrets.filter(x => x.stage === 'plan' && today - x.day >= 1)) {
             const c = w.agents[s.culprit], v = w.agents[s.victim]; if (!c || !v) { s.stage = 'off'; s.found = true; continue; }
             s.stage = 'done'; s.day = today; act(w, s, c, v);
         }
+        if (ch) return; // v9.22.0 要不要動手陷害交給本人決定(sim-decide-life.js「跟某人結怨很深」)
         if (D.secrets.filter(x => x.stage === 'plan').length >= 2) return;
         for (const c of rnd(all, all.length)) {
             if (malice(c) < 2 || honesty(c) > 2 || (today - (D.cool[c.agentId] ?? -99)) < 20) continue;
             const f = foeOf(w, c, null); if (!f || f.g.s < 50) continue;
             if (Math.random() > 0.15) continue;
-            const v = f.b; const opts = ['frame', 'sabotage'];
-            if (P?.items?.some(p => p.proposerId === v.agentId && p.status === 'open')) opts.push('lobby', 'lobby');
-            if (P?.items?.some(p => p.proposerId === v.agentId && p.status === 'done' && today - (p.decidedDay || p.createdDay || 0) <= 10)) opts.push('credit');
-            const kind = pick(opts);
-            D.cool[c.agentId] = today;
-            secret(w, { kind, stage: 'plan', culprit: c.agentId, victim: v.agentId, why: f.g.why, k: '{a}在籌劃陷害{v}', p: { a: c.name, v: v.name } });
-            mem(w, c, '{v}，你等著瞧。', { v: v.name }, 6);
-            log(w, 'scheme', '🕵️ {a}（{why}）開始盤算怎麼對付{v}……', { a: c.name, v: v.name, why: fill(WHY[f.g.why], { v: v.name }) }, c.name);
+            const v = f.b; plot(w, c, v, pick(schemeKinds(w, v, today)), f.g.why);
             break;
         }
+    }
+    // 現在能用哪幾招對付他(對方有提案在表決 → 可以私下拉票；對方的提案剛通過 → 可以搶功)
+    function schemeKinds(w, v, today) {
+        const P = w.proposals; const opts = ['frame', 'sabotage'];
+        if (P?.items?.some(p => p.proposerId === v.agentId && p.status === 'open')) opts.push('lobby', 'lobby');
+        if (P?.items?.some(p => p.proposerId === v.agentId && p.status === 'done' && today - (p.decidedDay || p.createdDay || 0) <= 10)) opts.push('credit');
+        return opts;
+    }
+    // 開始籌劃(一兩天後動手)
+    function plot(w, c, v, kind, why) {
+        const D = S(w); D.cool[c.agentId] = day(w);
+        const s = secret(w, { kind, stage: 'plan', culprit: c.agentId, victim: v.agentId, why, k: '{a}在籌劃陷害{v}', p: { a: c.name, v: v.name } });
+        mem(w, c, '{v}，你等著瞧。', { v: v.name }, 6);
+        log(w, 'scheme', '🕵️ {a}（{why}）開始盤算怎麼對付{v}……', { a: c.name, v: v.name, why: fill(WHY[why], { v: v.name }) }, c.name);
+        return s;
+    }
+    // 這個人現在有沒有結怨很深、可以下手的對象：{ v, why, s(怨有多深), kinds }；沒有就回傳 null
+    function schemeInfo(w, c) {
+        const D = S(w), today = day(w); if (D.secrets.filter(x => x.stage === 'plan').length >= 2 || (today - (D.cool[c.agentId] ?? -99)) < 20) return null;
+        const f = foeOf(w, c, null); if (!f || f.g.s < 50) return null;
+        return { v: f.b, why: f.g.why, s: f.g.s, kinds: [...new Set(schemeKinds(w, f.b, today))] };
     }
     function act(w, s, c, v) {
         const all = npcs(w).filter(a => a !== c && a !== v); const P = w.proposals; const sp = w.stockpile;
@@ -673,13 +688,13 @@ const DARK = (() => {
         if (D.mis.length > 20) D.mis = D.mis.filter(m => !m.done).concat(D.mis.filter(m => m.done).slice(-6)).slice(-20);
     }
 
-    function daily(w) {
+    function daily(w, ch) {
         S(w);
         try { rivalries(w); } catch (e) { console.warn('[Dark] rivalries', e); }
         try { disputes(w); } catch (e) { console.warn('[Dark] disputes', e); }
         try { campaign(w); } catch (e) { console.warn('[Dark] campaign', e); }
         try { lies(w); } catch (e) { console.warn('[Dark] lies', e); }
-        try { schemes(w); } catch (e) { console.warn('[Dark] schemes', e); }
+        try { schemes(w, ch); } catch (e) { console.warn('[Dark] schemes', e); }
         try { misunderstand(w); } catch (e) { console.warn('[Dark] mis', e); }
         try { discover(w); } catch (e) { console.warn('[Dark] discover', e); }
         // v9.20.0 道歉、原諒、報復改由本人決定(決策核心);沒有決策核心時才用擲骰的版本
@@ -709,7 +724,7 @@ const DARK = (() => {
         return out;
     }
     return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump,
-        today: day, byChoice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY };
+        today: day, byChoice, byLife, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY };
 })();
 
 // ---- 掛勾:聊天時講壞話、每日、存檔、AI ----
@@ -734,7 +749,7 @@ if (typeof ProposalSystem !== 'undefined') {
     };
     const _daily = ProposalSystem.prototype.daily;
     ProposalSystem.prototype.daily = function (w) {
-        try { const d = this._abs(w); if (w.observerMode && this._darkDay !== d) { this._darkDay = d; DARK.daily(w); } } catch (e) { console.warn('[Dark] daily', e); }
+        try { const d = this._abs(w); if (w.observerMode && this._darkDay !== d) { this._darkDay = d; DARK.daily(w, DARK.byLife(w)); } } catch (e) { console.warn('[Dark] daily', e); }
         return _daily.call(this, w);
     };
 }
