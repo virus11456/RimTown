@@ -213,14 +213,21 @@ Object.assign(RimTownApp.prototype, {
                     const saltTxt = V.salted ? `🧂 ${t('有鹽醃漬：存糧腐壞減半')} (${Math.round(V.salt)})` : `🧂 ${V.canSalt ? t('鹽還在曬，今天不夠用') : t('缺鹽：只有靠海的鎮曬得出鹽，要靠商隊買')}`;
                     const paperTxt = V.paperShort ? `📄 ${t('缺紙：報社可能停刊、研究變慢')}` : `📄 ${t('紙')} ${Math.round(V.paper)}`;
                     const good = V.spec.good.map(x => t(x)).join(t('、')), bad = V.spec.bad.map(x => t(x)).join(t('、'));
-                    html += `<div class="econ-section ec-local"><h3>🗺️ ${t('本鎮物產')}</h3>
-                        <div class="ec-bar">${bar}</div>
-                        <div class="ec-line">${kinds}</div>
-                        <div class="ec-line ec-muted">${roles}${V.canFish ? '' : ` · ${t('不靠水，不能捕魚')}`}</div>
-                        ${diet ? `<div class="ec-line">${diet}</div>` : ''}${eatWell}
-                        <div class="ec-line">${toolTxt}</div><div class="ec-line">${saltTxt}</div><div class="ec-line">${paperTxt}</div>
-                        ${good ? `<div class="ec-line">💪 ${t('本鎮擅長')}${t('：')}${esc(good)}</div>` : ''}${bad ? `<div class="ec-line ec-muted">🐪 ${t('得靠貿易')}${t('：')}${esc(bad)}</div>` : ''}
-                    </div>`;
+                    // v9.18.0 改成資訊卡:三種存糧大數字、人手與狀態一項一列(有顏色)、擅長／要靠貿易用小標籤
+                    const lines = [];
+                    if (diet) lines.push([diet, V.variety >= 3 ? 'g' : V.variety <= 1 ? 'r' : '']);
+                    if (typeof FLOW !== 'undefined') { const D = FLOW.diet(this.world);
+                        lines.push([D.good ? `🍰 ${t('昨天吃得好：今天少吃一成正餐')}${D.streak >= 3 ? `${t('（')}${t('已連續 {n} 天，大家心情變好').replace('{n}', D.streak)}${t('）')}` : ''}`
+                            : `🍽️ ${t('吃得普通')} <span class="ic-pills pg-inl">${[['variety', '飲食多樣'], ['snack', '麵包糕點果醬'], ['fine', '好酒好茶甜點']].map(([k, l]) => `<span class="ic-pill${D.parts?.[k] ? ' pg-g' : ''}">${D.parts?.[k] ? '✓' : '✗'} ${t(l)}</span>`).join('')}</span><small class="pg-sm">${t('湊齊兩樣就算吃得好')}</small>`, D.good ? 'g' : '']); }
+                    lines.push([toolTxt, V.toolF >= 1 ? 'g' : 'r'], [saltTxt, V.salted ? 'g' : 'y'], [paperTxt, V.paperShort ? 'r' : '']);
+                    const probs = [V.toolF < 1 ? t('工具不夠') : '', !V.salted && !V.canSalt ? t('缺鹽') : '', V.paperShort ? t('缺紙') : ''].filter(Boolean);
+                    html += this._ic({ id: 'gd-local', cls: 'ec-local', icon: '🗺️', title: t('本鎮物產'), defOpen: true, chip: probs.length ? { t: probs.join(t('、')), tone: 'y' } : null,
+                        kpis: ECON.KINDS.map(k => ({ v: Math.round(V.pantry[k]), l: `${ECON.KIND_ICON[k]} ${t(ECON.KIND_ZH[k])}` })),
+                        body: `<div class="ec-bar">${bar}</div>`
+                            + `<div class="pg-kv"><span>${t('人手')}</span><span class="ic-pills">${[[t('農夫'), V.roles.grain], [t('漁夫'), V.roles.fish], [t('獵人'), V.roles.meat]].map(([l, n]) => `<span class="ic-pill">${l} <b>${n}</b></span>`).join('')}${V.canFish ? '' : `<span class="ic-pill">${t('不靠水，不能捕魚')}</span>`}</span></div>`
+                            + `<div class="pg-stat">${lines.map(([x, tone]) => `<div class="pg-stat-row${tone ? ' ic-t-' + tone : ''}"><i class="ic-dot ${tone || 'n'}"></i><span>${x}</span></div>`).join('')}</div>`
+                            + (good ? `<div class="pg-kv"><span>💪 ${t('本鎮擅長')}</span><span class="ic-pills">${V.spec.good.map(x => `<span class="ic-pill pg-g">${esc(t(x))}</span>`).join('')}</span></div>` : '')
+                            + (bad ? `<div class="pg-kv"><span>🐪 ${t('得靠貿易')}</span><span class="ic-pills">${V.spec.bad.map(x => `<span class="ic-pill pg-y">${esc(t(x))}</span>`).join('')}</span></div>` : '') });
                 } } catch (e) { console.warn('[Econ] panel', e); }
                 // ② 加工產能:看今日流量(做了幾個/用掉幾個),不是純庫存
                 const PROCESSED = ['meals','tools','clothing','medicine','furniture'];
@@ -235,35 +242,25 @@ Object.assign(RimTownApp.prototype, {
                 // v5.51.0 經濟B波:每條加工線顯示「誰在做」+ 排班三態(休工/正常/加班)——經濟＝排人,不是囤貨
                 const GOOD_JOB = { meals:'cook', tools:'blacksmith', clothing:'tailor', medicine:'doctor', furniture:'carpenter' };
                 const workPolicy = this.world?.workPolicy || {};
-                html += `<div class="econ-section"><h3>⚒️ ${t('加工產能')}<span style="font-weight:normal;font-size:0.68rem;color:var(--text-muted);margin-left:6px">${t('今日產出／消耗（村民自己排班）')}</span></h3>`;
+                // v9.18.0 加工產能改成一品一列:左邊誰在做、中間今天做了／用了多少、右邊庫存大數字
+                let fRows = ''; let fShort = 0;
                 PROCESSED.forEach(k => {
                     const f = flow[k];
                     const stock = Math.round(res[k] || 0);
                     const fineN = (typeof FLOW !== 'undefined' && this.world && FLOW.FINE_FROM[k]) ? Math.floor(FLOW.fine(this.world, k)) : 0; // v6.80.0
                     const prod = Math.round(f.produced * 10) / 10, cons = Math.round(f.consumed * 10) / 10;
-                    const flowClr = prod >= cons ? 'var(--positive)' : 'var(--negative)';
                     const makers = Object.values(this.state.agents || {}).filter(a => a.job?.key === GOOD_JOB[k]).map(a => a.name);
                     const policy = workPolicy[k] || 'normal';
-                    // v5.53.0 產出在午夜結算,白天顯示「預估日產」避免 +0 被誤讀成排班沒生效
                     const RECIPE_OUT = { meals: 9, tools: 3, clothing: 2, medicine: 2, furniture: 2 };
                     const est = Math.round(makers.length * (RECIPE_OUT[k] || 0) * (policy === 'off' ? 0 : policy === 'extra' ? 1.5 : 1));
-                    const prodHtml = prod > 0 ? `＋${prod}` : `${t('預估日產')} ＋${est}<span style="color:var(--text-muted)">${t('（')}${t('午夜結算')}${t('）')}</span>`;
-                    const polBtn = (mode, icon, tip) => ``;
-                    html += `<div style="padding:6px 2px;border-bottom:1px solid var(--border);font-size:0.78rem">
-                        <div style="display:flex;align-items:center;gap:6px">
-                            <span>${icons[k]}</span><span style="font-weight:bold">${labels[k]}</span>
-                            <span style="color:var(--text-muted);font-size:0.66rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${makers.length ? '👤 ' + makers.join('、') : t('（無人手）')}</span>
-                            <span style="color:var(--text-secondary);font-size:0.7rem">${t('庫存')} ${stock}${fineN >= 1 ? `<span class="ec-fine" title="${t('工坊做的精製品，耗損只有一半')}">${t('（')}✨${t('精製')} ${fineN}${t('）')}</span>` : ''}</span>
-                        </div>
-                        <div style="display:flex;align-items:center;gap:5px;margin-top:3px">
-                            <span style="flex:1;font-size:0.7rem;color:${flowClr}">${prodHtml}${cons ? ` <span style="color:var(--negative)">−${cons}</span>` : ''} <span style="color:var(--text-muted)">· ${demandNote[k]}</span></span>
-                            ${polBtn('off', '⏸', t('休工：不生產，村民心情變好、多時間社交'))}
-                            ${polBtn('normal', '▶', t('正常排班'))}
-                            ${polBtn('extra', '⏫', t('加班：產量+50%，但村民會累、心情變差'))}
-                        </div>
-                    </div>`;
+                    const down = prod < cons; if (down || !makers.length) fShort++;
+                    fRows += `<div class="pg-flow${down ? ' down' : ''}">
+                        <span class="pg-flow-ic">${icons[k]}</span>
+                        <div class="pg-flow-m"><div class="pg-flow-t"><b>${labels[k]}</b><small>${makers.length ? '👤 ' + makers.map(n => this._escapeHtml(t(n))).join(t('、')) : t('（無人手）')}</small></div>
+                            <div class="pg-flow-n">${prod > 0 ? `<span class="ic-t-g"><b class="ic-t-g">＋${prod}</b></span>` : `<span>${t('預估日產')} <b>＋${est}</b> <small>${t('（')}${t('午夜結算')}${t('）')}</small></span>`}${cons ? `<span class="ic-t-r"><b class="ic-t-r">−${cons}</b></span>` : ''}<small>${demandNote[k]}</small></div></div>
+                        <div class="pg-flow-s"><b>${stock}</b><small>${t('庫存')}</small>${fineN >= 1 ? `<span class="ec-fine" title="${t('工坊做的精製品，耗損只有一半')}">✨${t('精製')} ${fineN}</span>` : ''}</div></div>`;
                 });
-                html += '</div>';
+                html += this._ic({ id: 'gd-proc', icon: '⚒️', title: t('加工產能'), defOpen: true, chip: fShort ? { t: t('{n} 項入不敷出或沒人做').replace('{n}', fShort), tone: 'y' } : { t: t('供應穩定'), tone: 'g' }, body: `<div class="ic-note" style="margin-bottom:4px">${t('今日產出／消耗（村民自己排班）')}</div>${fRows}` });
                 // ③ 原料倉庫:收成一顆燈,細目摺疊
                 const RAWS = ['wood','stone','metal','cloth','herbs','salt','paper']; // v6.77.0 鹽、紙
                 const short = RAWS.filter(k => (res[k] || 0) < 10);
@@ -273,48 +270,28 @@ Object.assign(RimTownApp.prototype, {
                     : tight.length ? `${t('吃緊')}${t('：')}${tight.map(k => labels[k]).join(t('、'))}`
                     : t('原料充足，工坊無虞');
                 const detailKeys = Object.keys(res).filter(k => !PROCESSED.includes(k) && k !== 'food' && k !== 'silver' && k !== 'research_points' && Math.round(res[k]) > 0);
-                html += `<div class="econ-section"><h3>📦 ${t('原料倉庫')}</h3>
-                    <div style="display:flex;align-items:center;gap:8px;font-size:0.8rem">${light}<span>${lightText}</span></div>
-                    <details style="margin-top:6px"><summary style="cursor:pointer;font-size:0.72rem;color:var(--text-muted)">${t('展開明細')}</summary>
-                    <div class="resource-grid" style="margin-top:6px">`;
-                // v6.81.0 作物收成會直接進糧倉(算在食物裡),這裡只留工坊要用的一點:不要標成短缺的紅色,免得以為鎮上缺糧
+                // v9.18.0 原料倉庫:燈號放標題、七種原料直接看得到(缺的紅、緊的黃)，其他庫存收進展開詳細
+                const rawTile = (k) => { const amount = res[k] || 0; const isRaw = RAWS.includes(k); const tone = !isRaw ? "" : amount < 10 ? 'r' : amount < 40 ? 'y' : ''; return `<div class="resource-item ${isRaw && amount < 10 ? "res-low" : amount > 100 ? 'res-high' : ''}${tone ? ' ic-t-' + tone : ''}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`; };
                 const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
-                detailKeys.forEach(k => {
-                    const amount = res[k];
-                    const cls = (amount < 10 && RAWS.includes(k)) ? 'res-low' : amount > 100 ? 'res-high' : '';
-                    html += `<div class="resource-item ${cls}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`;
-                });
-                html += '</div>';
-                if (detailKeys.some(k => CROPS.includes(k))) html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>`;
-                html += '</details></div>';
-                // Trade
+                const others = detailKeys.filter(k => !RAWS.includes(k));
+                html += this._ic({ id: 'gd-raw', icon: '📦', title: t('原料倉庫'), defOpen: true, chip: { t: short.length ? t('短缺') : tight.length ? t('吃緊') : t('充足'), tone: short.length ? 'r' : tight.length ? 'y' : 'g' },
+                    alert: short.length ? { t: lightText, tone: 'r' } : tight.length ? { t: lightText, tone: 'y' } : null,
+                    body: `<div class="resource-grid">${RAWS.map(rawTile).join('')}</div>${short.length || tight.length ? '' : `<div class="ic-note" style="margin-top:6px">🟢 ${lightText}</div>`}`,
+                    detail: others.length ? `<div class="ic-sub-h">${t('其他庫存')}</div><div class="resource-grid">${others.map(rawTile).join('')}</div>${others.some(k => CROPS.includes(k)) ? `<div class="ic-note" style="margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>` : ''}` : '' });
+                // v9.18.0 交易:商人卡(專長、還剩幾天)、每筆報價一格(買／賣用顏色分)、誰去談、最近成交
                 const trade = this.state.trade || {};
-                html += `<div class="econ-section"><h3>🤝 ${t('交易')}</h3>`;
+                const SPEC = { general: t('雜貨'), metals: t('金屬'), medicine: t('藥材'), textiles: t('布料'), exotic: t('異國貨') };
+                let tb = '';
                 if (trade.merchant) {
-                    html += `<div class="merchant-card"><div class="merchant-name">${t(trade.merchant.name)}</div>
-                        <div class="merchant-info">${t('專長：')}${({ general: t('雜貨'), metals: t('金屬'), medicine: t('藥材'), textiles: t('布料'), exotic: t('異國貨') })[trade.merchant.specialty] || t(trade.merchant.specialty || '')} | ${trade.merchant.daysRemaining}${t('天後離開')}</div>
-                        <div class="trade-offers">`;
-                    trade.merchant.offers.forEach((offer, idx) => {
-                        const icon = icons[offer.resource] || '📦';
-                        const resLabel = labels[offer.resource] || offer.resource;
-                        const action = offer.isBuying ? t('賣出') : t('買入');
-                        const actionCls = offer.isBuying ? 'trade-sell' : 'trade-buy';
-                        html += `<div class="trade-offer ${actionCls}">
-                            <span>${icon} ${resLabel}</span>
-                            <span>×${Math.round(offer.amount)}</span>
-                            <span>${offer.price}/${t('個')}</span>
-                        
-                            </div>`;
-                    });
-                    html += '</div></div>';
+                    const m = trade.merchant;
+                    tb += `<div class="ic-kpis n3"><div class="ic-kpi"><b>${this._escapeHtml(t(m.name))}</b><span>${t('商人')}</span></div><div class="ic-kpi"><b>${SPEC[m.specialty] || this._escapeHtml(t(m.specialty || ''))}</b><span>${t('專長')}</span></div><div class="ic-kpi${m.daysRemaining <= 1 ? ' ic-t-y' : ''}"><b>${m.daysRemaining}<small>${t('天')}</small></b><span>${t('後離開')}</span></div></div>`;
+                    tb += `<div class="pg-offers">${m.offers.map(offer => `<div class="pg-offer ${offer.isBuying ? 'sell' : 'buy'}"><span class="pg-offer-a">${offer.isBuying ? t('他收購') : t('他在賣')}</span><span class="pg-offer-r">${icons[offer.resource] || '📦'} ${labels[offer.resource] || offer.resource}</span><span class="pg-offer-n">×${Math.round(offer.amount)}</span><b>${offer.price}<small>/${t('個')}</small></b></div>`).join('')}</div>`;
                     const traderNames = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'trader').map(a => t(a.name));
-                    html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px">${traderNames.length ? t('{who} 每天會去跟商人談，多的賣、缺的買。').replace('{who}', traderNames.join(t('、'))) : t('鎮上沒有商人職業的村民，鎮長或其他人會代為去談。')}</div>`;
-                } else {
-                    html += t('<p class="muted-text">鎮上沒有商人，可能很快就會來一位。</p>');
-                }
+                    tb += `<div class="ic-note" style="margin-top:6px">${traderNames.length ? t('{who} 每天會去跟商人談，多的賣、缺的買。').replace('{who}', traderNames.join(t('、'))) : t('鎮上沒有商人職業的村民，鎮長或其他人會代為去談。')}</div>`;
+                } else tb += `<div class="ic-note">${t('鎮上沒有商人，可能很快就會來一位。')}</div>`;
                 const th = (this.world?.trade?.tradeHistory || []).slice(-3).reverse();
-                if (th.length) { html += `<div style="margin-top:6px;font-size:0.72rem;color:var(--text-secondary)">${t('最近成交')}</div>`; th.forEach(h => { const parts = (h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')); html += `<div style="font-size:0.72rem;padding:2px 0">${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}${t('：')}${this._escapeHtml(parts)}</div>`; }); }
-                html += '</div>';
+                if (th.length) tb += this._icSub(t('最近成交'), `<div class="ic-rows">${th.map(h => `<div class="ic-row"><span>${this._escapeHtml(t(h.who || ''))} ↔ ${this._escapeHtml(t(h.merchant || ''))}</span><small>${this._escapeHtml((h.deals || []).map(d => `${d.type === 'sell' ? t('賣') : t('買')} ${this._resName(d.r)}×${d.qty}`).join(t('、')))}</small></div>`).join('')}</div>`);
+                html += this._ic({ id: 'gd-trade', icon: '🤝', title: t('交易'), defOpen: true, chip: trade.merchant ? { t: t('商人在鎮上'), tone: 'g' } : { t: t('沒有商人') }, body: tb });
             }
         } if (S === 'tech') {
             // v5.52.0 研究獨立入口;v6.40.0 三個時代的科技樹;v7.8.0 獨立成「科技」分頁:科技路線、路線時代、路線帶來的問題
@@ -327,17 +304,15 @@ Object.assign(RimTownApp.prototype, {
             const BT = (typeof BUILDING_TEMPLATES !== 'undefined') ? BUILDING_TEMPLATES : {}; const FT = (typeof FACTORIES !== 'undefined') ? FACTORIES : {};
             const unlockName = (u) => u.startsWith('factory:') ? (FT[u.slice(8)] ? `${FT[u.slice(8)].icon} ${t(FT[u.slice(8)].name)}` : u) : (BT[u] ? `🏗️ ${t(BT[u].name)}` : u);
             const curEra = eraN(research.era || 1);
-            html += `<div class="econ-section"><h3>🔬 ${t('研究')}<span style="font-weight:normal;font-size:0.72rem;color:var(--text-secondary);margin-left:6px">📚 ${t('研究點')} ${Math.round(res.research_points || 0)} · ${t('現在的時代')}${t('：')}${curEra.icon || ''} ${t(curEra.name || '')}</span></h3>`;
-            if (currentKey && projects[currentKey]) {
-                const cur = projects[currentKey];
-                const pct = Math.min(100, Math.round((cur.progress / cur.cost) * 100));
-                html += `${t('<div class="research-current">研究中：<strong>')}${t(cur.name)}</strong>
-                    <div class="progress-bar"><div class="progress-fill research-fill" style="width:${pct}%"></div></div>
-                    <span class="progress-text">${pct}%</span></div>`;
-            }
+            // v9.18.0 研究改成資訊卡:正在研究什麼(大字＋進度條)、研究點、現在的時代、研究員;規則收進 ⓘ。科技樹另成一區
             const scholars = Object.values(this.state.agents || {}).filter(a => a.job?.key === 'researcher').map(a => t(a.name));
-            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin:4px 0 6px">${scholars.length ? t('研究員：') + scholars.join(t('、')) : t('鎮上還沒有研究員，研究進度只靠研究點。')}${!currentKey ? ' · ' + t('目前沒在研究：研究員做的進度先存著，等村民提「研究」提案（兩天沒人提，學者會自己挑最早時代的）') : ''}</div>`;
-            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。')}</div>`;
+            const curP = currentKey && projects[currentKey] ? projects[currentKey] : null; const cpct = curP ? Math.min(100, Math.round((curP.progress / curP.cost) * 100)) : 0;
+            html += this._ic({ id: 'tc-now', cls: 'research-card', icon: '🔬', title: t('研究'), defOpen: true, chip: curP ? { t: t('研究中'), tone: 'g' } : { t: t('目前沒在研究'), tone: 'y' },
+                top: curP ? `<div class="research-current pg-rc"><span>${t('研究中：')}</span><strong>${t(curP.name)}</strong><b class="progress-text">${cpct}%</b></div><div class="ic-bar big"><i class="research-fill" style="width:${Math.max(2, cpct)}%"></i></div>` : `<div class="ic-note">${t('目前沒在研究：研究員做的進度先存著，等村民提「研究」提案（兩天沒人提，學者會自己挑最早時代的）')}</div>`,
+                kpis: [{ v: Math.round(res.research_points || 0), l: '📚 ' + t('研究點') }, { v: `${curEra.icon || ''}${t(curEra.name || '')}`, l: t('現在的時代') }, { v: scholars.length, u: t('人'), l: t('研究員'), tone: scholars.length ? '' : 'y' }],
+                body: scholars.length ? `<div class="pg-kv"><span>${t('研究員：').replace(/[：:]$/, '')}</span><span class="ic-pills">${scholars.map(n => `<span class="ic-pill">${this._escapeHtml(n)}</span>`).join('')}</span></div>` : `<div class="ic-note">${t('鎮上還沒有研究員，研究進度只靠研究點。')}</div>`,
+                info: t('建築與工坊要先研究到才蓋得了（穀倉、深井除外）；哪一項先研究由村民提案、投票、鎮長裁決。') });
+            html += `<div class="econ-section tech-tree"><h3>🌳 ${t('科技樹')}</h3>`;
             // ---- v7.8.0 科技路線;v7.9.0 多條路線、路線大辯論、第六時代專屬 ----
             if (TV) {
                 const esc = (x) => this._escapeHtml(String(x ?? ''));
@@ -348,13 +323,12 @@ Object.assign(RimTownApp.prototype, {
                     const tl = TV.debate?.tally; const tallyTxt = tl ? Object.entries(tl.paths).map(([k, v]) => `${PD[k]?.icon || ''}${esc(PD[k]?.name || k)} ${v}`).concat([`🏡${t('維持傳統')} ${tl.keep}`]).join(' · ') : '';
                     html += `<div class="tech-desc">${TV.debate ? `🗳️ ${t('鎮上正在辯論科技路線')}${t('：')}${TV.debate.id} · ${tallyTxt}` : TV.nextDebate ? `🏡 ${t('上次辯論決定維持傳統，{n} 天後再辯論（遇到大事可能提早）').replace('{n}', TV.nextDebate)}` : TV.main3 >= TV.gate ? `🗳️ ${t('工坊時代研究到 {n}%，鎮上很快會開始辯論科技路線').replace('{n}', TV.main3)}` : `🔒 ${t('工坊時代研究到 {g}% 時，鎮上會辯論往後走哪條科技路線（現在 {n}%）').replace('{g}', TV.gate).replace('{n}', TV.main3)}`}</div>`;
                     if (TV.lean) html += `<div class="tech-desc">🏘️ ${t('小鎮的風氣')}${t('：')}${t('比較偏向{p}').replace('{p}', `${TV.lean.icon}${esc(TV.lean.name)}`)}${TV.lean.why ? `${t('（')}${esc(TV.lean.why)}${t('）')}` : ''}</div>`;
-                    for (const x of TV.paths || []) html += `<div class="tech-desc">${x.icon} <b>${esc(x.name)}</b>${t('：')}${esc(x.short)}${t('。')}👍 ${esc(x.pro)} · 👎 ${esc(x.con)} · ${t('吸引力')} ${x.appeal >= 0 ? '+' : ''}${x.appeal}</div>`;
+                    html += `<div class="pg-paths">${(TV.paths || []).map(x => `<div class="pg-path${TV.lean?.key === x.key ? ' lean' : ''}"><div class="pg-path-h"><span>${x.icon}</span><b>${esc(x.name)}</b><span class="pg-st${x.appeal < 0 ? '' : ''}"><b>${x.appeal >= 0 ? '+' : ''}${x.appeal}</b><span>${t('吸引力')}</span></span></div><div class="pg-path-d">${esc(x.short)}</div><div class="pg-path-pc"><span class="pg-g">👍 ${esc(x.pro)}</span><span class="pg-y">👎 ${esc(x.con)}</span></div></div>`).join('')}</div>`; // v9.18.0 三條路線並排成卡
                 } else {
                     const tl = TV.tally ? Object.entries(TV.tally).map(([k, v]) => `${PD[k]?.icon || ''}${esc(PD[k]?.name || k)} ${v}`).join(' · ') : '';
                     html += `<div class="tech-desc">${esc(TV.short)}${t('。')}${TV.since != null ? ` ${t('第 {d} 天決定').replace('{d}', TV.since)}` : ''}${tl ? ` · ${tl} · 🏡${t('維持傳統')} ${TV.no || 0}` : ''}</div>`;
                     html += `<div class="tech-desc">👍 ${esc(TV.pro)} · 👎 ${esc(TV.con)}</div>`;
-                    const stg = [4, 5, 6].map(e => { const en = eraN(e, TV.path); return `${en.icon} ${t(en.name)} ${TV.stage[e]}%`; }).join(' → ');
-                    html += `<div class="tech-desc">${stg}</div>`;
+                    html += `<div class="pg-stages">${[4, 5, 6].map(e => { const en = eraN(e, TV.path); return `<div class="pg-stage"><span>${en.icon} ${t(en.name)}</span><div class="ic-bar"><i style="width:${Math.max(2, TV.stage[e] || 0)}%"></i></div><b>${TV.stage[e]}%</b></div>`; }).join('')}</div>`; // v9.18.0 路線三個時代的進度條
                 }
                 // 核電(跟路線無關:蓋了核電廠就有風險)
                 if (TV.nuke || TV.noNuke || TV.law) { const rk = TV.risk ? { low: t('低'), mid: t('中'), high: t('高') }[TV.risk] : null; html += `<div class="tech-desc">☢️ ${TV.noNuke ? t('已經廢核') : TV.nuke ? `${t('核災風險')}${t('：')}<b class="tech-risk-${TV.risk}">${rk}</b>${TV.law ? ` · 📋 ${t('有核安法')}` : ` · ${t('沒有核安法')}`}` : t('還沒有核電廠')}</div>`; }
@@ -453,32 +427,20 @@ Object.assign(RimTownApp.prototype, {
             html += '</div>';
         } if (S === 'goods') {
             // v4.0: Shop system — card grid layout
-            html += t('<div class="econ-section"><h3>🛒 商店</h3>');
+            // v9.18.0 商店:公庫銀幣大數字、最近買賣一列一筆、物價板依類別成格
             const silverAmount = Math.round(res['silver'] || 0);
-            html += `<div style="margin-bottom:8px;font-size:0.85rem">${t('💰 公庫銀幣：')}<strong>${silverAmount}</strong></div>`;
             const slog = (this.world?.shop?.transactionLog || []).slice(-6).reverse();
-            html += `<div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:6px">${t('物價板。小量補貨與拋售由村民每天自己做，大宗進貨／拋售走「提案」。')}</div>`;
-            if (slog.length) { html += `<div style="margin-bottom:8px"><div style="font-size:0.72rem;color:var(--text-secondary)">${t('最近買賣')}</div>`; slog.forEach(x => { const nm = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[x.item]) ? SHOP_ITEMS[x.item].name() : x.item; html += `<div style="font-size:0.72rem;padding:2px 0">${x.type === 'buy' ? '🛒 ' + t('買進') : '💰 ' + t('賣出')} ${this._escapeHtml(nm)}×${x.amount} · ${x.type === 'buy' ? x.cost : x.income} ${t('銀幣')}</div>`; }); html += '</div>'; }
             const shopItems = this.world?.shop?.getAvailableItems(this.world) || [];
             const categories = { basic: t('基本物資'), craft: t('工藝品'), processed: t('加工品'), luxury: t('奢侈品') };
+            let sb = '';
             for (const [catKey, catName] of Object.entries(categories)) {
-                const catItems = shopItems.filter(i => i.category === catKey);
-                if (catItems.length === 0) continue;
-                html += `<div style="font-weight:bold;font-size:0.78rem;margin:8px 0 4px;color:var(--text-secondary)">${catName}</div>`;
-                html += '<div class="shop-grid">';
-                for (const item of catItems) {
-                    html += `<div class="shop-card">`;
-                    html += `<div class="shop-card-icon">${item.icon}</div>`;
-                    html += `<div class="shop-card-name">${t(item.name)}</div>`;
-                    html += `<div class="shop-card-stock">${t('庫存')}:${Math.round(item.stock)}</div>`;
-                    html += `<div class="shop-card-stock">${t('買')} ${item.buyPrice}💰 · ${t('賣')} ${item.sellPrice}💰</div>`;
-                    html += ``;
-                    html += ``;
-                    html += `</div>`;
-                }
-                html += '</div>';
+                const catItems = shopItems.filter(i => i.category === catKey); if (!catItems.length) continue;
+                sb += `<div class="ic-sub-h">${catName}</div><div class="shop-grid">${catItems.map(item => `<div class="shop-card"><div class="shop-card-icon">${item.icon}</div><div class="shop-card-name">${t(item.name)}</div><div class="shop-card-stock">${t('庫存')} ${Math.round(item.stock)}</div><div class="pg-bs"><span>${t('買')} <b>${item.buyPrice}</b></span><span>${t('賣')} <b>${item.sellPrice}</b></span></div></div>`).join('')}</div>`;
             }
-            html += '</div>';
+            html += this._ic({ id: 'gd-shop', icon: '🛒', title: t('商店'), defOpen: false, sum: `💰 <b>${silverAmount}</b>`,
+                kpis: [{ v: this._icNum(silverAmount), u: '💰', l: t('公庫銀幣') }, { v: slog.length, l: t('最近買賣') }],
+                info: t('物價板。小量補貨與拋售由村民每天自己做，大宗進貨／拋售走「提案」。'),
+                body: (slog.length ? `<div class="ic-rows" style="margin-bottom:8px">${slog.map(x => { const nm = (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[x.item]) ? SHOP_ITEMS[x.item].name() : x.item; return `<div class="ic-row"><span>${x.type === 'buy' ? '🛒 ' + t('買進') : '💰 ' + t('賣出')} ${this._escapeHtml(nm)}×${x.amount}</span><b class="${x.type === 'buy' ? 'ic-t-r' : 'ic-t-g'}">${x.type === 'buy' ? '−' + x.cost : '＋' + x.income}</b></div>`; }).join('')}</div>` : '') + sb });
         } if (S === 'build') {
             // Buildings
             const buildings = this.state.buildings || {};
@@ -553,7 +515,7 @@ Object.assign(RimTownApp.prototype, {
             // Factory (merged from old factory tab)
             const proc = this.state.processing || {};
             const factories = proc.builtFactories || {};
-            html += t('<div class="econ-section"><h3>🏭 工廠加工</h3></div>');
+            html += `<div class="econ-section"><h3>🏭 ${t('工廠加工')}</h3>${Object.keys(factories).length ? `<div class="ic-note">${t('鎮上的工廠：{n} 座，各自的配方與工人在下面。').replace('{n}', Object.keys(factories).length)}</div>` : `<div class="ic-note">${t('鎮上還沒有工廠。要蓋哪一座，看下面「可建造工廠」，等村民提案。')}</div>`}</div>`; // v9.18.0 沒工廠時不再只剩一個空標題
             for (const [key, factory] of Object.entries(factories)) {
                 const def = typeof FACTORIES !== 'undefined' ? FACTORIES[key] : null;
                 if (!def) continue;
@@ -610,10 +572,9 @@ Object.assign(RimTownApp.prototype, {
                 html += t('<div class="econ-section"><h3>可建造工廠（等村民提案）</h3>');
                 availFac.forEach(f => {
                     // v5.53.2 工廠成本在地化:接上與全站一致的資源名稱,不再露出英文 key
-                    const costStr = Object.entries(f.cost).map(([r,a]) => `${icons[r] || '📦'}${labels[r] || r}×${a}`).join(' ');
-                    const canBuild = f.canAfford ? '' : ' disabled';
-                    html += `<div class="build-card"><div><strong>${f.icon} ${t(f.name)}</strong>
-                        <br><span style="font-size:0.7rem">${costStr}${t(' | 建造天數：')}${f.buildDays}</span></div>
+                    // v9.18.0 材料一格一格、建造天數單獨一格（原本一整行用「|」接起來）
+                    html += `<div class="build-card pg-fac${f.canAfford ? '' : ' short'}"><div><strong>${f.icon} ${t(f.name)}</strong>
+                        ${this._icPills([...Object.entries(f.cost).map(([r, a]) => `${icons[r] || '📦'} ${labels[r] || r} <b>×${a}</b>`), `⏱️ ${t('建造天數：')}<b>${f.buildDays}</b>`])}</div>
                         </div>`;
                 });
                 html += '</div>';
@@ -728,7 +689,7 @@ Object.assign(RimTownApp.prototype, {
         {
             // Town level
             html += `${t('<div class="econ-section"><h3>🏘️ 小鎮等級：')}${ind.townLevelName || t('荒村')} (Lv${ind.townLevel || 1})</h3>`;
-            html += `${t('<div style="font-size:0.8rem;color:var(--text-secondary)">產業上限：')}${ind.maxIndustries || 1}${t(' | 已開啟：')}${Object.keys(ind.industries || {}).length}</div></div>`;
+            html += `${this._icGrid([{ v: ind.maxIndustries || 1, l: t('產業上限') }, { v: Object.keys(ind.industries || {}).length, l: t('已開啟') }])}</div>`; // v9.18.0 兩個數字改成格子
             // Needs initial industry choice
             if (ind.needsIndustryChoice) {
                 html += t('<div class="econ-section"><h3>第一個產業（等村民提案）</h3>');

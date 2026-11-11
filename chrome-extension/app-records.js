@@ -183,20 +183,22 @@ Object.assign(RimTownApp.prototype, {
         let html = '<div class="economy-panel">';
         html += this._renderSeasonTrial();
         const td = w.trials?.toDict ? w.trials.toDict(w) : null;
-        if (td?.declined) html += `<div class="econ-section" style="border-left:3px solid var(--warning)"><h3>🍂 ${t('衰敗中')}</h3><p class="muted-text">${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}</p></div>`;
+        if (td?.declined && !this.state?.trials) html += `<div class="econ-section" style="border-left:3px solid var(--warning)"><h3>🍂 ${t('衰敗中')}</h3><p class="muted-text">${t('連續撐過兩季考驗就能復興')}${t('（')}${td.passStreak || 0}/2${t('）')}</p></div>`;
         const rd = w.recap?.toDict?.(w); const hist = rd ? [rd.last, ...(rd.history || [])].filter(Boolean).filter((r, i, arr) => arr.findIndex(x => x && x.key === r.key) === i) : [];
         html += `<div class="econ-section"><h3>📜 ${t('小鎮年表')}</h3>`;
         if (!hist.length) html += `<p class="muted-text">${t('第一季結束後，這裡會留下每一季的回顧：考驗、人口、公庫、提案與搬進搬出的人。')}</p>`;
         for (const r of hist) {
             const col = { S: '#ffd166', A: 'var(--positive)', B: 'var(--accent)', C: 'var(--negative)' }[r.grade] || 'var(--accent)';
-            html += `<div class="quest-card quest-completed" style="margin-top:8px"><div class="quest-title" style="display:flex;justify-content:space-between;align-items:center"><span>${esc(r.title)}</span><b style="color:${col}">${esc(r.grade)} · ${esc(r.gradeText)}</b></div>`;
-            html += (r.lines || []).map(l => `<div class="quest-desc">${l.icon} ${esc(l.text)}</div>`).join('');
+            // v9.18.0 每一季一張小卡：季名＋評等徽章，每一行改成「圖示＋內容」的列
+            const tone = { S: 'g', A: 'g', B: 'y', C: 'r' }[r.grade] || 'y';
+            html += `<div class="quest-card quest-completed pg-season"><div class="quest-title pg-season-h"><span>${esc(r.title)}</span><span class="pg-grade pg-grade-${tone}" style="--gc:${col}"><b>${esc(r.grade)}</b><small>${esc(r.gradeText)}</small></span></div>`;
+            html += `<div class="pg-season-rows">${(r.lines || []).map(l => `<div class="quest-desc pg-li"><span class="pg-li-ic">${l.icon}</span><span>${esc(l.text)}</span></div>`).join('')}</div>`;
             html += '</div>';
         }
         html += '</div>';
         { const B = this._townBlocks(null, ['legacy', 'culture', 'goods']); const E = this._eventPieces(['life']); html += B.legacy + B.culture + B.goods + E.life; } // v7.3.0 鎮史、文化、珍品、出生與墓園搬來年表
         const ps = w.proposals?.toDict?.(w);
-        if (ps) html += `<div class="econ-section"><h3>🗳️ ${t('提案總覽')}</h3><p class="muted-text">${t('提出')} ${ps.stats.made} · ${t('已批准')} ${ps.stats.approved} · ${t('已否決')} ${ps.stats.rejected} · ${t('已完成')} ${ps.stats.done}${ps.stats.auto ? ` · ${t('依票數自動定案')} ${ps.stats.auto}` : ''}</p></div>`;
+        if (ps) html += `<div class="econ-section"><h3>🗳️ ${t('提案總覽')}</h3>${this._icGrid([{ v: ps.stats.made, l: t('提出') }, { v: ps.stats.approved, l: t('已批准'), tone: 'g' }, { v: ps.stats.rejected, l: t('已否決'), tone: ps.stats.rejected ? 'r' : '' }, { v: ps.stats.done, l: t('已完成') }, ps.stats.auto ? { v: ps.stats.auto, l: t('依票數自動定案') } : null])}</div>`; // v9.18.0 數字改成格子
         html += '</div>';
         container.innerHTML = html;
         this._renderChronicleSection(container); // v7.3.0 編年史(每天歸檔、匯出)從日報搬來

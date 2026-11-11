@@ -1,6 +1,7 @@
 // v9.18.0 全介面資訊改版：村民列表（一人一列＋篩選）、村民詳情（大數字＋近況／關係／能力／經歷分頁、重複紀錄合併）、
 // 各分頁區塊可收合（記得住）、長串「·」拆成小格子、科技的已完成／還沒解鎖收成一行、成就篩選、已定案提案收成一行；
 // 順手修的 bug：稅率提案顯示 [object Object]、地點顯示 river／town hall 代碼、日報「新村長(village chief)」、股東名字空白、設定勾選框排版
+// 第二輪：真相（數字格＋狀態標籤）、提案流程步驟、本季考驗資訊卡、歷季回顧評等徽章、上次選舉小卡、設定選項卡與開關列
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -87,7 +88,13 @@ async function run(browser, lang) {
       out.share = (() => { try { const k = Object.keys(w.market?.owners || {}).find(x => w.market.owners[x]); if (!k) return 'skip'; const M = SHARES.S(w); const real = M.shares[k]; M.shares[k] = Object.assign({}, SHARES.stakes(w, k), { ghost_xyz: 10 }); const row = SHARES.row(w, k); M.shares[k] = real; return row; } catch (e) { return 'ERR ' + e.message; } })();
       try { localStorage.setItem('rimtown_theme', 'day'); } catch (e) {} app._applyTheme(); out.theme = { day: !!document.querySelector('.theme-day'), stored: localStorage.getItem('rimtown_theme') };
       await go('settings'); out.theme.select = !!document.getElementById('settings-theme'); out.toggles = document.querySelectorAll('label.set-toggle input[type="checkbox"]').length;
-      out.cbWidth = Math.max(0, ...[...document.querySelectorAll('label.set-toggle input[type="checkbox"]')].map(e => e.getBoundingClientRect().width));
+      out.cbWidth = Math.max(0, ...[...document.querySelectorAll('label.set-toggle:not(.set-row) input[type="checkbox"], .set-switch')].map(e => e.getBoundingClientRect().width));
+      // 第二輪：設定選項卡／開關列／長說明拆列
+      out.set2 = { q: document.querySelectorAll('.set-opt[data-q]').length, qOn: document.querySelectorAll('.set-opt[data-q].on').length, qDesc: [...document.querySelectorAll('.set-opt[data-q] small')].filter(e => e.textContent.trim().length > 3).length, roster: document.querySelectorAll('.set-opt[data-action="settings-roster"] small').length, rows: document.querySelectorAll('.set-row .set-row-tx small').length, lines: document.querySelectorAll('.set-lines-ul li').length, help: /45/.test(document.querySelector('#settings-idlecam')?.closest('.set-row')?.textContent || '') };
+      // 真相：數字格＋每條有狀態標籤；提案流程；考驗卡；年表回顧
+      await go('proposals', 'truth'); const tr = document.querySelector('.pp-secrets'); out.truth = tr ? { grid: tr.querySelectorAll('.ic-g').length, rows: tr.querySelectorAll('.pg-truth').length, chips: tr.querySelectorAll('.pg-truth .ic-chip').length, hint: !!tr.querySelector('.pp-issue-hint') } : 'none';
+      await go('proposals', 'props'); out.flow = document.querySelectorAll('.pg-flow .pg-step').length;
+      await go('quest'); out.trial = { card: !!document.querySelector('#ic-qs-trial'), chip: !!document.querySelector('#ic-qs-trial .ic-chip'), oldDecl: [...document.querySelectorAll('.econ-section h3')].filter(h => /🍂/.test(h.textContent)).length, season: document.querySelectorAll('.pg-season').length, grade: document.querySelectorAll('.pg-season .pg-grade').length };
     } catch (e) { out.err = String(e && e.stack || e).slice(0, 700); }
     return out;
   }, lang);
@@ -110,7 +117,11 @@ async function run(browser, lang) {
   ok(r.loc && r.loc.river !== 'river' && !/town hall|town_hall/.test(r.loc.hall) && !/\btown hall\b/.test(r.life || ''), `${tag} 地點不再顯示 river、town hall 這種代碼`, { loc: r.loc, life: r.life });
   ok(typeof r.retitle === 'string' && r.retitle.includes('{mayor}') && !/village chief\)/i.test(r.retitle), `${tag} 稱號替換不會把 {mayor} 占位符換掉`, r.retitle);
   ok(r.share === 'skip' || (typeof r.share === 'string' && !/^\s*\d|・\s*\d|·\s*\d/.test(r.share)), `${tag} 股東名單不會出現沒有名字的一格`, r.share);
-  ok(r.toggles >= 3 && r.cbWidth > 0 && r.cbWidth <= 24, `${tag} 設定的勾選框是小方框（不再撐滿半行）`, { n: r.toggles, w: r.cbWidth });
+  ok(r.toggles >= 3 && r.cbWidth > 0 && r.cbWidth <= 48, `${tag} 設定的勾選框／開關是小的（不再撐滿半行）`, { n: r.toggles, w: r.cbWidth });
+  ok(r.set2 && r.set2.q === 3 && r.set2.qOn === 1 && r.set2.qDesc === 3 && r.set2.roster === 2 && r.set2.rows >= 3 && r.set2.lines >= 3 && r.set2.help, `${tag} 設定：畫質／開局村民改成選項卡（每個都寫說明）、開關一列一項、長說明一句一列`, r.set2);
+  ok(r.truth === 'none' || (r.truth.rows >= 1 && r.truth.chips === r.truth.rows && r.truth.grid >= 1 && r.truth.hint), `${tag} 真相：上面一排數字、每條都有狀態標籤`, r.truth);
+  ok(r.flow >= 3, `${tag} 提案說明改成流程步驟`, r.flow);
+  ok(r.trial && r.trial.card && r.trial.chip && r.trial.oldDecl === 0 && r.trial.grade === r.trial.season, `${tag} 本季考驗改成資訊卡、衰敗不重複、每季回顧有評等徽章`, r.trial);
   ok(r.theme && !r.theme.day && !r.theme.stored && !r.theme.select, `${tag} 白底版本拿掉了：只有一套配色，設定沒有配色選項，舊的設定值清掉`, r.theme);
   if (lang === 'en') ok(r.res && !r.res.leak.length && r.dt && !r.dt.leak.length, `${tag} 英文介面的新按鈕沒有中文`, { res: r.res?.leak, dt: r.dt?.leak });
   ok(!errs.length, `${tag} 沒有頁面錯誤`, errs.slice(0, 3));

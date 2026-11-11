@@ -1232,3 +1232,171 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .pg-cost, .rimtown-container .pg-eff { font-size: 0.76rem; padding: 2px 7px; border-radius: 7px; background: var(--ic-tile); color: var(--text-secondary); font-variant-numeric: tabular-nums; }
 .rimtown-container .pg-cost.short { background: var(--ic-rb); color: var(--ic-r); font-weight: 700; }
 .rimtown-container .pg-eff { background: var(--ic-gb); color: var(--ic-g); }
+/* v9.18.0 第二輪:物資頁 */
+.rimtown-container .ic-dot.n { background: color-mix(in srgb, var(--text-muted) 55%, transparent); }
+.rimtown-container .pg-kv { display: flex; align-items: flex-start; gap: 8px; margin-top: 8px; font-size: 0.8rem; }
+.rimtown-container .pg-kv > span:first-child { flex: none; color: var(--text-muted); padding-top: 5px; min-width: 4.5em; }
+.rimtown-container .pg-kv .ic-pills { margin-top: 0; }
+.rimtown-container .ic-pill b { color: var(--text-primary); }
+.rimtown-container .ic-pill.pg-g { background: var(--ic-gb); color: var(--ic-g); border-color: transparent; } .rimtown-container .ic-pill.pg-y { background: var(--ic-yb); color: var(--ic-y); border-color: transparent; } .rimtown-container .ic-pill.pg-r { background: var(--ic-rb); color: var(--ic-r); border-color: transparent; }
+.rimtown-container .pg-stat { display: flex; flex-direction: column; gap: 2px; margin-top: 8px; }
+.rimtown-container .pg-stat-row { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; }
+.rimtown-container .pg-stat-row .ic-dot { margin-top: 6px; }
+.rimtown-container .pg-stat-row.ic-t-r { color: var(--ic-r); } .rimtown-container .pg-stat-row.ic-t-g { color: var(--text-primary); }
+.rimtown-container .pg-flow { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); }
+.rimtown-container .pg-flow:last-child { border-bottom: 0; }
+.rimtown-container .pg-flow-ic { font-size: 1.2rem; width: 34px; height: 34px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--ic-tile); border-radius: 10px; }
+.rimtown-container .pg-flow.down .pg-flow-ic { box-shadow: inset 0 0 0 1px var(--ic-r); }
+.rimtown-container .pg-flow-m { flex: 1; min-width: 0; }
+.rimtown-container .pg-flow-t { display: flex; align-items: baseline; gap: 6px; min-width: 0; } .rimtown-container .pg-flow-t b { font-size: 0.9rem; color: var(--text-primary); white-space: nowrap; }
+.rimtown-container .pg-flow-t small { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-flow-n { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-top: 2px; font-size: 0.78rem; color: var(--text-secondary); }
+.rimtown-container .pg-flow-n small { color: var(--text-muted); font-size: 0.72rem; }
+.rimtown-container .pg-flow-s { flex: none; text-align: right; display: flex; flex-direction: column; align-items: flex-end; }
+.rimtown-container .pg-flow-s b { font-size: 1.15rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; line-height: 1.1; } .rimtown-container .pg-flow-s small { font-size: 0.68rem; color: var(--text-muted); }
+.rimtown-container .resource-item.ic-t-r { box-shadow: inset 0 0 0 1px var(--ic-r); } .rimtown-container .resource-item.ic-t-r .res-amount { color: var(--ic-r); }
+.rimtown-container .resource-item.ic-t-y { box-shadow: inset 0 0 0 1px var(--ic-y); } .rimtown-container .resource-item.ic-t-y .res-amount { color: var(--ic-y); }
+.rimtown-container .pg-offers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container .pg-offer { display: grid; grid-template-columns: 1fr auto; gap: 1px 6px; padding: 7px 9px; border-radius: 10px; background: var(--ic-tile); font-size: 0.8rem; border-left: 3px solid var(--ic-g); }
+.rimtown-container .pg-offer.sell { border-left-color: var(--ic-y); }
+.rimtown-container .pg-offer-a { grid-column: 1 / -1; font-size: 0.68rem; font-weight: 700; color: var(--text-muted); }
+.rimtown-container .pg-offer-r { color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .rimtown-container .pg-offer-n { color: var(--text-muted); text-align: right; }
+.rimtown-container .pg-offer b { grid-column: 1 / -1; font-size: 1rem; color: var(--text-primary); font-variant-numeric: tabular-nums; } .rimtown-container .pg-offer b small { font-size: 0.7rem; color: var(--text-muted); font-weight: 600; }
+.rimtown-container .pg-bs { display: flex; justify-content: center; gap: 8px; font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; } .rimtown-container .pg-bs b { color: var(--text-primary); }
+.rimtown-container .ic-card .resource-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.rimtown-container .ic-card .resource-item { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 6px 4px; border-radius: 10px; background: var(--ic-tile); border: 0; min-width: 0; }
+.rimtown-container .ic-card .resource-item .res-icon { font-size: 1rem; } .rimtown-container .ic-card .resource-item .res-label { font-size: 0.7rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.rimtown-container .ic-card .resource-item .res-amount { font-size: 0.95rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.rimtown-container .pg-inl { display: inline-flex; margin: 4px 0 0; } .rimtown-container .pg-sm { display: block; font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+.rimtown-container .pg-st { display: inline-flex; flex-direction: column; justify-content: center; min-width: 64px; max-width: 100%; padding: 5px 9px; border-radius: 9px; background: var(--ic-tile); line-height: 1.2; }
+.rimtown-container .pg-st b { font-size: 1rem; font-weight: 800; color: var(--text-primary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rimtown-container .pg-st b small { font-size: 0.68rem; font-weight: 600; color: var(--text-secondary); margin-left: 2px; }
+.rimtown-container .pg-st > span { font-size: 0.68rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .pg-st.zero { opacity: 0.55; } .rimtown-container .pg-st.zero b { font-weight: 700; color: var(--text-secondary); }
+/* 產業列:一個產業一張小卡 */
+.rimtown-container.observer .market-row { display: block !important; padding: 9px 10px; margin: 6px 0; border-radius: 12px; background: var(--ic-tile); border: 0; }
+.rimtown-container.observer .market-row .market-name { font-weight: 700; color: var(--text-primary); font-size: 0.92rem; }
+.rimtown-container.observer .market-row .market-owner { margin-left: 8px; font-size: 0.78rem; color: var(--accent); font-weight: 600; }
+.rimtown-container.observer .market-row .market-num, .rimtown-container.observer .market-row .market-holders, .rimtown-container.observer .market-row .market-rival { display: flex; margin-top: 6px; font-size: 0.78rem; }
+.rimtown-container.observer .market-row .pg-st { background: color-mix(in srgb, var(--bg-card) 75%, transparent); }
+/* v9.18.0 科技頁 */
+.rimtown-container .pg-rc { display: flex; align-items: baseline; gap: 6px; margin: 0 0 6px; padding: 0; border: 0; background: none; font-size: 0.86rem; color: var(--text-muted); }
+.rimtown-container .pg-rc strong { font-size: 1.05rem; color: var(--text-primary); } .rimtown-container .pg-rc b { margin-left: auto; font-size: 1.15rem; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.rimtown-container .research-card .ic-body:first-of-type { padding-top: 2px; }
+.rimtown-container .pg-paths { display: grid; grid-template-columns: 1fr; gap: 8px; margin: 8px 0; }
+@media (min-width: 560px) { .rimtown-container .pg-paths { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.rimtown-container .pg-path { padding: 9px 10px; border-radius: 12px; background: var(--ic-tile); border: 1px solid transparent; }
+.rimtown-container .pg-path.lean { border-color: color-mix(in srgb, var(--accent) 50%, transparent); }
+.rimtown-container .pg-path-h { display: flex; align-items: center; gap: 6px; } .rimtown-container .pg-path-h > b { font-size: 0.95rem; color: var(--text-primary); flex: 1; }
+.rimtown-container .pg-path-h .pg-st { min-width: 0; padding: 3px 8px; align-items: flex-end; }
+.rimtown-container .pg-path-d { font-size: 0.8rem; color: var(--text-secondary); margin: 4px 0 6px; line-height: 1.5; }
+.rimtown-container .pg-path-pc { display: flex; flex-direction: column; gap: 4px; font-size: 0.76rem; line-height: 1.45; }
+.rimtown-container .pg-path-pc span { padding: 3px 7px; border-radius: 7px; } .rimtown-container .pg-path-pc .pg-g { background: var(--ic-gb); color: var(--text-primary); } .rimtown-container .pg-path-pc .pg-y { background: var(--ic-yb); color: var(--text-primary); }
+.rimtown-container .pg-stages { display: flex; flex-direction: column; gap: 6px; margin: 6px 0; }
+.rimtown-container .pg-stage { display: grid; grid-template-columns: 7.5em 1fr 3em; align-items: center; gap: 8px; font-size: 0.8rem; color: var(--text-secondary); }
+.rimtown-container .pg-stage b { text-align: right; color: var(--text-primary); font-variant-numeric: tabular-nums; }
+.rimtown-container.observer .tech-era { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; align-content: start; }
+.rimtown-container.observer .tech-era > * { grid-column: 1 / -1; min-width: 0; }
+.rimtown-container.observer .tech-era > .tech-node.tech-open, .rimtown-container.observer .tech-era > .tech-node.tech-locked:not(.pg-hide2), .rimtown-container.observer .tech-era > .tech-node.tech-done:not(.pg-hide2) { grid-column: auto; margin: 0; }
+.rimtown-container.observer .tech-era > .tech-node .tech-node-head { flex-wrap: wrap; gap: 2px 6px; }
+.rimtown-container.observer .tech-era > .tech-node .tech-desc, .rimtown-container.observer .tech-era > .tech-node .tech-need { font-size: 0.74rem; line-height: 1.45; }
+.rimtown-container.observer details.tech-era { display: block; }
+.rimtown-container .pg-list2 { display: flex !important; flex-direction: column; gap: 3px; }
+.rimtown-container .pg-li { display: block; position: relative; padding: 4px 0 4px 12px; font-size: 0.8rem; line-height: 1.5; color: var(--text-secondary); border-bottom: 1px dashed color-mix(in srgb, var(--border) 70%, transparent); }
+.rimtown-container .pg-li:last-child { border-bottom: 0; } .rimtown-container .pg-li::before { content: ''; position: absolute; left: 2px; top: 11px; width: 4px; height: 4px; border-radius: 50%; background: var(--text-muted); }
+.rimtown-container .pp-gov { margin: 4px 0 8px; } .rimtown-container .pp-gov .ic-row b { white-space: normal; text-align: right; font-weight: 600; }
+.rimtown-container .pg-up, .rimtown-container .pg-classes, .rimtown-container .pg-mob { display: block; margin: 8px 0; }
+.rimtown-container .pg-stage.ok b, .rimtown-container .pg-stage.ok .pp-tier-req { color: var(--ic-g); }
+.rimtown-container .pg-stack { display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: var(--ic-tile); gap: 2px; }
+.rimtown-container .pg-stack i, .rimtown-container .pg-legend2 i { display: block; }
+.rimtown-container .pg-legend2 { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 6px; font-size: 0.76rem; color: var(--text-secondary); }
+.rimtown-container .pg-legend2 span { display: inline-flex; align-items: center; gap: 4px; } .rimtown-container .pg-legend2 b { color: var(--text-primary); } .rimtown-container .pg-legend2 small { color: var(--text-muted); }
+.rimtown-container .pg-legend2 i { width: 8px; height: 8px; border-radius: 2px; }
+.rimtown-container .pgc0 { background: #7A6F86; } .rimtown-container .pgc1 { background: #8FA3B8; } .rimtown-container .pgc2 { background: #6FCF97; } .rimtown-container .pgc3 { background: #F2C14E; } .rimtown-container .pgc4 { background: #F28C4A; } .rimtown-container .pgc5 { background: #E5736B; }
+.rimtown-container .pg-tl { display: flex; flex-direction: column; position: relative; }
+.rimtown-container .pg-ev { display: flex !important; gap: 10px; padding: 6px 0; position: relative; }
+.rimtown-container .pg-ev::before { content: ''; position: absolute; left: 4px; top: 18px; bottom: -6px; width: 1px; background: var(--border); }
+.rimtown-container .pg-ev:last-child::before { display: none; }
+.rimtown-container .pg-ev-dot { flex: none; width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: var(--text-muted); position: relative; z-index: 1; }
+.rimtown-container .pg-ev-dot.r { background: var(--ic-r); } .rimtown-container .pg-ev-dot.y { background: var(--ic-y); } .rimtown-container .pg-ev-dot.g { background: var(--ic-g); } .rimtown-container .pg-ev-dot.b { background: #6FA8F2; }
+.rimtown-container .pg-ev-m { display: flex; flex-direction: column; min-width: 0; font-size: 0.82rem; line-height: 1.45; }
+.rimtown-container .pg-ev-m b { color: var(--text-primary); } .rimtown-container .pg-ev-m span { color: var(--text-secondary); } .rimtown-container .pg-ev-m small { color: var(--text-muted); font-size: 0.7rem; }
+.rimtown-container .explore-zone .zone-stats { margin-top: 6px; }
+/* v9.18.0 真相：圖示＋內容＋狀態標籤 */
+.rimtown-container .pp-secrets .ic-grid { margin: 4px 0 8px; }
+.rimtown-container .pp-issue.pg-truth { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 10px; background: var(--ic-bg2, rgba(255,255,255,.04)); margin-bottom: 6px; }
+.rimtown-container .pg-truth .pg-tr-ic { font-size: 1.1rem; flex: none; }
+.rimtown-container .pg-truth .pg-tr-tx { flex: 1; min-width: 0; font-size: .82rem; line-height: 1.45; }
+.rimtown-container .pg-truth .ic-chip { flex: none; white-space: nowrap; }
+/* v9.18.0 本季考驗 */
+.rimtown-container .pg-trial-h { font-size: 1rem; margin-bottom: 2px; }
+.rimtown-container .pg-trial-bar { margin: 8px 0; }
+.rimtown-container .ic-bar.ic-t-g i { background: var(--positive, #4ade80); }
+.rimtown-container .ic-bar.ic-t-y i { background: var(--accent); }
+.rimtown-container .ic-bar.ic-t-r i { background: var(--negative, #f87171); }
+.rimtown-container .pg-trial-perk { display: flex; gap: 6px; align-items: flex-start; margin-top: 8px; padding: 8px 10px; border-radius: 10px; background: var(--ic-tile); font-size: .8rem; line-height: 1.45; }
+.rimtown-container .pg-rules { display: grid; gap: 6px; }
+.rimtown-container .pg-rules > span { display: block; padding: 8px 10px; border-radius: 10px; background: var(--ic-tile); font-size: .8rem; }
+.rimtown-container .pg-trial .ic-alert { margin: 0 0 8px; }
+/* v9.18.0 歷季回顧小卡 */
+.rimtown-container .pg-season { margin-top: 8px; padding: 10px 12px; }
+.rimtown-container .pg-season-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rimtown-container .pg-grade { display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--gc) 18%, transparent); color: var(--gc); white-space: nowrap; }
+.rimtown-container .pg-grade b { font-size: 1.05rem; } .rimtown-container .pg-grade small { font-size: .7rem; }
+.rimtown-container .pg-season-rows { margin-top: 6px; }
+.rimtown-container .pg-season .pg-li { display: flex; gap: 8px; padding-left: 0; color: var(--text-primary, inherit); }
+.rimtown-container .pg-season .pg-li::before { display: none; }
+.rimtown-container .pg-season .pg-li-ic { flex: none; width: 1.3em; text-align: center; }
+/* v9.18.0 上次選舉小卡 */
+.rimtown-container .pg-el { padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); }
+.rimtown-container .pg-el-h { font-size: .74rem; color: var(--text-muted); }
+.rimtown-container .pg-el-w { display: flex; align-items: center; gap: 8px; margin: 2px 0 6px; }
+.rimtown-container .pg-el-w b { font-size: 1.05rem; }
+/* v9.18.0 設定：選項卡、開關列 */
+.rimtown-container .set-blk { margin: 4px 0 12px; }
+.rimtown-container .set-blk-h { font-size: .78rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 6px; }
+.rimtown-container .set-help { font-size: .7rem; color: var(--text-muted); margin-top: 6px; }
+.rimtown-container .set-opts { display: grid; gap: 6px; }
+.rimtown-container .set-opts.n3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.rimtown-container .set-opts.n2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rimtown-container .set-opt { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-height: 44px; padding: 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--ic-tile); color: var(--text-primary); text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s; }
+.rimtown-container .set-opt:hover { border-color: color-mix(in srgb, var(--accent) 50%, var(--border)); }
+.rimtown-container .set-opt.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--ic-tile)); box-shadow: inset 0 0 0 1px var(--accent); }
+.rimtown-container .set-opt-ic { font-size: 1.2rem; line-height: 1; margin-bottom: 2px; }
+.rimtown-container .set-opt b { font-size: .86rem; }
+.rimtown-container .set-opt small { font-size: .68rem; color: var(--text-muted); line-height: 1.4; }
+.rimtown-container .set-rows { display: grid; gap: 6px; margin: 4px 0 12px; }
+.rimtown-container .set-toggle.set-row { display: flex !important; flex-wrap: nowrap; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); min-height: 52px; }
+.rimtown-container .set-row-ic { font-size: 1.2rem; flex: none; width: 1.6em; text-align: center; }
+.rimtown-container .set-row-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.rimtown-container .set-row-tx b { font-size: .86rem; color: var(--text-primary); }
+.rimtown-container .set-row-tx small { font-size: .7rem; color: var(--text-muted); line-height: 1.4; }
+.rimtown-container .set-switch { position: relative; flex: none; width: 44px; height: 26px; }
+.rimtown-container .set-switch input[type="checkbox"] { position: absolute; inset: 0; width: 100% !important; height: 100%; opacity: 0; margin: 0; cursor: pointer; z-index: 1; }
+.rimtown-container .set-switch i { position: absolute; inset: 0; border-radius: 999px; background: color-mix(in srgb, var(--text-muted) 40%, transparent); transition: background .2s; }
+.rimtown-container .set-switch i::after { content: ''; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.35); }
+.rimtown-container .set-switch input:checked + i { background: var(--accent); }
+.rimtown-container .set-switch input:checked + i::after { transform: translateX(18px); }
+.rimtown-container .set-switch input:focus-visible + i { outline: 2px solid var(--accent); outline-offset: 2px; }
+.rimtown-container .set-bgm { display: flex; align-items: center; gap: 10px; }
+.rimtown-container .set-bgm input[type="range"] { flex: 1; accent-color: var(--accent); }
+@media (max-width: 380px) { .rimtown-container .set-opts.n3 { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .rimtown-container .set-switch i, .rimtown-container .set-switch i::after { transition: none; } }
+.rimtown-container .set-lines-ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 4px; }
+.rimtown-container .set-lines-ul li { position: relative; padding-left: 12px; line-height: 1.45; }
+.rimtown-container .set-lines-ul li::before { content: ''; position: absolute; left: 2px; top: .55em; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); opacity: .7; }
+.rimtown-container .set-list li.set-li-ic { list-style: none; display: flex; gap: 8px; align-items: flex-start; margin-left: -1.1em; }
+.rimtown-container .set-list li.set-li-ic > span:first-child { flex: none; width: 1.3em; text-align: center; }
+.rimtown-container .set-acct { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--ic-tile); margin-bottom: 8px; }
+.rimtown-container .set-acct-av { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 22%, transparent); }
+.rimtown-container .set-acct strong { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.rimtown-container .set-cloud { margin: 0 0 8px; }
+/* v9.18.0 提案流程 */
+.rimtown-container .pp-tabhint.pg-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.rimtown-container .pg-flow .pg-step { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 999px; background: var(--ic-tile); color: var(--text-secondary); font-size: .72rem; }
+.rimtown-container .pg-flow .pg-step i { font-style: normal; }
+.rimtown-container .pg-flow .pg-step.last { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-weight: 700; }
+.rimtown-container .pg-flow .pg-arr { color: var(--text-muted); font-weight: 400; }
+.rimtown-container .pg-flow .pg-step.last + .pg-arr, .rimtown-container .pg-flow .pg-arr:has(+ .pg-step.last) { visibility: hidden; width: 4px; }
+.rimtown-container .pg-flow .pg-step:not(.last) i { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; background: color-mix(in srgb, var(--accent) 25%, transparent); color: var(--accent); font-size: .62rem; font-weight: 700; }
+.rimtown-container .set-toggle.set-fa { flex-wrap: nowrap; } .rimtown-container .set-toggle.set-fa .set-switch { margin-left: auto; }

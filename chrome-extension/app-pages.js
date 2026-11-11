@@ -220,23 +220,44 @@ Object.assign(RimTownApp.prototype, {
         const b = [...document.querySelectorAll('[data-pgb]')].find(x => x.dataset.pgb === k); if (!b) return;
         const on = !b.classList.contains('open'); b.classList.toggle('open', on); b.firstElementChild?.setAttribute('aria-expanded', String(on)); S.blk[k] = on ? 1 : 0; this._pgSave();
     },
+    // 「標籤 數字」的一段 → 數據格(數字大、說明小);其他照原文當小標籤。0 也照樣顯示，只是淡一點
+    _PG_STAT: /^(|.*?[^\d\s.,+\-−＋])\s*[：:]?\s*([+\-−＋]?\d[\d.,]*)\s*(%|人|次|棟|筆|天|家|件|位|股|銀幣|個|份|名|席|條|篇|座|間|項|週|年|歲|點|種|處|起|門)?\s*$/,
+    _pgStat(txt) {
+        const m = String(txt).trim().match(this._PG_STAT); if (!m) return null;
+        const l = m[1].replace(/[：:\s]+$/, '').trim(); if (l.length > 22 || /\d/.test(l)) return null; // 標籤裡還有數字(例如「價格 75% 對 100%」)就不拆,免得意思跑掉
+        return { l, v: m[2], u: m[3] || '' };
+    },
     _pgDots(root) {
         const SEP = /\s+·\s+|(?<=[\d%）)\]a-zA-Z])・(?=\S)/;
-        const cands = root.querySelectorAll('div, p, span.pp-tier-line, span.market-num, span.market-holders, span.market-rival');
+        const cands = root.querySelectorAll('div, p, span.pp-tier-line, span.market-num, span.market-holders, span.market-rival, .pp-tier-line > small, .pp-issue small');
+        const plain = (g) => g.every(n => n.nodeType === 3 || /^(B|STRONG|SMALL|SPAN)$/.test(n.tagName) && !n.querySelector('*'));
         for (const el of cands) {
             if (el.dataset.pgd || el.closest('.ic-card, .ic-kpi, button, .memory-item, .chat-msg, .pp-card, .pg-row, .tech-node-head, .news-paper, .obs-paper, .ob-paper')) continue;
             if (el.querySelector('div, p, ul, ol, table, section, h3, h4, button, input, select')) continue;
-            const txt = el.textContent || ''; if (txt.length < 24) continue;
-            const hits = txt.split(SEP).length - 1; if (hits < 2) continue;
+            const txt = el.textContent || ''; if (txt.length < 12) continue;
+            if (txt.length > 50 && (txt.match(/；/g) || []).length >= 2 && !el.closest('.pg-dots')) { // 用「；」串起來的長段 → 一條一條的清單
+                const rows = [[]];
+                for (const n of [...el.childNodes]) { if (n.nodeType === 3 && n.data.includes('；')) n.data.split('；').forEach((p, j) => { if (j > 0) rows.push([]); if (p.trim()) rows[rows.length - 1].push(document.createTextNode(p.trim())); }); else rows[rows.length - 1].push(n); }
+                const R = rows.filter(r => r.some(n => (n.textContent || '').trim()));
+                if (R.length >= 3) { el.textContent = ''; el.classList.add('pg-list2'); el.dataset.pgd = '1'; for (const r of R) { const d = document.createElement('span'); d.className = 'pg-li'; r.forEach(n => d.appendChild(n)); el.appendChild(d); } continue; }
+            }
+            const hits = txt.split(SEP).length - 1; if (hits < 1) continue;
             const groups = [[]];
             for (const n of [...el.childNodes]) {
                 if (n.nodeType === 3 && SEP.test(n.data)) { n.data.split(SEP).forEach((p, j) => { if (j > 0) groups.push([]); if (p.trim()) groups[groups.length - 1].push(document.createTextNode(p.trim())); }); }
                 else groups[groups.length - 1].push(n);
             }
             const G = groups.filter(g => g.some(n => (n.textContent || '').trim()));
-            if (G.length < 3 || G.some(g => g.reduce((a, n) => a + (n.textContent || '').trim().length, 0) > 30)) continue; // 只拆短的事實(一段太長代表是句子,拆了反而難讀)
+            const gt = (g) => g.map(n => n.textContent || '').join('').trim();
+            const noStat = el.matches('.market-holders, .pp-tier-line > small'); // 股東名單、店家說明照原文小標籤
+            const stats = G.map(g => { if (noStat || !plain(g)) return null; const x = gt(g); const parts = x.split('／'); if (parts.length === 2) { const a = this._pgStat(parts[0]), b = this._pgStat(parts[1]); if (a && b) return [a, b]; } const st = this._pgStat(x); return st ? [st] : null; });
+            const nStat = stats.filter(Boolean).length;
+            if (G.length < 2 || (G.length === 2 && nStat < 2) || (G.length >= 3 && nStat === 0 && G.some(g => gt(g).length > 30)) || G.some((g, i) => !stats[i] && gt(g).length > 40)) continue; // 只拆短的事實(一段太長代表是句子,拆了反而難讀)
             el.textContent = ''; el.classList.add('pg-dots'); el.dataset.pgd = '1';
-            for (const g of G) { const s = document.createElement('span'); s.className = 'pg-dot'; g.forEach(n => s.appendChild(n)); el.appendChild(s); }
+            G.forEach((g, i) => {
+                if (stats[i]) for (const st of stats[i]) { const z = /^[+\-−＋]?0(\.0+)?$/.test(st.v); const s2 = document.createElement('span'); s2.className = 'pg-st' + (z ? ' zero' : ''); s2.innerHTML = `<b>${this._icEsc(st.v)}${st.u ? `<small>${this._icEsc(st.u)}</small>` : ''}</b>${st.l ? `<span>${this._icEsc(st.l)}</span>` : ''}`; el.appendChild(s2); }
+                else { const s2 = document.createElement('span'); s2.className = 'pg-dot'; g.forEach(n => s2.appendChild(n)); el.appendChild(s2); }
+            });
         }
     },
     _dtApplyTab(container, k) {

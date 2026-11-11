@@ -20,12 +20,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     await page.waitForTimeout(800);
     const r = await page.evaluate(() => {
       const card = document.querySelector('.set-toggle-card'); if (!card) return { missing: true };
-      const cb = document.getElementById('settings-fullagent').getBoundingClientRect(), tt = card.querySelector('.set-toggle-title').getBoundingClientRect();
+      const cbEl = document.getElementById('settings-fullagent'); const cb = (cbEl.closest('.set-switch') || cbEl).getBoundingClientRect() /* v9.18.0 勾選框改成開關 */, tt = card.querySelector('.set-toggle-title').getBoundingClientRect();
       const root = document.querySelector('.set-card')?.closest('.econ-section') || document.body; const txt = root.innerText;
       return { cbW: Math.round(cb.width), sameLine: Math.abs((cb.top + cb.bottom) / 2 - (tt.top + tt.bottom) / 2) < 10, titleW: Math.round(tt.width), titleH: Math.round(tt.height),
         lists: document.querySelectorAll('.set-list li').length, txt: txt.replace(/\s+/g, ' ').slice(0, 900), overflowX: document.documentElement.scrollWidth > window.innerWidth + 1 };
     });
-    ok(!r.missing && r.cbW <= 24 && r.sameLine && r.titleH < 30, '完整智能體:勾選框正常大小,跟標題同一行、標題不被擠成兩行', r);
+    ok(!r.missing && r.cbW <= 48 && r.sameLine && r.titleH < 30, '完整智能體:開關正常大小,跟標題同一行、標題不被擠成兩行', r);
     ok(r.lists >= 3, 'AI 狀態改成條列', r.lists);
     ok(!/300 則|300 per day|300 a day/.test(r.txt), '不再寫死每日 300 則', r.txt.slice(0, 200));
     ok(lang === 'zh' ? /沒有每日次數上限/.test(r.txt) : /No daily limit/.test(r.txt), '沒有上限時寫「沒有每日次數上限」', r.txt.slice(0, 200));
