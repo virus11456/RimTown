@@ -4362,6 +4362,16 @@ body.landing-open { overflow: hidden; }
 .lp-ba p { margin: 0; color: var(--lp-ink2); font-size: 0.95rem; line-height: 1.75; }
 .lp-ba .now p { color: var(--lp-ink); }
 .lp .lp-steps.lp-steps-5 { grid-template-columns: repeat(5, 1fr); gap: 16px; }
+/* v9.20.0 五個步驟:編號和圖示排在同一列,標題、說明緊接在下面(以前三樣各佔一列,空隙太大);欄位夠寬時(平板、手機)標題也併到同一列 */
+.lp .lp-steps-5 .lp-step { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 8px; row-gap: 6px; align-items: center; align-content: start; padding: 14px 0 0 !important; }
+.lp .lp-steps-5 .lp-step-num { margin: 0; }
+.lp .lp-steps-5 .lp-step-ic { font-size: 1.5rem; justify-self: start; }
+.lp .lp-steps-5 .lp-step h3 { grid-column: 1 / -1; margin: 2px 0 0; font-size: 1.04rem; line-height: 1.35; }
+.lp .lp-steps-5 .lp-step p { grid-column: 1 / -1; }
+@media (max-width: 1100px) {
+    .lp .lp-steps-5 .lp-step { grid-template-columns: auto auto minmax(0, 1fr); row-gap: 8px; }
+    .lp .lp-steps-5 .lp-step h3 { grid-column: auto; margin: 0; }
+}
 .lp-sub-h { margin: 34px 0 14px; font-size: 1.15rem; font-weight: 800; }
 .lp-picks, .lp-prog { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .lp-picks li { padding: 16px; background: var(--lp-bg2); border-radius: 14px; border-left: 3px solid var(--lp-accent); }
