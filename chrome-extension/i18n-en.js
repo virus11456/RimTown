@@ -13414,6 +13414,7 @@
         '張': '',
         '鎮上還沒有工廠。可以蓋哪些在「展開詳細」裡，等村民提案。': 'No factories yet. What can be built is under "Show details"; it waits for a villager\'s proposal.',
         '每天產出': 'Daily output',
+        '鎮上還沒有工廠，也還沒研究出可以蓋的工廠。': 'No factories yet, and none has been researched.',
         '升下一級要': 'Next level needs',
         '第一個產業（等村民提案）': 'First industry (waits for a proposal)',
         '可開啟新產業（等村民提案）': 'New industry available (waits for a proposal)',

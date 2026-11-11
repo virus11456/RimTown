@@ -153,7 +153,7 @@ Object.assign(RimTownApp.prototype, {
     _indKv(k, v) { return v ? `<div class="pg-kv"><span>${k}</span>${v}</div>` : ''; },
     _industryV2() {
         this._icAlerts = []; const cards = [];
-        const add = (fn) => { try { const h = fn.call(this); if (h) cards.push(h); } catch (e) { console.warn('[industry]', e); } };
+        const add = (fn) => { try { const h = fn.call(this, cards.length); if (h) cards.push(h); } catch (e) { console.warn('[industry]', e); } };
         [this._indBiz, this._indShops, this._indFactory, this._indBase, this._indFarm, this._indBank, this._indLife, this._indPower, this._indUnion, this._indExile].forEach(add);
         const A = this._icAlerts; this._icAlerts = null;
         return `<div class="ic-wrap pg-ind">${A.length ? this._icBrief(A) : ''}${cards.join('')}</div>`;
@@ -194,7 +194,6 @@ Object.assign(RimTownApp.prototype, {
         const w = this.world, st = this.state; const esc = (x) => this._icEsc(x); const proc = st.processing || {}; const F = proc.builtFactories || {}; const FD = typeof FACTORIES !== 'undefined' ? FACTORIES : {};
         const keys = Object.keys(F).filter(k => FD[k]); const act = keys.filter(k => F[k].status === 'active').length, bld = keys.filter(k => F[k].status === 'building').length;
         const orders = (proc.orders || []).filter(o => o.status === 'active'); let avail = []; try { avail = w.processing?.getAvailableFactories?.(w) || []; } catch (e) {}
-        if (!keys.length && !orders.length && !avail.length) return '';
         const one = (k) => { const f = F[k], def = FD[k]; let h = `<div class="pg-firm pg-fac2">`;
             if (f.status === 'building') { const p = Math.round(f.buildProgress / Math.max(1, f.buildRequired) * 100); return h + this._indHead(`${def.icon} ${esc(t(def.name))}`, `${t('建造中')} ${p}%`, 'y') + `<div class="ic-bar"><i style="width:${Math.max(2, p)}%"></i></div></div>`; }
             h += this._indHead(`${def.icon} ${esc(t(def.name))}`, f.status === 'active' ? t('運作中') : esc(f.status || ''), f.status === 'active' ? 'g' : '');
@@ -209,10 +208,10 @@ Object.assign(RimTownApp.prototype, {
         const can = avail.length ? this._icSub(t('可建造工廠（等村民提案）'), `<div class="pg-firms">${avail.map(f => `<div class="pg-firm pg-fac${f.canAfford ? '' : ' short'}">` + this._indHead(`${f.icon} ${esc(t(f.name))}`, `⏱️ ${t('建造天數：')}${f.buildDays}`) + this._indRes(f.cost, true) + `</div>`).join('')}</div>`) : '';
         return this._ic({ id: 'ind-fac', icon: '🏭', title: t('工廠'), defOpen: false, sum: `<b>${keys.length}</b> ${t('座')}`, chip: bld ? { t: `${t('建造中')} ${bld}`, tone: 'y' } : null,
             kpis: [{ v: act, u: t('座'), l: t('運作中') }, { v: bld, u: t('座'), l: t('建造中') }, { v: orders.length, u: t('張'), l: t('訂單') }],
-            body: (keys.length ? `<div class="pg-firms">${keys.map(one).join('')}</div>` : `<div class="ic-note">${t('鎮上還沒有工廠。可以蓋哪些在「展開詳細」裡，等村民提案。')}</div>`) + ord, detail: can });
+            body: (keys.length ? `<div class="pg-firms">${keys.map(one).join('')}</div>` : `<div class="ic-note">${avail.length ? t('鎮上還沒有工廠。可以蓋哪些在「展開詳細」裡，等村民提案。') : t('鎮上還沒有工廠，也還沒研究出可以蓋的工廠。')}</div>`) + ord, detail: can });
     },
     // 基礎產業:小鎮等級、每個產業(等級、效果、工人、每天產出、升級要什麼)、產業加成
-    _indBase() {
+    _indBase(before) {
         const ind = this.state.industry || {}; const esc = (x) => this._icEsc(x); const ID = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES : {};
         const list = Object.entries(ind.industries || {}); const syn = ind.activeSynergies || [];
         const one = ([key, data]) => { const def = ID[key]; const lv = def?.levels?.find(l => l.lv === data.level), nx = def?.levels?.find(l => l.lv === data.level + 1); const wk = Array.isArray(data.workers) ? data.workers.length : (data.workers || 0); const out = Object.entries(data.dailyOutput || {});
@@ -223,7 +222,7 @@ Object.assign(RimTownApp.prototype, {
                 + (nx ? this._indKv(t('升下一級要'), this._indRes(nx.cost, true)) : '') + `</div>`; };
         let avail = []; if (ind.needsIndustryChoice || ind._pendingUnlock) { try { avail = this.world.industry.getAvailableIndustries(this.world) || []; } catch (e) {} }
         const pick = avail.length ? this._icSub(ind.needsIndustryChoice ? t('第一個產業（等村民提案）') : t('可開啟新產業（等村民提案）'), `<div class="pg-firms">${avail.map(i => `<div class="pg-firm build-card">` + this._indHead(`${i.icon} ${esc(t(i.name))}`, '') + `<div class="ic-note">${esc(i.desc)}</div></div>`).join('')}</div>`) : '';
-        return this._ic({ id: 'ind-base', icon: '🏘️', title: t('基礎產業'), defOpen: false, chip: { t: `${ind.townLevelName || t('荒村')} Lv${ind.townLevel || 1}`, tone: '' }, sum: `<b>${list.length}</b>/${ind.maxIndustries || 1}`,
+        return this._ic({ id: 'ind-base', icon: '🏘️', title: t('基礎產業'), defOpen: !before || !!(ind.needsIndustryChoice || ind._pendingUnlock), /* 前面沒有別的卡(剛開鎮)或正等著選產業時先展開 */ chip: { t: `${ind.townLevelName || t('荒村')} Lv${ind.townLevel || 1}`, tone: '' }, sum: `<b>${list.length}</b>/${ind.maxIndustries || 1}`,
             kpis: [{ v: `Lv${ind.townLevel || 1}`, l: `${t('小鎮等級')}・${ind.townLevelName || t('荒村')}` }, { v: ind.maxIndustries || 1, l: t('產業上限') }, { v: list.length, l: t('已開啟') }],
             body: (list.length ? `<div class="pg-firms">${list.map(one).join('')}</div>` : (pick ? '' : `<div class="ic-note">${t('還沒有開啟任何產業。')}</div>`)) + pick
                 + (syn.length ? this._icSub('✨ ' + t('產業加成') + ` <small>${syn.length}</small>`, this._icPills(syn.map(s => `${s.icon} ${esc(t(s.name))}`))) : '') });
