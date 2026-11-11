@@ -694,7 +694,7 @@ Object.assign(RimTownApp.prototype, {
             try {
                 const plan = liveAgent.generateDailyPlan(this.world);
                 const status = liveAgent.getPersonaStatus(this.world);
-                const lifestyle = liveAgent.getLifestyleText();
+                const lifestyle = liveAgent.getLifestyleText(this.world);
                 const timeline = liveAgent.getTodayTimeline(this.world, 12);
                 const timeOf = (s) => (String(s).match(/(\d{2}:\d{2})\s*$/) || [])[1] || '';
                 const nowLine = `<div class="memory-item"><span class="memory-time">${t('現在')}</span>${liveAgent.activityLabel} @ ${this._locationLabel(liveAgent.currentLocation)}</div>`;
@@ -1304,27 +1304,19 @@ Object.assign(RimTownApp.prototype, {
             </select>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('切換後會重新整理頁面；手機預設不開陰影。')}</div>
         </div>`;
-        // v6.29.0 介面配色與自動帶鏡頭
-        let themePref = 'night'; try { themePref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {} // v6.41.1 拿掉「自動」
+        // v6.29.0 自動帶鏡頭(v9.18.0 拿掉介面配色選項,只剩一套)
         let autocam = false; try { autocam = localStorage.getItem('rimtown_autocam') === '1'; } catch (e) {}
         let idlecam = true; try { idlecam = localStorage.getItem('rimtown_idlecam') !== '0'; } catch (e) {} // v6.32.0
         html += `<div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary)">${t('介面配色')}</label>
-            <select id="settings-theme" style="width:100%;padding:6px 8px;background:var(--bg-primary);color:var(--text-primary);border:1px solid var(--border);border-radius:4px;font-size:0.8rem" onchange="try{localStorage.setItem('rimtown_theme',this.value)}catch(e){};window.rimtownApp?._applyTheme?.()">
-                <option value="night"${themePref!=='day'?' selected':''}>${t('夜色')}</option>
-                <option value="day"${themePref==='day'?' selected':''}>${t('日光')}</option>
-            </select>
-        </div>
-        <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-autocam" ${autocam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}"> ${t('事件發生時自動帶鏡頭')}</label>
+            <label class="set-toggle" style="font-size:0.84rem;color:var(--text-secondary)"><input type="checkbox" id="settings-autocam" ${autocam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_autocam',this.checked?'1':'0')}catch(e){}"> ${t('事件發生時自動帶鏡頭')}</label>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('新提案、搬來、商隊進城、考驗公布時鏡頭自動飛過去；關掉的話通知上仍有「去看」鈕。')}</div>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-idlecam" ${idlecam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}"> ${t('閒置時鏡頭慢慢環繞小鎮')}</label>
+            <label class="set-toggle" style="font-size:0.84rem;color:var(--text-secondary)"><input type="checkbox" id="settings-idlecam" ${idlecam ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_idlecam',this.checked?'1':'0')}catch(e){};if(window.rimtownApp&&window.rimtownApp.tileMap){window.rimtownApp.tileMap.idleCam=this.checked;window.rimtownApp.tileMap._lastInputAt=Date.now();}"> ${t('閒置時鏡頭慢慢環繞小鎮')}</label>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('45 秒沒操作就開始環繞，動一下滑鼠或螢幕就停。')}</div>
         </div>
         <div class="setting-group" style="margin-bottom:8px">
-            <label style="font-size:0.82rem;color:var(--text-secondary);display:flex;align-items:center;gap:8px"><input type="checkbox" id="settings-uiall" ${this._uiAll?.() ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_ui_all',this.checked?'1':'0')}catch(e){};if(window.rimtownApp)window.rimtownApp.renderSidebar()"> ${t('一開始就顯示全部功能')}</label>
+            <label class="set-toggle" style="font-size:0.84rem;color:var(--text-secondary)"><input type="checkbox" id="settings-uiall" ${this._uiAll?.() ? 'checked' : ''} onchange="try{localStorage.setItem('rimtown_ui_all',this.checked?'1':'0')}catch(e){};if(window.rimtownApp)window.rimtownApp.renderSidebar()"> ${t('一開始就顯示全部功能')}</label>
             <div style="font-size:0.7rem;color:var(--text-muted);margin-top:3px">${t('不勾的話，分頁會隨著小鎮發展慢慢解鎖。')}${(() => { const p = this._uiPending?.() || []; return p.length && !this._uiAll?.() ? ' ' + t('還沒解鎖') + t('：') + p.map(x => x.icon + ' ' + x.label).join(t('、')) : ''; })()}</div>
         </div>`;
         // v5.59.2 背景音樂開關搬進設定分頁(原本只在無入口的舊版彈窗裡,玩家關不掉音樂)

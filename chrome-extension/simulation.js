@@ -640,7 +640,7 @@ class World {
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead).map(a => ({
             id: a.agentId, name: a.name, job: a.job?.title || '',
             currently: a.currently || '',
-            lifestyle: a.getLifestyleText ? a.getLifestyleText() : '',
+            lifestyle: a.getLifestyleText ? a.getLifestyleText(this) : '',
             plan: a.dailyPlan ? [...(a.dailyPlan.goals || [])] : [],
             planLlm: !!a.dailyPlan?.llm,
             replanned: !!a.dailyPlan?.replanned,

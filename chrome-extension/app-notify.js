@@ -707,7 +707,7 @@ Object.assign(RimTownApp.prototype, {
             host.id = 'achv-toast-host';
             host.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9500;display:flex;flex-direction:column;gap:8px;align-items:flex-end;pointer-events:none';
             document.body.appendChild(host);
-            try { const c = document.querySelector('.rimtown-container'); if (c?.classList.contains('observer')) { host.classList.add('observer'); host.classList.toggle('theme-day', c.classList.contains('theme-day')); } } catch (e) {} // v6.29.0 同步色票 class
+            try { const c = document.querySelector('.rimtown-container'); if (c?.classList.contains('observer')) { host.classList.add('observer'); } } catch (e) {} // v6.29.0 同步色票 class
         }
         this._placeToastHost(host);
         if (!this._toastHostWatched) { // v6.11.0 側欄變寬(聊天 .chat-wide)或視窗縮放時,已顯示的通知也跟著移位

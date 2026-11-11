@@ -213,7 +213,7 @@ const TIERS = (() => {
         return { next: nx, pop: [npcs(w).length, nx.pop], pros: [Math.round(pros(w)), nx.pros], era: [era(w), nx.era], streak: T.up, need: UP_DAYS, mat, matLack: mat ? ECON.lack(w, mat) : {} };
     }
     // ---------- 稱號換字(介面、紀錄、記憶、AI 提示詞都走 t()) ----------
-    const RE_EN = /(?<![Ll]ord )\b(Acting )?([Mm])ayor\b/g; // 「Lord Mayor」本身不再換(避免換兩次)
+    const RE_EN = /(?<![Ll]ord |\{)\b(Acting )?([Mm])ayor\b(?!\})/g; // v9.18.0 不換 {mayor} 這種範本占位符(以前日報變成「新村長(village chief)」) // 「Lord Mayor」本身不再換(避免換兩次)
     function retitle(s) {
         if (typeof s !== 'string' || !s) return s;
         const w = typeof window !== 'undefined' && window.rimtownApp?.world; const lv = w?.tierState?.lv;

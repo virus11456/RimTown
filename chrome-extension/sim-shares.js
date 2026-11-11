@@ -34,7 +34,7 @@ const SHARES = (function () {
     const pay = (w, from, to, n) => { n = Math.round(n * 100) / 100; if (!(n > 0) || !takeId(w, from, n)) return false; addId(w, to, n); return true; };
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 100) / 100, w.tickCount, why); };
     const nm = (k) => M_().name(k);
-    const nameOf = (w, id) => w.agents?.[id]?.name || '';
+    const nameOf = (w, id) => w.agents?.[id]?.name || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || (/^(town|public|gov)/.test(String(id)) ? '鎮公所' : (w.departedNames?.[id] || w._nameCache?.[id] || '已不在鎮上的人')); // v9.18.0 股東離鎮或是鎮公所時,以前名單上會空一格
     const SEC = () => Object.keys(M_().SECTORS);
     const MAXH = 6; // v9.8.0 一家最多六個股東(以前四個;通過員工認股以後,自家工人另外可以認股,最多八個)
     const maxH = (w) => (S(w).sh.law.staff ? 8 : MAXH);

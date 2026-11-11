@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.17.0';
+const RIMTOWN_APP_VERSION = '9.18.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2262,6 +2262,10 @@ class RimTownApp {
                 case 'give-gift': this._giveGift(val); break;
                 case 'show-leaderboard': this._showLeaderboard(); break;
                 case 'ic-toggle': case 'ic-more': case 'ic-info': case 'ic-go': this._icClick?.(action, val); break; // v9.17.0 資訊卡
+                case 'res-filter': case 'dt-tab': case 'ach-filter': this._pgClick?.(action, val); break;
+                case 'blk-toggle': this._pgBlkToggle?.(val); break;
+                case 'fold-toggle': this._pgFoldToggle?.(val); break;
+                case 'pp-mini': this._pgPropToggle?.(val); break; // v9.18.0 全介面改版
                 case 'decor-place': this._enterDecorMode(val); break;
                 case 'relmap-filter':
                     if (this._relmapFilters) { this._relmapFilters[val] = !this._relmapFilters[val]; this.renderSidebar(); }
@@ -3047,6 +3051,7 @@ class RimTownApp {
             this._renderTabContent(content);
         }
         this._restoreDetails(content, keep);
+        try { this._pgEnhance?.(content); } catch (e) { console.warn('[pages] enhance', e); } // v9.18.0 區塊收合、長串「·」拆成小格子
     }
     // v6.76.5 <details> 開合狀態:以「分頁＋摘要文字(去掉數字,計數會變)＋第幾個同名」為鍵;使用者手動收起的也照收起還原
     _detailsKeys(root) {
@@ -3270,13 +3275,10 @@ class RimTownApp {
         if (k >= '1' && k <= '4') { const tab = ['economy', 'residents', 'proposals', 'records'][+k - 1]; document.querySelector(`.rt-sidebar-tabs > button[data-tab="${tab}"]`)?.click(); return; }
         if (k === 'Escape') { this._hideNpcCard?.(); this.tileMap?.followAgent?.(null); }
     }
-    // v6.29.0 介面配色:日光／夜色
-    // v6.41.1 介面不再跟著遊戲裡的白天晚上換色:預設固定夜色,只有手動選「日光」才用日光色票(舊的「自動」一律當夜色)
-    _applyTheme() {
-        let pref = 'night'; try { pref = localStorage.getItem('rimtown_theme') || 'night'; } catch (e) {}
-        const day = pref === 'day';
-        const c = document.querySelector('.rimtown-container'); if (c && c.classList.contains('theme-day') !== day) c.classList.toggle('theme-day', day);
-        const th = document.getElementById('achv-toast-host'); if (th) { if (!th.classList.contains('observer')) th.classList.add('observer'); if (th.classList.contains('theme-day') !== day) th.classList.toggle('theme-day', day); } // 通知容器掛在 body 下,色票 class 要同步過去
+    _applyTheme() { // v9.18.0 只剩一套配色(淺色版拿掉):把舊的 theme-day 與設定值清掉
+        try { if (localStorage.getItem('rimtown_theme')) localStorage.removeItem('rimtown_theme'); } catch (e) {}
+        document.querySelectorAll('.theme-day').forEach(el => el.classList.remove('theme-day'));
+        const th = document.getElementById('achv-toast-host'); if (th && !th.classList.contains('observer')) th.classList.add('observer');
     }
     _locationLabel(locId) {
         if (!locId) return '';
@@ -3291,7 +3293,8 @@ class RimTownApp {
         };
         // Try the town map for custom location names
         if (this.state?.locations?.[locId]?.name) return this.state.locations[locId].name;
-        return labels[locId] || locId.replace(/_/g, ' ');
+        const tl = this.world?.townMap?.locations?.[locId]?.name; if (tl) return t(tl); // v9.18.0 河、山丘這些自然地點以前顯示 river、hill
+        return labels[locId] || (typeof LOC_FALLBACK !== 'undefined' && LOC_FALLBACK[locId] ? t(LOC_FALLBACK[locId]) : locId.replace(/_/g, ' '));
     }
 
     _escapeHtml(str) {

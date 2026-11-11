@@ -65,7 +65,7 @@ const CIVIC = (() => {
         const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = dir; }
         return p;
     }
-    function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return tpl('稅率從 {a}% 調成 {n}%', { a: Math.round(old * 100), n: Math.round(w.wallet.tax * 100) }); }
+    function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return t('稅率從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(w.wallet.tax * 100)); } // v9.18.0 以前回傳 tpl 物件，提案卡顯示成 [object Object]
     function taxVote(w, p, a) {
         const c = cash(w, a), tr = w.stockpile?.get?.('silver') || 0;
         if (p.dir === 'down') return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against';

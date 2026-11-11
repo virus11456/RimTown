@@ -271,7 +271,7 @@ class ConversationEngine {
             const prevCurrently = npc.currently || npc.getPersonaStatus(world);
             return `=== ${t('居民')} ${i + 1}${t('：')}${p.name} ===
 ${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
-${t('【作息】')}${npc.getLifestyleText()}
+${t('【作息】')}${npc.getLifestyleText(world)}
 ${t('【目前近況】')}${prevCurrently}
 ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
