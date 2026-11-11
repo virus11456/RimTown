@@ -101,7 +101,9 @@ const BIZ = (() => {
         if (banker && aff(banker, a) < -20) return { ok: false, why: 'dislike' };
         return { ok: true };
     }
-    function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: TYPES[s.type].icon, name: en() ? s.name[1] : s.name[0], type: t(TYPES[s.type].zh), owner: t(w.agents[s.owner]?.name || ''), partner: s.partner ? t(w.agents[s.partner]?.name || '') : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
+    // v9.18.1 老闆出遠門、過世或搬走時，名字不再是空白
+    const whoName = (w, id) => { const a = w.agents[id]; if (a && !a.isDead && a.name) return t(a.name); const tr = (w.events?._travellingAgents || []).find(x => x?.agentData?.agentId === id)?.agentData?.name; if (tr) return t(tr) + t('（出遠門）'); const nm = a?.name || w.departedNames?.[id] || w._nameCache?.[id]; return nm ? t(nm) + t('（已不在鎮上）') : t('已不在鎮上的人'); };
+    function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: TYPES[s.type].icon, name: en() ? s.name[1] : s.name[0], type: t(TYPES[s.type].zh), owner: whoName(w, s.owner), partner: s.partner ? whoName(w, s.partner) : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
     function chip(w, a) { const s = shopOf(w, a); if (!s) return ''; return `${TYPES[s.type].icon} ${s.owner === a.agentId ? t('老闆') : t('合夥人')}${t('：')}${en() ? s.name[1] : s.name[0]}`; }
     return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan };
 })();

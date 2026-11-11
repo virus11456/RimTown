@@ -254,9 +254,11 @@ Object.assign(RimTownApp.prototype, {
             const nStat = stats.filter(Boolean).length;
             if (G.length < 2 || (G.length === 2 && nStat < 2) || (G.length >= 3 && nStat === 0 && G.some(g => gt(g).length > 30)) || G.some((g, i) => !stats[i] && gt(g).length > 40)) continue; // 只拆短的事實(一段太長代表是句子,拆了反而難讀)
             el.textContent = ''; el.classList.add('pg-dots'); el.dataset.pgd = '1';
+            // v9.18.1 連續的數字格收進同一個等寬格線(不再跟長文字擠在同一行、大小不一);長文字單獨一行，順序照原文
+            let grid = null;
             G.forEach((g, i) => {
-                if (stats[i]) for (const st of stats[i]) { const z = /^[+\-−＋]?0(\.0+)?$/.test(st.v); const s2 = document.createElement('span'); s2.className = 'pg-st' + (z ? ' zero' : ''); s2.innerHTML = `<b>${this._icEsc(st.v)}${st.u ? `<small>${this._icEsc(st.u)}</small>` : ''}</b>${st.l ? `<span>${this._icEsc(st.l)}</span>` : ''}`; el.appendChild(s2); }
-                else { const s2 = document.createElement('span'); s2.className = 'pg-dot'; g.forEach(n => s2.appendChild(n)); el.appendChild(s2); }
+                if (stats[i]) { if (!grid) { grid = document.createElement('span'); grid.className = 'pg-stg'; el.appendChild(grid); } for (const st of stats[i]) { const z = /^[+\-−＋]?0(\.0+)?$/.test(st.v); const s2 = document.createElement('span'); s2.className = 'pg-st' + (z ? ' zero' : ''); s2.innerHTML = `<b>${this._icEsc(st.v)}${st.u ? `<small>${this._icEsc(st.u)}</small>` : ''}</b>${st.l ? `<span>${this._icEsc(st.l)}</span>` : ''}`; grid.appendChild(s2); } }
+                else { grid = null; const s2 = document.createElement('span'); s2.className = 'pg-dot' + (gt(g).length > 12 ? ' wide' : ''); g.forEach(n => s2.appendChild(n)); el.appendChild(s2); }
             });
         }
     },
