@@ -118,8 +118,9 @@ function processDailyProduction(world) {
                 world.logMessageT('economy', '銀庫不足，付不出{agent}的加班津貼，今日照常排班。', { agent: agent.name });
             }
         }
-        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0) + (world.buildings?.getEffect?.('farm_bonus',0) || 0); } // v6.43.1 進階農業／灌溉／風車等加成 // v5.93.0 大糧倉 +20%
-        if (agent.job.key === 'miner') eff *= 1 + (world.news?world.news.getModifier('mining_bonus',0):0) + (world.buildings?.getEffect?.('stone_efficiency',0) || 0); // v6.89.0 石工技術
+        if (agent.job.key === 'farmer' && world.weather?.cropStop?.(world) && (typeof ECON === 'undefined' || ECON.roleOf(world, agent) === 'grain')) return; // v9.23.1 氣溫低於 0 度或極端氣候:作物停止生長,種田的今天沒有收成(打魚打獵照舊)
+        if (agent.job.key === 'farmer') { eff *= SEASON_FARM_MOD[world.clock.season] || 1; eff *= Math.max(0, 1 + (world.news?world.news.getModifier('farm_bonus',0):0) + (world.weather?world.weather.farmModifier:0) + (world.harborFlags?.granary ? 0.2 : 0) + (world.buildings?.getEffect?.('farm_bonus',0) || 0)); } // v9.23.1 壞天氣＋天災＋政令加起來最多歸零(以前會變負的,農夫越種糧越少) // v6.43.1 進階農業／灌溉／風車等加成 // v5.93.0 大糧倉 +20%
+        if (agent.job.key === 'miner') eff *= Math.max(0, 1 + (world.news?world.news.getModifier('mining_bonus',0):0) + (world.buildings?.getEffect?.('stone_efficiency',0) || 0)); // v9.23.1 最多歸零 // v6.89.0 石工技術
         if (agent.job.key === 'blacksmith') eff *= 1 + (world.buildings?.getEffect?.('smithing_bonus',0) || 0) + (world.buildings?.getEffect?.('tool_quality',0) || 0) * 0.5; // v6.89.0 風箱鍛爐、冶金
         if (world.market?.hungry && (world.market.hungry[agent.agentId] || 0) >= 3) eff *= 0.6; // v6.89.0 餓了好幾天,做事沒力氣
         eff *= 1 + (agent.mood - 50)/500;
@@ -488,9 +489,9 @@ class TradeManager {
         const sellBonus=world.news?world.news.getModifier('sell_bonus',0):0;
         const buyBonus=world.news?world.news.getModifier('buy_bonus',0):0;
         const repTradeBonus=world.reputationSystem?world.reputationSystem.getModifier('trade_price_bonus'):0;
-        const offers=[];
-        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.round(bp*(1.2+Math.random()*0.6)*(1-tradeBonus-buyBonus-repTradeBonus)*10)/10,isBuying:false}); });
-        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.round(bp*(0.5+Math.random()*0.3)*(1+tradeBonus+sellBonus+repTradeBonus)*10)/10,isBuying:true}); });
+        const offers=[]; // v9.23.1 折扣最多打到四折、收購價最低四成(貿易加成一路疊上去以前會變成免費甚至倒貼;負面政令疊起來收購價會變負的)
+        mt.sells.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(10,30),price:Math.max(0.1,Math.round(bp*(1.2+Math.random()*0.6)*Math.max(0.4,1-tradeBonus-buyBonus-repTradeBonus)*10)/10),isBuying:false}); });
+        mt.buys.forEach(r=>{ const bp=BASE_PRICES[r]||5; offers.push({resource:r,amount:randInt(15,40),price:Math.max(0.1,Math.round(bp*(0.5+Math.random()*0.3)*Math.max(0.4,1+tradeBonus+sellBonus+repTradeBonus)*10)/10),isBuying:true}); });
         this.merchant={name:pickRandom(mt.names),specialty:mt.specialty,offers,daysRemaining:randInt(2,4)};
         world.logMessageT('trade', '商人{merchant}到了！專長：{specialty}。', { merchant: this.merchant.name, specialty: mt.specialty });
     }
@@ -618,7 +619,7 @@ class ResearchManager {
         let pts=0;
         Object.values(world.agents).forEach(a=>{ if(!a.isPlayer&&a.job?.key==='researcher'){ // v6.40.1 用 job.key 判斷,不靠翻譯後的職稱
              const sk=a.skills.get('智識'); pts+=7+(sk?sk.level:0)*0.35; } }); // v9.11.0 以前 3＋級×0.5(大家很快就是 13)
-        pts *= 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0);
+        pts *= Math.max(0, 1 + (world.news?world.news.getModifier('research_bonus',0):0) + (world.buildings?.getEffect?.('research_bonus',0) || 0)); // v9.23.1 最多歸零(以前疊幾道負面政令研究點會倒扣)
         if (world.econ?.paperShort) pts *= 0.8; // v6.77.0 缺紙研究變慢 // v6.40.0 文書房／印刷坊／天文台等加速研究
         return pts;
     }

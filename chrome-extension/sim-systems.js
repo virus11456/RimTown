@@ -262,6 +262,20 @@ class WeatherSystem {
 
         // Broadcast to daily news (significant weather only)
         this._reportWeather(world);
+
+        // v9.23.1 作物停止／恢復生長:只在狀態改變那天講一次
+        { const cs = this.cropStop(world); if (!!cs !== !!this._cropWas) world.logMessageT('weather', cs === 'cold' ? '🥶 氣溫降到零度以下，田裡的作物停止生長。' : cs ? '🥀 天氣太惡劣，田裡的作物停止生長。' : '🌱 天氣回穩，田裡的作物又開始長了。', {}); this._cropWas = cs; }
+    }
+
+    // v9.23.1 作物停止生長:氣溫低於 0 度,或遇到極端氣候(暴風雨／暴風雪／熱浪／乾旱,或衝擊農業的天災)。
+    // 有深井／灌溉(抗旱)的鎮,乾旱時田裡還有水,作物照長(只是長得慢)。只管種田的,打魚打獵照舊。回傳 'cold'／'extreme'／null
+    cropStop(world) {
+        if (this.temperature < 0) return 'cold';
+        const watered = (world?.buildings?.getEffect?.('drought_resistance', 0) || 0) > 0;
+        const dis = this.activeDisaster;
+        if (['storm', 'blizzard', 'heatwave', 'drought'].includes(this.current) && !(watered && this.current === 'drought')) return 'extreme';
+        if (dis && dis.effects && dis.effects.farm < 0 && !(watered && dis.type === 'drought_severe')) return 'extreme';
+        return null;
     }
 
     _rollWeather(season) {
@@ -559,9 +573,10 @@ class WeatherSystem {
     }
     get isExtreme() { return ['storm','blizzard','heatwave','drought'].includes(this.current) || !!this.activeDisaster; }
 
-    toDict() {
+    toDict(world) {
         const w = WEATHER_TYPES[this.current];
         return {
+            cropStop: this.cropStop(world), // v9.23.1
             current: this.current,
             name: w?.name() || this.current,
             icon: w?.icon || '?',
@@ -588,7 +603,7 @@ class WeatherSystem {
             forecast: this.forecast, _temperature: this._temperature,
             _humidity: this._humidity, _windSpeed: this._windSpeed,
             disasterWarning: this.disasterWarning, activeDisaster: this.activeDisaster,
-            _daysSinceDisaster: this._daysSinceDisaster,
+            _daysSinceDisaster: this._daysSinceDisaster, _cropWas: this._cropWas || null,
         };
     }
 
@@ -601,7 +616,7 @@ class WeatherSystem {
         this._temperature = data._temperature ?? 20;
         this._humidity = data._humidity ?? 50;
         this._windSpeed = data._windSpeed ?? 0;
-        this.disasterWarning = data.disasterWarning || null;
+        this.disasterWarning = data.disasterWarning || null; this._cropWas = data._cropWas || null;
         this.activeDisaster = data.activeDisaster || null;
         this._daysSinceDisaster = data._daysSinceDisaster ?? 10;
     }

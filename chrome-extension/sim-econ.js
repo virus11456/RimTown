@@ -100,6 +100,7 @@ const ECON = (() => {
     // processDailyProduction 用:農夫依角色換算產量(季節:魚冬天少、肉秋天多;已乘過的種田季節係數先除掉)
     const FISH_SEASON = { '春季': 1.0, '夏季': 1.1, '秋季': 1.0, '冬季': 0.7 };
     const MEAT_SEASON = { '春季': 0.9, '夏季': 1.0, '秋季': 1.2, '冬季': 0.8 };
+    const roleOf = (w, a) => a?.foodRole || S(w).roles[a?.agentId] || 'grain'; // v9.23.1
     function foodMult(w, a) {
         const role = a.foodRole || S(w).roles[a.agentId] || 'grain';
         const m = mult(w, role); if (role === 'grain') return m;
@@ -215,7 +216,7 @@ const ECON = (() => {
             return parts.join(t('；'));
         } catch (e) { return ''; }
     }
-    return { S, baseOf, water, mult, localRaws, rawFloor, assignRoles, applyRole, foodMult, noteFood, toolFactor, saltDecay, houseMat, tierMat, lack, matText, daily, noteTrade, specialty, view, townBrief, KINDS, KIND_ZH, KIND_ICON };
+    return { S, baseOf, water, mult, localRaws, rawFloor, assignRoles, applyRole, roleOf, foodMult, noteFood, toolFactor, saltDecay, houseMat, tierMat, lack, matText, daily, noteTrade, specialty, view, townBrief, KINDS, KIND_ZH, KIND_ICON };
 })();
 if (typeof globalThis !== 'undefined') globalThis.ECON = ECON;
 
