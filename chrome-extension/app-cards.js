@@ -16,6 +16,16 @@ Object.assign(RimTownApp.prototype, {
     _icSave() { try { const S = this._icState(); localStorage.setItem('rimtown_ic', JSON.stringify({ open: S.open, more: S.more })); } catch (e) {} },
     _icEsc(x) { return this._escapeHtml ? this._escapeHtml(String(x ?? '')) : String(x ?? ''); },
     _icNum(n) { const v = Math.round(Number(n) || 0); return Math.abs(v) >= 10000 ? v.toLocaleString() : String(v); },
+    // v9.20.1 大數字放不下時改顯示 25.5k:先照完整數字畫,畫完量一次,真的被截掉才換成短的(完整數字留在 title)
+    _icShort(x) { const s = String(x ?? ''); const m = s.match(/^([^\d-]*)(-?[\d,]+)$/); if (!m) return ''; const v = Number(m[2].replace(/,/g, '')); if (!isFinite(v) || Math.abs(v) < 10000) return '';
+        const a = Math.abs(v); const f = (n, u) => (n >= 100 ? String(Math.round(n)) : n.toFixed(1).replace(/\.0$/, '')) + u; return m[1] + (v < 0 ? '-' : '') + (a >= 1e6 ? f(a / 1e6, 'M') : f(a / 1000, 'k')); },
+    _icFit(root) {
+        for (const b of (root || document).querySelectorAll('.ic-kpi b[data-s], .ic-kpi b[data-su]')) {
+            if (b.scrollWidth <= b.clientWidth + 1) continue; const tn = b.firstChild;
+            if (b.dataset.s && tn && tn.nodeType === 3) tn.nodeValue = b.dataset.s;
+            if (b.dataset.su && b.scrollWidth > b.clientWidth + 1) { const sm = b.querySelector('small'); if (sm) sm.textContent = b.dataset.su; }
+        }
+    },
     // o: { id, icon, title, chip:{t,tone}, sum, kpis:[{v,u,l,tone}], alert:{t,tone,act,val,go}, body, detail, info, defOpen }
     _ic(o) {
         const S = this._icState(); const esc = (x) => this._icEsc(x);
@@ -29,7 +39,7 @@ Object.assign(RimTownApp.prototype, {
         h += `<button type="button" class="ic-hd" data-action="ic-toggle" data-val="${o.id}" aria-expanded="${open}"><span class="ic-ic" aria-hidden="true">${o.icon}</span><span class="ic-tt">${esc(o.title)}</span>${chip}${sum}<span class="ic-arr" aria-hidden="true"></span></button><div class="ic-main">`;
         if (o.info) h += `<div class="ic-info">${o.info}<button type="button" class="ic-info-x" data-action="ic-info" data-val="${o.id}">${t('知道了')}</button></div>`;
         if (o.top) h += `<div class="ic-body">${o.top}</div>`;
-        if (o.kpis?.length) h += `<div class="ic-kpis n${Math.min(4, o.kpis.length)}">${o.kpis.map(k => `<div class="ic-kpi${k.tone ? ' ic-t-' + k.tone : ''}"><b>${k.v}${k.u ? `<small>${esc(k.u)}</small>` : ''}</b><span>${esc(k.l)}</span></div>`).join('')}</div>`;
+        if (o.kpis?.length) h += `<div class="ic-kpis n${Math.min(4, o.kpis.length)}">${o.kpis.map(k => `<div class="ic-kpi${k.tone ? ' ic-t-' + k.tone : ''}"><b${(() => { const sv = this._icShort(k.v), su = this._icShort(k.u); return (sv || su) ? `${sv ? ` data-s="${esc(sv)}"` : ''}${su ? ` data-su="${esc(su)}"` : ''} title="${esc(String(k.v) + (k.u || ''))}"` : ''; })()}>${k.v}${k.u ? `<small>${esc(k.u)}</small>` : ''}</b><span>${esc(k.l)}</span></div>`).join('')}</div>`;
         if (o.alert) h += `<div class="ic-alert ic-${o.alert.tone || 'r'}"><span>${o.alert.tone === 'y' ? '⚠️' : '🚨'} ${esc(o.alert.t)}</span></div>`;
         if (o.body) h += `<div class="ic-body">${o.body}</div>`;
         if (o.detail) h += `<div class="ic-detail">${o.detail}</div>`;
@@ -46,7 +56,7 @@ Object.assign(RimTownApp.prototype, {
     _icPills(list) { const L = list.filter(Boolean); return L.length ? `<div class="ic-pills">${L.map(x => `<span class="ic-pill">${x}</span>`).join('')}</div>` : ''; },
     _icClick(k, v) {
         const S = this._icState(); const el = document.getElementById('ic-' + v);
-        if (k === 'ic-toggle') { const on = !(el?.classList.contains('open')); S.open[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('open', on); el.querySelector('.ic-hd')?.setAttribute('aria-expanded', String(on)); } }
+        if (k === 'ic-toggle') { const on = !(el?.classList.contains('open')); S.open[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('open', on); el.querySelector('.ic-hd')?.setAttribute('aria-expanded', String(on)); if (on) this._icFit(el); } }
         else if (k === 'ic-more') { const on = !(el?.classList.contains('more')); S.more[v] = on ? 1 : 0; this._icSave(); if (el) { el.classList.toggle('more', on); el.querySelector('.ic-more')?.setAttribute('aria-expanded', String(on)); } }
         else if (k === 'ic-info') { if (el) el.classList.toggle('info'); }
         else if (k === 'ic-go') { S.open[v] = 1; this._icSave(); if (el) { el.classList.add('open'); el.scrollIntoView({ block: 'start', behavior: 'smooth' }); el.classList.add('ic-flash'); setTimeout(() => el.classList.remove('ic-flash'), 1200); } }

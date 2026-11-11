@@ -2133,6 +2133,7 @@ class World {
                 if (n) { this._scrubbedLeaks = n; console.warn('[RimTown] 已清除', n, '則 AI 助理漏出的錯誤回覆'); }
                 if (World._s2tCount) { this._s2tFixed = World._s2tCount; console.warn('[RimTown] 已把', World._s2tCount, '段簡體字轉成繁體'); }
             } catch (e) {}
+            try { const rn = typeof fixNumberedNames === 'function' ? fixNumberedNames(data) : []; if (rn.length) { this._renamedOnLoad = rn; console.warn('[RimTown] 已把', rn.length, '個帶編號的名字換成真名', rn); } } catch (e) {} // v9.20.1
             // Clock
             this.clock.day=data.clock.day; this.clock.hour=data.clock.hour; this.clock.minute=data.clock.minute;
             this.clock.season=data.clock.season; this.clock.year=data.clock.year;

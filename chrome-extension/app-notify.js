@@ -57,9 +57,11 @@ Object.assign(RimTownApp.prototype, {
     _notifyScrubbedLeaks() {
         const n = (this.world && this.world._scrubbedLeaks) || 0;
         const c = (this.world && this.world._s2tFixed) || 0;
-        if (!n && !c) return;
-        if (this.world) { this.world._scrubbedLeaks = 0; this.world._s2tFixed = 0; }
+        const rn = (this.world && this.world._renamedOnLoad) || []; // v9.20.1 帶編號的舊名字換成真名
+        if (!n && !c && !rn.length) return;
+        if (this.world) { this.world._scrubbedLeaks = 0; this.world._s2tFixed = 0; this.world._renamedOnLoad = null; }
         try {
+            if (rn.length) this.world.logMessageT('system', '📛 {n} 位村民的名字後面帶著編號，已經換成正式的名字：{list}。存檔已修正。', { n: rn.length, list: rn.slice(0, 8).map(([o, x]) => `${o} → ${x}`).join(t('、')) + (rn.length > 8 ? '…' : '') });
             if (n) this.world.logMessageT('system', '🧹 已清除 {n} 則 AI 服務誤回的英文/自報身分內容，存檔已修正。', { n });
             if (c) this.world.logMessageT('system', '🈶 已把 {c} 段簡體字台詞轉成繁體，存檔已修正。', { c });
         } catch (e) {}
