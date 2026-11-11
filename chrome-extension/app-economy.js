@@ -86,6 +86,7 @@ Object.assign(RimTownApp.prototype, {
         const S = { economy: 'overview', 'econ-goods': 'goods', 'econ-build': 'build', 'econ-tech': 'tech', industry: 'industry' }[this.activeTab] || 'overview';
         let html = '<div class="economy-panel">';
         if (S === 'overview') html += this._renderPlayerCaravan(); // v5.92.0 押商隊
+        if (S === 'overview' && this._overviewCards && this.world?.observerMode) { container.innerHTML = html + this._overviewCards() + '</div>'; return; } // v9.17.0 概況改成資訊卡
 
         // Prosperity summary
         const prosp = this.state.prosperity;

@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.16.1';
+const RIMTOWN_APP_VERSION = '9.17.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2261,6 +2261,7 @@ class RimTownApp {
                 case 'rumor-send': this._sendRumor(val); break;
                 case 'give-gift': this._giveGift(val); break;
                 case 'show-leaderboard': this._showLeaderboard(); break;
+                case 'ic-toggle': case 'ic-more': case 'ic-info': case 'ic-go': this._icClick?.(action, val); break; // v9.17.0 資訊卡
                 case 'decor-place': this._enterDecorMode(val); break;
                 case 'relmap-filter':
                     if (this._relmapFilters) { this._relmapFilters[val] = !this._relmapFilters[val]; this.renderSidebar(); }
