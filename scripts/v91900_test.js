@@ -73,14 +73,14 @@ async function run(browser, lang, vp) {
     // ---------- 5) AI 版 ----------
     const save = { ok: ce.fullAgentOk, ask: ce._askJson }; let prompts = []; let reply = null;
     ce.fullAgentOk = () => true; ce._askJson = async (p) => { prompts.push(p); return typeof reply === 'function' ? reply(p) : reply; };
-    const letterOf = (p, who, re) => { const blk = p.split('=== ').slice(1).find(s => s.includes(who)) || ''; /* 第 0 段是鎮況,裡面也可能提到這個人 */ const line = (blk.split('\n').find(s => /【可以選】|\[You can choose\]/.test(s)) || ''); const parts = line.split(' ／ '); for (const x of parts) { const m = x.match(/([a-z])\. (.*)$/); if (m && re.test(m[2])) return m[1]; } return ''; };
+    const letterOf = (p, who, re) => { const blk = p.split('=== ').slice(1).find(s => s.includes(who)) || ''; /* 第 0 段是鎮況,裡面也可能提到這個人 */ const line = (blk.split('\n').find(s => /【可以選】|\[You can choose\]/.test(s)) || ''); const parts = line.split(' ／ '); for (const x of parts) { const m = x.match(/([\w:.-]+)＝(.*)$/); if (m && re.test(m[2])) return m[1]; /* v9.23.2 選項改用固定代號（＝前面那個字） */ } return ''; };
     const who = (a) => (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en' ? I18N.localizeNames(a.name, true) : a.name);
     // 5a) AI 選一個選項,附理由和打算
     reset(); w.fullAgentMode = true; B[F.agentId] = 600; F.job = F.job?.key === 'mayor' ? null : F.job; for (const o of all) rel(F, o, 0);
     reply = (p) => [{ n: 1, pick: letterOf(p, who(F), /去外地玩|trip/i), why: 'AIWHY想看看山的另一邊', next: 'AINEXT回來後開一間小店' }];
     { const st0 = SPEND.S(w).st.tripN || 0; const lg0 = (w.messageLog || []).length; prompts = []; out.aiCons = await conserved(async () => { today(); await DECIDE.flush(); }); const e = lastLog(F); const v = DECIDE.view(w, F); const p = prompts[0] || '';
       out.ai = { asked: prompts.length, id: e && e.id, ai: e && e.ai, why: v.rows[0]?.why, res: v.rows[0]?.res, plan: v.plan, trip: (SPEND.S(w).st.tripN || 0) - st0, log: (w.messageLog || []).slice(-12).some(m => String(m.content || '').includes('🧭') && String(m.content || '').includes('AIWHY')), mem: F.memory.entries.slice(-6).some(m => JSON.stringify(m).includes('AIWHY')),
-        prompt: { money: /【錢】|\[Money\]/.test(p), people: /【人際】|\[People\]/.test(p), event: /【遇到的事】|\[What came up\]/.test(p), choose: /【可以選】|\[You can choose\]/.test(p), other: / z\. /.test(p), town: /【鎮況】|\[Town\]/.test(p), cjk: /[一-鿿]/.test(p), cjkBits: (p.match(/[^\n]{0,24}[一-鿿][^\n]{0,24}/g) || []).slice(0, 10) },
+        prompt: { money: /【錢】|\[Money\]/.test(p), people: /【人際】|\[People\]/.test(p), event: /【遇到的事】|\[What came up\]/.test(p), choose: /【可以選】|\[You can choose\]/.test(p), other: /other＝/.test(p), town: /【鎮況】|\[Town\]/.test(p), cjk: /[一-鿿]/.test(p), cjkBits: (p.match(/[^\n]{0,24}[一-鿿][^\n]{0,24}/g) || []).slice(0, 10) },
         planInLedger: (ce._agentBrief(w, F, null).mem || []).some(s => s.includes('AINEXT')) }; }
     // 5b) AI 選「其他」:自己想做的事,用白名單效果落地;不在白名單的不算
     reset(); B[F.agentId] = 400; B[G.agentId] = 10; rel(F, G, 10);

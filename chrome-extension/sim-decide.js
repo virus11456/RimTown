@@ -242,14 +242,22 @@ const DECIDE = (() => {
     const pend = (X) => { let s = PEND.get(X); if (!s) { s = new Map(); PEND.set(X, s); } return s; };
     let _tok = 0;
     const _proms = [];
-    const letter = (i) => String.fromCharCode(97 + i);
     const clean = (s, n) => String(s == null ? '' : s).replace(/[\r\n]+/g, ' ').replace(/[<>]/g, '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, n);
     const cap = (zh, en) => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' ? en : zh; } catch (e) { return zh; } };
     function prompt(w, K, list) {
+        // v9.23.2 放不進伺服器的長度上限就把每個人的帳本再收短（超過會被從尾巴截掉，「只輸出 JSON」跟著不見，整批退回傾向版）
+        const ce = w.conversationEngine; const max = ce._promptMax ? ce._promptMax() : cap(5700, 17000); const bs = list.map(o => ce._agentBrief(w, o.a, null)); let p = '';
+        for (let lv = 0; lv <= 2; lv++) { p = promptAt(w, K, list, bs, lv); if (p.length <= max) break; }
+        return p;
+    }
+    const TIGHT = [() => ({ cap: { self: 4, world: 2 }, cut: cap(60, 150) }), () => ({ cap: { eco: 5, pol: 3, soc: 4, self: 2, world: 1, did: 2 }, cut: cap(40, 110) }), () => ({ cap: { now: 2, eco: 3, pol: 2, soc: 2, self: 1, world: 1, did: 1 }, cut: cap(30, 80) })];
+    function promptAt(w, K, list, bs, lv) {
         const ce = w.conversationEngine; const sep = t('；');
         const people = list.map((o, i) => {
-            const b = ce._agentBrief(w, o.a, null); const L = b.ledger ? lines(b.ledger, { cap: { self: 4, world: 2 }, cut: cap(60, 150) }) : (b.mem || []); // 一次問好幾個人：近況和鎮上的事收短一點，省字數
-            const opts = o.opts.map((op, j) => `${letter(j)}. ${say(op.text)}`).concat(`z. ${t('其他：做一件上面沒有、但你真的想做的事')}`);
+            const b = bs[i]; const L = b.ledger ? lines(b.ledger, TIGHT[lv]()) : (b.mem || []); // 一次問好幾個人：近況和鎮上的事收短一點，省字數
+            // v9.23.2 選項用固定的代號（repay、extend…），不用 a、b、c：一次問好幾個人時每個人的選項不一樣，同一個字母對不同人是不同的事，
+            // 真模型會搞混（實測：理由寫「帶點心意去道歉」，選的卻是別人清單裡的 c＝不道歉）
+            const opts = o.opts.map((op) => `${op.id}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
             return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${t('【遇到的事】')}${K.facts(w, o.a, o.ctx)}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
@@ -258,9 +266,9 @@ ${t('【鎮況】')}${String(ce._townBrief(w) || '').slice(0, cap(420, 1200))}
 
 ${people}
 
-${t('只輸出 JSON 陣列，每人一個物件：')}{"n":1,"pick":"a","why":"…","next":"…"}
-${t('n 是那個人的序號，pick 是選項的字母，why 是他自己口吻的一句理由（25 字內），next 是接下來的打算（沒有就省略，20 字內）。')}
-${t('如果選 z（其他），再加 "do":"想做的事（30 字內）" 和 "fx":[最多 3 個效果]。效果只能從這幾種挑，寫不出效果就只留 do：')}
+${t('只輸出 JSON 陣列，每人一個物件：')}{"n":1,"pick":"${t('代號')}","why":"…","next":"…"}
+${t('n 是那個人的序號，pick 是「他自己那一列」選項的代號（＝前面的英文，照抄），why 是他自己口吻的一句理由（25 字內），要跟選的那一項對得上，next 是接下來的打算（沒有就省略，20 字內）。')}
+${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和 "fx":[最多 3 個效果]。效果只能從這幾種挑，寫不出效果就只留 do：')}
 {"t":"give","to":"${t('人名')}","n":${t('銀幣')}} ${t('把錢給某人')}${sep}{"t":"town","n":${t('銀幣')}} ${t('捐給公庫')}${sep}{"t":"rel","to":"${t('人名')}","d":-10~10} ${t('對某人更好或更冷淡')}${sep}{"t":"mood","d":-5~5} ${t('自己的心情')}${sep}{"t":"goal","text":"${t('想存錢或努力去做的事')}"}`;
         return en ? I18N.localizeNames(text, true) : text; // 英文模式:帳本裡的人名一起換成英文(AI 回的人名用 byName 對回來)
     }
@@ -288,7 +296,8 @@ ${t('如果選 z（其他），再加 "do":"想做的事（30 字內）" 和 "fx
         let e = null;
         if (pk === 'z' || pk === 'other') e = freeAct(w, X, a, K, row, why, d);
         else {
-            const op = opts.find(o => o.id === pk) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
+            const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
+            const op = opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
             let res = null; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); }
             e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d);
             if (!op.quiet) { log(w, 'social', '🧭 {a}想了想，決定{x}：「{y}」', { a: a.name, x: op.say || op.text, y: why ? { raw: why } : (op.why || '') }, a.name); if (why) mem(w, a, '我想過了，決定{x}：{y}', { x: op.say || op.text, y: { raw: why } }, 5); }

@@ -71,7 +71,7 @@ const GAME_SYSTEM_PROMPT_EN = [
 ].join('\n');
 function systemPrompt(lang) { return lang === 'en' ? GAME_SYSTEM_PROMPT_EN : GAME_SYSTEM_PROMPT; }
 // 中繼的回覆若是「拒絕扮演/自報 AI 身分」就視同失敗,讓分流退回另一條渠道
-const REFUSAL_RE = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演|我不是(遊戲)?角色/i;
+const REFUSAL_RE = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|\bI'?m not going to (produce|generate|write) (this|that)|happy to help in other ways|\b(writing|speaking|responding) as an AI\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演|我不是(遊戲)?角色/i;
 // v6.40.1 補上中文自報身分:上線實測付費中繼回「我是 Claude Code，Anthropic 官方的命令列工具……不能假裝是遊戲引擎」,
 // 舊規則只認英文與「我是 AI／語言模型」,4 次漏掉 3 次。這些字眼村民台詞不會用到,出現就直接判拒絕,讓分流退回另一條渠道
 const IDENTITY_RE = /Claude Code|Anthropic|命令列工具|CLI 工具|(系統|系统)(指示|提示)|角色扮演模式|(隱瞞|隐瞒)[^。]{0,8}(身分|身份)|我是\s*(Claude|ChatGPT|GPT|Kiro|Gemini|Copilot|AI|人工智慧|人工智能|語言模型|语言模型|助理|助手|一個 ?AI|一个 ?AI)|核心設計原則|撰寫創意(文本|內容)|如果你對我的能力|(協助|幫助)其他(開發|專業|工作|寫作)/i;
@@ -305,7 +305,11 @@ module.exports = async (req, res) => {
     const b = req.body || {};
     // v9.7.3 截斷或拼接時把 emoji 切半會留下落單的代理字元,官方 API 會整筆回 400;送出前清掉
     const fixSur = (x) => x.replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '');
-    const prompt = fixSur(fixSur(String(b.prompt || '')).slice(0, 6000));
+    // v9.23.2 長度上限:中文 6000 字;英文 18000 字(同樣的內容英文字元數約三倍,token 反而比較少,以前跟中文共用 6000 等於只給三分之一)。
+    // 超過時留開頭和結尾、中間收掉:輸出格式的要求多半寫在最後,以前從尾巴截掉,AI 就不照格式回(前端現在會先把內容收短,這裡是保險)
+    const PROMPT_MAX = b.lang === 'en' ? 18000 : 6000, TAIL_KEEP = 1200;
+    const fitLen = (x) => x.length <= PROMPT_MAX ? x : x.slice(0, PROMPT_MAX - TAIL_KEEP - 3) + '\n…\n' + x.slice(-TAIL_KEEP);
+    const prompt = fixSur(fitLen(fixSur(String(b.prompt || ''))));
     if (!prompt) return L.err(res, 400, 'missing_prompt', 'Missing prompt');
     const maxTokens = Math.min(600, Math.max(1, parseInt(b.max_tokens, 10) || 300));
     const temperature = Math.min(1.5, Math.max(0, parseFloat(b.temperature) || 0.9));

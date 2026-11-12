@@ -197,7 +197,7 @@ async function run(browser, lang) {
     clean(); w.fullAgentMode = true; { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf, true); only(A); others(A, ['sell']); prompts = [];
       reply = (p) => /想出|is offering/.test(p) ? [{ n: 1, pick: 'b', why: 'W-KEEP', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const e = lastLog(A); const pD = prompts.find(p => /想出|is offering/.test(p)) || '';
-      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, stake: SHARES.pctOf(w, Kf, B.agentId), plan: DECIDE.view(w, A).plan, feed: /🧭/.test(logs(8)), menu: / z\. /.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
+      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, stake: SHARES.pctOf(w, Kf, B.agentId), plan: DECIDE.view(w, A).plan, feed: /🧭/.test(logs(8)), menu: /other＝/.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
     w.research.currentEra = () => 3;
     clean(); stock(); w.fullAgentMode = true; { Hs.lv[home] = 0; for (const o of mates) Bal[o.agentId] = 1; Bal[E.agentId] = cost * 2; only(E); others(E, ['renovate']); prompts = [];
       reply = (p) => /翻修要|Rebuilding costs/.test(p) ? [{ n: 1, pick: 'b', why: 'W-HOME' }] : null;
