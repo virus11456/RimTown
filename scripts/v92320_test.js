@@ -101,6 +101,18 @@ async function client(browser, lang) {
       const a0 = npcs[20], b0 = npcs[21]; DARK.wrong(w, a0, b0, 2, '報復{v}', { v: b0.name }); DARK.wrong(w, a0, b0, 2, '欠{v}錢不還', { v: b0.name });
       out.dark = { l1, l2, l3, self: !l1.includes('廖岳') && l1.includes(you) && l1.includes('馬強'), other: l2.split('廖岳').length === 2 && l2.includes(you), plain: l3.startsWith(you) && l3.includes('黃曦'),
         owe: DARK.about(w, a0).owe.filter(n => n === b0.name).length, hurt: DARK.about(w, b0).hurt.filter(n => n === a0.name).length, guide: /別扯到不相干的人|unrelated grudge/.test(dp) }; }
+    /* v9.23.3 選項代號不帶人名：id 是 borrow:imm_曹峰_552 這種時，題目上寫 borrow:1，AI 照抄回來對得到同一個選項 */
+    { const K2 = DECIDE.KINDS.pinch; const A = npcs[30]; let ran = '';
+      const mk = (id, tx) => ({ id, text: { raw: tx }, say: { raw: tx }, run: () => { ran = id; return null; } });
+      const optsX = [mk('endure', '撐著'), mk('borrow:imm_' + npcs[31].name + '_552', '跟人借'), mk('borrow:o_3', '跟另一個人借'), mk('borrow:' + npcs[32].name, '跟第三個人借')];
+      const px = DECIDE.prompt(w, K2, [{ a: A, ctx: {}, opts: optsX }]); const line = px.split('\n').filter(l => l.includes('endure＝')).pop() || '';
+      const cds = line.split('＝').slice(0, -1).map(x => x.split(/[\s／\]】]/).pop().trim());
+      const orig = ce._askJsonRaw; const pend0 = DECIDE.S(w).q.length;
+      out.codes = { cds, ascii: cds.every(c => /^[A-Za-z0-9_:.-]+$/.test(c)), uniq: new Set(cds).size === cds.length, keep: cds[0] === 'endure' && cds[2] === 'borrow:o_3', named: cds[1] === 'borrow:1' && cds[3] === 'borrow:2' };
+      out.codes.api = typeof DECIDE.applyAi === 'function';
+      if (out.codes.api) { const r1 = DECIDE.applyAi(w, A, K2, {}, optsX, { n: 1, pick: 'borrow:1', why: 'x' }); const got1 = ran; ran = ''; const r2 = DECIDE.applyAi(w, A, K2, {}, optsX, { n: 1, pick: 'BORROW:2', why: 'x' }); const got2 = ran; ran = ''; const r3 = DECIDE.applyAi(w, A, K2, {}, optsX, { n: 1, pick: optsX[1].id, why: 'x' }); const got3 = ran; ran = ''; const r4 = DECIDE.applyAi(w, A, K2, {}, optsX, { n: 1, pick: 'borrow:9', why: 'x' });
+        out.codes.back = got1 === optsX[1].id && got2 === optsX[3].id && got3 === optsX[1].id && !r4 && ran === ''; }
+      ce._askJsonRaw = orig; }
     return out;
   });
   ok(r.max === (en ? 17000 : 5700), '提示詞上限：中文 5700、英文 17000（比伺服器的 6000／18000 留一點餘裕）', r.max);
@@ -114,6 +126,8 @@ async function client(browser, lang) {
   ok(r.dark.self && r.dark.other && r.dark.plain, '「你還沒道歉的那件事」句子通順：不會出現「你廖岳私下拉票」這種重複主詞', r.dark);
   ok(r.dark.owe === 1 && r.dark.hurt === 1, '同一個人做錯兩件事：「覺得對不起誰／還在氣誰」只列一次名字', r.dark);
   ok(r.dark.guide, '題目要求理由講眼前這個人、這件事，不扯到不相干的人', r.dark.guide);
+  ok(r.codes.ascii && r.codes.uniq && r.codes.keep && r.codes.named, '選項代號不帶人名：帶人名的 id 改成「前綴:第幾個」，其他照舊、彼此不重複', r.codes);
+  ok(r.codes.api && r.codes.back, 'AI 照抄新代號（大小寫不拘）或舊的完整 id 都對得到同一個選項；不存在的代號不會亂對', r.codes);
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }

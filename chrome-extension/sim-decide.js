@@ -257,7 +257,7 @@ const DECIDE = (() => {
             const b = bs[i]; const L = b.ledger ? lines(b.ledger, TIGHT[lv]()) : (b.mem || []); // 一次問好幾個人：近況和鎮上的事收短一點，省字數
             // v9.23.2 選項用固定的代號（repay、extend…），不用 a、b、c：一次問好幾個人時每個人的選項不一樣，同一個字母對不同人是不同的事，
             // 真模型會搞混（實測：理由寫「帶點心意去道歉」，選的卻是別人清單裡的 c＝不道歉）
-            const opts = o.opts.map((op) => `${op.id}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
+            const cs = codes(o.opts); const opts = o.opts.map((op, i) => `${cs[i]}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
             return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${t('【遇到的事】')}${K.facts(w, o.a, o.ctx)}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
@@ -291,13 +291,20 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         mem(w, a, '我自己拿了主意：{x}。{y}', { x: { raw: doing }, y: { raw: why || '' } }, 6);
         return record(w, X, a, K, { id: 'other', say: { raw: doing }, free: true }, why ? { raw: why } : null, res, 'ai', d);
     }
+    /* v9.23.3 給 AI 看的選項代號：id 裡帶人名（例如 borrow:imm_曹峰_552）時改成「前綴:第幾個」。
+       英文模式整段題目的人名會換成英文，帶人名的代號跟著被改掉，AI 照抄回來就對不上（真模型實測 59 個決定有 4 個因此作廢）。 */
+    function codes(opts) {
+        const out = []; const n = {};
+        for (const op of opts) { const id = String(op.id); let c = id; if (!/^[A-Za-z0-9_:.-]+$/.test(id)) { const h = id.split(':')[0].replace(/[^A-Za-z0-9_.-]/g, '') || 'opt'; n[h] = (n[h] || 0) + 1; c = `${h}:${n[h]}`; } while (out.includes(c)) c += 'x'; out.push(c); }
+        return out;
+    }
     function applyAi(w, X, a, K, ctx, opts, row, d) {
         const pk = String(row?.pick ?? '').trim().toLowerCase(); const why = clean(row?.why, cap(50, 160)); const next = clean(row?.next, cap(40, 120));
         let e = null;
         if (pk === 'z' || pk === 'other') e = freeAct(w, X, a, K, row, why, d);
         else {
-            const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
-            const op = opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
+            const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); const cs = codes(opts).map(c => c.toLowerCase()); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
+            const op = opts[cs.indexOf(pk)] || opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
             let res = null; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); }
             e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d);
             if (!op.quiet) { log(w, 'social', '🧭 {a}想了想，決定{x}：「{y}」', { a: a.name, x: op.say || op.text, y: why ? { raw: why } : (op.why || '') }, a.name); if (why) mem(w, a, '我想過了，決定{x}：{y}', { x: op.say || op.text, y: { raw: why } }, 5); }
@@ -389,7 +396,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH };
+    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
