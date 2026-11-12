@@ -291,13 +291,11 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         mem(w, a, '我自己拿了主意：{x}。{y}', { x: { raw: doing }, y: { raw: why || '' } }, 6);
         return record(w, X, a, K, { id: 'other', say: { raw: doing }, free: true }, why ? { raw: why } : null, res, 'ai', d);
     }
-    /* v9.23.3 給 AI 看的選項代號：id 裡帶人名（例如 borrow:imm_曹峰_552）時改成「前綴:第幾個」。
-       英文模式整段題目的人名會換成英文，帶人名的代號跟著被改掉，AI 照抄回來就對不上（真模型實測 59 個決定有 4 個因此作廢）。 */
-    function codes(opts) {
-        const out = []; const n = {};
-        for (const op of opts) { const id = String(op.id); let c = id; if (!/^[A-Za-z0-9_:.-]+$/.test(id)) { const h = id.split(':')[0].replace(/[^A-Za-z0-9_.-]/g, '') || 'opt'; n[h] = (n[h] || 0) + 1; c = `${h}:${n[h]}`; } while (out.includes(c)) c += 'x'; out.push(c); }
-        return out;
-    }
+    /* v9.23.3 給 AI 看的選項代號：id 裡帶人名（例如 borrow:imm_曹峰_552）時改成「前綴:短碼」。
+       英文模式整段題目的人名會換成英文，帶人名的代號跟著被改掉，AI 照抄回來就對不上（真模型實測 59 個決定有 4 個因此作廢）。
+       短碼由 id 本身算出來、跟選項排第幾個無關：等 AI 回話的這段時間選項可能變動（有人不能借了），代號不能因此換人。 */
+    const code1 = (id) => { id = String(id); if (/^[A-Za-z0-9_:.-]+$/.test(id)) return id; let h = 2166136261; for (let i = 0; i < id.length; i++) { h ^= id.charCodeAt(i); h = Math.imul(h, 16777619); } return `${id.split(':')[0].replace(/[^A-Za-z0-9_.-]/g, '') || 'opt'}:${(h >>> 0).toString(36)}`; };
+    function codes(opts) { const out = []; for (const op of opts) { let c = code1(op.id); while (out.includes(c)) c += 'x'; out.push(c); } return out; }
     function applyAi(w, X, a, K, ctx, opts, row, d) {
         const pk = String(row?.pick ?? '').trim().toLowerCase(); const why = clean(row?.why, cap(50, 160)); const next = clean(row?.next, cap(40, 120));
         let e = null;
