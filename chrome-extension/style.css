@@ -4680,6 +4680,12 @@ body.landing-open { overflow: hidden; }
     .rimtown-container { height: var(--app-h, 100vh) !important; max-height: none !important; }
 }
 html.ios-standalone, html.ios-standalone body.rimtown-page, html.ios-standalone .rimtown-container { height: var(--app-h, 100vh) !important; max-height: none !important; }
+/* v9.23.4 iPhone 的瀏覽器分頁版(Safari／Chrome 分頁,不是主畫面 App)自己一套:高度用真正看得到的範圍(--web-h 由 app-mobile.js 量),整頁不能被推動。
+   主畫面 App 用上面 ios-standalone 那套,兩邊互不影響。 */
+@media (max-width: 768px) {
+    html.ios-browser { overflow: hidden !important; overscroll-behavior: none; }
+    html.ios-browser, html.ios-browser body.rimtown-page, html.ios-browser .rimtown-container { height: var(--web-h, 100dvh) !important; max-height: none !important; }
+}
 #vp-diag { position: fixed; left: 8px; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 64px); z-index: 99999; padding: 10px 12px; border-radius: 10px; background: rgba(0,0,0,.82); color: #fff; font: 12px/1.5 ui-monospace, monospace; white-space: pre-wrap; }
 /* v9.7.2 撐滿螢幕後補回 Home 條的高度(iOS 這時回報 0) */
 html.ios-gapfix .rimtown-container.observer #kairo-bar, html.ios-gapfix #kairo-bar { height: 90px !important; padding-bottom: 34px !important; }
