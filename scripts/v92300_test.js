@@ -150,7 +150,7 @@ async function run(browser, lang) {
     clean(); w.fullAgentMode = true; { const R = rival(B, 1.2); rel(G, A, 80); only(G); others(G, ['jobhop']); prompts = [];
       reply = (p) => /行情的|going wage/.test(p) ? [{ n: 1, pick: 'b', why: 'W-PAY', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const e = lastLog(G); const pD = prompts.find(p => /行情的|going wage/.test(p)) || '';
-      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, at: !!R.emp[G.agentId], plan: DECIDE.view(w, G).plan, feed: /🧭/.test(logs(8)), menu: / z\. /.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
+      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, at: !!R.emp[G.agentId], plan: DECIDE.view(w, G).plan, feed: /🧭/.test(logs(8)), menu: /other＝/.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
     ce.fullAgentOk = save.ok; ce._askJson = save.ask; w.fullAgentMode = false;
 
     // ---------- 9) 存讀檔、跑幾天 ----------

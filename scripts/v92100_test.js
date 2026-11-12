@@ -177,7 +177,7 @@ async function run(browser, lang) {
     clean(); w.fullAgentMode = true; { union(W1, workers); U.fund = 500; Bal[boss.agentId] = 5000; Bal[W1.agentId] = 100; U.talks = {}; fix(0.5, () => UNION.bargain(w, all, d0(), true)); only(boss); others(boss, ['demand']); prompts = [];
       reply = (p) => /來談|come to negotiate/.test(p) ? [{ n: 1, pick: 'a', why: 'W-DEAL', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const e = lastLog(boss); const pD = prompts.find(p => /來談|come to negotiate/.test(p)) || '';
-      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, pay: M.pay.farm, plan: DECIDE.view(w, boss).plan, feed: /🧭/.test(logs(8)), menu: / z\. /.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
+      out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, pay: M.pay.farm, plan: DECIDE.view(w, boss).plan, feed: /🧭/.test(logs(8)), menu: /other＝/.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
     clean(); w.fullAgentMode = true; { Bal[R.agentId] = 900; only(R, holder); others(R, ['donate']); others(holder, ['gift']); prompts = []; const h0 = Bal[holder.agentId];
       reply = (p) => /私下拿了|privately brought/.test(p) ? [{ n: 1, pick: 'b', why: 'W-BACK' }] : /捐了錢|your voice carries/.test(p) ? [{ n: 1, pick: 'b', why: 'W-GIVE' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const er = lastLog(R), eh = lastLog(holder); const pG = prompts.find(p => /私下拿了|privately brought/.test(p)) || '';

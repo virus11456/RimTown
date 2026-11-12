@@ -1035,27 +1035,38 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         if (W0 && (W1 !== W0 || W1._gen !== g0)) return new Promise(() => {});
         return r;
     }
+    // (JSON 的解析與修補在 LLMClient.parseJson)
     async _askJsonRaw(prompt, maxTokens) {
         const timeout = new Promise(r => setTimeout(() => r(null), 14000));
         let raw = null; try { raw = await Promise.race([this.llm.generate(prompt, maxTokens, 0.7, true, { strict: true }), timeout]); } catch (e) { raw = null; }
         if (!raw || raw === '__ERROR__' || raw === '__RATE_LIMITED__') return null;
-        const m = String(raw).match(/\[[\s\S]*\]|\{[\s\S]*\}/); if (!m) return null;
-        try { return JSON.parse(m[0]); } catch (e) { return null; }
+        return LLMClient.parseJson(raw);
     }
     // v6.41.1 長度上限依對話語言:英文同樣一句話字元數約是中文的 3 倍,舊上限會把英文理由切在半個字
     _cap(zh, en) { return (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? en : zh; }
     _costText(cost) { const parts = Object.entries(cost || {}).map(([r, n]) => `${(typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r)} ${n}`); return parts.length ? parts.join(t('、')) : t('不用花公庫的錢'); }
+    // v9.23.2 一次問好幾個人的提示詞要放得進伺服器的長度上限。以前超過 6000 字會被從尾巴截掉,寫在最後的「只輸出 JSON」跟著不見,
+    // AI 改回一段散文 → 解析失敗、悄悄退回規則(用真模型實測:投票的提示詞 5500～6400 字,超過的 3 次全失敗)。
+    // 做法:build(lv) 的 lv 越大,每個人的帳本收得越短;放得下就用
+    _promptMax() { return (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? 17000 : 5700; }
+    _fit(build) { const max = this._promptMax(); let p = ''; for (let lv = 0; lv <= 3; lv++) { p = build(lv); if (p.length <= max) break; } return p; }
+    _memAt(b, lv) {
+        if (!lv || !b?.ledger || typeof DECIDE === 'undefined' || !DECIDE.lines) return b?.mem || [];
+        const o = [null, { cap: { self: 3, world: 2 }, cut: this._cap(60, 150) }, { cap: { eco: 5, pol: 3, soc: 4, self: 2, world: 1, did: 2 }, cut: this._cap(40, 110) }, { cap: { now: 2, eco: 3, pol: 2, soc: 2, self: 1, world: 1, did: 1 }, cut: this._cap(30, 80) }][Math.min(3, lv)];
+        return DECIDE.lines(b.ledger, o);
+    }
     // 投票:一次問一批村民(最多 6 人),每人回 for/against + 一句自己口吻的理由
     async decideVotes(world, p, voters, proposer) {
         if (!this.fullAgentOk(world) || !voters.length) return null;
         const ps = world.proposals;
-        const lines = voters.map((a, i) => { const b = this._agentBrief(world, a, proposer); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`; }).join('\n');
-        const prompt = `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
+        const bs = voters.map(a => this._agentBrief(world, a, proposer));
+        const prompt = this._fit((lv) => { const lines = bs.map((b, i) => { const mem = this._memAt(b, lv); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）')}${mem.length ? ` ${t('最近記得')}${t('：')}${mem.join('／')}` : ''}`; }).join('\n');
+        return `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
 ${t('【鎮況】')}${this._townBrief(world)}
 ${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
 ${t('【村民】')}
 ${lines}
-${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`;
+${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`; });
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 80 + voters.length * 70);
         if (!Array.isArray(j)) return null;
@@ -1121,18 +1132,19 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"policy":"方針代碼","s
     async decideElectionVotes(world, candidates, voters, isBy) {
         if (!this.fullAgentOk(world) || !voters.length || candidates.length < 2) return null;
         const cl = candidates.map((c, i) => { const a = world.agents[c.agentId]; const nm = a ? this._agentBrief(world, a).name : c.name; return `${i + 1}. ${nm}${t('（')}${t('主張')}${t('：')}${t(c.policyLabel)}${t('）')}${c.speech ? `${t('「')}${c.speech}${t('」')}` : ''}`; }).join('\n');
-        const lines = voters.map((a, i) => {
-            const b = this._agentBrief(world, a);
+        const bs = voters.map(a => this._agentBrief(world, a));
+        const prompt = this._fit((lv) => { const lines = voters.map((a, i) => {
+            const b = bs[i]; const mem = this._memAt(b, lv);
             const rel = candidates.map(c => { const r = a.relationships?.relationships?.[c.agentId]; const ca = world.agents[c.agentId]; const nm = ca ? this._agentBrief(world, ca).name : c.name; return `${nm} ${Math.round(r?.affinity || 0)}`; }).join(t('、'));
-            return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('對候選人的好感')}${t('：')}${rel}${t('）')}${b.mem.length ? ` ${t('最近記得')}${t('：')}${b.mem.join('／')}` : ''}`;
+            return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('對候選人的好感')}${t('：')}${rel}${t('）')}${mem.length ? ` ${t('最近記得')}${t('：')}${mem.join('／')}` : ''}`;
         }).join('\n');
-        const prompt = `${isBy ? t('你是模擬小鎮的村民決策引擎。鎮長補選正在投票。') : t('你是模擬小鎮的村民決策引擎。鎮長選舉正在投票。')}${t('請替下面每位村民決定投給哪位候選人，並用他自己的口吻給一句理由（25 字內）。要依每個人的性格、在乎的價值、對候選人的好感、對政見與演說的看法、最近的記憶與鎮況判斷，不要全部一致。')}
+        return `${isBy ? t('你是模擬小鎮的村民決策引擎。鎮長補選正在投票。') : t('你是模擬小鎮的村民決策引擎。鎮長選舉正在投票。')}${t('請替下面每位村民決定投給哪位候選人，並用他自己的口吻給一句理由（25 字內）。要依每個人的性格、在乎的價值、對候選人的好感、對政見與演說的看法、最近的記憶與鎮況判斷，不要全部一致。')}
 ${t('【鎮況】')}${this._townBrief(world)}
 ${t('【候選人】')}
 ${cl}
 ${t('【村民】')}
 ${lines}
-${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序號,"why":"理由"}，不要其他文字。')}`;
+${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序號,"why":"理由"}，不要其他文字。')}`; });
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 80 + voters.length * 70);
         if (!Array.isArray(j)) return null;
@@ -2421,6 +2433,21 @@ class LLMClient {
         console.warn('[RimTown LLM] 429 received — pausing all requests for 60 seconds');
     }
 
+    // v9.23.2 從 AI 的回覆裡取出 JSON。回覆太長被字數上限切斷時(沒有收尾的括號)以前整筆作廢——
+    // 用真模型實測:銀行家說「不借」的理由寫太長被切斷 → 解析失敗 → 程式當成沒回答、照規則把錢借出去。
+    // 現在切斷的也救:陣列留到最後一個完整的物件;物件把沒寫完的字串收掉
+    static parseJson(raw) {
+        const s = String(raw == null ? '' : raw); const i = s.search(/[\[{]/); if (i < 0) return null;
+        const body = s.slice(i).replace(/```\s*$/, '').trimEnd(); const arr = body[0] === '[';
+        const m = body.match(arr ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/);
+        if (m) { try { return JSON.parse(m[0]); } catch (e) {} }
+        const tries = [];
+        if (arr) { const k = body.lastIndexOf('}'); if (k > 0) tries.push(body.slice(0, k + 1) + ']'); }
+        else tries.push(body + '"}', body + '}', body.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '') + '}');
+        for (const x of tries) { try { const j = JSON.parse(x); if (j && typeof j === 'object') return j; } catch (e) {} }
+        if (arr) { const m2 = body.match(/\{[\s\S]*\}/); if (m2) { try { return JSON.parse(m2[0]); } catch (e) {} } } // 「[注意] {…}」這種前面夾了方括號的
+        return null;
+    }
     async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false, opts = {}) {
         const strict = !!opts.strict; // v6.43.1 完整智能體決策:冷卻中不插隊
         // v5.39.0 智慧分流:有 Groq 金鑰且主供應商不是 Groq 時,「玩家對話/劇情」優先吃 Groq 免費額度,

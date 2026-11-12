@@ -174,7 +174,7 @@ const DARK = (() => {
     const wrongById = (w, id) => (S(w).wrongs || []).find(x => x.id === id) || null;
     const wrongId = (w, x) => { const D = S(w); if (!x.id) { D.wn = (D.wn || 0) + 1; x.id = D.wn; } return x.id; };
     // 這筆帳是什麼事(給決策核心看的一句話)。who 做的人、vName 受害的人;整句已經寫好人名的(被拆穿的秘密)就照原句
-    const wrongLine = (x, who, vName) => !x?.k ? fill('{who}{what}', { who, what: t('做了對不起人的事') }) : x.k.includes('{v}') ? fill('{who}{what}', { who, what: fill(x.k, Object.assign({}, x.p || {}, { v: vName })) }) : fill(x.k, x.p);
+    const wrongLine = (x, who, vName) => !x?.k ? fill('{who}{what}', { who, what: t('做了對不起人的事') }) : x.k.includes('{a}') ? fill(x.k, Object.assign({}, x.p || {}, { a: who }, x.k.includes('{v}') ? { v: vName } : {})) : x.k.includes('{v}') ? fill('{who}{what}', { who, what: fill(x.k, Object.assign({}, x.p || {}, { v: vName })) }) : fill(x.k, x.p);
     // 道歉說出口
     function sorryS(w, x, a, b) {
         x.last = day(w); x.tries = (x.tries || 0) + 1; bump(w, a, 'apologized');
@@ -719,8 +719,8 @@ const DARK = (() => {
         if (D) out.secrets = D.secrets.filter(s => !s.found && s.stage !== 'off' && s.culprit === a.agentId && s.kind !== 'white').map(s => fill(s.k, s.p));
         const f = foeOf(w, a, null); if (f) out.grudge = { name: f.b.name, why: fill(WHY[f.g.why], { v: f.b.name }) };
         out.rep = D ? repLabel(w, a) : ''; const cq = D ? cliqueOf(w, a.agentId) : null; out.clique = cq ? cliqueName(w, cq) : '';
-        out.owe = D ? (D.wrongs || []).filter(x => !x.done && x.by === a.agentId).map(x => w.agents[x.to]?.name).filter(Boolean).slice(0, 2) : [];
-        out.hurt = D ? (D.wrongs || []).filter(x => !x.done && x.to === a.agentId && !x.forgiven).map(x => w.agents[x.by]?.name).filter(Boolean).slice(0, 2) : [];
+        out.owe = D ? [...new Set((D.wrongs || []).filter(x => !x.done && x.by === a.agentId).map(x => w.agents[x.to]?.name).filter(Boolean))].slice(0, 2) : [];
+        out.hurt = D ? [...new Set((D.wrongs || []).filter(x => !x.done && x.to === a.agentId && !x.forgiven).map(x => w.agents[x.by]?.name).filter(Boolean))].slice(0, 2) : [];
         return out;
     }
     return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump,
