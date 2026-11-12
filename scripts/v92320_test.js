@@ -95,6 +95,12 @@ async function client(browser, lang) {
       try { BANK.lend(w, B, borrower, 90, '周轉'); } /* 景氣差時放款額會打折，給大一點才一定會問銀行家 */ catch (e) { out.bank.err = String(e); }
       await new Promise(r => setTimeout(r, 300));
       out.bank.asked = !!asked; out.bank.promptGuide = asked ? asked.p.includes(t('一句理由，20 字內')) : null; out.bank.mt = asked?.mt; out.bank.refused = Object.keys(B.loans || {}).length === loans0; }
+    /* 做錯事的那句話不重複主詞；「覺得對不起誰」不重複列同一個人；理由要講眼前這件事 */
+    { const you = t('你'); const x1 = { k: '{a}私下拉票，讓{v}的提案{id}被否決', p: { a: '廖岳', v: '馬強', id: 'L079' } }; const x2 = { k: '報復{v}', p: { v: '黃曦' } };
+      const l1 = DARK.wrongLine(x1, you, '馬強'), l2 = DARK.wrongLine(x1, '廖岳', you), l3 = DARK.wrongLine(x2, you, '黃曦');
+      const a0 = npcs[20], b0 = npcs[21]; DARK.wrong(w, a0, b0, 2, '報復{v}', { v: b0.name }); DARK.wrong(w, a0, b0, 2, '欠{v}錢不還', { v: b0.name });
+      out.dark = { l1, l2, l3, self: !l1.includes('廖岳') && l1.includes(you) && l1.includes('馬強'), other: l2.split('廖岳').length === 2 && l2.includes(you), plain: l3.startsWith(you) && l3.includes('黃曦'),
+        owe: DARK.about(w, a0).owe.filter(n => n === b0.name).length, hurt: DARK.about(w, b0).hurt.filter(n => n === a0.name).length, guide: /別扯到不相干的人|unrelated grudge/.test(dp) }; }
     return out;
   });
   ok(r.max === (en ? 17000 : 5700), '提示詞上限：中文 5700、英文 17000（比伺服器的 6000／18000 留一點餘裕）', r.max);
@@ -105,6 +111,9 @@ async function client(browser, lang) {
   ok(r.json.lendFalse && r.json.arr && r.json.fenced && r.json.prose === null && r.json.empty === null, 'AI 回覆被切斷：物件救得回來、陣列留到最後一個完整的人；散文照樣算沒回答', r.json);
   ok(r.bank.asked && r.bank.promptGuide && r.bank.mt >= 140, '銀行家放款的題目要求理由 20 字內', r.bank);
   ok(r.bank.refused, '銀行家說「不借」但理由被切斷：照樣不借（以前解析失敗就照規則借出去）', r.bank);
+  ok(r.dark.self && r.dark.other && r.dark.plain, '「你還沒道歉的那件事」句子通順：不會出現「你廖岳私下拉票」這種重複主詞', r.dark);
+  ok(r.dark.owe === 1 && r.dark.hurt === 1, '同一個人做錯兩件事：「覺得對不起誰／還在氣誰」只列一次名字', r.dark);
+  ok(r.dark.guide, '題目要求理由講眼前這個人、這件事，不扯到不相干的人', r.dark.guide);
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }

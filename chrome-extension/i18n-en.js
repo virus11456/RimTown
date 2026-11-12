@@ -13439,7 +13439,7 @@
         '📛 {n} 位村民的名字後面帶著編號，已經換成正式的名字：{list}。存檔已修正。': '📛 {n} villagers had a number tacked onto their name and now have proper names: {list}. The save has been fixed.',
         // v9.23.2 用真模型驗證後的修正：選項改用固定代號、銀行家的理由限長
         '代號': 'code',
-        'n 是那個人的序號，pick 是「他自己那一列」選項的代號（＝前面的英文，照抄），why 是他自己口吻的一句理由（25 字內），要跟選的那一項對得上，next 是接下來的打算（沒有就省略，20 字內）。': 'n is that person\'s number; pick is the code of an option from that person\'s own list (the word before "＝", copied exactly); why is one sentence of reason in their own voice (under 20 words) and must match the option picked; next is what they plan to do next (omit if none, under 15 words).',
+        'n 是那個人的序號，pick 是「他自己那一列」選項的代號（＝前面的英文，照抄），why 是他自己口吻的一句理由（25 字內），要跟選的那一項對得上，講的是【遇到的事】裡那個人、那件事，別扯到不相干的人，next 是接下來的打算（沒有就省略，20 字內）。': 'n is that person\'s number; pick is the code of an option from that person\'s own list (the word before "＝", copied exactly); why is one sentence of reason in their own voice (under 20 words); it must match the option picked and be about the person and matter under [What came up], not some unrelated grudge; next is what they plan to do next (omit if none, under 15 words).',
         '如果選 other（其他），再加 "do":"想做的事（30 字內）" 和 "fx":[最多 3 個效果]。效果只能從這幾種挑，寫不出效果就只留 do：': 'If you pick other (something else), also add "do":"what they want to do (under 25 words)" and "fx":[up to 3 effects]. Effects may only be chosen from the kinds below; if none fits, give only "do":',
         '一句理由，20 字內': 'one sentence of reason, under 15 words',
         // v9.23.1 作物停止生長（氣溫低於 0 度或極端氣候）
