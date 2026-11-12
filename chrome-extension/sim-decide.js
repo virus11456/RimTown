@@ -287,7 +287,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         const res = outs.length ? { raw: outs.map(say).join(t('、')) } : { k: '這件事現在還做不到，先放在心裡' };
         if (!outs.length) X.plan[a.agentId] = { x: { raw: doing }, d }; // 做不到的先變成打算，下次拿主意時他自己看得到
         X.st.free++;
-        log(w, 'social', '💭 {a}自己拿了主意：{x}——「{y}」', { a: a.name, x: { raw: doing }, y: { raw: why || doing } }, a.name);
+        if (why && why !== doing) log(w, 'social', '💭 {a}自己拿了主意：{x}——「{y}」', { a: a.name, x: { raw: doing }, y: { raw: why } }, a.name); else log(w, 'social', '💭 {a}自己拿了主意：{x}', { a: a.name, x: { raw: doing } }, a.name);
         mem(w, a, '我自己拿了主意：{x}。{y}', { x: { raw: doing }, y: { raw: why || '' } }, 6);
         return record(w, X, a, K, { id: 'other', say: { raw: doing }, free: true }, why ? { raw: why } : null, res, 'ai', d);
     }

@@ -13297,6 +13297,7 @@
         '立下目標：{x}': 'Set a goal: {x}',
         '這件事現在還做不到，先放在心裡': 'Can\'t be done yet, so it stays in mind for now',
         '💭 {a}自己拿了主意：{x}——「{y}」': '💭 {a} made up their own mind: {x} — "{y}"',
+        '💭 {a}自己拿了主意：{x}': '💭 {a} made up their own mind: {x}',
         '我自己拿了主意：{x}。{y}': 'I made up my own mind: {x}. {y}',
         '🧭 {a}想了想，決定{x}：「{y}」': '🧭 {a} thought it over and decided to {x}: "{y}"',
         '我想過了，決定{x}：{y}': 'I thought it over and decided to {x}: {y}',
