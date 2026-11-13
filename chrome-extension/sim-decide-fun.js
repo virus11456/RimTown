@@ -86,7 +86,7 @@
         K.options = function (w, a, ctx) {
             const out = _opts.call(this, w, a, ctx) || []; const M = MB(); if (!on(M, w)) return out;
             try { const I = M.spreeInfo(w, a); if (I) out.push({ id: 'spree', text: { k: '痛快花一筆：請客、買一堆喜歡的東西，大概花掉 {n} 銀幣', p: { n: I.n } }, say: '痛快花了一筆', why: '錢就是拿來花的，省給誰看',
-                base: 1.3, lean: { joy: 0.8, face: 0.3, safe: -0.5 },
+                base: 1.0, lean: { joy: 0.8, face: 0.3, safe: -0.5 },
                 run: (w2, a2) => { const got = M.spreeBy(w2, a2); return got ? { k: '花掉了 {n} 銀幣', p: { n: got } } : { k: '沒花成' }; } }); } catch (e) {}
             return out;
         }; } }

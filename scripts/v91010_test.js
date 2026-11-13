@@ -39,6 +39,7 @@ async function run(browser, lang) {
         // 慕名訂做:錢從有錢人付給名匠,全鎮總數不變
         const rich = adults().filter(o => o !== X && !MOBILITY.isMaster(o)); for (const o of rich.slice(0, 3)) { w.wallet.bal[o.agentId] = 1000; o.job = o.job || new Job('farmer'); }
         const c0 = WALLET.get(w, X), t0 = MONEY.total(w); const d3 = Math.ceil((w._absDay() - 3) / 7) * 7 + 3; fix(0.1, () => MOBILITY.masters(w, all(), d3));
+        if (MOBILITY.byFun?.(w)) for (let i = 0; i < 6 && WALLET.get(w, X) <= c0; i++) { const o = rich[i % 3]; const I = MOBILITY.commInfo(w, o); if (!I) break; MOBILITY.commBy(w, o, I.m.agentId); } // v9.25.0 訂不訂做交給有錢人自己決定：這裡替他們拿主意(一位名匠一週只接一件，所以輪到 X 為止)
         out.comm = { got: Math.round(WALLET.get(w, X) - c0), cons: Math.abs(MONEY.total(w) - t0) < 0.01 }; out.masterX = X.agentId; out.yLost = !MOBILITY.isMaster(Y); }
       // E. 收徒:名匠優先(就算交情比較淺),20 天出師
       { const [Mst, Pal] = take(2); const A = adults().filter(o => !used.has(o.agentId) && o !== Mst && o !== Pal).find(o => { o.job = new Job('farmer'); w.wallet.bal[o.agentId] = 30; delete CLASS.S(w).titles[o.agentId]; return CLASS.compute(w, o) <= 1; }); used.add(A.agentId); take(0); A.age = 20; // 學徒要找真的是平民以下的人(官職、頭銜都會拉高階層)
