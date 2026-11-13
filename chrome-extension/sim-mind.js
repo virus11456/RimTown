@@ -131,7 +131,7 @@ const MIND = (() => {
             } catch (e) {}
         }
         who.forEach((a, i) => {
-            const line = ai && typeof ai[i] === 'string' && ai[i].trim() ? { k: '{x}', p: { x: String(ai[i]).trim().slice(0, 60) } } : ruleDiary(w, a);
+            const line = ai && typeof ai[i] === 'string' && ai[i].trim() ? { k: '{x}', p: { x: LLMClient.clip(LLMClient.unname(ai[i], a.name), 60) } } : ruleDiary(w, a);
             const arr = M.diary[a.agentId] || (M.diary[a.agentId] = []); arr.push({ day: d, k: line.k, p: line.p, ai: !!ai }); if (arr.length > 5) arr.splice(0, arr.length - 5);
             mem(w, a, line.k, line.p, 5);
         });

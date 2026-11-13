@@ -237,9 +237,10 @@ class ConversationEngine {
         if (this._planBusy || !this._planQueue.length) return;
         if (!this.llm || !this.llm._canMakeRequest(false)) return;
         if ((world.npcLlmUsedToday || 0) >= this.npcLlmDailyBudget()) { this._planQueue = []; return; }
-        // v5.39.0 批次生成:一次呼叫規劃 3 位,省下每次重複的規則/格式前綴(輸入省約三成;輸出內容不變)
+        // v5.39.0 批次生成:一次呼叫規劃多位,省下每次重複的規則/格式前綴
+        // v9.23.5 一次 3 位改 2 位:真模型實測一個人的行程要 550～700 token,3 位寫不完(47 人只拿到 4 人);2 位約 9 秒寫得完
         const batch = [];
-        while (batch.length < 3 && this._planQueue.length) {
+        while (batch.length < 2 && this._planQueue.length) {
             const npc = world.agents[this._planQueue.shift()];
             if (npc && !npc.isDead && !npc.isPlayer) batch.push(npc);
         }
@@ -287,7 +288,7 @@ ${t('【任務】為上面每一位居民:')}
 2. ${t('生成今天的行程:5-6 個時段,每個時段 2-3 個具體的小動作(像「揉麵團」「跟熟客閒聊兩句」,不要抽象標籤)。行程要呼應約定、心事與性格,工作時段要符合作息。')}
 ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：'), '[Rules] Write all text in natural English. Output JSON only, nothing else:')}
 {"plans": [{"name": "${t('居民姓名')}", "currently": "...", "plan": [{"time": "06:00", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}", "${t('小動作2')}"]}]}]}`;
-        const response = await this.llm.generate(prompt, 450 * npcs.length + 100, 0.85, false);
+        const response = await this.llm.generate(prompt + '\n' + LLM_LANG.rule('長度：每個時段的 text 20 字內，每個小動作 10 字內。', 'Length: each "text" under 15 words, each step under 8 words.'), 650 * npcs.length + 100, 0.85, false);
         if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
         let data = null;
         try {
@@ -348,18 +349,15 @@ ${t('【剛剛發生的事】')}${shortReason}
 ${t('【任務】依這件事改寫「現在之後」的行程:2-4 個時段(時間必須晚於現在),每時段 1-3 個小動作。若約好了時間/地點務必排進去;沒被影響的原安排可以保留;睡覺時間照舊。')}
 ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不要其他文字：'), '[Rules] Write all text in natural English. Output JSON only, nothing else:')}
 {"plan": [{"time": "HH:MM", "text": "${t('時段在做什麼')}", "steps": ["${t('小動作1')}"]}]}`;
-            const response = await this.llm.generate(prompt, 350, 0.85, false);
+            // v9.23.5 350→500、題目要求寫短、被切斷的也救:真模型實測 16 次只有 4 次解析成功(其餘寫到一半被切斷就整筆作廢)
+            const response = await this.llm.generate(prompt + '\n' + LLM_LANG.rule('長度：每個時段的 text 20 字內，每個小動作 10 字內。', 'Length: each "text" under 15 words, each step under 8 words.'), 500, 0.85, false);
             if (!response || response === '__ERROR__' || response === '__RATE_LIMITED__') return;
-            let data = null;
-            try {
-                const js = response.indexOf('{'), je = response.lastIndexOf('}') + 1;
-                if (js >= 0 && je > js) data = JSON.parse(response.slice(js, je));
-            } catch (e) { return; }
+            const data = LLMClient.parseJson(response); if (!data || Array.isArray(data)) return;
             const fresh = (Array.isArray(data?.plan) ? data.plan : []).filter(b => b && b.text && (toMin(b.time) || 0) > nowMin)
                 .slice(0, 5).map(b => ({
                     time: String(b.time || '').slice(0, 5),
-                    text: String(b.text).slice(0, 60),
-                    steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 3).map(s => String(s).slice(0, 40)),
+                    text: LLMClient.clip(b.text, 60),
+                    steps: (Array.isArray(b.steps) ? b.steps : []).filter(Boolean).slice(0, 3).map(s => LLMClient.clip(s, 40)),
                 }));
             if (!fresh.length) return;
             const key = `${world.clock.year}-${world.clock.season}-${world.clock.day}`;
@@ -584,7 +582,7 @@ ${t('情境：')}${scenario}
 
 ${t('【你是誰】')}
 ${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
-${t('你現在在')}${npc.currentLocation.replace(/_/g,' ')}${t('，正在')}${npc.activity}${t('。')}
+${t('你現在在')}${t(locName(world, npc.currentLocation))}${t('，正在')}${npc.activityLabel || npc.activity}${t('。')}
 ${this._buildRelContext(relNpc, player.name)}
 ${memNpc.length ? `${t('你記得：')}${memNpc.map(m=>m.content).join(t('；'))}` : ''}
 
@@ -689,7 +687,7 @@ ${LLM_LANG.rule(t('【格式】只寫一句貼文,表達此刻的心情與這個
                     const prompt = `${t('你在為小鎮社群「鎮民動態」寫貼文(像臉書/IG動態)。')}
 ${t('發文者:')}${pN.name}${t('，')}${pN.age}${t('歲，')}${pN.job}${t('。性格：')}${pN.traits}${t('。')}
 ${pN.thought ? `${t('最近在想：')}${pN.thought}` : ''}
-${t('現在在')}${author.currentLocation.replace(/_/g, ' ')}${t('，正在')}${author.activity}${t('。')}
+${t('現在在')}${t(locName(world, author.currentLocation))}${t('，正在')}${author.activityLabel || author.activity}${t('。')}
 
 ${t('【格式】第一行寫貼文內容(1-2句,口語、有梗、可加表情符號)。')}
 ${names.length ? `${t('接著每行寫一則留言,格式「名字: 留言」,留言者依序是:')}${names.join(t('、'))}` : ''}
@@ -1328,7 +1326,7 @@ ${t('- 可以有幽默、諷刺、調侃、撒嬌、關心、爭吵等豐富的�
 
 ${festCtx}${t('場景：')}${scenario}
 ${t('時間：')}${world.clock.timeStr}
-${t('地點：')}${agentA.currentLocation.replace(/_/g,' ')}
+${t('地點：')}${t(locName(world, agentA.currentLocation))}
 
 ${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}${t('，')}${pA.status}
 ${pA.thought ? `${t('最近在想：')}${pA.thought}` : ''}${pA.needs !== t('狀態良好') ? `${t('（有點')}${pA.needs}${t('）')}` : ''}
@@ -1357,7 +1355,8 @@ ${t('最後一行：')}EFFECTS: {"affinity_change_a": ${t('數字')}(-3${t('到'
 ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖昧、調情、深層情感連結才給 1-2。普通友好聊天應該給 0。大部分對話 romantic_change 應該是 0。')}`;
 
         // v5.39.0 輸出上限 800→500:NPC 背景對話 3-4 句就夠,輸出 token 是成本大頭
-        const response = await this.llm.generate(prompt, 500);
+        // v9.23.5 500→600:真模型實測 500 寫不完(對話 4 句+結果那一行),結果行 16 次有 15 次被切斷
+        const response = await this.llm.generate(prompt + '\n' + LLM_LANG.rule('長度：對話每句 30 字內；EFFECTS 裡的 summary、memory、plan 每項 25 字內。', 'Length: each spoken line under 25 words; summary, memory and plan in EFFECTS under 20 words each.'), 600);
         return this._parseConversation(response, agentA, agentB, world, relA, relB);
     }
 
@@ -1372,6 +1371,8 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                     const js = rest.indexOf('{'), je = rest.lastIndexOf('}')+1;
                     if (js>=0 && je>js) effects = JSON.parse(rest.slice(js,je));
                 } catch(e) {}
+                // v9.23.5 結果那一行被字數上限切斷:寫完的欄位(好感變化、摘要…)照樣採用,只丟掉沒寫完的最後一項(以前整行作廢、好感改用亂數)
+                if (!Object.keys(effects).length) { try { const rest = lines.slice(lines.indexOf(line)).join('\n'); const js = rest.indexOf('{'); if (js >= 0) effects = LLMClient.repairJson(rest.slice(js)) || {}; } catch (e) {} }
                 break;
             } else if (trimmed.includes(':')) {
                 const [speaker, ...textParts] = trimmed.split(':');
@@ -2445,8 +2446,46 @@ class LLMClient {
         if (arr) { const k = body.lastIndexOf('}'); if (k > 0) tries.push(body.slice(0, k + 1) + ']'); }
         else tries.push(body + '"}', body + '}', body.replace(/,\s*"[^"]*"?\s*:?\s*"?[^"]*$/, '') + '}');
         for (const x of tries) { try { const j = JSON.parse(x); if (j && typeof j === 'object') return j; } catch (e) {} }
+        { const j = LLMClient.repairJson(body); if (j) return j; }
         if (arr) { const m2 = body.match(/\{[\s\S]*\}/); if (m2) { try { return JSON.parse(m2[0]); } catch (e) {} } } // 「[注意] {…}」這種前面夾了方括號的
         return null;
+    }
+    // v9.23.5 巢狀的 JSON 被切斷(行程、對話結果這種裡面還有陣列和物件的):往回找最後一個「前面都完整」的位置,
+    // 把還沒關的括號補上。只丟掉沒寫完的那一小段,前面寫好的都留著。
+    static repairJson(body) {
+        body = String(body || ''); const st = []; const safe = []; let inStr = false, esc = false;
+        for (let i = 0; i < body.length; i++) {
+            const ch = body[i];
+            if (inStr) { if (esc) esc = false; else if (ch === '\\') esc = true; else if (ch === '"') inStr = false; continue; }
+            if (ch === '"') inStr = true;
+            else if (ch === '{' || ch === '[') st.push(ch);
+            else if (ch === '}' || ch === ']') { st.pop(); if (!st.length) break; safe.push([i + 1, st.join('')]); }
+            else if (ch === ',' && st.length) safe.push([i, st.join('')]);
+        }
+        for (let k = safe.length - 1; k >= 0 && k >= safe.length - 80; k--) {
+            const [pos, open] = safe[k]; const close = [...open].reverse().map(c => c === '{' ? '}' : ']').join('');
+            try { const j = JSON.parse(body.slice(0, pos) + close); if (j && typeof j === 'object') return j; } catch (e) {}
+        }
+        return null;
+    }
+    // v9.23.5 AI 寫的句子比要求的長時,以前用固定字數硬切,畫面上會出現斷在半句的話(英文更糟:60 個字元才十個字)。
+    // 現在英文的上限放寬(預設三倍),而且切在句子結尾;找不到句子結尾才切在逗號或單字邊界,後面加「…」。
+    static clip(text, zhMax, enMax, plain) {
+        const s = String(text == null ? '' : text).replace(/[\u0000-\u001f<>]/g, ' ').replace(/\s+/g, ' ').trim(); const en = (typeof LLM_LANG !== 'undefined') && LLM_LANG.get() === 'en';
+        const max = en ? (enMax || zhMax * 3) : zhMax; if (s.length <= max) return s;
+        if (plain) return (en ? s.slice(0, max).replace(/\s+\S*$/, '') : s.slice(0, max)).replace(/[，、；：,;:\s]+$/, ''); // 店名、作品名:不加「…」
+        const head = s.slice(0, max); const m = head.match(en ? /^[\s\S]*[.!?…。！？]["'」』)]?/ : /^[\s\S]*[。！？!?…]["」』）)]?/);
+        if (m && m[0].length >= max * 0.5) return m[0].trim();
+        const m2 = head.match(en ? /^[\s\S]*[,;:]\s/ : /^[\s\S]*[，、；：,;]/);
+        if (m2 && m2[0].length >= max * 0.5) return m2[0].replace(/[，、；：,;:\s]+$/, '') + '…';
+        return (en ? head.replace(/\s+\S*$/, '') : head.slice(0, max - 1)) + '…';
+    }
+    // v9.23.5 AI 常自己在台詞前面加「名字：」,畫面上本來就會標是誰說的,拿掉免得重複
+    static unname(text, ...names) {
+        let s = String(text == null ? '' : text).trim();
+        for (const n of names) { if (!n) continue; const all = [n]; try { if (typeof I18N !== 'undefined' && I18N.localizeNames) { const e = I18N.localizeNames(n, true); if (e && e !== n) all.push(e, e.split(' ')[0]); } } catch (e) {}
+            for (const x of all) { const esc = String(x).replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); s = s.replace(new RegExp('^\\*{0,2}' + esc + '\\*{0,2}\\s*[：:]\\s*'), ''); } }
+        return s.replace(/^["「『]+|["」』]+$/g, '').trim();
     }
     async generate(prompt, maxTokens = 500, temperature = 0.9, isPlayerChat = false, opts = {}) {
         const strict = !!opts.strict; // v6.43.1 完整智能體決策:冷卻中不插隊

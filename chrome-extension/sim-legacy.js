@@ -20,7 +20,7 @@ const LEGACY = (() => {
         const evs = seasonEvents(w); const scribe = npcs(w).filter(a => a.job?.key === 'researcher').sort(() => Math.random() - 0.5)[0] || npcs(w).find(a => a.job?.key === 'priest') || npcs(w)[0]; if (!scribe) return null;
         let title = { k: '第 {y} 年{s}', p: { y: year, s: season } }, text = evs.length ? { k: '這一季鎮上發生了：{list}', p: { list: evs.slice(-5).map(s => s.replace(/^[^\p{L}\p{N}]+/u, '')).join(' / ') } } : { k: '這一季風平浪靜，大家過著平常的日子。', p: {} };
         const ce = ai(w);
-        if (ce && evs.length) { try { const prompt = `${t('你是小鎮的史官')}${scribe.name}${t('。請用史書的口吻，把這一季的大事寫成一段編年史（60 字內），並給這一章一個標題（10 字內）。大事')}${t('：')}${evs.join(' / ')}${t('。只輸出 JSON')}${t('：')}{"title":"...","text":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 220); if (j?.text) { text = { k: '{x}', p: { x: String(j.text).slice(0, 160) } }; if (j.title) title = { k: '{x}', p: { x: String(j.title).slice(0, 24) } }; } } catch (e) {} }
+        if (ce && evs.length) { try { const prompt = `${t('你是小鎮的史官')}${scribe.name}${t('。請用史書的口吻，把這一季的大事寫成一段編年史（60 字內），並給這一章一個標題（10 字內）。大事')}${t('：')}${evs.join(' / ')}${t('。只輸出 JSON')}${t('：')}{"title":"...","text":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 220); if (j?.text) { text = { k: '{x}', p: { x: LLMClient.clip(j.text, 160) } }; if (j.title) title = { k: '{x}', p: { x: LLMClient.clip(j.title, 24, 70, true) } }; } } catch (e) {} }
         const C = { year, season, by: scribe.name, title, text, n: evs.length };
         L.chapters.push(C); if (L.chapters.length > 24) L.chapters.shift();
         log(w, 'system', '📚 史官{a}寫下了鎮史新的一章〈{t}〉。', { a: scribe.name, t: title }, scribe.name);

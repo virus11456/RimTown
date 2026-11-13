@@ -41,7 +41,7 @@ const BIZ = (() => {
         const S2 = { id: 'B' + (++B.n), type: k, owner: a.agentId, partner: partner?.agentId || null, name, price: T.price + (has(a, 'jealous') ? 1 : 0), till: 0, profit: 0, week: 0, opened: d, lossDays: 0, closed: false };
         B.shops.push(S2);
         const ce = ai(w);
-        if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('村民「')}${b.name}${t('」（')}${b.traits}${t('）要開一家')}${t(T.zh)}${t('。請幫他取一個有個人色彩的店名（8 字內），只輸出 JSON')}${t('：')}{"name":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 60); const nm = String(j?.name || '').trim().slice(0, 16); if (nm) { S2.name = [nm, nm]; } } catch (e) {} }
+        if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('村民「')}${b.name}${t('」（')}${b.traits}${t('）要開一家')}${t(T.zh)}${t('。請幫他取一個有個人色彩的店名（8 字內），只輸出 JSON')}${t('：')}{"name":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 60); const nm = LLMClient.clip(j?.name, 16, 40, true); if (nm) { S2.name = [nm, nm]; } } catch (e) {} }
         try { I18N.registerName(S2.name[0], S2.name[1]); } catch (e) {}
         log(w, '{i} {a}開了一家{t}「{n}」{p}！', { i: T.icon, a: a.name, t: T.zh, n: S2.name[0], p: partner ? { k: '（跟{b}合夥）', p: { b: partner.name } } : '' }, a.name);
         mem(w, a, '我開了自己的店「{n}」，希望生意興隆。', { n: S2.name[0] }, 8);

@@ -28,7 +28,7 @@ const DREAM = (() => {
             if (!s.found || s.decided || !s.foundBy || d - (s.foundDay ?? d) > 1 || s.kind === 'white') continue; s.decided = true;
             const f = w.agents[s.foundBy], c = w.agents[s.culprit]; if (!f || !c || f === c) continue;
             let ch = ruleChoice(w, f, c); const ce = ai(w);
-            if (ce) { try { const b = ce._agentBrief(w, f, c); const prompt = `${t('你是')}${b.name}${t('（')}${b.traits}${t('）。你發現了一個祕密')}${t('：')}${Memory.render(s.k, s.p)}${t('。你和')}${c.name}${t('的交情')} ${Math.round(aff(f, c))}${t('。要 expose（公開）、cover（幫忙掩護）還是 blackmail（私下勒索）？用一句話說理由。只輸出 JSON')}${t('：')}{"act":"expose","why":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 120); if (j && ['expose', 'cover', 'blackmail'].includes(j.act)) ch = { act: j.act, why: String(j.why || '').slice(0, 60), ai: true }; } catch (e) {} }
+            if (ce) { try { const b = ce._agentBrief(w, f, c); const prompt = `${t('你是')}${b.name}${t('（')}${b.traits}${t('）。你發現了一個祕密')}${t('：')}${Memory.render(s.k, s.p)}${t('。你和')}${c.name}${t('的交情')} ${Math.round(aff(f, c))}${t('。要 expose（公開）、cover（幫忙掩護）還是 blackmail（私下勒索）？用一句話說理由。只輸出 JSON')}${t('：')}{"act":"expose","why":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 120); if (j && ['expose', 'cover', 'blackmail'].includes(j.act)) ch = { act: j.act, why: LLMClient.clip(j.why, 60), ai: true }; } catch (e) {} }
             const why = ch.ai ? { k: '{x}', p: { x: ch.why } } : { k: ch.why, p: { c: c.name } };
             if (ch.act === 'cover') {
                 try { const r = w.dark.rep[c.agentId]; if (r && r.exposed) r.exposed = Math.max(0, r.exposed - 1); } catch (e) {}
@@ -54,14 +54,14 @@ const DREAM = (() => {
         const rule = (x) => { const b = w.agents[x.to]; return x.forgiven ? (has(b, 'kind') ? '人都會犯錯，我不想記恨。' : '他是真心的，我就給他一次機會。') : (has(b, 'jealous') || has(b, 'abrasive') ? '這種事哪是一句對不起就算了？' : '我需要一點時間。'); };
         const ce = ai(w); let lines = null;
         if (ce) { try { const list = fresh.map((x, i) => `${i + 1}. ${w.agents[x.to].name}${t(x.forgiven ? '原諒了' : '還不肯原諒')}${w.agents[x.by].name}`).join('\n'); const prompt = `${t('以下每一對村民，道歉之後一方原諒或不原諒。請用被道歉的人的口吻各寫一句理由（20 字內）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 160); if (Array.isArray(j)) lines = j; } catch (e) {} }
-        fresh.forEach((x, i) => { const b = w.agents[x.to]; if (!b) return; /* v9.7.1 等 AI 回話時原諒的人已經離開或過世 */ const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: lines[i].trim().slice(0, 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
+        fresh.forEach((x, i) => { const b = w.agents[x.to]; if (!b) return; /* v9.7.1 等 AI 回話時原諒的人已經離開或過世 */ const s = lines && typeof lines[i] === 'string' && lines[i].trim() ? { k: '{x}', p: { x: LLMClient.clip(LLMClient.unname(lines[i], b.name), 60) } } : { k: rule(x), p: {} }; x.why = s; log(w, 'social', '💬 {b}：「{s}」', { b: b.name, s }, b.name); mem(w, b, s.k, s.p, 5); });
     }
     // ---------- 禱詞 ----------
     async function prayers(w, d) {
         const F = w.faith; const ce = ai(w); if (!F || !ce) return;
         const fresh = Object.entries(F.prayers || {}).filter(([id, p]) => p.day === d && !p.text && w.agents[id]).slice(0, 3); if (!fresh.length) return;
         try { const list = fresh.map(([id, p], i) => { const a = w.agents[id]; const R = F.rels.find(r => r.id === p.rel); return `${i + 1}. ${a.name}${t('向')}${R ? R.deity[0] : ''}${t('祈求')}${t('：')}${t(p.wish)}`; }).join('\n'); const prompt = `${t('請替每位村民寫一句真誠的禱詞（25 字內，第一人稱）。只輸出 JSON 陣列')}${t('：')}["..."]\n${list}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 180);
-            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { if (typeof j[i] === 'string' && j[i].trim()) { p.text = j[i].trim().slice(0, 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: w.agents[id].name, x: p.text }, w.agents[id].name); } });
+            if (Array.isArray(j)) fresh.forEach(([id, p], i) => { if (typeof j[i] === 'string' && j[i].trim()) { p.text = LLMClient.clip(LLMClient.unname(j[i], w.agents[id]?.name), 70); log(w, 'social', '🙏 {a}的禱詞：「{x}」', { a: w.agents[id].name, x: p.text }, w.agents[id].name); } });
         } catch (e) {}
     }
     // ---------- 託夢 ----------
@@ -73,7 +73,7 @@ const DREAM = (() => {
         Sd.lastDream = d;
         mem(w, a, '我夢見有個聲音對我說：「{x}」', { x: text }, 9);
         let read = ruleRead(text, a), meaning = null; const ce = ai(w);
-        if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('你是')}${b.name}${t('（')}${b.traits}${t('）。昨晚你夢見有個聲音對你說')}${t('：')}${t('「')}${text}${t('」')}${t('。依你的個性與處境，你怎麼解讀？可能誤會。用第一人稱一句話說你的解讀，並選一個行動類型：build、reconcile、journey、love、wealth、warning、vague。只輸出 JSON')}${t('：')}{"meaning":"...","kind":"vague"}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 140); if (j?.meaning) { meaning = String(j.meaning).slice(0, 70); if (KEY.some(([, k]) => k === j.kind) || j.kind === 'vague') read = { kind: j.kind, wrong: false }; } } catch (e) {} }
+        if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('你是')}${b.name}${t('（')}${b.traits}${t('）。昨晚你夢見有個聲音對你說')}${t('：')}${t('「')}${text}${t('」')}${t('。依你的個性與處境，你怎麼解讀？可能誤會。用第一人稱一句話說你的解讀，並選一個行動類型：build、reconcile、journey、love、wealth、warning、vague。只輸出 JSON')}${t('：')}{"meaning":"...","kind":"vague"}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 140); if (j?.meaning) { meaning = LLMClient.clip(j.meaning, 70); if (KEY.some(([, k]) => k === j.kind) || j.kind === 'vague') read = { kind: j.kind, wrong: false }; } } catch (e) {} }
         const dr = { day: d, to: agentId, toName: a.name, text, kind: read.kind, wrong: read.wrong, meaning };
         Sd.dreams.push(dr); if (Sd.dreams.length > 10) Sd.dreams.shift();
         act(w, a, dr);

@@ -235,7 +235,7 @@ if (typeof ConversationEngine !== 'undefined') {
 ${t('【國況】')}${this._townBrief(world)}${t('；')}${t('民心')} ${Math.round(C.legit)}/100${t('；')}${t('公庫')} ${Math.round(world.stockpile?.get?.('silver') || 0)}${t('；')}${t('稅率')} ${Math.round((world.wallet?.tax ?? 0.1) * 100)}%
 ${t('請依你的性格與國況，從這些王令選一道頒布')}${t('：')}${list}${t('。')}${t('再用國王的口吻寫一句詔書（25 字內）。')}
 ${t('只輸出 JSON')}${t('：')}{"key":"…","text":"…"}`;
-        try { this._countNpcLlmUse?.(world); const j = await this._askJson(prompt, 160); if (j && typeof j.key === 'string') return { key: j.key, text: String(j.text || '').slice(0, 60) }; } catch (e) {}
+        try { this._countNpcLlmUse?.(world); const j = await this._askJson(prompt, 160); if (j && typeof j.key === 'string') return { key: j.key, text: LLMClient.clip(j.text, 60) }; } catch (e) {}
         return null;
     };
 }

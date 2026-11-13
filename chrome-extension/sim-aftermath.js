@@ -180,7 +180,7 @@ const AFTERMATH = (() => {
         const ids = new Set(pool.map(a => a.agentId)); C.aiPend = { d, ids: [...ids] }; C.st.ai = (C.st.ai || 0) + 1;
         ce._askJson(prompt, 80 + pool.length * 60).then(j => {
             const arr = Array.isArray(j) ? j : (Array.isArray(j?.list) ? j.list : []); C.aiPend = null; let n = 0;
-            for (const x of arr) { const a = pool[(x?.i | 0) - 1]; const r = x?.r; if (!a || !w.agents[a.agentId] || a.isDead) continue; if (r && R[r]) { if (act(w, a, r, cr, String(x.line || '').replace(/[<>]/g, '').slice(0, 30))) n++; } else if (r === 'none') C.did[a.agentId] = [day(w), 'none', cr.id]; }
+            for (const x of arr) { const a = pool[(x?.i | 0) - 1]; const r = x?.r; if (!a || !w.agents[a.agentId] || a.isDead) continue; if (r && R[r]) { if (act(w, a, r, cr, LLMClient.clip(LLMClient.unname(x.line, a.name), 30))) n++; } else if (r === 'none') C.did[a.agentId] = [day(w), 'none', cr.id]; }
             C.st.aiActs = (C.st.aiActs || 0) + n;
         }).catch(() => { C.aiPend = null; });
         return ids;

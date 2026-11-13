@@ -96,7 +96,7 @@ const BANK = (() => {
                 const b = ce._agentBrief(w, banker, null);
                 const prompt = `${t('你正在扮演銀行家「')}${b.name}${t('」（')}${t('性格')}${t('：')}${b.traits}${t('）')}${t('。')}${t('存款')} ${Math.round(totalDep(B))}${t('，')}${t('放款')} ${Math.round(totalLoan(B))}${t('，')}${t('準備金')} ${Math.round(B.reserve)}${t('，')}${t('呆帳')} ${Math.round(B.bad)}${t('，')}${t('目前放款利率')} ${Math.round(B.rate * 100)}%${t('。')}${t('依你的性格決定新的放款利率（4～20）與一句理由。只輸出 JSON')}${t('：')}{"rate":8,"why":"..."}`;
                 ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 120);
-                if (j && Number.isFinite(+j.rate)) { B.rate = Math.max(0.04, Math.min(0.2, +j.rate / 100)); B.rateWhy = String(j.why || '').slice(0, 60); return; }
+                if (j && Number.isFinite(+j.rate)) { B.rate = Math.max(0.04, Math.min(0.2, +j.rate / 100)); B.rateWhy = LLMClient.clip(j.why, 60); return; }
             } catch (e) {}
         }
         rule();
@@ -200,7 +200,7 @@ const BANK = (() => {
                     ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt, 120);
                 } catch (e) {}
                 if (!live()) return;
-                if (j && typeof j.bailout === 'boolean') done(j.bailout, String(j.why || '').slice(0, 60) || ruleBailout(w, B, m, need).why);
+                if (j && typeof j.bailout === 'boolean') done(j.bailout, LLMClient.clip(j.why, 60) || ruleBailout(w, B, m, need).why);
                 else { const r = ruleBailout(w, B, m, need); done(r.yes, r.why); }
             })();
             return;

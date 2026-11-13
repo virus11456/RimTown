@@ -32,7 +32,7 @@ const POLITICS = (() => {
             try {
                 const prompt = `${t('鎮上的選舉辯論。候選人')}${t('：')}${cands.map(a => { const b = ce._agentBrief(w, a, null); return `${b.name}${t('（')}${b.traits}${t('）')}`; }).join(t('、'))}${t('。')}${t('請替每位候選人寫一句攻擊對手或宣揚自己的辯詞（25 字內，口語），並判斷誰表現最好。只輸出 JSON')}${t('：')}{"lines":["...","..."],"best":0}`;
                 ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 220);
-                if (j && Array.isArray(j.lines)) { j.lines.forEach((s, i) => { if (lines[i] && typeof s === 'string' && s.trim()) { lines[i].k = '{x}'; lines[i].p = { x: s.trim().slice(0, 60) }; } }); if (Number.isInteger(j.best) && lines[j.best]) lines[j.best].score += 100; } // AI 判定的贏家就是贏家
+                if (j && Array.isArray(j.lines)) { j.lines.forEach((s, i) => { if (lines[i] && typeof s === 'string' && s.trim()) { lines[i].k = '{x}'; lines[i].p = { x: LLMClient.clip(LLMClient.unname(s, cands[i]?.name), 60) }; } }); if (Number.isInteger(j.best) && lines[j.best]) lines[j.best].score += 100; } // AI 判定的贏家就是贏家
             } catch (e) {}
         }
         for (let i = lines.length - 1; i >= 0; i--) { const a = w.agents[lines[i].id]; if (!a || a.isDead) lines.splice(i, 1); } if (lines.length < 2) return null; // v8.7.0 等 AI 的時候候選人可能過世或搬走了
@@ -78,7 +78,7 @@ const POLITICS = (() => {
         try {
             const prompt = `${t('請同時扮演兩邊：本鎮使節「')}${envoyName}${t('」與')}${t(p.name[0])}${t('的領袖，進行一場外交談判。目前雙方關係')} ${Math.round(D.rel[pid] || 0)}${t('（-100～100）。')}${t('談判結果只能是 treaty（簽約）、marriage（聯姻）、compensation（對方要求賠償）、none（破局）之一，並用一句話描述經過。只輸出 JSON')}${t('：')}{"result":"treaty","text":"..."}`;
             ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 160); if (!j || !['treaty', 'marriage', 'compensation', 'none'].includes(j.result)) return null;
-            const text = String(j.text || '').slice(0, 80);
+            const text = LLMClient.clip(j.text, 80);
             if (j.result === 'treaty') { DIPLO.bump(w, pid, 15); if ((D.rel[pid] || 0) >= 20 && D.status[pid] !== 'ally') { D.status[pid] = 'trade'; } }
             if (j.result === 'marriage') DIPLO.bump(w, pid, 10);
             if (j.result === 'compensation') { const n = Math.min(60, w.stockpile?.get?.('silver') || 0); if (n && w.stockpile.consume('silver', n, w.tickCount, t('外交賠償'))) { try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'event', -n); } catch (e) {} } /* v8.8.0 賠給外地的錢記到「事件」 */ DIPLO.bump(w, pid, 8); }
@@ -109,7 +109,7 @@ const POLITICS = (() => {
         if (ce) {
             try {
                 const prompt = `${t('鎮上的審判：被告')}${c.name}${t('，罪名')}${t('：')}${p.dk ? Memory.render(p.dk, p.dp || {}) : ''}${t('。')}${t('控方')}${prosecutor.name}${t('、辯方')}${defender.name}${t('、法官')}${judge.name}${t('。請替三人各寫一句陳詞（25 字內）。只輸出 JSON 陣列')}${t('：')}["...","...","..."]`;
-                ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 200); if (Array.isArray(j)) j.slice(0, 3).forEach((s, i) => { if (typeof s === 'string' && s.trim()) { T.lines[i].k = '{x}'; T.lines[i].p = { x: s.trim().slice(0, 60) }; } });
+                ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 200); if (Array.isArray(j)) j.slice(0, 3).forEach((s, i) => { if (typeof s === 'string' && s.trim()) { T.lines[i].k = '{x}'; T.lines[i].p = { x: LLMClient.clip(LLMClient.unname(s, T.lines[i].who), 60) }; } });
             } catch (e) {}
         }
         P.trials[p.id] = T;
