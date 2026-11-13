@@ -55,6 +55,8 @@ async function fetchTimeout(url, opts, ms = 20000) {
 // v5.66.5 整個請求共用一個時間預算(見 handler 的 deadline):每個上游呼叫只能用剩下的時間,
 // 兩條渠道加起來不會超過函式 30 秒上限,最壞情況也是「退回另一邊」而不是 504
 function budget(deadline, cap) { return Math.max(1000, Math.min(cap, deadline - Date.now())); }
+// v9.23.5 回覆很長的請求(每日行程 1450、日報 1200)寫完要十秒上下,單次等待上限從 15 秒放寬到 22 秒(整個請求仍共用 26 秒)
+function waitCap(maxTokens) { return (maxTokens || 0) > 700 ? 22000 : 15000; }
 
 // v5.67.2 遊戲系統提示:有些中繼(例如 Kiro 系代理)會自己塞「我是程式開發助理、不做角色扮演」的系統提示,
 // 村民對話就被拒絕、還用英文自報身分。我們自己的系統提示一定要送,能蓋過就蓋過;蓋不過由下方的拒絕偵測接手。
@@ -105,7 +107,7 @@ async function postOpenAI(url, key, body, deadline) {
     const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${key}` };
     let r;
     for (let i = 0; i < 4; i++) {
-        r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
+        r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, waitCap(body.max_tokens || body.max_completion_tokens)));
         if (r.status !== 400 || i === 3 || deadline - Date.now() < 3000) return { r };
         let msg = ''; try { msg = JSON.stringify(await r.json()); } catch (e) {}
         let changed = false;
@@ -181,7 +183,7 @@ async function callRelay(prompt, maxTokens, temperature, deadline = Date.now() +
         body = { model: RELAY_MODEL, max_tokens: maxTokens, messages: [{ role: 'user', content: (lang === 'en' ? '[System instructions] ' : '【系統指示】') + systemPrompt(lang) + '\n\n' + prompt }] };
         if (!NO_SAMPLING_RE.test(RELAY_MODEL)) body.temperature = temperature;
     }
-    let r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000));
+    let r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, waitCap(maxTokens)));
     if (r.status === 400 && RELAY_FORMAT === 'anthropic' && (body.thinking || body.temperature !== undefined) && deadline - Date.now() > 3000) {
         let msg = ''; try { msg = JSON.stringify(await r.json()); } catch (e) {}
         if (/thinking|temperature|sampling/i.test(msg)) { delete body.thinking; delete body.temperature; body.max_tokens = Math.max(400, body.max_tokens); r = await fetchTimeout(url, { method: 'POST', headers, body: JSON.stringify(body) }, budget(deadline, 15000)); }
@@ -311,7 +313,9 @@ module.exports = async (req, res) => {
     const fitLen = (x) => x.length <= PROMPT_MAX ? x : x.slice(0, PROMPT_MAX - TAIL_KEEP - 3) + '\n…\n' + x.slice(-TAIL_KEEP);
     const prompt = fixSur(fitLen(fixSur(String(b.prompt || ''))));
     if (!prompt) return L.err(res, 400, 'missing_prompt', 'Missing prompt');
-    const maxTokens = Math.min(600, Math.max(1, parseInt(b.max_tokens, 10) || 300));
+    // v9.23.5 回覆長度上限 600→1600:每日行程一次問 3 人要 1450、日報要 1200,以前一律壓到 600,
+    // 真模型實測每日行程 47 人只拿到 4 人、日報每篇寫到一半被切斷(錢照付、結果丟掉)
+    const maxTokens = Math.min(1600, Math.max(1, parseInt(b.max_tokens, 10) || 300));
     const temperature = Math.min(1.5, Math.max(0, parseFloat(b.temperature) || 0.9));
 
     // 額度身分:登入的帳號

@@ -55,7 +55,7 @@ const EPIC = (() => {
         try {
             const prompt = `${t('你是小鎮的吟遊詩人。請把這件事寫成史詩的一篇：一個標題（12 字內）和四行詩句（每行 20 字內），要用到真實的人名和數字，口吻莊重但有人情味。事實')}${t('：')}${R(C.title.k, C.title.p)}${t('；')}${C.lines.map(l => R(l.k, l.p)).join(' ')}${facts ? t('；') + facts : ''}${t('。只輸出 JSON')}${t('：')}{"title":"...","lines":["...","...","...","..."]}`;
             ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 260);
-            if (j && Array.isArray(j.lines) && j.lines.length) C.ai = { title: String(j.title || '').slice(0, 30), lines: j.lines.slice(0, 6).map(x => String(x).slice(0, 60)), lang: en() ? 'en' : 'zh' };
+            if (j && Array.isArray(j.lines) && j.lines.length) C.ai = { title: LLMClient.clip(j.title, 30, 80, true), lines: j.lines.slice(0, 6).map(x => LLMClient.clip(x, 60)), lang: en() ? 'en' : 'zh' };
         } catch (e) {}
     }
     const T = (k, p) => ({ k, p: p || {} });

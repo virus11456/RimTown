@@ -53,7 +53,7 @@ async function run(browser, lang) {
       tray.querySelector('[data-gh="wish-ex"]').click(); out.ui.ex = ta().value.length > 2;
       ta().focus(); ta().value = lang === 'en' ? 'A bard sings all night long' : '有個詩人唱了一整夜'; ta().dispatchEvent(new Event('input', { bubbles: true }));
       const el0 = ta(); app._ghRefresh(); out.ui.keep = ta() === el0 && ta().value.length > 4;
-      tray.querySelector('[data-gh="wish-go"]').click(); await new Promise(r => setTimeout(r, 400));
+      tray.querySelector('[data-gh="wish-go"]').click(); for (let i = 0; i < 100 && (WISH.S(w).busy || app._ghOpen); i++) await new Promise(r => setTimeout(r, 100)); await new Promise(r => setTimeout(r, 150)); /* 等「命運正在寫…」結束（先問 AI、沒回覆才照規則寫）：固定等 0.4 秒有時還沒寫完 */
       out.ui.closed = !app._ghOpen; out.ui.follow = !!app.tileMap?._followAgent; out.ui.lastText = WISH.S(w).last?.text;
       app._ghShow(); out.ui.blocked = document.querySelector('#gh-tray .gh-card[data-v="wish"]')?.classList.contains('blocked');
       out.ui.note = document.querySelector('#gh-tray .gh-wish .gh-d-note')?.textContent || '';

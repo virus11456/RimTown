@@ -23,7 +23,7 @@ const CULTURE = (() => {
         const ev = topEvent(w); if (!ev) return;
         let k = '{s}{e}', p = { s: SPIN[P.st] || '', e: { k: '{x}', p: { x: ev } } };
         const ce = ai(w); const j0 = w.agents[P.journo];
-        if (ce && j0) { try { const prompt = `${t('你是')}${t(P.name[0])}${t('的記者')}${j0.name}${t('（立場')}${t(PRESS.STANCE[P.st].zh)}${t('）。今天鎮上最重要的事')}${t('：')}${ev}${t('。請用報社的立場寫一句頭條（25 字內）。只輸出 JSON')}${t('：')}{"headline":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 90); const h = String(j?.headline || '').trim(); if (h) { k = '{x}'; p = { x: h.slice(0, 60) }; } } catch (e) {} }
+        if (ce && j0) { try { const prompt = `${t('你是')}${t(P.name[0])}${t('的記者')}${j0.name}${t('（立場')}${t(PRESS.STANCE[P.st].zh)}${t('）。今天鎮上最重要的事')}${t('：')}${ev}${t('。請用報社的立場寫一句頭條（25 字內）。只輸出 JSON')}${t('：')}{"headline":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 90); const h = String(j?.headline || '').trim(); if (h) { k = '{x}'; p = { x: LLMClient.clip(h, 60) }; } } catch (e) {} }
         PRESS.story(w, P, 'headline', k, p, null);
         C.heads.push({ day: d, paper: P.id, k, p }); if (C.heads.length > 6) C.heads.shift();
     }
@@ -55,7 +55,7 @@ const CULTURE = (() => {
         for (const a of makers) {
             if (Math.random() > 0.08) continue; const kind = pick(Object.keys(KINDS)); const ad = pick(ADJ), sb = pick(SUBJ[kind]);
             let title = [`${ad[0]}的${sb[0]}`, `The ${ad[1]} ${sb[1]}`];
-            const ce = ai(w); if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('村民藝術家「')}${b.name}${t('」（')}${b.traits}${t('）完成了一件')}${t(KINDS[kind][0])}${t('。依他最近的心事')}${t('：')}${(b.mem || []).slice(0, 3).join(' / ')}${t('，取一個作品名（10 字內）。只輸出 JSON')}${t('：')}{"title":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 60); const tt = String(j?.title || '').trim().slice(0, 20); if (tt) title = [tt, tt]; } catch (e) {} }
+            const ce = ai(w); if (ce) { try { const b = ce._agentBrief(w, a, null); const prompt = `${t('村民藝術家「')}${b.name}${t('」（')}${b.traits}${t('）完成了一件')}${t(KINDS[kind][0])}${t('。依他最近的心事')}${t('：')}${(b.mem || []).slice(0, 3).join(' / ')}${t('，取一個作品名（10 字內）。只輸出 JSON')}${t('：')}{"title":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 60); const tt = LLMClient.clip(j?.title, 20, 60, true); if (tt) title = [tt, tt]; } catch (e) {} }
             try { I18N.registerName(title[0], title[1]); } catch (e) {}
             const q = Math.min(100, Math.round(40 + Math.random() * 45 + (a.skills?.skills?.藝術?.level || 0) * 2 + (has(a, 'perfectionist') ? 8 : 0)));
             const W = { id: 'A' + (++C.n), by: a.agentId, byName: a.name, kind, title, q, day: d, legend: false };
@@ -78,7 +78,7 @@ const CULTURE = (() => {
         const ev = logs[logs.length - 1].replace(/^[^\p{L}\p{N}]+/u, '').slice(0, 60); C.lastSong = d;
         let title = ['{e}之歌', '']; let tp = { e: ev.slice(0, 12) };
         const ce = ai(w); let lyric = '';
-        if (ce) { try { const prompt = `${t('你是吟遊詩人')}${singer.name}${t('。把這件鎮上的大事編成一首歌謠')}${t('：')}${ev}${t('。給歌名（8 字內）與一句歌詞（20 字內）。只輸出 JSON')}${t('：')}{"title":"...","line":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 100); if (j?.title) { title = ['{x}', '']; tp = { x: String(j.title).slice(0, 20) }; lyric = String(j.line || '').slice(0, 50); } } catch (e) {} }
+        if (ce) { try { const prompt = `${t('你是吟遊詩人')}${singer.name}${t('。把這件鎮上的大事編成一首歌謠')}${t('：')}${ev}${t('。給歌名（8 字內）與一句歌詞（20 字內）。只輸出 JSON')}${t('：')}{"title":"...","line":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 100); if (j?.title) { title = ['{x}', '']; tp = { x: LLMClient.clip(j.title, 20, 60, true) }; lyric = LLMClient.clip(j.line, 50); } } catch (e) {} }
         const song = { day: d, by: singer.name, k: title[0], p: tp, lyric, ev };
         C.songs.push(song); if (C.songs.length > 8) C.songs.shift();
         log(w, 'social', '🎶 {a}把「{e}」編成歌謠〈{t}〉，在酒館傳唱。', { a: singer.name, e: ev, t: { k: song.k, p: song.p } }, singer.name);
@@ -108,7 +108,7 @@ const CULTURE = (() => {
     for (const c of CLAIMS) { try { I18N.registerName(c[0], c[1]); } catch (e) {} }
     async function doctrine(w, R2, founder) {
         let claim = pick(CLAIMS); const ce = ai(w);
-        if (ce && founder) { try { const prompt = `${t('有魅力的村民')}${founder.name}${t('自立新教派「')}${R2.name[0]}${t('」。請替這個教派寫一句核心教義（20 字內）。只輸出 JSON')}${t('：')}{"claim":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 80); const c = String(j?.claim || '').trim().slice(0, 40); if (c) { claim = [c, c]; try { I18N.registerName(c, c); } catch (e) {} } } catch (e) {} }
+        if (ce && founder) { try { const prompt = `${t('有魅力的村民')}${founder.name}${t('自立新教派「')}${R2.name[0]}${t('」。請替這個教派寫一句核心教義（20 字內）。只輸出 JSON')}${t('：')}{"claim":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 80); const c = LLMClient.clip(j?.claim, 40); if (c) { claim = [c, c]; try { I18N.registerName(c, c); } catch (e) {} } } catch (e) {} }
         R2.doctrine = claim; R2.pre = [claim, ...(R2.pre || []).slice(0, 1)];
         log(w, 'social', '📖 {a}為{r}立下教義：「{x}」', { a: founder?.name || '', r: R2.name[0], x: claim[0] }, founder?.name || '');
     }
@@ -116,7 +116,7 @@ const CULTURE = (() => {
     async function mutate(w, C, d) {
         if (C.lastMut === d) return; C.lastMut = d; const ce = ai(w); if (!ce || !w.tidings) return;
         const T = w.tidings; const it = T.items.slice().reverse().find(x => x.dist && !x.alt && Object.values(T.known).filter(k => k.includes(x.id)).length >= 3); if (!it) return;
-        try { const prompt = `${t('這則消息在鎮上越傳越離譜')}${t('：')}${TIDINGS.render(it)}${t('。請寫出現在傳成什麼樣子（25 字內，誇張但像真的謠言）。只輸出 JSON')}${t('：')}{"rumor":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 80); const s = String(j?.rumor || '').trim(); if (s) { it.alt = s.slice(0, 60); log(w, 'news', '🗯️ 謠言越傳越離譜：「{x}」', { x: it.alt }); } } catch (e) {}
+        try { const prompt = `${t('這則消息在鎮上越傳越離譜')}${t('：')}${TIDINGS.render(it)}${t('。請寫出現在傳成什麼樣子（25 字內，誇張但像真的謠言）。只輸出 JSON')}${t('：')}{"rumor":"..."}`; ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 80); const s = String(j?.rumor || '').trim(); if (s) { it.alt = LLMClient.clip(s, 60); log(w, 'news', '🗯️ 謠言越傳越離譜：「{x}」', { x: it.alt }); } } catch (e) {}
     }
     function daily(w) {
         const C = S(w), d = day(w); if (C.lastDay === d) return; C.lastDay = d;

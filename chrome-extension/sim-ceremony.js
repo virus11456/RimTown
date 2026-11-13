@@ -43,7 +43,7 @@ const CEREMONY = (() => {
         try {
             const llm = w.conversationEngine?.llm; if (!llm || !llm._canMakeRequest?.(false)) return;
             llm.generate(prompt, 160, 0.85, false).then(txt => {
-                const s = String(txt || '').replace(/^[「"『\s]+|[」"』\s]+$/g, '').split('\n')[0].slice(0, 80);
+                const s = LLMClient.clip(String(txt || '').trim().split('\n')[0].replace(/^[「"『\s]+|[」"』\s]+$/g, ''), 80);
                 if (s && c.status !== 'held') { c.speech = s; c.ai = 1; }
             }).catch(() => {});
         } catch (e) {}

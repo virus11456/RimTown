@@ -6061,6 +6061,8 @@
         '他是現任鎮長。': ' They are the current mayor.',
         '他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。': ' They are a traveler who came to town, not the mayor. Do not call them mayor.',
         '現任鎮長是': ' The current mayor is ',
+        '你自己就是現任鎮長。': ' You yourself are the current mayor.',
+        '一句話，25 字內': 'one sentence, under 20 words',
         '的聲望提升為': "'s reputation rose to ",
         '公開感謝': ' publicly thanked ',
         '當初的決定': ' for that earlier decision',

@@ -24,7 +24,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 史書(規則)
       w.logMessageT('event', '⚔️ 政變成功！{a}推翻舊王，自立為王，建立{d}。', { a: all[0].name, d: '金冠王朝' });
       const c1 = await LEGACY.chapter(w, L, 1, '春季'); out.chapter = !!c1 && c1.n >= 1 && logHas(/鎮史|town history/);
-      let restore = stubAI({ title: '王冠落地', text: '這一季，舊王倒台，新王登基，鎮上人心惶惶。' }); const c2 = await LEGACY.chapter(w, L, 1, '夏季'); restore(); out.aiChapter = Memory.render(c2.title.k, c2.title.p) === '王冠落地';
+      let restore = stubAI({ title: '王冠落地', text: '這一季，舊王倒台，新王登基，鎮上人心惶惶。' }); const c2 = await LEGACY.chapter(w, L, 1, '夏季'); restore(); out.aiChapter = c2.title?.p?.x === '王冠落地'; /* 看存下來的原文：英文介面顯示時會把「王」當成姓氏換成英文名，拿顯示文字比對會誤判 */
       // 換季自動寫
       const n0 = L.chapters.length; const _ad = w._absDay; let D = 31; w._absDay = () => D; L.lastSeason = 1; L.lastDay = null; await LEGACY.daily(w); out.autoChapter = L.chapters.length === n0 + 1;
       // 名人與傳說

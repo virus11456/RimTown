@@ -134,7 +134,7 @@ if (typeof ProposalSystem !== 'undefined') {
         const addresses = (Array.isArray(j.addresses) ? j.addresses : []).map(n => (j._issueKeys || [])[Math.round(Number(n)) - 1]).filter(Boolean).slice(0, 3); // v6.50.0 要處理哪幾件急事
         const cand = { kind: 'free', key: 'free:' + title.slice(0, 12), jobs: [a.job?.key], make: () => ({ addresses, kind: 'free', key: 'free:' + title.slice(0, 12), tk: (typeof clipText === 'function' ? clipText(title, 30) : title.slice(0, 30)), tp: {}, dk: String(j.pitch || '').trim().slice(0, 160), dp: {}, cost, fx, category: cat, jobBias: [a.job?.key] }) };
         const p = this._createWith(w, day, cand, a);
-        if (p) { p.llm = true; p.pitch = String(j.pitch || '').trim().slice(0, 160); try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
+        if (p) { p.llm = true; p.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
     };
     const _toItem = PS.toItem;
     PS.toItem = function (w, p) { const it = _toItem.call(this, w, p); if (p.kind === 'free') it.effectsText = (p.fx || []).map(e => FREEPROP.describe(w, e)).filter(Boolean); return it; };

@@ -94,9 +94,9 @@ const BANK = (() => {
         if (w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && banker) {
             try {
                 const b = ce._agentBrief(w, banker, null);
-                const prompt = `${t('你正在扮演銀行家「')}${b.name}${t('」（')}${t('性格')}${t('：')}${b.traits}${t('）')}${t('。')}${t('存款')} ${Math.round(totalDep(B))}${t('，')}${t('放款')} ${Math.round(totalLoan(B))}${t('，')}${t('準備金')} ${Math.round(B.reserve)}${t('，')}${t('呆帳')} ${Math.round(B.bad)}${t('，')}${t('目前放款利率')} ${Math.round(B.rate * 100)}%${t('。')}${t('依你的性格決定新的放款利率（4～20）與一句理由。只輸出 JSON')}${t('：')}{"rate":8,"why":"..."}`;
-                ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 120);
-                if (j && Number.isFinite(+j.rate)) { B.rate = Math.max(0.04, Math.min(0.2, +j.rate / 100)); B.rateWhy = String(j.why || '').slice(0, 60); return; }
+                const prompt = `${t('你正在扮演銀行家「')}${b.name}${t('」（')}${t('性格')}${t('：')}${b.traits}${t('）')}${t('。')}${t('存款')} ${Math.round(totalDep(B))}${t('，')}${t('放款')} ${Math.round(totalLoan(B))}${t('，')}${t('準備金')} ${Math.round(B.reserve)}${t('，')}${t('呆帳')} ${Math.round(B.bad)}${t('，')}${t('目前放款利率')} ${Math.round(B.rate * 100)}%${t('。')}${t('依你的性格決定新的放款利率（4～20）與一句理由。只輸出 JSON')}${t('：')}{"rate":8,"why":"${t('一句話，25 字內')}"}`;
+                ce._countNpcLlmUse?.(w); const j = await ce._askJson(prompt, 160);
+                if (j && Number.isFinite(+j.rate)) { B.rate = Math.max(0.04, Math.min(0.2, +j.rate / 100)); B.rateWhy = LLMClient.clip(j.why, 60); return; }
             } catch (e) {}
         }
         rule();
@@ -196,11 +196,11 @@ const BANK = (() => {
                         + (banker && R.injected > 0 ? `${t('銀行家')}${banker.name}${t('已經拿自己的')} ${R.injected} ${t('銀幣補過了')}${t('。')}` : '')
                         + `${t('紓困要以鎮公所的名義向外地錢莊借錢，連本帶利要還')} ${Math.round(need * (1 + INTEREST))} ${t('銀幣')}${t('，')}${t('每天從公庫還')}${t('；')}${t('公庫目前有')} ${Math.round(treasury(w))} ${t('銀幣')}`
                         + ((B.debt?.owed || 0) > 0 ? `${t('，')}${t('鎮公所已經欠債')} ${Math.round(B.debt.owed)} ${t('銀幣')}` : '') + `${t('。')}`
-                        + `${t('不紓困，銀行就會倒，存戶的錢全沒了')}${t('。')}${t('你要紓困嗎？依你的性格與立場決定，只輸出 JSON')}${t('：')}{"bailout":true,"why":"..."}`;
-                    ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt, 120);
+                        + `${t('不紓困，銀行就會倒，存戶的錢全沒了')}${t('。')}${t('你要紓困嗎？依你的性格與立場決定，只輸出 JSON')}${t('：')}{"bailout":true,"why":"${t('一句話，25 字內')}"}`;
+                    ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt, 200); // v9.23.5 理由寫太長被切斷就拿不到(真模型實測)→ 要求寫短、額度放寬
                 } catch (e) {}
                 if (!live()) return;
-                if (j && typeof j.bailout === 'boolean') done(j.bailout, String(j.why || '').slice(0, 60) || ruleBailout(w, B, m, need).why);
+                if (j && typeof j.bailout === 'boolean') done(j.bailout, LLMClient.clip(j.why, 60) || ruleBailout(w, B, m, need).why);
                 else { const r = ruleBailout(w, B, m, need); done(r.yes, r.why); }
             })();
             return;

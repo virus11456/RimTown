@@ -140,7 +140,7 @@ const THINGS = (() => {
                     who.forEach((a, i) => {
                         if (!w.agents[a.agentId] || X.att[T.id][a.agentId] != null) return; const r = ai ? ai[i] : null;
                         if (r && Number.isFinite(+r.v) && typeof r.why === 'string' && r.why.trim()) {
-                            form(w, X, T, a, d, Math.max(-2, Math.min(2, Math.round(+r.v))) * 40 + (Math.random() - 0.5) * 10, { k: '{x}', p: { x: String(r.why).trim().slice(0, 60) } }, true);
+                            form(w, X, T, a, d, Math.max(-2, Math.min(2, Math.round(+r.v))) * 40 + (Math.random() - 0.5) * 10, { k: '{x}', p: { x: LLMClient.clip(r.why, 60) } }, true);
                             if (ACTS.includes(r.act)) (X.intent || (X.intent = {}))[T.id + '|' + a.agentId] = r.act;
                         }
                     });
