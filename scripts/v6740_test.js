@@ -41,6 +41,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       let B = fresh(); out.banker = B.banker === rich.agentId;
       for (const a of buyers) { w.wallet.bal[a.agentId] = 200; setAff(a, rich, 40); }
       BANK.startRun(w, B, D); step();
+      for (const a of buyers) BANK.bondBy(w, a, B.offer?.id); // v9.24.0 債券改成開賣兩天、買不買交給本人：這裡替兩位買家拿主意(買)
       out.inject = logHas(/掏出自己的|of their own/) && WALLET.get(w, rich) < 50;
       out.bonds = B.bonds.length === 2 && B.bonds.every(x => x.rate === 0.12 && x.due === x.issued + 30) && logHas(/發行債券|issued bonds/);
       out.bondMem = memHas(buyers[0], /債券|bonds/);
@@ -56,7 +57,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.bondPaid = Math.round(WALLET.get(w, h) - c0) === Math.round(bd.n * 1.12) && !B.bonds.includes(bd);
       const bd2 = B.bonds[0]; bd2.due = D + 1; B.reserve = 3; step(0.99); out.bondDefault = B.defaults === 1 && logHas(/付不出|couldn't pay/);
       // 平時準備金太低也發債(利息 8%)
-      for (const a of savers) { w.wallet.bal[a.agentId] = 100; BANK.deposit(w, B, a, 100); } for (const a of buyers) w.wallet.bal[a.agentId] = 200; B.reserve = 10; B.lastIssue = -99; step(0.01);
+      for (const a of savers) { w.wallet.bal[a.agentId] = 100; BANK.deposit(w, B, a, 100); } for (const a of buyers) w.wallet.bal[a.agentId] = 200; B.reserve = 10; B.lastIssue = -99; step(0.01); for (const a of buyers) BANK.bondBy(w, a, B.offer?.id);
       out.normalBond = B.bonds.length > 0 && B.bonds.every(x => x.rate === 0.08);
       // 紓困債:每天還 3%;公庫沒錢加罰息;還清
       const o0 = B.debt.owed; w.stockpile.resources.silver = 1000; step(0.99); out.repay = B.debt.owed < o0 && B.debt.paid > 0;
@@ -77,7 +78,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       B = fresh(); w.wallet.bal[rich.agentId] = 0; for (const a of savers) setAff(a, mayor, 0);
       s = stubAI({ bailout: false, why: '銀行家自己活該' }); BANK.startRun(w, B, D); step(); await new Promise(r => setTimeout(r, 30)); s.restore();
       out.aiNo = B.lastBail && !B.lastBail.yes && logHas(/拒絕紓困|refused to bail/);
-      step(0.01); out.failed = B.status === 'failed' && !B.open;
+      for (const a of savers) BANK.runBy(w, a, 1); /* v9.24.0 存戶自己決定全領 */ step(0.01); out.failed = B.status === 'failed' && !B.open;
       out.blame = (savers[0].relationships.relationships[mayor.agentId]?.affinity || 0) <= -10 && memHas(savers[0], /見死不救|left the bank to die/);
       // 存讀檔
       B.debt = { owed: 77, borrowed: 70, paid: 0, since: D, late: 0 }; B.bonds = [{ id: 'BDx', holder: buyers[0].agentId, n: 30, rate: 0.08, issued: D, due: D + 30 }];

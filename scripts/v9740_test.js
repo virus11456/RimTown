@@ -24,7 +24,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     for (const a of [wife, kid, gf]) for (const o of [boss, wife, kid, gf]) if (a !== o) { const r = a.relationships.relationships[o.agentId]; if (r) r.status = 'friend'; }
     for (const a of all()) { const r = a.relationships.relationships[boss.agentId]; if (r && ['married', 'dating'].includes(r.status)) r.status = 'friend'; if ((a._parentNames || []).includes(boss.name)) a._parentNames = []; }
     rel(boss, wife, 'married'); rel(boss, gf, 'dating'); kid._parentNames = [boss.name]; kid.age = 25; wife.age = 50;
-    WALLET.take(w, boss, WALLET.get(w, boss)); WALLET.add(w, boss, 1000); if (w.bank?.dep) delete w.bank.dep[boss.agentId]; if (w.bank?.loans) delete w.bank.loans[boss.agentId]; /* 只算錢包 1000 */ M.owners.kitchen = boss.agentId; delete M.rival.kitchen;
+    WALLET.take(w, boss, WALLET.get(w, boss)); WALLET.add(w, boss, 1000); if (w.bank?.dep) delete w.bank.dep[boss.agentId]; if (w.bank?.loans) delete w.bank.loans[boss.agentId]; /* 只算錢包 1000 */ M.owners.kitchen = boss.agentId; if (M.shares) delete M.shares.kitchen; /* 隨機的鎮裡這家可能已經有別的股東：直接指定老闆卻沒清掉舊股份的話，老闆不在股東名單裡，過世後「股份最多的人當家」會把店判給舊股東，配偶就接不到（約三成機率） */ delete M.rival.kitchen;
     const wv = MARKET.firmsOf(w, boss.agentId).reduce((x, f) => x + MARKET.value(w, f.k) * (f.rival ? 0.6 : 1), 0) + ESTATE.ownsOf(w, boss.agentId).reduce((x, u) => x + ESTATE.valueOf(w, u), 0); /* 名下所有產業＋房子 */ const et0 = w.wallet.estateTax || 0, wife0 = WALLET.get(w, wife), kid0 = WALLET.get(w, kid), gf0 = WALLET.get(w, gf), t0 = T();
     kill(boss);
     const tax = Math.round(((w.wallet.estateTax || 0) - et0) * 100) / 100;

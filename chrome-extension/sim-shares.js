@@ -41,6 +41,8 @@ const SHARES = (function () {
     // v9.22.0 有人眼紅想入股時，當家賣不賣交給本人決定(sim-decide-life.js)；擲骰的版本留給直接呼叫 weekly() 的情況
     const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
+    // v9.24.0 買斷股東、帳上動手腳、帶頭合股、工人認股，交給本人決定(sim-decide-share.js)；擲骰的版本留給直接呼叫 weekly()／syndicate() 的情況
+    const byShare = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.share && !!DECIDE.on?.(w); } catch (e) { return false; } };
 
     function S(w) {
         const M = M_().S(w); M.shares = M.shares && typeof M.shares === 'object' ? M.shares : {};
@@ -91,20 +93,28 @@ const SHARES = (function () {
     }
 
     // ---------- 招股:公營產業標售,沒人一個人買得起時合股買下 ----------
-    function syndicate(w, all, d) {
-        const M = S(w);
+    // 這一家誰最有條件帶頭、朋友湊不湊得齊(只算、不動錢)
+    function synPlan(w, all, k) {
+        const M = S(w); if (M.owners[k] || !M_().workersOf(w, k, all).length) return null;
+        const price = valueOf(w, k);
+        if (all.some(a => bal(w, a.agentId) >= price * 2) || M_().workersOf(w, k, all).some(a => bal(w, a.agentId) >= price)) return null; // 有人一個人買得起,照原本的標售
+        const amb = w.mind?.amb || {};
+        const leads = all.filter(a => (a.age ?? 30) >= 18 && bal(w, a.agentId) >= price * 0.3 && (has(a, 'hardworking') || has(a, 'greedy') || has(a, 'ambitious') || amb[a.agentId]?.key === 'rich' || a.job?.key === 'trader' || M_().JOB2S[a.job?.key] === k))
+            .sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId));
+        const lead = leads[0]; if (!lead) return null;
+        const mine = Math.min(bal(w, lead.agentId) * 0.9, price * 0.7); let need = price - mine; const parts = [[lead, mine]];
+        const friends = all.filter(o => o !== lead && aff(o, lead) >= 30 && bal(w, o.agentId) >= 15).sort((x, y) => aff(y, lead) - aff(x, lead) || bal(w, y.agentId) - bal(w, x.agentId));
+        for (const f of friends) { if (need <= 0.5 || parts.length >= MAXH) break; const put = Math.min(need, bal(w, f.agentId) * (has(f, 'thrifty') ? 0.4 : 0.6), price * 0.45); if (put < price * 0.08) continue; parts.push([f, put]); need -= put; }
+        if (need > 0.5 || parts.length < 2) return null;
+        return { k, price, lead, parts, mine };
+    }
+    // sh = 要不要帶頭交給本人決定(這裡就不擲骰)；force = { k, id }：本人決定要帶頭，只辦這一家
+    function syndicate(w, all, d, sh, force) {
+        const M = S(w); let done = false;
         for (const k of SEC()) {
-            if (M.owners[k] || !M_().workersOf(w, k, all).length) continue;
-            const price = valueOf(w, k);
-            if (all.some(a => bal(w, a.agentId) >= price * 2) || M_().workersOf(w, k, all).some(a => bal(w, a.agentId) >= price)) continue; // 有人一個人買得起,照原本的標售
-            const amb = w.mind?.amb || {};
-            const leads = all.filter(a => (a.age ?? 30) >= 18 && bal(w, a.agentId) >= price * 0.3 && (has(a, 'hardworking') || has(a, 'greedy') || has(a, 'ambitious') || amb[a.agentId]?.key === 'rich' || a.job?.key === 'trader' || M_().JOB2S[a.job?.key] === k))
-                .sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId));
-            const lead = leads[0]; if (!lead || Math.random() > 0.5) continue;
-            const mine = Math.min(bal(w, lead.agentId) * 0.9, price * 0.7); let need = price - mine; const parts = [[lead, mine]];
-            const friends = all.filter(o => o !== lead && aff(o, lead) >= 30 && bal(w, o.agentId) >= 15).sort((x, y) => aff(y, lead) - aff(x, lead) || bal(w, y.agentId) - bal(w, x.agentId));
-            for (const f of friends) { if (need <= 0.5 || parts.length >= MAXH) break; const put = Math.min(need, bal(w, f.agentId) * (has(f, 'thrifty') ? 0.4 : 0.6), price * 0.45); if (put < price * 0.08) continue; parts.push([f, put]); need -= put; }
-            if (need > 0.5 || parts.length < 2) continue;
+            if (force && force.k !== k) continue;
+            const P = synPlan(w, all, k); if (!P) continue; const { price, lead, parts } = P;
+            if (force ? lead.agentId !== force.id : (sh || Math.random() > 0.5)) continue;
             const paid = []; let ok = true;
             for (const [a, n] of parts) { if (takeId(w, a.agentId, Math.round(n * 100) / 100)) paid.push([a, Math.round(n * 100) / 100]); else { ok = false; break; } }
             if (!ok) { for (const [a, n] of paid) addId(w, a.agentId, n); continue; }
@@ -116,9 +126,12 @@ const SHARES = (function () {
             news(w, '🤝 {a}和{b}合股買下了{s}', { a: lead.name, b: others.map(x => x.name).join(t('、')), s: nm(k) }, 7, [lead.name, ...others.map(x => x.name)]);
             mem(w, lead, '我找朋友合股買下了{s}，由我當家。', { s: nm(k) }, 8);
             for (const o of others) { mem(w, o, '我出錢跟{a}合股買下{s}，拿到 {p}% 的股份。', { a: lead.name, s: nm(k), p: M.shares[k][o.agentId] || 0 }, 7); bump(o, lead, 5); bump(lead, o, 5); }
-            note(w, k, '合股買下', { a: lead.name });
+            note(w, k, '合股買下', { a: lead.name }); done = true;
         }
+        return done;
     }
+    const synInfo = (w, a) => { if (!here(w, a)) return null; const all = npcs(w); for (const k of SEC()) { if (S(w).owners[k]) continue; const P = synPlan(w, all, k); if (P && P.lead === a) return P; } return null; };
+    const synBy = (w, a, k) => syndicate(w, npcs(w), day(w), false, { k, id: a.agentId });
 
     // ---------- 當家欠薪、沒錢:先賣股週轉 ----------
     function rescue(w, all) {
@@ -189,7 +202,8 @@ const SHARES = (function () {
         return envySell(w, k, I.fan, I.boss, I.pct, I.price) ? 'sold' : 'gone';
     }
 
-    function weekly(w, all, d, ch) {
+    // ch = 有人想入股時賣不賣交給本人(v9.22.0)；sh = 帳上動不動手腳、買不買斷股東、工人認不認股交給本人(v9.24.0)
+    function weekly(w, all, d, ch, sh) {
         const M = S(w); const X = M.sh;
         for (const k of SEC()) {
             const id = M.owners[k]; if (!id) continue; const boss = w.agents[id]; if (!boss) continue; const s = stakes(w, k); const others = Object.keys(s).filter(h => h !== id && present(w, h));
@@ -197,7 +211,9 @@ const SHARES = (function () {
             // 分紅
             if (others.length) {
                 const pool = Math.max(0, prof) * 0.6; let reported = pool; let cheat = 0;
-                if (pool > 4 && shady(boss) && Math.random() < (X.law.audit ? 0.1 : 0.5)) { /* 帳本公開以後,很少人敢動手腳 */ reported = pool * (0.45 + Math.random() * 0.25); cheat = pool - reported; }
+                // sh：當家這週有沒有打定主意動手腳(cookBy 記下來的，七天內有效)；沒有 sh 才擲骰
+                const cooked = pool > 4 && (sh ? (X.cook?.[k] != null && d - X.cook[k] <= 7) : (shady(boss) && Math.random() < (X.law.audit ? 0.1 : 0.5))); if (X.cook) delete X.cook[k];
+                if (cooked) { /* 帳本公開以後,很少人敢動手腳 */ reported = pool * (0.45 + Math.random() * 0.25); cheat = pool - reported; }
                 let paidAll = 0;
                 for (const h of others) {
                     const due = reported * (s[h] || 0) / 100; const a = w.agents[h];
@@ -217,11 +233,8 @@ const SHARES = (function () {
             // 拆夥:當家和股東翻臉,當家買斷
             for (const h of Object.keys(stakes(w, k)).filter(h => h !== id)) {
                 const a = w.agents[h]; if (!a || aff(boss, a) > -30 && aff(a, boss) > -30) continue;
-                const price = priceOf(w, k, pctOf(w, k, h)); if (bal(w, id) < price || Math.random() > 0.5) continue;
-                const p = pctOf(w, k, h); if (!transfer(w, k, h, id, p, price)) continue; X.st.split++;
-                log(w, '💢 {o}和{b}吵到合不來，{o}出 {n} 銀幣買斷了{b}手上{s}的股份，從此各走各的。', { o: boss.name, b: a.name, n: price, s: nm(k) }, boss.name);
-                mem(w, boss, '我買斷了{b}的股份，{s}不用再看他臉色。', { b: a.name, s: nm(k) }, 7); mem(w, a, '{o}把我{s}的股份買斷了，拆夥了也好。', { o: boss.name, s: nm(k) }, 7);
-                note(w, k, '拆夥', { a: boss.name, b: a.name });
+                const price = priceOf(w, k, pctOf(w, k, h)); if (bal(w, id) < price || sh || Math.random() > 0.5) continue;
+                buyout(w, k, boss, a);
             }
             // 股東會奪權
             oust(w, k, d);
@@ -251,22 +264,65 @@ const SHARES = (function () {
                 }
             }
         }
-        staffBuy(w, all); staffPropose(w, all);
+        staffBuy(w, all, sh); staffPropose(w, all);
         // 自家工人當了股東,分紅那週心情好一點(罷工也比較少)
         for (const k of SEC()) { const id = M.owners[k]; if (!id || !(X.lastDiv[k] > 0)) continue; for (const a of M_().workersOf(w, k, all)) if (a.agentId !== id && pctOf(w, k, a.agentId) > 0) a.moodModifier = (a.moodModifier || 0) + 2; }
     }
     // 員工認股:通過以後,自家工人可以用存款買一小份股份(當家至少留 35%)
-    function staffBuy(w, all) {
-        const M = S(w); const X = M.sh; if (!X.law.staff) return;
+    function staffDo(w, k, wk, price) {
+        const M = S(w); const X = M.sh; const id = M.owners[k]; if (!id || !transfer(w, k, id, wk.agentId, 5, price)) return false; X.st.staff = (X.st.staff || 0) + 1;
+        log(w, '👷 {a}用存了很久的錢，認購了自己上工的{s} 5% 股份。', { a: wk.name, s: nm(k) }, wk.name);
+        mem(w, wk, '我現在也是{s}的股東了，做起事來感覺不一樣。', { s: nm(k) }, 7); wk.moodModifier = (wk.moodModifier || 0) + 3;
+        return true;
+    }
+    // sh = 認不認股交給工人自己決定(這裡就不擲骰、也不替他挑人)
+    function staffBuy(w, all, sh) {
+        const M = S(w); const X = M.sh; if (!X.law.staff || sh) return;
         for (const k of SEC()) {
             const id = M.owners[k]; const boss = w.agents[id]; if (!boss || Math.random() > 0.4) continue; const s = stakes(w, k);
             if (Object.keys(s).length >= maxH(w) || (s[id] || 0) < 40) continue; const price = priceOf(w, k, 5);
             const wk = M_().workersOf(w, k, all).filter(a => a.agentId !== id && !s[a.agentId] && bal(w, a.agentId) >= price + 30).sort((x, y) => bal(w, y.agentId) - bal(w, x.agentId))[0];
-            if (!wk || !transfer(w, k, id, wk.agentId, 5, price)) continue; X.st.staff = (X.st.staff || 0) + 1;
-            log(w, '👷 {a}用存了很久的錢，認購了自己上工的{s} 5% 股份。', { a: wk.name, s: nm(k) }, wk.name);
-            mem(w, wk, '我現在也是{s}的股東了，做起事來感覺不一樣。', { s: nm(k) }, 7); wk.moodModifier = (wk.moodModifier || 0) + 3;
+            if (wk) staffDo(w, k, wk, price);
         }
     }
+    // 這個工人現在能不能認購自家店的股份
+    function staffInfo(w, a) {
+        const M = S(w); const X = M.sh; if (!X.law.staff || !here(w, a)) return null; let k = null; try { k = M_().JOB2S[a.job?.key] || null; } catch (e) {}
+        if (!k) return null; const id = M.owners[k]; const boss = w.agents[id]; if (!boss || id === a.agentId) return null;
+        if (!M_().workersOf(w, k, [a]).length) return null; const s = stakes(w, k);
+        if (s[a.agentId] || Object.keys(s).length >= maxH(w) || (s[id] || 0) < 40) return null; const price = priceOf(w, k, 5);
+        if (bal(w, a.agentId) < price + 30) return null;
+        return { k, boss, price, profit: profit7(w, k) };
+    }
+    const staffBy = (w, a, k) => { const I = staffInfo(w, a); return !!I && I.k === k && staffDo(w, k, a, I.price); };
+    // ---------- 當家買斷處不來的股東 ----------
+    function buyout(w, k, boss, a) {
+        const X = S(w).sh; const p = pctOf(w, k, a.agentId); const price = priceOf(w, k, p); if (!(p > 0) || !transfer(w, k, a.agentId, boss.agentId, p, price)) return false; X.st.split++;
+        log(w, '💢 {o}和{b}吵到合不來，{o}出 {n} 銀幣買斷了{b}手上{s}的股份，從此各走各的。', { o: boss.name, b: a.name, n: price, s: nm(k) }, boss.name);
+        mem(w, boss, '我買斷了{b}的股份，{s}不用再看他臉色。', { b: a.name, s: nm(k) }, 7); mem(w, a, '{o}把我{s}的股份買斷了，拆夥了也好。', { o: boss.name, s: nm(k) }, 7);
+        note(w, k, '拆夥', { a: boss.name, b: a.name });
+        return true;
+    }
+    // 這個當家手上有沒有處不來、又買得起的股東(先看翻臉最兇的)
+    function buyoutInfo(w, a) {
+        const M = S(w); if (!here(w, a)) return null; let best = null;
+        for (const k of SEC()) { if (M.owners[k] !== a.agentId) continue;
+            for (const h of Object.keys(stakes(w, k))) { if (h === a.agentId) continue; const o = w.agents[h]; if (!o || o.isDead) continue; if (aff(a, o) > -30 && aff(o, a) > -30) continue;
+                const pct = pctOf(w, k, h); const price = priceOf(w, k, pct); if (bal(w, a.agentId) < price) continue;
+                const bad = Math.min(aff(a, o), aff(o, a)); if (!best || bad < best.bad) best = { k, o, pct, price, bad }; } }
+        return best;
+    }
+    const buyoutBy = (w, a, k, oid) => { const o = w.agents[oid]; if (!o || S(w).owners[k] !== a.agentId) return false; if (aff(a, o) > -30 && aff(o, a) > -30) return false; return bal(w, a.agentId) >= priceOf(w, k, pctOf(w, k, oid)) && buyout(w, k, a, o); };
+    // ---------- 帳上動手腳：這個當家這週有沒有東西可以動 ----------
+    function cookInfo(w, a) {
+        const M = S(w); const X = M.sh; if (!here(w, a) || !shady(a)) return null; const d = day(w);
+        for (const k of SEC()) { if (M.owners[k] !== a.agentId) continue; if (X.cook?.[k] != null && d - X.cook[k] <= 7) continue;
+            const s = stakes(w, k); const others = Object.keys(s).filter(h => h !== a.agentId && present(w, h)); if (!others.length) continue;
+            const profit = profit7(w, k); const pool = Math.max(0, profit) * 0.6; if (!(pool > 4)) continue;
+            const mine = (s[a.agentId] || 0) / 100; return { k, profit, pool, others: others.length, keep: pool * 0.42 * (1 - mine), audit: !!X.law.audit }; }
+        return null;
+    }
+    const cookBy = (w, a, k) => { const M = S(w); if (M.owners[k] !== a.agentId) return false; const X = M.sh; X.cook = X.cook || {}; X.cook[k] = day(w); return true; };
     function staffPropose(w, all) {
         const M = S(w); const X = M.sh; if (X.law.staff || typeof TECH === 'undefined' || TECH.busy(w, 'sh_staff') || Math.random() > 0.06) return;
         const owned = SEC().filter(k => M.owners[k]); if (owned.length < 2) return;
@@ -331,10 +387,10 @@ const SHARES = (function () {
     // ---------- 掛上 MARKET 的每天 ----------
     function daily(w, orig, args) {
         const M = S(w); const d = day(w); const ran = M.lastDay !== d; const all = npcs(w);
-        if (ran && w.wallet) { try { departures(w); rescue(w, all); syndicate(w, all, d); } catch (e) { console.warn('[Shares] pre', e); } }
+        if (ran && w.wallet) { try { departures(w); rescue(w, all); syndicate(w, all, d, byShare(w)); } catch (e) { console.warn('[Shares] pre', e); } }
         const before = {}; for (const k of SEC()) before[k] = { own: M.owners[k], s: M.shares[k] ? JSON.parse(JSON.stringify(M.shares[k])) : null };
         const r = orig.apply(M_(), args);
-        if (ran && w.wallet) { try { reconcile(w, before); if (d % 7 === 0) weekly(w, all, d, byChoice(w)); } catch (e) { console.warn('[Shares] post', e); } }
+        if (ran && w.wallet) { try { reconcile(w, before); if (d % 7 === 0) weekly(w, all, d, byChoice(w), byShare(w)); } catch (e) { console.warn('[Shares] post', e); } }
         return r;
     }
 
@@ -368,7 +424,7 @@ const SHARES = (function () {
     function row(w, k) { const s = stakes(w, k); const ks = Object.keys(s); if (ks.length < 2) return ''; return ks.sort((a, b) => s[b] - s[a]).map(h => `${t(nameOf(w, h))} ${s[h]}%`).join(t('・')); }
     function view(w) { const X = S(w).sh; return { st: X.st, hist: X.hist.map(([d, k, txt, p]) => ({ d, k, s: nm(k), txt: t(txt), a: t(p.a || ''), b: t(p.b || '') })), lastDiv: X.lastDiv }; }
 
-    return { S, maxH, note, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, envySell, envyNo, askInfo, answerBuy, byChoice, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
+    return { S, maxH, note, enact, vote, staffBuy, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, envySell, envyNo, askInfo, answerBuy, byChoice, byShare, synPlan, synInfo, synBy, staffInfo, staffBy, buyout, buyoutInfo, buyoutBy, cookInfo, cookBy, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
 })();
 
 if (typeof MARKET !== 'undefined') {
