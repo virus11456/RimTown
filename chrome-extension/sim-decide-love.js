@@ -126,7 +126,7 @@
     // ================= 對別人動了心：要不要偷情 =================
     const affOf = (w, a) => (on(w) ? safe(() => w.affairCands?.(a)?.[0]) : null);
     DECIDE.kind('affair', {
-        title: '對別人動了心', cool: 7, pri: 0.6,
+        title: '對別人動了心', cool: 4, pri: 0.6,
         when(w, a) { const I = affOf(w, a); return I ? { p: I.p.agentId } : null; },
         facts(w, a) {
             const I = affOf(w, a); if (!I) return '';
@@ -138,9 +138,9 @@
             const I = affOf(w, a); if (!I) return [];
             const out = [{ id: 'stay', quiet: true, mute: true, text: '守住現在的感情', say: { k: '沒有背著{p}亂來', p: { p: I.p.name } }, why: '不能對不起他',
                 base: REF + (has(a, 'kind') ? 0.2 : 0) + (has(a, 'stoic') ? 0.15 : 0), lean: { safe: 0.2, face: 0.2 }, run: () => null }];
-            // 以前：一對情侶裡只有一個人會被擲到（而且是對每個第三人分別擲），每天 6%；照新舊對照，一個人算 6%，七天問一次
+            // 以前：一對情侶裡只有一個人會被擲到（而且是對每個第三人分別擲），每天 6%（同一段會被重複擲到，實際約三成是新的一段）；照新舊對照（看不同的對），一個人四天問一次、算 15%
             for (const x of I.list) out.push({ id: 'go:' + x.t.agentId, quiet: true, text: { k: '背著{p}跟{t}在一起', p: { p: I.p.name, t: x.t.name } }, say: { k: '背著{p}跟{t}在一起', p: { p: I.p.name, t: x.t.name } }, why: '心不由己',
-                base: REF + tilt(within(0.06, 7)) + (has(a, 'romantic') ? 0.15 : 0) + (has(a, 'neurotic') ? 0.1 : 0) + clampN(-I.cool / 100, -0.1, 0.3), lean: { joy: 0.3, safe: -0.3, face: -0.2 },
+                base: REF + tilt(within(0.15, 4)) + (has(a, 'romantic') ? 0.15 : 0) + (has(a, 'neurotic') ? 0.1 : 0) + clampN(-I.cool / 100, -0.1, 0.3), lean: { joy: 0.3, safe: -0.3, face: -0.2 },
                 run: (w2, a2) => { const tt = w2.agents[x.t.agentId], p = w2.agents[I.p.agentId]; if (!tt || !p || !w2.affairCands(a2).length) return { k: '沒有成' }; w2.startAffair(a2, p, tt); return { k: '跟{t}偷偷在一起了', p: { t: tt.name } }; } });
             return out;
         },
