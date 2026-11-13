@@ -110,11 +110,15 @@ const I18N = (() => {
         NAME_FIXED[zh] = en;
         _nameRe = null; _revRe = null; _bump();
     }
-    function delocalizeNames(str) {
+    // v9.23.7 src＝送給 AI 的原始題目(有給才檢查):只有一個單字的英文名(Autumn、Sunny、Max…)常常同時是普通單字,
+    //   題目裡沒提到那個人(找不到他的中文名,也找不到那個英文字)就不換——以前 AI 寫「an Autumn morning」會被換成「an 雨桐 morning」存起來。
+    //   「名 姓」兩個字的照舊一律換(不會跟普通單字撞)。只會比以前換得少,不會多換。
+    function delocalizeNames(str, src) {
         if (!str || typeof str !== 'string' || !/[A-Za-z]/.test(str)) return str;
         if (!_revRe) _buildRev();
+        const known = (zh, en) => typeof src !== 'string' || src.includes(zh) || src.includes(en);
         return str.replace(_revRe, (m, gv, sn, fixed) => {
-            if (fixed) return _revFixed[fixed] || m;
+            if (fixed) { const zh = _revFixed[fixed]; return zh && known(zh, fixed) ? zh : m; }
             if (gv && sn && _revSurname[sn] && _revGiven[gv]) return _revSurname[sn] + _revGiven[gv];
             return m;
         });

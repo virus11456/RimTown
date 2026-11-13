@@ -2629,7 +2629,7 @@ class LLMClient {
                 let reply = data.reply || '';
                 if (lang === 'en') {
                     // v5.73.0 英文回覆:英文名換回中文名,讓行程/對話解析與存檔仍用中文名(顯示層再換成英文)
-                    if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
+                    if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply, prompt); // v9.23.7 帶上題目:題目沒提到的人,回覆裡跟他英文名同字的普通單字不換
                 } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
                 if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
                 return reply;
@@ -2645,17 +2645,17 @@ class LLMClient {
         const sendPrompt = (lang === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(prompt, true) : prompt;
         const raw = await this._callDirect(provider, apiKey, model, sendPrompt, maxTokens, temperature, LLMClient.systemPrompt(lang));
         if (raw === '__ERROR__' || raw === '__RATE_LIMITED__') return raw;
-        return this._postProcessDirect(raw, lang);
+        return this._postProcessDirect(raw, lang, prompt);
     }
 
-    _postProcessDirect(reply, lang) {
+    _postProcessDirect(reply, lang, prompt) {
         reply = String(reply || '').trim();
         if (typeof World !== 'undefined' && World.looksLikeAssistantLeak && World.looksLikeAssistantLeak(reply)) {
             console.warn('[RimTown LLM] assistant leak blocked (direct provider)');
             return '__ERROR__';
         }
         if (lang === 'en') {
-            if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply);
+            if (typeof I18N !== 'undefined') reply = I18N.delocalizeNames(reply, prompt); // v9.23.7 帶上題目:題目沒提到的人,回覆裡跟他英文名同字的普通單字不換
         } else if (typeof RIMTOWN_S2T !== 'undefined' && RIMTOWN_S2T.looksSimplified(reply)) reply = RIMTOWN_S2T.convert(reply);
         if (lang !== 'en' && typeof zhPunct === 'function') reply = zhPunct(reply); // v6.40.1
         return reply;
