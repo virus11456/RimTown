@@ -49,8 +49,8 @@
             const L = confessOf(w, a); if (!L || !L.length) return [];
             const out = [{ id: 'wait', quiet: true, mute: true, text: '先不說，再看看', say: '沒有告白', why: '還沒準備好', base: REF, lean: { safe: 0.1 }, run: () => null }];
             for (const x of L) out.push({ id: 'go:' + x.b.agentId, quiet: true, text: { k: '向{b}告白', p: { b: x.b.name } }, say: { k: '向{b}告白', p: { b: x.b.name } }, why: { k: '不說出口，{b}永遠不會知道', p: { b: x.b.name } },
-                // 以前：兩邊門檻都過了以後每天 20%（三天問一次）
-                base: REF + tilt(within(0.2, 3)) + (has(a, 'romantic') ? 0.2 : 0) + (has(a, 'charismatic') ? 0.15 : 0) - (has(a, 'shy') ? 0.3 : 0) + clampN((x.ri - 65) / 100, -0.1, 0.25), lean: { joy: 0.3, safe: -0.2 },
+                // 以前：兩邊門檻都過了以後每天 20%（兩個人都可能開口；照新舊對照，一個人算 15%，三天問一次）
+                base: REF + tilt(within(0.15, 3)) + (has(a, 'romantic') ? 0.2 : 0) + (has(a, 'charismatic') ? 0.15 : 0) - (has(a, 'shy') ? 0.3 : 0) + clampN((x.ri - 65) / 100, -0.1, 0.25), lean: { joy: 0.3, safe: -0.2 },
                 run: (w2, a2) => { const b = w2.agents[x.b.agentId]; if (!b) return { k: '沒有說成' }; ask(w2, b, 'wooed', { by: a2.agentId }); return { k: '向{b}告白了', p: { b: b.name } }; } });
             return out;
         },
@@ -92,9 +92,9 @@
             const I = propOf(w, a); if (!I) return [];
             return [
                 { id: 'wait', quiet: true, mute: true, text: '再等等', say: { k: '還沒向{b}求婚', p: { b: I.b.name } }, why: '不急，日子還長', base: REF, lean: { safe: 0.1 }, run: () => null },
-                // 以前：一對情侶每天 10%（兩個人都可能開口；照新舊對照，一個人算 4%，四天問一次）
+                // 以前：一對情侶每天 10%（兩個人都可能開口；照新舊對照，一個人算 3%，四天問一次）
                 { id: 'propose', quiet: true, text: { k: '向{b}求婚', p: { b: I.b.name } }, say: { k: '向{b}求婚', p: { b: I.b.name } }, why: '我想跟他過一輩子',
-                    base: REF + tilt(within(0.04, 4)) + (has(a, 'romantic') ? 0.2 : 0) + (val(a, '家庭') ? 0.2 : 0) - (val(a, '自由') ? 0.2 : 0), lean: { bond: 0.3, joy: 0.2 },
+                    base: REF + tilt(within(0.03, 4)) + (has(a, 'romantic') ? 0.2 : 0) + (val(a, '家庭') ? 0.2 : 0) - (val(a, '自由') ? 0.2 : 0), lean: { bond: 0.3, joy: 0.2 },
                     run: (w2, a2) => { const b = w2.agents[I.b.agentId]; if (!b) return { k: '沒有說成' }; ask(w2, b, 'proposed', { by: a2.agentId }); return { k: '向{b}求婚了', p: { b: b.name } }; } },
             ];
         },
@@ -198,9 +198,9 @@
         options(w, a) {
             const L = feudOf(w, a); if (!L || !L.length) return [];
             const out = [{ id: 'calm', quiet: true, mute: true, text: '忍一忍，繞路走', say: '沒有跟人起衝突', why: '吵了也沒用', base: REF, lean: { safe: 0.2 }, run: () => null }];
-            // 以前：每一對每天 15%、吵過隔五天，仇人多的人一天可能吵好幾場；這裡一個人三天問一次（一次只跟一個人吵），照新舊對照算 18%
+            // 以前：每一對每天 15%、吵過隔五天，仇人多的人一天可能吵好幾場；這裡一個人三天問一次（一次只跟一個人吵），照新舊對照算 22%
             for (const x of L) out.push({ id: 'go:' + x.b.agentId, quiet: true, text: { k: '當面跟{b}吵個明白', p: { b: x.b.name } }, say: { k: '當街跟{b}吵起來', p: { b: x.b.name } }, why: '這口氣我嚥不下去',
-                base: REF + tilt(within(0.18, 3)) + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'neurotic') ? 0.1 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0) - (has(a, 'shy') ? 0.2 : 0), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
+                base: REF + tilt(within(0.22, 3)) + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'neurotic') ? 0.1 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0) - (has(a, 'shy') ? 0.2 : 0), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
                 run: (w2, a2) => { const b = w2.agents[x.b.agentId]; if (!b || !w2.feudCands(a2).some(y => y.b === b)) return { k: '沒有碰上' }; w2.publicFeud(a2, b); return { k: '跟{b}吵了一架', p: { b: b.name } }; } });
             return out;
         },
