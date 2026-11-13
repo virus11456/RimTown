@@ -14,6 +14,7 @@ async function run(browser, lang, vp) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(400);
   const r = await page.evaluate(async () => {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; w.observerMode = true; w.fullAgentMode = false; const out = {};
+    if (typeof DECIDE !== 'undefined') DECIDE.fun = false; // v9.25.0 去不去賭、押多少、開不開賭場改由本人決定(v92500_test.js 在驗)；這支驗的是賭場本身的結算(下注、賒帳、討債、輸光、觀光客)，所以用舊的擲骰來驅動
     const tick = (n) => { for (let k = 0; k < n; k++) { w.paused = false; w.tick(); } };
     tick(96 * 21); // 開張要第 20 天以後
     const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && !w.isAway?.(a.agentId));

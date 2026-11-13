@@ -34,7 +34,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     w.tierState.lv = 2; const C = CLASS.S(w); C.lastGrant = -99;
     const hero = all.find(a => a !== rich && a !== poor && a.job?.key !== 'mayor'); w.proposals.record = (id) => id === hero.agentId ? { done: 5, approved: 5 } : { done: 0, approved: 0 };
     const buyer = rich; w.wallet.bal[buyer.agentId] = 1000; const tr0 = w.stockpile.get('silver');
-    const _r2 = Math.random; Math.random = () => 0.01; try { CLASS.daily(w); } finally { Math.random = _r2; }
+    const _r2 = Math.random; Math.random = () => 0.01; try { CLASS.daily(w); if (CLASS.byFun?.(w)) CLASS.titleBy(w, buyer); /* v9.25.0 買不買爵位交給本人決定：這裡替他拿主意 */ } finally { Math.random = _r2; }
     out.heroTitle = CLASS.titleOf(w, hero); out.heroLv = CLASS.level(w, hero); out.buyerTitle = CLASS.titleOf(w, buyer); out.bought = !!C.titles[buyer.agentId]?.bought; out.paid = w.stockpile.get('silver') - tr0;
     out.brief = JSON.stringify(w.conversationEngine._agentBrief(w, hero, null));
     const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = !!w2.classes?.titles?.[hero.agentId]; w2.reset(); out.reset = !w2.classes;

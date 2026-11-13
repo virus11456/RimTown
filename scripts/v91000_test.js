@@ -54,7 +54,7 @@ async function run(browser, lang, mobile) {
         out.appr = { started, job: A.job?.key, done: MB.done[A.agentId], xp: (A.skills.get('工藝')?.xp || 0) > xp0, log: logs().slice(-10).some(s => /出師當上了|finished the apprenticeship/.test(s)), start: logs().slice(-14).some(s => /為師|apprentice to learn/.test(s)) }; }
       // G. 敗家:出身好又懶散的人揮霍,錢付給店家(總額不變)
       { const [X] = take(1); strip(X); MB.o[X.agentId] = 3; X.personality.traits = ['lazy']; setCash(X, 1000); const t0 = MONEY.total(w); const c0 = WALLET.get(w, X); const r0 = Math.random; Math.random = () => 0.01;
-        try { MOBILITY.spree(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), 3); } finally { Math.random = r0; }
+        try { MOBILITY.spree(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), 3); if (MOBILITY.byFun?.(w)) MOBILITY.spreeBy(w, X); /* v9.25.0 要不要痛快花一筆交給本人決定：這裡替他拿主意 */ } finally { Math.random = r0; }
         out.spree = { spent: Math.round(c0 - WALLET.get(w, X)), cons: Math.abs(MONEY.total(w) - t0) < 0.01 }; }
       // H. 鎮況面板、存讀檔
       { const B = app._townBlocks(null, ['tier']); const panel = /階層流動|Social mobility/.test(B.tier || '') && /白手起家|rose from nothing|家道中落|fell on hard times/.test(B.tier || '');
