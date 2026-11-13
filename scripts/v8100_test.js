@@ -53,7 +53,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const fp2 = mk('build', A[10], A.slice(11, 15), []); fp2.status = 'failed'; const tr1 = X.trust; WAYS.onBad(w, fp2); out.bad.failedTrust = X.trust - tr1;
       out.bad.outcome = { bad: WAYS.badOutcome({ mood: -7, pop: 0, silver: 0, food: 0 }), noise: WAYS.badOutcome({ mood: -3, pop: 0, silver: -20, food: 5 }) };
       // 4) 說一套做一套
-      X.hyp = []; const hy = A[12]; traits(hy, ['greedy']); const lawP = { id: 'LH1', kind: 'steam_air', votes: { [hy.agentId]: 'for' }, status: 'approved' }; fix(0.1, () => WAYS.onApproved(w, lawP));
+      X.hyp = []; const hy = A[12]; traits(hy, ['greedy']); const lawP = { id: 'LH1', kind: 'steam_air', votes: { [hy.agentId]: 'for' }, status: 'approved' }; fix(0.1, () => WAYS.onApproved(w, lawP)); if (!X.hyp.length) WAYS.twofaceBy(w, hy, { k: lawP.kind, t: lawP.id }); /* v9.26.0 私下守不守由本人決定(不再擲骰)：這裡讓他決定不守 */
       app.state = w.getState(); const vw0 = WAYS.view(w); const tr2 = X.trust; const f2 = WAYS.faceOf(w, hy); if (X.hyp[0]) WAYS.expose(w, X.hyp[0]);
       out.hyp = { made: vw0.hyp.length === 1, trust: X.trust - tr2, face: WAYS.faceOf(w, hy) - f2, log: /被人撞見|was caught/.test(logs()) };
       // 信任低:大家比較多疑

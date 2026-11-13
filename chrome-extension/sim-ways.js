@@ -114,7 +114,7 @@ const WAYS = (function () {
         if (!DEED[p.kind] || /^cal_/.test(p.kind)) return; // 疫情規定的陽奉陰違由 sim-plague-ways.js 看真的偷溜才算
         const owner = (a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
         const pool = Object.entries(p.votes || {}).filter(([, v]) => v === 'for').map(([id]) => w.agents[id]).filter(a => a && !a.isDead && (hasT(a, 'greedy') || hasT(a, 'lazy') || owner(a)));
-        if (!pool.length) return; let title = p.id; try { title = w.proposals.title(p); } catch (e) {}
+        if (!pool.length) return; let title = p.id; try { title = w.proposals.title(p) || p.id; } catch (e) {}
         // v9.26.0 私下守不守,由那個人自己決定(決策核心「自己贊成的規定」);沒有決策核心才擲骰
         if (byDark(w)) { const a = rnd(pool); try { DECIDE.enqueue(w, a, 'twoface', { k: p.kind, t: title }); DECIDE.drain(w, DECIDE.S(w), day(w)); } catch (e) { console.warn('[Ways] twoface', e); } return; }
         if (Math.random() > (p.kind === 'policy' ? 0.12 : 0.4)) return; const a = rnd(pool); // 一般政令比較少人陽奉陰違;真的有限制的法律才常見
