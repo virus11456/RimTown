@@ -452,6 +452,8 @@ class World {
         const cands = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead
             && a.job?.key !== 'mayor' && !a.agentId.startsWith('visit_') && (a.mood || 50) > 40);
         if (!cands.length) return;
+        // v9.28.0 決策核心開著時，被問到的人自己決定去不去（sim-decide-love.js）；不去的話再問一個人
+        if (this._byLove()) { try { DECIDE.enqueue(this, pickRandom(cands), 'visit', { town: target.id, stay: randInt(3, 5), again: 1 }); DECIDE.drain(this, DECIDE.S(this), this._absDay()); } catch (e) { console.warn('[RimTown] visit ask', e); } return; }
         this.sendVisitorTo(pickRandom(cands), target, randInt(3, 5));
     }
     sendVisitorTo(agent, town, stayDays = 4) {
@@ -664,7 +666,7 @@ class World {
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
         this._feudCooldown = this._feudCooldown || {};
         const day = this._absDay(); // v6.43.2 含季節(以前換季時天數倒退,季末吵過架的兩人整個下一季都被冷卻擋住)
-        const seen = new Set();
+        const seen = new Set(); const love = this._byLove();
         for (const a of npcs) {
             for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
                 const b = this.agents[tid];
@@ -687,42 +689,9 @@ class World {
                     this.queueDramaScene('severance', a, b);
                     continue;
                 }
-                // (b) 廣場對嗆(每對至少隔 5 天)
-                if (rel.affinity <= -35 && relB.affinity <= -35
-                    && (day - (this._feudCooldown[key] || -99)) >= 5 && Math.random() < 0.15) {
-                    this._feudCooldown[key] = day;
-                    // v9.6.0 勸架:兩邊都要好的人出面打圓場,這次沒吵起來、氣也消了一點(以前只會越吵越僵,一年下來交惡的比交好的還多)
-                    if (this.observerMode) {
-                        const peace = npcs.find(m => m !== a && m !== b && (m.relationships.relationships[a.agentId]?.affinity || 0) >= 30 && (m.relationships.relationships[b.agentId]?.affinity || 0) >= 30);
-                        if (peace && Math.random() < 0.35) {
-                            rel.modifyAffinity(6); relB.modifyAffinity(6);
-                            this.logMessageT('social', '🕊️ {a}和{b}差點當街吵起來，{m}趕緊出面打圓場，兩人氣消了一點。', { a: a.name, b: b.name, m: peace.name }, peace.name);
-                            peace.memory?.addT?.(this.tickCount, this.clock.timeStr, 'social', '我替{a}和{b}打了圓場，希望他們別再鬧了。', { a: a.name, b: b.name }, 4, [a.name, b.name]);
-                            continue;
-                        }
-                    }
-                    rel.modifyAffinity(-4); relB.modifyAffinity(-4);
-                    a.moodModifier = (a.moodModifier || 0) - 6;
-                    b.moodModifier = (b.moodModifier || 0) - 6;
-                    this.logMessageT('event', '🗯️ {a}和{b}在眾目睽睽下大吵一架,火藥味十足!', { a: a.name, b: b.name });
-                    this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('當眾對嗆,鎮上議論紛紛')}`, 7, [a.name, b.name]);
-                    // 圍觀選邊站:交情好的替朋友抱不平,對另一方觀感變差
-                    for (const w of npcs) {
-                        if (w === a || w === b) continue;
-                        const wa = w.relationships.relationships[a.agentId]?.affinity || 0;
-                        const wb = w.relationships.relationships[b.agentId]?.affinity || 0;
-                        if (wa >= 40 && wb < 40) {
-                            { const rb = w.relationships.getOrCreate(b.agentId, b.name); if (!this.observerMode || (rb.affinity || 0) > -25) rb.modifyAffinity(-3); } // v9.6.0 替朋友抱不平只會疏遠,不會因此變成死對頭
-                            w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{a2}這邊。', { a: a.name, b: b.name, a2: a.name }, 4, [a.name, b.name]);
-                        } else if (wb >= 40 && wa < 40) {
-                            { const ra = w.relationships.getOrCreate(a.agentId, a.name); if (!this.observerMode || (ra.affinity || 0) > -25) ra.modifyAffinity(-3); }
-                            w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{b2}這邊。', { a: a.name, b: b.name, b2: b.name }, 4, [a.name, b.name]);
-                        } else if ((wa || wb) && Math.random() < 0.3) {
-                            w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '看到{a}和{b}當眾大吵,小鎮的氣氛有點僵。', { a: a.name, b: b.name }, 3, [a.name, b.name]);
-                        }
-                    }
-                    this.queueDramaScene('feud', a, b);
-                }
+                // (b) 廣場對嗆(每對至少隔 5 天)；v9.28.0 決策核心開著時由本人決定要不要當面吵（sim-decide-love.js）
+                if (!love && rel.affinity <= -35 && relB.affinity <= -35
+                    && (day - (this._feudCooldown[key] || -99)) >= 5 && Math.random() < 0.15) this.publicFeud(a, b);
             }
         }
     }
@@ -1085,6 +1054,7 @@ class World {
         return legacy;
     }
     _processRelationships() {
+        const love = this._byLove(); // v9.28.0 決策核心開著時，告白、求婚、偷情、分手、離婚由本人決定（sim-decide-love.js），這裡不擲骰
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer);
         for (const agent of npcs) {
             for (const rel of Object.values(agent.relationships.relationships)) {
@@ -1210,62 +1180,25 @@ class World {
                     if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, other);
                 }
 
-                // --- Start Dating ---
-                if (!rel.status && !otherRel.status) {
+                // --- Start Dating ---（v9.28.0 決策核心開著時由本人決定要不要告白，見 sim-decide-love.js）
+                if (!love && !rel.status && !otherRel.status) {
                     const agentHasPartner = agent.relationships.getPartner();
                     const otherHasPartner = other.relationships.getPartner();
                     if (!agentHasPartner && !otherHasPartner &&
                         rel.romanticInterest > 50 && otherRel.romanticInterest > 35 &&
-                        rel.affinity > 30 && otherRel.affinity > 20 && Math.random() < 0.2) {
-                        rel.status = 'dating'; rel.statusSince = this.tickCount;
-                        otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
-                        this.queueDramaScene('confession', agent, other); // v5.1.0 名場面
-                        agent.addThought('got_together', this, other.agentId, other.name); other.addThought('got_together', this, agent.agentId, agent.name);
-                        this.logMessageT('relationship', '{agent}和{other}開始交往了！', { agent: agent.name, other: other.name }, agent.name, other.name);
-                        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}開始交往了！', { other: other.name }, 9, [other.name]);
-                        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始交往了！', { agent: agent.name }, 9, [agent.name]);
-                        agent.moodModifier = (agent.moodModifier || 0) + 20;
-                        other.moodModifier = (other.moodModifier || 0) + 20;
-                        this.gossipNetwork.createRelGossip(this, 'newCouple', agent, other); // v5.3.0 有內容八卦
-                    }
+                        rel.affinity > 30 && otherRel.affinity > 20 && Math.random() < 0.2) this.startDating(agent, other);
                 }
 
                 // --- Proposal / Marriage (from dating) ---
-                if (rel.status === 'dating' && otherRel.status === 'dating') {
+                if (!love && rel.status === 'dating' && otherRel.status === 'dating') {
                     const datingDuration = this.tickCount - rel.statusSince;
                     // Need to have been dating for a while, high affinity and romantic
                     if (datingDuration > 300 && rel.affinity > 50 && rel.romanticInterest > 55 &&
-                        otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) {
-                        rel.status = 'married'; rel.statusSince = this.tickCount;
-                        otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
-                        agent.addThought('married', this, other.agentId, other.name); other.addThought('married', this, agent.agentId, agent.name);
-                        // v6.86.0 決定結婚 → 訂婚期,真正的婚禮(賓客、致詞、禮金、名場面)在當天辦(sim-ceremony.js);沒有典禮模組時照舊一次辦完
-                        if (typeof CEREMONY !== 'undefined') {
-                            agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}決定結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
-                            other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}決定結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
-                            agent.moodModifier = (agent.moodModifier || 0) + 8; other.moodModifier = (other.moodModifier || 0) + 8;
-                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('要結婚了！')}`, contentT: tpl('{a}和{b}要結婚了！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                            CEREMONY.planWedding(this, agent, other);
-                        } else {
-                        this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
-                        this.logMessageT('relationship', '{agent}和{other}結婚了！全鎮舉辦了盛大的婚禮！', { agent: agent.name, other: other.name }, agent.name, other.name);
-                        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
-                        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
-                        // Wedding boosts mood for everyone
-                        Object.values(this.agents).forEach(a => {
-                            a.moodModifier = (a.moodModifier || 0) + 8;
-                            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
-                                a.memory.addT(this.tickCount, this.clock.timeStr, 'social', '參加了{agent}和{other}的婚禮！', { agent: agent.name, other: other.name }, 6, [agent.name, other.name]);
-                            }
-                        });
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('結婚了！婚禮好浪漫！')}`, contentT: tpl('{a}和{b}結婚了！婚禮好浪漫！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, 10, [agent.name, other.name]);
-                        }
-                    }
+                        otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) this.marry(agent, other);
                 }
 
                 // --- Cheating ---
-                if ((rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
+                if (!love && (rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
                     // Check if agent has high romantic interest in someone else
                     for (const otherRel2 of Object.values(agent.relationships.relationships)) {
                         if (otherRel2.targetId === rel.targetId) continue;
@@ -1276,13 +1209,7 @@ class World {
                         const isVulnerable = rel.affinity < 20 || agent.personality.traits.includes('romantic') || agent.personality.traits.includes('neurotic');
                         if (isVulnerable && otherRel2.romanticInterest > 50 && thirdRel.romanticInterest > 40 &&
                             otherRel2.affinity > 30 && Math.random() < 0.06) { // v5.22.0 加溫:偷情更容易發生(修羅場的火種)
-                            otherRel2.isCheating = true;
-                            thirdRel.isCheating = true;
-                            this.logMessageT('relationship', '{agent}背著{other}和{third}有了秘密關係⋯⋯', { agent: agent.name, other: other.name, third: third.name }, agent.name, third.name);
-                            agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我背著{other}和{third}在一起了⋯⋯我知道這不對。', { other: other.name, third: third.name }, 9, [other.name, third.name]);
-                            third.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始了秘密關係。', { agent: agent.name }, 8, [agent.name]);
-                            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, contentT: tpl('有人看到{a}和{b}偷偷在一起⋯⋯', { a: agent.name, b: third.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                            if (this.dailyNews) this.dailyNews.collectEvent('drama', `${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, 8, [agent.name, third.name]);
+                            this.startAffair(agent, other, third);
                             break; // Only one affair at a time
                         }
                     }
@@ -1323,46 +1250,15 @@ class World {
                 }
 
                 // --- Natural breakup (dating, low affinity) ---
-                if (rel.status === 'dating' && otherRel.status === 'dating') {
+                if (!love && rel.status === 'dating' && otherRel.status === 'dating') {
                     const duration = this.tickCount - rel.statusSince;
-                    if (duration > 100 && (rel.affinity < -10 || otherRel.affinity < -10 || (rel.romanticInterest < 15 && otherRel.romanticInterest < 15)) && Math.random() < 0.1) {
-                        rel.status = 'ex'; rel.statusSince = this.tickCount;
-                        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
-                        rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
-                        this.queueDramaScene('breakup', agent, other); // v5.1.0 名場面
-                        agent.addThought('broke_up', this); other.addThought('broke_up', this);
-                        this.logMessageT('relationship', '{agent}和{other}分手了。', { agent: agent.name, other: other.name }, agent.name, other.name);
-                        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}分手了。', { other: other.name }, 8, [other.name]);
-                        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}分手了。', { agent: agent.name }, 8, [agent.name]);
-                        agent.moodModifier = (agent.moodModifier || 0) - 15;
-                        other.moodModifier = (other.moodModifier || 0) - 15;
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, contentT: tpl('{a}和{b}分手了⋯⋯', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, 6, [agent.name, other.name]);
-                    }
+                    if (duration > 100 && (rel.affinity < -10 || otherRel.affinity < -10 || (rel.romanticInterest < 15 && otherRel.romanticInterest < 15)) && Math.random() < 0.1) this.breakUp(agent, other);
                 }
 
                 // --- Divorce (married, very low affinity for a long time) ---
-                if (rel.status === 'married' && otherRel.status === 'married') {
+                if (!love && rel.status === 'married' && otherRel.status === 'married') {
                     const duration = this.tickCount - rel.statusSince;
-                    if (duration > 300 && rel.affinity < -30 && otherRel.affinity < -20 && Math.random() < 0.05) {
-                        rel.status = 'ex'; rel.statusSince = this.tickCount;
-                        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
-                        rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
-                        this.queueDramaScene('divorce', agent, other); // v5.1.0 名場面
-                        agent.addThought('divorced', this); other.addThought('divorced', this);
-                        this.logMessageT('relationship', '{agent}和{other}離婚了。', { agent: agent.name, other: other.name }, agent.name, other.name);
-                        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}離婚了。', { other: other.name }, 10, [other.name]);
-                        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}離婚了。', { agent: agent.name }, 10, [agent.name]);
-                        agent.moodModifier = (agent.moodModifier || 0) - 25;
-                        other.moodModifier = (other.moodModifier || 0) - 25;
-                        Object.values(this.agents).forEach(a => {
-                            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
-                                a.moodModifier = (a.moodModifier || 0) - 3;
-                            }
-                        });
-                        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯好可惜。')}`, contentT: tpl('{a}和{b}離婚了⋯⋯好可惜。', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
-                        if (this.dailyNews) this.dailyNews.collectEvent('drama', `${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯全鎮不勝唏噓。')}`, 9, [agent.name, other.name]);
-                    }
+                    if (duration > 300 && rel.affinity < -30 && otherRel.affinity < -20 && Math.random() < 0.05) this.divorce(agent, other);
                 }
             }
         }
@@ -1813,6 +1709,230 @@ class World {
     }
 
     // --- v5.1.0 名場面直播:NPC 感情大事件時生成 AI 對話劇,推播給玩家吃瓜 ---
+    // ================= v9.28.0 感情：給決策核心問本人用的查詢（xxxCands）與執行；擲骰版也呼叫同一個執行 =================
+    _byLove() { try { return typeof DECIDE !== 'undefined' && !!DECIDE.love && !!DECIDE.on?.(this); } catch (e) { return false; } }
+    _loveOk(a) { return !!a && !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'); } // 出遠門的人不在 agents 裡
+    // 對誰心動、而且看得出對方也有意思（以前就是這個門檻再每天擲 20%）
+    confessCands(a) {
+        if (!this._loveOk(a) || a.relationships.getPartner()) return [];
+        const out = [];
+        for (const rel of Object.values(a.relationships.relationships)) {
+            if (rel.status || rel.romanticInterest <= 50 || rel.affinity <= 30) continue;
+            const b = this.agents[rel.targetId]; if (!this._loveOk(b) || b.relationships.getPartner()) continue;
+            const back = b.relationships.relationships[a.agentId]; if (!back || back.status || back.romanticInterest <= 35 || back.affinity <= 20) continue;
+            out.push({ b, ri: Math.round(rel.romanticInterest), aff: Math.round(rel.affinity) });
+        }
+        return out.sort((x, y) => y.ri - x.ri).slice(0, 2);
+    }
+    // 被告白的人婉拒：告白的人難過、心動冷下來（多久不再開口由決策核心的冷卻決定）
+    turnDown(agent, other) {
+        const rel = agent.relationships.getOrCreate(other.agentId, other.name); rel.modifyRomantic(-15);
+        agent.moodModifier = (agent.moodModifier || 0) - 10;
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我鼓起勇氣向{other}告白，被婉拒了。', { other: other.name }, 8, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '{agent}向我告白，我婉拒了。', { agent: agent.name }, 6, [agent.name]);
+        this.logMessageT('relationship', '💔 {agent}向{other}告白，被婉拒了。', { agent: agent.name, other: other.name }, agent.name, other.name);
+        return true;
+    }
+    // 兩人開始交往（告白成功）
+    startDating(agent, other) {
+        const rel = agent.relationships.getOrCreate(other.agentId, other.name), otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+        rel.status = 'dating'; rel.statusSince = this.tickCount;
+        otherRel.status = 'dating'; otherRel.statusSince = this.tickCount;
+        this.queueDramaScene('confession', agent, other); // v5.1.0 名場面
+        agent.addThought('got_together', this, other.agentId, other.name); other.addThought('got_together', this, agent.agentId, agent.name);
+        this.logMessageT('relationship', '{agent}和{other}開始交往了！', { agent: agent.name, other: other.name }, agent.name, other.name);
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}開始交往了！', { other: other.name }, 9, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始交往了！', { agent: agent.name }, 9, [agent.name]);
+        agent.moodModifier = (agent.moodModifier || 0) + 20;
+        other.moodModifier = (other.moodModifier || 0) + 20;
+        this.gossipNetwork.createRelGossip(this, 'newCouple', agent, other); // v5.3.0 有內容八卦
+        return true;
+    }
+    // 交往夠久、感情夠好的另一半（以前就是這個門檻再每天擲 10%）
+    proposeCands(a) {
+        if (!this._loveOk(a)) return []; const rel = a.relationships.getPartner(); if (!rel || rel.status !== 'dating') return [];
+        const b = this.agents[rel.targetId]; if (!this._loveOk(b)) return []; const back = b.relationships.relationships[a.agentId]; if (!back || back.status !== 'dating') return [];
+        if (this.tickCount - rel.statusSince <= 300 || rel.affinity <= 50 || rel.romanticInterest <= 55 || back.affinity <= 45 || back.romanticInterest <= 45) return [];
+        return [{ b, days: Math.floor((this.tickCount - rel.statusSince) / 96), aff: Math.round(rel.affinity) }];
+    }
+    // 求婚被婉拒：還是在交往，求婚的人難過
+    notYet(agent, other) {
+        agent.moodModifier = (agent.moodModifier || 0) - 10;
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我向{other}求婚，對方說還沒準備好。', { other: other.name }, 8, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '{agent}向我求婚，我說還沒準備好。', { agent: agent.name }, 7, [agent.name]);
+        this.logMessageT('relationship', '💍 {agent}向{other}求婚，對方說還沒準備好。', { agent: agent.name, other: other.name }, agent.name, other.name);
+        return true;
+    }
+    // 決定結婚（有典禮模組時先訂婚、當天辦婚禮）
+    marry(agent, other) {
+        const rel = agent.relationships.getOrCreate(other.agentId, other.name), otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+        rel.status = 'married'; rel.statusSince = this.tickCount;
+        otherRel.status = 'married'; otherRel.statusSince = this.tickCount;
+        agent.addThought('married', this, other.agentId, other.name); other.addThought('married', this, agent.agentId, agent.name);
+        // v6.86.0 決定結婚 → 訂婚期,真正的婚禮(賓客、致詞、禮金、名場面)在當天辦(sim-ceremony.js);沒有典禮模組時照舊一次辦完
+        if (typeof CEREMONY !== 'undefined') {
+            agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}決定結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
+            other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}決定結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
+            agent.moodModifier = (agent.moodModifier || 0) + 8; other.moodModifier = (other.moodModifier || 0) + 8;
+            this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('要結婚了！')}`, contentT: tpl('{a}和{b}要結婚了！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+            CEREMONY.planWedding(this, agent, other);
+        } else {
+        this.queueDramaScene('wedding', agent, other); // v5.1.0 名場面
+        this.logMessageT('relationship', '{agent}和{other}結婚了！全鎮舉辦了盛大的婚禮！', { agent: agent.name, other: other.name }, agent.name, other.name);
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}結婚了！這是我人生中最幸福的一天。', { other: other.name }, 10, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}結婚了！太開心了。', { agent: agent.name }, 10, [agent.name]);
+        // Wedding boosts mood for everyone
+        Object.values(this.agents).forEach(a => {
+            a.moodModifier = (a.moodModifier || 0) + 8;
+            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
+                a.memory.addT(this.tickCount, this.clock.timeStr, 'social', '參加了{agent}和{other}的婚禮！', { agent: agent.name, other: other.name }, 6, [agent.name, other.name]);
+            }
+        });
+        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('結婚了！婚禮好浪漫！')}`, contentT: tpl('{a}和{b}結婚了！婚禮好浪漫！', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('結婚了！全鎮舉辦了盛大的婚禮！')}`, 10, [agent.name, other.name]);
+        }
+        return true;
+    }
+    // 有另一半、卻對別人動了心（以前：感情不好或多情、神經質的人，對彼此有意思的第三人每天擲 6%）
+    affairCands(a) {
+        if (!this._loveOk(a)) return []; const rel = a.relationships.getPartner(); if (!rel || rel.isCheating) return [];
+        const other = this.agents[rel.targetId]; if (!other) return [];
+        const T = a.personality.traits; if (!(rel.affinity < 20 || T.includes('romantic') || T.includes('neurotic'))) return [];
+        if (Object.values(a.relationships.relationships).some(r => r.isCheating)) return []; // 一次只有一段
+        const out = [];
+        for (const r2 of Object.values(a.relationships.relationships)) {
+            if (r2.targetId === rel.targetId || r2.romanticInterest <= 50 || r2.affinity <= 30) continue;
+            const third = this.agents[r2.targetId]; if (!this._loveOk(third)) continue;
+            const back = third.relationships.relationships[a.agentId]; if (!back || back.romanticInterest <= 40) continue;
+            out.push({ t: third, ri: Math.round(r2.romanticInterest) });
+        }
+        return out.length ? [{ p: other, cool: Math.round(rel.affinity), married: rel.status === 'married', list: out.sort((x, y) => y.ri - x.ri).slice(0, 2) }] : [];
+    }
+    // 背著另一半跟第三人在一起
+    startAffair(agent, other, third) {
+        const otherRel2 = agent.relationships.getOrCreate(third.agentId, third.name), thirdRel = third.relationships.getOrCreate(agent.agentId, agent.name);
+        otherRel2.isCheating = true;
+        thirdRel.isCheating = true;
+        this.logMessageT('relationship', '{agent}背著{other}和{third}有了秘密關係⋯⋯', { agent: agent.name, other: other.name, third: third.name }, agent.name, third.name);
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我背著{other}和{third}在一起了⋯⋯我知道這不對。', { other: other.name, third: third.name }, 9, [other.name, third.name]);
+        third.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}開始了秘密關係。', { agent: agent.name }, 8, [agent.name]);
+        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, contentT: tpl('有人看到{a}和{b}偷偷在一起⋯⋯', { a: agent.name, b: third.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+        if (this.dailyNews) this.dailyNews.collectEvent('drama', `${t('有人看到')}${agent.name}${t('和')}${third.name}${t('偷偷在一起⋯⋯')}`, 8, [agent.name, third.name]);
+        return true;
+    }
+    // 交往中、感情已經淡了或鬧僵了（以前：交往一天以上、任一方好感 < -10 或兩人心動都 < 15，每天擲 10%）
+    breakCands(a) {
+        if (!this._loveOk(a)) return []; const rel = a.relationships.getPartner(); if (!rel || rel.status !== 'dating') return [];
+        const b = this.agents[rel.targetId]; if (!b || b.isDead) return []; const back = b.relationships.relationships[a.agentId]; if (!back || back.status !== 'dating') return [];
+        if (this.tickCount - rel.statusSince <= 100) return [];
+        if (!(rel.affinity < -10 || back.affinity < -10 || (rel.romanticInterest < 15 && back.romanticInterest < 15))) return [];
+        return [{ b, aff: Math.round(rel.affinity), back: Math.round(back.affinity), ri: Math.round(rel.romanticInterest) }];
+    }
+    // 分手
+    breakUp(agent, other) {
+        const rel = agent.relationships.getOrCreate(other.agentId, other.name), otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+        rel.status = 'ex'; rel.statusSince = this.tickCount;
+        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
+        rel.modifyAffinity(-10); otherRel.modifyAffinity(-10);
+        this.queueDramaScene('breakup', agent, other); // v5.1.0 名場面
+        agent.addThought('broke_up', this); other.addThought('broke_up', this);
+        this.logMessageT('relationship', '{agent}和{other}分手了。', { agent: agent.name, other: other.name }, agent.name, other.name);
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}分手了。', { other: other.name }, 8, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}分手了。', { agent: agent.name }, 8, [agent.name]);
+        agent.moodModifier = (agent.moodModifier || 0) - 15;
+        other.moodModifier = (other.moodModifier || 0) - 15;
+        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, contentT: tpl('{a}和{b}分手了⋯⋯', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+        if (this.dailyNews) this.dailyNews.collectEvent('relationship', `${agent.name}${t('和')}${other.name}${t('分手了⋯⋯')}`, 6, [agent.name, other.name]);
+        return true;
+    }
+    // 婚姻走到很糟（以前：結婚三天以上、一方好感 < -30、另一方 < -20，每天擲 5%）
+    divorceCands(a) {
+        if (!this._loveOk(a)) return []; const rel = a.relationships.getPartner(); if (!rel || rel.status !== 'married') return [];
+        const b = this.agents[rel.targetId]; if (!b || b.isDead) return []; const back = b.relationships.relationships[a.agentId]; if (!back || back.status !== 'married') return [];
+        if (this.tickCount - rel.statusSince <= 300 || rel.affinity >= -30 || back.affinity >= -20) return [];
+        const kids = Object.values(this.agents).filter(k => !k.isDead && (k.age ?? 30) < 18 && (k._parentNames || []).includes(a.name) && (k._parentNames || []).includes(b.name)).length;
+        return [{ b, aff: Math.round(rel.affinity), back: Math.round(back.affinity), kids }];
+    }
+    // 離婚
+    divorce(agent, other) {
+        const rel = agent.relationships.getOrCreate(other.agentId, other.name), otherRel = other.relationships.getOrCreate(agent.agentId, agent.name);
+        rel.status = 'ex'; rel.statusSince = this.tickCount;
+        otherRel.status = 'ex'; otherRel.statusSince = this.tickCount;
+        rel.modifyAffinity(-15); otherRel.modifyAffinity(-15);
+        this.queueDramaScene('divorce', agent, other); // v5.1.0 名場面
+        agent.addThought('divorced', this); other.addThought('divorced', this);
+        this.logMessageT('relationship', '{agent}和{other}離婚了。', { agent: agent.name, other: other.name }, agent.name, other.name);
+        agent.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{other}離婚了。', { other: other.name }, 10, [other.name]);
+        other.memory.addT(this.tickCount, this.clock.timeStr, 'relationship', '我和{agent}離婚了。', { agent: agent.name }, 10, [agent.name]);
+        agent.moodModifier = (agent.moodModifier || 0) - 25;
+        other.moodModifier = (other.moodModifier || 0) - 25;
+        Object.values(this.agents).forEach(a => {
+            if (a.agentId !== agent.agentId && a.agentId !== other.agentId) {
+                a.moodModifier = (a.moodModifier || 0) - 3;
+            }
+        });
+        this.gossipNetwork.activeGossip.push({ about:agent.name, content:`${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯好可惜。')}`, contentT: tpl('{a}和{b}離婚了⋯⋯好可惜。', { a: agent.name, b: other.name }), source:t('鎮民'), spreadCount:0, tickCreated:this.tickCount, isTrue:true });
+        if (this.dailyNews) this.dailyNews.collectEvent('drama', `${agent.name}${t('和')}${other.name}${t('離婚了⋯⋯全鎮不勝唏噓。')}`, 9, [agent.name, other.name]);
+        return true;
+    }
+    // 死對頭碰上了（以前：兩人好感都 <= -35、隔 5 天以上，每天擲 15%）
+    feudCands(a) {
+        if (!this._loveOk(a)) return []; this._feudCooldown = this._feudCooldown || {}; const day = this._absDay(); const out = [];
+        for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
+            const b = this.agents[tid]; if (!this._loveOk(b) || rel.affinity > -35) continue;
+            const relB = b.relationships.relationships[a.agentId]; if (!relB || relB.affinity > -35) continue;
+            const key = [a.agentId, tid].sort().join('|'); if ((day - (this._feudCooldown[key] || -99)) < 5) continue;
+            out.push({ b, aff: Math.round(rel.affinity), back: Math.round(relB.affinity) });
+        }
+        return out.sort((x, y) => x.aff - y.aff).slice(0, 2);
+    }
+    // 當街吵起來（兩邊都要好的人可能出面打圓場）
+    publicFeud(a, b) {
+        const npcs = Object.values(this.agents).filter(x => !x.isPlayer && !x.isDead);
+        this._feudCooldown = this._feudCooldown || {}; const day = this._absDay(); const key = [a.agentId, b.agentId].sort().join('|');
+        const rel = a.relationships.getOrCreate(b.agentId, b.name), relB = b.relationships.getOrCreate(a.agentId, a.name);
+        this._feudCooldown[key] = day;
+        // v9.6.0 勸架:兩邊都要好的人出面打圓場,這次沒吵起來、氣也消了一點(以前只會越吵越僵,一年下來交惡的比交好的還多)
+        if (this.observerMode) {
+            const peace = npcs.find(m => m !== a && m !== b && (m.relationships.relationships[a.agentId]?.affinity || 0) >= 30 && (m.relationships.relationships[b.agentId]?.affinity || 0) >= 30);
+            if (peace && Math.random() < 0.35) {
+                rel.modifyAffinity(6); relB.modifyAffinity(6);
+                this.logMessageT('social', '🕊️ {a}和{b}差點當街吵起來，{m}趕緊出面打圓場，兩人氣消了一點。', { a: a.name, b: b.name, m: peace.name }, peace.name);
+                peace.memory?.addT?.(this.tickCount, this.clock.timeStr, 'social', '我替{a}和{b}打了圓場，希望他們別再鬧了。', { a: a.name, b: b.name }, 4, [a.name, b.name]);
+                return true;
+            }
+        }
+        rel.modifyAffinity(-4); relB.modifyAffinity(-4);
+        a.moodModifier = (a.moodModifier || 0) - 6;
+        b.moodModifier = (b.moodModifier || 0) - 6;
+        this.logMessageT('event', '🗯️ {a}和{b}在眾目睽睽下大吵一架,火藥味十足!', { a: a.name, b: b.name });
+        this.dailyNews?.collectEvent('social', `${a.name}${t('與')}${b.name}${t('當眾對嗆,鎮上議論紛紛')}`, 7, [a.name, b.name]);
+        // 圍觀選邊站:交情好的替朋友抱不平,對另一方觀感變差
+        for (const w of npcs) {
+            if (w === a || w === b) continue;
+            const wa = w.relationships.relationships[a.agentId]?.affinity || 0;
+            const wb = w.relationships.relationships[b.agentId]?.affinity || 0;
+            if (wa >= 40 && wb < 40) {
+                { const rb = w.relationships.getOrCreate(b.agentId, b.name); if (!this.observerMode || (rb.affinity || 0) > -25) rb.modifyAffinity(-3); } // v9.6.0 替朋友抱不平只會疏遠,不會因此變成死對頭
+                w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{a2}這邊。', { a: a.name, b: b.name, a2: a.name }, 4, [a.name, b.name]);
+            } else if (wb >= 40 && wa < 40) {
+                { const ra = w.relationships.getOrCreate(a.agentId, a.name); if (!this.observerMode || (ra.affinity || 0) > -25) ra.modifyAffinity(-3); }
+                w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '目睹{a}和{b}當眾大吵——我當然站{b2}這邊。', { a: a.name, b: b.name, b2: b.name }, 4, [a.name, b.name]);
+            } else if ((wa || wb) && Math.random() < 0.3) {
+                w.memory.addT(this.tickCount, this.clock.timeStr, 'observation', '看到{a}和{b}當眾大吵,小鎮的氣氛有點僵。', { a: a.name, b: b.name }, 3, [a.name, b.name]);
+            }
+        }
+        this.queueDramaScene('feud', a, b);
+        return true;
+    }
+    // 要不要去鄰鎮作客（以前：每天 25% 從心情好的人裡隨便挑一個派出去）
+    visitInfo(a, c) {
+        if (!this._loveOk(a) || a.job?.key === 'mayor' || (a.mood || 50) <= 40 || !Array.isArray(this.otherTowns)) return null;
+        const town = this.otherTowns.find(tw => tw.id === c?.town && !tw.closed); if (!town) return null;
+        if ((this.events._travellingAgents || []).filter(tr => tr.visitTownId).length >= 2) return null;
+        return { town };
+    }
+    visitBy(a, c) { const I = this.visitInfo(a, c); if (!I) return false; return this.sendVisitorTo(a, I.town, c.stay || randInt(3, 5)); }
     queueDramaScene(kind, agentA, agentB, thirdName) {
         const meta = {
             confession: { icon: '💘', title: t('告白成功') },
