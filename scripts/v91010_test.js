@@ -35,7 +35,7 @@ async function run(browser, lang) {
         MB.day = null; CLASS.daily(w); const w1 = WALLET.wageOf(X); w.wallet.bal[X.agentId] = 0; const nm = [X.name, t(X.name)]; const hit = (s) => /名匠|master/i.test(s) && nm.some(n => s.includes(n)); const n1 = logs().slice(L0).filter(hit).length; MB.day = null; CLASS.daily(w); const n2 = logs().slice(L0).filter(hit).length;
         out.master = { was, now: MOBILITY.isMaster(X), pay: Math.round(w1 / w0 * 100) / 100, n1, n2, lv: CLASS.level(w, X), brief: MOBILITY.brief(w, X) };
         app._showNpcCard?.(X.agentId); out.master.card = /名匠|Master/.test(document.querySelector('#npc-quick-card')?.innerText || ''); app._hideNpcCard?.();
-        const B = app._townBlocks(null, ['tier']); out.master.panel = /名匠 \d+ 人|\d+ masters/.test(B.tier || '');
+        const B = app._townBlocks(null, ['tier']); out.master.panel = /🏅\s*(名匠|Master)/.test(B.tier || ''); /* v9.18.0 鎮況改成資訊卡：名匠人數變成一格（數字＋「🏅 名匠」），不再是「名匠 N 人」一行字 */
         // 慕名訂做:錢從有錢人付給名匠,全鎮總數不變
         const rich = adults().filter(o => o !== X && !MOBILITY.isMaster(o)); for (const o of rich.slice(0, 3)) { w.wallet.bal[o.agentId] = 1000; o.job = o.job || new Job('farmer'); }
         const c0 = WALLET.get(w, X), t0 = MONEY.total(w); const d3 = Math.ceil((w._absDay() - 3) / 7) * 7 + 3; fix(0.1, () => MOBILITY.masters(w, all(), d3));
