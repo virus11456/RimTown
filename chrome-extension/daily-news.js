@@ -190,9 +190,24 @@ ${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口�
 
         const response = await world.conversationEngine.llm.chat([
             { role: 'user', content: prompt }
-        ], { max_tokens: 1200 });
+        ], { max_tokens: 1500 }); // v9.23.6 1200 寫中文大約 900 字就到頂,手記常寫到一半被切(線上實測 3 篇有 1 篇)
 
-        return response?.content || response?.choices?.[0]?.message?.content || null;
+        // v9.23.6 llm.chat() 回的是字串;以前這裡只讀 .content／.choices(物件才有),AI 寫好的日報每天都被當成沒寫、改用範本
+        const text = typeof response === 'string' ? response : (response?.content || response?.choices?.[0]?.message?.content || null);
+        return DailyNewsEngine.tidy(text);
+    }
+    // AI 寫的日報收尾:沒寫完(被長度上限切斷)就收到最後一個完整句子;太短的不算數,改用範本
+    static tidy(text) {
+        let s = String(text == null ? '' : text).replace(/^```[a-z]*\s*|\s*```$/gi, '').trim(); if (!s) return null;
+        s = s.replace(/\*\*([^*\n]+)\*\*/g, '$1').replace(/^#{1,4}\s+/gm, ''); // 專欄是純文字顯示,Markdown 的粗體和標題記號會原樣露出來(英文真模型常這樣寫)
+        if (!/[。！？!?….」』"”’）)~～]$/.test(s)) { const m = s.match(/^[\s\S]*[。！？!?….][」』"”’）)]?/); if (m && m[0].length >= s.length * 0.6) s = m[0].trim(); }
+        return s.length >= 80 ? s : null;
+    }
+    // 舊報(最近 30 期以前)的 AI 專欄只留標題和頭條報導那一段:AI 寫的一篇有 900～3000 字,每天一篇全留著,一年下來存檔會多出近 1MB
+    static condense(content) {
+        const s = String(content || ''); if (s.length <= 700) return s;
+        const i = s.search(/\n\s*(📋|💬|✍️)/); const head = (i > 40 ? s.slice(0, i) : s.slice(0, 600)).trim();
+        const cross = s.indexOf('🐎'); return head + (cross > 0 ? '\n\n' + s.slice(cross).trim() : '');
     }
 
     _generateTemplate(reporter, events, world) {
@@ -255,7 +270,7 @@ ${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口�
         // v6.43.7 報紙一期都不刪;只是最近 30 期以前的舊報不再存「當天素材清單」(events／跨鎮專欄,只有最近幾期點開才用得到),正文、日期、記者都保留
         const keepFull = 30, n = this.newspapers.length;
         return {
-            newspapers: this.newspapers.map((p, i) => (i >= n - keepFull || !p) ? p : (({ events, crossTown, ...rest }) => rest)(p)),
+            newspapers: this.newspapers.map((p, i) => (i >= n - keepFull || !p) ? p : (({ events, crossTown, ...rest }) => ({ ...rest, content: DailyNewsEngine.condense(rest.content) }))(p)),
             todayEvents: this.todayEvents,
             _lastPublishDay: this._lastPublishDay,
             _enabled: this._enabled,
