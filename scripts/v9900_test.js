@@ -33,6 +33,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const a of haters) X.intent = Object.assign(X.intent || {}, { [T.id + '|' + a.agentId]: 'protest' });
       X.lastProtest = -99; delete T.protest; X.lastDay = null; X.att[T.id][mayor.agentId] = -10;
       Math.random = () => 0.1; try { THINGS.daily(w); } finally { Math.random = rnd; }
+      // v9.27.0 跟不跟、要不要到場聲援由每個人自己決定，隔天才集合：這裡讓支持的人都答應到場，再跑隔天
+      if (THINGS.byCrowd?.(w) && T.call) { for (const a of fans) THINGS.rallyBy(w, a, { tid: T.id, side: 'pro' }); DECIDE.S(w).q = []; T.call.d = w._absDay() - 1; X.lastDay = null; Math.random = () => 0.1; try { THINGS.daily(w); } finally { Math.random = rnd; } }
       const L = logs();
       out.protest = { n: T.protest?.n || 0, counter: T.protest?.counter || 0, notice: X.st.notice || 0, boycott: !!T.boycott, stance: T.stance?.side, silent: X.st.silent || 0,
         logNotice: /告示|notice board/i.test(L), logCounter: /聲援|counter|support/i.test(L), logBoycott: /抵制|boycott/i.test(L), logStance: /表態|首長|took a stand|leader/i.test(L) };

@@ -144,19 +144,35 @@ const CROWN = (() => {
         else issue(ruleDecree(w, C));
     }
     // ---------- 政變 ----------
+    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const plotCand = (w, k) => npcs(w).filter(a => a !== k && prestige(w, a) >= 20 && aff(a, k) < 10).sort((x, y) => (aff(x, k) - prestige(w, x)) - (aff(y, k) - prestige(w, y)))[0] || null;
+    function startPlot(w, C, k, am, d) {
+        C.plot = { leader: am.agentId, members: [am.agentId], start: d, ready: d + 6 + Math.floor(Math.random() * 5) };
+        mem(w, am, '國王失去民心，是時候了。我要聯絡幾個信得過的人。', {}, 9);
+        try { const sc = DARK.secret(w, { kind: 'scheme', plan: true, culprit: am.agentId, victim: k.agentId, k: '{a}正在密謀推翻國王{k}', p: { a: am.name, k: k.name } }); C.plot.sec = sc?.id || null; } catch (e) {}
+    }
+    const joinable = (w, P, L, k, o) => o !== k && !P.members.includes(o.agentId) && aff(o, L) > 20 && aff(o, k) < 0;
+    function joinDo(w, P, L, o) { P.members.push(o.agentId); mem(w, o, '{l}拉我加入推翻國王的計畫，我答應了。', { l: L.name }, 8); }
+    // v9.27.0 給決策核心。能動這個念頭的跟以前擲骰的是同一個人:國王民心低於 35 時,鎮上最有聲望、又跟國王處不好的那一位
+    const reign = (w) => { const C = S(w); if (!isCapital(w) || C.republic || !C.king) return null; const k = king(w); return k && !k.isDead ? { C, k } : null; };
+    function plotInfo(w, a) { const R = reign(w); if (!a || !R || R.C.plot || R.C.legit >= 35 || plotCand(w, R.k) !== a) return null; return { k: R.k, legit: Math.round(R.C.legit), pres: Math.round(prestige(w, a)) }; }
+    function plotBy(w, a) { const I = plotInfo(w, a); if (!I) return false; startPlot(w, S(w), I.k, a, day(w)); return true; }
+    function joinInfo(w, a) {
+        const R = reign(w); const P = R?.C.plot; if (!a || !P) return null; const L = w.agents[P.leader]; if (!L || L.isDead || a === L || !joinable(w, P, L, R.k, a)) return null;
+        return { L, k: R.k, n: P.members.length, left: Math.max(0, P.ready - day(w)), legit: Math.round(R.C.legit) };
+    }
+    function joinBy(w, a) { const I = joinInfo(w, a); if (!I) return false; joinDo(w, S(w).plot, I.L, a); return true; }
     function plot(w, C, k, d) {
         if (!C.plot) {
-            if (C.legit >= 35 || Math.random() > 0.2) return;
-            const am = npcs(w).filter(a => a !== k && prestige(w, a) >= 20 && aff(a, k) < 10).sort((x, y) => (aff(x, k) - prestige(w, x)) - (aff(y, k) - prestige(w, y)))[0];
+            if (C.legit >= 35 || byCrowd(w) || Math.random() > 0.2) return; // v9.27.0 有決策核心時,動不動手由最有可能的那個人自己決定
+            const am = plotCand(w, k);
             if (!am) return;
-            C.plot = { leader: am.agentId, members: [am.agentId], start: d, ready: d + 6 + Math.floor(Math.random() * 5) };
-            mem(w, am, '國王失去民心，是時候了。我要聯絡幾個信得過的人。', {}, 9);
-            try { const sc = DARK.secret(w, { kind: 'scheme', plan: true, culprit: am.agentId, victim: k.agentId, k: '{a}正在密謀推翻國王{k}', p: { a: am.name, k: k.name } }); C.plot.sec = sc?.id || null; } catch (e) {}
+            startPlot(w, C, k, am, d);
             return;
         }
         const P = C.plot, L = w.agents[P.leader]; if (!L || L.isDead) { C.plot = null; return; }
         // 拉人:跟主謀交好、跟國王處不好的人
-        for (const o of npcs(w)) if (o !== k && !P.members.includes(o.agentId) && aff(o, L) > 20 && aff(o, k) < 0 && Math.random() < 0.25) { P.members.push(o.agentId); mem(w, o, '{l}拉我加入推翻國王的計畫，我答應了。', { l: L.name }, 8); }
+        if (!byCrowd(w)) for (const o of npcs(w)) if (joinable(w, P, L, k, o) && Math.random() < 0.25) joinDo(w, P, L, o); // v9.27.0 有決策核心時,加不加入由被拉的人自己決定
         // 被忠臣識破
         const loyal = npcs(w).filter(o => o !== L && !P.members.includes(o.agentId) && aff(o, k) > 30);
         let caught = false; try { caught = loyal.some(o => Math.random() < 0.02 * DARK.insight(o)); } catch (e) { caught = Math.random() < 0.04; }
@@ -200,7 +216,7 @@ const CROWN = (() => {
     }
     function brief(w) { const C = w.crown; if (!C) return ''; if (C.republic) return t('王都已推翻王室，改為共和'); const k = king(w); if (!k) return C.crisis ? t('王位空懸，繼承危機中') : ''; return `${t('國王')}${t('：')}${t(k.name)}${t('（')}${en() ? C.dynasty?.en || '' : C.dynasty?.zh || ''}${t('，')}${t('民心')} ${Math.round(C.legit)}/100${t('）')}`; }
     function view(w) { const C = w.crown; if (!C) return null; const k = king(w); return { king: k ? t(k.name) : null, dynasty: C.dynasty ? (en() ? C.dynasty.en : C.dynasty.zh) : '', legit: Math.round(C.legit), decrees: (C.decrees || []).slice(-3).reverse(), crisis: C.crisis ? C.crisis.claimants.map(id => w.agents[id]?.name).filter(Boolean).map(n => t(n)) : null, republic: !!C.republic, plot: C.plot ? { leader: w.agents[C.plot.leader]?.name, n: C.plot.members.length } : null, history: C.history.slice(-5) }; }
-    return { S, daily, king, crown, brief, view, DECREES, prestige, legitimacy, foiled }; // v9.4.0 legitimacy／foiled 給測試用
+    return { S, daily, king, crown, brief, view, DECREES, prestige, legitimacy, foiled, plotInfo, plotBy, joinInfo, joinBy }; // v9.4.0 legitimacy／foiled 給測試用
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

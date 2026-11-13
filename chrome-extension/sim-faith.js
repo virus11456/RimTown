@@ -198,39 +198,74 @@ const FAITH = (() => {
         }
     }
     // 祈禱:日子難過時向神祈求
+    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.27.0 祈禱、傳教、改宗交給本人決定
+    const WISH = { hungry: '別讓家裡斷糧', sick: '讓病快點好起來', poor: '能有份穩定的收入', low: '讓日子好過一點' };
+    function trouble(w, a) {
+        const th = (a.thoughts || []).map(x => x.kind || x.type || x);
+        const hungry = th.includes('hungry'), poor = money(w, a) < 5 && !!w.wallet, low = (a.mood || 50) < 35, sick = (a.health ?? 100) < 50;
+        return hungry ? 'hungry' : sick ? 'sick' : poor ? 'poor' : low ? 'low' : null;
+    }
+    function prayDo(w, F, a, R, why, d) {
+        const wish = WISH[why] || WISH.low;
+        F.prayers[a.agentId] = { day: d, wish, rel: R.id };
+        mem(w, a, '我向{g}祈求：{wish}。', { g: R.deity[0], wish }, 6);
+        log(w, '🙏 {a}向{g}祈禱：「{wish}」', { a: a.name, g: R.deity[0], wish }, a.name);
+        return wish;
+    }
     function pray(w, F, d) {
         for (const id of Object.keys(F.prayers)) if (d - F.prayers[id].day > 4) delete F.prayers[id];
+        if (byCrowd(w)) return; // 要不要祈禱由本人決定
         for (const a of npcs(w)) {
             const R = relOf(w, a); const f = F.of[a.agentId]; if (!R || !f || f.piety < 40 || F.prayers[a.agentId]) continue;
-            const th = (a.thoughts || []).map(x => x.kind || x.type || x);
-            const hungry = th.includes('hungry'), poor = money(w, a) < 5 && !!w.wallet, low = (a.mood || 50) < 35, sick = (a.health ?? 100) < 50;
-            if (!(hungry || poor || low || sick) || Math.random() > 0.25) continue;
-            const wish = hungry ? '別讓家裡斷糧' : sick ? '讓病快點好起來' : poor ? '能有份穩定的收入' : '讓日子好過一點';
-            F.prayers[a.agentId] = { day: d, wish, rel: R.id };
-            mem(w, a, '我向{g}祈求：{wish}。', { g: R.deity[0], wish }, 6);
-            log(w, '🙏 {a}向{g}祈禱：「{wish}」', { a: a.name, g: R.deity[0], wish }, a.name);
+            const why = trouble(w, a);
+            if (!why || Math.random() > 0.25) continue;
+            prayDo(w, F, a, R, why, d);
         }
     }
+    // v9.27.0 給決策核心:這個人現在是不是日子難過、又夠虔誠(跟以前擲骰的是同一批人)
+    function prayInfo(w, a) { const F = S(w); const R = relOf(w, a); const f = F.of[a?.agentId]; if (!a || !R || !f || f.piety < 40 || F.prayers[a.agentId]) return null; const why = trouble(w, a); return why ? { R, why, wish: WISH[why], piety: Math.round(f.piety) } : null; }
+    function prayBy(w, a) { const I = prayInfo(w, a); return I ? prayDo(w, S(w), a, I.R, I.why, day(w)) : null; }
     // 傳教:虔誠的人勸朋友改宗;家人改宗會失和
+    const zealOf = (R) => (R.sk === 'sheng' ? 0.06 : R.sk === 'chan' ? 0.03 : 0.02);
+    const preachFriends = (w, F, a, R) => Object.values(a.relationships?.relationships || {}).filter(r => r.affinity >= 30).map(r => w.agents[r.targetId]).filter(o => o && !o.isDead && !o.isPlayer && F.of[o.agentId] && F.of[o.agentId].rel !== R.id);
+    const resistOf = (F, o) => { const of = F.of[o.agentId]; return (of.rel ? of.piety : 10) / 100 + (has(o, 'stoic') ? 0.2 : 0); };
+    function convertDo(w, F, a, o, R) {
+        const of = F.of[o.agentId]; const oldR = relOf(w, o); of.rel = R.id; of.piety = 45;
+        mem(w, o, '{a}帶我認識了{r}，我決定改信。', { a: a.name, r: R.name[0] }, 7);
+        log(w, '{i} {o}在{a}的勸說下改信{r}。', { i: SK[R.sk].icon, o: o.name, a: a.name, r: R.name[0] }, o.name);
+        // 家人失和
+        if (oldR) for (const fam of npcs(w)) if (F.of[fam.agentId]?.rel === oldR.id && F.of[fam.agentId].piety >= 50 && ((fam._parentNames || []).includes(o.name) || (o._parentNames || []).includes(fam.name) || fam.relationships?.relationships?.[o.agentId]?.status === 'married')) {
+            fam.relationships.getOrCreate(o.agentId, o.name).modifyAffinity(-12); mem(w, fam, '{o}背棄了{r}，家裡吵得很兇。', { o: o.name, r: oldR.name[0] }, 7);
+        }
+    }
+    const refuseDo = (w, a, o, R) => mem(w, o, '{a}一直勸我信{r}，我不想。', { a: a.name, r: R.name[0] }, 4);
     function preach(w, F) {
-        if (F.rels.length < 1) return;
+        if (F.rels.length < 1 || byCrowd(w)) return; // v9.27.0 有決策核心時,去不去勸、改不改宗都由本人決定
         for (const a of npcs(w)) {
             const R = relOf(w, a); const f = F.of[a.agentId]; if (!R || !f || f.piety < 70) continue;
-            const zeal = R.sk === 'sheng' ? 0.06 : R.sk === 'chan' ? 0.03 : 0.02; if (Math.random() > zeal) continue;
-            const friends = Object.values(a.relationships?.relationships || {}).filter(r => r.affinity >= 30).map(r => w.agents[r.targetId]).filter(o => o && !o.isDead && !o.isPlayer && F.of[o.agentId]?.rel !== R.id);
+            if (Math.random() > zealOf(R)) continue;
+            const friends = preachFriends(w, F, a, R);
             const o = friends[Math.floor(Math.random() * friends.length)]; if (!o) continue;
-            const of = F.of[o.agentId]; const resist = (of.rel ? of.piety : 10) / 100 + (has(o, 'stoic') ? 0.2 : 0);
-            if (Math.random() < 0.5 - resist * 0.6) {
-                const oldR = relOf(w, o); of.rel = R.id; of.piety = 45;
-                mem(w, o, '{a}帶我認識了{r}，我決定改信。', { a: a.name, r: R.name[0] }, 7);
-                log(w, '{i} {o}在{a}的勸說下改信{r}。', { i: SK[R.sk].icon, o: o.name, a: a.name, r: R.name[0] }, o.name);
-                // 家人失和
-                if (oldR) for (const fam of npcs(w)) if (F.of[fam.agentId]?.rel === oldR.id && F.of[fam.agentId].piety >= 50 && ((fam._parentNames || []).includes(o.name) || (o._parentNames || []).includes(fam.name) || fam.relationships?.relationships?.[o.agentId]?.status === 'married')) {
-                    fam.relationships.getOrCreate(o.agentId, o.name).modifyAffinity(-12); mem(w, fam, '{o}背棄了{r}，家裡吵得很兇。', { o: o.name, r: oldR.name[0] }, 7);
-                }
-            } else mem(w, o, '{a}一直勸我信{r}，我不想。', { a: a.name, r: R.name[0] }, 4);
+            if (Math.random() < 0.5 - resistOf(F, o) * 0.6) convertDo(w, F, a, o, R); else refuseDo(w, a, o, R);
         }
     }
+    // v9.27.0 給決策核心:很虔誠、又有信別的(或不信)的好朋友的人,可以去勸;被勸的人自己決定改不改
+    function preachInfo(w, a) {
+        const F = S(w); const R = relOf(w, a); const f = F.of[a?.agentId]; if (!a || !R || !f || f.piety < 70) return null;
+        const friends = preachFriends(w, F, a, R).sort((x, y) => (a.relationships.relationships[y.agentId]?.affinity || 0) - (a.relationships.relationships[x.agentId]?.affinity || 0)).slice(0, 2);
+        return friends.length ? { R, zeal: zealOf(R), friends } : null;
+    }
+    function preachBy(w, a, oid) {
+        const I = preachInfo(w, a); const o = I ? I.friends.find(x => x.agentId === oid) : null; if (!o) return null;
+        mem(w, a, '我去勸{o}信{r}。', { o: o.name, r: I.R.name[0] }, 5);
+        try { DECIDE.enqueue(w, o, 'convert', { by: a.agentId, rel: I.R.id }); } catch (e) {}
+        return o;
+    }
+    function convertInfo(w, o, c) {
+        const F = S(w); const a = w.agents[c?.by]; const R = F.rels.find(x => x.id === c?.rel); const of = F.of[o?.agentId]; if (!o || !a || a.isDead || !R || !of || of.rel === R.id) return null;
+        return { a, R, oldR: relOf(w, o), piety: Math.round(of.piety || 0), p: Math.max(0.02, 0.5 - resistOf(F, o) * 0.6) };
+    }
+    function convertBy(w, o, c, yes) { const I = convertInfo(w, o, c); if (!I) return null; if (yes) convertDo(w, S(w), I.a, o, I.R); else refuseDo(w, I.a, o, I.R); return I; }
     // 你打出的事件卡,在信徒眼裡是神意
     function onCard(w, card) {
         const F = S(w), d = day(w); const good = card?.cat === 'fortune', bad = card?.cat === 'disaster' || card?.cat === 'mishap'; if (!good && !bad) return;
@@ -279,7 +314,7 @@ const FAITH = (() => {
             .concat([]);
     }
     const nonBelievers = (w) => npcs(w).filter(a => !S(w).of[a.agentId]?.rel).length;
-    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, byChoice, embezzleInfo, embezzleBy };
+    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, byChoice, embezzleInfo, embezzleBy, byCrowd, prayInfo, prayBy, preachInfo, preachBy, convertInfo, convertBy };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') { PROPOSAL_KINDS.faith_tax = { icon: '⛪', label: '宗教稅' }; PROPOSAL_KINDS.faith_untax = { icon: '⛪', label: '宗教稅' }; }
 if (typeof VOTE_WHY !== 'undefined') { VOTE_WHY.faith = VOTE_WHY.faith || '信仰的立場'; VOTE_WHY.purse = VOTE_WHY.purse || '看自己的荷包'; }

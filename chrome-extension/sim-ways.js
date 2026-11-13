@@ -41,18 +41,31 @@ const WAYS = (function () {
     const proud = (a) => hasT(a, 'abrasive') || hasT(a, 'charismatic') || hasT(a, 'greedy') || hasT(a, 'jealous');
     function setFace(w, a, v) { S(w).face[a.agentId] = Math.max(0, Math.min(100, Math.round(v))); }
     function loseFace(w, a, n) { setFace(w, a, faceOf(w, a) - n * (proud(a) ? 1.4 : 1)); }
+    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const stepFriend = (w, a) => adults(w).filter(x => x !== a && aff(a, x) >= 30 && aff(x, a) >= 20).sort((x, y) => aff(a, y) - aff(a, x))[0] || null;
+    function casualDo(w, a, d) { const X = S(w); X.lastCasual = d; log(w, '🎭 {a}的提案被大比數否決之後，逢人就說：「我本來就只是隨口提提。」', { a: a.name }, a.name); bump(X, 'casual'); }
+    function stepDo(w, a, fr) {
+        const X = S(w); setFace(w, a, faceOf(w, a) + 10); addAff(a, fr, 6); owe(w, a, fr, 3); bump(X, 'step');
+        mem(w, a, '提案被否決那天，還好{f}替我說了話。', { f: fr.name }, 7);
+        log(w, '🎭 {f}跟{a}說：「這次是時機不對，不是你的問題。」{a}嘴上說沒事，心裡記住了這份情。', { f: fr.name, a: a.name }, fr.name, a.name);
+    }
+    // v9.27.0 給決策核心:提案剛被大比數否決的人、他最要好的朋友
+    function casualInfo(w, a, c) { const X = S(w); const d = day(w); return a && !a.isDead && c && d - (c.d ?? -99) <= 2 && d - (X.lastCasual ?? -99) >= 20 ? { t: c.t, face: Math.round(faceOf(w, a)) } : null; }
+    function casualBy(w, a, c) { if (!casualInfo(w, a, c)) return false; casualDo(w, a, day(w)); mem(w, a, '提案被否決，我跟大家說我本來就只是隨口提提。', {}, 5); return true; }
+    function stepInfo(w, fr, c) { const a = w.agents[c?.a]; return fr && a && !a.isDead && fr !== a && day(w) - (c.d ?? -99) <= 2 ? { a, t: c.t, face: Math.round(faceOf(w, a)) } : null; }
+    function stepBy(w, fr, c) { const I = stepInfo(w, fr, c); if (!I) return false; stepDo(w, I.a, fr); mem(w, fr, '{a}的提案被否決，我去跟他說了幾句話。', { a: I.a.name }, 5); return true; }
     function onRejected(w, p) {
         const a = w.agents[p.proposerId]; if (!a || a.isDead) return; const X = S(w); const d = day(w);
         const V = Object.values(p.votes || {}); const f = V.filter(v => v === 'for').length, ag = V.filter(v => v === 'against').length;
         const big = ag >= Math.max(3, f * 1.5) || /鎮長否決/.test(p.result || '');
         loseFace(w, a, big ? 15 : 5); bump(X, 'rejected');
-        if (big && Math.random() < 0.15 && d - (X.lastCasual ?? -99) >= 20) { X.lastCasual = d; log(w, '🎭 {a}的提案被大比數否決之後，逢人就說：「我本來就只是隨口提提。」', { a: a.name }, a.name); bump(X, 'casual'); }
         // 朋友給台階
-        const fr = adults(w).filter(x => x !== a && aff(a, x) >= 30 && aff(x, a) >= 20).sort((x, y) => aff(a, y) - aff(a, x))[0];
-        if (fr && big && Math.random() < 0.5) {
-            setFace(w, a, faceOf(w, a) + 10); addAff(a, fr, 6); owe(w, a, fr, 3); bump(X, 'step');
-            mem(w, a, '提案被否決那天，還好{f}替我說了話。', { f: fr.name }, 7);
-            log(w, '🎭 {f}跟{a}說：「這次是時機不對，不是你的問題。」{a}嘴上說沒事，心裡記住了這份情。', { f: fr.name, a: a.name }, fr.name, a.name);
+        const fr = stepFriend(w, a);
+        if (byCrowd(w)) { // v9.27.0 嘴不嘴硬、要不要出面給台階,由本人決定
+            if (big) { let title = p.id; try { title = w.proposals.title(p) || p.id; } catch (e) {} try { DECIDE.enqueue(w, a, 'rejected', { t: title, d }); if (fr) DECIDE.enqueue(w, fr, 'step', { a: a.agentId, t: title, d }); DECIDE.drain(w, DECIDE.S(w), d); } catch (e) { console.warn('[Ways] rejected', e); } }
+        } else {
+            if (big && Math.random() < 0.15 && d - (X.lastCasual ?? -99) >= 20) casualDo(w, a, d);
+            if (fr && big && Math.random() < 0.5) stepDo(w, a, fr);
         }
         if (faceOf(w, a) < 35) {
             if (hasT(a, 'charismatic') || hasT(a, 'abrasive')) { X.lobby[a.agentId] = d; mem(w, a, '我不服氣，這次先去找大家私下聊聊，下次一定讓它通過。', {}, 6); bump(X, 'lobby'); }
@@ -324,7 +337,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, twofaceInfo, twofaceBy, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, casualInfo, casualBy, stepInfo, stepBy, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, twofaceInfo, twofaceBy, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });

@@ -55,7 +55,9 @@ async function run(browser, lang, vp) {
       // ---------- 到門口抗議：帶頭的人找看法相近的人一起去；老闆回應；人多就提案禁止 ----------
       { const crowd = all.filter(a => a !== boss && a !== lover).slice(3, 11); for (const a of crowd) { X.att[id][a.agentId] = -85; for (const b of crowd) if (a !== b) a.relationships.getOrCreate(b.agentId, b.name).affinity = 40; }
         (X.intent || (X.intent = {}))[id + '|' + crowd[0].agentId] = 'protest'; Th.protest = null; Th.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
-        await daily(0.05); const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban');
+        await daily(0.05);
+        if (THINGS.byCrowd?.(w) && Th.call) { for (const a of crowd.slice(1)) THINGS.rallyBy(w, a, { tid: id, side: 'con' }); DECIDE.S(w).q = []; Th.call.d = w._absDay() - 1; await daily(0.05); } // v9.27.0 跟不跟由每個人自己決定、隔天才集合：這裡讓大家都答應，再跑隔天
+        const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban');
         out.protest = { n: Th.protest?.n || 0, go: crowd.filter(a => a._thingGo?.place === 'casino_front').length, log: /門口抗議|protest outside/.test(logs()), owner: /捐了|donates|冷冷|coldly/.test(logs()), prop: !!pr && pr.thing === id };
         tick(1); out.protest.at = crowd.filter(a => a._thingAt === 'casino_front').length; out.pr = pr ? pr.id : null; }
       // ---------- 勸家人別再去：成功就答應戒賭 ----------
@@ -66,7 +68,7 @@ async function run(browser, lang, vp) {
       { const v = all[14] || all[7], sp = all[15] || all[8], fr = all[16] || all[9]; v.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; X.att[id][sp.agentId] = 0;
         THINGS.victim(w, id, v, '我輸光了。'); out.victim = { v: X.att[id][v.agentId], sp: X.att[id][sp.agentId] };
         fr.relationships.getOrCreate(v.agentId, v.name).affinity = 70; fr.personality.traits = ['kind']; B[fr.agentId] = 300; B[v.agentId] = 0; X.victims[v.agentId].day = w._absDay() - 3;
-        let ok2 = false; const c0 = B[v.agentId]; const cons = conserved(() => { ok2 = true; }); await daily(0.0);
+        let ok2 = false; const c0 = B[v.agentId]; const cons = conserved(() => { ok2 = true; }); await daily(0.0); if (THINGS.byCrowd?.(w)) THINGS.rescueBy(w, fr, v.agentId); // v9.27.0 要不要拉他一把由朋友自己決定：這裡讓他決定幫
         out.rescue = { helped: !!X.victims[v.agentId]?.helped, got: (B[v.agentId] || 0) > c0, quit: THINGS.quitting(w, id, v), log: /拿了|gives/.test(logs()) }; }
       // ---------- 報社：吵得兇的東西寫成專題 ----------
       { boss.personality.traits = ['kind']; Th.pressDay = -99; const p0 = X.st.press; await daily(0.5); out.press = { n: X.st.press - p0, news: (w.dailyNews?.events || w.dailyNews?._events || []).length >= 0 && /專題|Feature/.test(logs()) }; boss.personality.traits = ['greedy', 'ambitious']; }

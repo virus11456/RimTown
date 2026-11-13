@@ -32,7 +32,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const P of R.papers) { const j = w.agents[P.journo]; if (j) j.personality.traits = j.personality.traits.filter(x => x !== 'perfectionist'); }
       // A 有一個沒被發現的祕密
       const sec = DARK.secret(w, { kind: 'scheme', culprit: A.agentId, victim: B.agentId, k: '{a}私下塞錢給{m}拉票爭王位', p: { a: A.name, m: B.name } });
-      PRESS.bribeBy(w, B); // v9.26.0 收不收買報社由候選人自己決定(不再擲骰)，這裡讓 B 決定收買
+      // v9.26.0 收不收買報社由候選人自己決定(不再擲骰)，這裡讓 B 決定收買。收買哪一家是隨機的:
+      // 先把會登 A 揭弊的那家(鎮報)排除，不然它被收買後連番抹黑又更正，更正的加分會蓋過揭弊的扣分，下面「讀到揭弊扣分」就時過時不過
+      const Pt = R.papers.find(P => P.st === 'town'), _bn = Pt && Pt.banned; if (Pt) Pt.banned = true;
+      PRESS.bribeBy(w, B); if (Pt) Pt.banned = _bn;
       fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); DARK.honesty = _hon;
       out.bribed = R.papers.some(P => P.bribedBy === B.agentId) && (DARK.S(w).secrets || []).some(s => /收買|paid off/.test(JSON.stringify(s)));
       out.exposed = sec.found && R.papers.some(P => P.stories.some(s => s.kind === 'expose' && s.cand === A.agentId)) && logHas(/揭弊|Exposed/);
