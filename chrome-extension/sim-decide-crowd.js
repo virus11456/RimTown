@@ -1,13 +1,13 @@
 // RimTown - sim-decide-crowd.js：v9.27.0 決策核心批次 E（信仰與群眾行動）
 // 以前：日子難過的信徒每天 25% 機率祈禱；很虔誠的人每天 2～6% 機率去勸朋友改宗、被勸的人照「抗拒程度」擲骰；
-//       對鎮上新東西有看法的人每天照「看法強度」擲骰做點什麼（去用、推薦、抱怨、勸家人、抗議），有人號召抗議時每個人擲骰決定跟不跟、
+//       討厭鎮上某樣新東西的人每天照「看法強度」擲骰，骰到了可能去勸常去的家人朋友、也可能帶頭抗議；有人號召抗議時每個人擲骰決定跟不跟、
 //       支持的人 30% 機率到場聲援；朋友被新東西害慘了 25% 機率有人拿錢給他；出了怪事純人派 60% 機率連夜搜捕；
 //       國王失了民心時每天 20% 機率有人起意政變、被拉的人每天 25% 機率加入；提案被大比數否決後 15% 機率嘴硬、50% 機率朋友出面給台階。
 // 現在：這些事由本人決定。能動念頭的還是同一批人（各系統說「他現在做得到哪幾件事」），做不做是他自己選：
 //   日子難過(pray)                      靠自己想辦法／向神祈求
 //   要不要勸朋友信教(preach)             不去勸／去勸某個朋友
 //   朋友勸你改信(convert)               不改／改信                          ← 由朋友來勸那一刻引發
-//   鎮上的新東西(thing)                 放在心裡／多去幾次／跟朋友推薦／跟朋友抱怨／勸家人朋友別去／號召大家抗議
+//   鎮上有你看不慣的東西(thing)          不特別做什麼／去勸常去的自己人別去／貼告示號召大家抗議   ← 去用、推薦、抱怨是日常閒聊，維持原樣
 //   有人號召抗議(rally)                 不去／跟著去抗議（或到場聲援）        ← 由貼告示那一刻引發，隔天才集合
 //   朋友被害慘了(rescue)                現在幫不上／拿錢拉他一把
 //   要不要帶隊搜捕(hunt)                沒有證據不抓人／帶隊連夜搜捕          ← 由出事那一刻引發；抓到誰、抓得對不對仍然是運氣
@@ -45,7 +45,7 @@
     const PWHY = { hungry: '家裡快斷糧了。', sick: '你的身體很差。', poor: '你身上幾乎沒有錢。', low: '你最近心情很低落。' };
     const prayInfo = (w, a) => (on(w) ? safe(() => FA()?.prayInfo?.(w, a)) : null);
     DECIDE.kind('pray', {
-        title: '日子難過', cool: 3, pri: 0.3,
+        title: '日子難過', cool: 3, pri: 0.6,
         when(w, a) { const I = prayInfo(w, a); return I ? { why: I.why } : null; },
         facts(w, a) {
             const I = prayInfo(w, a); if (!I) return '';
@@ -75,7 +75,7 @@
             const I = preachInfo(w, a); if (!I) return []; const r = I.R.name[0]; const P = within(I.zeal, 10);
             const out = [{ id: 'no', quiet: true, mute: true, text: '不去勸，各人信各人的', say: '沒有去勸朋友信教', why: '信不信是他自己的事', base: REF, lean: { safe: 0.1 }, run: () => null }];
             for (const o of I.friends) out.push({ id: 'go:' + o.agentId, quiet: true, text: { k: '去勸{o}信{r}', p: { o: o.name, r } }, say: { k: '去勸{o}信{r}', p: { o: o.name, r } }, why: '好東西要讓好朋友也知道',
-                base: REF + tilt(P) - (I.friends.length > 1 ? 0.3 : 0) + (has(a, 'charismatic') ? 0.15 : 0) - (has(a, 'shy') ? 0.3 : 0), lean: { bond: 0.2, safe: -0.2 },
+                base: REF + tilt(P) + 0.15 - (I.friends.length > 1 ? 0.3 : 0) + (has(a, 'charismatic') ? 0.15 : 0) - (has(a, 'shy') ? 0.3 : 0), lean: { bond: 0.2, safe: -0.2 },
                 run: (w2, a2) => (FA().preachBy(w2, a2, o.agentId) ? { k: '去找{o}談了', p: { o: o.name } } : { k: '沒有去成' }) });
             return out;
         },
@@ -98,41 +98,36 @@
                 { id: 'no', quiet: true, mute: true, text: '不改，謝謝他的好意', say: { k: '沒有聽{a}的勸改信', p: { a: I.a.name } }, why: '我有我自己信的', base: REF,
                     run: (w2, a2) => { FA().convertBy(w2, a2, c, false); return null; } },
                 { id: 'yes', quiet: true, text: { k: '改信{r}', p: { r } }, say: { k: '改信了{r}', p: { r } }, why: { k: '{a}說的有道理，我想試試', p: { a: I.a.name } },
-                    base: REF + tilt(I.p) + clampN((aff(a, I.a) - 40) / 200, -0.1, 0.25), lean: { bond: 0.2, safe: -0.2 },
+                    base: REF + tilt(I.p) + 0.3 + clampN((aff(a, I.a) - 40) / 200, -0.1, 0.25), lean: { bond: 0.2, safe: -0.2 },
                     run: (w2, a2) => (FA().convertBy(w2, a2, c, true) ? { k: '開始信{r}了', p: { r } } : { k: '沒有改成' }) },
             ];
         },
     });
 
-    // ================= 鎮上的新東西 =================
+    // ================= 鎮上有你看不慣的東西 =================
+    // 去用、跟朋友推薦、跟朋友抱怨是日常閒聊（城市裡一天好幾次），維持原樣；這裡只問兩件有後果的事：勸常去的自己人別去、帶頭號召抗議
     const actInfo = (w, a) => (on(w) ? safe(() => TH()?.actInfo?.(w, a)) : null);
-    const FEEL = (v) => (v >= 60 ? '很喜歡' : v > 0 ? '還算喜歡' : v <= -60 ? '很討厭' : '不太喜歡');
     DECIDE.kind('thing', {
-        title: '鎮上的新東西', cool: 5, pri: 0.45,
+        title: '鎮上有你看不慣的東西', cool: 5, pri: 1.0,
         when(w, a) { const I = actInfo(w, a); return I ? { tid: I.T.id } : null; },
         facts(w, a) {
             const I = actInfo(w, a); if (!I) return '';
-            const L = [fill('鎮上的{t}，你{f}。鎮上喜歡它的有 {p} 人、不喜歡的有 {c} 人。', { t: { raw: I.name }, f: FEEL(I.v), p: I.pro, c: I.con })];
+            const L = [fill('鎮上的{t}，你{f}。鎮上喜歡它的有 {p} 人、不喜歡的有 {c} 人。', { t: { raw: I.name }, f: I.v <= -60 ? '很討厭' : '不太喜歡', p: I.pro, c: I.con })];
             if (I.owner) L.push(fill('它是{o}的。', { o: I.owner.name }));
             if (I.victim) L.push(t('你自己就被它害過。'));
-            if (I.acts.includes('protest')) L.push(t('號召抗議要貼告示找人，隔天到場三個人以上才成；帶頭和到場的人會被老闆記恨。'));
-            if (I.acts.includes('persuade')) L.push(t('你有家人或朋友常往那裡跑，可以去勸；勸不動的話會吵起來。'));
+            if (I.acts.includes('persuade')) L.push(fill('{o}常往那裡跑。你可以去勸：勸得動，他會答應不再去；勸不動，你們會大吵一架。', { o: { raw: names(I.who) } }));
+            if (I.acts.includes('protest')) L.push(t('你也可以貼告示號召大家去抗議：隔天到場三個人以上才成；帶頭和到場的人會被老闆記恨。'));
             return L.join('');
         },
         options(w, a) {
-            const T = TH(); const I = actInfo(w, a); if (!I) return []; const nm = { raw: I.name }; const P = within(I.p, 5); const hasP = I.acts.includes('protest');
+            const T = TH(); const I = actInfo(w, a); if (!I) return []; const nm = { raw: I.name }; const hasP = I.acts.includes('protest'), hasQ = I.acts.includes('persuade');
             const run = (act) => (w2, a2) => (T.actBy(w2, a2, I.T.id, act) ? null : { k: '沒有做成' });
-            const out = [{ id: 'quiet', quiet: true, mute: true, text: '放在心裡，不特別做什麼', say: { k: '對{t}沒有特別做什麼', p: { t: nm } }, why: '各過各的日子', base: REF, run: () => null }];
-            if (I.acts.includes('use')) out.push({ id: 'use', quiet: true, text: '自己多去幾次', say: { k: '打算多去{t}', p: { t: nm } }, why: '喜歡就多去',
-                base: REF + tilt(P * 0.7), lean: { joy: 0.2, safe: -0.2 }, run: run('use') });
-            if (I.acts.includes('recommend')) out.push({ id: 'recommend', quiet: true, text: '跟朋友推薦它', say: { k: '打算跟朋友推薦{t}', p: { t: nm } }, why: '好東西要讓朋友也知道',
-                base: REF + tilt(P * 0.3) + (has(a, 'charismatic') ? 0.15 : 0) + (has(a, 'gossip') ? 0.15 : 0), lean: { bond: 0.2, safe: -0.2 }, run: run('recommend') });
-            if (I.acts.includes('complain')) out.push({ id: 'complain', quiet: true, text: '跟朋友抱怨它', say: { k: '打算跟朋友抱怨{t}', p: { t: nm } }, why: '不說出來不痛快',
-                base: REF + tilt(P * (hasP ? 0.33 : 0.5)) + (has(a, 'gossip') ? 0.2 : 0) + (has(a, 'abrasive') ? 0.1 : 0), lean: { joy: 0.1, safe: -0.1 }, run: run('complain') });
-            if (I.acts.includes('persuade')) out.push({ id: 'persuade', quiet: true, text: '去勸常往那裡跑的家人朋友別再去', say: { k: '打算勸家人朋友別再去{t}', p: { t: nm } }, why: '不能看著自己人陷進去',
-                base: REF + tilt(P * (hasP ? 0.33 : 0.5)) + (has(a, 'kind') ? 0.2 : 0), lean: { bond: 0.3, safe: -0.3 }, run: run('persuade') });
+            const out = [{ id: 'quiet', quiet: true, mute: true, text: '不特別做什麼', say: { k: '對{t}沒有特別做什麼', p: { t: nm } }, why: '各過各的日子', base: REF, run: () => null }];
+            // 以前：討厭的人每天照看法強度擲骰，骰到了有三成五（夠格時）去抗議、其餘一半去勸人
+            if (hasQ) out.push({ id: 'persuade', quiet: true, text: { k: '去勸{o}別再去', p: { o: { raw: names(I.who) } } }, say: { k: '打算勸自己人別再去{t}', p: { t: nm } }, why: '不能看著自己人陷進去',
+                base: REF + tilt(within(I.p * (hasP ? 0.325 : 0.5), 5)) + (has(a, 'kind') ? 0.2 : 0) + (I.victim ? 0.2 : 0), lean: { bond: 0.3, safe: -0.3 }, run: run('persuade') });
             if (hasP) out.push({ id: 'protest', quiet: true, text: '貼告示號召大家去抗議', say: { k: '打算號召大家去抗議{t}', p: { t: nm } }, why: '光抱怨沒有用，要讓大家看見',
-                base: REF + tilt(P * 0.35) + (has(a, 'charismatic') ? 0.2 : 0) + (has(a, 'abrasive') ? 0.2 : 0) - (has(a, 'shy') ? 0.4 : 0) + (I.victim ? 0.3 : 0), lean: { face: 0.2, safe: -0.3 }, run: run('protest') });
+                base: REF + tilt(within(I.p * 0.35, 5)) + (has(a, 'charismatic') ? 0.2 : 0) + (has(a, 'abrasive') ? 0.2 : 0) - (has(a, 'shy') ? 0.4 : 0) + (I.victim ? 0.3 : 0), lean: { face: 0.2, safe: -0.3 }, run: run('protest') });
             return out;
         },
     });
@@ -154,7 +149,7 @@
                 { id: 'stay', quiet: true, mute: true, text: '不去', say: { k: '沒有去{t}門口', p: { t: nm } }, why: '這種場合我不想露面', base: REF, lean: { safe: 0.1 }, run: () => null },
                 { id: 'join', quiet: true, text: con ? '明天跟著去抗議' : '明天到場替它說話', say: { k: con ? '答應明天去抗議{t}' : '答應明天去聲援{t}', p: { t: nm } },
                     why: con ? { k: '{o}都站出來了，我不能躲在後面', p: { o: I.org.name } } : '喜歡的東西被人這樣說，我看不下去',
-                    base: REF + tilt(I.p), lean: con ? { bond: 0.2, safe: -0.2 } : { face: 0.2, safe: -0.2 },
+                    base: REF + tilt(I.p) + (con ? 0 : 0.25), lean: con ? { bond: 0.2, safe: -0.2 } : { face: 0.2, safe: -0.2 },
                     run: (w2, a2) => (T.rallyBy(w2, a2, c) ? { k: '明天會到場' } : { k: '來不及了' }) },
             ];
         },
@@ -236,7 +231,7 @@
             return [
                 { id: 'refuse', quiet: true, mute: true, text: '不加入，也不說出去', say: { k: '沒有加入{l}的計畫', p: { l: I.L.name } }, why: '這是掉腦袋的事', base: REF, lean: { safe: 0.1 }, run: () => null },
                 { id: 'join', quiet: true, text: '加入', say: { k: '加入了{l}推翻國王的計畫', p: { l: I.L.name } }, why: '這個國王早該換了',
-                    base: REF + tilt(0.6) + clampN((aff(a, I.L) - 40) / 200, -0.1, 0.25) + clampN(-aff(a, I.k) / 200, 0, 0.3), lean: { face: 0.2, safe: -0.3 },
+                    base: REF + tilt(0.6) + 0.1 + clampN((aff(a, I.L) - 40) / 200, -0.1, 0.25) + clampN(-aff(a, I.k) / 200, 0, 0.3), lean: { face: 0.2, safe: -0.3 },
                     run: (w2, a2) => (CR().joinBy(w2, a2) ? { k: '答應了{l}', p: { l: I.L.name } } : { k: '沒有加入成' }) },
             ];
         },

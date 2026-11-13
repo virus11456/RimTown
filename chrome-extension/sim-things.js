@@ -446,23 +446,18 @@ const THINGS = (() => {
     // ---------- v9.27.0 給決策核心 ----------
     const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const baseOk = (X, T) => { const A0 = Object.values(X.att[T.id] || {}); const hateN = A0.filter(v => v <= -40).length; return Object.values(X.victims).some(x => x.id === T.id) || (A0.length > 0 && hateN / A0.length >= 0.2); };
-    // 這個人對鎮上哪一樣新東西最有意見、現在可以做哪些事(跟以前擲骰的是同一批人:有看法、不是老闆、沒有因為自己是少數而不敢講)
+    const canCall = (X, T, d) => !T.call && d - (T.protest?.day ?? -99) >= 30 && d - (X.lastProtest ?? -99) >= 7 && baseOk(X, T);
+    // 這個人最看不慣鎮上哪一樣新東西、現在可以做哪些有後果的事(勸常去的自己人別去、帶頭號召抗議)。跟以前擲骰的是同一批人:有看法、不是老闆、今天沒有因為自己是少數而不敢講
     function actInfo(w, a) {
         const X = S(w); const d = day(w); if (!a || !here(w).includes(a)) return null; let best = null;
         for (const T of live(w)) {
-            const v = X.att[T.id]?.[a.agentId]; if (v == null || Math.abs(v) < 25 || a.agentId === T.owner || X.intent?.[T.id + '|' + a.agentId]) continue;
-            if (d - (X.silent?.[T.id + '|' + a.agentId] ?? -99) <= 3) continue;
-            if (!best || Math.abs(v) > Math.abs(best.v)) best = { T, v };
+            const v = X.att[T.id]?.[a.agentId]; if (v == null || v > -25 || a.agentId === T.owner || X.intent?.[T.id + '|' + a.agentId]) continue;
+            if (X.silent?.[T.id + '|' + a.agentId] === d) continue;
+            const acts = []; const tg = persTargets(w, X, T, a); if (tg.length) acts.push('persuade'); if (v <= -55 && canCall(X, T, d)) acts.push('protest');
+            if (acts.length && (!best || v < best.v)) best = { T, v, acts, tg };
         }
-        if (!best) return null; const { T, v } = best; const acts = [];
-        if (v > 0) { acts.push('use'); if (friendsOf(w, a, 15, T).some(o => (X.att[T.id][o.agentId] ?? 0) < 50)) acts.push('recommend'); }
-        else {
-            if (friendsOf(w, a, 5, T).length) acts.push('complain');
-            const tg = persTargets(w, X, T, a); if (tg.length) acts.push('persuade');
-            if (v <= -55 && !T.call && d - (T.protest?.day ?? -99) >= 30 && d - (X.lastProtest ?? -99) >= 7 && baseOk(X, T)) acts.push('protest');
-        }
-        if (!acts.length) return null; const cs = camps(w, X, T);
-        return { T, v: Math.round(v), acts, p: Math.abs(v) / 100 * 0.18, pro: cs.pro, con: cs.con, name: nm(T), owner: w.agents[T.owner] || null, victim: !!X.victims[a.agentId] };
+        if (!best) return null; const { T, v, acts, tg } = best; const cs = camps(w, X, T);
+        return { T, v: Math.round(v), acts, p: Math.abs(v) / 100 * 0.18, pro: cs.pro, con: cs.con, name: nm(T), owner: w.agents[T.owner] || null, victim: !!X.victims[a.agentId], who: tg.slice(0, 3) };
     }
     function actBy(w, a, tid, act) {
         const I = actInfo(w, a); if (!I || I.T.id !== tid || !I.acts.includes(act)) return false;
@@ -518,7 +513,9 @@ const THINGS = (() => {
                 const v = X.att[T.id][a.agentId]; if (v == null || a.agentId === T.owner) continue;
                 if (!X.intent?.[T.id + '|' + a.agentId] && silent(w, X, T, a, v, cs)) continue; // v9.9.0 沉默螺旋
                 let act = X.intent?.[T.id + '|' + a.agentId]; if (act) delete X.intent[T.id + '|' + a.agentId];
-                if (!act) { if (byCrowd(w)) continue; /* v9.27.0 要不要去用、推薦、抱怨、勸人、抗議,由本人決定(決策核心「鎮上的新東西」) */ const p = Math.abs(v) / 100 * 0.18; if (Math.random() > p) continue; act = v > 0 ? (Math.random() < 0.7 ? 'use' : 'recommend') : (v <= -55 && d - (T.protest?.day ?? -99) >= 30 && Math.random() < 0.35 ? 'protest' : Math.random() < 0.5 ? 'persuade' : 'complain'); }
+                if (!act) { const p = Math.abs(v) / 100 * 0.18; if (Math.random() > p) continue; act = v > 0 ? (Math.random() < 0.7 ? 'use' : 'recommend') : (v <= -55 && d - (T.protest?.day ?? -99) >= 30 && Math.random() < 0.35 ? 'protest' : Math.random() < 0.5 ? 'persuade' : 'complain');
+                    // v9.27.0 去用、推薦、抱怨是日常閒聊,照舊;勸自己人別去、帶頭號召抗議這兩件有後果的事由本人決定(決策核心「鎮上有你看不慣的東西」),這裡不替他做
+                    if (byCrowd(w)) { if (act === 'persuade') { if (persTargets(w, X, T, a).length) continue; act = 'complain'; } else if (act === 'protest') { if (baseOk(X, T)) continue; act = 'complain'; } } } // 抗議:有群眾基礎就留給本人決定(時機不對時以前也是不了了之);沒有群眾基礎的,以前就是改成抱怨
                 if (act === 'use') { X.st.use++; continue; } // 真的去用，交給各系統看 useMult
                 if (act === 'recommend') recommend(w, X, T, a);
                 else if (act === 'complain') complain(w, X, T, a);

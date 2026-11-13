@@ -94,31 +94,37 @@ async function run(browser, lang) {
       Fa.of[B.agentId] = { rel: null, piety: 0 }; const p0 = (X.pick['convert.yes'] || 0) + (X.pick['convert.no'] || 0); fix(0.5, () => { go(A, 'preach', 'go:' + B.agentId); DECIDE.drain(w, X, d0()); }); out.preach.flow = (X.pick['convert.yes'] || 0) + (X.pick['convert.no'] || 0) - p0;
       Fa.of[A.agentId] = { rel: R.id, piety: 80 }; Fa.of[B.agentId] = { rel: null, piety: 0 }; X.q = []; Fa.lastDay = null; noCrowd(() => fix(0.01, () => FAITH.daily(w, true))); out.preach.dice = Fa.of[B.agentId].rel === R.id; }
 
-    // ---------- 4) 鎮上的新東西 ----------
-    clean(); { const T = thing(F); const At = Th.att[T.id]; At[A.agentId] = 80; rel(A, B, 30); const c1 = K.thing.when(w, A); keep('thingLike', 'thing', A);
-      out.thing = { tid: c1?.tid === T.id, likeIds: ids(A, 'thing'), owner: K.thing.when(w, F), none: K.thing.when(w, C) };
-      At[A.agentId] = 15; out.thing.weak = K.thing.when(w, A); At[A.agentId] = 80;
+    // ---------- 4) 鎮上有你看不慣的東西：勸自己人別去、帶頭號召抗議 ----------
+    clean(); { let regs = [B.agentId]; THINGS.HOOKS.testhall = { regulars: () => regs }; const T = THINGS.register(w, { kind: 'testhall', key: 'th' + Math.floor(Math.random() * 1e6), name: ['測試館', 'Test Hall'], icon: '🏗️', facts: '測試用的新東西。', tags: { fun: 1 }, ttl: 45, owner: F.agentId }); const At = Th.att[T.id];
+      const only3 = () => { for (const id of Object.keys(At)) if (id !== F.agentId) delete At[id]; }; /* 模擬會替其他村民形成看法，只留指定的人 */
+      At[A.agentId] = 80; rel(A, B, 30); out.thing = { like: K.thing.when(w, A), owner: K.thing.when(w, F), none: K.thing.when(w, C) };
+      // 日常閒聊（去用、推薦、抱怨）照舊由每天的流程處理
+      const st0 = { ...Th.st }; DAY = _ad() + 1; thDay(0.01); out.thing.chat = Th.st.use - st0.use; only3();
+      // 不喜歡、又有自己人常往那裡跑：可以去勸
+      At[A.agentId] = -40; const c1 = K.thing.when(w, A); keep('thingPers', 'thing', A); out.thing.tid = c1?.tid === T.id; out.thing.persIds = ids(A, 'thing');
+      At[A.agentId] = -15; out.thing.weak = K.thing.when(w, A); At[A.agentId] = -40;
       Th.silent[T.id + '|' + A.agentId] = d0(); out.thing.silent = K.thing.when(w, A); Th.silent = {};
-      // 每天的流程不再擲骰
-      const st0 = { ...Th.st }; DAY = _ad() + 1; thDay(0.01); out.thing.untouched = Th.st.use === st0.use && Th.st.rec === st0.rec && Th.st.comp === st0.comp;
-      const r1 = go(A, 'thing', 'recommend'); out.thing.plan = { res: r1 === null, intent: Th.intent[T.id + '|' + A.agentId], again: K.thing.when(w, A) };
-      DAY = _ad() + 2; thDay(); out.thing.rec = { n: Th.st.rec - st0.rec, cleared: !Th.intent[T.id + '|' + A.agentId], b: At[B.agentId] != null };
-      // 討厭的人：抱怨、號召抗議
-      for (const id of Object.keys(At)) if (id !== F.agentId) delete At[id]; At[A.agentId] = -80; At[C.agentId] = -60; At[D.agentId] = -50; rel(A, B, 30); /* 模擬會替其他村民形成看法，這裡只留指定的人 */ keep('thingHate', 'thing', A); out.thing.hateIds = ids(A, 'thing');
-      const pr0 = sc(A, 'thing', 'protest'); traits(A, ['charismatic']); const prC = sc(A, 'thing', 'protest'); traits(A, ['shy']); const prS = sc(A, 'thing', 'protest'); traits(A, ['hardworking']);
-      At[A.agentId] = -30; const cm30 = sc(A, 'thing', 'complain'); const mild = ids(A, 'thing'); At[A.agentId] = -80; const cm80 = sc(A, 'thing', 'complain'); out.thing.sc = { pr0, prC, prS, cm30, cm80, mild };
+      regs = []; out.thing.nothing = K.thing.when(w, A); regs = [B.agentId];
+      const q0 = sc(A, 'thing', 'persuade'); traits(A, ['kind']); const qK = sc(A, 'thing', 'persuade'); traits(A, ['hardworking']); At[A.agentId] = -90; const q90 = sc(A, 'thing', 'persuade'); At[A.agentId] = -40;
+      const pers0 = Th.st.pers || 0, ok0 = Th.st.persOk || 0; const r1 = go(A, 'thing', 'persuade'); out.thing.plan = { res: r1 === null, intent: Th.intent[T.id + '|' + A.agentId], again: K.thing.when(w, A) };
+      DAY = _ad() + 2; thDay(0.01); out.thing.pers = { n: (Th.st.pers || 0) - pers0, ok: (Th.st.persOk || 0) - ok0, quit: THINGS.quitting(w, T.id, B), cleared: !Th.intent[T.id + '|' + A.agentId] }; only3(); Th.quit = {};
+      // 夠討厭、鎮上也有夠多人討厭：多一個「號召抗議」
+      At[A.agentId] = -80; At[C.agentId] = -60; At[D.agentId] = -50; keep('thingHate', 'thing', A); out.thing.hateIds = ids(A, 'thing'); regs = []; out.thing.noRegIds = ids(A, 'thing');
+      const pr0 = sc(A, 'thing', 'protest'); traits(A, ['charismatic']); const prC = sc(A, 'thing', 'protest'); traits(A, ['shy']); const prS = sc(A, 'thing', 'protest'); traits(A, ['hardworking']); out.thing.sc = { q0, qK, q90, pr0, prC, prS };
+      // 每天的流程不替他帶頭抗議
+      const p0 = Th.st.prot; DAY = _ad() + 3; thDay(0.01); out.thing.untouched = !T.call && Th.st.prot === p0; only3(); At[A.agentId] = -80; At[C.agentId] = -60; At[D.agentId] = -50;
       // 號召抗議：貼告示 → 每個人自己決定跟不跟 → 隔天集合
-      At[E2.agentId] = 70; At[G.agentId] = 60; At[H.agentId] = 55; rel(C, A, 40); const p0 = Th.st.prot;
-      go(A, 'thing', 'protest'); DAY = _ad() + 3; thDay(0.99); const q = X.q.slice(); X.q = [];
+      At[E2.agentId] = 70; At[G.agentId] = 60; At[H.agentId] = 55; rel(C, A, 40);
+      go(A, 'thing', 'protest'); DAY = _ad() + 4; thDay(0.99); const q = X.q.slice(); X.q = [];
       const cC = q.find(x => x.a === C.agentId)?.ctx, cD = q.find(x => x.a === D.agentId)?.ctx, cE = q.find(x => x.a === E2.agentId)?.ctx, cG = q.find(x => x.a === G.agentId)?.ctx, cH = q.find(x => x.a === H.agentId)?.ctx;
       out.rally = { call: !!T.call && T.call.who.join() === A.agentId, notYet: Th.st.prot === p0, asked: q.filter(x => x.kind === 'rally').map(x => x.ctx.side).sort().join(), owner: q.some(x => x.a === F.agentId), noMore: ids(A, 'thing')?.includes('protest') || false };
       if (cC && cE) { keep('rallyCon', 'rally', C, cC); keep('rallyPro', 'rally', E2, cE); out.rally.ids = ids(C, 'rally', cC); out.rally.pC = THINGS.rallyInfo(w, C, cC)?.p; out.rally.pD = THINGS.rallyInfo(w, D, cD)?.p;
         out.rally.sc = { c: sc(C, 'rally', 'join', cC), d: sc(D, 'rally', 'join', cD) };
         go(C, 'rally', 'join', cC); go(D, 'rally', 'join', cD); go(E2, 'rally', 'join', cE); go(G, 'rally', 'join', cG); go(H, 'rally', 'join', cH);
         out.rally.joined = { who: T.call.who.length, fans: T.call.fans.length, again: ids(C, 'rally', cC) };
-        DAY = _ad() + 4; thDay(0.99); out.rally.run = { n: T.protest?.n, counter: T.protest?.counter, prot: Th.st.prot - p0, gone: !T.call, late: THINGS.rallyInfo(w, B, { tid: T.id, side: 'con' }) }; }
-      // 沒有決策核心：照舊擲骰
-      DAY = _ad() + 40; const T2 = thing(null); Th.att[T2.id][A.agentId] = 80; const u0 = Th.st.use; noCrowd(() => thDay(0.01)); out.thing.dice = Th.st.use - u0; DAY = null; }
+        DAY = _ad() + 5; thDay(0.99); out.rally.run = { n: T.protest?.n, counter: T.protest?.counter, prot: Th.st.prot - p0, gone: !T.call, late: THINGS.rallyInfo(w, B, { tid: T.id, side: 'con' }) }; }
+      // 沒有決策核心：照舊擲骰（骰到就當天抗議）
+      DAY = _ad() + 60; Th.lastProtest = -99; const T2 = THINGS.register(w, { kind: 'testhall', key: 'th2' + Math.floor(Math.random() * 1e6), name: ['測試館二', 'Test Hall Two'], facts: 'x', tags: { fun: 1 }, ttl: 45, owner: null }); T.gone = true; const A2 = Th.att[T2.id]; A2[A.agentId] = -80; A2[C.agentId] = -60; A2[D.agentId] = -50; Th.victims[H.agentId] = { id: T2.id, day: d0(), k: '', p: {} }; /* 已經有人被害：抗議有群眾基礎 */ const p1 = Th.st.prot; noCrowd(() => thDay(0.01)); out.thing.dice = Th.st.prot - p1; DAY = null; delete THINGS.HOOKS.testhall; }
 
     // ---------- 5) 朋友被害慘了 ----------
     clean(); { const T = thing(null); Th.victims[B.agentId] = { id: T.id, day: d0() - 5, k: '', p: {} }; rel(A, B, 60); Bal[A.agentId] = 200; traits(A, ['kind']); const I = THINGS.rescueInfo(w, A); keep('rescue', 'rescue', A);
@@ -222,11 +228,12 @@ async function run(browser, lang) {
   ok(r.conv && r.conv.run.kept && r.conv.run.res && r.conv.run.rel && r.conv.run.piety === 45 && !r.conv.run.after?.length, L + '改信：說不改就不改；決定改信就真的改（虔誠度從 45 開始），不會再問', r.conv?.run);
   ok(r.preach.dice, L + '傳教：沒有決策核心時照舊擲骰', r.preach.dice);
   // 新東西
-  ok(r.thing.tid && r.thing.likeIds.join() === 'quiet,use,recommend' && !r.thing.owner && !r.thing.none && !r.thing.weak && !r.thing.silent, L + '新東西：只問有明確看法的人；老闆自己、沒看法、看法很淡、因為是少數不敢講的人不問', r.thing);
-  ok(r.thing.untouched && r.thing.plan.res && r.thing.plan.intent === 'recommend' && !r.thing.plan.again && r.thing.rec.n === 1 && r.thing.rec.cleared && r.thing.rec.b, L + '新東西：每天的流程不再擲骰；本人決定推薦，隔天真的去跟朋友說', { plan: r.thing.plan, rec: r.thing.rec });
-  ok(r.thing.hateIds.join() === 'quiet,complain,protest' && r.thing.sc.mild.join() === 'quiet,complain', L + '新東西：討厭的人可以抱怨；夠討厭、鎮上也有夠多人討厭時才多一個「號召抗議」', { ids: r.thing.hateIds, mild: r.thing.sc.mild });
-  ok(r.thing.sc.prC > r.thing.sc.pr0 && r.thing.sc.prS < r.thing.sc.pr0 && r.thing.sc.cm80 > r.thing.sc.cm30, L + '新東西：有魅力的比較敢帶頭、害羞的不敢；看法越強烈越想做點什麼', r.thing.sc);
-  ok(r.thing.dice >= 1, L + '新東西：沒有決策核心時照舊擲骰', r.thing.dice);
+  ok(!r.thing.like && !r.thing.owner && !r.thing.none && r.thing.chat >= 1, L + '新東西：喜歡的人、老闆、沒看法的人不問；去用、推薦、抱怨這些日常閒聊照舊由每天的流程處理', r.thing);
+  ok(r.thing.tid && r.thing.persIds.join() === 'quiet,persuade' && !r.thing.weak && !r.thing.silent && !r.thing.nothing, L + '新東西：不喜歡、又有自己人常往那裡跑的人，可以決定要不要去勸；看法很淡、今天不敢講、沒事可做的人不問', r.thing);
+  ok(r.thing.plan.res && r.thing.plan.intent === 'persuade' && !r.thing.plan.again && r.thing.pers.n === 1 && r.thing.pers.ok === 1 && r.thing.pers.quit && r.thing.pers.cleared, L + '新東西：本人決定去勸，隔天真的去勸；勸動了對方答應不再去', { plan: r.thing.plan, pers: r.thing.pers });
+  ok(r.thing.hateIds.join() === 'quiet,persuade,protest' && r.thing.noRegIds.join() === 'quiet,protest', L + '新東西：夠討厭、鎮上也有夠多人討厭時，多一個「號召抗議」', { ids: r.thing.hateIds, noReg: r.thing.noRegIds });
+  ok(r.thing.sc.qK > r.thing.sc.q0 && r.thing.sc.q90 > r.thing.sc.q0 && r.thing.sc.prC > r.thing.sc.pr0 && r.thing.sc.prS < r.thing.sc.pr0, L + '新東西：心軟的比較會去勸、越討厭越想做點什麼；有魅力的比較敢帶頭、害羞的不敢', r.thing.sc);
+  ok(r.thing.untouched && r.thing.dice === 1, L + '新東西：每天的流程不替人帶頭抗議；沒有決策核心時照舊擲骰（骰到當天就抗議）', { untouched: r.thing.untouched, dice: r.thing.dice });
   // 抗議
   ok(r.rally.call && r.rally.notYet && r.rally.asked === 'con,con,pro,pro,pro' && !r.rally.owner && !r.rally.noMore, L + '號召抗議：帶頭的人貼告示，當天不集合；不喜歡的人被問跟不跟、喜歡的人被問要不要聲援，老闆不問', r.rally);
   ok(r.rally.ids?.join() === 'stay,join' && r.rally.pC > r.rally.pD && r.rally.sc.c > r.rally.sc.d, L + '號召抗議：越討厭、跟帶頭的人越熟，越會跟', r.rally);
