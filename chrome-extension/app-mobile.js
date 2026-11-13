@@ -661,6 +661,38 @@ Object.assign(RimTownApp.prototype, {
     if (/[?&]vp=1/.test(location.search)) { if (document.readyState === 'complete') diag(); else window.addEventListener('load', diag); }
 })();
 
+// v9.23.4 iPhone 的「瀏覽器分頁版」(Safari／Chrome 分頁,不是加到主畫面的 App)自己一套版面規則,跟上面主畫面 App 那套分開。
+// iOS 26 的 Safari 網址列改成浮在網頁上面,100dvh 有時比真正看得到的範圍高:多出來的那一截讓整頁可以被往上推,
+// 鎮名／暫停／倍速那一列就滑到網址列底下。這裡量真正看得到的高度(visualViewport)填進 --web-h,並把被推上去的頁面捲回來。
+// 網址加 ?vp=1 會顯示量到的數字(排查用)。
+(function fitIOSBrowser() {
+    if (typeof window === 'undefined') return; const nav = window.navigator;
+    const ios = /iP(hone|ad|od)/.test(nav.userAgent || '') || (nav.platform === 'MacIntel' && nav.maxTouchPoints > 1);
+    if (!ios || nav.standalone === true) return;
+    const root = document.documentElement; root.classList.add('ios-browser');
+    const typing = () => { const el = document.activeElement; return !!document.body?.classList.contains('rt-kb-open') || !!(el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.isContentEditable)); };
+    const fit = () => {
+        if (window.innerWidth > 768) { root.style.removeProperty('--web-h'); return; }
+        if (typing()) return; // 鍵盤開著:看得到的範圍變矮是鍵盤造成的,版面不跟著縮(聊天框由下面那段另外處理)
+        const vv = window.visualViewport; const h = Math.round(vv ? vv.height : window.innerHeight); if (!(h >= 200)) return;
+        root.style.setProperty('--web-h', h + 'px');
+        if (window.scrollY || root.scrollTop || document.body?.scrollTop) window.scrollTo(0, 0); // 整頁本來就不該能捲;被推上去就捲回來
+    };
+    const later = (ms) => setTimeout(fit, ms || 0);
+    if (document.body) fit(); else document.addEventListener('DOMContentLoaded', fit);
+    window.addEventListener('resize', fit); window.addEventListener('scroll', fit, { passive: true }); window.addEventListener('pageshow', () => later(50));
+    window.addEventListener('orientationchange', () => later(300)); document.addEventListener('focusout', () => later(300)); // 鍵盤收起後再量一次
+    window.visualViewport?.addEventListener('resize', fit); window.visualViewport?.addEventListener('scroll', fit);
+    const diag = () => setTimeout(() => {
+        const probe = document.createElement('div'); probe.style.cssText = 'position:fixed;top:0;left:0;padding:env(safe-area-inset-top) 0 env(safe-area-inset-bottom);visibility:hidden'; document.body.appendChild(probe); const cs = getComputedStyle(probe);
+        const rect = (q) => { const r = document.querySelector(q)?.getBoundingClientRect(); return r ? `${Math.round(r.top)}～${Math.round(r.bottom)}` : '-'; }; const vv = window.visualViewport;
+        const d = document.createElement('div'); d.id = 'vp-diag'; d.style.top = '40%';
+        d.textContent = `browser tab ${(nav.userAgent.match(/OS (\d+[_\d]*)/) || [])[1] || '?'}\nscreen ${screen.width}x${screen.height}\ninner ${innerWidth}x${innerHeight} client ${root.clientWidth}x${root.clientHeight}\nvisualViewport ${vv ? `${Math.round(vv.width)}x${Math.round(vv.height)} offTop ${Math.round(vv.offsetTop)} pageTop ${Math.round(vv.pageTop)}` : 'none'}\nscrollY ${Math.round(window.scrollY)} docH ${root.scrollHeight}\nsafe top ${cs.paddingTop} bottom ${cs.paddingBottom}\n--web-h ${root.style.getPropertyValue('--web-h')}\ncontainer ${rect('.rimtown-container')} header ${rect('.mobile-header')} bar ${rect('#kairo-bar')}`;
+        d.onclick = () => d.remove(); document.body.appendChild(d); probe.remove();
+    }, 1200);
+    if (/[?&]vp=1/.test(location.search)) { if (document.readyState === 'complete') diag(); else window.addEventListener('load', diag); }
+})();
+
 // v9.8.1 手機聊天打字時,讓聊天框貼在鍵盤正上方:iOS 鍵盤打開時版面高度不變、只有 visualViewport 變矮,
 // 聊天框原本貼著畫面底部,會被鍵盤蓋住,Safari 就把整頁往上捲。這裡量鍵盤上緣,把聊天框放上去,並把頁面捲回頂端。
 (function chatKeyboardFit() {
