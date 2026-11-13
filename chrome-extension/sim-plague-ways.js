@@ -37,7 +37,7 @@ const PLAGUEWAYS = (function () {
 
     // 每場疫情自己的狀態(跟著 calamity.cur 一起存檔)
     function P(X) {
-        const p = X.pw || (X.pw = {}); for (const k of ['brk', 'home', 'hyp', 'said', 'cd']) if (!p[k] || typeof p[k] !== 'object') p[k] = {};
+        const p = X.pw || (X.pw = {}); for (const k of ['brk', 'home', 'hyp', 'said', 'cd', 'go']) if (!p[k] || typeof p[k] !== 'object') p[k] = {};
         for (const k of ['sneak', 'caught', 'traced', 'food', 'stay', 'admit', 'stub', 'sorry', 'grudge']) p[k] = p[k] || 0; p.deaths = p.deaths || []; p.lost = p.lost || []; return p;
     }
     const cool = (p, k, d, n) => { if (d - (p.cd[k] ?? -99) < n) return false; p.cd[k] = d; return true; };
@@ -76,29 +76,47 @@ const PLAGUEWAYS = (function () {
         const ps = (w.proposals?.items || []).filter(p => p.kind === 'cal_' + k && (p.createdDay ?? 0) >= (X.day ?? 0) - 1); const p = ps[ps.length - 1];
         return p && p.votes?.[a.agentId] === 'for' ? p : null;
     }
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 守不守規定由本人決定
+    // 這個人今天受哪一條規定管、有多想溜(以前擲骰用的那個機率)
+    function sneakOdds(w, X, a, d, f) {
+        const p = P(X); if (p.home[a.agentId] > d) return null;
+        const sick = sickI(X, a); let k = null, base = 0;
+        if (sick && X.ms.quar) { k = 'quar'; base = hasT(a, 'pessimist') || hasT(a, 'kind') ? 0.005 : 0.02; }
+        else if (!sick && X.ms.lock && a.job?.key === 'trader') { k = 'lock'; base = 0.04; }
+        else if (!sick && X.ms.close) { const r = ways()?.routineOf?.(w, a); k = 'close'; base = (r && (r.s === 'tavern' || r.s === 'market') ? 0.02 : 0.006) + (hasT(a, 'glutton') || hasT(a, 'charismatic') ? 0.03 : 0); }
+        else if (!sick && X.ms.mask) { k = 'mask'; base = 0.01; }
+        if (!k) return null;
+        if (hasT(a, 'lazy')) base += 0.02; if (hasV(a, '自由')) base += 0.02; if (hasT(a, 'pessimist')) base *= 0.4; if (a.job?.key === 'doctor') base *= 0.2;
+        return { k, p: Math.min(0.25, base * f) };
+    }
+    function sneakDo(w, X, a, k, d, guard) {
+        const p = P(X); p.brk[a.agentId] = d; p.sneak++;
+        // 投贊成票還偷溜:說一套做一套(v8.1)
+        const vp = votedFor(w, X, a, k); const W = ways();
+        if (vp && W && !p.hyp[a.agentId]) { const X8 = W.S(w); let title = vp.id; try { title = w.proposals.title(vp); } catch (e) {} const h = { a: a.agentId, k: 'cal_' + k, t: title, d }; X8.hyp.push(h); if (X8.hyp.length > 12) X8.hyp = X8.hyp.slice(-12); p.hyp[a.agentId] = 1; mem(w, a, '「{t}」我是投了贊成，不過……就這一次，沒人看見。', { t: title }, 4); }
+        // 被抓:有衛兵的話機會大一點
+        if (Math.random() < (guard ? 0.06 : 0.04)) caught(w, X, a, k, d, false);
+    }
     function sneakDaily(w, X, d) {
         const p = P(X); const ks = active(X); if (!ks.length) return; const f = fatigue(w, X);
         const guard = here(w).some(a => a.job?.key === 'guard');
-        for (const a of adults(w)) {
-            if (p.home[a.agentId] > d) continue;
-            const sick = sickI(X, a); let k = null, base = 0;
-            if (sick && X.ms.quar) { k = 'quar'; base = hasT(a, 'pessimist') || hasT(a, 'kind') ? 0.005 : 0.02; }
-            else if (!sick && X.ms.lock && a.job?.key === 'trader') { k = 'lock'; base = 0.04; }
-            else if (!sick && X.ms.close) { const r = ways()?.routineOf?.(w, a); k = 'close'; base = (r && (r.s === 'tavern' || r.s === 'market') ? 0.02 : 0.006) + (hasT(a, 'glutton') || hasT(a, 'charismatic') ? 0.03 : 0); }
-            else if (!sick && X.ms.mask) { k = 'mask'; base = 0.01; }
-            if (!k) continue;
-            if (hasT(a, 'lazy')) base += 0.02; if (hasV(a, '自由')) base += 0.02; if (hasT(a, 'pessimist')) base *= 0.4; if (a.job?.key === 'doctor') base *= 0.2;
-            if (Math.random() >= Math.min(0.25, base * f)) continue;
-            p.brk[a.agentId] = d; p.sneak++;
-            // 投贊成票還偷溜:說一套做一套(v8.1)
-            const vp = votedFor(w, X, a, k); const W = ways();
-            if (vp && W && !p.hyp[a.agentId]) { const X8 = W.S(w); let title = vp.id; try { title = w.proposals.title(vp); } catch (e) {} const h = { a: a.agentId, k: 'cal_' + k, t: title, d }; X8.hyp.push(h); if (X8.hyp.length > 12) X8.hyp = X8.hyp.slice(-12); p.hyp[a.agentId] = 1; mem(w, a, '「{t}」我是投了贊成，不過……就這一次，沒人看見。', { t: title }, 4); }
-            // 被抓:有衛兵的話機會大一點
-            if (Math.random() < (guard ? 0.06 : 0.04)) caught(w, X, a, k, d, false);
+        if (byDark(w)) { // 昨天打定主意要溜的人,今天真的溜(規定撤了、病倒了就算了)
+            for (const [id, g] of Object.entries(p.go)) { delete p.go[id]; const a = w.agents[id]; if (!a || a.isDead || d - g.d > 2 || !adults(w).includes(a)) continue; const o = sneakOdds(w, X, a, d, f); if (o) sneakDo(w, X, a, o.k, d, guard); }
+        } else for (const a of adults(w)) {
+            const o = sneakOdds(w, X, a, d, f); if (!o) continue;
+            if (Math.random() >= o.p) continue;
+            sneakDo(w, X, a, o.k, d, guard);
         }
         // 太久以前的紀錄清掉
         for (const [id, v] of Object.entries(p.brk)) if (d - v > 8) delete p.brk[id];
     }
+    // v9.26.0 給決策核心:這個人現在受哪條規定管、溜出去的念頭有多強(p 是以前每天擲骰的機率,讓照個性推估時的頻率跟以前差不多)
+    function sneakInfo(w, a) {
+        const X = w?.calamity?.cur; if (!a || !X || X.kind !== 'pathogen' || !active(X).length || !adults(w).includes(a)) return null; const p = P(X); const d = day(w);
+        if (p.go[a.agentId] || p.brk[a.agentId] === d) return null; const f = fatigue(w, X); const o = sneakOdds(w, X, a, d, f); if (!o) return null;
+        return { k: o.k, p: o.p, rule: MS_NAME[o.k], days: Math.max(0, d - (X.ms[o.k] || d)), tired: f >= 2, voted: !!votedFor(w, X, a, o.k), sick: sickI(X, a), guard: here(w).some(x => x.job?.key === 'guard') };
+    }
+    function sneakBy(w, a) { const I = sneakInfo(w, a); if (!I) return null; P(w.calamity.cur).go[a.agentId] = { k: I.k, d: day(w) }; return I; }
     function caught(w, X, a, k, d, traced) {
         const p = P(X); const W = ways(); const deed = W?.DEED?.['cal_' + k] || '私下自己照樣不守'; p.caught++; if (traced) p.traced++; p.shame = d;
         const h = W ? (W.S(w).hyp || []).find(x => x.a === a.agentId && x.k === 'cal_' + k && !x.exp) : null;
@@ -287,7 +305,7 @@ const PLAGUEWAYS = (function () {
     };
     const _view = C0.view; C0.view = function (w) { const v = _view.call(this, w); try { v.ways = view(w); } catch (e) {} return v; };
 
-    return { P, lessonOf, fatigue, view, anniv, caught, H, _t: { stayDaily, sneakDaily, traceDaily, foodDaily, stubDaily, panaceaDaily, panaceaCheck } };
+    return { P, lessonOf, fatigue, view, anniv, caught, sneakInfo, sneakBy, H, _t: { stayDaily, sneakDaily, traceDaily, foodDaily, stubDaily, panaceaDaily, panaceaCheck } };
 })();
 if (PLAGUEWAYS && typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _d = PS.daily;

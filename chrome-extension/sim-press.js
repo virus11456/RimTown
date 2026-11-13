@@ -73,18 +73,43 @@ const PRESS = (() => {
         for (const v of npcs(w)) { const best = cands.map(c => ({ c, s: aff(v, w.agents[c.agentId]) + Math.random() * 10 })).sort((a, b) => b.s - a.s)[0]; if (best) tally[best.c.agentId]++; }
         return cands.map(c => ({ c, n: tally[c.agentId] })).sort((a, b) => b.n - a.n);
     }
-    function electionDay(w, R, E, d) {
-        const cands = (E.candidates || []).filter(c => w.agents[c.agentId]); if (cands.length < 2) return;
+    // 收買報社(擲骰版與決策核心共用):隨便找一家還沒被買走的,記者有原則就不收
+    const BRIBE = 60;
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 收不收買報社由候選人自己決定
+    const freePapers = (R) => R.papers.filter(P => P.st !== 'board' && P.st !== 'crown' && !P.bribedBy && !P.banned);
+    function elecOf(w, R, E, d) {
+        const cands = (E.candidates || []).filter(c => w.agents[c.agentId]); if (cands.length < 2) return null;
         const key = (E.lastElectionDay || 0) + ':' + cands.map(c => c.agentId).join(','); if (!R.elec || R.elec.key !== key) R.elec = { key, start: d, endorsed: {}, bribes: {} };
+        return cands;
+    }
+    function bribePaper(w, R, a) {
+        const P = freePapers(R).sort(() => Math.random() - 0.5)[0]; if (!P) return null;
+        const ed = w.agents[P.journo]; if (!ed || has(ed, 'perfectionist')) return { P, ed: ed || null, refused: true };
+        if (!WALLET.pay(w, a, ed, BRIBE)) return null;
+        P.bribedBy = a.agentId; R.elec.bribes[a.agentId] = P.id;
+        try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: ed.agentId, k: '{a}花錢收買了{paper}', p: { a: a.name, paper: P.name[0] } }); } catch (e) {}
+        return { P, ed };
+    }
+    // v9.26.0 給決策核心:這個候選人現在能不能收買報社(跟以前擲骰的是同一批人:手上有 150 銀幣、不是特別老實、還有報社沒被買走、這次選舉還沒買過)
+    function bribeInfo(w, a) {
+        const E = w.election; if (!a || !E || !E.active || E.phase !== 'campaign' || typeof WALLET === 'undefined' || !w.wallet) return null;
+        const R = S(w); const cands = elecOf(w, R, E, day(w)); if (!cands || !cands.some(c => c.agentId === a.agentId) || R.elec.bribes[a.agentId] || money(w, a) < 150) return null;
+        let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest >= 3) return null;
+        const n = freePapers(R).length; return n ? { n, cost: BRIBE } : null;
+    }
+    function bribeBy(w, a) {
+        if (!bribeInfo(w, a)) return null; const r = bribePaper(w, S(w), a); if (!r) return null;
+        if (r.refused) { mem(w, a, '我想塞錢給{paper}，被擋了回來。', { paper: r.P.name[0] }, 5); if (r.ed) mem(w, r.ed, '{a}想塞錢要我替他說好話，我沒收。', { a: a.name }, 6); }
+        else { mem(w, a, '我花了 {n} 銀幣，讓{paper}替我說話。', { n: BRIBE, paper: r.P.name[0] }, 6); mem(w, r.ed, '{a}塞了 {n} 銀幣，要報上替他說好話。我收了。', { a: a.name, n: BRIBE }, 6); }
+        return r;
+    }
+    function electionDay(w, R, E, d) {
+        const cands = elecOf(w, R, E, d); if (!cands) return;
         // 收買:有錢又不老實的候選人花錢買報社
-        for (const c of cands) {
+        if (!byDark(w)) for (const c of cands) {
             const a = w.agents[c.agentId]; if (!a || R.elec.bribes[c.agentId] || money(w, a) < 150) continue;
             let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest >= 3 || Math.random() > 0.35) continue;
-            const P = R.papers.filter(P => P.st !== 'board' && P.st !== 'crown' && !P.bribedBy && !P.banned).sort(() => Math.random() - 0.5)[0]; if (!P) continue;
-            const ed = w.agents[P.journo]; if (!ed || has(ed, 'perfectionist')) continue;
-            if (!WALLET.pay(w, a, ed, 60)) continue;
-            P.bribedBy = c.agentId; R.elec.bribes[c.agentId] = P.id;
-            try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: ed.agentId, k: '{a}花錢收買了{paper}', p: { a: a.name, paper: P.name[0] } }); } catch (e) {}
+            bribePaper(w, R, a);
         }
         for (const P of R.papers) {
             if (P.banned && !P.underground) continue; if (P.st === 'board') { if (!R.elec.endorsed[P.id]) { R.elec.endorsed[P.id] = 'none'; story(w, P, 'platform', '候選人：{list}', { list: cands.map(c => c.name).join(' / ') }); } continue; }
@@ -155,7 +180,7 @@ const PRESS = (() => {
         const R = S(w);
         return R.papers.map(P => ({ id: P.id, icon: STANCE[P.st].icon, name: t(P.name[0]), stance: t(STANCE[P.st].zh), cred: Math.round(P.cred), readers: Object.values(R.reads).filter(x => x === P.id).length, journo: w.agents[P.journo] ? t(w.agents[P.journo].name) : null, banned: P.banned, underground: P.underground, last: P.stories.length ? Memory.render(P.stories[P.stories.length - 1].k, P.stories[P.stories.length - 1].p) : '', fame: P.fame || 0 }));
     }
-    return { S, STANCE, daily, bias, trust, paperOf, brief, view, poll, electionDay, weekday, story };
+    return { S, STANCE, daily, bias, trust, paperOf, brief, view, poll, electionDay, weekday, story, bribeInfo, bribeBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

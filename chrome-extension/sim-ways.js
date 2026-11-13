@@ -114,11 +114,19 @@ const WAYS = (function () {
         if (!DEED[p.kind] || /^cal_/.test(p.kind)) return; // 疫情規定的陽奉陰違由 sim-plague-ways.js 看真的偷溜才算
         const owner = (a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
         const pool = Object.entries(p.votes || {}).filter(([, v]) => v === 'for').map(([id]) => w.agents[id]).filter(a => a && !a.isDead && (hasT(a, 'greedy') || hasT(a, 'lazy') || owner(a)));
-        if (!pool.length || Math.random() > (p.kind === 'policy' ? 0.12 : 0.4)) return; const a = rnd(pool); // 一般政令比較少人陽奉陰違;真的有限制的法律才常見
-        let title = p.id; try { title = w.proposals.title(p); } catch (e) {}
-        X.hyp.push({ a: a.agentId, k: p.kind, t: title, d: day(w) }); if (X.hyp.length > 12) X.hyp = X.hyp.slice(-12);
+        if (!pool.length) return; let title = p.id; try { title = w.proposals.title(p); } catch (e) {}
+        // v9.26.0 私下守不守,由那個人自己決定(決策核心「自己贊成的規定」);沒有決策核心才擲骰
+        if (byDark(w)) { const a = rnd(pool); try { DECIDE.enqueue(w, a, 'twoface', { k: p.kind, t: title }); DECIDE.drain(w, DECIDE.S(w), day(w)); } catch (e) { console.warn('[Ways] twoface', e); } return; }
+        if (Math.random() > (p.kind === 'policy' ? 0.12 : 0.4)) return; const a = rnd(pool); // 一般政令比較少人陽奉陰違;真的有限制的法律才常見
+        breakLaw(w, a, p.kind, title);
+    }
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
+    function breakLaw(w, a, kind, title) {
+        const X = S(w); X.hyp.push({ a: a.agentId, k: kind, t: title, d: day(w) }); if (X.hyp.length > 12) X.hyp = X.hyp.slice(-12);
         mem(w, a, '「{t}」我是投了贊成，不過自己私下……反正沒人看見。', { t: title }, 4);
     }
+    function twofaceInfo(w, a, c) { return a && !a.isDead && c && DEED[c.k] && !/^cal_/.test(c.k) ? { t: c.t, policy: c.k === 'policy' } : null; }
+    function twofaceBy(w, a, c) { const I = twofaceInfo(w, a, c); if (!I) return null; breakLaw(w, a, c.k, c.t); return I; }
     function expose(w, h) {
         const X = S(w); const a = w.agents[h.a]; h.exp = day(w); if (!a || a.isDead) return;
         loseFace(w, a, 25); X.trust = Math.max(20, X.trust - (/^cal_/.test(h.k || '') ? 3 : 6)); bump(X, 'hyp'); // 疫情裡偷溜的人不少,全鎮信任只扣一半
@@ -316,7 +324,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, twofaceInfo, twofaceBy, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });
