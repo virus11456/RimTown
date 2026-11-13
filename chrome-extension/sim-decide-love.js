@@ -92,9 +92,9 @@
             const I = propOf(w, a); if (!I) return [];
             return [
                 { id: 'wait', quiet: true, mute: true, text: '再等等', say: { k: '還沒向{b}求婚', p: { b: I.b.name } }, why: '不急，日子還長', base: REF, lean: { safe: 0.1 }, run: () => null },
-                // 以前：一對情侶每天 10%（兩個人都可能開口，所以一個人算 6%，四天問一次）
+                // 以前：一對情侶每天 10%（兩個人都可能開口；照新舊對照，一個人算 4%，四天問一次）
                 { id: 'propose', quiet: true, text: { k: '向{b}求婚', p: { b: I.b.name } }, say: { k: '向{b}求婚', p: { b: I.b.name } }, why: '我想跟他過一輩子',
-                    base: REF + tilt(within(0.06, 4)) + (has(a, 'romantic') ? 0.2 : 0) + (val(a, '家庭') ? 0.2 : 0) - (val(a, '自由') ? 0.2 : 0), lean: { bond: 0.3, joy: 0.2 },
+                    base: REF + tilt(within(0.04, 4)) + (has(a, 'romantic') ? 0.2 : 0) + (val(a, '家庭') ? 0.2 : 0) - (val(a, '自由') ? 0.2 : 0), lean: { bond: 0.3, joy: 0.2 },
                     run: (w2, a2) => { const b = w2.agents[I.b.agentId]; if (!b) return { k: '沒有說成' }; ask(w2, b, 'proposed', { by: a2.agentId }); return { k: '向{b}求婚了', p: { b: b.name } }; } },
             ];
         },
@@ -138,9 +138,9 @@
             const I = affOf(w, a); if (!I) return [];
             const out = [{ id: 'stay', quiet: true, mute: true, text: '守住現在的感情', say: { k: '沒有背著{p}亂來', p: { p: I.p.name } }, why: '不能對不起他',
                 base: REF + (has(a, 'kind') ? 0.2 : 0) + (has(a, 'stoic') ? 0.15 : 0), lean: { safe: 0.2, face: 0.2 }, run: () => null }];
-            // 以前：一對情侶裡只有一個人會被擲到（而且是對每個第三人分別擲），每天 6%；這裡一個人算 4%，七天問一次
+            // 以前：一對情侶裡只有一個人會被擲到（而且是對每個第三人分別擲），每天 6%；照新舊對照，一個人算 6%，七天問一次
             for (const x of I.list) out.push({ id: 'go:' + x.t.agentId, quiet: true, text: { k: '背著{p}跟{t}在一起', p: { p: I.p.name, t: x.t.name } }, say: { k: '背著{p}跟{t}在一起', p: { p: I.p.name, t: x.t.name } }, why: '心不由己',
-                base: REF + tilt(within(0.04, 7)) + (has(a, 'romantic') ? 0.15 : 0) + (has(a, 'neurotic') ? 0.1 : 0) + clampN(-I.cool / 100, -0.1, 0.3), lean: { joy: 0.3, safe: -0.3, face: -0.2 },
+                base: REF + tilt(within(0.06, 7)) + (has(a, 'romantic') ? 0.15 : 0) + (has(a, 'neurotic') ? 0.1 : 0) + clampN(-I.cool / 100, -0.1, 0.3), lean: { joy: 0.3, safe: -0.3, face: -0.2 },
                 run: (w2, a2) => { const tt = w2.agents[x.t.agentId], p = w2.agents[I.p.agentId]; if (!tt || !p || !w2.affairCands(a2).length) return { k: '沒有成' }; w2.startAffair(a2, p, tt); return { k: '跟{t}偷偷在一起了', p: { t: tt.name } }; } });
             return out;
         },
@@ -188,7 +188,7 @@
     // ================= 碰上死對頭：要不要當面吵 =================
     const feudOf = (w, a) => (on(w) ? safe(() => w.feudCands?.(a)) : null);
     DECIDE.kind('feud', {
-        title: '碰上死對頭', cool: 5, pri: 0.8,
+        title: '碰上死對頭', cool: 3, pri: 0.8,
         when(w, a) { const L = feudOf(w, a); return L && L.length ? { b: L[0].b.agentId } : null; },
         facts(w, a) {
             const L = feudOf(w, a); if (!L || !L.length) return '';
@@ -198,9 +198,9 @@
         options(w, a) {
             const L = feudOf(w, a); if (!L || !L.length) return [];
             const out = [{ id: 'calm', quiet: true, mute: true, text: '忍一忍，繞路走', say: '沒有跟人起衝突', why: '吵了也沒用', base: REF, lean: { safe: 0.2 }, run: () => null }];
-            // 以前：每一對每天 15%、吵過隔五天；兩個人都可能先開口，所以一個人算 8%，五天問一次
+            // 以前：每一對每天 15%、吵過隔五天，仇人多的人一天可能吵好幾場；這裡一個人三天問一次（一次只跟一個人吵），照新舊對照算 18%
             for (const x of L) out.push({ id: 'go:' + x.b.agentId, quiet: true, text: { k: '當面跟{b}吵個明白', p: { b: x.b.name } }, say: { k: '當街跟{b}吵起來', p: { b: x.b.name } }, why: '這口氣我嚥不下去',
-                base: REF + tilt(within(0.08, 5)) + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'neurotic') ? 0.1 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0) - (has(a, 'shy') ? 0.2 : 0), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
+                base: REF + tilt(within(0.18, 3)) + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'neurotic') ? 0.1 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0) - (has(a, 'shy') ? 0.2 : 0), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
                 run: (w2, a2) => { const b = w2.agents[x.b.agentId]; if (!b || !w2.feudCands(a2).some(y => y.b === b)) return { k: '沒有碰上' }; w2.publicFeud(a2, b); return { k: '跟{b}吵了一架', p: { b: b.name } }; } });
             return out;
         },
