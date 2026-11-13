@@ -30,7 +30,7 @@ const SHORT = 52; // 看得到的範圍比版面矮多少
       document.getElementById('vp-diag')?.remove();
       // 整頁被推上去(Safari 讓太高的頁面可以捲):應該自己捲回來
       root.style.overflow = 'visible'; const sp = document.createElement('div'); sp.style.cssText = 'height:300px'; document.body.appendChild(sp); document.body.style.setProperty('overflow', 'visible', 'important'); document.body.style.setProperty('height', 'auto', 'important');
-      root.style.setProperty('overflow', 'visible', 'important'); window.scrollTo(0, 40); await wait(50); out.scrolledTo = Math.round(scrollY); window.dispatchEvent(new Event('scroll')); await wait(120); out.scrollAfter = Math.round(scrollY);
+      root.style.setProperty('overflow', 'visible', 'important'); window.scrollTo(0, 40); out.scrolledTo = Math.round(scrollY); /* 當下就讀：等一下再讀的話，快的機器上已經被捲回去了 */ await wait(50); window.dispatchEvent(new Event('scroll')); await wait(250); out.scrollAfter = Math.round(scrollY);
       sp.remove(); document.body.style.removeProperty('overflow'); document.body.style.removeProperty('height'); root.style.removeProperty('overflow'); window.scrollTo(0, 0);
       // 鍵盤打開(看得到的範圍少 336px):版面高度不跟著縮
       const app = window.rimtownApp; const id = Object.keys(app.world.agents).find(k => !app.world.agents[k].isPlayer); app.startChatWith(id); app.renderSidebar?.(); await wait(500);
