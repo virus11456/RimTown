@@ -92,23 +92,35 @@ const CLASS = (() => {
             }
         }
         // 有錢人花錢買爵位(錢進公庫);舊貴族看不起
-        if (Math.random() < 0.15 && typeof WALLET !== 'undefined' && w.wallet) {
+        if (!byFun(w) && Math.random() < 0.15 && typeof WALLET !== 'undefined' && w.wallet) { // v9.25.0 交給本人:買不買爵位由有錢人自己決定(titleBy)
             const buyer = all.filter(a => !C.titles[a.agentId] && money(w, a) >= BUY_PRICE * 1.3).sort((x, y) => money(w, y) - money(w, x))[0];
-            if (buyer && WALLET.pay(w, buyer, null, BUY_PRICE, t('{a}買爵位').replace('{a}', buyer.name))) {
+            if (buyer) buyTitle(w, C, all, buyer, d);
+        }
+    }
+    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    function buyTitle(w, C, all, buyer, d) {
+            if (WALLET.pay(w, buyer, null, BUY_PRICE, t('{a}買爵位').replace('{a}', buyer.name))) {
                 C.titles[buyer.agentId] = { rank: 0, since: d, how: 'bought', bought: true }; C.lv[buyer.agentId] = compute(w, buyer);
                 mem(w, buyer, '我花了 {n} 銀幣買到騎士頭銜，以後也能出入上流的場合了。', { n: BUY_PRICE }, 8);
                 log(w, '💰 {a}花了 {n} 銀幣買下騎士頭銜。', { a: buyer.name, n: BUY_PRICE }, buyer.name);
                 for (const o of all) if (C.titles[o.agentId] && !C.titles[o.agentId].bought && o !== buyer) { o.relationships.getOrCreate(buyer.agentId, buyer.name).modifyAffinity(-6); if (Math.random() < 0.5) mem(w, o, '{a}的頭銜是花錢買來的，算什麼貴族。', { a: buyer.name }, 4); }
                 try { DARK.secret(w, { kind: 'cover', culprit: buyer.agentId, victim: buyer.agentId, k: '{a}的騎士頭銜是花錢買來的', p: { a: buyer.name } }); } catch (e) {}
+                return true;
             }
-        }
+            return false;
     }
+    // 這個人現在能不能買爵位:城市以上、還沒有頭銜、錢夠(價錢的 1.3 倍)
+    function titleInfo(w, a) {
+        if (typeof WALLET === 'undefined' || !w.wallet || !a || (a.age ?? 30) < 18 || tier(w) < 2) return null; const C = S(w); if (C.titles[a.agentId] || money(w, a) < BUY_PRICE * 1.3) return null;
+        return { price: BUY_PRICE, c: Math.floor(money(w, a)), nobles: Object.keys(C.titles).filter(id => w.agents[id] && !w.agents[id].isDead && !C.titles[id].bought).length };
+    }
+    function titleBy(w, a) { if (!titleInfo(w, a)) return false; const C = S(w); const all = Object.values(w.agents || {}).filter(x => !x.isPlayer && !x.isDead); return buyTitle(w, C, all, a, typeof w._absDay === 'function' ? w._absDay() : 0); }
     function describe(w, a) {
         if (!a) return ''; const tt = titleOf(w, a);
         return (en() ? 'Social standing: ' : '社會地位' + t('：')) + label(w, a) + (tt ? t('（') + tt + t('）') : '');
     }
     function pyramid(w) { const out = [0, 0, 0, 0, 0, 0]; for (const a of npcs(w)) out[level(w, a)]++; return out; }
-    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE };
+    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE, byFun, titleInfo, titleBy };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

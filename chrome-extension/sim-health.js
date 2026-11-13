@@ -179,6 +179,22 @@ const HEALTH = (() => {
     // 手術失敗:家屬可能怪醫生(好感大跌,醫生心情差;被告上法庭的戲份交給既有的審判提案)
     function malpractice(w, a, doc) { if (!doc) return; for (const f of family(w, a)) { const r = f.relationships?.getOrCreate?.(doc.agentId, doc.name); if (r) r.affinity = Math.max(-100, (r.affinity || 0) - 20); } doc.moodModifier = (doc.moodModifier || 0) - 6; mem(w, doc, '{a}的手術沒成功，家屬很不諒解。', { a: a.name }, 7); }
     function rec(w, H, a, r, p) { H.log.push([day(w), a.name, r, p]); if (H.log.length > 12) H.log.splice(0, H.log.length - 12); }
+    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const BRIBE = 80;
+    function bribeDo(w, all, H, q, a, doc) {
+        if (!WL() || !WL().take(w, a, BRIBE)) return false; const rich = [q, a];
+        WL().add(w, doc, BRIBE); H.q.splice(H.q.indexOf(rich[0]), 1); H.q.unshift(rich[0]); H.st.bribes++; mem(w, rich[1], '塞了紅包給{d}，移植排到最前面了。', { d: doc.name }, 6);
+                if (typeof PRESS !== 'undefined' && w.press && Math.random() < 0.35) { log(w, '📰 報社揭發：{a}塞紅包給醫生{d}插隊等移植！', { a: rich[1].name, d: doc.name }, rich[1].name); w.dailyNews?.collectEvent?.('politics', `${t('醫療插隊醜聞')}${t('：')}${rich[1].name}`, 7, [rich[1].name, doc.name]); for (const o of all) { if (o === rich[1]) continue; const r = o.relationships?.getOrCreate?.(rich[1].agentId, rich[1].name); if (r) r.affinity = Math.max(-100, (r.affinity || 0) - 6); } doc.moodModifier = (doc.moodModifier || 0) - 8; }
+        return true;
+    }
+    // 這個人是不是在等移植、前面還有人、又出得起紅包(身上 300 以上)，而且鎮上有肯收的醫生(心軟的醫生不收)
+    function bribeInfo(w, a) {
+        const H = w.health; if (!H || !WL() || !w.wallet || !a) return null; const i = (H.q || []).findIndex(q => q.id === a.agentId); if (i < 1 || WL().get(w, a) < 300) return null;
+        const doc = Object.values(w.agents || {}).filter(x => !x.isPlayer && !x.isDead && x.job?.key === 'doctor' && x !== a).find(x => !trait(x, 'kind')); if (!doc) return null;
+        const first = w.agents[H.q[0].id];
+        return { q: H.q[i], pos: i + 1, doc, part: PN[H.q[i].p], fee: BRIBE, c: Math.floor(WL().get(w, a)), first: first && first !== a ? first : null, hp: Math.round(body(w, a)[H.q[i].p]) };
+    }
+    function bribeBy(w, a) { const I = bribeInfo(w, a); if (!I) return false; const all = Object.values(w.agents || {}).filter(x => !x.isPlayer && !x.isDead); return bribeDo(w, all, w.health, I.q, a, I.doc); }
     // ---------- 器官壞到底:排隊等移植;過世的村民可能捐出器官 ----------
     function queue(w, all, H, d) {
         for (const a of all) for (const p of PARTS) { if (body(w, a)[p] > 25 || !transplantable(w, p)) continue; if (H.q.some(q => q.id === a.agentId && q.p === p)) continue; H.q.push({ id: a.agentId, p, d }); mem(w, a, '醫生說我的{p}要換，只能排隊等人捐。', { p: t(PN[p]) }, 7); }
@@ -186,10 +202,9 @@ const HEALTH = (() => {
         H.bank = H.bank.filter(o => d - o.d <= 3); // 器官放不久
         // 插隊:有錢人塞紅包給醫生
         const docs = all.filter(a => a.job?.key === 'doctor');
-        if (H.q.length > 1 && docs.length && Math.random() < 0.15) {
+        if (H.q.length > 1 && docs.length && !byFun(w) && Math.random() < 0.15) { // v9.25.0 交給本人:塞不塞紅包由排隊的人自己決定(bribeBy)
             const rich = H.q.slice(1).map(q => [q, w.agents[q.id]]).filter(([, a]) => a && WL() && WL().get(w, a) >= 300).sort((x, y) => WL().get(w, y[1]) - WL().get(w, x[1]))[0];
-            const doc = docs.find(x => !trait(x, 'kind')) ; if (rich && doc && WL().take(w, rich[1], 80)) { WL().add(w, doc, 80); H.q.splice(H.q.indexOf(rich[0]), 1); H.q.unshift(rich[0]); H.st.bribes++; mem(w, rich[1], '塞了紅包給{d}，移植排到最前面了。', { d: doc.name }, 6);
-                if (typeof PRESS !== 'undefined' && w.press && Math.random() < 0.35) { log(w, '📰 報社揭發：{a}塞紅包給醫生{d}插隊等移植！', { a: rich[1].name, d: doc.name }, rich[1].name); w.dailyNews?.collectEvent?.('politics', `${t('醫療插隊醜聞')}${t('：')}${rich[1].name}`, 7, [rich[1].name, doc.name]); for (const o of all) { if (o === rich[1]) continue; const r = o.relationships?.getOrCreate?.(rich[1].agentId, rich[1].name); if (r) r.affinity = Math.max(-100, (r.affinity || 0) - 6); } doc.moodModifier = (doc.moodModifier || 0) - 8; } } }
+            const doc = docs.find(x => !trait(x, 'kind')); if (rich && doc) bribeDo(w, all, H, rich[0], rich[1], doc); }
         // 配對:捐贈器官或培養器官
         for (const q of H.q.slice()) {
             const a = w.agents[q.id]; if (!a) continue; let src = H.bank.find(o => o.p === q.p);
@@ -284,7 +299,7 @@ const HEALTH = (() => {
         if (!bad.length && !al.length) return ''; return `${t('身體')}${t('：')}${[...al, ...bad].join(t('、'))}`;
     }
     function townBrief(w) { if (!w.health) return ''; const v = view(w); const n = v.patients.length; if (!n && !v.queue.length) return ''; return `${t('鎮上有 {n} 個病人').replace('{n}', n)}${v.queue.length ? t('，{n} 人等移植').replace('{n}', v.queue.length) : ''}${v.flu ? t('，風寒正在流行') : ''}`; }
-    return { W: null, PARTS, PN, PI, KN, S, body, setPart, hurt, eff, ails, addAil, workMult, speed, sleepMult, deathMult, jobFit, pay, successRate, deathRisk, canSurgery, transplantable, surgery, onDeath, daily, view, agentView, brief, townBrief, vote, setAid, proposal, family };
+    return { W: null, PARTS, PN, PI, KN, S, body, setPart, hurt, eff, ails, addAil, workMult, speed, sleepMult, deathMult, jobFit, pay, successRate, deathRisk, canSurgery, transplantable, surgery, onDeath, daily, view, agentView, brief, townBrief, vote, setAid, proposal, family, byFun, bribeInfo, bribeBy };
 })();
 
 // ---------- 研究:第五時代「生技」(城市以上＋機械時代全部研究完＋研究院) ----------

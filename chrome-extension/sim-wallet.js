@@ -31,6 +31,19 @@ const WALLET = (() => {
     const MEAL = MEAL0;
     // 材料折算銀幣(自己出錢 = 把材料錢付給公庫)
     const PRICE = { silver: 1, wood: 2, stone: 3, food: 1, meals: 2, metal: 5, iron: 5, tools: 6, clothing: 6, cloth: 4, medicine: 6, furniture: 8, bread: 2 };
+    // v9.25.0 平常怎麼花錢、提案的錢誰出，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
+    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // 花錢的習慣:frugal 能省就省(七天花一次)、normal 偶爾花(兩天一次)、indulge 想買就買(天天)
+    const HABIT = { frugal: 7, normal: 2, indulge: 1 };
+    const habitOf = (w, a) => { const h = w.wallet?.habit?.[a.agentId]; return h && HABIT[h.k] ? h.k : (trait(a, 'greedy') || trait(a, 'ascetic') ? 'frugal' : 'normal'); }; // 還沒拿過主意的人:貪心、克己的省,其他人普通
+    // 這個人現在要不要重新想想自己怎麼花錢:手頭有餘裕(70 以上)的大人;沒想過、想過超過 30 天、或身家跟上次差了一倍
+    function habitInfo(w, a) {
+        if (!w.wallet || !a || (a.age ?? 30) < 16) return null; const bal = get(w, a); if (bal <= 70) return null;
+        const W = w.wallet; const h = W.habit?.[a.agentId]; const d = day(w);
+        if (h && HABIT[h.k] && d - h.d < 30 && bal < h.c * 2 && bal > h.c / 2) return null;
+        return { cur: h && HABIT[h.k] ? h.k : null, bal: Math.floor(bal), once: Math.round(Math.min(bal * 0.08, 3 + Math.sqrt(bal) * 0.65)) };
+    }
+    function habitSet(w, a, k) { if (!w.wallet || !a || !HABIT[k]) return false; const W = w.wallet; W.habit = W.habit || {}; W.habit[a.agentId] = { k, d: day(w), c: Math.max(1, Math.floor(get(w, a))) }; return true; }
     const costValue = (c) => Math.round(Object.entries(c || {}).reduce((s, [r, n]) => s + (PRICE[r] || 3) * (n || 0), 0));
     function S(w) {
         if (!w.wallet || typeof w.wallet.bal !== 'object') w.wallet = { bal: {}, tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } };
@@ -101,7 +114,7 @@ const WALLET = (() => {
         const cooks = all.filter(a => a.job?.key === 'cook'), tailors = all.filter(a => a.job?.key === 'tailor');
         const tipCap = 6, tips = new Map();
         const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
-        const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0;
+        const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0; const fun = byFun(w);
         // v7.7.0 小孩買衣服、柴火由家裡的大人出;家裡沒人出得起才用自己的錢
         const payBy = (a, n) => { if ((a.age ?? 30) >= 16) return take(w, a, n); try { const f = (typeof HEALTH !== 'undefined' ? HEALTH.family(w, a) : []).filter(o => (o.age ?? 30) >= 16 && get(w, o) >= n + 3).sort((x, y) => get(w, y) - get(w, x))[0]; if (f && take(w, f, n)) return true; } catch (e) {} return take(w, a, n); };
         // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
@@ -123,7 +136,7 @@ const WALLET = (() => {
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多);v6.90.0 越有錢花得越多(大約跟財富的平方根成正比)
-            const bal = get(w, a); if (bal > 70 && Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45)) { const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
+            const bal = get(w, a); if (bal > 70 && (fun ? (d + a.agentId.length * 3) % HABIT[habitOf(w, a)] === 0 : Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45))) { /* v9.25.0 交給本人:照他自己的花錢習慣，幾天花一次 */ const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
                 if (payBy(a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }
@@ -203,15 +216,33 @@ const WALLET = (() => {
     function decideFund(w, ps, p) {
         const c = costValue(ps._cost(p)); if (!(c > 0)) return null;
         const a = w.agents[p.proposerId]; if (!a) return { by: 'town', value: c };
-        const mine = get(w, a);
-        if (mine >= c * 1.2 && (trait(a, 'kind') || trait(a, 'charismatic') || c <= mine * 0.35 || Math.random() < 0.35)) return { by: 'self', pledges: { [a.agentId]: c }, value: c };
+        const mine = get(w, a); const fun = byFun(w);
+        if (!fun && mine >= c * 1.2 && (trait(a, 'kind') || trait(a, 'charismatic') || c <= mine * 0.35 || Math.random() < 0.35)) return { by: 'self', pledges: { [a.agentId]: c }, value: c };
         const pledges = {}; let sum = 0;
         const mineGive = Math.floor(Math.min(mine * 0.5, c)); if (mineGive >= 5) { pledges[a.agentId] = mineGive; sum += mineGive; }
         for (const f of npcs(w).filter(x => x !== a && aff(x, a) >= 25 && get(w, x) >= 20).sort((x, y) => aff(y, a) - aff(x, a))) {
             if (sum >= c) break; const n = Math.floor(Math.min(get(w, f) * 0.3, c - sum)); if (n >= 5) { pledges[f.agentId] = n; sum += n; }
         }
-        if (sum >= c && Object.keys(pledges).length >= 2) return { by: 'crowd', pledges, value: c };
-        return { by: 'town', value: c };
+        const base = sum >= c && Object.keys(pledges).length >= 2 ? { by: 'crowd', pledges, value: c } : { by: 'town', value: c };
+        // v9.25.0 自己出得起時，要不要自掏腰包由提案人決定：先照「湊錢／公庫」記著，他拿了主意再改(fundBy)
+        if (fun && mine >= c * 1.2) { base.ask = true; base.alt = base.by; if (base.by === 'crowd') base.altPledges = pledges; }
+        return base;
+    }
+    // 提案人現在能不能決定這個提案的錢誰出(還在表決、錢還沒收、他自己出得起)
+    function fundInfo(w, a, pid) {
+        const p = w.proposals?.byId?.(pid); if (!p || !a || p.proposerId !== a.agentId) return null;
+        const f = p.fund; if (!f || !f.ask || f.paid || !['open', 'shelved'].includes(p.status)) return null;
+        const c = f.value || 0; const mine = get(w, a); if (!(c > 0) || mine < c * 1.2) return null;
+        return { p, cost: c, mine: Math.floor(mine), crowd: f.alt === 'crowd' ? Object.keys(f.altPledges || {}).filter(id => id !== a.agentId).map(id => w.agents[id]).filter(Boolean) : [], treasury: Math.round(w.stockpile?.get?.('silver') || 0) };
+    }
+    // 提案人拿了主意:self 自己出／crowd 找朋友湊／town 讓公庫出
+    function fundBy(w, a, pid, how) {
+        const I = fundInfo(w, a, pid); if (!I) return false; const p = I.p; const c = I.cost; const old = p.fund;
+        if (how === 'self') p.fund = { by: 'self', pledges: { [a.agentId]: c }, value: c };
+        else if (how === 'crowd' && old.alt === 'crowd') p.fund = { by: 'crowd', pledges: old.altPledges, value: c };
+        else p.fund = { by: 'town', value: c };
+        if (p.fund.by !== 'town') mem(w, a, p.fund.by === 'self' ? '{id} 我打算自己出錢，不動用公庫。' : '{id} 找了幾個朋友一起湊錢。', { id: p.id }, 4);
+        return true;
     }
     // 批准時把私人出的錢收進公庫(專款),付不出的部分由公庫補
     function collect(w, p) {
@@ -235,7 +266,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, byFun, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
@@ -304,7 +335,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const _create = PS._createWith;
     PS._createWith = function (w, day, cand, a) {
         const p = _create.call(this, w, day, cand, a);
-        try { if (p && w.wallet) { const f = WALLET.decideFund(w, this, p); if (f) { p.fund = f; if (f.by !== 'town') a?.memory?.addT?.(w.tickCount, w.clock.timeStr, 'economy', f.by === 'self' ? '{id} 我打算自己出錢，不動用公庫。' : '{id} 找了幾個朋友一起湊錢。', { id: p.id }, 4, []); } } } catch (e) {}
+        try { if (p && w.wallet) { const f = WALLET.decideFund(w, this, p); if (f) { p.fund = f; if (f.ask && a) { try { DECIDE.enqueue(w, a, 'fund', { pid: p.id }); DECIDE.drain(w, DECIDE.S(w), typeof w._absDay === 'function' ? w._absDay() : 0); } catch (e) {} } else if (f.by !== 'town') a?.memory?.addT?.(w.tickCount, w.clock.timeStr, 'economy', f.by === 'self' ? '{id} 我打算自己出錢，不動用公庫。' : '{id} 找了幾個朋友一起湊錢。', { id: p.id }, 4, []); } } } catch (e) {}
         return p;
     };
     const _decide = PS._decide;
@@ -336,7 +367,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.wallet = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats }; return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats, habit: this.wallet.habit || {} /* v9.25.0 每個人自己定的花錢習慣 */ }; return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.wallet = (data?.wallet && typeof data.wallet.bal === 'object') ? Object.assign({ tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } }, data.wallet) : null; } catch (e) {} return r; };
 }
