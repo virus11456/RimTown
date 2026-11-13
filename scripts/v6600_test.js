@@ -54,7 +54,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const _ad = w._absDay; w._absDay = () => 7; F.lastDay = null; fix(0.9, () => FAITH.daily(w)); w._absDay = _ad;
       out.tithe = WALLET.get(w, tither) < 200; out.charity = WALLET.get(w, poor) > 0 || sheng.fund > 0;
       const priest = npcs().find(x => x !== a); priest.job.key = 'priest'; priest.personality.traits = priest.personality.traits.filter(x => x !== 'ascetic'); F.of[priest.agentId] = { rel: sheng.id, piety: 80 }; sheng.fund = 100;
-      F.lastDay = null; const ns = (w.dark?.secrets || []).length; fix(0.01, () => FAITH.daily(w)); out.corrupt = (w.dark?.secrets || []).length > ns && sheng.fund < 100;
+      F.lastDay = null; const ns = (w.dark?.secrets || []).length; fix(0.01, () => FAITH.daily(w));
+      { const keeper = FAITH.believers(w, sheng).find(x => x.job?.key === 'priest'); if (keeper) { keeper.personality.traits = keeper.personality.traits.filter(x => x !== 'ascetic'); sheng.fund = 100; FAITH.embezzleBy(w, keeper); } } // v9.26.0 拿不拿奉獻箱的錢由管錢的神職自己決定(不再擲骰)，這裡讓他決定拿
+      out.corrupt = (w.dark?.secrets || []).length > ns && sheng.fund < 100;
       // 節日
       const fr = F.rels[0]; const seasons = ['春季', '夏季', '秋季', '冬季']; const cs = w.clock.season, cd = w.clock.day; w.clock.season = seasons[fr.festSeason]; w.clock.day = fr.festDay; fr._festDay = null; F.lastDay = null;
       fix(0.9, () => FAITH.daily(w)); w.clock.season = cs; w.clock.day = cd; out.fest = logHas(/齊聚|gathered/);

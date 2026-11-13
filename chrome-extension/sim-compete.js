@@ -176,6 +176,22 @@ const COMPETE = (() => {
     const fkey = (f) => f.k + (f.rival ? ':R' : '');
     function firmRev(w, f) { const M = S(w); const h = f.rival ? (M.rival[f.k]?.hist || []) : (M.hist[f.k] || []); return h.reduce((s, [r]) => s + r, 0); }
     function firmStaff(w, f, all) { const R = MK().rivalOf(w, f.k); return f.rival ? empOf(w, f.k, R, all) : incOf(w, f.k, R, all); }
+    // 掌櫃揩油(擲骰版與決策核心共用):拿走這家店近期營收的 8%,老闆有三成五的機會查出來
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
+    const skimAmt = (w, f, o) => Math.min(bal(w, o), r2(firmRev(w, f) * 0.08));
+    function skim(w, M, key, f, o, m) {
+        const Mk = MK(); const amt = skimAmt(w, f, o); if (!(amt >= 1) || !WALLET.take(w, o, amt)) return null; WALLET.add(w, m, amt); M.cst.skim++;
+        if (Math.random() < 0.35) { M.cst.caught++; delete M.mgr[key]; bump(o, m, -20); bump(m, o, -8); log(w, '🕵️ {o}查帳發現掌櫃{m}揩油了 {n} 銀幣，當場把他辭了。', { o: o.name, m: m.name, n: Math.round(amt) }, o.name); mem(w, o, '掌櫃{m}在{s}的帳上動手腳，被我抓到了。', { m: m.name, s: Mk.name(f.k) }, 8); mem(w, m, '我在帳上動手腳被{o}抓到，丟了掌櫃的差事。', { o: o.name }, 8); return { amt, caught: true }; }
+        mem(w, m, '這週又從{s}的帳上撈了一點，{o}沒發現。', { s: Mk.name(f.k), o: o.name }, 5); return { amt, caught: false };
+    }
+    // v9.26.0 給決策核心:這個人是不是哪家店的掌櫃、這週帳上撈得到多少(跟以前擲骰的是同一批人:貪心或愛說謊的掌櫃)
+    function skimInfo(w, a) {
+        if (!a || !(has(a, 'greedy') || a.dark?.liar) || typeof WALLET === 'undefined' || !w.wallet) return null; const M = S(w);
+        const key = Object.keys(M.mgr || {}).find(k => M.mgr[k] === a.agentId); if (!key) return null;
+        const k = key.split(':')[0], rival = key.endsWith(':R'); const o = w.agents[rival ? M.rival?.[k]?.owner : M.owners?.[k]]; if (!o || o.isDead || o === a) return null;
+        const f = { k, rival }; const amt = skimAmt(w, f, o); return amt >= 1 ? { key, f, o, amt: Math.round(amt), shop: MK().name(k) } : null;
+    }
+    function skimBy(w, a) { const I = skimInfo(w, a); return I ? skim(w, S(w), I.key, I.f, I.o, a) : null; }
     function manage(w, all, d) {
         const M = S(w); const Mk = MK(); const owners = new Set([...Object.values(M.owners || {}), ...Object.values(M.rival || {}).map(R => R?.owner)].filter(Boolean)); const keep = new Set();
         for (const id of owners) {
@@ -191,11 +207,7 @@ const COMPETE = (() => {
                 }
                 const fee = r2(2 * wageIdx()); if (WALLET.take(w, o, fee)) WALLET.add(w, m, fee);
                 // 掌櫃揩油:貪心或愛說謊的掌櫃每週有機會偷一點營收,老闆不一定抓得到
-                if (d % 7 === 3 && (has(m, 'greedy') || m.dark?.liar) && Math.random() < 0.25) {
-                    const amt = Math.min(bal(w, o), r2(firmRev(w, f) * 0.08)); if (amt >= 1 && WALLET.take(w, o, amt)) { WALLET.add(w, m, amt); M.cst.skim++;
-                        if (Math.random() < 0.35) { M.cst.caught++; delete M.mgr[key]; bump(o, m, -20); bump(m, o, -8); log(w, '🕵️ {o}查帳發現掌櫃{m}揩油了 {n} 銀幣，當場把他辭了。', { o: o.name, m: m.name, n: Math.round(amt) }, o.name); mem(w, o, '掌櫃{m}在{s}的帳上動手腳，被我抓到了。', { m: m.name, s: Mk.name(f.k) }, 8); mem(w, m, '我在帳上動手腳被{o}抓到，丟了掌櫃的差事。', { o: o.name }, 8); }
-                        else mem(w, m, '這週又從{s}的帳上撈了一點，{o}沒發現。', { s: Mk.name(f.k), o: o.name }, 5); }
-                }
+                if (!byDark(w) && d % 7 === 3 && (has(m, 'greedy') || m.dark?.liar) && Math.random() < 0.25) skim(w, M, key, f, o, m); // v9.26.0 有決策核心時,動不動帳由掌櫃自己決定
             }
         }
         for (const key of Object.keys(M.mgr)) if (!keep.has(key)) delete M.mgr[key];
@@ -297,7 +309,7 @@ const COMPETE = (() => {
         for (const [key, id] of Object.entries(w.market?.mgr || {})) if (id === a.agentId) out.push(fill('{s}的掌櫃', { s: Mk.name(key.split(':')[0]) }));
         return out.join(t('；'));
     }
-    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, byChoice, manage, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
+    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, byChoice, manage, skimInfo, skimBy, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
 })();
 if (typeof window !== 'undefined') window.COMPETE = COMPETE;
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.antitrust_cap = { icon: '⚖️', label: '反壟斷' };

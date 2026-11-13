@@ -171,6 +171,7 @@ const DARK = (() => {
     // v9.20.0 村民自己拿主意時由決策核心決定(sim-decide-soc.js)；這裡只剩「怎麼結算」。下面擲骰的版本留給沒有決策核心的情況
     const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const byLife = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.22.0 陰謀陷害交給本人決定
+    const byDark = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.dark && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.26.0 說謊、選戰手段、傳話交給本人決定
     const wrongById = (w, id) => (S(w).wrongs || []).find(x => x.id === id) || null;
     const wrongId = (w, x) => { const D = S(w); if (!x.id) { D.wn = (D.wn || 0) + 1; x.id = D.wn; } return x.id; };
     // 這筆帳是什麼事(給決策核心看的一句話)。who 做的人、vName 受害的人;整句已經寫好人名的(被拆穿的秘密)就照原句
@@ -317,7 +318,9 @@ const DARK = (() => {
         if ((has(listener, 'kind') || honesty(listener) >= 4) && aff(listener, foe) >= 30) {
             rel(listener, speaker)?.modifyAffinity?.(-3); bump(w, listener, 'helped');
             mem(w, listener, '{a}在背後說{c}的壞話，我替{c}說了幾句話。', { a: speaker.name, c: foe.name }, 5);
-            if (Math.random() < 0.35) confront(w, foe, speaker, line);
+            // v9.26.0 要不要去告訴當事人,由聽到的人自己決定(決策核心「聽到有人說朋友壞話」);沒有決策核心才擲骰
+            if (byDark(w)) { try { DECIDE.enqueue(w, listener, 'tattle', { foe: foe.agentId, by: speaker.agentId, line }); } catch (e) {} }
+            else if (Math.random() < 0.35) confront(w, foe, speaker, line);
         } else {
             // v6.52.0 信不信要看說的人名聲:老實的人講的比較有人信,愛八卦、陰險的人講的大家打折聽
             const cred = credibility(w, speaker);
@@ -456,12 +459,13 @@ const DARK = (() => {
             const sellers = all.filter(a => SELLERS.includes(a.job?.key)); if (!sellers.length) return;
             const s = pick(sellers), b = pick(all.filter(a => a !== s));
             const i = Math.floor(Math.random() * 3); const k = ['嫌{s}賣得太貴', '買到{s}做的東西沒幾天就壞了', '要{s}退錢被拒絕'][i]; const k2 = ['賣太貴', '東西做得不好', '不肯退錢'][i];
-            const cheat = honesty(s) <= 1.5 && Math.random() < 0.6;
+            const cheat = byDark(w) ? shorting(w, s) : honesty(s) <= 1.5 && Math.random() < 0.6; // v9.26.0 有沒有偷斤減兩,看這個賣家自己定的做法
             rel(b, s)?.modifyAffinity?.(-6); b.addThought?.('cheated', w, s.agentId, s.name); rel(s, b)?.modifyAffinity?.(-2);
             mem(w, b, '今天{k}，以後不想再跟他買了。', { k: fill(k, { s: s.name }) }, 5);
             mem(w, s, '{b}又來找麻煩，說我{k}。', { b: b.name, k: t(k2) }, 4);
             log(w, 'social', '🛒 {b}跟{s}吵起來了：{k}。{c}', { b: b.name, s: s.name, k: fill(k, { s: s.name }), c: cheat ? t('🎭（{s}真的有偷斤減兩）').replace('{s}', s.name) : t('🎭（其實是原料漲價，{s}沒有騙人）').replace('{s}', s.name) }, b.name);
             if (cheat) { bump(w, s, 'lies'); wrong(w, s, b, 1, '賣東西坑了{v}', { v: b.name }); }
+            if (cheat && byDark(w)) { try { if (typeof WALLET !== 'undefined' && w.wallet) WALLET.pay(w, b, s, SHORT_GAIN); } catch (e) {} } // 坑到的錢是真的從買的人口袋到他口袋
             if (cheat) secret(w, { kind: 'cover', culprit: s.agentId, victim: b.agentId, k: '{s}賣東西真的偷斤減兩，坑了{b}', p: { s: s.name, b: b.name } });
             else D.mis.push({ kind: 'price', a: b.agentId, b: s.agentId, day: today });
         } else if (roll < 0.55) { // 借錢
@@ -504,59 +508,107 @@ const DARK = (() => {
     }
 
     // 選舉的髒招:講對手壞話給選民聽、開空頭支票
+    function smear(w, a, o) {
+        const all = npcs(w); const voters = rnd(all.filter(v => v !== a && v !== o), 3);
+        const kx = pick(DISS_LIE); const line = fill(kx, { who: o.name });
+        for (const v of voters) { rel(v, o)?.modifyAffinity?.(-4); mem(w, v, '{a}拉票的時候跟我說：「{x}」', { a: a.name, x: line }, 5); }
+        log(w, 'politics', '🗳️ {a}拉票時抹黑對手{o}：「{x}」🎭（其實是編的）', { a: a.name, o: o.name, x: line }, a.name);
+        secret(w, { kind: 'slander', culprit: a.agentId, victim: o.agentId, k: '{a}選舉時造謠抹黑{c}（「{x}」）', p: { a: a.name, c: o.name, x: line } });
+        return line;
+    }
+    function hollow(w, a) {
+        const all = npcs(w);
+        const promise = pick(['當選後每戶發 50 銀幣', '當選後保證不再缺糧', '當選後每週辦一次宴席', '當選後把路全部鋪成石板']);
+        for (const v of rnd(all.filter(v => v !== a), 3)) { rel(v, a)?.modifyAffinity?.(3); mem(w, v, '{a}答應我們：「{x}」', { a: a.name, x: t(promise) }, 5); }
+        log(w, 'politics', '🗳️ {a}開出支票：「{x}」🎭（根本做不到）', { a: a.name, x: t(promise) }, a.name);
+        secret(w, { kind: 'promise', culprit: a.agentId, victim: null, k: '{a}的選舉承諾「{x}」是空頭支票', p: { a: a.name, x: t(promise) } });
+        return promise;
+    }
     function campaign(w) {
         const E = w.election; if (!E?.active || E.phase !== 'campaign' || !Array.isArray(E.candidates)) return;
-        const all = npcs(w);
+        if (byDark(w)) return; // v9.26.0 選戰怎麼打由候選人自己決定(決策核心「選戰怎麼打」)
         for (const c of E.candidates) {
             const a = w.agents[c.agentId]; if (!a || a.isPlayer) continue;
             if (honesty(a) > 2 || Math.random() > 0.3) continue;
             const opp = E.candidates.map(x => w.agents[x.agentId]).filter(x => x && x !== a && !x.isPlayer);
-            if (opp.length && malice(a) >= 1 && Math.random() < 0.6) {
-                const o = pick(opp); const voters = rnd(all.filter(v => v !== a && v !== o), 3);
-                const kx = pick(DISS_LIE); const line = fill(kx, { who: o.name });
-                for (const v of voters) { rel(v, o)?.modifyAffinity?.(-4); mem(w, v, '{a}拉票的時候跟我說：「{x}」', { a: a.name, x: line }, 5); }
-                log(w, 'politics', '🗳️ {a}拉票時抹黑對手{o}：「{x}」🎭（其實是編的）', { a: a.name, o: o.name, x: line }, a.name);
-                secret(w, { kind: 'slander', culprit: a.agentId, victim: o.agentId, k: '{a}選舉時造謠抹黑{c}（「{x}」）', p: { a: a.name, c: o.name, x: line } });
-            } else {
-                const promise = pick(['當選後每戶發 50 銀幣', '當選後保證不再缺糧', '當選後每週辦一次宴席', '當選後把路全部鋪成石板']);
-                for (const v of rnd(all.filter(v => v !== a), 3)) { rel(v, a)?.modifyAffinity?.(3); mem(w, v, '{a}答應我們：「{x}」', { a: a.name, x: t(promise) }, 5); }
-                log(w, 'politics', '🗳️ {a}開出支票：「{x}」🎭（根本做不到）', { a: a.name, x: t(promise) }, a.name);
-                secret(w, { kind: 'promise', culprit: a.agentId, victim: null, k: '{a}的選舉承諾「{x}」是空頭支票', p: { a: a.name, x: t(promise) } });
-            }
+            if (opp.length && malice(a) >= 1 && Math.random() < 0.6) smear(w, a, pick(opp)); else hollow(w, a);
         }
     }
+    // v9.26.0 給決策核心:這個候選人現在能用哪些手段(跟以前擲骰的是同一批人:不夠老實的才會動這個念頭)
+    function campInfo(w, a) {
+        const E = w.election; if (!a || !E?.active || E.phase !== 'campaign' || !Array.isArray(E.candidates) || !E.candidates.some(c => c.agentId === a.agentId)) return null;
+        const opp = E.candidates.map(x => w.agents[x.agentId]).filter(x => x && x !== a && !x.isPlayer && !x.isDead);
+        return { opp, left: E.campaignDaysLeft || 0, smear: honesty(a) <= 2 && malice(a) >= 1 && opp.length > 0, hollow: honesty(a) <= 2 };
+    }
+    function smearBy(w, a, oid) { const I = campInfo(w, a); const o = I && I.smear ? I.opp.find(x => x.agentId === oid) : null; return o ? { o, line: smear(w, a, o) } : null; }
+    function hollowBy(w, a) { const I = campInfo(w, a); return I && I.hollow ? { x: hollow(w, a) } : null; }
 
     // ---------- 說謊:偷懶偷吃還推給別人;善意的謊言 ----------
+    const pilferOk = (w, a) => honesty(a) <= 1 && (has(a, 'lazy') || has(a, 'glutton')) && !!w.stockpile;
+    function pilferDo(w, a, v) {
+        const all = npcs(w); const sp = w.stockpile;
+        const food = has(a, 'glutton'); const what = food ? t('倉庫的食物') : t('工具');
+        if (food) sp.consume?.('food', 8, w.tickCount, t('不見了')); else sp.consume?.('tools', 1, w.tickCount, t('壞了'));
+        if (v) {
+            for (const o of rnd(all.filter(x => x !== a && x !== v), 3)) { rel(o, v)?.modifyAffinity?.(-4); mem(w, o, '{a}說是{v}弄的：{what}。', { a: a.name, v: v.name, what }, 5); }
+            v.addThought?.('wrongly_blamed', w); mem(w, v, '大家說{what}是我弄的，可是根本不是我！', { what }, 7);
+            log(w, 'incident', '⚠️ {what}出了狀況，{a}說是{v}弄的。🎭（其實是{a}自己）', { what, a: a.name, v: v.name }, a.name);
+            bump(w, a, 'lies'); wrong(w, a, v, 2, '把{what}推給{v}', { what, v: v.name });
+            secret(w, { kind: 'cover', culprit: a.agentId, victim: v.agentId, k: '{what}其實是{a}弄的，還推給{v}', p: { what, a: a.name, v: v.name } });
+        } else {
+            log(w, 'incident', '⚠️ {what}出了狀況，沒人承認。🎭（其實是{a}）', { what, a: a.name }, a.name);
+            secret(w, { kind: 'cover', culprit: a.agentId, victim: null, k: '{what}其實是{a}弄的，他一直裝作不知道', p: { what, a: a.name } });
+        }
+        return what;
+    }
+    const comfortOk = (a) => has(a, 'kind') || has(a, 'romantic');
+    const sadFriend = (w, a) => npcs(w).find(b => b !== a && (b.mood ?? 50) < 30 && aff(a, b) >= 20) || null;
+    function comfortDo(w, a, sad) {
+        sad.moodModifier = (sad.moodModifier || 0) + 4; sad.addThought?.('comforted', w, a.agentId, a.name);
+        mem(w, sad, '{a}跟我說大家其實都很喜歡我，心裡好受多了。', { a: a.name }, 5);
+        log(w, 'social', '💗 {a}安慰心情低落的{b}：「大家其實都很喜歡你。」🎭（善意的謊言）', { a: a.name, b: sad.name }, a.name);
+        bump(w, a, 'helped');
+        secret(w, { kind: 'white', culprit: a.agentId, victim: sad.agentId, k: '{a}說「大家都很喜歡{b}」是善意的謊言', p: { a: a.name, b: sad.name } });
+    }
     function lies(w) {
+        if (byDark(w)) return; // v9.26.0 要不要拿、要不要推給別人、要不要說善意的謊,由本人決定
         const all = npcs(w); const sp = w.stockpile;
         for (const a of all) {
             if (honesty(a) <= 1 && (has(a, 'lazy') || has(a, 'glutton')) && Math.random() < 0.06 && sp) {
-                const food = has(a, 'glutton'); const what = food ? t('倉庫的食物') : t('工具');
-                if (food) sp.consume?.('food', 8, w.tickCount, t('不見了')); else sp.consume?.('tools', 1, w.tickCount, t('壞了'));
                 const f = foeOf(w, a, null);
-                if (f && malice(a) >= 1.5) {
-                    const v = f.b; for (const o of rnd(all.filter(x => x !== a && x !== v), 3)) { rel(o, v)?.modifyAffinity?.(-4); mem(w, o, '{a}說是{v}弄的：{what}。', { a: a.name, v: v.name, what }, 5); }
-                    v.addThought?.('wrongly_blamed', w); mem(w, v, '大家說{what}是我弄的，可是根本不是我！', { what }, 7);
-                    log(w, 'incident', '⚠️ {what}出了狀況，{a}說是{v}弄的。🎭（其實是{a}自己）', { what, a: a.name, v: v.name }, a.name);
-                    bump(w, a, 'lies'); wrong(w, a, v, 2, '把{what}推給{v}', { what, v: v.name });
-                    secret(w, { kind: 'cover', culprit: a.agentId, victim: v.agentId, k: '{what}其實是{a}弄的，還推給{v}', p: { what, a: a.name, v: v.name } });
-                } else {
-                    log(w, 'incident', '⚠️ {what}出了狀況，沒人承認。🎭（其實是{a}）', { what, a: a.name }, a.name);
-                    secret(w, { kind: 'cover', culprit: a.agentId, victim: null, k: '{what}其實是{a}弄的，他一直裝作不知道', p: { what, a: a.name } });
-                }
+                pilferDo(w, a, f && malice(a) >= 1.5 ? f.b : null);
             }
-            if ((has(a, 'kind') || has(a, 'romantic')) && Math.random() < 0.05) {
-                const sad = all.find(b => b !== a && (b.mood ?? 50) < 30 && aff(a, b) >= 20);
-                if (sad) {
-                    sad.moodModifier = (sad.moodModifier || 0) + 4; sad.addThought?.('comforted', w, a.agentId, a.name);
-                    mem(w, sad, '{a}跟我說大家其實都很喜歡我，心裡好受多了。', { a: a.name }, 5);
-                    log(w, 'social', '💗 {a}安慰心情低落的{b}：「大家其實都很喜歡你。」🎭（善意的謊言）', { a: a.name, b: sad.name }, a.name);
-                    bump(w, a, 'helped');
-                    secret(w, { kind: 'white', culprit: a.agentId, victim: sad.agentId, k: '{a}說「大家都很喜歡{b}」是善意的謊言', p: { a: a.name, b: sad.name } });
-                }
-            }
+            if (comfortOk(a) && Math.random() < 0.05) { const sad = sadFriend(w, a); if (sad) comfortDo(w, a, sad); }
         }
     }
+    // v9.26.0 給決策核心。會動這些念頭的,跟以前擲骰的是同一批人;做不做由他自己決定
+    function pilferInfo(w, a) {
+        if (!a || !pilferOk(w, a)) return null; const food = has(a, 'glutton');
+        let have = 0; try { have = w.stockpile.get(food ? 'food' : 'tools') || 0; } catch (e) {} if (have < (food ? 8 : 1)) return null; // 倉庫是空的就沒得拿
+        const f = foeOf(w, a, null); return { food, foe: f ? f.b : null, why: f ? f.g.why : null, mal: malice(a) };
+    }
+    function pilferBy(w, a, blame) {
+        const I = pilferInfo(w, a); if (!I) return null; const v = blame && I.foe ? I.foe : null;
+        const what = pilferDo(w, a, v); a.moodModifier = (a.moodModifier || 0) + (I.food ? 3 : 2); // 吃飽了／省了力氣
+        mem(w, a, v ? (I.food ? '我偷吃了倉庫的東西，還說是{v}拿的。' : '我把公家的工具弄壞了，還說是{v}弄的。') : (I.food ? '我偷吃了倉庫的東西，沒有人知道。' : '我把公家的工具弄壞了，裝作不知道。'), { v: v ? v.name : '' }, 5);
+        return { what, v, food: I.food };
+    }
+    function comfortInfo(w, a) { if (!a || !comfortOk(a)) return null; const sad = sadFriend(w, a); return sad ? { sad } : null; }
+    function comfortBy(w, a, how) {
+        const I = comfortInfo(w, a); if (!I) return null; const sad = I.sad;
+        if (how === 'lie') comfortDo(w, a, sad);
+        else { sad.moodModifier = (sad.moodModifier || 0) + 2; rel(sad, a)?.modifyAffinity?.(2); mem(w, sad, '{a}來陪我坐了一會，沒多說什麼。', { a: a.name }, 4); mem(w, a, '{b}心情很差，我去陪他坐了一會。', { b: sad.name }, 4); bump(w, a, 'helped'); }
+        return { sad, how };
+    }
+    // 做生意的手法:不夠老實的賣家自己決定要不要偷斤減兩(定下來以後,買賣糾紛是不是真的坑人就看這個,不再擲骰)
+    const SHORT_GAIN = 3;
+    const tradeOk = (a) => !!a && SELLERS.includes(a.job?.key) && honesty(a) <= 1.5;
+    const shorting = (w, s) => tradeOk(s) && S(w).trade?.[s.agentId]?.k === 'short';
+    function tradeInfo(w, a) { if (!tradeOk(a)) return null; const cur = S(w).trade?.[a.agentId] || null; return { cur: cur ? cur.k : null, since: cur ? cur.d : null, gain: SHORT_GAIN }; }
+    function tradeSet(w, a, k) { if (!tradeOk(a) || !['fair', 'short'].includes(k)) return false; const D = S(w); D.trade = D.trade || {}; const was = D.trade[a.agentId]?.k || null; D.trade[a.agentId] = { k, d: day(w) }; return was !== k; }
+    // 聽到有人說朋友壞話:去不去告訴當事人
+    function tattleInfo(w, a, c) { const foe = w.agents[c?.foe], by = w.agents[c?.by]; return a && foe && by && !foe.isDead && !by.isDead && foe !== a && by !== a ? { foe, by, line: c.line || '' } : null; }
+    function tattleBy(w, a, c) { const I = tattleInfo(w, a, c); if (!I) return null; mem(w, a, '我把{a}在背後說的話告訴了{c}。', { a: I.by.name, c: I.foe.name }, 5); confront(w, I.foe, I.by, I.line); return I; }
 
     // ---------- 陰謀:籌劃 → 動手 → 可能被拆穿 ----------
     function schemes(w, ch) {
@@ -694,6 +746,7 @@ const DARK = (() => {
         try { disputes(w); } catch (e) { console.warn('[Dark] disputes', e); }
         try { campaign(w); } catch (e) { console.warn('[Dark] campaign', e); }
         try { lies(w); } catch (e) { console.warn('[Dark] lies', e); }
+        try { const T = w.dark.trade; if (T) for (const id of Object.keys(T)) if (!w.agents[id] && !w.isAway?.(id)) delete T[id]; } catch (e) {}
         try { schemes(w, ch); } catch (e) { console.warn('[Dark] schemes', e); }
         try { misunderstand(w); } catch (e) { console.warn('[Dark] mis', e); }
         try { discover(w); } catch (e) { console.warn('[Dark] discover', e); }
@@ -724,7 +777,8 @@ const DARK = (() => {
         return out;
     }
     return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump,
-        today: day, byChoice, byLife, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY };
+        today: day, byChoice, byLife, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY,
+        byDark, campInfo, smearBy, hollowBy, pilferInfo, pilferBy, comfortInfo, comfortBy, tradeInfo, tradeSet, shorting, tattleInfo, tattleBy };
 })();
 
 // ---- 掛勾:聊天時講壞話、每日、存檔、AI ----

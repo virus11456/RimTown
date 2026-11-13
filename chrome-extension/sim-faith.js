@@ -93,6 +93,16 @@ const FAITH = (() => {
     const bumpP = (w, a, n) => { const f = w.faith?.of?.[a.agentId]; if (f) f.piety = Math.max(0, Math.min(100, f.piety + n)); };
     const tierLv = (w) => (typeof TIERS !== 'undefined' ? TIERS.level(w) : 0);
     const placeOf = (w, R) => SK[R.sk].place[Math.max(0, Math.min(3, tierLv(w)))];
+    // 神職私吞奉獻(擲骰版與決策核心共用):拿走基金的三成,真相頁看得到
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
+    function embezzle(w, R, priest) { const n = Math.floor(R.fund * 0.3); R.fund -= n; try { WALLET.add(w, priest, n); DARK.secret(w, { kind: 'scheme', culprit: priest.agentId, victim: priest.agentId, k: '{a}從{r}的奉獻裡私吞了 {n} 銀幣', p: { a: priest.name, r: R.name[0], n } }); } catch (e) {} return n; }
+    // v9.26.0 給決策核心:管奉獻箱的神職(跟以前擲骰的是同一批人:基金有 40 銀幣以上、不是苦行的人)
+    function embezzleInfo(w, a) {
+        if (!a || a.job?.key !== 'priest' || has(a, 'ascetic') || typeof WALLET === 'undefined' || !w.wallet) return null; const R = relOf(w, a); if (!R || !(R.fund >= 40)) return null;
+        if (believers(w, R).find(x => x.job?.key === 'priest') !== a) return null; // 一個教團只有一位管錢的
+        return { R, fund: Math.floor(R.fund), n: Math.floor(R.fund * 0.3) };
+    }
+    function embezzleBy(w, a) { const I = embezzleInfo(w, a); if (!I) return null; const n = embezzle(w, I.R, a); mem(w, a, '我從{r}的奉獻箱裡拿了 {n} 銀幣，沒有人知道。', { r: I.R.name[0], n }, 6); return { n, R: I.R }; }
     const believers = (w, R) => npcs(w).filter(a => w.faith.of[a.agentId]?.rel === R.id);
     // v7.0.0 宗教財務:捐獻進基金(若已課稅,15% 交公庫);基金付維護、辦節日、濟貧,太多就蓋場所
     const TAX_RATE = 0.15;
@@ -163,7 +173,7 @@ const FAITH = (() => {
             if (R.sk === 'li' && bs.length && w.crown && w.crown.king && !w.crown.republic) w.crown.legit = Math.min(100, (w.crown.legit || 50) + 0.05 * bs.length / Math.max(1, all.length) * 10);
             // 神職貪污(偶爾,真相頁看得到)
             const priest = bs.find(a => a.job?.key === 'priest');
-            if (priest && R.fund >= 40 && Math.random() < 0.04 && !has(priest, 'ascetic')) { const n = Math.floor(R.fund * 0.3); R.fund -= n; try { WALLET.add(w, priest, n); DARK.secret(w, { kind: 'scheme', culprit: priest.agentId, victim: priest.agentId, k: '{a}從{r}的奉獻裡私吞了 {n} 銀幣', p: { a: priest.name, r: R.name[0], n } }); } catch (e) {} }
+            if (!byDark(w) && priest && R.fund >= 40 && Math.random() < 0.04 && !has(priest, 'ascetic')) embezzle(w, R, priest); // v9.26.0 有決策核心時,拿不拿由神職自己決定
             // 節日
             const season = ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock?.season); if (season === R.festSeason && w.clock?.day === R.festDay && R._festDay !== d) {
                 R._festDay = d; for (const a of bs) { a.moodModifier = (a.moodModifier || 0) + 6; bumpP(w, a, 2); }
@@ -269,7 +279,7 @@ const FAITH = (() => {
             .concat([]);
     }
     const nonBelievers = (w) => npcs(w).filter(a => !S(w).of[a.agentId]?.rel).length;
-    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, byChoice };
+    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, byChoice, embezzleInfo, embezzleBy };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') { PROPOSAL_KINDS.faith_tax = { icon: '⛪', label: '宗教稅' }; PROPOSAL_KINDS.faith_untax = { icon: '⛪', label: '宗教稅' }; }
 if (typeof VOTE_WHY !== 'undefined') { VOTE_WHY.faith = VOTE_WHY.faith || '信仰的立場'; VOTE_WHY.purse = VOTE_WHY.purse || '看自己的荷包'; }

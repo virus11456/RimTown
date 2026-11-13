@@ -186,21 +186,37 @@ const WALLET = (() => {
         }
     }
     // 選舉:不老實又有錢的候選人私下塞錢拉票
+    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 買不買票由候選人自己決定
+    const BUY_VOTE = 10;
+    const buyable = (w, a, all) => all.filter(v => v !== a && get(w, v) < 40 && aff(v, a) > -30);
+    function buyVotes(w, a, all) {
+        const voters = buyable(w, a, all).sort(() => Math.random() - 0.5).slice(0, 2); const got = [];
+        for (const v of voters) {
+            if (!pay(w, a, v, BUY_VOTE)) break;
+            rel(v, a)?.modifyAffinity?.(15); v.addThought?.('bribed', w, a.agentId, a.name);
+            mem(w, v, '{c}私下塞了 10 銀幣給我，要我投他一票。', { c: a.name }, 5);
+            try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: v.agentId, k: '{c}私下塞錢給{v}買票', p: { c: a.name, v: v.name } }); } catch (e) {}
+            got.push(v);
+        }
+        return got;
+    }
     function election(w, W, all) {
         const el = w.election; if (!el || el.phase !== 'campaign' || !Array.isArray(el.candidates)) return;
+        if (byDark(w)) return;
         for (const c of el.candidates) {
             const a = w.agents[c.agentId || c.id]; if (!a || get(w, a) < 60) continue;
             let honest = 3; try { honest = DARK.honesty(a); } catch (e) {}
             if (honest > 1.8 || Math.random() > 0.5) continue;
-            const voters = all.filter(v => v !== a && get(w, v) < 40 && aff(v, a) > -30).sort(() => Math.random() - 0.5).slice(0, 2);
-            for (const v of voters) {
-                if (!pay(w, a, v, 10)) break;
-                rel(v, a)?.modifyAffinity?.(15); v.addThought?.('bribed', w, a.agentId, a.name);
-                mem(w, v, '{c}私下塞了 10 銀幣給我，要我投他一票。', { c: a.name }, 5);
-                try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: v.agentId, k: '{c}私下塞錢給{v}買票', p: { c: a.name, v: v.name } }); } catch (e) {}
-            }
+            buyVotes(w, a, all);
         }
     }
+    // v9.26.0 給決策核心:這個候選人現在買不買得了票(跟以前擲骰的是同一批人:手上有 60 銀幣、不夠老實、鎮上有手頭緊的人)
+    function voteBuyInfo(w, a) {
+        const el = w.election; if (!a || !w.wallet || !el || el.phase !== 'campaign' || !Array.isArray(el.candidates) || !el.candidates.some(c => (c.agentId || c.id) === a.agentId) || get(w, a) < 60) return null;
+        let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest > 1.8) return null;
+        const n = buyable(w, a, npcs(w)).length; return n ? { n: Math.min(2, n), each: BUY_VOTE, bal: Math.round(get(w, a)) } : null;
+    }
+    function voteBuyBy(w, a) { return voteBuyInfo(w, a) ? buyVotes(w, a, npcs(w)) : null; }
 
     // ---------- 鎮況急事 ----------
     function issues(w) {
@@ -266,7 +282,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, byFun, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, byFun, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失

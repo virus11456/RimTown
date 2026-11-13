@@ -51,6 +51,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
         // 投贊成票、愛熱鬧又懶的人:最容易偷溜;被抓 → 說一套做一套被拆穿
         const a = A().find(x => !X.st[x.agentId]); traits(a, ['glutton', 'lazy']); vals(a, ['自由']); WX.rt[a.agentId] = { s: 'tavern', t: 'pm' }; X.pw.fear = -99; X.pw.shame = -99; X.ms.close = d0 - 30;
         const pp = { id: 'LT' + Math.floor(Math.random() * 1e6), kind: 'cal_close', createdDay: X.day, proposerId: A()[2].agentId, votes: { [a.agentId]: 'for' }, why: {}, status: 'approved' }; w.proposals.items.push(pp);
+        PW.sneakBy(w, a); // v9.26.0 溜不溜由本人決定(不再擲骰)：這裡讓他決定要溜，隔天真的溜
         next(); fix(0.1, () => T.sneakDaily(w, X, d0)); const hyp = WX.hyp.find(h => h.a === a.agentId && h.k === 'cal_close');
         const face0 = WAYS.faceOf(w, a), tr0 = WX.trust; PW.caught(w, X, a, 'close', d0, false); const L = logs();
         out.sneak = { brk: X.pw.brk[a.agentId] === d0, hyp: !!hyp, exposed: !!hyp?.exp, face: face0 - WAYS.faceOf(w, a), trust: Math.round((tr0 - WX.trust) * 10) / 10, log: /🤫/.test(L), shame: X.pw.shame === d0, after: PW.fatigue(w, X) };
