@@ -56,7 +56,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 6) 房屋抵押,還不出來被銀行收走
       const B = BANK.S(w); B.open = true; B.status = 'ok'; B.reserve = 2000; B.banker = rich.agentId; const debtor = npcs().find(a => a !== rich && a.age >= 20);
       const house = Object.values(E.units).find(u => !u.occ) || Object.values(E.units)[0]; house.owner = debtor.agentId; Wl.bal[debtor.agentId] = 0; delete B.loans[debtor.agentId];
-      const rnd = Math.random; Math.random = () => 0.01; try { ESTATE.market(w, ESTATE.households(w)); } finally { Math.random = rnd; }
+      const rnd = Math.random; Math.random = () => 0.01; try { ESTATE.market(w, ESTATE.households(w)); if (ESTATE.byShare?.(w)) ESTATE.mortBy(w, debtor); /* v9.24.0 抵押不抵押交給屋主自己決定：這裡替他拿主意 */ } finally { Math.random = rnd; }
       out.mortgage = !!B.loans[debtor.agentId]?.collateral; const coll = B.loans[debtor.agentId]?.collateral; if (B.loans[debtor.agentId]) { B.loans[debtor.agentId].due = -100; Wl.bal[debtor.agentId] = 0; B.lastDay = null; try { BANK.daily(w); } catch (e) { out.bankErr = e.message; } }
       out.foreclosed = !!coll && E.units[coll].owner === rich.agentId;
       // 7) 存款利息只從放款利息付
