@@ -7,7 +7,7 @@
 'use strict';
 
 const WISH = (() => {
-    const COST = 6, MAXLEN = 60;
+    const COST = 6; const maxLen = () => (en() ? 160 : 60); // v9.23.5 英文一句話 60 個字元寫不完(約十個單字),放寬到 160
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
     const adults = (w) => npcs(w).filter(a => (a.age ?? 30) >= 14 && !w.isAway?.(a.agentId));
@@ -15,6 +15,7 @@ const WISH = (() => {
     const rnd = (L) => L[Math.floor(Math.random() * L.length)];
     const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, Number(v) || 0));
     const clip = (s, n) => String(s ?? '').replace(/[\u0000-\u001f<>]/g, ' ').trim().slice(0, n);
+    const sclip = (s, zh, enMax, plain) => (typeof LLMClient !== 'undefined' && LLMClient.clip) ? LLMClient.clip(s, zh, enMax, plain) : clip(s, zh); // v9.23.5 AI 寫的字太長時切在句子或單字邊界(英文上限放寬),不再固定字數硬切
     const powerOf = (w) => (typeof CALAMITY !== 'undefined' ? CALAMITY.power(w) : Infinity);
     const spend = (w, n) => (typeof CALAMITY !== 'undefined' ? CALAMITY.spend(w, n) : true);
     const byName = (w, n) => { n = String(n || '').trim(); if (!n) return null; const L = (x) => (typeof I18N !== 'undefined' && I18N.delocalizeNames) ? I18N.delocalizeNames(x) : x; return npcs(w).find(a => a.name === n || a.name === L(n) || t(a.name) === n) || null; };
@@ -101,7 +102,7 @@ const WISH = (() => {
         const good = fx.reduce((s, e) => s + (e.type === 'mood' ? e.amount : e.type === 'hurt' ? -3 : e.type === 'gift' || e.type === 'heal' ? 3 : 0), 0);
         const A = adults(w).sort(() => Math.random() - 0.5).slice(0, 2);
         const lines = good > 0 ? ['真不敢相信，竟然真的發生了！', '這一定是好兆頭。'] : good < 0 ? ['這下可糟了……', '大家先別慌，一起想辦法。'] : ['你們看到了嗎？', '這到底是怎麼回事？'];
-        return { title: clip(text, 16), icon: icons[0], story: { k: '鎮上真的發生了：{x}', p: { x: clip(text, MAXLEN) } }, fx: sanitize(w, fx), reactions: A.map((a, i) => ({ id: a.agentId, name: a.name, text: t(lines[i % lines.length]) })), ai: false };
+        return { title: sclip(text, 16, 48, true), icon: icons[0], story: { k: '鎮上真的發生了：{x}', p: { x: clip(text, maxLen()) } }, fx: sanitize(w, fx), reactions: A.map((a, i) => ({ id: a.agentId, name: a.name, text: t(lines[i % lines.length]) })), ai: false };
     }
 
     // ---------- 有 AI:讓 AI 寫成一件事 ----------
@@ -126,13 +127,13 @@ ${t('只輸出 JSON')}${t('：')}{"title":"${t('12 字內的標題')}","icon":"$
         try { ce._countNpcLlmUse?.(w); } catch (e) {}
         const j = await ce._askJson(prompt, 520); if (!j || typeof j !== 'object') return null;
         const fx = sanitize(w, j.effects); if (!fx.length && !j.story) return null;
-        const reactions = (Array.isArray(j.reactions) ? j.reactions : []).slice(0, 3).map(r => { const a = byName(w, r?.name); return a && r.line ? { id: a.agentId, name: a.name, text: clip(r.line, 60) } : null; }).filter(Boolean);
-        return { title: clip(j.title || text, 20), icon: clip(j.icon || '✨', 4) || '✨', story: clip(j.story || text, 90), fx, reactions, ai: true };
+        const reactions = (Array.isArray(j.reactions) ? j.reactions : []).slice(0, 3).map(r => { const a = byName(w, r?.name); return a && r.line ? { id: a.agentId, name: a.name, text: sclip(r.line, 60) } : null; }).filter(Boolean);
+        return { title: sclip(j.title || text, 20, 60, true), icon: clip(j.icon || '✨', 4) || '✨', story: sclip(j.story || text, 90), fx, reactions, ai: true };
     }
 
     // ---------- 寫下一句話 ----------
     async function cast(w, text) {
-        text = clip(text, MAXLEN); if (text.length < 2) return { ok: false, why: 'empty' };
+        text = clip(text, maxLen()); if (text.length < 2) return { ok: false, why: 'empty' };
         const can = canCast(w); if (!can.ok) return can;
         const W = S(w); W.busy = true;
         let ev = null; try { ev = await byAI(w, text); } catch (e) { ev = null; }
@@ -160,7 +161,7 @@ ${t('只輸出 JSON')}${t('：')}{"title":"${t('12 字內的標題')}","icon":"$
         return { ok: true, ev: Object.assign({}, W.last, { affected }) };
     }
     const EXAMPLES = ['今晚下起流星雨', '河邊撈到一箱金幣', '一場大雨救了乾枯的田', '有個吟遊詩人路過唱了一整夜', '兩個冤家被困在同一間屋子'];
-    return { COST, MAXLEN, S, canCast, cast, sanitize, byRules, describe, EXAMPLES, _apply: X };
+    return { COST, get MAXLEN() { return maxLen(); }, S, canCast, cast, sanitize, byRules, describe, EXAMPLES, _apply: X };
 })();
 
 if (typeof World !== 'undefined') {

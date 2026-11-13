@@ -4,6 +4,7 @@
 //   3) 聊完改行程：長度上限 350→500、要求寫短；每日行程一次 2 人、每人 650
 //   4) AI 寫的句子太長時切在句子結尾（英文上限放寬），不再固定字數硬切；台詞前面重複的「名字：」拿掉
 //   5) 題目裡的地點和動作用看得懂的名字（以前是 residential south、sleeping）
+//   6) 跟村民聊天：首長本人知道自己是首長、去掉外層引號、英文句點結尾不再被砍、Oh／Ha 不當複述；許願的字數切法與英文長度
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const path = require('path'); const fs = require('fs');
 let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('  ✓ ' + m); } else { fail++; console.log('  ✗ ' + m + ' → ' + JSON.stringify(x)); } };
@@ -76,6 +77,26 @@ async function client(browser, lang) {
     { let asked = null; w.townFeed = w.townFeed || { posts: [] }; w.townFeed._lastLlmPostTick = -99999; D2.currentLocation = 'residential_south'; D2.activity = 'sleeping';
       ce.llm.generate = async (p) => { asked = p; return '__ERROR__'; }; try { await ce.generateFeedPost(w, D2, true); } catch (e) { out.feedErr = String(e); }
       out.feed = { asked: !!asked, raw: /residential[ _]south|sleeping/.test(asked || ''), line: (String(asked || '').split('\n').find(l => /現在在|Currently at|is at|Now at/i.test(l)) || '').slice(0, 80) }; }
+    // 8) 跟村民聊天（第二輪真模型驗證找到的）
+    { const player = w.agents.player || Object.values(w.agents).find(a => a.isPlayer); const mName = typeof mayorNameOf === 'function' ? mayorNameOf(w) : ''; const M = npcs.find(a => a.name === mName), N = npcs.find(a => a.name !== mName); let asked = '';
+      const FX = '\nEFFECTS: {"affinity_change": 1, "romantic_change": 0, "summary": "ok"}';
+      const say = async (npc, msg, reply) => { player.chatHistory = []; ce.llm._canMakeRequest = () => true; ce.llm.generate = async (p) => { asked = p; return reply + FX; }; const r = await ce.generatePlayerReply(player, npc, msg, w); return r?.npc_reply; };
+      out.chat = { hasMayor: !!M, mName };
+      if (M) { await say(M, '你好', '你好啊。'); out.chat.self = /你自己就是現任|You yourself are the current/.test(asked); out.chat.selfNotOther = !asked.includes(t('現任鎮長是') + mName); }
+      await say(N, '你好', '你好啊。'); out.chat.other = !mName || (asked.includes(mName) && !/你自己就是現任|You yourself are the current/.test(asked));
+      out.chat.quote = await say(N, '你好，今天過得怎麼樣？', '「哈，還行啦！今天忙到腰都快斷了。」');
+      out.chat.period = await say(N, 'What do you think of the mayor?', "Ha, you're asking me that straight out? Well, he is doing his best with a tough job. Me? I had my turn, and it ended badly.");
+      out.chat.oh = await say(N, 'Hello! How has your day been?', 'Oh, hello there, traveler! Busy, but a good kind of busy.');
+      out.chat.star = await say(N, 'What do you think of the mayor?', "*scratches the back of his neck and gives a rueful grin* She's a sharp one, I'll give her that. I *really* mean it.");
+      out.chat.echo = await say(N, 'How has your day been?', 'How has my day been? well, busy as always, traveler.'); }
+    // 9) 許願：AI 寫的標題、故事、反應太長
+    { const S = WISH.S(w); S.busy = false; S.day = null; try { CALAMITY.S(w).power = 40; } catch (e) {} ce.llm._canMakeRequest = () => true; const isEn = LLM_LANG.get() === 'en';
+      const story = isEn ? 'A painted wagon rolled through the gate at dawn, followed by jugglers, a clown, and a drum-beating strongman. The square filled with laughter, and for one afternoon every quarrel in town was forgotten. Then the rain came and everybody ran for the tavern, laughing all the way down the muddy road to the river.' : '一輛彩繪馬車在清晨駛進鎮口，後面跟著雜耍藝人、小丑和打鼓的大力士。廣場上笑聲不斷，這個下午鎮上所有的爭吵都被拋在腦後。後來下起雨，大家笑著一路跑進酒館，沿著泥濘的路一直跑到河邊，誰也沒有停下來。再多寫一句讓它超過上限。';
+      const title = isEn ? 'The Wandering Circus Comes to Our Little Frontier Town at Dawn Today' : '流浪馬戲團在清晨來到我們這座邊境小鎮的廣場上表演了一整個下午';
+      const _ask = ce._askJson; ce._askJson = async () => ({ title, icon: '🎪', story, effects: [{ type: 'mood', who: 'all', amount: 3 }], reactions: [{ name: A.name, line: isEn ? "Look at that clown juggling pies, I have not laughed like this in weeks and weeks, and honestly I thought I never would again after the harvest went so badly for all of us this year, so bless them." : '你看那個小丑在丟派，我好幾個禮拜沒這樣笑過了，說真的今年收成那麼差我還以為再也笑不出來了，真是老天保佑這些人願意來我們這種小地方表演給大家看。' }] });
+      const r = await WISH.cast(w, isEn ? 'A wandering circus arrives and everyone forgets their troubles for one whole afternoon.' : '一個流浪馬戲團來到鎮上，大家暫時忘了煩惱。'); ce._askJson = _ask;
+      const ev = r?.ev || {}; const txt = (x) => typeof x === 'string' ? x : (x?.p?.x || '');
+      out.wish = { ok: !!r?.ok, ai: !!ev.ai, why: r?.why, max: WISH.MAXLEN, input: ev.text, title: txt(ev.title), story: txt(ev.story), react: ev.reactions?.[0]?.text || '' }; }
     // 7) 各功能都改用新的切法
     out.sites = {}; for (const [k, f] of Object.entries({ politics: typeof POLITICS !== 'undefined' ? POLITICS : null })) out.sites[k] = !!f;
     return out;
@@ -90,6 +111,16 @@ async function client(browser, lang) {
   ok(r.replan.has1430 && r.replan.has1800 && r.replan.kept, '改行程的回覆被切斷：寫完的時段照樣排進去，原本已過的時段保留', r.replan);
   ok(r.plans.first && r.plans.first.mt === 1400 && r.plans.first.brief && r.plans.left === 3, '每日行程：一次問 2 人（排隊的 5 人剩 3 人）、長度上限 1400、題目要求寫短', r.plans);
   ok(r.feed.asked && !r.feed.raw, '社群貼文的題目：地點和動作用看得懂的名字（以前是 residential south、sleeping）', r.feed);
+  ok(r.chat.hasMayor && r.chat.self && r.chat.selfNotOther && r.chat.other, '跟首長本人聊天：題目說「你自己就是現任首長」（以前只說現任首長是某某，本人會把自己當別人評論）；跟別人聊照舊交代現任是誰', r.chat);
+  ok(r.chat.quote === '哈，還行啦！今天忙到腰都快斷了。', '整段回覆被引號包住：去掉外層引號', r.chat.quote);
+  ok(/ended badly\.$/.test(r.chat.period || '') && /^Ha, you're/.test(r.chat.period || ''), '英文回覆以句點結尾：整段保留（以前被當成沒寫完，砍回前一個問號）', r.chat.period);
+  ok(/^Oh, hello there/.test(r.chat.oh || ''), '英文回覆開頭的 Oh／Ha：不當成複述剪掉', r.chat.oh);
+  ok(r.chat.star === "She's a sharp one, I'll give her that. I *really* mean it.", '英文回覆裡用星號包起來的動作描寫：拿掉（單字強調不動）', r.chat.star);
+  ok(/^Well, busy as always/.test(r.chat.echo || ''), '真的在複述對方的話：照樣剪掉，剪完英文句首補回大寫', r.chat.echo);
+  { const W = r.wish;
+    ok(W.ok && W.ai && W.max === (en ? 160 : 60) && (!en || /afternoon\.$/.test(W.input)), `許願可以寫的長度：${en ? '英文 160 個字元（以前 60，一句話寫不完）' : '中文照舊 60 字'}`, { max: W.max, input: W.input, why: W.why });
+    ok(W.title.length <= (en ? 60 : 20) && W.title.length >= 8 && !/…$/.test(W.title) && (!en || 'The Wandering Circus Comes to Our Little Frontier Town at Dawn Today'.split(' ').includes(W.title.split(' ').pop())), '許願的標題太長：切在單字邊界、不加「…」', W.title);
+    ok(W.story.length <= (en ? 270 : 90) && /[。.!?！？…]$/.test(W.story) && W.react.length <= (en ? 180 : 60) && /[。.!?！？…]$/.test(W.react), '許願的故事和村民反應太長：切在句子或單字邊界（以前固定字數，英文會斷在單字中間）', { story: W.story, react: W.react }); }
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }
@@ -98,6 +129,8 @@ function sources() {
   const dir = path.join(__dirname, '..', 'chrome-extension'); const need = ['sim-politics', 'sim-culture', 'sim-dream', 'sim-bank', 'sim-diplo', 'sim-crown', 'sim-legacy', 'sim-mind', 'sim-epic', 'sim-aftermath', 'sim-ceremony', 'sim-biz', 'sim-things'];
   const miss = need.filter(f => !/LLMClient\.clip\(/.test(fs.readFileSync(path.join(dir, f + '.js'), 'utf8')));
   ok(miss.length === 0, `${need.length} 個 AI 功能都改成切在句子結尾（不再固定字數硬切）`, miss);
+  const bank = fs.readFileSync(path.join(dir, 'sim-bank.js'), 'utf8');
+  ok(/_askJson\(prompt, 200\)/.test(bank) && (bank.match(/一句話，25 字內/g) || []).length === 2, '銀行利率與紓困的理由：題目要求一句話、紓困的長度上限放寬到 200（以前理由寫太長被切斷就拿不到）', null);
 }
 (async () => {
   await server(); sources();

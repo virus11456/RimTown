@@ -172,6 +172,8 @@ class GossipNetwork {
 }
 
 // --- Conversation Engine (Personality-Driven + LLM) ---
+// v9.23.5 跟旅人聊天時交代現任首長是誰;對方自己就是首長時要講明(以前只說「現任鎮長是某某」,首長本人會把自己當成別人來評論)
+function mayorLineFor(world, npc) { const m = typeof mayorNameOf === 'function' ? mayorNameOf(world) : ''; return !m ? '' : (npc && m === npc.name) ? t('你自己就是現任鎮長。') : `${t('現任鎮長是')}${m}${t('。')}`; }
 class ConversationEngine {
     constructor(llmClient = null) {
         this.llm = llmClient;
@@ -1886,7 +1888,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);
                 const pN = this._buildCharacterProfile(npc);
-                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${world.observerMode ? `${typeof TRAVELER !== 'undefined' ? TRAVELER.persona(world, npc) : t('他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}` : playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorNameOf(world) ? `${t('現任鎮長是')}${mayorNameOf(world)}${t('。')}` : ''}`}
+                const prompt = `${t('你正在扮演「')}${npc.name}${t('」——{town}的一位真實居民。有個叫').replace('{town}', t(world.townName || '邊境鎮'))}${player.name}${t('的人正在跟你說話。')}${world.observerMode ? `${typeof TRAVELER !== 'undefined' ? TRAVELER.persona(world, npc) : t('他是一直看顧著這座小鎮的觀察者：不住在鎮上、不是鎮長，但鎮上的提案都由他批准或否決，大家都認識他、用名字叫他就好。')}${mayorLineFor(world, npc)}` : playerTitle(world) === t('鎮長') ? t('他是現任鎮長。') : `${t('他是來到鎮上的旅人，不是鎮長，不要叫他鎮長。')}${mayorLineFor(world, npc)}`}
 ${t('你要完全入戲，像真人一樣自然地回應。')}
 
 ${t('【你是誰】')}
@@ -1961,10 +1963,11 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         for (let k = 0; k < 2; k++) {
             const mt = out.match(/^(.+?[，。！？!?…～~,.;；]+)\s*/); if (!mt) break;
             const c = norm(mt[1]), rest = out.slice(mt[0].length).trim();
-            if (c.length < 2 || norm(rest).length < 4) break;
+            if (c.length < (/^[\x00-\x7f]+$/.test(c) ? 6 : 2) || norm(rest).length < 4) break; // v9.23.5 英文的 Oh／Ha／Well 這種短語助詞不算複述(以前拿字母去比,「Oh」剛好出現在「hell-o h-ow」裡就被剪掉)
             if (!(m.includes(c) || (c.length >= 3 && c.includes(m)) || (c.length >= 4 && sim(c, m) >= 0.5))) break;
             out = rest;
         }
+        if (out !== String(reply) && /^[a-z]/.test(out)) out = out[0].toUpperCase() + out.slice(1); // 剪掉開頭後,英文句首補回大寫
         return out;
     }
 
@@ -2006,6 +2009,8 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
                 for (const pat of prefixPatterns) {
                     if (pat.test(text)) { text = text.replace(pat, '').trim(); break; }
                 }
+                // v9.23.5 英文真模型常在台詞裡夾 *scratches the back of his neck* 這種動作描寫,聊天框不會轉成斜體、只會看到一堆星號 → 拿掉(單字強調如 *really* 不動)
+                { const t2 = text.replace(/\*([^*\n]{12,160})\*\s*/g, (m0, x) => (/\s/.test(x) ? '' : m0)).trim(); if (t2.length >= 8) text = t2; }
                 // Skip lines that look like stage directions or system text
                 if (text.startsWith('(') && text.endsWith(')')) continue;
                 if (text.startsWith(t('（')) && text.endsWith(t('）'))) {
@@ -2022,10 +2027,12 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         }
         let npcReply = replyLines.join(' ').trim();
         // v5.44.0 截斷防護:回覆被 max_tokens 砍斷時,收斂到最後一個完整句子,不再出現半句話
-        if (npcReply && !/[。！？!?…～~」』)）]$/.test(npcReply)) {
-            const m = npcReply.match(/^[\s\S]*[。！？!?…～~」』)）]/);
+        // v9.23.5 英文句子用「.」結尾也算完整(以前不認,英文回覆只要以句點收尾就被當成沒寫完,砍回前一個 ? 或 !,後半段整個不見)
+        if (npcReply && !/[。！？!?….～~」』)）"'”’]$/.test(npcReply)) {
+            const m = npcReply.match(/^[\s\S]*[。！？!?….～~」』)）]["'”’]?/);
             if (m && m[0].length >= 8) npcReply = m[0];
         }
+        { const q = npcReply.match(/^[「『"“]([^「」『』"“”]+)[」』"”]$/); if (q) npcReply = q[1].trim(); } // v9.23.5 整段回覆被引號包住(真模型偶爾會這樣)→ 去掉外層引號
         npcReply = this._stripEcho(npcReply, playerMessage); // v9.16.1 模型照著玩家的句子開頭回答(鸚鵡學話)時,把開頭複述的那一段剪掉
         if (!npcReply) {
             // Parsing yielded nothing → use fallback
