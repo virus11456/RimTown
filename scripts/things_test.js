@@ -27,7 +27,7 @@ async function run(browser, lang, vp) {
     try {
       INFL.S(w).p = 1; INFL.S(w).wage = 1; INFL.sync(w);
       const all = npcs(); const boss = all[0]; boss.personality.traits = ['greedy', 'ambitious']; for (const a of all) B[a.agentId] = 40; B[boss.agentId] = 800;
-      fix(0.001, () => { w.casino && (w.casino.lastDay = -1); CASINO.daily(w); }); const C = w.casino; const X = THINGS.S(w); const id = C.thing; const Th = X.list[id];
+      fix(0.001, () => { w.casino && (w.casino.lastDay = -1); CASINO.daily(w); if (CASINO.byFun?.(w)) CASINO.openBy(w, boss); /* v9.25.0 開不開賭場交給本人決定：這裡替最有條件的人拿主意 */ }); const C = w.casino; const X = THINGS.S(w); const id = C.thing; const Th = X.list[id];
       out.reg = { open: C.open, id: !!id, kind: Th?.kind, owner: X.att[id]?.[boss.agentId], place: Th?.place, dealer: !!C.dealer };
       // ---------- 地圖：蓋一棟、門口留空地、地點名稱 ----------
       THINGS.syncMap(w, app.tileMap); const tm = app.tileMap;
@@ -84,7 +84,7 @@ async function run(browser, lang, vp) {
       // ---------- 存讀檔 ----------
       { const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.save = !!w2.things && Object.keys(w2.things.list).length === Object.keys(X.list).length && JSON.stringify(w2.things.att[id]) === JSON.stringify(X.att[id]) && !!w2.things.list[id].site; }
       // ---------- 守恆：重新開一家，跑 20 天（看法、賭博、賒帳、討債、工資、拉一把） ----------
-      { C.ban = false; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban'); B[boss.agentId] = 900; fix(0.001, () => { C.lastDay = -1; CASINO.daily(w); }); out.reopen = C.open;
+      { C.ban = false; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban'); B[boss.agentId] = 900; fix(0.001, () => { C.lastDay = -1; CASINO.daily(w); if (CASINO.byFun?.(w)) CASINO.openBy(w, boss); }); out.reopen = C.open;
         const M = MONEY.S(w); M.lastT = MONEY.total(w); M.pend = 0; const d0 = w._absDay(); for (const k of Object.keys(M.days)) if (+k >= d0) delete M.days[k].other; tick(96 * 20);
         out.other = Math.round(Object.entries(M.days).filter(([k]) => +k > d0).reduce((x, [, v]) => x + (v.other || 0), 0) * 100) / 100; out.opinions = Object.keys(X.att[C.thing] || {}).length; out.after = { open: C.open, ban: C.ban, why: C.closedWhy }; }
       // ---------- 介面 ----------

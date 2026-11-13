@@ -64,7 +64,7 @@ async function run(browser, lang, vp) {
     { fix(0.5, today); const l = lastLog(C); out.refuse = { lender: l && l.id, got: B[D2.agentId] <= 2.01, res: (DECIDE.view(w, D2).rows[0] || {}).res || '' }; w.dark.wrongs = w.dark.wrongs.filter(x => !(x.by === D2.agentId && x.to === C.agentId)); }
 
     // ---------- 4) 舊的擲骰迴圈已經拿掉:沒有決策核心,宴客、旅遊、借錢、接濟都不會自己發生 ----------
-    reset(); for (const a of all) B[a.agentId] = 500; B[E.agentId] = 1; for (const o of all) rel(o, E, 50); E.personality.traits = ['kind']; G.personality.traits = ['creative']; B[G.agentId] = 100;
+    reset(); for (const a of all) B[a.agentId] = 500; B[E.agentId] = 1; for (const o of all) rel(o, E, 50); E.personality.traits = ['kind']; G.personality.traits = ['creative']; B[G.agentId] = 100; for (const o of all) if (o !== G) rel(o, G, 30); // v9.25.0 賞錢照花錢習慣：普通習慣的人給認識的表演者
     { const S0 = { ...SPEND.S(w).st }; const d0 = (w.dark.debts || []).length; const e0 = B[E.agentId]; const lg0 = (w.messageLog || []).length;
       fix(0.001, () => { for (let i = 0; i < 12; i++) { SPEND.S(w).lastDay = -1; SPEND.daily(w); } const W0 = WALLET.S(w); });
       const S1 = SPEND.S(w).st; const txt = (w.messageLog || []).slice(lg0).map(m => String(m.content || '')).join('\n');
@@ -133,7 +133,7 @@ async function run(browser, lang, vp) {
   ok(r.loanCons, '朋友借錢：銀幣守恆', r.loanCons);
   ok(r.refuse.lender === 'refuse' && r.refuse.got && /拒絕|turned me down/.test(r.refuse.res), '被他坑過的人不肯再借，借的人知道被拒絕了', r.refuse);
   ok(r.noDice.feast === 0 && r.noDice.trip === 0 && r.noDice.art === 0 && r.noDice.fee === 0 && r.noDice.debts === 0 && r.noDice.api === 'undefined' && r.noDice.src, '舊的擲骰迴圈拿掉了：沒有人拿主意，宴客、旅遊、畫像、讀書、借錢都不會自己發生', r.noDice);
-  ok(r.noDice.show >= 1, '街頭表演賞錢（不是誰的決定）照舊', r.noDice);
+  ok(r.noDice.show >= 1, '街頭表演賞錢照舊有人給（v9.25.0 起照每個人的花錢習慣）', r.noDice);
   ok(r.ai.asked === 1 && r.ai.id === 'trip' && r.ai.ai === 1 && r.ai.trip === 1 && /AIWHY/.test(r.ai.why) && r.ai.res, 'AI 版：AI 選了旅遊就真的去旅遊，理由是 AI 自己寫的', r.ai);
   ok(/AINEXT/.test(r.ai.plan) && r.ai.planInLedger, 'AI 留下的「接下來的打算」記下來了，下次拿主意時他自己看得到', r.ai);
   ok(r.ai.log && r.ai.mem, 'AI 的決定進日誌（🧭）和本人的記憶', r.ai);

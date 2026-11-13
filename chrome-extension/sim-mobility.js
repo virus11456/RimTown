@@ -161,28 +161,53 @@ const MOBILITY = (() => {
             news(w, `${a.name}${t('成了名匠')}`, [a.name]); mem(w, a, '大家都說我是鎮上手藝最好的{j}，這些年的苦沒有白吃。', { j: t(jt(k)) }, 9); a.moodModifier = (a.moodModifier || 0) + 10;
             if (prev) { mem(w, prev, '{a}的手藝已經比我好了，名匠的名號換人了。', { a: a.name }, 6); prev.moodModifier = (prev.moodModifier || 0) - 4; }
         }
-        if (d % 7 !== 3 || typeof WALLET === 'undefined' || !w.wallet) return;
+        if (d % 7 !== 3 || typeof WALLET === 'undefined' || !w.wallet || byFun(w)) return; // v9.25.0 交給本人:要不要找名匠訂做，由有錢人自己決定(commBy)
         for (const a of all) { if (!isMaster(a, w) || w.isAway?.(a.agentId) || Math.random() > 0.3) continue;
             const b = all.filter(o => o !== a && (o.age ?? 30) >= ADULT && !isMaster(o, w) && money(w, o) >= 150 && lvOf(w, o) >= 2 && !w.isAway?.(o.agentId)).sort(() => Math.random() - 0.5)[0]; if (!b) continue;
-            const fee = Math.min(40, 10 + (skillOfJob(a)?.lv || 0)); if (!WALLET.pay(w, b, a, fee, t('名匠訂做'))) continue;
-            M.st.comm = (M.st.comm || 0) + 1; M.st.commN = Math.round((M.st.commN || 0) + fee);
-            a.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(3); b.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(3);
-            if (Math.random() < 0.2) log(w, '💰 {b}慕名請名匠{a}出手，付了 {n} 銀幣。', { b: b.name, a: a.name, n: fee }, a.name);
+            commDo(w, M, a, b, Math.random() < 0.2);
         }
     }
+    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const commFee = (a) => Math.min(40, 10 + (skillOfJob(a)?.lv || 0));
+    function commDo(w, M, a, b, loud) {
+        const fee = commFee(a); if (!WALLET.pay(w, b, a, fee, t('名匠訂做'))) return 0;
+        M.st.comm = (M.st.comm || 0) + 1; M.st.commN = Math.round((M.st.commN || 0) + fee);
+        a.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(3); b.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(3);
+        if (loud) log(w, '💰 {b}慕名請名匠{a}出手，付了 {n} 銀幣。', { b: b.name, a: a.name, n: fee }, a.name);
+        return fee;
+    }
+    // 這個人現在能不能找名匠訂做:有錢(150 以上)、算得上工匠商人以上、自己不是名匠；一位名匠一週只接一件
+    function commInfo(w, b) {
+        if (typeof WALLET === 'undefined' || !w.wallet || !b || (b.age ?? 30) < ADULT || isMaster(b, w) || money(w, b) < 150 || lvOf(w, b) < 2 || w.isAway?.(b.agentId)) return null; const M = S(w), d = day(w); M.cm = M.cm || {};
+        const ms = npcs(w).filter(a => a !== b && isMaster(a, w) && !w.isAway?.(a.agentId) && !(M.cm[a.agentId] != null && d - M.cm[a.agentId] < 7)).sort((x, y) => (skillOfJob(y)?.lv || 0) - (skillOfJob(x)?.lv || 0));
+        const a = ms[0]; if (!a) return null; return { m: a, fee: commFee(a), job: t(jt(a.job.key)), c: Math.floor(money(w, b)) };
+    }
+    function commBy(w, b, mid) { const I = commInfo(w, b); if (!I || I.m.agentId !== mid) return 0; const M = S(w); const fee = commDo(w, M, I.m, b, true); if (fee) M.cm[I.m.agentId] = day(w); return fee; }
     // 敗家:出身好、手頭寬、又懶散愛玩的人隔三差五揮霍,錢付給鎮上的店家(沒有店家就進公庫)
     function spree(w, all, d) {
         if (typeof WALLET === 'undefined' || !w.wallet) return; const M = S(w);
         const owners = (() => { try { return Object.values(MARKET.S(w).owners || {}).map(id => w.agents[id]).filter(Boolean); } catch (e) { return []; } })();
         for (const a of all) {
             if ((a.age ?? 30) < ADULT || (M.o[a.agentId] ?? 0) < 3 || !has(a, 'lazy', 'glutton', 'romantic') || has(a, 'ascetic', 'hardworking')) continue;
-            const c = money(w, a); if (c < 150 || Math.random() > 0.12) continue;
-            const amt = Math.round(c * (0.12 + Math.random() * 0.13)); const pool = owners.filter(o => o !== a); const to = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
-            if (!WALLET.pay(w, a, to, amt, t('揮霍'))) continue; M.st.spree = (M.st.spree || 0) + 1; M.st.spent = Math.round((M.st.spent || 0) + amt);
-            if (Math.random() < 0.4) log(w, '🍾 {a}又一擲千金，請客、買了一堆用不到的東西，花掉 {n} 銀幣。', { a: a.name, n: amt }, a.name);
-            for (const p of parentsOf(w, a)) if (Math.random() < 0.3) mem(w, p, '{a}花錢像流水，家業遲早被敗光。', { a: a.name }, 5);
+            const c = money(w, a); if (c < 150 || byFun(w) || Math.random() > 0.12) continue; // v9.25.0 交給本人:要不要痛快花一筆由他自己決定(spreeBy)
+            spreeDo(w, M, a, owners, Math.round(c * (0.12 + Math.random() * 0.13)), Math.random() < 0.4);
         }
     }
+    const shopOwners = (w) => { try { return Object.values(MARKET.S(w).owners || {}).map(id => w.agents[id]).filter(Boolean); } catch (e) { return []; } };
+    function spreeDo(w, M, a, owners, amt, loud) {
+        const pool = owners.filter(o => o !== a); const to = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
+        if (!WALLET.pay(w, a, to, amt, t('揮霍'))) return 0; M.st.spree = (M.st.spree || 0) + 1; M.st.spent = Math.round((M.st.spent || 0) + amt);
+        if (loud) log(w, '🍾 {a}又一擲千金，請客、買了一堆用不到的東西，花掉 {n} 銀幣。', { a: a.name, n: amt }, a.name);
+        for (const p of parentsOf(w, a)) if (Math.random() < 0.3) mem(w, p, '{a}花錢像流水，家業遲早被敗光。', { a: a.name }, 5);
+        return amt;
+    }
+    // 這個人是不是會想痛快花一筆的人:出身好(士紳以上)、手頭寬(150 以上)、又懶散愛玩
+    function spreeInfo(w, a) {
+        if (typeof WALLET === 'undefined' || !w.wallet || !a || (a.age ?? 30) < ADULT) return null; const M = S(w);
+        if ((M.o[a.agentId] ?? 0) < 3 || !has(a, 'lazy', 'glutton', 'romantic') || has(a, 'ascetic', 'hardworking')) return null; const c = money(w, a); if (c < 150) return null;
+        return { n: Math.round(c * 0.18), c: Math.floor(c) };
+    }
+    function spreeBy(w, a) { const I = spreeInfo(w, a); if (!I) return 0; return spreeDo(w, S(w), a, shopOwners(w), I.n, true); }
 
     // ---------- 給觀察者與 AI ----------
     function masterTag(w, a) { if (!isMaster(a, w)) return null; return { text: `🏅 ${t('{j}名匠').replace('{j}', t(jt(a.job.key)))}`, cls: 'nqc-master' }; }
@@ -205,7 +230,7 @@ const MOBILITY = (() => {
         let up = 0, down = 0; for (const a of all) { const o = M.o?.[a.agentId]; if (o == null) continue; const c = lvOf(w, a); if (c > o) up++; else if (c < o) down++; }
         return { up, down, n: all.length, masters: npcs(w).filter(a => isMaster(a, w)).length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
     }
-    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, byChoice, masters, spree, tag, masterTag, brief, view, how };
+    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, byChoice, byFun, commInfo, commBy, spreeInfo, spreeBy, masters, spree, tag, masterTag, brief, view, how };
 })();
 
 if (typeof CLASS !== 'undefined') { const _d = CLASS.daily; CLASS.daily = function (w, ...rest) { const r = _d.call(this, w, ...rest); try { MOBILITY.daily(w); } catch (e) { console.warn('[Mobility] daily', e); } return r; }; }
