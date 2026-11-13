@@ -42,6 +42,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       plotter.relationships.getOrCreate(k1.agentId, k1.name).affinity = -40; WALLET.add(w, plotter, 1000);
       loyal.relationships.getOrCreate(k1.agentId, k1.name).affinity = 60; loyal.job.key = 'guard';
       w.crown.legit = 10; w.crown.lastDecree = w._absDay(); w.crown.plot = null; w.crown.poverty = 0;
+      { const cand = npcs().find(a => CROWN.plotInfo?.(w, a)); if (cand) CROWN.plotBy(w, cand); } // v9.27.0 動不動手由最有可能的那個人自己決定(不再擲骰)：這裡讓他決定動手
       fix(0.01, () => CROWN.daily(w)); out.plotStarted = !!w.crown.plot || logHas(/政變|coup/i);
       const sec = (w.dark?.secrets || []).some(s => /密謀推翻|plotting/.test(JSON.stringify(s)) || s.victim === k1.agentId);
       if (w.crown.plot) fix(0.01, () => CROWN.daily(w));

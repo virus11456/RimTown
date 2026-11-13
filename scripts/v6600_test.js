@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 讓第一個宗教當主角
       const R = F.rels[0]; const bs = FAITH.believers(w, R); const a = bs[0] || npcs()[0]; F.of[a.agentId] = { rel: R.id, piety: 60 };
       // 祈禱 → 好事卡 → 應驗
-      a.mood = 20; F.lastDay = null; F.prayers = {}; fix(0.01, () => FAITH.daily(w)); out.prayed = !!F.prayers[a.agentId] && logHas(/🙏/);
+      a.mood = 20; F.lastDay = null; F.prayers = {}; fix(0.01, () => FAITH.daily(w)); if (!F.prayers[a.agentId]) FAITH.prayBy?.(w, a); /* v9.27.0 祈不祈禱由本人決定(不再擲骰)：這裡讓他決定祈禱 */ out.prayed = !!F.prayers[a.agentId] && logHas(/🙏/);
       const p0 = FAITH.pietyOf(w, a); FAITH.onCard(w, { cat: 'fortune' }); out.answered = FAITH.pietyOf(w, a) >= p0 + 15 && memHas(a, /應驗|answered/);
       // 災禍卡 → 依信仰解讀
       fix(0.01, () => FAITH.onCard(w, { cat: 'disaster' })); const line = FAITH.SK[R.sk].bad; out.interp = memHas(a, new RegExp((line[0] + '|' + line[1]).replace(/[.?*+()]/g, '\\$&').slice(0, 200)));
@@ -42,7 +42,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const fam = npcs().find(x => x !== a && x !== o); if (F.rels[1]) F.of[fam.agentId] = { rel: F.rels[1].id, piety: 80 }; o._parentNames = [fam.name];
       for (const x of Object.values(a.relationships.relationships)) if (x.targetId !== o.agentId && x.affinity >= 30) x.affinity = 29; // 傳教挑朋友清單的第一位:讓 o 是唯一夠熟的朋友(以前隨機小鎮裡 a 若已有別的熟朋友就會勸別人)
       a.relationships.getOrCreate(o.agentId, o.name).affinity = 50; F.of[a.agentId].piety = 95; const affFam0 = fam.relationships.getOrCreate(o.agentId, o.name).affinity;
-      F.lastDay = null; fix(0.01, () => FAITH.daily(w)); out.converted = F.of[o.agentId].rel === R.id && logHas(/改信|converted/);
+      F.lastDay = null; fix(0.01, () => FAITH.daily(w)); if (F.of[o.agentId].rel !== R.id && FAITH.byCrowd?.(w)) FAITH.convertBy(w, o, { by: a.agentId, rel: R.id }, true); /* v9.27.0 去不去勸、改不改信由本人決定(不再擲骰)：這裡讓被勸的人決定改信 */ out.converted = F.of[o.agentId].rel === R.id && logHas(/改信|converted/);
       out.discord = !F.rels[1] || fam.relationships.getOrCreate(o.agentId, o.name).affinity < affFam0;
       // 喪親
       const mourner = npcs().find(x => x !== a && x !== o && x !== fam && F.of[x.agentId]?.rel); F.of[mourner.agentId].piety = 20; const lost = npcs().find(x => x !== mourner && x !== a);
