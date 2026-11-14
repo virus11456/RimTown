@@ -42,7 +42,11 @@ async function run(browser, watch, days) {
     out.hasWatchKey = Object.keys(w).filter(k => /watch/i.test(k)).length;
     return out;
   }, { TIER, SEED, days, watch });
-  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(r.save).digest('hex'); r.saveBytes = r.save.length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
+  // 存檔裡有兩個欄位跟模擬無關、每次跑都不同（不載入紀錄器跑兩次也不同，實測過）：
+  //   savedAt＝存檔當下的真實時間；housing.map＝誰住哪一棟，取決於頁面開機時畫面那一層先排好的房屋配置。
+  // 比較時把這兩個欄位拿掉再算雜湊，並另外列出「拿掉之前有幾處不同、在哪裡」，不藏起來。
+  const saveObj = JSON.parse(r.save); r.saveRaw = saveObj; const norm = JSON.parse(r.save); delete norm.savedAt; if (norm.housing) delete norm.housing.map;
+  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(JSON.stringify(norm)).digest('hex'); r.saveBytes = r.save.length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
   await page.context().close(); return r;
 }
 
@@ -54,6 +58,10 @@ async function run(browser, watch, days) {
     // 先確認測試環境自己可重現：不載入紀錄器跑兩次要完全相同，否則下面的比較不能算數
     const repro = keys.every(k => JSON.stringify(rows.none[k]) === JSON.stringify(rows.none2[k])); console.log((repro ? 'SAME ' : 'DIFF ') + '基準重跑  不載入紀錄器跑兩次' + (repro ? '完全相同' : '就不一樣：測試環境不可重現，以下比較不能算數')); if (!repro) ok = false;
     for (const k of keys) { const v = ['none', 'loaded', 'on'].map(m => JSON.stringify(rows[m][k])); const same = v[0] === v[1] && v[1] === v[2]; if (!same) ok = false; console.log((same ? 'SAME ' : 'DIFF ') + k.padEnd(10) + ' ' + (k === 'decide' ? crypto.createHash('sha256').update(v[0]).digest('hex').slice(0, 12) : v[0].slice(0, 70)) + (same ? '' : '  | ' + v[1].slice(0, 40) + ' | ' + v[2].slice(0, 40))); }
+    const diffPaths = (x, y) => { const out = []; (function d(a, b, p) { if (out.length > 5000) return; if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') { if (a !== b) out.push(p); return; } for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) d(a[k], b[k], p + '.' + k); })(x, y, ''); return out; };
+    const volatile = (p) => p === '.savedAt' || p.startsWith('.housing.map.');
+    for (const m of ['none2', 'loaded', 'on']) { const dp = diffPaths(rows.none.saveRaw, rows[m].saveRaw); const other = dp.filter(p => !volatile(p)); if (other.length) ok = false;
+      console.log(`存檔逐欄比較 none vs ${m}：savedAt 與 housing.map 不同 ${dp.length - other.length} 處（跟模擬無關，基準重跑也會不同）；其他欄位不同 ${other.length} 處` + (other.length ? '  例：' + other.slice(0, 5).join(' ') : '')); }
     console.log(`errors none/loaded/on: ${rows.none.errs.length}/${rows.loaded.errs.length}/${rows.on.errs.length}; world keys named watch: ${rows.on.hasWatchKey}; AI requests: ${rows.on.net}`);
     console.log(ok && !rows.on.hasWatchKey ? `PASS  紀錄器開關前後完全相同（等級 ${TIER}、種子 ${SEED}、${DAYS} 天）` : 'FAIL  紀錄器影響了模擬');
     await browser.close(); process.exit(ok ? 0 : 1);
