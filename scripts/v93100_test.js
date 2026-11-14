@@ -37,7 +37,7 @@ const stage = () => {
   // 上限：同一個人塞 40 筆，只留 24 筆，而且自己拿的主意留著
   for (let i = 0; i < 40; i++) NOTES.add(w, { who: out.ids[0], nm: out.names[0], t: 'pick', q: '', x: { raw: '選了 ' + i }, y: { raw: '理由 ' + i }, r: null });
   const mine = NOTES.S(w).list.filter(e => e.who === out.ids[0]); out.cap = mine.length; out.ideaKept = mine.some(e => e.t === 'idea');
-  try { app.state = w.getState(); app.activeTab = 'proposals'; app._ppTab = 'props'; app.renderSidebar(); } catch (e) { out.renderErr = String(e); }
+  try { app.state = w.getState(); app.activeTab = 'residents'; app.renderSidebar(); } catch (e) { out.renderErr = String(e); } // v10.1.0 手記入口搬到村民分頁
   return out;
 };
 
@@ -56,7 +56,7 @@ const stage = () => {
   ok(R.cap === 24 && R.ideaKept, '同一個人最多留 24 筆，自己拿的主意優先留著', [R.cap, R.ideaKept]);
   ok(R.noteBytes < 2000, '兩筆手記佔存檔不到 2KB', R.noteBytes);
   // 介面：桌機
-  ok(await page.locator('[data-action="notes-open"]').count() >= 1, '提案頁最上面有鎮民手記的入口');
+  ok(await page.locator('[data-action="notes-open"]').count() >= 1, '村民分頁上面有鎮民手記的入口（v10.1.0 從提案頁搬過來）');
   await page.locator('.notes-open').first().click(); await page.waitForSelector('#notes-book .nb-entry');
   ok((await page.locator('#notes-book .nb-person').count()) >= 3, '書裡左邊列出有東西可看的人');
   ok(/放風箏/.test(await page.locator('#notes-book .nb-body').innerText()), '寫得最多的人排第一個，翻開就看得到他的主意');

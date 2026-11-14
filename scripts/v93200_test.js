@@ -108,7 +108,7 @@ const stageC = (id) => {
   await page.locator('.pv-card.pv-idea [data-pv-go]').click(); const fol = await page.evaluate(() => [window.rimtownApp.tileMap._followAgent, window.rimtownApp.selectedAgentId]);
   ok(fol[0] === B.ideaId && fol[1] === B.ideaId, '點卡片上的名字：鏡頭跟到那個人', fol);
   await page.evaluate(() => window.rimtownApp._hideNpcCard?.());
-  await page.locator('.pv-card.pv-idea .pv-more').click(); await page.waitForSelector('#notes-book'); ok(/放風箏/.test(await page.locator('#notes-book .nb-body').innerText()), '點「翻開他的手記」：直接翻到那個人'); await page.keyboard.press('Escape');
+  await page.locator('.pv-card.pv-idea .pv-nb').click(); await page.waitForSelector('#notes-book'); ok(/放風箏/.test(await page.locator('#notes-book .nb-body').innerText()), '點「翻開他的手記」：直接翻到那個人'); await page.keyboard.press('Escape');
   // 早上：他醒來出門，收著的話才冒出來；點泡泡看那個人
   const C = await page.evaluate(stageC, B.ideaId); let dom = { idea: [] };
   for (let i = 0; i < 12 && !dom.idea.length; i++) { await page.waitForTimeout(1000); dom = await page.evaluate(() => ({ idea: [...document.querySelectorAll('.t3d-thought.is-idea')].filter(e => e.style.display !== 'none').map(e => e.textContent), say: [...document.querySelectorAll('.t3d-thought.is-say')].filter(e => e.style.display !== 'none').length })); }
@@ -128,7 +128,7 @@ const stageC = (id) => {
     await m.page.evaluate(() => { const app = window.rimtownApp; app._kairoCardOpen = true; app.activeTab = 'proposals'; app._ppTab = 'voices'; app.renderSidebar(); }); // 手機上面板是浮動卡片，要先打開
     await m.page.waitForTimeout(600);
     const lay = await m.page.evaluate(() => { const tabs = document.querySelector('.pp-tabs'); const wide = document.documentElement.scrollWidth > window.innerWidth + 1; const tr = tabs ? tabs.getBoundingClientRect() : null;
-      const small = [...document.querySelectorAll('.pv-chip, .pv-who, .pv-more, .pp-tab')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36).map(b => b.className + ':' + Math.round(b.getBoundingClientRect().height));
+      const small = [...document.querySelectorAll('.pv-chip, .pv-who, .pv-nb, .pp-tab')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36).map(b => b.className + ':' + Math.round(b.getBoundingClientRect().height));
       const over = [...document.querySelectorAll('.pv-card, .pv-chips, .pp-tab')].filter(b => b.offsetParent && b.getBoundingClientRect().right > window.innerWidth + 1).map(b => b.className);
       const rw = (b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect().width; }; const cut = tabs ? [...tabs.querySelectorAll('.pp-tab')].filter(b => rw(b) > b.clientWidth + 1).map(b => b.textContent.trim()) : ['no bar']; const shown = [...document.querySelectorAll('.pv-card')].filter(b => b.offsetParent).length;
       return { wide, cut, shown, small, over, cards: document.querySelectorAll('.pv-card').length, txt: (document.querySelector('.proposals-panel')?.innerText || '').slice(0, 400) }; });

@@ -353,6 +353,7 @@ Object.assign(RimTownApp.prototype, {
         w.onProposalEvent = (kind, p) => this._onProposalEvent(kind, p); // v6.26.0 村民提案事件
         w.onEventCard = (kind, e, npc, text) => this._onEventCard(kind, e, npc, text); // v6.38.0 事件卡
         w.onScheme = (ev, P) => { try { this._onScheme(ev, P); } catch (e) {} }; // v9.33.0 個人企劃
+        w.onBoard = (ev, B) => { try { this._onBoard(ev, B); } catch (e) {} }; // v10.1.0 公告欄、信、流言
         w.onWorldCal = (c, ph, endC) => { try { if (typeof WORLDCAL === 'undefined') return; const K = WORLDCAL.KINDS[(c || endC)?.kind]; if (!K) return; const P = WORLDCAL.PH[ph]; const D = { omen: '鎮上開始出現說不出的怪事。', debate: '學者算出了真相，鎮上分成兩派。', rumor: '消息傳遍全鎮，有人開始收拾行李。', panic: '大家越來越害怕。', arrive: '它來了。', after: '最難的時候過去了，大家開始收拾。', end: '小鎮撐過來了，這件事寫進了帳號，之後在任何城鎮都能從手牌打出來。' };
             if (ph === 'found') { this._showCornerNotice({ icon: '🌑', title: t('發現了新的世界級災厄'), name: t(K.name), desc: t('七種末日都撐過了。這次，是太陽本身。它已經出現在手牌的世界級災厄區塊。') }); this._ghRefresh?.(); return; } // v9.3.0
             this._showCornerNotice({ icon: K.icon, title: ph === 'end' ? t('世界級災厄結束') : `${P?.icon || ''} ${t(P?.name || '')}`, name: t(K.name), desc: t(D[ph] || '') }); this._ghRefresh?.(); } catch (err) {} }; // v8.5.0
@@ -646,10 +647,26 @@ Object.assign(RimTownApp.prototype, {
     // v9.33.0 個人企劃的通知：有人想到事情、開始了、有結果。只是畫面。
     _onScheme(ev, P) {
         if (typeof SCHEME === 'undefined' || !P) return; const esc = (x) => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-        const v = SCHEME.view(this.world, 40).find(x => x.id === P.id); if (!v) return; const open = () => { this.activeTab = 'proposals'; this._ppTab = 'plans'; try { this.renderSidebar(); } catch (e) {} };
+        const v = SCHEME.view(this.world, 40).find(x => x.id === P.id); if (!v) return; const open = () => { this.activeTab = 'proposals'; this._ppTab = 'mail'; this._bdOnly = 'plans'; try { this.renderSidebar(); } catch (e) {} };
         if (ev === 'new') this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t(v.secret ? '{a}私下打著主意' : '{a}想辦一件事').replace('{a}', v.byName)}`), name: esc(v.title), desc: v.why ? esc(t('「{x}」').replace('{x}', v.why)) : '', go: { agentId: v.by }, open, openLabel: t('看企劃') });
         else if (ev === 'start') { try { this.tileMap?.setThought?.(v.by, { kind: 'idea', name: v.byName, text: v.title, ms: 14000 }); } catch (e) {} this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t('開始了')}`), name: esc(v.title), desc: esc(v.placeName), go: { locId: v.place }, open, openLabel: t('看企劃') }); }
         else if (ev === 'done' && v.out) this._showCornerNotice({ icon: v.out.ok ? '🎉' : '💨', title: esc(`${v.id} · ${v.title}`), name: '', desc: esc(v.out.text), go: v.here ? { agentId: v.by } : null, open, openLabel: t('看企劃') });
+    },
+    // v10.1.0 公告欄、信、流言：新貼的告示與信、有結果、流言傳到本人耳裡，各出一張角落通知；回應的人頭上冒出他說的話
+    _onBoard(ev, X) {
+        if (typeof BOARD === 'undefined' || !X) return; const esc = (x) => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        const open = (only) => () => { this.activeTab = 'proposals'; this._ppTab = 'mail'; this._bdOnly = only; try { this.renderSidebar(); } catch (e) {} }; const q1 = (x) => esc(t('「{x}」').replace('{x}', x));
+        if (ev === 'reached' || ev === 'answered' || ev === 'rumor') {
+            const R = BOARD.rumors(this.world, 30).find(r => r.id === X.id); if (!R || ev === 'rumor') return;
+            if (ev === 'reached') this._showCornerNotice({ icon: '🗣️', title: esc(`${R.id} · ${t('閒話傳到{b}耳裡了').replace('{b}', R.aboutName)}`), name: q1(R.text), desc: esc(t('傳了 {n} 手。他會怎麼辦？').replace('{n}', R.hops.length)), go: R.here ? { agentId: R.about } : null, open: open('rumors'), openLabel: t('看流言') });
+            else if (R.re) { try { if (R.re.pub || R.re.y) this.tileMap?.setThought?.(R.about, { kind: 'say', name: R.aboutName, text: R.re.pub || R.re.y, ms: 12000, hold: true }); } catch (e) {} this._showCornerNotice({ icon: '🗣️', title: esc(`${R.id} · ${R.aboutName}${t('：')}${R.re.label}`), name: '', desc: R.re.y ? q1(R.re.y) : '', go: R.here ? { agentId: R.about } : null, open: open('rumors'), openLabel: t('看流言') }); }
+            return;
+        }
+        const v = BOARD.view(this.world, 50).find(x => x.id === X.id); if (!v) return; const op = open(v.priv ? 'letters' : 'notes'); const lab = t(v.priv ? '看信' : '看公告');
+        if (ev === 'new') this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t(v.priv ? '{a}寫了一封信給{b}' : '{a}在公告欄貼了告示').replace('{a}', v.byName).replace('{b}', v.toName)}`), name: q1(v.text), desc: v.why ? esc(`${t('心裡的盤算')}${t('：')}${v.why}`) : '', go: v.here ? { agentId: v.by } : null, open: op, openLabel: lab });
+        else if (ev === 'reply') { const q = [...v.re].reverse().find(e => e.s !== 'asked' && (e.pub || e.y)); try { if (q && this.world.agents[q.id]) this.tileMap?.setThought?.(q.id, { kind: 'say', name: q.name, text: q.pub || q.y, ms: 10000, hold: true }); } catch (e) {} }
+        else if (ev === 'start') this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t('約的時間到了')}`), name: q1(v.text), desc: esc(v.placeName), go: { locId: v.place }, open: op, openLabel: lab });
+        else if (ev === 'done' && v.out) this._showCornerNotice({ icon: v.out.ok ? '🎉' : '💨', title: esc(`${v.id} · ${v.kindName}`), name: '', desc: esc(v.out.text), go: v.here ? { agentId: v.by } : null, open: op, openLabel: lab });
     },
     _onEventCard(kind, e, npc, text) {
         if (kind === 'played') {

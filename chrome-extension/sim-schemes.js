@@ -73,6 +73,7 @@ const SCHEME = (() => {
         if (P.secret) log(w, '🤫 {a}私下打著主意：{x}', { a: a.name, x: title }, a.name); else log(w, '🎯 {a}想辦一件事：{x}', { a: a.name, x: title }, a.name);
         mem(w, a, '我打算{x}。', { x: title }, 6);
         for (const q of ask) { const x = w.agents[q.id]; if (x && typeof DECIDE !== 'undefined') DECIDE.enqueue(w, x, 'schemeAsk', { sid: P.id }); }
+        try { if (typeof BOARD !== 'undefined') BOARD.onScheme(w, P); } catch (e) {} // v10.1.0 不瞞人的熱鬧事順手貼到公告欄，看到的人可以自己報名
         tell(w, 'new', P); return P;
     }
     // 照個性套樣板（AI 關著時）：有仇人的想算計或捉弄、有心上人的想約、其餘想熱鬧或結伴
@@ -222,7 +223,7 @@ ${t('tone 的意思：fun 熱鬧好玩、bond 拉人結伴、court 追求某人�
         return { id: P.id, stage: P.stage, stageName: render(STAGE[P.stage] || P.stage, {}), tone: P.tone, icon: T.icon, toneName: render(T.name, {}), secret: !!P.secret, ai: !!P.ai, from: P.from || '',
             title: say(P.title), why: say(P.why), by: P.by, byName: nm(P.by, P.byName), here: inTown(w, w.agents[P.by]), target: P.target, targetName: P.target ? nm(P.target, P.targetName) : '', warned: !!P.warned,
             place: P.place, placeName: placeName(w, P.place), d0: P.d0, when: P.when, hour: P.hour, cost: P.cost || 0,
-            ask: P.ask.map(q => ({ id: q.id, name: nm(q.id, q.nm), s: q.s, label: render(q.guest ? ({ asked: '還沒回話', yes: '答應赴約', no: '婉拒' }[q.s] || q.s) : (ANS[q.s] || q.s), {}), y: say(q.y), guest: !!q.guest, came: P.came.includes(q.id), noShow: !!q.ns && P.stage === 'done' })),
+            ask: P.ask.map(q => ({ id: q.id, name: nm(q.id, q.nm), s: q.s, label: render(q.guest ? ({ asked: '還沒回話', yes: '答應赴約', no: '婉拒' }[q.s] || q.s) : (ANS[q.s] || q.s), {}), y: say(q.y), guest: !!q.guest, walk: !!q.walk, came: P.came.includes(q.id), noShow: !!q.ns && P.stage === 'done' })),
             came: P.came.map(id => nm(id)), out: P.out ? { ok: !!P.out.ok, text: say(P.out) } : null, log: P.log.map(e => ({ d: e.d, text: say(e) })) };
     }
     const view = (w, n = 20) => S(w).list.slice(-n).reverse().map(P => view1(w, P));

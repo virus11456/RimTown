@@ -80,11 +80,12 @@ const NOTES = (() => {
         // 反思：AI 寫的沒有翻譯鍵（k），照個性寫的有；只有前者標成他自己寫的
         function reflections(w, id) { const a = w.agents?.[id]; return (a?.memory?.entries || []).filter(e => e.category === 'reflection' && !e.k && e.content).slice(-8).map(e => ({ d: Math.floor((e.tick || 0) / 96), t: 'reflect', title: '', text: String(e.content), ai: true, own: true })); },
         function plans(w, id) { return typeof SCHEME === 'undefined' ? [] : SCHEME.ofAgent(w, id).map(P => ({ d: P.d0, t: 'plan', title: P.id + ' ' + P.title, text: P.why + (P.out ? (P.why ? ' / ' : '') + P.out.text : ''), ai: P.ai, own: P.ai })); }, // v9.33.0 他發起的個人企劃
+        function notices(w, id) { return typeof BOARD === 'undefined' ? [] : BOARD.ofAgent(w, id).map(B => ({ d: B.d0, t: B.priv ? 'letter' : 'notice', title: B.id + ' ' + B.kindName + (B.toName ? ' → ' + B.toName : ''), text: B.text + (B.out ? ' / ' + B.out.text : ''), ai: B.ai, own: B.ai })); }, // v10.1.0 他貼的告示、寫的信
         function epic(w, id) { return (w.epic?.cantos || []).filter(C => (C.heroes || []).some(h => h.id === id)).map(C => { let x = { title: '', lines: [] }; try { x = EPIC.textOf(C); } catch (e) {} return { d: C.d ?? 0, t: 'epic', title: x.title, text: (x.lines || [])[0] || '', ai: !!C.ai, own: false, ref: { canto: C.n } }; }); },
     ];
     const KIND = {
         idea: ['💡', '自己拿的主意'], pick: ['🧭', '做決定時說的話'], prop: ['🗳️', '提過的案'], diary: ['📔', '日記'], epic: ['📜', '被寫進史詩'],
-        vote: ['✋', '投票時說的話'], speech: ['🎤', '演說與致詞'], post: ['📮', '貼過的動態'], drama: ['🎭', '鬧過的場面'], react: ['⚡', '遇到大事的反應'], work: ['🎨', '作品'], dream: ['🌙', '夢與解讀'], shop: ['🏪', '開的店'], reflect: ['🪞', '反思'], plan: ['🎯', '發起的企劃'],
+        vote: ['✋', '投票時說的話'], speech: ['🎤', '演說與致詞'], post: ['📮', '貼過的動態'], drama: ['🎭', '鬧過的場面'], react: ['⚡', '遇到大事的反應'], work: ['🎨', '作品'], dream: ['🌙', '夢與解讀'], shop: ['🏪', '開的店'], reflect: ['🪞', '反思'], plan: ['🎯', '發起的企劃'], notice: ['📌', '貼的告示'], letter: ['💌', '寫的信'],
     };
     function entriesOf(w, id) {
         const out = [];
