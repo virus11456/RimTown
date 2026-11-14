@@ -73,9 +73,8 @@ const PRESS = (() => {
         for (const v of npcs(w)) { const best = cands.map(c => ({ c, s: aff(v, w.agents[c.agentId]) + Math.random() * 10 })).sort((a, b) => b.s - a.s)[0]; if (best) tally[best.c.agentId]++; }
         return cands.map(c => ({ c, n: tally[c.agentId] })).sort((a, b) => b.n - a.n);
     }
-    // 收買報社(擲骰版與決策核心共用):隨便找一家還沒被買走的,記者有原則就不收
+    // 收買報社:隨便找一家還沒被買走的,記者有原則就不收
     const BRIBE = 60;
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 收不收買報社由候選人自己決定
     const freePapers = (R) => R.papers.filter(P => P.st !== 'board' && P.st !== 'crown' && !P.bribedBy && !P.banned);
     function elecOf(w, R, E, d) {
         const cands = (E.candidates || []).filter(c => w.agents[c.agentId]); if (cands.length < 2) return null;
@@ -105,12 +104,7 @@ const PRESS = (() => {
     }
     function electionDay(w, R, E, d) {
         const cands = elecOf(w, R, E, d); if (!cands) return;
-        // 收買:有錢又不老實的候選人花錢買報社
-        if (!byDark(w)) for (const c of cands) {
-            const a = w.agents[c.agentId]; if (!a || R.elec.bribes[c.agentId] || money(w, a) < 150) continue;
-            let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest >= 3 || Math.random() > 0.35) continue;
-            bribePaper(w, R, a);
-        }
+        // 收買:要不要花錢買報社,由有錢又不老實的候選人自己決定(bribeBy)
         for (const P of R.papers) {
             if (P.banned && !P.underground) continue; if (P.st === 'board') { if (!R.elec.endorsed[P.id]) { R.elec.endorsed[P.id] = 'none'; story(w, P, 'platform', '候選人：{list}', { list: cands.map(c => c.name).join(' / ') }); } continue; }
             const ed = w.agents[P.journo];

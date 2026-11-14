@@ -23,7 +23,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const ids = Object.keys(homes); const richHome = ids[0], poorHome = ids[1];
     for (const a of homes[richHome]) w.wallet.bal[a.agentId] = 1000; for (const a of homes[poorHome]) w.wallet.bal[a.agentId] = 0;
     const before = { rich: H.lv[richHome], poor: H.lv[poorHome] }; const sil = WALLET.get(w, homes[richHome][0]) + (homes[richHome][1] ? WALLET.get(w, homes[richHome][1]) : 0);
+    // 翻修由住戶自己決定：每日流程不替人翻修；有錢的那戶決定翻修(一次升一級)，沒錢的那戶沒有這件事
     const _r = Math.random; Math.random = () => 0.01; try { for (let i = 0; i < 6; i++) HOUSING.daily(w); } finally { Math.random = _r; }
+    out.noAuto = H.lv[richHome] === before.rich;
+    for (let i = 0; i < 6; i++) for (const a of [...homes[richHome], ...homes[poorHome]]) HOUSING.renovateBy(w, a);
     const sil2 = WALLET.get(w, homes[richHome][0]) + (homes[richHome][1] ? WALLET.get(w, homes[richHome][1]) : 0);
     out.rich = [before.rich, H.lv[richHome]]; out.poor = [before.poor, H.lv[poorHome]]; out.paid = sil - sil2;
     out.log = (w.messageLog || []).slice(-30).some(m => /🔨/.test(m.content || ''));
@@ -36,7 +39,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     return out;
   });
   ok(r.homes > 3 && r.startAll, '新房子照當下時代的樣式', r);
-  ok(r.rich[1] === 2 && r.paid > 0, '有錢的住戶花錢翻修到磚造樓房', r);
+  ok(r.noAuto && r.rich[1] === 2 && r.paid > 0, '每日流程不替人翻修；有錢的住戶自己決定翻修，花錢翻到磚造樓房', r);
   ok(r.poor[1] === r.poor[0], '沒錢的住戶房子維持舊樣', r);
   ok(r.log, '翻修有記在動態裡', r);
   ok(r.sigChanged && r.tierLv === 2, '等級／翻修有變時 3D 會重建', r);

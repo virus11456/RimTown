@@ -65,8 +65,7 @@ const MOBILITY = (() => {
         }
         for (const id of Object.keys(M.o)) if (!w.agents[id] && !w.isAway?.(id)) { delete M.o[id]; delete M.pk[id]; delete M.h[id]; delete M.told[id]; delete M.ap[id]; delete M.done[id]; }
         masters(w, all, d);
-        apprentice(w, all, d, byChoice(w));
-        if (d % 3 === 0) spree(w, all, d);
+        apprentice(w, all, d);
     }
     function how(w, a) {
         const sp = spouseOf(w, a), C = CLASS.S(w), T = C.titles?.[a.agentId], M = S(w);
@@ -97,7 +96,7 @@ const MOBILITY = (() => {
         const sp = spouseOf(w, a); if (sp) mem(w, sp, '家裡的日子大不如前了。', {}, 6);
     }
     // 拜師:沒什麼出路的年輕人跟熟識的師傅學一個月手藝,出師就換到工匠的工作(工資高 → 慢慢存錢往上爬)
-    function apprentice(w, all, d, ch) {
+    function apprentice(w, all, d) { // 要不要拜師由本人決定(sim-decide-work.js「要不要拜師學手藝」)；這裡只管已經在學的人
         const M = S(w);
         for (const [id, P] of Object.entries(M.ap)) {
             const a = w.agents[id], m = w.agents[P.m]; if (!a) { if (!w.isAway?.(id)) delete M.ap[id]; continue; }
@@ -110,17 +109,8 @@ const MOBILITY = (() => {
                 log(w, '🎓 {a}跟著{m}學了 {n} 天，出師當上了{j}。', { a: a.name, m: m.name, n: days, j: t(jt(P.k)) }, a.name);
                 mem(w, a, '我跟{m}學成出師，以後就是{j}了。', { m: m.name, j: t(jt(P.k)) }, 8); mem(w, m, '我帶出來的徒弟{a}出師了。', { a: a.name }, 6); }
         }
-        if (ch) return; // v9.23.0 要不要拜師交給本人決定(sim-decide-work.js「要不要拜師學手藝」)
-        if (d % 7 !== 0 || Object.keys(M.ap).length >= 2 || Math.random() > 0.4) return;
-        const cand = all.filter(a => canLearn(w, a) && (has(a, 'hardworking', 'creative', 'perfectionist') || Math.random() < 0.3));
-        for (const a of cand.sort(() => Math.random() - 0.5)) {
-            const m = masterFor(w, a, all); if (!m) continue;
-            takeOn(w, a, m, d);
-            return; // 一週最多一個
-        }
     }
-    // v9.23.0 擲骰版與本人決定共用的三段：誰可以去學、找誰學、拜師
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // 誰可以去學、找誰學、拜師
     const freeOf = (w, a) => { const M = S(w); return !M.ap[a.agentId] && !Object.values(M.ap).some(P => P.m === a.agentId) && !w.isAway?.(a.agentId) && !w.exile?.pending?.[a.agentId]; };
     // 沒什麼出路的年輕人：18～35 歲、階層不高、不是工匠、還沒出師過
     const canLearn = (w, a) => { const M = S(w); return freeOf(w, a) && (a.age ?? 30) >= ADULT && (a.age ?? 30) <= 35 && lvOf(w, a) <= 1 && !CRAFT.includes(a.job?.key) && a.job?.key !== 'mayor' && !M.done[a.agentId]; };
@@ -161,13 +151,7 @@ const MOBILITY = (() => {
             news(w, `${a.name}${t('成了名匠')}`, [a.name]); mem(w, a, '大家都說我是鎮上手藝最好的{j}，這些年的苦沒有白吃。', { j: t(jt(k)) }, 9); a.moodModifier = (a.moodModifier || 0) + 10;
             if (prev) { mem(w, prev, '{a}的手藝已經比我好了，名匠的名號換人了。', { a: a.name }, 6); prev.moodModifier = (prev.moodModifier || 0) - 4; }
         }
-        if (d % 7 !== 3 || typeof WALLET === 'undefined' || !w.wallet || byFun(w)) return; // v9.25.0 交給本人:要不要找名匠訂做，由有錢人自己決定(commBy)
-        for (const a of all) { if (!isMaster(a, w) || w.isAway?.(a.agentId) || Math.random() > 0.3) continue;
-            const b = all.filter(o => o !== a && (o.age ?? 30) >= ADULT && !isMaster(o, w) && money(w, o) >= 150 && lvOf(w, o) >= 2 && !w.isAway?.(o.agentId)).sort(() => Math.random() - 0.5)[0]; if (!b) continue;
-            commDo(w, M, a, b, Math.random() < 0.2);
-        }
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const commFee = (a) => Math.min(40, 10 + (skillOfJob(a)?.lv || 0));
     function commDo(w, M, a, b, loud) {
         const fee = commFee(a); if (!WALLET.pay(w, b, a, fee, t('名匠訂做'))) return 0;
@@ -183,16 +167,7 @@ const MOBILITY = (() => {
         const a = ms[0]; if (!a) return null; return { m: a, fee: commFee(a), job: t(jt(a.job.key)), c: Math.floor(money(w, b)) };
     }
     function commBy(w, b, mid) { const I = commInfo(w, b); if (!I || I.m.agentId !== mid) return 0; const M = S(w); const fee = commDo(w, M, I.m, b, true); if (fee) M.cm[I.m.agentId] = day(w); return fee; }
-    // 敗家:出身好、手頭寬、又懶散愛玩的人隔三差五揮霍,錢付給鎮上的店家(沒有店家就進公庫)
-    function spree(w, all, d) {
-        if (typeof WALLET === 'undefined' || !w.wallet) return; const M = S(w);
-        const owners = (() => { try { return Object.values(MARKET.S(w).owners || {}).map(id => w.agents[id]).filter(Boolean); } catch (e) { return []; } })();
-        for (const a of all) {
-            if ((a.age ?? 30) < ADULT || (M.o[a.agentId] ?? 0) < 3 || !has(a, 'lazy', 'glutton', 'romantic') || has(a, 'ascetic', 'hardworking')) continue;
-            const c = money(w, a); if (c < 150 || byFun(w) || Math.random() > 0.12) continue; // v9.25.0 交給本人:要不要痛快花一筆由他自己決定(spreeBy)
-            spreeDo(w, M, a, owners, Math.round(c * (0.12 + Math.random() * 0.13)), Math.random() < 0.4);
-        }
-    }
+    // 敗家:出身好、手頭寬、又懶散愛玩的人要不要痛快花一筆，由他自己決定(spreeBy)
     const shopOwners = (w) => { try { return Object.values(MARKET.S(w).owners || {}).map(id => w.agents[id]).filter(Boolean); } catch (e) { return []; } };
     function spreeDo(w, M, a, owners, amt, loud) {
         const pool = owners.filter(o => o !== a); const to = pool.length ? pool[Math.floor(Math.random() * pool.length)] : null;
@@ -230,7 +205,7 @@ const MOBILITY = (() => {
         let up = 0, down = 0; for (const a of all) { const o = M.o?.[a.agentId]; if (o == null) continue; const c = lvOf(w, a); if (c > o) up++; else if (c < o) down++; }
         return { up, down, n: all.length, masters: npcs(w).filter(a => isMaster(a, w)).length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
     }
-    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, byChoice, byFun, commInfo, commBy, spreeInfo, spreeBy, masters, spree, tag, masterTag, brief, view, how };
+    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, commInfo, commBy, spreeInfo, spreeBy, masters, tag, masterTag, brief, view, how };
 })();
 
 if (typeof CLASS !== 'undefined') { const _d = CLASS.daily; CLASS.daily = function (w, ...rest) { const r = _d.call(this, w, ...rest); try { MOBILITY.daily(w); } catch (e) { console.warn('[Mobility] daily', e); } return r; }; }

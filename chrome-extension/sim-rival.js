@@ -67,8 +67,7 @@ const RIVAL = (() => {
 
     // ---------- 一件一件的事 ----------
     // ---------- 挖角的結算(留下／被挖走) ----------
-    // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)；擲骰的版本留給直接呼叫 event() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const canLeave = (w) => npcs(w).length >= 12; // 人太少的小村不會真的被挖空
     function poachStay(w, V, p, a, skill) {
@@ -105,12 +104,12 @@ const RIVAL = (() => {
             return true;
         },
         // 挖角:開高薪挖我們最厲害的人
-        talent(w, V, p, ch) {
+        talent(w, V, p) {
             const lead = leaderIds(w); const pool = adults(w).filter(a => !lead.has(a.agentId) && (a.age ?? 30) <= 60);
             const tgt = pool.map(a => ({ a, s: topSkill(a) })).filter(x => x.s && x.s.level >= 2).sort((x, y) => y.s.level - x.s.level)[0]; if (!tgt) return false;
             const a = tgt.a, skill = tgt.s.category; const rel = relOf(w, p.id);
-            // v9.22.0 ch = 走不走交給本人決定：先記下「有人來挖角」，他拿了主意再結算
-            if (ch && here(w, a)) { try { DECIDE.enqueue(w, a, 'poach', { pid: p.id, skill }); V.st.asked = (V.st.asked || 0) + 1; return true; } catch (e) {} }
+            // 走不走由本人決定：先記下「有人來挖角」，他拿了主意再結算；人不在鎮上問不到時，才照他的處境推一個結果
+            if (here(w, a)) { try { DECIDE.enqueue(w, a, 'poach', { pid: p.id, skill }); V.st.asked = (V.st.asked || 0) + 1; return true; } catch (e) {} }
             let stay = 0.5 + (a.relationships?.getPartner?.() ? 0.2 : 0) + ((a.mood ?? 50) >= 60 ? 0.12 : 0) - ((a.mood ?? 50) < 35 ? 0.2 : 0) + (rel <= -30 ? 0.15 : 0) - (V.them > usOf(w) + 10 ? 0.12 : 0) + (has(a, 'stoic') ? 0.1 : 0) - (has(a, 'jealous') ? 0.08 : 0);
             if (!canLeave(w)) stay = 1; // 人太少的小村不會真的被挖空
             if (Math.random() < stay) poachStay(w, V, p, a, skill); else poachGo(w, V, p, a, skill);
@@ -172,18 +171,18 @@ const RIVAL = (() => {
         if (V.them < 30 && rel >= 25) L.push(['aid', 2.5]);
         const sum = L.reduce((s, x) => s + x[1], 0); let r = Math.random() * sum; for (const [k, wt] of L) { r -= wt; if (r <= 0) return k; } return 'trade';
     }
-    function event(w, kind, ch) {
+    function event(w, kind) {
         const V = S(w); const p = ensure(w); if (!p) return null;
-        const k = kind || choose(w, V, p); let ok = false; try { ok = EV[k]?.(w, V, p, ch); } catch (e) { console.warn('[Rival]', k, e); }
+        const k = kind || choose(w, V, p); let ok = false; try { ok = EV[k]?.(w, V, p); } catch (e) { console.warn('[Rival]', k, e); }
         if (!ok && !kind) { try { ok = EV.contest(w, V, p); } catch (e) {} return ok ? 'contest' : null; }
         return ok ? k : null;
     }
-    function daily(w, ch) {
+    function daily(w) {
         const V = S(w), d = day(w); if (V.lastDay === d) return; V.lastDay = d;
         const p = ensure(w); if (!p) return;
         // 對手鎮自己的發展:落後會拚命追、領先太多會鬆懈
         const gap = usOf(w) - V.them; V.them = clamp(V.them + (Math.random() - 0.5) * 1.2 + gap * 0.04, 5, 95);
-        if (d - (V.lastEv ?? d) >= 7) { V.lastEv = d - Math.floor(Math.random() * 2); event(w, undefined, ch); }
+        if (d - (V.lastEv ?? d) >= 7) { V.lastEv = d - Math.floor(Math.random() * 2); event(w, undefined); }
         effects(w, V);
     }
 
@@ -207,12 +206,12 @@ const RIVAL = (() => {
         const L = (typeof TIERS !== 'undefined' && TIERS.LV) ? TIERS.LV : [{ icon: '🏡' }, { icon: '🏘️' }, { icon: '🏙️' }, { icon: '🏰' }];
         return { name: t(pname(p)), icon: L[p.lv ?? 1]?.icon || '🏘️', us: usOf(w), them: Math.round(V.them), rel, stance: t(stanceOf(rel)), st: V.st, dep: V.dep || 0, log: V.log.slice(-4).reverse().map(x => ({ text: R(x.k, x.p), good: x.good, ago: day(w) - x.d })) };
     }
-    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf, poachInfo, poachAnswer, byChoice };
+    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf, poachInfo, poachAnswer };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) RIVAL.daily(w, RIVAL.byChoice(w)); } catch (e) { console.warn('[Rival] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) RIVAL.daily(w); } catch (e) { console.warn('[Rival] daily', e); } return r; };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype; const _fb = CE._fallbackConversation;

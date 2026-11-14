@@ -76,7 +76,6 @@ const PLAGUEWAYS = (function () {
         const ps = (w.proposals?.items || []).filter(p => p.kind === 'cal_' + k && (p.createdDay ?? 0) >= (X.day ?? 0) - 1); const p = ps[ps.length - 1];
         return p && p.votes?.[a.agentId] === 'for' ? p : null;
     }
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 守不守規定由本人決定
     // 這個人今天受哪一條規定管、有多想溜(以前擲骰用的那個機率)
     function sneakOdds(w, X, a, d, f) {
         const p = P(X); if (p.home[a.agentId] > d) return null;
@@ -100,13 +99,8 @@ const PLAGUEWAYS = (function () {
     function sneakDaily(w, X, d) {
         const p = P(X); const ks = active(X); if (!ks.length) return; const f = fatigue(w, X);
         const guard = here(w).some(a => a.job?.key === 'guard');
-        if (byDark(w)) { // 昨天打定主意要溜的人,今天真的溜(規定撤了、病倒了就算了)
-            for (const [id, g] of Object.entries(p.go)) { delete p.go[id]; const a = w.agents[id]; if (!a || a.isDead || d - g.d > 2 || !adults(w).includes(a)) continue; const o = sneakOdds(w, X, a, d, f); if (o) sneakDo(w, X, a, o.k, d, guard); }
-        } else for (const a of adults(w)) {
-            const o = sneakOdds(w, X, a, d, f); if (!o) continue;
-            if (Math.random() >= o.p) continue;
-            sneakDo(w, X, a, o.k, d, guard);
-        }
+        // 溜不溜由本人決定(sneakBy):昨天打定主意要溜的人,今天真的溜(規定撤了、病倒了就算了)
+        for (const [id, g] of Object.entries(p.go)) { delete p.go[id]; const a = w.agents[id]; if (!a || a.isDead || d - g.d > 2 || !adults(w).includes(a)) continue; const o = sneakOdds(w, X, a, d, f); if (o) sneakDo(w, X, a, o.k, d, guard); }
         // 太久以前的紀錄清掉
         for (const [id, v] of Object.entries(p.brk)) if (d - v > 8) delete p.brk[id];
     }

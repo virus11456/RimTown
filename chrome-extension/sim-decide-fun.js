@@ -33,7 +33,7 @@
     const MB = () => (typeof MOBILITY !== 'undefined' ? MOBILITY : null);
     const CL = () => (typeof CLASS !== 'undefined' ? CLASS : null);
     const HL = () => (typeof HEALTH !== 'undefined' ? HEALTH : null);
-    const on = (M, w) => { try { return !!M && !!M.byFun && M.byFun(w); } catch (e) { return false; } };
+    const on = (M, w) => { try { return !!M && DECIDE.on(w); } catch (e) { return false; } };
     DECIDE.fun = true; // 其他系統看到這個，就知道花錢與享樂的事交給本人決定、不擲骰
 
     // ================= 平常怎麼花錢 =================

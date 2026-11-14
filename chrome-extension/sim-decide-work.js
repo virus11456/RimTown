@@ -51,8 +51,8 @@
         gloom: { fact: '鎮上的氣氛很差，已經拖了 {n} 天沒人管。', why: '這個地方待不下去了', base: 1.2 },
     };
     function leaveInfo(w, a) {
-        const M = MK(); try { if (M && w.market && M.byWork(w) && (a.age || 30) >= 16) { const h = M.isHungry(w, a); if (h >= 7) return { key: 'starve', n: h }; } } catch (e) {}
-        const T = TI(); try { if (T && T.byChoice(w)) { const I = T.leaveWhy(w, a); if (I) return { key: I.key, n: I.idle }; } } catch (e) {}
+        const M = MK(); try { if (M && w.market && DECIDE.on(w) && (a.age || 30) >= 16) { const h = M.isHungry(w, a); if (h >= 7) return { key: 'starve', n: h }; } } catch (e) {}
+        const T = TI(); try { if (T && DECIDE.on(w)) { const I = T.leaveWhy(w, a); if (I) return { key: I.key, n: I.idle }; } } catch (e) {}
         return null;
     }
     DECIDE.kind('leave', {
@@ -76,7 +76,7 @@
 
     // ================= 工作 =================
     // ---------- 對面那家工資比較高：要不要換過去 ----------
-    const hopInfo = (w, a) => { const C = CP(); return C && w.market && C.byChoice(w) ? C.hopInfo(w, a) : null; };
+    const hopInfo = (w, a) => { const C = CP(); return C && w.market && DECIDE.on(w) ? C.hopInfo(w, a) : null; };
     DECIDE.kind('jobhop', {
         title: '對面那家工資比較高', cool: 7, pri: 1.5,
         when(w, a) { const I = hopInfo(w, a); return I && I.from && I.to ? { k: I.k } : null; },
@@ -96,7 +96,7 @@
     });
 
     // ---------- 要不要拜師學手藝 ----------
-    const learnInfo = (w, a) => { const M = MB(); return M && M.byChoice(w) ? M.learnInfo(w, a) : null; };
+    const learnInfo = (w, a) => { const M = MB(); return M && DECIDE.on(w) ? M.learnInfo(w, a) : null; };
     DECIDE.kind('apprentice', {
         title: '要不要拜師學手藝', cool: 14, pri: 1.2,
         when(w, a) { const I = learnInfo(w, a); return I ? { m: I.m.agentId } : null; },
@@ -118,7 +118,7 @@
 
     // ================= 開店 =================
     // ---------- 這一行很賺：要不要在對面開一家 ----------
-    const openInfo = (w, a) => { const C = CP(); return C && w.market && C.byChoice(w) ? C.openInfo(w, a) : null; };
+    const openInfo = (w, a) => { const C = CP(); return C && w.market && DECIDE.on(w) ? C.openInfo(w, a) : null; };
     DECIDE.kind('rivalshop', {
         title: '這一行很賺，要不要在對面開一家', cool: 7, pri: 1.3,
         when(w, a) { const I = openInfo(w, a); return I ? { k: I.k } : null; },
@@ -139,7 +139,7 @@
     });
 
     // ---------- 合夥的店不賺錢：要不要拆夥 ----------
-    const splitInfo = (w, a) => { const B = BZ(); return B && B.byWork(w) ? B.splitInfo(w, a) : null; };
+    const splitInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.splitInfo(w, a) : null; };
     DECIDE.kind('split', {
         title: '合夥的店不賺錢', cool: 7, pri: 1,
         when(w, a) { const I = splitInfo(w, a); return I ? { o: I.other.agentId } : null; },

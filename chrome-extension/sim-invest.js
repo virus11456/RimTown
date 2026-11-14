@@ -26,8 +26,7 @@ const INVEST = (() => {
     const cash = (w, a) => (a && typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const dep = (w, a) => (a && w.bank?.open ? (w.bank.dep?.[a.agentId] || 0) : 0);
     const MK = () => MARKET, SH = () => SHARES;
-    // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算。擲骰的版本留給直接呼叫(沒有決策核心)的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const nm = (k) => MK().name(k);
 
@@ -115,14 +114,15 @@ const INVEST = (() => {
         try { SH().note?.(w, k, '看利息入股', { a: a.name }); } catch (e) {}
         return { ok: true, k, p, price, boss };
     }
-    function buy(w, a, k, ch) {
+    function buy(w, a, k) {
         const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
         const { p, price, boss } = q;
-        if (ch && byChoice(w) && here(w, boss)) {
+        if (here(w, boss)) { // 當家在鎮上：賣不賣由他自己決定
             if (X.ask[k] && day(w) - X.ask[k].d <= 3) return { ok: false, busy: true, k, boss }; // 已經有人在跟當家談了
             X.ask[k] = { by: a.agentId, d: day(w) }; try { DECIDE.enqueue(w, boss, 'sell', { k, by: a.agentId, src: 'inv' }); } catch (e) { delete X.ask[k]; return { ok: false }; }
             return { ok: false, asked: true, k, p, price, boss };
         }
+        // 當家不在鎮上，問不到本人：照他的個性與交情推估
         const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
         if (Math.random() > yes) return refuse(w, a, q);
         return close(w, a, q);
@@ -162,16 +162,13 @@ const INVEST = (() => {
         for (const k of Object.keys(MK().SECTORS)) { if ((X.low[k + '|' + a.agentId] || 0) < 3) continue; const D = outDeal(w, all, k, a.agentId); if (D) return { k, weeks: X.low[k + '|' + a.agentId], y: firmYield(w, k), by: bankYield(w), ...D }; }
         return null;
     }
-    // ch = 交給股東本人決定：這裡只記「連續幾週不如銀行」，不擲骰
-    function cashOuts(w, all, d, ch) {
+    function cashOuts(w, all, d) { // 記下每一份股份連續幾週不如放銀行；要不要退股由股東自己決定(cashOutBy)
         const X = S(w); const M = SH().S(w); const by = bankYield(w); if (!(by > 0) || typeof BANK === 'undefined') return;
         for (const k of Object.keys(MK().SECTORS)) {
             const bossId = M.owners[k]; const boss = w.agents[bossId]; if (!boss) continue; const y = firmYield(w, k);
             for (const h of Object.keys(SH().stakes(w, k))) {
                 if (h === bossId) continue; const a = w.agents[h]; if (!a) continue; const key = k + '|' + h;
                 X.low[key] = y < by * 0.8 ? (X.low[key] || 0) + 1 : 0;
-                if (X.low[key] < 3 || ch || Math.random() > 0.5) continue;
-                cashOut(w, all, k, h);
             }
         }
     }
@@ -265,7 +262,7 @@ const INVEST = (() => {
         if (!w.observerMode || !w.market || typeof WALLET === 'undefined' || !w.wallet || typeof SHARES === 'undefined') return;
         const X = S(w); const d = day(w); if (X.day === d) return; X.day = d;
         trackBank(w); const all = npcs(w);
-        try { cashOuts(w, all, d, byChoice(w)); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
+        try { cashOuts(w, all, d); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
     }
 
     // ---------- 給 AI 與觀察者 ----------
@@ -287,7 +284,7 @@ const INVEST = (() => {
     function partners(w, k) { const R = MK().rivalOf(w, k); const s = R && sh(w, R); if (!s) return ''; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(id => `${t(w.agents[id]?.name || '')} ${s[id]}%`).join(t('・')); }
     function view(w) { const X = S(w); return { st: X.st, bank: pct1(bankYield(w)), best: (() => { try { const M = SH().S(w); return Object.keys(MK().SECTORS).filter(k => M.owners[k] && perPct(w, k) > 0).map(k => ({ s: nm(k), y: Math.round(perPct(w, k) * 10) / 10 })).sort((a, b) => b.y - a.y).slice(0, 3); } catch (e) { return []; } })() }; }
 
-    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, askInfo, answer, cashOuts, cashOut, lowOf, byChoice, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
+    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, askInfo, answer, cashOuts, cashOut, lowOf, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
 })();
 if (typeof window !== 'undefined') window.INVEST = INVEST;
 

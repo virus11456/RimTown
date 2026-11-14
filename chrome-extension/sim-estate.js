@@ -15,8 +15,7 @@ const ESTATE = (() => {
     const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'economy', k, p || {}, imp, []); } catch (e) {} };
     const WL = () => (typeof WALLET !== 'undefined' ? WALLET : null);
     const cash = (w, a) => (WL() && a ? WL().get(w, a) : 0);
-    // v9.24.0 屋主要不要拿房子去抵押，交給本人決定(sim-decide-share.js：「手頭很緊」多一個選項)；擲骰的版本留給沒有決策核心的情況
-    const byShare = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.share && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.24.0 屋主要不要拿房子去抵押，交給本人決定(sim-decide-share.js：「手頭很緊」多一個選項)
     const tier = (w) => { try { return typeof TIERS !== 'undefined' ? TIERS.level(w) : 0; } catch (e) { return 0; } };
     const land = (w) => { try { return typeof CIVIC !== 'undefined' && CIVIC.landPrice ? CIVIC.landPrice(w) : 50; } catch (e) { return 50; } };
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 100) / 100, w.tickCount, why); };
@@ -175,12 +174,7 @@ const ESTATE = (() => {
             const id = 'U' + (++E.n); E.units[id] = { id, owner: null, occ: null, lv: 0, built: day(w), pub: 1 }; E.stats.publicBuilt = (E.stats.publicBuilt || 0) + 1;
             if (k === 0) log(w, '🏗️ 鎮上缺房子，公庫出錢蓋了公有房舍。', {}, '');
           } }
-        // 抵押:屋主缺錢,拿房子跟銀行借
-        const B = w.bank;
-        if (B && B.open && typeof BANK !== 'undefined' && !byShare(w)) for (const u of Object.values(E.units)) {
-            const o = ownerAgent(w, u); if (!o || B.loans?.[o.agentId] || cash(w, o) >= 8 || Math.random() > 0.4) continue;
-            mortDo(w, B, o, u);
-        }
+        // 抵押:屋主缺錢要不要拿房子跟銀行借，由他自己決定(mortBy)
     }
     function mortDo(w, B, o, u) {
         const n = BANK.lend(w, B, o, Math.round(valueOf(w, u) * 0.4), '房屋抵押'); if (n && B.loans[o.agentId]) { B.loans[o.agentId].collateral = u.id; mem(w, o, '拿房子去銀行抵押，借了 {n} 銀幣。', { n }, 7); }
@@ -282,7 +276,7 @@ const ESTATE = (() => {
         const rents = units.filter(u => u.occ).map(u => rentOf(w, u));
         return { units: units.length, lodgers: units.reduce((n, u) => n + lodgersOf(u).length, 0), vacant: units.filter(u => !u.occ).length, homeless: Object.values(E.homeless).length, homelessPeople: Object.keys(E.homeless).reduce((s, hid) => s + ((households(w).get(hid) || []).length || 1), 0), landlords: landlords.size, townOwned: units.filter(u => !u.owner).length, rent: rents.length ? Math.round(rents.reduce((s, x) => s + x, 0) / rents.length) : 0, servants: Object.keys(E.servants).length, stats: { ...E.stats } };
     }
-    return { S, init, daily, weekly, market, settle, evict, moveIn, lodgeIn, lodgeSlot, foreclose, seedFamilies, households, headOf, unitOf, isHomeless, rentOf, valueOf, ownsOf, scarcity, brief, describe, view, servants, payServants, SERVANT_PAY, HOMELESS_AT, byShare, mortInfo, mortBy };
+    return { S, init, daily, weekly, market, settle, evict, moveIn, lodgeIn, lodgeSlot, foreclose, seedFamilies, households, headOf, unitOf, isHomeless, rentOf, valueOf, ownsOf, scarcity, brief, describe, view, servants, payServants, SERVANT_PAY, HOMELESS_AT, mortInfo, mortBy };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { homeless: { mood: -10, opinion: 0, days: 2, label: t('無家可歸') } });

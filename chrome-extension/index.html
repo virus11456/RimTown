@@ -7,8 +7,8 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="邊境鎮">
-    <meta name="theme-color" content="#1a1a2e">
-    <meta name="description" content="RimWorld-inspired AI town simulation - 邊境鎮 AI 小鎮模擬">
+    <meta name="theme-color" content="#13111f">
+    <meta name="description" content="邊境鎮 RimTown：AI 村民自己拿主意的 3D 小鎮沙盒，打開瀏覽器就能看。A browser 3D town where AI villagers make their own decisions.">
     <link rel="manifest" href="pwa-manifest.json">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/icon32.png">
     <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
@@ -17,15 +17,16 @@
     <link rel="canonical" href="https://rimtown.cc/">
     <style>
     /* 獨立版關鍵樣式:深色底 + 滿版鎖定,避免 Safari 上下留白/彈跳(style.css 載入前就生效) */
-    html, body { background: #1a1a2e; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
+    html, body { background: #13111f; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&family=Nunito:wght@400;600;700;800&display=swap">
     <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="landing.css">
 </head>
 <!-- v6.82.2 首頁(/):只放介紹與登入註冊,不載遊戲。遊戲在 /town(town.html),登入後才下載 -->
-<body class="rimtown-page landing-open" style="background:#17142a;margin:0">
+<body class="rimtown-page landing-open" style="background:#13111f;margin:0">
 <div id="landing" class="landing hidden"></div>
 <div class="rimtown-container" id="rt-auth-host" style="height:0 !important;min-height:0 !important;overflow:visible !important;display:block !important;background:none !important">
     <div id="auth-modal" class="modal hidden">
@@ -71,6 +72,7 @@
     <script src="sim-agent.js"></script>
     <script src="app.js"></script>
     <script src="app-landing.js"></script>
+    <script src="landing-page.js"></script>
     <script src="landing-3d.js"></script>
     <script>
     // v6.82.2 首頁開機:只借用 RimTownApp 的首頁與帳號方法,不建立世界、不跑模擬
@@ -92,7 +94,7 @@
             var meta = app._getTownList().filter(function (tw) { return tw.id === last; })[0];
             var name = meta && meta.name ? t(meta.name) : '';
             var b = document.getElementById('landing-continue');
-            if (b) { b.disabled = false; b.innerHTML = '▶ ' + t('繼續遊戲') + (name ? '<span class="landing-continue-sub">' + app._escapeHtml(name) + '</span>' : ''); }
+            if (b) { b.disabled = false; b.innerHTML = t('繼續遊戲') + (name ? '<span class="landing-continue-sub">' + app._escapeHtml(name) + '</span>' : ''); }
         };
         window.rimtownLanding = app;
         var start = function () {

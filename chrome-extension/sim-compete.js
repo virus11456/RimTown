@@ -38,8 +38,7 @@ const COMPETE = (() => {
     const incOf = (w, k, R, all) => MK().workersOf(w, k, all).filter(a => a.agentId !== w.market.owners[k] && !(R && R.emp?.[a.agentId]));
 
     // ---------- 1. 有人在對面開店 ----------
-    // v9.23.0 要不要在對面開店、要不要跳槽，交給本人決定(sim-decide-work.js)；這裡只剩「誰夠格」和結算。擲骰的版本留給直接呼叫 entry()／weekly() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.23.0 要不要在對面開店、要不要跳槽，交給本人決定(sim-decide-work.js)；這裡只剩「誰夠格」和結算
     const openCost = (w, k, all) => Math.round(30 + MK().workersOf(w, k, all).length * 8);
     // 這個人有多想、多適合在這一行開店(不含當天的運氣)
     const drive = (w, a, k, boss) => (has(a, 'greedy') ? 2 : 0) + (has(a, 'hardworking') ? 1 : 0) + (has(a, 'charismatic') ? 1 : 0) + (hasV(a, '財富') ? 2 : 0) + (MK().JOB2S[a.job?.key] === k ? 2 : 0) - (aff(a, boss) > 40 ? 2 : 0);
@@ -77,8 +76,8 @@ const COMPETE = (() => {
         const Mk = MK(); const d = day(w); const all = npcs(w); const I = openInfo(w, a); if (!I || I.k !== k || Mk.rivalOf(w, k)) return null;
         if (!WALLET.take(w, a, I.cost)) return null; return openShop(w, all, k, a, d, null);
     }
-    // ch = 交給本人決定：這裡只記「這一行連幾週好賺」；一個人開不起、要找朋友合夥的那種照舊
-    function entry(w, all, d, ch) {
+    // 要不要開店交給本人決定：這裡只記「這一行連幾週好賺」；一個人開不起、要找朋友合夥的那種照舊
+    function entry(w, all, d) {
         const M = S(w); const Mk = MK();
         for (const k of Object.keys(Mk.SECTORS)) {
             const id = Mk.ownerOf(w, k); if (!id || Mk.rivalOf(w, k)) { if (!id) M.good[k] = 0; continue; }
@@ -88,7 +87,7 @@ const COMPETE = (() => {
             if (M.good[k] < 2) continue;
             const cost = openCost(w, k, all);
             const boss = w.agents[id];
-            if (ch && all.some(a => canOpen(w, a, k, cost, d) && drive(w, a, k, boss) >= 2)) continue; // 有人自己開得起：等他拿主意
+            if (all.some(a => canOpen(w, a, k, cost, d) && drive(w, a, k, boss) >= 2)) continue; // 有人自己開得起：等他拿主意
             if (Math.random() > 0.5) continue;
             const score = (a) => drive(w, a, k, boss) + Math.random();
             const cand = all.filter(a => canOpen(w, a, k, cost, d))
@@ -122,7 +121,7 @@ const COMPETE = (() => {
     }
 
     // ---------- 每週:調價、搶工人、繳稅、倒閉與併購 ----------
-    function weekly(w, all, d, ch) {
+    function weekly(w, all, d) {
         const M = S(w); const Mk = MK();
         for (const k of Object.keys(Mk.SECTORS)) {
             const R = Mk.rivalOf(w, k); if (!R) continue; const id = M.owners[k]; const boss = w.agents[id], rv = w.agents[R.owner];
@@ -134,16 +133,8 @@ const COMPETE = (() => {
             if (s < 0.45 && Pr > -5) pr = Math.max(floor(rv), pr - step(rv)); else if (s > 0.65) pr = Math.min(1, pr + 0.05);
             M.price[k] = Math.round(pi * 100) / 100; R.price = Math.round(pr * 100) / 100;
             if (pi < pi0 && pr < pr0 && d - (R.warLog || -99) >= 21) { R.warLog = d; M.cst.wars++; log(w, '💥 {o}和{a}的{s}打起價格戰，一個降到 {p}%、一個降到 {q}%，村民樂得撿便宜。', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k), p: Math.round(pi * 100), q: Math.round(pr * 100) }, rv?.name || ''); news(w, '{o}和{a}的{s}打起價格戰', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k) }, 6, [boss?.name || '', rv?.name || '']); }
-            // 搶工人:對面工資高一成以上就可能跳槽
-            const payI = Mk.payRate(w, k), payR = R.pay ?? 1; let lostI = R.hopI || 0, lostR = R.hopR || 0; delete R.hopI; delete R.hopR; // 這一週自己決定換過去的人(ch)也算進來
-            for (const a of Mk.workersOf(w, k, all)) {
-                if (ch) break; // 跳不跳槽交給本人決定
-                if (a.agentId === id || a.agentId === R.owner) continue; const atR = !!R.emp[a.agentId];
-                const mine = atR ? payR : payI, other = atR ? payI : payR; if (other - mine < 0.1 || Math.random() > 0.3) continue;
-                if (atR) { delete R.emp[a.agentId]; lostR++; } else { R.emp[a.agentId] = d; lostI++; }
-                M.cst.poach++; mem(w, a, '{o}那邊工資比較高，我換過去做了。', { o: (atR ? boss : rv)?.name || '' }, 5);
-            }
-            if (!ch && lostI + lostR && d - (R.poachLog || -99) >= 14) { R.poachLog = d; log(w, '🔀 {s}的工人跳槽：{n} 個人換到工資比較高的那一家。', { s: Mk.name(k), n: lostI + lostR }); }
+            // 搶工人:對面工資高一成以上，跳不跳槽由工人自己決定(hopBy)；這一週換過去的人記在 hopI／hopR
+            const payI = Mk.payRate(w, k), payR = R.pay ?? 1; let lostI = R.hopI || 0, lostR = R.hopR || 0; delete R.hopI; delete R.hopR;
             // 被挖走人、還有賺錢的老闆加薪(吝嗇的不加)
             if (lostI && Pi > 0 && !has(boss, 'greedy') && payI < 1.2) { M.pay[k] = Math.min(1.2, Math.round((payI + 0.05) * 100) / 100); M.cst.raise++; }
             if (lostR && Pr > 0 && !has(rv, 'greedy') && payR < 1.2) { R.pay = Math.min(1.2, Math.round((payR + 0.05) * 100) / 100); M.cst.raise++; }
@@ -176,8 +167,7 @@ const COMPETE = (() => {
     const fkey = (f) => f.k + (f.rival ? ':R' : '');
     function firmRev(w, f) { const M = S(w); const h = f.rival ? (M.rival[f.k]?.hist || []) : (M.hist[f.k] || []); return h.reduce((s, [r]) => s + r, 0); }
     function firmStaff(w, f, all) { const R = MK().rivalOf(w, f.k); return f.rival ? empOf(w, f.k, R, all) : incOf(w, f.k, R, all); }
-    // 掌櫃揩油(擲骰版與決策核心共用):拿走這家店近期營收的 8%,老闆有三成五的機會查出來
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
+    // 掌櫃揩油:拿走這家店近期營收的 8%,老闆有三成五的機會查出來
     const skimAmt = (w, f, o) => Math.min(bal(w, o), r2(firmRev(w, f) * 0.08));
     function skim(w, M, key, f, o, m) {
         const Mk = MK(); const amt = skimAmt(w, f, o); if (!(amt >= 1) || !WALLET.take(w, o, amt)) return null; WALLET.add(w, m, amt); M.cst.skim++;
@@ -206,8 +196,7 @@ const COMPETE = (() => {
                     log(w, '👔 {o}名下店太多顧不過來，請{m}當{s}的掌櫃。', { o: o.name, m: m.name, s: Mk.name(f.k) }, o.name); mem(w, m, '{o}請我當{s}的掌櫃，多一份薪水。', { o: o.name, s: Mk.name(f.k) }, 6);
                 }
                 const fee = r2(2 * wageIdx()); if (WALLET.take(w, o, fee)) WALLET.add(w, m, fee);
-                // 掌櫃揩油:貪心或愛說謊的掌櫃每週有機會偷一點營收,老闆不一定抓得到
-                if (!byDark(w) && d % 7 === 3 && (has(m, 'greedy') || m.dark?.liar) && Math.random() < 0.25) skim(w, M, key, f, o, m); // v9.26.0 有決策核心時,動不動帳由掌櫃自己決定
+                // 掌櫃揩油:動不動帳由掌櫃自己決定(skimBy),老闆不一定抓得到
             }
         }
         for (const key of Object.keys(M.mgr)) if (!keep.has(key)) delete M.mgr[key];
@@ -277,7 +266,7 @@ const COMPETE = (() => {
         const all = npcs(w);
         try { manage(w, all, d); } catch (e) { console.warn('[Compete] manage', e); }
         try { lobby(w, d); } catch (e) { console.warn('[Compete] lobby', e); }
-        if (d % 7 === 2) { try { const ch = byChoice(w); entry(w, all, d, ch); weekly(w, all, d, ch); capProposal(w, d); divest(w, all, d); } catch (e) { console.warn('[Compete] weekly', e); } }
+        if (d % 7 === 2) { try { entry(w, all, d); weekly(w, all, d); capProposal(w, d); divest(w, all, d); } catch (e) { console.warn('[Compete] weekly', e); } }
         // 沒有對手的那一行,價錢慢慢回到原價
         for (const k of Object.keys(M.price)) if (!MK().rivalOf(w, k) && M.price[k] < 1 && d % 7 === 2) M.price[k] = Math.min(1, Math.round((M.price[k] + 0.05) * 100) / 100);
     }
@@ -309,7 +298,7 @@ const COMPETE = (() => {
         for (const [key, id] of Object.entries(w.market?.mgr || {})) if (id === a.agentId) out.push(fill('{s}的掌櫃', { s: Mk.name(key.split(':')[0]) }));
         return out.join(t('；'));
     }
-    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, byChoice, manage, skimInfo, skimBy, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
+    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, manage, skimInfo, skimBy, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
 })();
 if (typeof window !== 'undefined') window.COMPETE = COMPETE;
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.antitrust_cap = { icon: '⚖️', label: '反壟斷' };

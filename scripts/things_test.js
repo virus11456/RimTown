@@ -27,7 +27,7 @@ async function run(browser, lang, vp) {
     try {
       INFL.S(w).p = 1; INFL.S(w).wage = 1; INFL.sync(w);
       const all = npcs(); const boss = all[0]; boss.personality.traits = ['greedy', 'ambitious']; for (const a of all) B[a.agentId] = 40; B[boss.agentId] = 800;
-      fix(0.001, () => { w.casino && (w.casino.lastDay = -1); CASINO.daily(w); if (CASINO.byFun?.(w)) CASINO.openBy(w, boss); /* v9.25.0 開不開賭場交給本人決定：這裡替最有條件的人拿主意 */ }); const C = w.casino; const X = THINGS.S(w); const id = C.thing; const Th = X.list[id];
+      fix(0.001, () => { w.casino && (w.casino.lastDay = -1); CASINO.daily(w); CASINO.openBy(w, boss); /* v9.25.0 開不開賭場交給本人決定：這裡替最有條件的人拿主意 */ }); const C = w.casino; const X = THINGS.S(w); const id = C.thing; const Th = X.list[id];
       out.reg = { open: C.open, id: !!id, kind: Th?.kind, owner: X.att[id]?.[boss.agentId], place: Th?.place, dealer: !!C.dealer };
       // ---------- 地圖：蓋一棟、門口留空地、地點名稱 ----------
       THINGS.syncMap(w, app.tileMap); const tm = app.tileMap;
@@ -56,7 +56,7 @@ async function run(browser, lang, vp) {
       { const crowd = all.filter(a => a !== boss && a !== lover).slice(3, 11); for (const a of crowd) { X.att[id][a.agentId] = -85; for (const b of crowd) if (a !== b) a.relationships.getOrCreate(b.agentId, b.name).affinity = 40; }
         (X.intent || (X.intent = {}))[id + '|' + crowd[0].agentId] = 'protest'; Th.protest = null; Th.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
         await daily(0.05);
-        if (THINGS.byCrowd?.(w) && Th.call) { for (const a of crowd.slice(1)) THINGS.rallyBy(w, a, { tid: id, side: 'con' }); DECIDE.S(w).q = []; Th.call.d = w._absDay() - 1; await daily(0.05); } // v9.27.0 跟不跟由每個人自己決定、隔天才集合：這裡讓大家都答應，再跑隔天
+        if (Th.call) { for (const a of crowd.slice(1)) THINGS.rallyBy(w, a, { tid: id, side: 'con' }); DECIDE.S(w).q = []; Th.call.d = w._absDay() - 1; await daily(0.05); } // v9.27.0 跟不跟由每個人自己決定、隔天才集合：這裡讓大家都答應，再跑隔天
         const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban');
         out.protest = { n: Th.protest?.n || 0, go: crowd.filter(a => a._thingGo?.place === 'casino_front').length, log: /門口抗議|protest outside/.test(logs()), owner: /捐了|donates|冷冷|coldly/.test(logs()), prop: !!pr && pr.thing === id };
         tick(1); out.protest.at = crowd.filter(a => a._thingAt === 'casino_front').length; out.pr = pr ? pr.id : null; }
@@ -68,7 +68,7 @@ async function run(browser, lang, vp) {
       { const v = all[14] || all[7], sp = all[15] || all[8], fr = all[16] || all[9]; v.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; X.att[id][sp.agentId] = 0;
         THINGS.victim(w, id, v, '我輸光了。'); out.victim = { v: X.att[id][v.agentId], sp: X.att[id][sp.agentId] };
         fr.relationships.getOrCreate(v.agentId, v.name).affinity = 70; fr.personality.traits = ['kind']; B[fr.agentId] = 300; B[v.agentId] = 0; X.victims[v.agentId].day = w._absDay() - 3;
-        let ok2 = false; const c0 = B[v.agentId]; const cons = conserved(() => { ok2 = true; }); await daily(0.0); if (THINGS.byCrowd?.(w)) THINGS.rescueBy(w, fr, v.agentId); // v9.27.0 要不要拉他一把由朋友自己決定：這裡讓他決定幫
+        let ok2 = false; const c0 = B[v.agentId]; const cons = conserved(() => { ok2 = true; }); await daily(0.0); THINGS.rescueBy(w, fr, v.agentId); // v9.27.0 要不要拉他一把由朋友自己決定：這裡讓他決定幫
         out.rescue = { helped: !!X.victims[v.agentId]?.helped, got: (B[v.agentId] || 0) > c0, quit: THINGS.quitting(w, id, v), log: /拿了|gives/.test(logs()) }; }
       // ---------- 報社：吵得兇的東西寫成專題 ----------
       { boss.personality.traits = ['kind']; Th.pressDay = -99; const p0 = X.st.press; await daily(0.5); out.press = { n: X.st.press - p0, news: (w.dailyNews?.events || w.dailyNews?._events || []).length >= 0 && /專題|Feature/.test(logs()) }; boss.personality.traits = ['greedy', 'ambitious']; }
@@ -86,7 +86,7 @@ async function run(browser, lang, vp) {
       // ---------- 存讀檔 ----------
       { const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.save = !!w2.things && Object.keys(w2.things.list).length === Object.keys(X.list).length && JSON.stringify(w2.things.att[id]) === JSON.stringify(X.att[id]) && !!w2.things.list[id].site; }
       // ---------- 守恆：重新開一家，跑 20 天（看法、賭博、賒帳、討債、工資、拉一把） ----------
-      { C.ban = false; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban'); B[boss.agentId] = 900; fix(0.001, () => { C.lastDay = -1; CASINO.daily(w); if (CASINO.byFun?.(w)) CASINO.openBy(w, boss); }); out.reopen = C.open;
+      { C.ban = false; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban'); B[boss.agentId] = 900; fix(0.001, () => { C.lastDay = -1; CASINO.daily(w); CASINO.openBy(w, boss); }); out.reopen = C.open;
         const M = MONEY.S(w); M.lastT = MONEY.total(w); M.pend = 0; const d0 = w._absDay(); for (const k of Object.keys(M.days)) if (+k >= d0) delete M.days[k].other; tick(96 * 20);
         out.other = Math.round(Object.entries(M.days).filter(([k]) => +k > d0).reduce((x, [, v]) => x + (v.other || 0), 0) * 100) / 100; out.opinions = Object.keys(X.att[C.thing] || {}).length; out.after = { open: C.open, ban: C.ban, why: C.closedWhy }; }
       // ---------- 介面 ----------

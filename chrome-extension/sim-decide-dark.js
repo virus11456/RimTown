@@ -35,7 +35,7 @@
     const CP = () => (typeof COMPETE !== 'undefined' ? COMPETE : null);
     const WY = () => (typeof WAYS !== 'undefined' ? WAYS : null);
     const PW = () => (typeof PLAGUEWAYS !== 'undefined' ? PLAGUEWAYS : null);
-    const on = (w) => { try { const D = DK(); return !!D && !!D.byDark && D.byDark(w); } catch (e) { return false; } };
+    const on = (w) => { try { const D = DK(); return !!D && DECIDE.on(w); } catch (e) { return false; } };
     const honesty = (a) => { try { return DK().honesty(a); } catch (e) { return 2; } };
     const malice = (a) => { try { return DK().malice(a); } catch (e) { return 0; } };
     // 兩個選項、當天心情起伏 ±0.9 時，起跑分數差多少會讓這個選項大約有 P 的機會被選中

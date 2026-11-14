@@ -91,13 +91,8 @@ const CLASS = (() => {
                 try { w.dailyNews?.collectEvent?.('politics', `${cand.a.name}${t('獲封')}${t(r.zh)}`, 7, [cand.a.name]); } catch (e) {}
             }
         }
-        // 有錢人花錢買爵位(錢進公庫);舊貴族看不起
-        if (!byFun(w) && Math.random() < 0.15 && typeof WALLET !== 'undefined' && w.wallet) { // v9.25.0 交給本人:買不買爵位由有錢人自己決定(titleBy)
-            const buyer = all.filter(a => !C.titles[a.agentId] && money(w, a) >= BUY_PRICE * 1.3).sort((x, y) => money(w, y) - money(w, x))[0];
-            if (buyer) buyTitle(w, C, all, buyer, d);
-        }
+        // 有錢人花錢買爵位(錢進公庫);舊貴族看不起:買不買由有錢人自己決定(titleBy)
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     function buyTitle(w, C, all, buyer, d) {
             if (WALLET.pay(w, buyer, null, BUY_PRICE, t('{a}買爵位').replace('{a}', buyer.name))) {
                 C.titles[buyer.agentId] = { rank: 0, since: d, how: 'bought', bought: true }; C.lv[buyer.agentId] = compute(w, buyer);
@@ -120,7 +115,7 @@ const CLASS = (() => {
         return (en() ? 'Social standing: ' : '社會地位' + t('：')) + label(w, a) + (tt ? t('（') + tt + t('）') : '');
     }
     function pyramid(w) { const out = [0, 0, 0, 0, 0, 0]; for (const a of npcs(w)) out[level(w, a)]++; return out; }
-    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE, byFun, titleInfo, titleBy };
+    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE, titleInfo, titleBy };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

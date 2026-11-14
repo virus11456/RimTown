@@ -94,7 +94,6 @@ const SPEND = (() => {
         if (!w.spend || typeof w.spend !== 'object') w.spend = { lastDay: null, school: {}, edu: {}, st: { show: 0, showN: 0, feast: 0, feastN: 0, art: 0, artN: 0, trip: 0, tripN: 0, fee: 0, feeN: 0 } };
         const X = w.spend; X.school = X.school || {}; X.edu = X.edu || {}; X.st = X.st || {}; return X;
     }
-    const thrift = (a) => (has(a, 'ascetic') || has(a, 'stoic') ? 0.4 : 1) * (has(a, 'greedy') ? 0.6 : 1) * (has(a, 'glutton') || has(a, 'optimist') || has(a, 'romantic') || has(a, 'generous') ? 1.4 : 1); // 克己的人少花、貪心的人捨不得、愛享受的人多花
     const townName = (w) => { const L = (w.otherTowns || []).map(x => x?.name || x?.townName).filter(Boolean); return L.length ? t(L[Math.floor(Math.random() * L.length)]) : t('王都'); };
     // ---------- v9.19.0 花錢的動作(由決策核心呼叫) ----------
     // 每個動作分兩半:xxxPlan(w, a) 只回答「現在做得到嗎、要花多少、跟誰」(不動任何東西);xxx(w, a) 真的結算。
@@ -148,7 +147,6 @@ const SPEND = (() => {
         log(w, '🎓 {a}花 {n} 銀幣送{k}去{t}讀書。', { a: a.name, n: Math.round(fee), k: k.name, t: townName(w) }, a.name); mem(w, a, '我把錢省下來送{k}去外地讀書，希望他將來有出息。', { k: k.name }, 7); mem(w, k, '我要去外地讀書了。', {}, 7);
         return { cost: fee, kid: k };
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const tips = (w, a, pf) => { const h = WALLET.habitOf ? WALLET.habitOf(w, a) : 'normal'; return h === 'indulge' || (h === 'normal' && aff(a, pf) >= 20); }; // 想買就買的人都給；普通的人給認識的人；省的人不給
     function daily(w) {
         if (!W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d;
@@ -157,8 +155,8 @@ const SPEND = (() => {
         const perf = all.filter(a => (has(a, 'creative') || has(a, 'charismatic')) && cash(w, a) < 300);
         if (perf.length && Math.random() < 0.5) {
             const pf = perf[Math.floor(Math.random() * perf.length)]; const fee = r2(1.5 * px); let n = 0, got = 0;
-            const fun = byFun(w); // v9.25.0 交給本人:給不給賞錢看他自己的花錢習慣(想買就買的人都給、普通的人只給熟人、省的人不給)，不擲骰
-            for (const a of all) { if (a === pf || cash(w, a) < 20 * px || (fun ? !tips(w, a, pf) : Math.random() > 0.14 * thrift(a))) continue; if (WALLET.take(w, a, fee)) { got += fee; n++; a.moodModifier = (a.moodModifier || 0) + 1; } }
+            // 給不給賞錢看他自己的花錢習慣(想買就買的人都給、普通的人只給熟人、省的人不給)
+            for (const a of all) { if (a === pf || cash(w, a) < 20 * px || !tips(w, a, pf)) continue; if (WALLET.take(w, a, fee)) { got += fee; n++; a.moodModifier = (a.moodModifier || 0) + 1; } }
             if (got > 0) { if (WALLET.bizIncome) WALLET.bizIncome(w, pf, got); else WALLET.add(w, pf, got); X.st.show = r2((X.st.show || 0) + got); X.st.showN = (X.st.showN || 0) + 1;
                 if (n >= 3 && Math.random() < 0.35) log(w, '🎭 {p}在廣場{x}，{n} 個人圍著看，丟了 {s} 銀幣賞錢。', { p: pf.name, x: has(pf, 'creative') ? t('說書唱曲') : t('變戲法'), n, s: Math.round(got) }, pf.name);
                 if (n >= 4 && Math.random() < 0.3) mem(w, pf, '今天在廣場表演，{n} 個人丟賞錢給我。', { n }, 5); }
@@ -174,7 +172,7 @@ const SPEND = (() => {
     }
     function view(w) { const X = S(w); return { ...X.st, edu: Object.keys(X.edu).filter(k => !k.startsWith('art_')).length, studying: Object.keys(X.school).filter(id => !X.edu[id] && !X.drop?.[id]).length, drop: Object.keys(X.drop || {}).length }; }
     function brief(w, a) { const X = w.spend; if (!X) return ''; if (X.edu?.[a.agentId]) return t('你小時候家裡送你去外地讀過書，工資比別人高一些。'); if (X.school?.[a.agentId] != null) return t('家裡花錢送你去外地讀書。'); return ''; }
-    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, thrift, byFun, tips };
+    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, tips };
 })();
 
 const WORKS = (() => {
@@ -271,8 +269,7 @@ const CASINO = (() => {
         if (typeof THINGS !== 'undefined' && C.thing) p *= THINGS.useMult(w, C.thing, a); // v9.0.0 喜不喜歡賭場、有沒有答應家人戒賭
         return Math.min(0.7, p);
     }
-    // v9.25.0 去不去賭、押多少、借不借錢翻本、賭債還不出來怎麼辦、要不要開賭場，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.25.0 去不去賭、押多少、借不借錢翻本、賭債還不出來怎麼辦、要不要開賭場，交給本人決定(sim-decide-fun.js)
     const openCand = (w) => { const px = INFL.p(w); return here(w).filter(a => cash(w, a) >= 250 * px && (has(a, 'greedy') || has(a, 'ambitious') || has(a, 'charismatic')) && a.job?.key !== 'priest').sort((x, y) => cash(w, y) - cash(w, x))[0] || null; };
     function open(w, C, d, who) {
         const px = INFL.p(w); const cand = who || openCand(w);
@@ -355,28 +352,16 @@ const CASINO = (() => {
     function daily(w) {
         if (typeof WALLET === 'undefined' || !w.wallet) return; const C = S(w), d = day(w); if (C.lastDay === d) return; C.lastDay = d; const tr = tier(w);
         if (C.ban) return;
-        const fun = byFun(w);
-        if (!C.open) { if (!fun && tr >= 1 && d >= 20 && Math.random() < 0.04) open(w, C, d); return; }
+        if (!C.open) return; // 要不要開賭場由本人決定(openBy)
         const own = w.agents[C.owner]; if (!own || own.isDead) { if (!w.isAway?.(C.owner)) { log(w, '🎰 賭場「{s}」的老闆不在了，賭場關了門。', { s: C.name[0] }); close(w, C, 'gone'); } return; }
-        const px = INFL.p(w); const T = fun && C.today && typeof C.today === 'object' ? C.today : (C.today = { n: 0, net: 0 }); // 交給本人:今天的帳是從上次結帳到現在、大家自己來賭累積的
-        for (const a of here(w)) {
-            if (fun) break; // 去不去、押多少由本人決定(goBy)
-            if (a === own || cash(w, a) < 5 || Math.random() > urge(w, C, a)) continue;
-            const c = cash(w, a), st = C.streak[a.agentId] || 0; const rich = c >= 200 * px, poor = c < 40 * px;
-            let f = rich ? 0.02 + Math.random() * 0.04 : poor ? 0.3 + Math.random() * 0.4 : 0.1 + Math.random() * 0.1; if (st >= 2) f = Math.max(f, 0.5 + Math.random() * 0.5); // 輸紅了眼就全押
-            // 想翻本卻沒錢:去銀行借
-            if (st >= 2 && c < 10 * px && typeof BANK !== 'undefined' && w.bank?.open && !w.bank.loans?.[a.agentId]) { try { const got = BANK.lend(w, BANK.S(w), a, Math.ceil(30 * px), t('翻本')); if (got) log(w, '🏦 {a}跟銀行借了 {n} 銀幣，說要去賭場翻本。', { a: a.name, n: got }, a.name); } catch (e) {} }
-            // v9.0.0 銀行不借，莊家賒帳給你賭（記成賭債，之後會來討）
-            if (st >= 2 && cash(w, a) < 10 * px && !C.debt[a.agentId] && cash(w, own) > 100 * px && Math.random() < 0.6) { const n = Math.round(20 * px); if (WALLET.take(w, own, n)) { WALLET.add(w, a, n); C.debt[a.agentId] = { n, day: d }; C.st.credit++; log(w, '🧾 {o}讓{a}先賒 {n} 銀幣下注，說「有錢再還」。', { o: own.name, a: a.name, n }, a.name); } }
-            if (bet(w, C, own, a, f, d, px, T)?.closed) return;
-        }
+        const px = INFL.p(w); const T = C.today && typeof C.today === 'object' ? C.today : (C.today = { n: 0, net: 0 }); // 今天的帳是從上次結帳到現在、大家自己來賭累積的(去不去、押多少由本人決定 goBy)
         // 城市以上:外地賭客來試手氣(觀光收入,錢從外地進來)
         if (tr >= 2 && cash(w, own) > 0) { const n = tr * (1 + Math.floor(Math.random() * 3)); const spend = r2(n * (6 + Math.random() * 6) * px); const inn = r2(n * 2 * px);
             if (WALLET.bizIncome) WALLET.bizIncome(w, own, spend); else WALLET.add(w, own, spend); if (typeof MARKET !== 'undefined' && w.market) MARKET.sell(w, 'kitchen', inn, t('外地賭客')); else w.stockpile?.add?.('silver', inn, w.tickCount, t('外地賭客'));
             try { if (typeof MONEY !== 'undefined') MONEY.flow(w, 'tourism', r2(spend + inn)); } catch (e) {}
             C.st.tourists += n; C.st.tour = r2(C.st.tour + spend + inn); if (Math.random() < 0.08) log(w, '🧳 {n} 個外地客專程來「{s}」試手氣，順便在鎮上吃住，花了 {m} 銀幣。', { n, s: C.name[0], m: Math.round(spend + inn) }); }
         upkeep(w, C, own, d, T); collect(w, C, own, d);
-        if (fun && C.open) C.today = { n: 0, net: 0 }; // 結完帳，重新開始記(之後大家自己來賭的會累積在這裡)
+        if (C.open) C.today = { n: 0, net: 0 }; // 結完帳，重新開始記(之後大家自己來賭的會累積在這裡)
         for (const id of Object.keys(C.v)) if (!w.agents[id] && !w.isAway?.(id)) { delete C.v[id]; delete C.streak[id]; delete C.lost[id]; }
     }
     // v9.0.0 開店要成本：荷官工資每天從老闆口袋付；連續一個月虧錢、老闆又沒錢，就收掉
@@ -398,11 +383,7 @@ const CASINO = (() => {
                 if (fam && WALLET.take(w, fam, D.n)) { WALLET.add(w, own, D.n); log(w, '💸 {f}咬著牙替{a}還了 {n} 銀幣賭債。', { f: fam.name, a: a.name, n: Math.round(D.n) }, fam.name); mem(w, fam, '我替{a}還了賭債，心裡很不是滋味。', { a: a.name }, 7); try { if (C.thing && typeof THINGS !== 'undefined') THINGS.feel(w, C.thing, fam, -20); } catch (e) {} D.n = 0; } }
             if (D.n <= 0.5) { delete C.debt[id]; C.st.collect++; log(w, '🧾 {a}把欠{o}的賭債還清了。', { a: a.name, o: own.name }, a.name); continue; }
             if (!D.warned || d - D.warned >= 4) { D.warned = d; a.moodModifier = (a.moodModifier || 0) - 8; bump(a, own, -8); log(w, '👊 {o}找人堵在{a}家門口討賭債：「還欠 {n} 銀幣，別想躲。」', { o: own.name, a: a.name, n: Math.round(D.n) }, a.name); mem(w, a, '{o}的人天天堵在我家門口討債，我怕得不敢出門。', { o: own.name }, 8); }
-            if (d - D.day >= 21 && !byFun(w)) { // 交給本人:偷不偷、跑不跑由他自己決定(stealBy／fleeBy)
-                const mark = here(w).filter(o => o !== a && o !== own && cash(w, o) >= D.n + 10).sort(() => Math.random() - 0.5)[0];
-                if (mark && !has(a, 'kind') && Math.random() < 0.5) { const n = Math.min(D.n, cash(w, mark) * 0.3); if (WALLET.take(w, mark, n)) { WALLET.add(w, own, n); D.n = r2(D.n - n); C.st.theft++; try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: mark.agentId, k: '{a}為了還賭債，偷了{b}的 {n} 銀幣', p: { a: a.name, b: mark.name, n: Math.round(n) } }); } catch (e) {} mem(w, mark, '我家少了 {n} 銀幣，不知道被誰拿走了。', { n: Math.round(n) }, 7); mem(w, a, '我為了還賭債，偷了{b}的錢。', { b: mark.name }, 9); log(w, '🕵️ {b}家裡少了 {n} 銀幣，大家議論紛紛。', { b: mark.name, n: Math.round(n) }, mark.name); if (D.n <= 0.5) delete C.debt[id]; } }
-                else if (Math.random() < 0.3) { log(w, '🌙 {a}欠了一屁股債，連夜跑路離開了小鎮。', { a: a.name }, a.name); C.st.fled++; delete C.debt[id]; try { a._leaveReason = t('賭債'); w.leaveTown?.(a.agentId, t('賭債')); } catch (e) {} }
-            }
+            // 拖太久的賭債:偷不偷、跑不跑由他自己決定(stealBy／fleeBy)
         }
     }
     // 輸到家破人亡:配偶受不了離開、欠債的人連夜跑路
@@ -416,11 +397,7 @@ const CASINO = (() => {
         }
         for (const o of (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : [])) if (o !== a && o !== spouse && Math.random() < 0.6) { bump(o, a, -10); mem(w, o, '{a}在賭場把家都輸光了。', { a: a.name }, 6); }
         const owes = w.bank?.loans?.[a.agentId];
-        if (byFun(w)) { try { DECIDE.enqueue(w, a, 'ruined', { tot: Math.round(tot), owes: !!owes }); } catch (e) {} }
-        else if (owes || Math.random() < 0.25) {
-            log(w, '🌙 {a}欠了一屁股債，連夜跑路離開了小鎮。', { a: a.name }, a.name); news(w, `🌙 ${a.name}${t('賭輸跑路')}`, 7, [a.name]); C.st.fled++;
-            try { a._leaveReason = t('賭債'); w.leaveTown?.(a.agentId, t('賭債')); } catch (e) {}
-        }
+        try { DECIDE.enqueue(w, a, 'ruined', { tot: Math.round(tot), owes: !!owes }); } catch (e) {} // 跑不跑路由他自己決定
     }
     function vote(w, p0, a) {
         const C = S(w); const own = a.agentId === C.owner; const gambler = (C.v[a.agentId] || 0) >= 3; const kitchen = (() => { try { return typeof MARKET !== 'undefined' && MARKET.ownedBy(w, a.agentId).includes('kitchen'); } catch (e) { return false; } })();
@@ -434,7 +411,7 @@ const CASINO = (() => {
         const C = w.casino; if (!C) return ''; if (a.agentId === C.owner && C.open) return t('你在鎮上開賭場，莊家長期下來總是贏。');
         const st = C.streak?.[a.agentId] || 0; if (st >= 2) return t('你最近在賭場一直輸，滿腦子只想把錢贏回來。'); if ((C.v?.[a.agentId] || 0) >= 5) return t('你常去賭場碰碰運氣。'); return '';
     }
-    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, byFun, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy };
+    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy };
 })();
 
 // ---------- 接上其他系統 ----------

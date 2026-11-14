@@ -102,7 +102,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     // ---------- 長時間遊玩不卡 ----------
     const pf = await page.evaluate(() => {
       const app = window.rimtownApp, w = app.world, P = w.proposals; const a = Object.values(w.agents).find(x => !x.isPlayer);
-      for (let i = 0; i < 30; i++) { const cs = P._candidates(w, P._abs(w)); if (!cs.length) break; const p = P._createWith(w, P._abs(w), cs[i % cs.length], a); P._decide(w, p, i % 2 ? 'approve' : 'reject', 'mayor'); }
+      for (let i = 0; i < 30; i++) { const cs = P._candidates(w, P._abs(w)); if (!cs.length) break; try { WAYS.S(w).shame = {}; } catch (e) {} /* 提案被否決後會丟臉幾天、不能再提(v8.1);這裡要連提 30 個,先清掉 */ const p = P._createWith(w, P._abs(w), cs[i % cs.length], a); if (!p) continue; P._decide(w, p, i % 2 ? 'approve' : 'reject', 'mayor'); }
       app.state = w.getState(); app._ppTab = 'props'; app._ppHistAll = false;
       const box = document.createElement('div'); document.body.appendChild(box); app.renderProposals(box); const first = box.firstElementChild;
       const t0 = performance.now(); for (let i = 0; i < 20; i++) app.renderProposals(box); const ms = (performance.now() - t0) / 20;

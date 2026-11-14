@@ -30,9 +30,11 @@ async function run(browser, lang) {
       out.tradeLose = { good: last().good, mod: (w.news?.bulletins || []).some(b => b.rival && Object.values(b.modifiers || {}).some(v => v < 0)) };
       // 挖角:留下、被挖走
       const A = P().filter(a => !(w.election?.currentMayor?.(w)?.agentId === a.agentId))[2]; A.skills.skills['工藝'].xp = 9000;
-      const n0 = P().length; force(0.0, () => RIVAL.event(w, 'talent'));
-      out.kept = { good: last().good, alive: !!w.agents[A.agentId], mem: (A.memory.entries || []).slice(-5).some(m => /沒答應|said no|turned/i.test(m.content || '') || /{p}/.test(m.k || '')), st: V().st.kept };
-      force(0.999, () => RIVAL.event(w, 'talent'));
+      // 走不走由本人決定：對手鎮開口後先問他，這裡替他回答
+      const X = DECIDE.S(w); const ask = () => { X.q = []; delete X.cool[A.agentId + '|poach']; RIVAL.event(w, 'talent'); const q = X.q.find(x => x.kind === 'poach'); X.q = []; return q; };
+      const n0 = P().length; const q1 = ask(); if (q1) force(0.0, () => RIVAL.poachAnswer(w, w.agents[q1.a], q1.ctx.pid, q1.ctx.skill, false));
+      out.kept = { asked: !!q1 && q1.a === A.agentId && !!w.agents[A.agentId], good: last().good, alive: !!w.agents[A.agentId], mem: (A.memory.entries || []).slice(-5).some(m => /沒答應|said no|turned/i.test(m.content || '') || /{p}/.test(m.k || '')), st: V().st.kept };
+      const q2 = ask(); if (q2) force(0.999, () => RIVAL.poachAnswer(w, w.agents[q2.a], q2.ctx.pid, q2.ctx.skill, true));
       out.lost = { good: last().good, gone: !w.agents[A.agentId], st: V().st.lost, n: n0 - P().length, mem: P().some(o => (o.memory.entries || []).slice(-6).some(m => (m.content || '').includes(t(A.name)))) };
       // 人才投奔
       w.prosperity.prosperity = 90; V().them = 20; const n1 = Object.keys(w.agents).length; RIVAL.event(w, 'gain');
@@ -63,7 +65,7 @@ async function run(browser, lang) {
   ok(!r.err, `${tag} 跑完沒有例外`, r.err);
   ok(r.pick && r.pick.has && r.pick.them && r.pick.town, `${tag} 從鄰鎮裡挑出對手鎮，有自己的繁榮度`, r.pick);
   ok(r.tradeWin && r.tradeWin.kind === 'trade' && r.tradeWin.good && r.tradeWin.mod && r.tradeWin.rel && r.tradeLose && !r.tradeLose.good && r.tradeLose.mod, `${tag} 搶生意：比較強就守住（賣價加成），比較弱就被搶（賣價變差），關係變差`, { w: r.tradeWin, l: r.tradeLose });
-  ok(r.kept && r.kept.good && r.kept.alive && r.kept.st >= 1, `${tag} 挖角：好手婉拒，留在鎮上`, r.kept);
+  ok(r.kept && r.kept.asked && r.kept.good && r.kept.alive && r.kept.st >= 1, `${tag} 挖角：好手婉拒，留在鎮上`, r.kept);
   ok(r.lost && !r.lost.good && r.lost.gone && r.lost.st >= 1 && r.lost.n === 1 && r.lost.mem, `${tag} 挖角：好手被高薪挖走，鎮上的人記得`, r.lost);
   ok(r.gain && r.gain.kind === 'gain' && r.gain.more === 1 && r.gain.st >= 1, `${tag} 我們比較興旺時，對手鎮的人搬過來`, r.gain);
   ok(r.swap && r.swap.good && r.swap.cloth > 0 && r.swap.stone === r.swap.cloth && r.swap.warm && r.gouge && !r.gouge.good && r.gouge.st >= 1, `${tag} 互通有無：關係好拿多的換缺的（關係變好），關係差被抬價`, { s: r.swap, g: r.gouge });

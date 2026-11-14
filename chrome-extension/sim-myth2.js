@@ -121,13 +121,11 @@ const MYTHSOC = (() => {
         for (const x of (w.myth.inc || []).filter(x => x[0] > since && x[0] <= d)) {
             const c = w.agents[x[2]];
             if (x[3]) { for (const o of all) if (o !== c && !gene(w, o)) bump(w, o, aff(o, c) >= 40 ? -3 : -8); if (c) press(w, X, 'panic', '神裔又出事了！{a}身上的{g}害人受傷，晚上最好別出門', { a: c.name, g: gname(x[1]) }, all); }
-            else { for (const o of all) if (!gene(w, o)) bump(w, o, -3); /* 不知道是誰幹的,大家都怕 */ if (x[1] === 'wolf' || x[1] === 'night') { if (byCrowd(w)) askHunt(w, X, d, c, x[1]); else hunt(w, X, d, all, c, x[1]); } } // v9.27.0 有決策核心時,搜不搜由純人派帶頭的人決定
+            else { for (const o of all) if (!gene(w, o)) bump(w, o, -3); /* 不知道是誰幹的,大家都怕 */ if (x[1] === 'wolf' || x[1] === 'night') askHunt(w, X, d, c, x[1]); } // v9.27.0 有決策核心時,搜不搜由純人派帶頭的人決定
         }
     }
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const huntOk = (X) => { const P = X.grp.pure; return !!P && (P.members || []).length >= 2 && !X.hunts.some(h => !h.done); };
     const huntLead = (w, X) => { const P = X.grp.pure; const hs = (P?.members || []).map(id => w.agents[id]).filter(a => a && !a.isDead).slice(0, 4); return { hs, lead: w.agents[P?.leader] || hs[0] || null }; };
-    function hunt(w, X, d, all, culprit, kind) { if (!huntOk(X) || Math.random() > 0.6) return null; return huntDo(w, X, d, all, culprit, kind); }
     // v9.27.0 給決策核心:出了不知道是誰幹的事,純人派帶頭的人自己決定要不要帶隊搜捕(抓到誰、抓得對不對仍然看運氣)
     function askHunt(w, X, d, culprit, kind) { if (!huntOk(X)) return; const { hs, lead } = huntLead(w, X); if (!lead || !hs.length) return; try { DECIDE.enqueue(w, lead, 'hunt', { cul: culprit?.agentId || null, kind, d }); } catch (e) {} }
     function huntInfo(w, a, c) {
@@ -314,7 +312,7 @@ const MYTHSOC = (() => {
         if (v.rights) out.push(t('神裔平權令已通過')); if (v.st.wrongful) out.push(fill('獵人隊冤案 {n} 件', { n: v.st.wrongful }));
         return out.join(t('；'));
     }
-    return { S, active, att, initAtt, attLabel, stanceOf, groupOf, isPure, bump, hunt, huntInfo, huntBy, reveal, onWedding, geneFit, bossOf, elite, vote, groupVote, rights, unban, bias, daily, view, agentView, brief, townBrief, press, FIT, CULT };
+    return { S, active, att, initAtt, attLabel, stanceOf, groupOf, isPure, bump, huntInfo, huntBy, reveal, onWedding, geneFit, bossOf, elite, vote, groupVote, rights, unban, bias, daily, view, agentView, brief, townBrief, press, FIT, CULT };
 })();
 
 // ---------- 接上其他系統 ----------

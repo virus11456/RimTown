@@ -1,10 +1,11 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v9.28.0';
+const CACHE_NAME = 'rimtown-v9.29.0';
 // v6.82.2 首頁(/)與遊戲(/town)分頁。Vercel 開了 cleanUrls,index.html／town.html 會轉址到 / 與 /town,
 // 轉址回應不能拿來回應頁面導覽,所以清單只放 './',遊戲頁另外試著快取 './town'(本機沒有乾淨網址就略過)
 const ASSETS_TO_CACHE = [
   './',
   './style.css',
+  './landing.css',
   './style-observer.css',
   './pwa-manifest.json',
   './s2t.js',
@@ -90,6 +91,7 @@ const ASSETS_TO_CACHE = [
   './town3d.js',
   './app.js',
   './app-landing.js',
+  './landing-page.js',
   './app-notify.js',
   './app-achievements.js',
   './app-loop.js',

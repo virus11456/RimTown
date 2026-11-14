@@ -9,7 +9,6 @@ const UNION = (() => {
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
-    const aff = (a, id) => a?.relationships?.relationships?.[id]?.affinity || 0;
     const rel = (a, b) => (a && b ? a.relationships?.getOrCreate?.(b.agentId, b.name) : null);
     const mem = (w, a, k, p, imp = 6) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
@@ -38,20 +37,9 @@ const UNION = (() => {
     const leadBase = (w, a) => (has(a, 'charismatic') ? 3 : 0) + (has(a, 'abrasive') ? 1 : 0) + (has(a, 'pessimist') ? 0.5 : 0) + (a.skills?.skills?.社交?.level || 0) * 0.4 + grievance(w, a) * 2;
     const leaderScore = (w, a) => leadBase(w, a) + Math.random();
     // v9.21.0 決策核心階段 3:要不要帶頭組工會、加入、退出、跟不跟罷工、老闆答不答應,交給本人決定(sim-decide-pol.js);這裡只留「做得到什麼」和「做了怎麼結算」
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.pol && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
 
     // ---------- 組工會、入會、退會、會費 ----------
-    // ch = 這件事交給本人決定(每日流程在觀察者模式下傳 true;直接呼叫時照舊擲骰)
-    function found(w, all, d, ch) {
-        const U = S(w); if (tierLv(w) < 2) return; // 工會是城市才有的:村莊、城鎮的工人只會自發罷工,還組織不起來
-        const ws = privateWorkers(w, all); if (ws.length < 6) return;
-        const angry = ws.filter(a => grievance(w, a) >= 0.3); if (angry.length < 4) return;
-        if (ch) return; // 有人願意帶頭才組得起來(選擇點 organize)
-        if (Math.random() > 0.35) return;
-        const lead = angry.slice().sort((x, y) => leaderScore(w, y) - leaderScore(w, x))[0];
-        start(w, lead, angry.filter(a => a !== lead && Math.random() < 0.6), d);
-    }
     // 現在組不組得起工會、這個人是不是適合帶頭的那幾個(回傳一起不滿的人數)
     function canOrganize(w, a) {
         const U = S(w); if (U.on || tierLv(w) < 2 || !MK() || !w.market || !sectorOf(w, a) || grievance(w, a) < 0.3) return 0;
@@ -66,11 +54,11 @@ const UNION = (() => {
         for (const id of Object.keys(U.members)) mem(w, w.agents[id], id === lead.agentId ? '我帶頭成立了工會，大家團結起來才不會一直被壓榨。' : '我加入了{a}組的工會，希望大家一起爭取到合理的工資。', { a: lead.name }, 7);
         U.history.push({ d, k: 'found', who: lead.name }); return true;
     }
-    // 入會、退會(擲骰版和本人決定共用)
+    // 入會、退會
     function join(w, a, d = day(w)) { const U = S(w); if (!U.on || !a || U.members[a.agentId] || !sectorOf(w, a)) return false; U.members[a.agentId] = d; mem(w, a, '我加入了{u}，大家團結才有籌碼。', { u: U.name }, 6); rel(a, w.agents[U.leader])?.modifyAffinity?.(4); return true; }
     function leave(w, a, why) { const U = S(w); if (!a || !U.members[a.agentId] || U.leader === a.agentId) return false; delete U.members[a.agentId]; delete U.sour[a.agentId];
         mem(w, a, why === 'lost' ? '我退出工會了，罷工根本沒用。' : '日子過得去了，我退出了工會，會費省下來。', {}, why === 'lost' ? 5 : 4); return true; }
-    function membership(w, all, d, ch) {
+    function membership(w, all, d) { // 要不要加入、待遇好了要不要退會，由本人決定(選擇點 union／unionout)；這裡只管會員名冊與領袖
         const U = S(w); const lead = w.agents[U.leader];
         const gone = []; for (const id of Object.keys(U.members)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門還是會員 */ if (!a || a.isDead || !sectorOf(w, a)) { delete U.members[id]; if (a && !a.isDead) gone.push(a); } }
         // 領袖不在了(過世、離鎮、當了老闆):會員裡最有號召力的人接手
@@ -86,17 +74,6 @@ const UNION = (() => {
                 for (const m of pool) { rel(m, old)?.modifyAffinity?.(-20); if (Math.random() < 0.5) mem(w, m, '原來{a}收了老闆的錢，我們被出賣了。', { a: old?.name || '' }, 8); }
                 if (pool.length) { const nl = pool.sort((x, y) => leaderScore(w, y) - leaderScore(w, x))[0]; U.leader = nl.agentId; log(w, '💥 {a}收老闆錢的事曝光，被{u}趕下台，改由{b}帶領。', { a: old?.name || '', u: U.name, b: nl.name }, nl.name); }
                 else { U.on = false; U.leader = null; refund(w, old && !old.isDead ? [old] : []); } U.history.push({ d, k: 'ousted' }); if (!U.on) return; } } } catch (e) {}
-        const L = w.agents[U.leader];
-        for (const a of privateWorkers(w, all)) {
-            if (U.members[a.agentId]) {
-                const k = sectorOf(w, a); if (!ch && MK().payRate(w, k) >= 1 && (a.mood ?? 50) > 60 && Math.random() < 0.08) leave(w, a, 'fine');
-                continue;
-            }
-            if (ch) continue; // 要不要加入由本人決定(選擇點 union)
-            const boss = w.agents[MK().ownerOf(w, sectorOf(w, a))];
-            let p = 0.08 + grievance(w, a) * 0.35 + (aff(a, U.leader) > 30 ? 0.15 : 0) - (aff(a, boss?.agentId) > 50 ? 0.25 : 0) - (has(a, 'greedy') ? 0.08 : 0) + Math.min(0.15, (U.won || 0) * 0.04);
-            if (Math.random() < p) join(w, a, d);
-        }
         for (const [id, d0] of Object.entries(U.sour)) if (d - d0 > 10 || !U.members[id]) delete U.sour[id];
     }
     // 解散時把罷工基金分還給最後的會員(沒人可分就進公庫),錢不會憑空消失
@@ -154,7 +131,7 @@ const UNION = (() => {
         U.history.push({ d, k: 'fire', s: T.k }); return tgt;
     }
     // 談判破裂 → 罷工(基金要撐得了幾天);回傳有沒有罷工成
-    function walkout(w, T, d = day(w), ch = false) {
+    function walkout(w, T, d = day(w), ask = false) { // ask = 會員各自決定跟不跟(老闆親口回絕時才問；老闆不在鎮上那條路不問)
         const U = S(w); const M = MK(); const { k, boss, mem_, ws } = T;
         if (U.fund >= mem_.length * STRIKE_PAY * 2) {
             U.strike[k] = { start: d, until: d + STRIKE_MAX, members: mem_.map(a => a.agentId), boss: T.bossId, want: T.want };
@@ -165,7 +142,7 @@ const UNION = (() => {
             for (const s of scabs) { for (const a of mem_) if (Math.random() < 0.5) rel(a, s)?.modifyAffinity?.(-6); if (Math.random() < 0.5) mem(w, s, '我沒加入工會，罷工的時候照樣去上工，被他們罵工賊。', {}, 5); }
             U.history.push({ d, k: 'strike', s: k });
             // 會員自己決定跟不跟(領袖帶頭,不問)
-            if (ch) for (const a of mem_) if (a.agentId !== U.leader && here(w, a)) { try { DECIDE.enqueue(w, a, 'strike', { k }); } catch (e) {} }
+            if (ask) for (const a of mem_) if (a.agentId !== U.leader && here(w, a)) { try { DECIDE.enqueue(w, a, 'strike', { k }); } catch (e) {} }
             return true;
         }
         log(w, '😠 {o}拒絕了{u}的加薪要求，工會的錢還不夠罷工。', { o: boss.name, u: U.name }, boss.name); for (const a of mem_) mem(w, a, '{o}不肯加薪，工會的錢也不夠撐罷工。', { o: boss.name }, 5);
@@ -188,12 +165,12 @@ const UNION = (() => {
         if (how === 'fire') { fireLead(w, T, d); return walkout(w, T, d, true) ? 'strike' : 'no'; }
         return walkout(w, T, d, true) ? 'strike' : 'no';
     }
-    function bargain(w, all, d, ch) {
+    function bargain(w, all, d) {
         const U = S(w); const M = MK(); if (!w.agents[U.leader]) return;
         for (const k of Object.keys(M.SECTORS)) {
             if ((U.talks[k] || -99) > d - 14 || U.ask[k] != null) continue; const T = talkInfo(w, k, all); if (!T) continue;
             U.talks[k] = d;
-            if (ch && here(w, T.boss)) { // 老闆自己決定怎麼回(隔天有答案)
+            if (here(w, T.boss)) { // 老闆自己決定怎麼回(隔天有答案)；老闆不在鎮上問不到時，才照他的個性推一個結果
                 U.ask[k] = d; log(w, '📣 {u}向{o}提出要求：{s}的工資要調到原本的 {p}%。', { u: U.name, o: T.boss.name, s: M.name(k), p: Math.round(T.want * 100) }, T.boss.name);
                 try { DECIDE.enqueue(w, T.boss, 'demand', { k }); } catch (e) { delete U.ask[k]; }
                 if (U.ask[k] != null) continue;
@@ -207,7 +184,7 @@ const UNION = (() => {
         }
     }
     // 罷工每天:發補貼、老闆會不會讓步、撐不住就失敗
-    function strikeDay(w, d, ch) {
+    function strikeDay(w, d) {
         const U = S(w); const M = MK(); const Wl = WL();
         for (const [k, s] of Object.entries(U.strike)) {
             const boss = w.agents[s.boss]; const live = s.members.filter(id => w.agents[id] && !w.agents[id].isDead && U.members[id]);
@@ -225,7 +202,7 @@ const UNION = (() => {
             }
             if (U.fund < pay || d >= s.until) {
                 U.lost++; log(w, '🥀 {s}的罷工撐不下去了，工人們回去上工，什麼也沒爭取到。', { s: M.name(k) }, boss.name);
-                for (const id of live) { const a = w.agents[id]; mem(w, a, '罷工失敗了，白白少領好幾天工資。', {}, 7); a.addThought?.('strike_lost', w); if (ch) U.sour[id] = d; /* 輸了之後要不要退會,由本人決定(選擇點 unionout) */ else if (Math.random() < 0.3) leave(w, a, 'lost'); }
+                for (const id of live) { const a = w.agents[id]; mem(w, a, '罷工失敗了，白白少領好幾天工資。', {}, 7); a.addThought?.('strike_lost', w); U.sour[id] = d; /* 輸了之後要不要退會,由本人決定(選擇點 unionout) */ }
                 delete U.strike[k]; U.history.push({ d, k: 'lost', s: k });
             }
         }
@@ -238,13 +215,12 @@ const UNION = (() => {
     function daily(w) {
         const U = S(w); const d = day(w); if (U.lastDay === d) return; U.lastDay = d; const all = npcs(w);
         if (!MK() || !w.market) return;
-        const ch = byChoice(w);
-        if (U.on) strikeDay(w, d, ch);
+        if (U.on) strikeDay(w, d);
         // 老闆三天都沒回話(不在鎮上、出遠門):當作不答應
         for (const [k, d0] of Object.entries(U.ask)) if (d - d0 >= 3) { try { answer(w, k, 'no'); } catch (e) { delete U.ask[k]; } }
         if (d % 7 !== 3) return; // 每週一次(跟市場的週結錯開)
-        if (!U.on) { found(w, all, d, ch); return; }
-        membership(w, all, d, ch); if (!U.on) return; dues(w); bargain(w, all, d, ch);
+        if (!U.on) return; // 有人願意帶頭才組得起來(選擇點 organize)
+        membership(w, all, d); if (!U.on) return; dues(w); bargain(w, all, d);
     }
 
     // ---------- 選舉與提案 ----------
@@ -273,8 +249,8 @@ const UNION = (() => {
     function view(w) {
         const U = S(w); return { on: U.on, name: U.name, leader: w.agents[U.leader]?.name || '', members: Object.keys(U.members).length, fund: Math.round(U.fund), strikes: U.strikes, won: U.won, lost: U.lost, bribed: U.bribed, fired: U.fired, striking: Object.keys(U.strike).length };
     }
-    return { S, daily, found, membership, dues, bargain, strikeDay, idle, bias, brief, describe, view, isMember, grievance, sectorOf, STRIKE_PAY,
-        byChoice, canOrganize, start, join, leave, talkInfo, deal, bribe, fireLead, walkout, cross, answer, leadBase, privateWorkers };
+    return { S, daily, membership, dues, bargain, strikeDay, idle, bias, brief, describe, view, isMember, grievance, sectorOf, STRIKE_PAY,
+        canOrganize, start, join, leave, talkInfo, deal, bribe, fireLead, walkout, cross, answer, leadBase, privateWorkers };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { strike_lost: { mood: -6, opinion: 0, days: 3, label: t('罷工失敗') } });
@@ -292,13 +268,7 @@ if (typeof ElectionSystem !== 'undefined') {
             const U = world.union; const L = U?.on && world.agents[U.leader];
             const mine = L && this.candidates?.find(c => c.agentId === L.agentId);
             if (mine) { mine.union = true; world.logMessageT?.('event', '✊ {u}表態支持自家領袖{a}。', { u: U.name, a: L.name }, L.name); } // 領袖本來就有出來選:工會全力支持
-            else if (L && !L.isDead && Object.keys(U.members).length >= 5 && this.candidates?.length && this._residents(world).includes(L) && !UNION.byChoice(world) && Math.random() < 0.6) { // v9.21.0 本人決定時,領袖要不要選由他自己說(選擇點 run)
-                const pol = (typeof ELECTION_POLICIES !== 'undefined' && ELECTION_POLICIES.find(p => p.id === 'welfare')) || this._pickPolicy(L);
-                const c = { agentId: L.agentId, name: L.name, policy: pol.id, policyLabel: pol.label, policyIcon: pol.icon, votes: 0, speech: this._generateSpeech(L, pol), union: true };
-                this.candidates[this.candidates.length - 1] = c;
-                world.logMessageT?.('event', '✊ {u}推出領袖{a}參選鎮長。', { u: U.name, a: L.name }, L.name);
-                L.memory?.addT?.(world.tickCount, world.clock.timeStr, 'election', '工會推我出來選鎮長，要替工人發聲。', {}, 8, []);
-            }
+            // 領袖沒出來選:要不要選由他自己說(選擇點 run)
         } catch (e) { console.warn('[Union] election', e); }
         return r;
     };

@@ -41,7 +41,6 @@ const WAYS = (function () {
     const proud = (a) => hasT(a, 'abrasive') || hasT(a, 'charismatic') || hasT(a, 'greedy') || hasT(a, 'jealous');
     function setFace(w, a, v) { S(w).face[a.agentId] = Math.max(0, Math.min(100, Math.round(v))); }
     function loseFace(w, a, n) { setFace(w, a, faceOf(w, a) - n * (proud(a) ? 1.4 : 1)); }
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const stepFriend = (w, a) => adults(w).filter(x => x !== a && aff(a, x) >= 30 && aff(x, a) >= 20).sort((x, y) => aff(a, y) - aff(a, x))[0] || null;
     function casualDo(w, a, d) { const X = S(w); X.lastCasual = d; log(w, '🎭 {a}的提案被大比數否決之後，逢人就說：「我本來就只是隨口提提。」', { a: a.name }, a.name); bump(X, 'casual'); }
     function stepDo(w, a, fr) {
@@ -61,11 +60,8 @@ const WAYS = (function () {
         loseFace(w, a, big ? 15 : 5); bump(X, 'rejected');
         // 朋友給台階
         const fr = stepFriend(w, a);
-        if (byCrowd(w)) { // v9.27.0 嘴不嘴硬、要不要出面給台階,由本人決定
+        { // v9.27.0 嘴不嘴硬、要不要出面給台階,由本人決定
             if (big) { let title = p.id; try { title = w.proposals.title(p) || p.id; } catch (e) {} try { DECIDE.enqueue(w, a, 'rejected', { t: title, d }); if (fr) DECIDE.enqueue(w, fr, 'step', { a: a.agentId, t: title, d }); DECIDE.drain(w, DECIDE.S(w), d); } catch (e) { console.warn('[Ways] rejected', e); } }
-        } else {
-            if (big && Math.random() < 0.15 && d - (X.lastCasual ?? -99) >= 20) casualDo(w, a, d);
-            if (fr && big && Math.random() < 0.5) stepDo(w, a, fr);
         }
         if (faceOf(w, a) < 35) {
             if (hasT(a, 'charismatic') || hasT(a, 'abrasive')) { X.lobby[a.agentId] = d; mem(w, a, '我不服氣，這次先去找大家私下聊聊，下次一定讓它通過。', {}, 6); bump(X, 'lobby'); }
@@ -128,12 +124,9 @@ const WAYS = (function () {
         const owner = (a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
         const pool = Object.entries(p.votes || {}).filter(([, v]) => v === 'for').map(([id]) => w.agents[id]).filter(a => a && !a.isDead && (hasT(a, 'greedy') || hasT(a, 'lazy') || owner(a)));
         if (!pool.length) return; let title = p.id; try { title = w.proposals.title(p) || p.id; } catch (e) {}
-        // v9.26.0 私下守不守,由那個人自己決定(決策核心「自己贊成的規定」);沒有決策核心才擲骰
-        if (byDark(w)) { const a = rnd(pool); try { DECIDE.enqueue(w, a, 'twoface', { k: p.kind, t: title }); DECIDE.drain(w, DECIDE.S(w), day(w)); } catch (e) { console.warn('[Ways] twoface', e); } return; }
-        if (Math.random() > (p.kind === 'policy' ? 0.12 : 0.4)) return; const a = rnd(pool); // 一般政令比較少人陽奉陰違;真的有限制的法律才常見
-        breakLaw(w, a, p.kind, title);
+        // v9.26.0 私下守不守,由那個人自己決定(決策核心「自己贊成的規定」)
+        { const a = rnd(pool); try { DECIDE.enqueue(w, a, 'twoface', { k: p.kind, t: title }); DECIDE.drain(w, DECIDE.S(w), day(w)); } catch (e) { console.warn('[Ways] twoface', e); } }
     }
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
     function breakLaw(w, a, kind, title) {
         const X = S(w); X.hyp.push({ a: a.agentId, k: kind, t: title, d: day(w) }); if (X.hyp.length > 12) X.hyp = X.hyp.slice(-12);
         mem(w, a, '「{t}」我是投了贊成，不過自己私下……反正沒人看見。', { t: title }, 4);
@@ -165,17 +158,6 @@ const WAYS = (function () {
     // v9.22.0 這戶人家是不是正眼紅鄰居翻修(三十天內)；借錢翻修了就記一筆、不再眼紅(給決策核心用)
     function envied(w, h) { const X = S(w); const dd = X.envy[h]; if (dd == null) return false; if (day(w) - dd > 30) { delete X.envy[h]; return false; } return true; }
     function envyBorrowed(w, h) { const X = S(w); bump(X, 'borrow'); delete X.envy[h]; }
-    // 眼紅的人家手頭不夠:去銀行借錢也要翻修
-    function envyBorrow(w) {
-        const X = S(w); const d = day(w); if (typeof HOUSING === 'undefined' || typeof BANK === 'undefined' || !w.bank || typeof WALLET === 'undefined') return;
-        const H = HOUSING.S(w); const top = HOUSING.maxLv(w);
-        for (const [h, dd] of Object.entries(X.envy)) {
-            if (d - dd > 30) { delete X.envy[h]; continue; } const lv = H.lv[h] ?? top; if (lv >= top) { delete X.envy[h]; continue; }
-            const ppl = npcs(w).filter(a => HOUSING.houseOf(w, a) === h); const b = ppl.sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0]; if (!b) continue;
-            const need = Math.ceil(HOUSING.COST[lv + 1] * 1.25 - WALLET.get(w, b)); if (need <= 0 || hasT(b, 'ascetic') || Math.random() > 0.08) continue;
-            try { const B = BANK.S(w); const got = BANK.lend(w, B, b, need, t('跟鄰居一樣翻修房子')); if (got) { bump(X, 'borrow'); delete X.envy[h]; log(w, '🏦 {a}為了把家翻修得跟鄰居一樣，跟銀行借了 {n} 銀幣。', { a: b.name, n: got }, b.name); } } catch (e) {}
-        }
-    }
 
     // ================= 👴 懷舊 =================
     const NEW_KINDS = ['research', 'build', 'factory', 'industry', 'industry_up', 'tech_path', 'upgrade', 'market'];
@@ -252,14 +234,13 @@ const WAYS = (function () {
             if (c.until <= d) {
                 if (c.done) { if (d - c.until > 60) delete X.cold[k]; continue; } c.done = 1;
                 // v9.20.0 村民自己拿主意時,要不要先開口由本人決定(決策核心「跟某人冷戰中」);拖到最後都沒人開口,就看兩人心裡還剩多少情分,不擲骰
-                const soft = byChoice(w) ? (aff(a, b) >= -50 && aff(b, a) >= -50) : Math.random() < 0.6;
+                const soft = aff(a, b) >= -50 && aff(b, a) >= -50;
                 if (soft) { addAff(a, b, 8); addAff(b, a, 8); bump(X, 'thaw'); log(w, '🫖 冷戰了 {n} 天，{a}和{b}在井邊碰到，終於開口打了招呼。', { n: c.until - c.d, a: a.name, b: b.name }, a.name, b.name); }
                 else { addAff(a, b, -5); addAff(b, a, -5); bump(X, 'apart'); log(w, '🧊 {a}和{b}冷戰到最後，從此不再往來。', { a: a.name, b: b.name }, a.name, b.name); }
             } else if (aff(a, b) >= 10 && aff(b, a) >= 10 && d - c.d >= 2) { c.until = d; c.done = 1; bump(X, 'thaw'); log(w, '🤝 {a}和{b}終於和好了，冷戰結束。', { a: a.name, b: b.name }, a.name, b.name); }
         }
     }
     // ---------- v9.20.0 冷戰的三種收場(決策核心用):先開口 → 對方點頭和好／裝作沒看到;或乾脆不往來 ----------
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const coldRec = (w, a, b) => { const c = S(w).cold[key2(a.agentId, b.agentId)]; return c && c.until > day(w) ? c : null; };
     function reach(w, a, b) { const c = coldRec(w, a, b); if (!c) return false; c.by = a.agentId; mem(w, a, '冷戰這麼久，我決定先跟{b}開口。', { b: b.name }, 5); if (typeof DECIDE !== 'undefined') DECIDE.enqueue(w, b, 'reached', { a: a.agentId }); return true; }
     function thaw(w, a, b) { // a 先開口,b 點頭
@@ -317,7 +298,7 @@ const WAYS = (function () {
             const who = A.filter(a => !sil.includes(a.agentId)).sort((x, y) => ((hasT(y, 'kind') ? 2 : 0) + (hasT(y, 'charismatic') ? 2 : 0) + (hasV(y, '社群') ? 1 : 0)) - ((hasT(x, 'kind') ? 2 : 0) + (hasT(x, 'charismatic') ? 2 : 0) + (hasV(x, '社群') ? 1 : 0)))[0];
             if (who) { X.lastForum = d; TECH.propose(w, 'ways_forum', 'ways', who, '辦一場鄰里茶會', '{who}說最近大家都不太敢開口提事情了，提議辦一場鄰里茶會：每個人都能說說自己的想法，說錯了也沒關係。只花一點茶點錢。', {}, 'culture'); }
         }
-        if (!(typeof HOUSING !== 'undefined' && HOUSING.byChoice?.(w))) envyBorrow(w); /* v9.22.0 眼紅鄰居、要不要借錢翻修，改由本人決定 */ nostalgia(w); routines(w); coldDaily(w);
+        /* v9.22.0 眼紅鄰居、要不要借錢翻修，由本人決定 */ nostalgia(w); routines(w); coldDaily(w);
     }
 
     // ================= 給介面與 AI =================
@@ -337,7 +318,7 @@ const WAYS = (function () {
         return out;
     }
     function townBrief(w) { const X = w.ways; if (!X) return ''; return X.trust < 45 ? t('鎮上的人最近不太相信喊口號的人') : silent(w).length >= 3 ? t('鎮上最近很多人不敢開口提事情') : ''; }
-    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, casualInfo, casualBy, stepInfo, stepBy, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, twofaceInfo, twofaceBy, expose, onRenovate, envyBorrow, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
+    return { ABSENT, S, faceOf, setFace, loseFace, onRejected, casualInfo, casualBy, stepInfo, stepBy, silent, forum, owe, owedTo, repay, giftAmount, onGift, onFuneral, badOutcome, goodOutcome, onBad, onGood, DEED, onApproved, twofaceInfo, twofaceBy, expose, onRenovate, envied, envyBorrowed, NEW_KINDS, pastLeader, nostalgia, SPOTS, routineOf, routines, coldWith, coldOf, quarrel, coldDaily, weddingGuests, vote, daily, view, brief, townBrief, SYS, reach, thaw, snub, apart, coldList, proud };
 })();
 
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { ways_forum: { icon: '🫖', label: '鄰里茶會' } });

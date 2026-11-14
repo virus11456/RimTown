@@ -21,24 +21,26 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const kinds = (a) => (a.thoughts || []).map(x => x.kind);
       const D = DARK.S(w); const d0 = P._abs(w); const dayAt = (n) => { P._abs = () => d0 + n; };
       const out = {};
+      // 道歉、原諒、報復都由本人決定。這裡用「照個性決定」那條路(不加運氣)，看不同個性的人會怎麼選
+      const byNature = (a, key) => { Math.random = () => 0.5; try { return DECIDE.ruleOnce(w, a, key, true); } finally { back(); } };
       // 1) 道歉 → 原諒(善良的人)
       const A = ag[0], B = ag[1]; A.personality.traits = ['kind']; B.personality.traits = ['kind'];
-      D.wrongs = []; DARK.wrong(w, A, B, 2, '在背後說{v}壞話', { v: B.name }); dayAt(3); seq([0.01, 0.5, 0.01]); try { DARK.apologies(w); } finally { back(); }
-      out.forgive = { a: kinds(A).includes('forgiven'), b: kinds(B).includes('forgave'), done: D.wrongs[0]?.forgiven };
+      set(A, B, 0); set(B, A, 0); D.wrongs = []; DARK.wrong(w, A, B, 2, '在背後說{v}壞話', { v: B.name }); dayAt(3); const e1 = byNature(A, 'sorry'); // 善良的 A 自己決定去道歉，B 當下決定原不原諒
+      out.forgive = { said: ['say', 'gift'].includes(e1?.id), a: kinds(A).includes('forgiven'), b: kinds(B).includes('forgave'), done: D.wrongs[0]?.forgiven };
       // 2) 道歉被拒 → 記恨的人報復,恩怨連載
       const C = ag[2], E = ag[3]; C.personality.traits = ['abrasive']; E.personality.traits = ['jealous', 'abrasive'];
-      D.wrongs = []; D.feuds = {}; DARK.wrong(w, C, E, 3, '栽贓{v}', { v: E.name }); dayAt(6); seq([0.01, 0.5, 0.99]); try { DARK.apologies(w); } finally { back(); }
+      set(C, E, 0); set(E, C, 0); D.wrongs = []; D.feuds = {}; DARK.wrong(w, C, E, 3, '栽贓{v}', { v: E.name }); dayAt(6); Math.random = () => 0.5; try { DARK.apologize(w, D.wrongs[0], 0); DECIDE.drain(w, DECIDE.S(w), w._absDay()); } finally { back(); } // 這裡讓 C 去道歉；原不原諒由記恨的 E 自己決定
       out.unforgiving = kinds(E).includes('unforgiving');
-      dayAt(7); seq([0.01, 0.2, 0.2, 0.2, 0.2, 0.2]); try { DARK.revenge(w); } finally { back(); }
-      out.revenge = { avenged: kinds(E).includes('avenged'), counter: D.wrongs.some(x => x.by === E.agentId && x.to === C.agentId) };
+      dayAt(7); const e2 = byNature(E, 'grudge'); // 心裡有口氣的 E 自己決定要不要報復
+      out.revenge = { pick: e2?.id, avenged: kinds(E).includes('avenged'), counter: D.wrongs.some(x => x.by === E.agentId && x.to === C.agentId) };
       // 對方再報復回來 → 連載第 2 回
       C.personality.traits = ['abrasive', 'jealous']; const cw = D.wrongs.find(x => x.by === E.agentId && x.to === C.agentId); if (cw) { cw.day = d0; }
-      dayAt(10); seq([0.01, 0.2, 0.2, 0.2, 0.2]); try { DARK.revenge(w); } finally { back(); }
+      dayAt(10); byNature(C, 'grudge');
       out.feud = Math.max(0, ...Object.values(D.feuds).map(f => f.n));
       // 3) 小團體:常一起講同一個人壞話
       const F = ag[4], G = ag[5], H = ag[6]; F.personality.traits = ['jealous', 'gossip']; G.personality.traits = ['optimist']; H.personality.traits = [];
       set(F, G, 40); set(F, H, -80); set(G, H, 0); D.cliques = []; D.allies = {}; D.rep[F.agentId] = {};
-      for (let i = 0; i < 2; i++) { D.spoke = {}; seq([0.01, 0.9, 0.5, 0.5, 0.5]); try { DARK.badmouth(w, F, G); } finally { back(); } }
+      for (let i = 0; i < 2; i++) { D.spoke = {}; seq([0.5]); try { DARK.speak(w, F, G, H, 'dislike', false); } finally { back(); } } // 要不要講由本人決定：這裡讓 F 跟 G 抱怨了兩次
       const cq = DARK.cliqueOf(w, G.agentId); out.clique = !!cq && cq.members.includes(F.agentId) && cq.against.includes(H.agentId);
       const pH = { proposerId: H.agentId, kind: 'free', votes: {}, why: {} }, pF = { proposerId: F.agentId, kind: 'free', votes: {}, why: {} };
       out.cliqueVote = { againstH: DARK.cliqueVote(w, pH, G), forF: DARK.cliqueVote(w, pF, G) };
@@ -82,7 +84,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.paused = false; for (let i = 0; i < 96 * 8; i++) w.tick(); w.paused = true;
       return out;
     });
-    ok(r.forgive.a && r.forgive.b && r.forgive.done, '做錯事的人會道歉，善良的人會原諒', r.forgive);
+    ok(r.forgive.said && r.forgive.a && r.forgive.b && r.forgive.done, '做錯事的人（善良的）自己決定去道歉，善良的人會原諒', r.forgive);
     ok(r.unforgiving, '記恨的人不肯原諒', null);
     ok(r.revenge.avenged && r.revenge.counter, '不肯原諒、又心眼小的人會報復，報復又變成新的虧欠', r.revenge);
     ok(r.feud >= 2, '你來我往的報復變成恩怨連載', r.feud);

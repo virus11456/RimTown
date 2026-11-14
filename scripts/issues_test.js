@@ -43,10 +43,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const ab = eng._agentBrief(w, A); const tb = eng._townBrief(w);
       let prompt = ''; eng.fullAgentOk = () => true; eng._askJson = async (p) => { prompt = p; return { title: lang === 'en' ? 'Buy grain' : '去鄰鎮買糧', pitch: 'x', category: 'economy', cost: { silver: 20 }, effects: [{ type: 'resource', res: 'food', amount: 60 }], addresses: [1] }; };
       const lang = window.I18N?.lang || localStorage.getItem('rimtown-lang');
+      // v9.28.2 起有 35% 的機會改請村民提「跟急事無關、自己的事」，那種題目不附急事清單；這裡要驗的是附清單的那種，所以先把手氣固定住
+      const _rnd = Math.random; Math.random = () => 0.9;
       const j = await eng.inventProposal(w, A, []);
       // 提案處理急事:addresses 指到最急的那件 → by 設好
       sp.resources.silver = 500;
       await P._inventLLM(w, day, A, () => {}, []);
+      Math.random = _rnd;
       const made = P.items[P.items.length - 1];
       const firstKey = TOWN_ISSUES.list(P)[0]?.key;
       const claimed = Object.values(P.issues).filter(i => i.by === made?.id).map(i => i.key);

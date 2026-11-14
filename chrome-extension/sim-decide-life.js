@@ -70,7 +70,7 @@
     // ---------- 手上的股份分紅不如銀行：要不要退 ----------
     DECIDE.kind('cashout', {
         title: '手上的股份分紅不如銀行', cool: 7, pri: 1,
-        when(w, a) { const V = IV(); if (!V || !w.market || !V.byChoice(w)) return null; const L = V.lowOf(w, a); return L ? { k: L.k } : null; },
+        when(w, a) { const V = IV(); if (!V || !w.market || !DECIDE.on(w)) return null; const L = V.lowOf(w, a); return L ? { k: L.k } : null; },
         facts(w, a, ctx) {
             const L = IV().lowOf(w, a); if (!L || L.k !== ctx.k) return '';
             return fill('你在{s}有 {p}% 股份。這家的分紅已經連續 {n} 週不如銀行：照現在的行情一週大約 {y}%，銀行存款一週 {r}%。現在賣可以拿回 {m} 銀幣（{b}願意接手）。當家是{o}，你跟他{tie}。',
@@ -97,7 +97,7 @@
         const need = Math.ceil(cost * 1.2 - cash(w, a) + 5); return need >= 5 && BANK.lendable(B) >= need ? need : 0;
     }
     function renoInfo(w, a) {
-        const H = HS(); if (!H || !H.byChoice(w)) return null; const I = H.info(w, a); if (!I || I.lack) return null;
+        const H = HS(); if (!H || !DECIDE.on(w)) return null; const I = H.info(w, a); if (!I || I.lack) return null;
         const c = cash(w, a); const can = c >= I.cost * 1.2; const loan = can ? 0 : renoLoan(w, a, I.cost); if (!can && !loan) return null;
         return { ...I, c, can, loan, envy: envied(w, I.home) };
     }
@@ -129,7 +129,7 @@
     // ================= 信仰 =================
     // ---------- 要不要奉獻 ----------
     const FT = () => (typeof FAITH !== 'undefined' ? FAITH : null);
-    const titheInfo = (w, a) => { const F = FT(); if (!F || !w.faith || !F.byChoice(w)) return null; const I = F.giftInfo(w, a); return I && I.piety >= 45 ? I : null; };
+    const titheInfo = (w, a) => { const F = FT(); if (!F || !w.faith || !DECIDE.on(w)) return null; const I = F.giftInfo(w, a); return I && I.piety >= 45 ? I : null; };
     DECIDE.kind('tithe', {
         title: '要不要奉獻', cool: 7, pri: 0.5,
         when(w, a) { return titheInfo(w, a) ? {} : null; },
@@ -161,7 +161,7 @@
         credit: { text: '到處說{v}的提案其實是你的主意', say: '搶走{v}的功勞', off: 0.1 },
     };
     function schemeInfo(w, a) {
-        const D = DK(); if (!D || !D.byLife(w) || D.malice(a) < 1 || D.honesty(a) > 3) return null;
+        const D = DK(); if (!D || !DECIDE.on(w) || D.malice(a) < 1 || D.honesty(a) > 3) return null;
         const I = D.schemeInfo(w, a); return I && ok(w, I.v) ? I : null;
     }
     DECIDE.kind('scheme', {
@@ -184,7 +184,7 @@
     // ================= 開店 =================
     // ---------- 想不想自己開店 ----------
     const BZ = () => (typeof BIZ !== 'undefined' ? BIZ : null);
-    const startInfo = (w, a) => { const B = BZ(); return B && B.byChoice(w) ? B.startInfo(w, a) : null; };
+    const startInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.startInfo(w, a) : null; };
     DECIDE.kind('startup', {
         title: '想不想自己開店', cool: 10, pri: 1.2,
         when(w, a) { return startInfo(w, a) ? {} : null; },

@@ -18,8 +18,7 @@ const BANK = (() => {
     const cash = (w, a) => (W() && w.wallet ? WALLET.get(w, a) : 0);
     const r1 = (n) => Math.round(n * 10) / 10;
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
-    // v9.24.0 擠兌時領不領、債券買不買，交給本人決定(sim-decide-share.js)；擲骰的版本留給沒有決策核心的情況
-    const byShare = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.share && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    // v9.24.0 擠兌時領不領、債券買不買，交給本人決定(sim-decide-share.js)
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
     const INTEREST = 0.1; // 紓困借款利息
     function S(w) {
@@ -67,7 +66,6 @@ const BANK = (() => {
             if (B.loans[a.agentId]) continue; const c = cash(w, a);
             /* v9.19.0 周轉貸款改由決策核心在村民「手頭很緊」時自己決定 */
             /* v9.22.0 借錢翻修改由住戶本人決定(sim-decide-life.js「家裡的房子舊了」) */
-            if (typeof HOUSING !== 'undefined' && w.housing && !HOUSING.byChoice?.(w) && Math.random() < 0.03) { const h = HOUSING.houseOf(w, a); const lv = w.housing.lv?.[h]; const top = HOUSING.maxLv(w); if (h && lv !== undefined && lv < top) { const cost = HOUSING.COST[lv + 1]; if (c < cost * 1.2 && c + lendable(B) >= cost * 1.2) BANK.lend(w, B, a, cost * 1.2 - c + 5, '翻修房子'); } }
         }
         // 還款:每天從手上的錢還一點;逾期又還不出來就變呆帳
         for (const [id, L] of Object.entries(B.loans)) {
@@ -119,7 +117,7 @@ const BANK = (() => {
         if (!R.injected && banker && !banker.isDead && B.reserve < totalDep(B)) inject(w, B, banker, R);
         if (!R.bonds && banker && !banker.isDead && B.reserve < totalDep(B) * 0.8) { R.bonds = issueBonds(w, B, d, Math.ceil(totalDep(B) - B.reserve), true) || -1; }
         if (!R.asked && B.reserve < totalDep(B) * 0.6) { askBailout(w, B, d, R); if (R.asked === 'pending') return; }
-        if (!byShare(w)) for (const id of Object.keys(B.dep)) { const a = w.agents[id]; if (!a || Math.random() > 0.6) continue; withdraw(w, B, a, B.dep[id]); } // 交給本人決定時，由存戶自己去領(runBy)
+        // 要不要去領，由存戶自己決定(runBy)
         if (totalDep(B) > 0 && B.reserve < 1 && !R.asked) { askBailout(w, B, d, R); if (R.asked === 'pending') return; } // 一天就被領光:倒閉前還是要先問政府
         if (totalDep(B) > 0 && B.reserve < 1) return fail(w, B, d);
         if (d - B.runDay >= 3) { B.status = 'ok'; B.run = null; B.bad = Math.round((B.bad || 0) * 0.3); B.lastRunEnd = d; log(w, '🏦 銀行撐過了擠兌，大家慢慢放心了。', {}); }
@@ -136,26 +134,9 @@ const BANK = (() => {
     // 債券:三十天到期;擠兌時利息較高(一成二)才有人敢買,平時八分
     function issueBonds(w, B, d, goal, inRun) {
         const banker = w.agents[B.banker]; if (!banker || goal < 5) return 0;
-        const rate = inRun ? 0.12 : 0.08; B.lastIssue = d; let raised = 0, buyers = 0;
+        const rate = inRun ? 0.12 : 0.08; B.lastIssue = d;
         log(w, '📜 銀行家{a}發行債券：三十天到期，利息 {r}%{why}。', { a: banker.name, r: Math.round(rate * 100), why: inRun ? '（想撐過擠兌）' : '（補充準備金）' }, banker.name);
-        if (byShare(w)) { if (B.offer) closeOffer(w, B); B.offer = { id: 'OF' + (B.offerN = (B.offerN || 0) + 1), d, until: d + 2, goal: Math.ceil(goal), rate, inRun: !!inRun, raised: 0, buyers: 0, got: {} }; return 0; } // 開賣兩天，誰要買由本人決定(bondBy)，到期再結算(closeOffer)
-        const cands = npcs(w).filter(a => a !== banker && cash(w, a) >= 20).sort((x, y) => cash(w, y) - cash(w, x));
-        for (const a of cands) {
-            if (raised >= goal) break;
-            const trust = aff(a, banker); const prudent = has(a, 'stoic') || has(a, 'hardworking') || has(a, 'perfectionist');
-            if (trust < -10) continue;
-            let p = (inRun ? 0.2 : 0.25) + (trust > 30 ? 0.25 : trust > 10 ? 0.1 : 0) + (prudent ? 0.1 : 0) + (has(a, 'optimist') ? 0.1 : 0) - (has(a, 'pessimist') || has(a, 'neurotic') ? 0.15 : 0);
-            if (inRun && (B.dep[a.agentId] || 0) > 0) p -= 0.1; // 自己的存款都在擔心了
-            if (Math.random() > p) continue;
-            const n = Math.floor(Math.min(cash(w, a) * 0.4, goal - raised)); if (n < 5 || !WALLET.take(w, a, n)) continue;
-            B.bonds.push({ id: 'BD' + (B.bondN = (B.bondN || 0) + 1), holder: a.agentId, n, rate, issued: d, due: d + 30 });
-            B.reserve += n; raised += n; buyers++;
-            mem(w, a, '我買了 {n} 銀幣的銀行債券，三十天後連本帶利拿回來。', { n }, 5);
-        }
-        if (buyers) log(w, '📜 {k} 個人買了債券，銀行籌到 {n} 銀幣。', { k: buyers, n: raised }, banker.name);
-        else log(w, '📜 沒有人敢買銀行的債券。', {}, banker.name);
-        mem(w, banker, buyers ? '我發行債券籌到了 {n} 銀幣。' : '我發行債券，結果沒有人買。', { n: raised }, 6);
-        return raised;
+        if (B.offer) closeOffer(w, B); B.offer = { id: 'OF' + (B.offerN = (B.offerN || 0) + 1), d, until: d + 2, goal: Math.ceil(goal), rate, inRun: !!inRun, raised: 0, buyers: 0, got: {} }; return 0; // 開賣兩天，誰要買由本人決定(bondBy)，到期再結算(closeOffer)
     }
     // ---------- v9.24.0 交給本人決定的版本 ----------
     // 債券的認購期結束：公布賣了多少
@@ -300,7 +281,7 @@ const BANK = (() => {
     function brief(w, a) { const B = w.bank; if (!B || !B.open) return ''; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; const bs = bondsOf(B, a); if (bs.length && !dv && !L) return `${t('銀行')}${t('：')}${t('持有債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; if (!dv && !L) return a.agentId === B.banker ? t('你經營鎮上的銀行') : ''; return `${t('銀行')}${t('：')}${dv ? t('存款 {n} 銀幣').replace('{n}', dv) : ''}${dv && L ? t('，') : ''}${L ? t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed)) : ''}`; }
     function chip(w, a) { const B = w.bank; if (!B || !B.open) return ''; if (a.agentId === B.banker) return `🏦 ${t('銀行家')}`; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; if (L) return `🏦 ${t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed))}`; if (dv) return `🏦 ${t('存款 {n} 銀幣').replace('{n}', dv)}`; const bs = bondsOf(B, a); if (bs.length) return `📜 ${t('債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; return ''; }
     function view(w) { const B = S(w); return { open: B.open, status: B.status, banker: w.agents[B.banker] ? t(w.agents[B.banker].name) : null, dep: Math.round(totalDep(B)), loan: Math.round(totalLoan(B)), reserve: Math.round(B.reserve), rate: Math.round(B.rate * 100), bad: Math.round(B.bad), savers: Object.keys(B.dep).length, borrowers: Object.keys(B.loans).length, biz: Object.values(B.loans).filter(L => L.kind === 'biz').length, bizLent: Math.round(B.bizLent || 0), why: B.rateWhy || '', failed: B.history.slice(-1)[0] || null, pending: B.run?.asked === 'pending', debt: B.debt ? { owed: Math.round(B.debt.owed), paid: Math.round(B.debt.paid), late: B.debt.late || 0 } : null, bail: B.lastBail ? { by: t(B.lastBail.by), yes: B.lastBail.yes, n: B.lastBail.n, why: t(B.lastBail.why || ''), day: B.lastBail.day } : null, debtDone: (B.debtHist || []).slice(-1)[0] || null, bonds: (B.bonds || []).reduce((s, x) => s + x.n, 0), bondHolders: new Set((B.bonds || []).map(x => x.holder)).size, bondRate: B.bonds?.length ? Math.round(B.bonds[B.bonds.length - 1].rate * 100) : 0, defaults: B.defaults || 0 }; }
-    return { S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, byShare, closeOffer, bondInfo, bondBy, runInfo, runBy };
+    return { S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, closeOffer, bondInfo, bondBy, runInfo, runBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

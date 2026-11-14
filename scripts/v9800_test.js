@@ -43,7 +43,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     // 3. 退股存銀行:連三週分紅比銀行差,小股東把股份賣回給當家、錢存進銀行
     setCash(boss, 900); const d0 = B.dep[inv.agentId] || 0, o0 = IV.st.out;
     Math.random = () => 0.1; for (let i = 0; i < 3; i++) INVEST.cashOuts(w, all(), w._absDay()); Math.random = rnd;
-    out.cashOut = { stake: SHARES.pctOf(w, 'kitchen', inv.agentId), dep: Math.round((B.dep[inv.agentId] || 0) - d0), outs: IV.st.out - o0 };
+    // 每週只記下「連幾週不如銀行」，退不退由股東自己決定：這裡替他拿主意
+    const kept3 = SHARES.pctOf(w, 'kitchen', inv.agentId) > 0; const low = INVEST.lowOf(w, inv); if (low) INVEST.cashOut(w, all(), low.k, inv.agentId);
+    out.cashOut = { kept3, weeks: low?.weeks, stake: SHARES.pctOf(w, 'kitchen', inv.agentId), dep: Math.round((B.dep[inv.agentId] || 0) - d0), outs: IV.st.out - o0 };
     IV.bankY = 0.01;
     // 4. 朋友合夥開新店:一個人出不起,找交情好的朋友湊
     for (const a of all()) if (a !== boss) setCash(a, 5); setCash(boss, 5);
@@ -81,7 +83,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(r.buy.log && r.buy.mem, '日誌與記憶寫出「分紅幾 %、銀行幾 %」的比較', r.buy);
   ok(r.noBuy.stake === 0 && r.noBuy.buys === 0, '分紅比銀行利息差就不入股', r.noBuy);
   ok(r.hurdle.cautious > r.hurdle.bold, '謹慎的人要求的分紅比敢衝的人高', r.hurdle);
-  ok(r.cashOut.stake === 0 && r.cashOut.dep > 0 && r.cashOut.outs === 1, '連三週分紅比銀行差：小股東把股份賣回、錢存進銀行', r.cashOut);
+  ok(r.cashOut.kept3 && r.cashOut.weeks >= 3 && r.cashOut.stake === 0 && r.cashOut.dep > 0 && r.cashOut.outs === 1, '連三週分紅比銀行差：小股東把股份賣回、錢存進銀行', r.cashOut);
   ok(r.coop.opened && r.coop.owner && r.coop.sh >= 2 && r.coop.conserved && r.coop.log, '一個人出不起開店本錢：找朋友合夥開新店，照出資拿股份', r.coop);
   ok(/%/.test(r.coop.row), '市場面板的對手店列出合夥人與股份', r.coop.row);
   ok(r.div && r.div.got === r.div.expect && r.div.conserved, '合夥店每週照股份分紅（利潤六成）', r.div);

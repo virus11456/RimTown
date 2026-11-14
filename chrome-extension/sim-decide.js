@@ -40,6 +40,7 @@ const DECIDE = (() => {
     const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
+    const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
@@ -267,6 +268,7 @@ ${t('【鎮況】')}${String(ce._townBrief(w) || '').slice(0, cap(420, 1200))}
 ${people}
 
 ${t('只輸出 JSON 陣列，每人一個物件：')}{"n":1,"pick":"${t('代號')}","why":"…","next":"…"}
+${t('這一題只有 {n} 位村民，陣列裡只能有 {n} 個物件，不要替沒列出來的人作答。').split('{n}').join(list.length)}
 ${t('n 是那個人的序號，pick 是「他自己那一列」選項的代號（＝前面的英文，照抄），why 是他自己口吻的一句理由（25 字內），要跟選的那一項對得上，講的是【遇到的事】裡那個人、那件事，別扯到不相干的人，next 是接下來的打算（沒有就省略，20 字內）。')}
 ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和 "fx":[最多 3 個效果]。效果只能從這幾種挑，寫不出效果就只留 do：')}
 {"t":"give","to":"${t('人名')}","n":${t('銀幣')}} ${t('把錢給某人')}${sep}{"t":"town","n":${t('銀幣')}} ${t('捐給公庫')}${sep}{"t":"rel","to":"${t('人名')}","d":-10~10} ${t('對某人更好或更冷淡')}${sep}{"t":"mood","d":-5~5} ${t('自己的心情')}${sep}{"t":"goal","text":"${t('想存錢或努力去做的事')}"}`;
@@ -313,6 +315,14 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     // 同一類的幾個人一次問；回來時處境可能變了，選項重新列一次；AI 沒回或答非所問 → 傾向版
     async function askBatch(w, X, K, list, d) {
         const ce = w.conversationEngine; const P0 = pend(X); let j = null;
+        // v9.28.2 送出前再確認一次：排在後面的幾批，輪到它時前面的人已經做完決定，處境可能變了（例如死對頭已經先吵過）。
+        // 過時的不問(省一次 AI)，整批都過時就不連線；選項也照現在的處境重新列
+        { const live = []; for (const o of list) {
+            if (P0.get(o.a.agentId)?.tok !== o.tok) continue;
+            const a = w.agents[o.a.agentId]; const ctx = (a && !a.isDead && inTown(w, a)) ? (K.scan ? whenOf(w, a, K) : o.ctx) : null; const opts = ctx ? optsOf(w, a, K, ctx) : [];
+            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
+            o.a = a; o.ctx = ctx; o.opts = opts; live.push(o); }
+          if (!live.length) { drain(w, X, d); return; } list = live; }
         try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 120); } } catch (e) { j = null; }
         if (w.decide !== X) return;
         list.forEach((o, i) => {
@@ -332,7 +342,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
             const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
-            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && (!cur || bump)) { X._asked++; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
+            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < AI_KIND && (!cur || bump)) { X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);
@@ -353,7 +363,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // ================= 4. 每天 =================
     function daily(w) {
-        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0;
+        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0; X._kAsked = {};
         const all = npcs(w);
         // 昨天問 AI 的還沒回話（太慢、沒額度、遊戲開很快）：不讓人卡著，先照個性決定；晚到的回話就不算了
         { const P1 = pend(X); for (const [id, q] of [...P1]) { if (q.d >= d) continue; P1.delete(id); const a = w.agents[id]; if (!a || !inTown(w, a)) continue; const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) continue; X.st.aiMiss++; resolveRule(w, X, { a, K: q.K, ctx }, d); } }
@@ -436,7 +446,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             try { if (typeof INVEST !== 'undefined') for (const q of INVEST.quotes(w, a).sort((x, y) => (y.y - x.y)).slice(0, 2)) {
                 const sName = MARKET.name(q.k); const prem = clampN((q.y - q.by - INVEST.hurdle(a)) * 100, -2, 2); // 分紅比銀行利息好多少（已經扣掉這個人要的風險補貼）
                 out.push({ id: 'invest:' + q.k, text: { k: '花 {n} 銀幣向{o}買{s} {p}% 的股份（照現在的生意，一週分紅大約是本錢的 {y}%；銀行存款一週 {r}%）', p: { n: q.price, o: q.boss.name, s: sName, p: q.p, y: pct1(q.y), r: pct1(q.by) } }, say: { k: '花 {n} 銀幣入股{s}', p: { n: q.price, s: sName } }, why: '分紅比銀行利息好，錢要拿去生錢。', base: 0.6 + prem * 0.5, lean: { gain: 0.9, safe: -0.3 },
-                    run: (w2, a2) => { const r = INVEST.buy(w2, a2, q.k, true); /* v9.22.0 賣不賣由當家自己決定(sim-decide-life.js) */ return r.ok ? { k: '買到{s} {p}% 的股份', p: { s: sName, p: r.p } } : r.asked ? { k: '去找{o}談入股了', p: { o: r.boss.name } } : r.refused ? { k: '{o}不肯賣', p: { o: r.boss.name } } : { k: '沒談成' }; } });
+                    run: (w2, a2) => { const r = INVEST.buy(w2, a2, q.k); /* v9.22.0 賣不賣由當家自己決定(sim-decide-life.js) */ return r.ok ? { k: '買到{s} {p}% 的股份', p: { s: sName, p: r.p } } : r.asked ? { k: '去找{o}談入股了', p: { o: r.boss.name } } : r.refused ? { k: '{o}不肯賣', p: { o: r.boss.name } } : { k: '沒談成' }; } });
             } } catch (e) {}
             if (typeof SPEND !== 'undefined') {
                 // 宴客
@@ -532,7 +542,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.decide = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, ...rest } = this.decide; d.decide = rest; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, _kAsked, ...rest } = this.decide; d.decide = rest; } return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.decide = (data?.decide && typeof data.decide === 'object') ? data.decide : null; } catch (e) {} return r; };
 }
