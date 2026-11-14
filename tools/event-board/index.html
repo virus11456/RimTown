@@ -11,7 +11,9 @@ body { margin:0; background:var(--bg); color:var(--text); font:15px/1.6 system-u
 button { font:inherit; color:inherit; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px 12px; min-height:44px; cursor:pointer; }
 button:hover { border-color:var(--accent); } button.on { background:#3a2c14; border-color:var(--accent); color:var(--accent); }
 button:focus-visible, select:focus-visible, input:focus-visible, [tabindex]:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
-select { font:inherit; color:inherit; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px; min-height:44px; max-width:100%; }
+select { font:inherit; color:inherit; background:var(--panel2); border:1px solid var(--line); border-radius:8px; padding:8px; min-height:44px; max-width:100%; min-width:0; text-overflow:ellipsis; }
+header label { display:flex; flex-wrap:wrap; align-items:center; gap:6px; max-width:100%; min-width:0; } header label select { flex:1 1 180px; }
+.badge.multi { white-space:normal; border-radius:8px; }
 header { padding:12px 16px; border-bottom:1px solid var(--line); display:flex; flex-wrap:wrap; gap:10px 16px; align-items:center; }
 header h1 { font-size:18px; margin:0; } .sub { color:var(--dim); font-size:13px; }
 .badge { display:inline-block; padding:1px 8px; border-radius:99px; font-size:12px; border:1px solid var(--line); color:var(--dim); white-space:nowrap; }
@@ -59,15 +61,15 @@ canvas { width:100%; max-width:760px; height:auto; background:#0b0e12; border:1p
 'use strict';
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const TYPE = { wage: ['💰', '工資爭議'], union: ['✊', '工會組織'], protest: ['📢', '抗議集合'], fight: ['👊', '打架'], guard: ['👮', '守衛'] };
-const STAGES = { wage: [['grievance', '工資被壓'], ['organizing', '有人出面'], ['demand', '提出要求'], ['strike', '罷工'], ['ended', '結束']], protest: [['calling', '號召'], ['answers', '各人回答'], ['gathering', '集合'], ['ended', '結束']], union: [['considering', '有人考慮'], ['active', '運作中'], ['ended', '結束']] };
-const OUT = { deal: '談成了，沒有罷工', strike_won: '罷工後老闆讓步', strike_lost: '罷工失敗', stalled: '不了了之', refused: '被拒絕，工會的錢不夠罷工', recovered: '工資自己回來了，沒有人行動', raise_after_strike: '自發罷工後老闆讓步', strike_failed: '自發罷工後老闆沒有讓步', fizzled: '沒有成形（到的人不夠）', held: '集合辦完了', dissolved: '工會解散', founded: '工會成立', injury: '有人受傷', guard: '守衛處理' };
+const TYPE = { wage: ['💰', '工資爭議'], union: ['✊', '工會組織'], protest: ['📢', '抗議集合'], fight: ['👊', '打架'], guard: ['👮', '守衛'], ceremony: ['🎎', '典禮'] };
+const STAGES = { wage: [['grievance', '工資被壓'], ['organizing', '有人出面'], ['demand', '提出要求'], ['strike', '罷工'], ['ended', '結束']], protest: [['calling', '號召'], ['answers', '各人回答'], ['gathering', '集合'], ['ended', '結束']], union: [['considering', '有人考慮'], ['active', '運作中'], ['ended', '結束']], ceremony: [['gathering', '進行中'], ['ended', '結束']] };
+const OUT = { deal: '談成了', strike_won: '罷工後老闆讓步', strike_lost: '罷工失敗', stalled: '不了了之', refused: '被拒絕，工會的錢不夠罷工', recovered: '工資回到原本的水準（期間沒有記到談判或罷工）', raise_after_strike: '自發罷工後老闆讓步', strike_failed: '自發罷工後老闆沒有讓步', fizzled: '沒有成形（能到的人不到三個）', held: '集合辦完了', dissolved: '工會解散', founded: '工會成立', injury: '有人受傷', guard: '守衛處理', ceremony_held: '典禮辦完了', ceremony_off: '典禮沒有辦完' };
 const KIND = { cause: '起因', organize: '組織', invite: '號召', answer: '個人決定', talk: '談判', strike: '罷工', exit: '退出', outcome: '結果', conflict: '衝突', hidden: '觀察者才看得到', scene: '現場', follow: '後續', related: '相關', resource: '資源' };
-const ROLE = { boss: '老闆', leader: '工會領袖', member: '會員', worker: '工人', organizer: '發起人', owner: '被抗議的老闆', protester: '反對的人', supporter: '支持的人', fighter: '當事人', injured: '受傷的人', involved: '當事人', unlisted: '不在名單上' };
+const ROLE = { boss: '老闆', leader: '工會領袖', member: '會員', worker: '工人', organizer: '發起人', owner: '被抗議的老闆', protester: '反對的人', supporter: '支持的人', fighter: '當事人', injured: '受傷的人', involved: '當事人', unlisted: '不在名單上', couple: '新人', host: '主辦的人', guest: '賓客' };
 const WHY = { own: '本人說的理由（AI 回答）', option: '選項內建的理由（照個性推估時用的固定句子，不是本人說的）', none: '沒有紀錄理由' };
 const SRC = { log: '遊戲日誌', decision: '決策紀錄', state: '讀到的狀態' };
 const SRCKIND = { REAL_GAME_RECORD: ['real', '真實遊戲紀錄'], STAGED_SCENARIO: ['staged', '測試場景：起始條件是人為設定的，過程由真實程式跑出'], DEMO_HANDWRITTEN: ['demo', '展示資料：手寫的，不是遊戲跑出來的'] };
-const GROUP = ['wage', 'union', 'protest'];
+const GROUP = ['wage', 'union', 'protest', 'ceremony'];
 let DATA = [], D = null, T = null, filter = 'all', typeF = 'group', follow = null, frameI = 0, timer = null;
 
 const hm = (t) => (String(t || '').match(/\d{1,2}:\d{2}$/) || [''])[0];
@@ -80,7 +82,7 @@ function load() {
 function pick(i) {
   D = DATA[i]; T = null; follow = null; const k = SRCKIND[D.source] || ['demo', D.source];
   $('#dsBadge').innerHTML = `<span class="badge ${k[0]}">${esc(k[1])}</span>`;
-  $('#dsInfo').textContent = `${D.meta.town || ''}　第 ${D.meta.from?.d ?? '?'}～${D.meta.to?.d ?? '?'} 天　遊戲版本 ${D.meta.app || '?'}　${D.meta.ai ? 'AI 開' : 'AI 關（照個性推估）'}　共 ${D.threads.length} 件`;
+  $('#dsInfo').textContent = `${D.meta.town || ''}　第 ${D.meta.from?.d ?? '?'}～${D.meta.to?.d ?? '?'} 天　遊戲版本 ${D.meta.app || '?'}　${D.meta.ai ? 'AI 開' : 'AI 關（照個性推估）'}　共 ${D.threads.length} 件` + (D.meta.evicted ? `（另有 ${D.meta.evicted} 件較早的事超過上限，沒有保留）` : '');
   renderList(); const first = visible()[0]; if (first && window.innerWidth > 860) open(first.id); else { document.body.classList.remove('detail'); $('#main').innerHTML = ''; }
 }
 function visible() { return D.threads.filter(t => (filter === 'all' || t.status === filter) && (typeF === 'all' || (typeF === 'group' ? GROUP.includes(t.type) : t.type === typeF)) && (!follow || t.people.some(p => p.id === follow))).sort((a, b) => (b.status === 'open') - (a.status === 'open') || (b.timeline.at(-1)?.tick ?? b.opened.tick) - (a.timeline.at(-1)?.tick ?? a.opened.tick)); }
@@ -96,7 +98,7 @@ function open(id) { T = D.threads.find(t => t.id === id); frameI = 0; stop(); do
 function visited(t) { const v = new Set(); const kinds = new Set(t.timeline.map(e => e.kind)); if (t.type === 'wage') { v.add('grievance'); if (t.timeline.some(e => e.src?.kind === 'organize' && e.src.id === 'lead') || t.timeline.some(e => e.src?.kind === 'union' && e.src.id === 'join')) v.add('organizing'); if (kinds.has('talk')) v.add('demand'); if (kinds.has('strike')) v.add('strike'); } if (t.type === 'protest') { v.add('calling'); if (kinds.has('answer')) v.add('answers'); if (t.scene) v.add('gathering'); } if (t.type === 'union') { if (t.key.includes('pre') || kinds.has('answer')) v.add('considering'); if (!t.key.includes('pre')) v.add('active'); } if (t.status === 'closed') v.add('ended'); return v; }
 function renderMain() {
   if (!T) { $('#main').innerHTML = ''; return; } const t = T; const ty = TYPE[t.type] || ['', t.type]; const v = visited(t); const st = STAGES[t.type];
-  const steps = st ? `<div class="steps" aria-label="進度">${st.map(([k, n]) => `<span class="step ${t.stage === k || (k === 'answers' && t.stage === 'calling' && v.has('answers')) ? 'cur' : v.has(k) ? 'done' : t.status === 'closed' ? 'skip' : ''}" title="${v.has(k) ? '有紀錄' : t.status === 'closed' ? '這一步沒有發生' : '還沒到'}">${n}</span>`).join('<span class="sub">→</span>')}</div>` : '';
+  const steps = st ? `<div class="steps" aria-label="進度">${st.map(([k, n]) => `<span class="step ${t.stage === k || (k === 'answers' && t.stage === 'calling' && v.has('answers')) ? 'cur' : v.has(k) ? 'done' : t.status === 'closed' ? 'skip' : ''}" title="${v.has(k) ? '有紀錄' : t.status === 'closed' ? '這一步沒有記到（不代表沒有發生）' : '還沒到'}">${n}</span>`).join('<span class="sub">→</span>')}</div>` : '';
   const facts = t.facts ? Object.entries({ pay: '開始時工資比例', workers: '這一行的工人數', boss: '老闆', union: '當時有沒有工會', members: '會員數', fund: '基金（銀幣）', leader: '領袖', strikes: '發動過罷工', won: '爭取成功', lost: '失敗' }).filter(([k]) => t.facts[k] != null).map(([k, n]) => `${n}：${k === 'pay' ? t.facts[k] + '%' : t.facts[k] === true ? '有' : t.facts[k] === false ? '沒有' : esc(t.facts[k])}`).join('　') : '';
   let h = `<button class="back" data-back="1">← 回事件清單</button>`;
   if (D.source !== 'REAL_GAME_RECORD') h += `<div class="warnbox">${esc((SRCKIND[D.source] || ['', D.source])[1])}</div>`;
@@ -108,39 +110,39 @@ function renderMain() {
     <dt>結果</dt><dd>${t.outcome ? `<b>${esc(OUT[t.outcome.code] || t.outcome.code)}</b><div class="why">${esc(t.outcome.text)}</div>` : '<span class="sub">還沒有結果</span>'}</dd>
     ${facts ? `<dt>當時的數字</dt><dd class="sub">${facts}</dd>` : ''}</dl></section>`;
   // 參與者
-  const cell = (arr, f) => arr.length ? arr.map(f).join('<br>') : '<span class="none">沒有紀錄</span>';
+  const cell = (arr, f) => arr.length ? arr.map(f).join('<br>') : '<span class="none" title="紀錄器沒有讀到。不代表沒有發生。">沒有紀錄</span>';
   const tally = (f) => { const m = {}; for (const p of t.people) for (const k of f(p)) m[k] = (m[k] || 0) + 1; return Object.entries(m).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(k)} ${n} 人`).join('、') || '沒有紀錄'; };
   const sum = `<p class="sub">共 ${t.people.length} 人。被問到：${t.people.filter(p => p.asked.length).length} 人。最後的回答：${tally(p => p.answered.length ? [p.answered.at(-1).text] : [])}。實際行動：${tally(p => [...new Set(p.acted.map(a => a.text.replace(/（.*?）/g, '')))])}。</p>`;
   h += `<section><h2>參與的人（被問到、回答、實際行動、結果分開記）</h2>${sum}<div class="tablewrap"><table><thead><tr><th>人</th><th>身分</th><th>被問到</th><th>回答</th><th>實際行動</th><th>結果</th></tr></thead><tbody>` + t.people.map(p => `<tr>
     <td><button class="who ${follow === p.id ? 'follow' : ''}" data-who="${esc(p.id)}">${esc(p.name)}</button></td><td>${esc(p.roles.map(r => ROLE[r] || r).join('、'))}</td>
     <td>${cell(p.asked, a => `第 ${a.d} 天：${esc(a.text)}`)}</td>
     <td>${cell(p.answered, a => `第 ${a.d} 天：${esc(a.text)}${a.why ? `<div class="why">理由：${esc(a.why)}<br><span title="${esc(WHY[a.whySrc])}">（${a.whySrc === 'own' ? '本人說的' : a.whySrc === 'option' ? '選項內建，不是本人說的' : '沒有紀錄'}）</span></div>` : ''}`)}</td>
-    <td>${cell(p.acted, a => `第 ${a.from ?? a.d}${a.to != null && a.to !== a.from ? '～' + a.to : ''} 天：${esc(a.text)}`)}</td>
+    <td>${cell(p.acted, a => `第 ${a.from ?? a.d}${a.to != null && a.to !== a.from ? '～' + a.to : ''} 天：${esc(a.text)}${a.note ? ` <span class="sub" title="${esc(a.note)}">ⓘ</span>` : ''}`)}</td>
     <td>${cell(p.result, a => `第 ${a.d} 天：${esc(a.text)}`)}</td></tr>`).join('') + `</tbody></table></div>
-    <p class="note">「回答」是他當時選的，「實際行動」是之後從遊戲狀態讀到的。兩欄對不上的地方就是答應了沒做，或沒被問就被算進去。點名字可以只看這個人。</p></section>`;
+    <p class="note">「回答」是他當時選的，「實際行動」是之後從遊戲狀態讀到的。兩欄對不上，只代表這兩種紀錄不一致，原因有好幾種：答應了但沒有被排去、程式沒問就把他算進去、當天不在鎮上，或那一段沒有被記到。要看時間線裡那幾筆的來源才分得出來，不能直接當成「答應了沒做」。${t.type === 'wage' ? '「名字在罷工名單上」也不等於沒去上工：名單一天讀一次，人當天在哪裡沒有讀。' : ''}「沒有紀錄」是紀錄器沒有讀到，不代表沒有發生。點名字可以只看這個人。</p>${t.dropped ? `<p class="note">這件事的紀錄超過上限，最早的 ${t.dropped} 筆沒有保留。</p>` : ''}</section>`;
   // 現場
   h += `<section><h2>現場</h2>${sceneHtml(t)}</section>`;
   // 時間線
   // 同一天、同一個問題、同一個回答的人合併成一列（原始紀錄都還在，點開看名單）
   const rows = []; t.timeline.forEach((e, i) => { const g = e.src?.type === 'decision' ? e.d + '|' + e.kind + '|' + e.src.kind + '|' + e.src.id + '|' + (e.why || '') : null; const last = rows.at(-1); if (g && last && last.g === g) last.items.push([e, i]); else rows.push({ g, items: [[e, i]] }); });
   const one = (e, i) => `<li class="${follow && (e.who || []).includes(follow) ? 'hl' : ''}"><div class="when">${when(e)}${e.times > 1 ? `<br>同樣的回答共 ${e.times} 次，最後一次第 ${e.lastD} 天` : ''}</div><div>
-    <span class="chip ${e.kind}">${esc(KIND[e.kind] || e.kind)}</span>${esc(e.text)}${e.uncertain ? ' <span class="badge" title="這筆日誌沒寫是哪一行，是從同一天的紀錄對出來的">對應不確定</span>' : ''}
+    <span class="chip ${e.kind}">${esc(KIND[e.kind] || e.kind)}</span>${esc(e.text)}${e.uncertain ? ' <span class="badge" title="這筆日誌沒寫清楚是哪一行、哪一個人或哪一樣東西，是從同一天的紀錄對出來的，可能接錯">對應不確定</span>' : ''}${e.whoUnsure?.length ? ` <span class="badge multi" title="日誌只寫名字。鎮上叫這個名字的不只一個人，分不出是哪一個，所以這一筆沒有接到任何人身上">同名，沒有接到人：${esc(e.whoUnsure.join('、'))}</span>` : ''}
     ${e.why || e.whySrc ? `<div class="why">理由：<b>${esc(e.why || '（沒有）')}</b>　來源：${esc(WHY[e.whySrc] || '')}</div>` : ''}${e.res ? `<div class="why">當下的結果：<b>${esc(e.res)}</b></div>` : ''}${e.note ? `<div class="note">${esc(e.note)}</div>` : ''}
     <button class="src" data-src="${i}" aria-expanded="false">來源：${esc(SRC[e.src?.type] || '未知')}${e.src?.mode ? (e.src.mode === 'ai' ? '（AI）' : '（照個性推估）') : ''}</button><pre class="raw" id="raw${i}" hidden>${esc(JSON.stringify(e.src, null, 1))}</pre></div></li>`;
   h += `<section><h2>時間線（每一筆都有來源）</h2><ul class="tl">` + rows.map(r => { if (r.items.length < 3) return r.items.map(([e, i]) => one(e, i)).join(''); const [e, i] = r.items[0]; const names = r.items.map(([x]) => x.text.split('：')[0]); const act = e.text.split('：').slice(1).join('：'); const mine = follow && r.items.some(([x]) => (x.who || []).includes(follow));
     return `<li class="${mine ? 'hl' : ''}"><div class="when">${when(e)}</div><div><span class="chip ${e.kind}">${esc(KIND[e.kind] || e.kind)}</span><b>${r.items.length} 個人</b>都回答：${esc(act)}
-      <div class="why">理由：<b>${esc(e.why || '（沒有）')}</b>　來源：${esc(WHY[e.whySrc] || '')}${e.whySrc === 'option' ? '。這麼多人理由一字不差，是因為這句話是選項附帶的，不是各自說的。' : ''}</div>
+      <div class="why">理由：<b>${esc(e.why || '（沒有）')}</b>　來源：${esc(WHY[e.whySrc] || '')}${e.whySrc === 'option' ? '。這麼多人理由一字不差，是因為這句話是選項附帶的，不是各自說的。照個性推估時每個人的分數是各自算的，只是沒有留下文字，所以不能從這裡判斷他們有沒有各自的考量。' : ''}</div>
       <button class="src" data-src="g${i}" aria-expanded="false">看這 ${r.items.length} 個人是誰</button><pre class="raw" id="rawg${i}" hidden>${esc(names.join('、'))}</pre></div></li>`; }).join('') + `</ul>${t.timeline.length ? '' : '<p class="sub">沒有紀錄。</p>'}</section>`;
   h += `<section><h2>錢與制度的變化</h2>${t.resources.length ? '<ul>' + t.resources.map(r => `<li>第 ${r.d} 天：${esc(r.text)}${r.note ? ` <span class="sub">（${esc(r.note)}）</span>` : ''} <span class="sub">來源：${esc(SRC[r.src?.type] || '')} ${esc(r.src?.path || '')}</span></li>`).join('') + '</ul>' : '<p class="sub">沒有讀到變化。</p>'}</section>`;
   h += `<section><h2>還沒了結的事</h2>${t.open.length ? '<ul>' + t.open.map(o => `<li>${esc(o.text)} <span class="sub">（第 ${o.since.d} 天起${o.until != null ? '，到第 ' + o.until + ' 天' : ''}）</span></li>`).join('') + '</ul>' : `<p class="sub">${t.status === 'open' ? '目前沒有等著發生的事。' : '沒有。'}</p>`}</section>`;
   $('#main').innerHTML = h; drawScene();
 }
 function sceneHtml(t) {
-  if (!t.scene) return `<p>${esc(t.place?.note || '這件事沒有現場。')}</p>${t.place?.id ? '<canvas id="cv" width="760" height="460" aria-label="小鎮地圖"></canvas><p class="sub">地圖只標出地點，沒有人物位置的紀錄。</p>' : '<p class="sub">所以這裡只有時間線，沒有地圖畫面。</p>'}`;
-  const S = t.scene; return `<p>以下是真的被排去現場的 ${S.who.length} 個人，在每個時間點的位置（讀自遊戲狀態，有變化才記一格，共 ${S.frames.length} 格）。沒到場的人不會出現。</p>
+  if (!t.scene) return `<p>${esc(t.place?.note || '這件事沒有記到現場。')}</p>${t.place?.id ? '<canvas id="cv" width="760" height="460" aria-label="小鎮地圖"></canvas><p class="sub">地圖只標出地點，沒有人物位置的紀錄。</p>' : '<p class="sub">所以這裡只有時間線，沒有地圖畫面。</p>'}`;
+  const S = t.scene; return `<p>以下是被排去現場的 ${S.who.length} 個人，在每個時間點的位置（讀自遊戲狀態，一格是遊戲裡的十五分鐘，有變化才記一格，共 ${S.frames.length} 格${S.framesDropped ? `；超過上限，後面還有 ${S.framesDropped} 格沒有保留` : ''}）。沒有被排去的人不會出現在圖上，就算他自己剛好走到那裡也一樣。</p>
     <div class="scenebar"><button data-play="1" id="playBtn">▶ 重看</button><input type="range" id="fr" min="0" max="${Math.max(0, S.frames.length - 1)}" value="${frameI}" aria-label="時間"><span id="frLabel" class="sub"></span></div>
     <canvas id="cv" width="760" height="460" aria-label="現場地圖"></canvas>
-    <div class="legend"><span><i class="dot" style="background:#ef7d7d"></i>反對的人</span><span><i class="dot" style="background:#6fcf97"></i>支持的人</span><span><i class="dot" style="background:#9aa7b8"></i>不知道哪一邊</span><span>實心＝人在現場</span><span>空心＝還在路上或在別處</span><span>✕＝已經離開</span>${follow ? `<span><i class="dot" style="background:#f0b35a"></i>正在跟的人</span>` : ''}</div><div id="frList" class="sub"></div>`;
+    <div class="legend">${S.kind === 'ceremony' ? '<span><i class="dot" style="background:#9aa7b8"></i>賓客</span>' : '<span><i class="dot" style="background:#ef7d7d"></i>反對的人</span><span><i class="dot" style="background:#6fcf97"></i>支持的人</span><span><i class="dot" style="background:#9aa7b8"></i>不知道哪一邊</span>'}<span>實心＝人在現場</span><span>空心＝還在路上或在別處</span><span>✕＝已經離開</span>${follow ? `<span><i class="dot" style="background:#f0b35a"></i>正在跟的人</span>` : ''}</div><div id="frList" class="sub"></div>`;
 }
 function drawScene() {
   const cv = $('#cv'); if (!cv || !T) return; const g = cv.getContext('2d'); const W = cv.width, H = cv.height; g.clearRect(0, 0, W, H);

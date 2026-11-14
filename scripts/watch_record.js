@@ -3,8 +3,9 @@
 //   node scripts/watch_record.js record  <天數=120> <城鎮等級=3> <種子=7> <輸出.js>
 //       固定亂數種子建一座城、跑 N 天，把事件追蹤板的資料寫成 tools/event-board/data/ 可以直接載入的 .js
 //   node scripts/watch_record.js compare <天數=60>  <城鎮等級=3> <種子=7>
-//       同一顆種子跑四次：不載入紀錄器（兩次，確認測試環境自己可重現）／載入但沒接上／載入並接上，比較存檔雜湊、亂數取用次數、tick、
-//       記憶筆數、決策統計、AI 名額。四次必須完全相同（紀錄器不能影響模擬）。
+//       同一顆種子跑四次：不載入紀錄器（兩次，確認測試環境自己可重現）／載入但沒接上／載入並接上，比較整份存檔的雜湊
+//       （不排除任何欄位）、亂數取用次數、tick、記憶筆數、決策統計、AI 名額。四次必須完全相同（紀錄器不能影響模擬）。
+//       基準（不載入跑兩次）不一樣的話直接判定失敗：環境不可重現時，後面的比較沒有意義。
 // 需要本機 8126 服務 chrome-extension/：  python3 -m http.server 8126 -d chrome-extension
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto');
@@ -26,9 +27,16 @@ async function run(browser, watch, days) {
   const r = await page.evaluate(async ({ TIER, SEED, days, watch }) => {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = new World(); app.world = w;
     let s = SEED >>> 0, calls = 0; Math.random = () => { calls++; s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    let clk = 1700000000000; Date.now = () => (clk += 7); let pn = 1000; performance.now = () => (pn += 3); app._gameAlert = () => {}; app._showCornerNotice = () => {};
+    // 時間也固定：Date.now() 與 new Date() 都走同一個假時鐘（存檔的 savedAt 用的是 new Date()，只換 Date.now 的話每次跑都不同）
+    let clk = 1700000000000; const RealDate = Date; class FixedDate extends RealDate { constructor(...a) { if (a.length) super(...a); else super(clk += 7); } static now() { return (clk += 7); } } window.Date = FixedDate;
+    let pn = 1000; performance.now = () => (pn += 3); app._gameAlert = () => {}; app._showCornerNotice = () => {};
+    // 誰住哪一棟（housing.map）是照「地圖上有哪些房子、誰先被問到」分的。頁面開機時那座隨機小鎮畫好的房子還留在地圖層，
+    // 不清掉的話新鎮的人會被分進上一座鎮的房子，每次開機都不同。這裡回到「地圖還沒畫」的狀態，等下面重畫後才分房。
+    if (app.tileMap) { app.tileMap._houseSubZones = {}; app.tileMap._agentHouseMap = {}; app.tileMap._extraHouseCount = 0; app.tileMap.agentPartners = {}; }
     w.reset(); w.observerMode = true; ORIGIN.seed(w, TIER, { seed: SEED }); w.observerMode = true; w.fullAgentMode = false; WALLET.S(w);
     try { app.state = w.getState(); app._generateTileMapLayout(); } catch (e) {}
+    // 夫妻同住的對照表平常是畫面更新時交給地圖層的；這裡整段同步跑、不更新畫面，所以照同一套規則先算好交過去
+    try { const byN = {}; const ns = Object.values(w.agents).filter(a => !a.isPlayer); for (const a of ns) byN[a.name] = a.agentId; const partners = {}; for (const a of ns) { const sp = a.relationships?.getSpouse?.(); const pid = sp ? byN[sp.targetName] : null; if (pid && pid !== a.agentId) partners[a.agentId] = pid; } if (app.tileMap) app.tileMap.agentPartners = partners; } catch (e) {}
     if (watch === 'on') WATCH.attach(w);
     // 整段同步跑完，中途不把控制權交還給瀏覽器。交還的話，畫面更新、計時器和非同步回呼會在不固定的時間點插進來取用亂數，
     // 同一顆種子每次跑出來就不一樣（實測過：連「不載入紀錄器」跑兩次都不同），比較就沒有意義。
@@ -37,16 +45,15 @@ async function run(browser, watch, days) {
     const out = { ver: RIMTOWN_APP_VERSION, tick: w.tickCount, day: w._absDay(), rng: calls, pop: all.filter(a => !a.isDead).length, tier: typeof TIERS !== 'undefined' ? TIERS.level(w) : null,
       mem: all.reduce((n, a) => n + (a.memory?.entries?.length || 0), 0), memText: all.map(a => (a.memory?.entries || []).length + ':' + (a.memory?.entries?.slice(-1)[0]?.tick ?? '')).join(','),
       decide: JSON.stringify(DECIDE.S(w).st) + JSON.stringify(DECIDE.S(w).pick), llmUsed: w.npcLlmUsedToday || 0, union: w.union ? { on: w.union.on, strikes: w.union.strikes, won: w.union.won, lost: w.union.lost, hist: (w.union.history || []).map(h => h.k).join(',') } : null,
-      mstrikes: w.market?.strikes || 0, prot: w.things?.st?.prot || 0, save: JSON.stringify(w.serialize()) };
+      mstrikes: w.market?.strikes || 0, prot: w.things?.st?.prot || 0, houses: Object.keys(w.housing?.map || {}).length + ' 人分到 ' + new Set(Object.values(w.housing?.map || {})).size + ' 棟', save: JSON.stringify(w.serialize()) };
     if (watch === 'on') out.watch = WATCH.export(w, { seed: SEED, tier: TIER, days });
     out.hasWatchKey = Object.keys(w).filter(k => /watch/i.test(k)).length;
     return out;
   }, { TIER, SEED, days, watch });
-  // 存檔裡有兩個欄位跟模擬無關、每次跑都不同（不載入紀錄器跑兩次也不同，實測過）：
-  //   savedAt＝存檔當下的真實時間；housing.map＝誰住哪一棟，取決於頁面開機時畫面那一層先排好的房屋配置。
-  // 比較時把這兩個欄位拿掉再算雜湊，並另外列出「拿掉之前有幾處不同、在哪裡」，不藏起來。
-  const saveObj = JSON.parse(r.save); r.saveRaw = saveObj; const norm = JSON.parse(r.save); delete norm.savedAt; if (norm.housing) delete norm.housing.map;
-  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(JSON.stringify(norm)).digest('hex'); r.saveBytes = JSON.stringify(norm).length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
+  // 存檔整份拿來算雜湊，不拿掉任何欄位（鍵的先後順序也算在內）。
+  // 以前 savedAt 與 housing.map 每次跑都不同，所以被排除在比較之外；現在上面把時間與房屋配置都固定了，不需要排除。
+  r.saveRaw = JSON.parse(r.save);
+  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(r.save).digest('hex'); r.saveBytes = r.save.length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
   await page.context().close(); return r;
 }
 
@@ -54,15 +61,15 @@ async function run(browser, watch, days) {
   const browser = await chromium.launch();
   if (MODE === 'compare') {
     const rows = {}; for (const m of ['none', 'none2', 'loaded', 'on']) { rows[m] = await run(browser, m === 'none2' ? 'none' : m, DAYS); delete rows[m].watch; }
-    const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'saveHash', 'saveBytes']; let ok = true; // net（開機時遊戲自己發的 /api/chat，本機攔下）另外印，不列入比較
+    const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'houses', 'saveHash', 'saveBytes']; let ok = true; // net（開機時遊戲自己發的 /api/chat，本機攔下）另外印，不列入比較
     // 先確認測試環境自己可重現：不載入紀錄器跑兩次要完全相同，否則下面的比較不能算數
     const repro = keys.every(k => JSON.stringify(rows.none[k]) === JSON.stringify(rows.none2[k])); console.log((repro ? 'SAME ' : 'DIFF ') + '基準重跑  不載入紀錄器跑兩次' + (repro ? '完全相同' : '就不一樣：測試環境不可重現，以下比較不能算數')); if (!repro) ok = false;
     for (const k of keys) { const v = ['none', 'loaded', 'on'].map(m => JSON.stringify(rows[m][k])); const same = v[0] === v[1] && v[1] === v[2]; if (!same) ok = false; console.log((same ? 'SAME ' : 'DIFF ') + k.padEnd(10) + ' ' + (k === 'decide' ? crypto.createHash('sha256').update(v[0]).digest('hex').slice(0, 12) : v[0].slice(0, 70)) + (same ? '' : '  | ' + v[1].slice(0, 40) + ' | ' + v[2].slice(0, 40))); }
     // 值不同記路徑；值都一樣但鍵的先後順序不同，記成「路徑 (順序)」。順序不同代表有東西被提早建立，也算影響
     const diffPaths = (x, y) => { const out = []; (function d(a, b, p) { if (out.length > 5000) return; if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') { if (a !== b) out.push(p); return; } const ka = Object.keys(a), kb = Object.keys(b); if (ka.length === kb.length && ka.join('\u0001') !== kb.join('\u0001') && ka.slice().sort().join('\u0001') === kb.slice().sort().join('\u0001')) out.push(p + ' (順序)'); for (const k of new Set([...ka, ...kb])) d(a[k], b[k], p + '.' + k); })(x, y, ''); return out; };
-    const volatile = (p) => p === '.savedAt' || p.startsWith('.housing.map');
-    for (const m of ['none2', 'loaded', 'on']) { const dp = diffPaths(rows.none.saveRaw, rows[m].saveRaw); const other = dp.filter(p => !volatile(p)); if (other.length) ok = false;
-      console.log(`存檔逐欄比較 none vs ${m}：savedAt 與 housing.map 不同 ${dp.length - other.length} 處（跟模擬無關，基準重跑也會不同）；其他欄位不同 ${other.length} 處` + (other.length ? '  例：' + other.slice(0, 5).join(' ') : '')); }
+    for (const m of ['none2', 'loaded', 'on']) { const dp = diffPaths(rows.none.saveRaw, rows[m].saveRaw); if (dp.length) ok = false;
+      console.log(`存檔逐欄比較 none vs ${m}（整份存檔，沒有排除任何欄位）：不同 ${dp.length} 處` + (dp.length ? '  例：' + dp.slice(0, 8).join(' ') : '')); }
+    if (!repro) console.log('基準不可重現時，下面的 PASS／FAIL 不能當成紀錄器有沒有影響模擬的證據。');
     console.log(`errors none/loaded/on: ${rows.none.errs.length}/${rows.loaded.errs.length}/${rows.on.errs.length}; world keys named watch: ${rows.on.hasWatchKey}; AI requests: ${rows.on.net}`);
     console.log(ok && !rows.on.hasWatchKey ? `PASS  紀錄器開關前後完全相同（等級 ${TIER}、種子 ${SEED}、${DAYS} 天）` : 'FAIL  紀錄器影響了模擬');
     await browser.close(); process.exit(ok ? 0 : 1);

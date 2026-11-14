@@ -3,6 +3,8 @@
 //   2. 受控比較：不載入／載入沒接上／接上，同一顆種子跑出來的存檔、亂數取用次數、記憶、決策統計完全相同
 //   3. 測試場景：人為設定起始條件，過程由真實程式跑出，檢查「被問到／回答／實際行動／結果」有分開記
 //      （談成、罷工中有人退出、錢不夠罷工、抗議成形與有人答應沒到、抗議沒成形）
+//   3b. 可信度：同一格兩個老闆各自拒絕不會接錯行業；同名的人不猜；超過上限被捨棄的事件不會再被寫入；
+//       婚禮有現場（賓客名單是程式排的，沒有被問到）
 //   4. 離線事件追蹤板：用 file:// 打開、點事件、看時間線與參與者、重看現場；桌機與 390px 手機
 // 用法：node scripts/watch_test.js [--no-compare]      需要本機 8126 服務 chrome-extension/
 const { chromium } = require('playwright');
@@ -39,7 +41,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   // ---------- 3. 測試場景 ----------
   const browser = await chromium.launch();
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 860 }, serviceWorkers: 'block' })).newPage();
-  const errs = []; page.on('pageerror', e => errs.push(e.message)); let net = 0;
+  const errs = []; page.on('pageerror', e => errs.push(e.message)); let net = 0, aiOut = 0;
+  // 任何看起來像 AI 的請求，只要不是打到本機（本機的會被下面那一行攔下、回空白），就算一次
+  page.on('request', r => { const u = r.url(); if (/\/api\/chat|anthropic|openai|groq|generativelanguage|openrouter/i.test(u) && !u.startsWith(BASE)) aiOut++; });
   await page.route('**/api/**', r => { if (/\/api\/chat/.test(r.request().url())) net++; return r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: true, user: { id: 1, username: 'tester' } } : { saves: [], reply: '' }) }); });
   await page.addInitScript(({ jwt }) => { localStorage.setItem('rimtown-lang', 'zh'); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_gh_intro', '1'); localStorage.setItem('rimtown_ui_all', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); }, { jwt });
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 });
@@ -137,7 +141,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       ok(t2.timeline.some(e => e.kind === 'exit'), '場景二：時間線上有「退出」這一筆');
       const outs = t2.people.filter(p => p.answered.some(a => a.id === 'out')); ok(outs.length >= 1 && outs.every(p => p.acted.some(a => a.code === 'striking' || a.code === 'listed')), '場景二：回答「跟」的人，另外有從狀態讀到的「在罷工名單上」；兩件事分開記', outs.map(p => [p.name, p.acted.map(a => a.code)]));
       const listed = t2.people.filter(p => p.acted.some(a => a.code === 'listed')); const notAsked = listed.filter(p => !p.asked.length);
-      ok(listed.length >= 3 && notAsked.every(p => p.roles.includes('leader')), '場景二：名單上的人除了領袖都有「被問到」的紀錄；領袖是直接列進去的（沒被問），兩欄對不上看得出來', [listed.length, notAsked.map(p => [p.name, p.roles])]);
+      ok(listed.length >= 3 && notAsked.every(p => p.roles.includes('leader')), '場景二：名單上的人除了領袖都有「被問到」的紀錄；領袖是直接列進去的（沒被問），兩欄不一致看得出來', [listed.length, notAsked.map(p => [p.name, p.roles])]);
       ok(['strike_won', 'strike_lost'].includes(t2.outcome?.code) || t2.status === 'open', '場景二：結果是罷工成功或失敗（由遊戲擲骰決定，兩種都算合法）', t2.outcome);
       ok(t2.resources.some(r => r.what === 'fund' && r.to < r.from), '場景二：罷工補貼讓工會基金變少，有記下來', t2.resources.map(r => r.text)); } }
   // 場景三
@@ -150,7 +154,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   if (t4) { const S = t4.scene; const goneP = t4.people.find(p => p.id === R.s4.goneId);
     ok(S.frames.length >= 2 && S.who.length >= 3, '場景四：現場有多格位置紀錄', [S.frames.length, S.who.length]);
     ok(S.who.every(id => R.s4.going.includes(id)) && S.who.length === R.s4.going.length, '場景四：現場名單等於遊戲真的排去現場的人，一個不多一個不少');
-    ok(!!goneP && goneP.acted.some(a => a.code === 'promised') && goneP.acted.some(a => a.code === 'absent') && !S.who.includes(goneP.id), '場景四（答應了沒到）：那個人有「在名單上」也有「沒有去（當天不在鎮上）」，而且不在現場名單裡', goneP && goneP.acted);
+    ok(!!goneP && goneP.acted.some(a => a.code === 'promised') && goneP.acted.some(a => a.code === 'absent') && !S.who.includes(goneP.id), '場景四（答應了沒到）：那個人有「在名單上」也有「沒有被排去現場（當天不在鎮上）」，而且不在現場名單裡', goneP && goneP.acted);
     const present = t4.people.filter(p => p.acted.some(a => a.code === 'present')); ok(present.length >= 3 && present.every(p => S.who.includes(p.id)), '場景四：記成「人在現場」的都在現場名單裡', present.length);
     ok(S.frames.some(f => Object.values(f.pos).some(p => p.st === 'present')) && S.frames.at(-1) && Object.values(S.frames.at(-1).pos).every(p => p.st === 'left'), '場景四：看得到到場與散場');
     ok(t4.people.some(p => p.asked.length && p.answered.length), '場景四：有人是「被問到 → 回答」的完整紀錄');
@@ -158,7 +162,60 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   const t5 = R.s5 && prot.find(t => t.thing === R.s5.tid && t.outcome?.code === 'fizzled');
   ok(!!t5 && !t5.scene, '場景五（沒人加入）：到的人不夠，事件以「沒有成形」結束，沒有現場', [R.s5, prot.map(t => [t.thing, t.outcome?.code])]);
   if (t5) ok(t5.people.filter(p => p.acted.some(a => a.code === 'promised')).length >= 3 && t5.people.filter(p => p.acted.some(a => a.code === 'absent')).length >= 1 && !t5.people.some(p => p.acted.some(a => a.code === 'present' || a.code === 'sent')), '場景五：答應的人留在「名單上」那一欄，沒有任何人被記成到場', t5.people.map(p => p.acted.map(a => a.code)));
-  ok(net >= 0, `全程沒有連到真實 AI（遊戲自己發出的 ${net} 個 /api/chat 請求都在本機攔下，回空白）`);
+  ok(aiOut === 0, `沒有任何像 AI 的請求離開本機（遊戲自己發出的 ${net} 個 /api/chat 都打到本機、被攔下回空白）`, aiOut);
+  ok(TH.every(t => t.timeline.every(e => e.src?.mode !== 'ai')) && W.meta.ai === false, '紀錄裡沒有任何一筆決定是 AI 做的（完整智能體模式關著）');
+
+  // ---------- 3b. 可信度 ----------
+  const Q = await page.evaluate(async () => {
+    const app = window.rimtownApp; const w = new World(); app.world = w;
+    let s = 11; Math.random = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    w.reset(); w.observerMode = true; ORIGIN.seed(w, 3, { seed: 11 }); w.observerMode = true; w.fullAgentMode = false; WALLET.S(w);
+    try { app.state = w.getState(); app._generateTileMapLayout(); } catch (e) {}
+    const M = MARKET, U = UNION; const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); const day = () => w._absDay();
+    const tick = (n = 1) => { for (let i = 0; i < n; i++) { w.paused = false; w.tick(); } };
+    const trait = (a, add, del) => { const T = a.personality.traits; for (const x of del || []) { const i = T.indexOf(x); if (i >= 0) T.splice(i, 1); } for (const x of add || []) if (!T.includes(x)) T.push(x); };
+    const like = (a, b, n) => { const r = a.relationships.getOrCreate(b.agentId, b.name); r.affinity = n; };
+    const out = { notes: [] }; tick(96 * 2); WATCH.attach(w); M.S(w);
+    { const spare = all().filter(a => (a.age ?? 30) >= 25 && !M.JOB2S[a.job?.key] && a.currentLocation !== 'exploration'); let i = 0; for (const k of Object.keys(M.SECTORS)) if (!w.agents[M.ownerOf(w, k)] && M.workersOf(w, k, all()).length >= 4 && spare[i]) w.market.owners[k] = spare[i++].agentId; }
+    const secs = Object.keys(M.SECTORS).map(k => ({ k, boss: w.agents[M.ownerOf(w, k)], ws: M.workersOf(w, k, all()).filter(a => a.agentId !== M.ownerOf(w, k) && (a.age || 30) >= 16) })).filter(x => x.boss && x.ws.length >= 4).sort((a, b) => b.ws.length - a.ws.length);
+    // (a) 兩個不同老闆的行業，同一格各自拒絕工會、工會錢不夠罷工。日誌只寫老闆名字，要各自接回自己的行業
+    const two = []; for (const x of secs) if (!two.some(y => y.boss === x.boss)) two.push(x); two.length = Math.min(2, two.length);
+    if (two.length === 2) {
+      for (const x of secs) w.market.pay[x.k] = 1; tick(); U.start(w, two[0].ws[0], []); for (const x of two) for (const a of x.ws) if (!U.S(w).members[a.agentId]) U.join(w, a);
+      for (const x of two) { w.market.pay[x.k] = 0.75; trait(x.boss, ['greedy'], ['kind', 'generous', 'abrasive']); w.wallet.bal[x.boss.agentId] = 30; U.S(w).talks[x.k] = -99; } tick(); U.S(w).fund = 0;
+      U.bargain(w, all(), day()); DECIDE.drain(w, DECIDE.S(w), day()); tick();
+      out.two = two.map(x => ({ k: x.k, boss: x.boss.name, bossId: x.boss.agentId })); out.sameBossName = two[0].boss.name === two[1].boss.name;
+    } else out.notes.push('找不到兩個不同老闆的行業');
+    // (b) 同名：把一個旁人改成跟打架的人同名，再寫一筆打架日誌。日誌只有名字，分不出是哪一個，不能猜
+    const P = all().filter(a => (a.age ?? 30) >= 18); const X = P[3], Y = P[4], Z = P[5]; const zOld = Z.name; Z.name = X.name;
+    w.logMessageT('health', '👊 {a}跟{b}打起來了，{l}的{p}受了傷。', { a: X.name, b: Y.name, l: Y.name, p: '手' }, X.name); tick();
+    out.same = { x: X.agentId, y: Y.agentId, z: Z.agentId, name: X.name }; Z.name = zOld;
+    // (d) 婚禮：用遊戲自己的 planWedding 訂婚期，把日期改成今天，讓遊戲自己開始與結束
+    const A1 = P[30], B1 = P[31]; const guests = P.slice(32, 40); for (const g of guests) { like(g, A1, 90); like(g, B1, 90); }
+    const c = CEREMONY.planWedding(w, A1, B1); c.day = day() + 1; let n = 0; while (c.status === 'planned' && n++ < 96 * 2 + 8) tick(); out.wed = { id: c.id, started: c.status, guests: (c.guests || []).length, loc: c.loc };
+    n = 0; while (c.status === 'ongoing' && n++ < 96) tick(); tick(2); out.wed.ended = c.status;
+    out.watch = WATCH.export(w, { seed: 11, tier: 3, staged: true }); // 先匯出；下面的「超過上限」會把較早的事件擠掉
+    // (c) 超過上限：把上限調成 6，再寫 8 筆打架。開著的工資事件不能被擠掉；被捨棄的事件不能再被任何索引指到
+    const st = WATCH.get(w); const before = st.threads.length; WATCH.CAP.threads = Math.max(6, before); const openWage = st.threads.filter(t => t.type === 'wage' && t.status === 'open').map(t => t.id);
+    for (let i = 0; i < 8; i++) { const a = P[6 + i], b = P[15 + i]; w.logMessageT('health', '👊 {a}跟{b}打起來了，{l}的{p}受了傷。', { a: a.name, b: b.name, l: b.name, p: '腳' }, a.name); tick(); }
+    const live = new Set(st.threads); out.evict = { cap: WATCH.CAP.threads, n: st.threads.length, evicted: st.evicted, openWageKept: openWage.every(id => st.threads.some(t => t.id === id)),
+      dangling: [...Object.values(st.wage), ...Object.values(st.prot), ...st.fights, ...Object.values(st.idx)].filter(t => t && t.id && !live.has(t)).length };
+    out.evict.metaEvicted = WATCH.export(w, {}).meta.evicted; WATCH.CAP.threads = 300;
+    return out;
+  });
+  { const QT = Q.watch.threads; ok(Q.watch.meta.errors.length === 0 && errs.length === 0, '可信度場景：紀錄器與頁面都沒有出錯', [Q.watch.meta.errors, errs.slice(0, 2), Q.notes]);
+    if (Q.two && !Q.sameBossName) { for (const x of Q.two) { const ts = QT.filter(t => t.type === 'wage' && t.sector === x.k); const outs = ts.flatMap(t => t.timeline.filter(e => e.kind === 'outcome' && /拒絕/.test(e.text)));
+        ok(outs.length === 1 && outs[0].text.includes(x.boss) && outs[0].who.includes(x.bossId) && !outs[0].uncertain, `兩個老闆同一格各自拒絕：${x.boss}的那一筆只接到他自己的行業（${x.k}），不是「對應不確定」`, [ts.length, outs.map(e => [e.text, e.who, e.uncertain])]); } }
+    else ok(false, '可信度場景需要兩個不同老闆的行業', Q.notes);
+    const f = QT.find(t => t.type === 'fight' && t.timeline.some(e => (e.whoUnsure || []).includes(Q.same.name)));
+    ok(!!f && !f.people.some(p => p.id === Q.same.x || p.id === Q.same.z) && f.people.some(p => p.id === Q.same.y), '同名：鎮上有兩個同名的人時，那一筆標成「同名，沒有接到人」，兩個同名的人都沒有被記進去；另一個當事人照常記', f ? [f.people.map(p => p.id), f.timeline[0].who, f.timeline[0].whoUnsure] : QT.filter(t => t.type === 'fight').length);
+    ok(Q.evict.n <= Q.evict.cap && Q.evict.evicted >= 1 && Q.evict.openWageKept && Q.evict.dangling === 0 && Q.evict.metaEvicted === Q.evict.evicted, '超過上限：先捨棄已經結束的事件、進行中的工資爭議留著；沒有任何索引還指著被捨棄的事件；匯出的資料寫明捨棄了幾件', Q.evict);
+    const wd = QT.find(t => t.type === 'ceremony'); ok(Q.wed.started !== 'planned' && !!wd && !!wd.scene && wd.scene.who.length === Q.wed.guests, '婚禮：有記成一件事，現場名單等於遊戲排的賓客名單', [Q.wed, wd && wd.scene.who.length]);
+    if (wd) { ok(wd.people.every(p => !p.asked.length && !p.answered.length) && wd.people.every(p => p.acted.some(a => a.code === 'sent')), '婚禮：賓客只有「被排去會場」，沒有被問到也沒有回答（程式沒有問）');
+      ok(wd.scene.frames.length >= 2 && wd.people.some(p => p.acted.some(a => a.code === 'present')) && wd.status === 'closed' && wd.outcome.code === 'ceremony_held', '婚禮：看得到有人到場，典禮結束後事件收尾', [wd.scene.frames.length, wd.outcome, Q.wed]); } }
+  Q.watch.source = 'STAGED_SCENARIO'; Q.watch.meta.label = '測試場景二：同名、兩個老闆、婚禮';
+  fs.mkdirSync(path.join(BOARD, 'data'), { recursive: true });
+  fs.writeFileSync(path.join(BOARD, 'data', 'staged-trust.js'), '// 由 scripts/watch_test.js 產生：起始條件是人為設定的，過程由真實遊戲程式跑出。不是自然發生的遊戲紀錄，也不是手寫資料。\n(window.RIMTOWN_EVENT_DATA = window.RIMTOWN_EVENT_DATA || []).push(' + JSON.stringify(Q.watch) + ');\n');
   // 匯出測試場景給離線追蹤板
   W.source = 'STAGED_SCENARIO'; W.meta.label = '測試場景（起始條件人為設定，過程由真實程式跑出）';
   fs.mkdirSync(path.join(BOARD, 'data'), { recursive: true });
@@ -171,9 +228,10 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   for (const [name, vp] of [['desktop', { width: 1280, height: 900 }], ['mobile', { width: 390, height: 844 }]]) {
     const p = await (await browser.newContext({ viewport: vp, deviceScaleFactor: name === 'mobile' ? 2 : 1 })).newPage(); const e2 = []; p.on('pageerror', e => e2.push(e.message)); let req = 0; p.on('request', r => { if (/^https?:/.test(r.url())) req++; });
     await p.goto('file://' + path.join(BOARD, 'index.html')); await p.waitForSelector('#ds option', { state: 'attached' });
-    const idx = await p.evaluate(() => [...document.querySelectorAll('#ds option')].findIndex(o => /測試場景/.test(o.textContent))); await p.selectOption('#ds', String(idx)); await p.waitForSelector('.card');
+    const idx = await p.evaluate(() => [...document.querySelectorAll('#ds option')].findIndex(o => /^測試場景（/.test(o.textContent.trim()))); await p.selectOption('#ds', String(idx)); await p.waitForSelector('.card');
     ok(await p.locator('.badge.staged').count() >= 1, `追蹤板（${name}）：測試場景有明確標示，不會被當成真實紀錄`);
     await p.locator('.card', { hasText: '工資爭議' }).first().click(); await p.waitForSelector('.tl li');
+    ok(/不代表沒有發生/.test(await p.locator('main').innerText()) && !/就是答應了沒做/.test(await p.locator('main').innerText()), `追蹤板（${name}）：畫面上寫明「沒有紀錄不代表沒有發生」，也不再把兩欄不一致直接說成答應了沒做`);
     ok(await p.locator('main th', { hasText: '被問到' }).count() === 1 && await p.locator('main th', { hasText: '實際行動' }).count() === 1, `追蹤板（${name}）：參與者表格把被問到、回答、實際行動、結果分欄`);
     await p.locator('.tl .src').first().click(); ok(await p.locator('pre.raw:not([hidden])').count() === 1, `追蹤板（${name}）：點來源看得到原始紀錄`);
     await p.screenshot({ path: path.join(SHOTS, `${name}-wage.png`), fullPage: name === 'desktop' });
@@ -183,6 +241,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     if (hasScene) { const before = await p.locator('#frLabel').textContent(); await p.locator('#fr').fill('2'); await p.locator('#fr').dispatchEvent('input'); const after = await p.locator('#frLabel').textContent(); ok(before !== after, `追蹤板（${name}）：拖時間軸可以重看現場`, [before, after]); }
     await p.locator('main .who').first().click(); ok(await p.locator('main h2', { hasText: '只看' }).count() === 1 && await p.locator('.filters .on', { hasText: '正在跟' }).count() === 1, `追蹤板（${name}）：點人可以只看這個人跨事件的先後`);
     await p.locator('#cv').scrollIntoViewIfNeeded(); await p.screenshot({ path: path.join(SHOTS, `${name}-protest.png`) });
+    // 測試場景二：婚禮有現場；同名的那一筆有標示
+    const idx2 = await p.evaluate(() => [...document.querySelectorAll('#ds option')].findIndex(o => /^測試場景二/.test(o.textContent.trim()))); await p.selectOption('#ds', String(idx2)); await p.waitForSelector('.card');
+    const ids = await p.evaluate(() => ({ wed: D.threads.find(t => t.type === 'ceremony')?.id, same: D.threads.find(t => t.timeline.some(e => e.whoUnsure))?.id }));
+    await p.evaluate((id) => open(id), ids.wed); await p.waitForSelector('#fr');
+    ok(/賓客/.test(await p.locator('.legend').innerText()) && /被排去會場/.test(await p.locator('main table').innerText()), `追蹤板（${name}）：婚禮有現場可以重看，賓客那一欄寫的是「被排去會場」`);
+    await p.locator('#fr').fill('1'); await p.locator('#fr').dispatchEvent('input'); await p.locator('#cv').scrollIntoViewIfNeeded(); await p.screenshot({ path: path.join(SHOTS, `${name}-wedding.png`) });
+    await p.evaluate((id) => open(id), ids.same); await p.waitForSelector('.tl li');
+    { const bb = await p.locator('.tl .badge', { hasText: '同名，沒有接到人' }).first().boundingBox().catch(() => null); ok(!!bb && bb.height < 80 && bb.width <= vp.width, `追蹤板（${name}）：同名的那一筆在時間線上有標示，標籤大小正常`, bb); } await p.locator('.tl').scrollIntoViewIfNeeded(); await p.screenshot({ path: path.join(SHOTS, `${name}-samename.png`) });
     const wide = await p.evaluate(() => document.documentElement.scrollWidth > window.innerWidth + 1); ok(!wide, `追蹤板（${name}）：頁面沒有橫向捲動`);
     ok(e2.length === 0 && req === 0, `追蹤板（${name}）：沒有錯誤，也沒有任何對外連線`, [e2.slice(0, 2), req]); await p.context().close();
   }
