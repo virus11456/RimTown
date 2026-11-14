@@ -23,7 +23,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       let D = 1300; const _ad = w._absDay; w._absDay = () => D; const out = {}; const B = BIZ.S(w); const all = npcs().filter(a => a.job?.key !== 'mayor');
       for (const a of npcs()) w.wallet.bal[a.agentId] = 50;
       // 開店(有錢的老闆自己出)
-      const o1 = all[0]; o1.job.key = 'cook'; w.wallet.bal[o1.agentId] = 200; const s1 = await BIZ.open(w, B, o1, D); out.open = !!s1 && s1.type === 'bakery' && WALLET.get(w, o1) === 140 && logHas(/開了一家|opened a/);
+      const o1 = all[0]; o1.job.key = 'cook'; w.wallet.bal[o1.agentId] = 200; o1.personality.traits = (o1.personality.traits || []).filter(x => x !== 'creative'); /* 有創意的人會開畫坊,這裡要驗的是照職業 */ const s1 = await BIZ.open(w, B, o1, D); out.open = !!s1 && s1.type === 'teahouse' /* v9.30.0 廚師開的店從麵包店改成說書茶館(麵包店跟產業「食堂」重疊,拿掉了) */ && WALLET.get(w, o1) === 140 && logHas(/開了一家|opened a/);
       // 合夥(錢不夠找朋友)
       const o2 = all[1], fr = all[2]; w.wallet.bal[o2.agentId] = 30; w.wallet.bal[fr.agentId] = 100; fr.relationships.getOrCreate(o2.agentId, o2.name).affinity = 60; fr.personality.traits = [...fr.personality.traits.filter(x => x !== 'jealous'), 'jealous'];
       const s2 = await BIZ.open(w, B, o2, D); out.partner = !!s2 && s2.partner === fr.agentId && WALLET.get(w, fr) === 60;
