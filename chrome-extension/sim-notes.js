@@ -31,9 +31,10 @@ const NOTES = (() => {
     function onDecided(o) {
         const w = o.w; if (!w || !w.observerMode || o.src !== 'ai' || !o.a) return;
         const own = o.why && typeof o.why === 'object' && o.why.raw != null && String(o.why.raw).trim();
-        if (o.op.free) return add(w, { who: o.a.agentId, nm: o.a.name, t: 'idea', q: o.K.title || '', x: o.op.say || o.op.text, y: own ? { raw: String(o.why.raw) } : null, r: o.res || null });
+        const ex = {}; if (o.feel) ex.f = String(o.feel); if (o.pub) ex.s = String(o.pub); // v10.0.0 這次出於什麼、嘴上對別人怎麼說
+        if (o.op.free) return add(w, Object.assign({ who: o.a.agentId, nm: o.a.name, t: 'idea', q: o.K.title || '', x: o.op.say || o.op.text, y: own ? { raw: String(o.why.raw) } : null, r: o.res || null }, ex));
         if (!own) return null; // AI 沒寫理由時用的是選項內建的句子，那不是他說的，不收
-        return add(w, { who: o.a.agentId, nm: o.a.name, t: 'pick', q: o.K.title || '', x: o.op.say || o.op.text, y: { raw: String(o.why.raw) }, r: o.res || null });
+        return add(w, Object.assign({ who: o.a.agentId, nm: o.a.name, t: 'pick', q: o.K.title || '', x: o.op.say || o.op.text, y: { raw: String(o.why.raw) }, r: o.res || null }, ex));
     }
     // ---------- v9.32.0 念頭：通知畫面（地圖泡泡、角落卡）。只傳話，不存、不改世界、不用亂數 ----------
     const SUBS = [];
@@ -45,13 +46,13 @@ const NOTES = (() => {
         if (ev !== 'decided') return;
         const e = onDecided(o); if (!SUBS.length || !o?.a) return;
         if (!e) { tell({ w: o.w, kind: 'clear', id: o.a.agentId }); return; } // 照個性決定、或 AI 沒有自己的話：把「正在想」收掉就好
-        tell({ w: o.w, kind: e.t === 'idea' ? 'idea' : 'say', id: e.who, name: nameOf(o.w, e.who, e.nm), q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r), i: e.i });
+        tell({ w: o.w, kind: e.t === 'idea' ? 'idea' : 'say', id: e.who, name: nameOf(o.w, e.who, e.nm), q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r), feel: e.f || '', pub: e.s || '', i: e.i });
     }
     // 心聲卡片：最近的幾筆（自己拿的主意＋做決定時自己說的話），新的在前
     function feed(w, n = 30, only) {
         const L = S(w).list; const out = [];
         for (let i = L.length - 1; i >= 0 && out.length < n; i--) { const e = L[i]; if (only && e.t !== only) continue;
-            out.push({ i: e.i, who: e.who, name: nameOf(w, e.who, e.nm), here: !!w.agents?.[e.who] && !w.agents[e.who].isDead, t: e.t, d: e.d, tm: e.tm || '', q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r) }); }
+            out.push({ i: e.i, who: e.who, name: nameOf(w, e.who, e.nm), here: !!w.agents?.[e.who] && !w.agents[e.who].isDead, t: e.t, d: e.d, tm: e.tm || '', q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r), feel: e.f || '', pub: e.s || '' }); }
         return out;
     }
     const stats = (w) => { const L = S(w).list; const d = day(w); let ideas = 0, today = 0; for (const e of L) { if (e.t === 'idea') ideas++; if (e.d === d) today++; } return { all: L.length, ideas, today }; };
@@ -87,7 +88,7 @@ const NOTES = (() => {
     };
     function entriesOf(w, id) {
         const out = [];
-        for (const e of S(w).list) if (e.who === id) out.push({ d: e.d, tm: e.tm, t: e.t, q: e.q ? render(e.q, {}) : '', title: say(e.x), text: say(e.y), res: say(e.r), ai: true, own: true });
+        for (const e of S(w).list) if (e.who === id) out.push({ d: e.d, tm: e.tm, t: e.t, q: e.q ? render(e.q, {}) : '', title: say(e.x), text: say(e.y), res: say(e.r), feel: e.f || '', pub: e.s || '', ai: true, own: true });
         for (const f of SOURCES) { try { for (const x of f(w, id) || []) if (x && (x.title || x.text)) out.push(x); } catch (err) {} }
         return out.sort((a, b) => (b.d - a.d) || ((b.i || 0) - (a.i || 0)));
     }
@@ -119,7 +120,7 @@ const NOTES = (() => {
                 : `<div class="nb-who"><h3 class="nb-name">${me.here ? '' : '🕯️ '}${esc(me.name)}</h3><span class="nb-job">${esc(job)}</span>${me.here ? `<button type="button" class="nb-go" data-nb="go">👁 ${esc(t('去看他'))}</button>` : `<span class="nb-gone">${esc(t('已經不在鎮上'))}</span>`}</div>
                    <div class="nb-chips" role="tablist"><button type="button" class="nb-chip${filter === 'all' ? ' on' : ''}" data-nb="f" data-k="all">${esc(t('全部'))} ${L.length}</button>${kinds.map(k => `<button type="button" class="nb-chip${filter === k ? ' on' : ''}" data-nb="f" data-k="${k}">${KIND[k][0]} ${esc(t(KIND[k][1]))} ${L.filter(e => e.t === k).length}</button>`).join('')}</div>
                    ${shown.length ? shown.map(e => `<div class="nb-entry nb-${e.t}"><div class="nb-meta"><span class="nb-kind">${KIND[e.t][0]} ${esc(t(KIND[e.t][1]))}</span><span class="nb-day">${esc(t('第 {n} 天').replace('{n}', e.d))}</span>${e.own ? `<span class="nb-own" title="${esc(t('這是他自己寫的，不是程式內建的句子'))}">✍️ ${esc(t('他自己寫的'))}</span>` : ''}</div>
-                        ${e.q ? `<div class="nb-q">${esc(t('遇到的事'))}${esc(t('：'))}${esc(e.q)}</div>` : ''}${e.title ? `<div class="nb-title">${esc(e.title)}</div>` : ''}${e.text ? `<p class="nb-text">${e.t === 'pick' || e.t === 'idea' ? quote(esc(e.text)) : esc(e.text)}</p>` : ''}${e.res ? `<div class="nb-res">${esc(t('後來'))}${esc(t('：'))}${esc(e.res)}</div>` : ''}</div>`).join('') : `<p class="nb-empty">${esc(t('這一類還沒有東西。'))}</p>`}`;
+                        ${e.q ? `<div class="nb-q">${esc(t('遇到的事'))}${esc(t('：'))}${esc(e.q)}</div>` : ''}${e.title ? `<div class="nb-title">${esc(e.title)}</div>` : ''}${e.feel ? `<div class="nb-feel">${esc(t('出於'))}${esc(t('：'))}${esc(e.feel)}</div>` : ''}${e.text ? `<p class="nb-text">${e.pub ? `<span class="nb-lab">${esc(t('心裡想'))}${esc(t('：'))}</span>` : ''}${e.t === 'pick' || e.t === 'idea' ? quote(esc(e.text)) : esc(e.text)}</p>` : ''}${e.pub ? `<p class="nb-text nb-pub"><span class="nb-lab">${esc(t('嘴上說'))}${esc(t('：'))}</span>${quote(esc(e.pub))}</p>` : ''}${e.res ? `<div class="nb-res">${esc(t('後來'))}${esc(t('：'))}${esc(e.res)}</div>` : ''}</div>`).join('') : `<p class="nb-empty">${esc(t('這一類還沒有東西。'))}</p>`}`;
             el.innerHTML = `<div class="nb-page"><button type="button" class="nb-x" data-nb="close" aria-label="${esc(t('關閉'))}">✕</button>
                 <div class="nb-head">📓 ${esc(t('鎮民手記'))} <small>${esc(t('他們各自想了什麼'))}</small></div>
                 <div class="nb-cols"><nav class="nb-people" aria-label="${esc(t('鎮民'))}">${P.length > 1 ? `<select class="nb-select" data-nb="sel" aria-label="${esc(t('選一個人'))}">${P.map(p => `<option value="${esc(p.id)}"${p.id === cur ? ' selected' : ''}>${esc(p.name)} (${p.n})</option>`).join('')}</select>` : ''}<div class="nb-plist">${list}</div></nav><section class="nb-body">${body}</section></div></div>`;

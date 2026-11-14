@@ -640,7 +640,7 @@ Object.assign(RimTownApp.prototype, {
         if (!o || o.w !== this.world) return; const tm = this.tileMap; const esc = (x) => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
         if (o.kind === 'clear') { tm?.clearThought?.(o.id); return; }
         if (o.kind === 'think') { tm?.setThought?.(o.id, { kind: 'think', text: o.q || '…', ms: 30000 }); return; }
-        tm?.setThought?.(o.id, { kind: o.kind, name: o.name, text: o.kind === 'idea' ? o.what : (o.text || o.what), ms: o.kind === 'idea' ? 16000 : 10000, hold: true }); // 等他醒著、看得到時才冒出來
+        tm?.setThought?.(o.id, { kind: o.kind, name: o.name, text: o.kind === 'idea' ? o.what : (o.pub || o.text || o.what), ms: o.kind === 'idea' ? 16000 : 10000, hold: true }); // v10.0.0 地圖上冒的是他嘴上說的那句（有的話）；心裡想的在心聲卡片上 // 等他醒著、看得到時才冒出來
         if (o.kind === 'idea') this._showCornerNotice({ icon: '💡', title: esc(t('{a}自己拿了主意').replace('{a}', o.name)), name: esc(o.what), desc: o.text ? esc(t('「{x}」').replace('{x}', o.text)) : '', go: { agentId: o.id }, open: () => NOTES.openBook(this, o.id), openLabel: t('翻手記') });
     },
     // v9.33.0 個人企劃的通知：有人想到事情、開始了、有結果。只是畫面。

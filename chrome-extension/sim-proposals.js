@@ -614,7 +614,11 @@ class ProposalSystem {
             this._execute(w, p, day);
         } else {
             p.status = 'rejected'; p.resolvedDay = day; this.stats.rejected++; this._tr(p.proposerId).rejected++; p.result = by === 'auto' ? '三天沒處理，依票數否決' : by === 'mayor' ? '鎮長否決' : '被否決';
-            if (a) { a.moodModifier = (a.moodModifier || 0) - 4; a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '{id}「{title}」被否決了，有點失望。', { id: p.id, title: this.title(p) }, 6, [p.proposerName]); }
+            if (a) { a.moodModifier = (a.moodModifier || 0) - 4;
+                // v10.0.0 被否決的理由要回到提案人身上（以前只記「被否決了，有點失望」，他不知道為什麼，下次照樣提）
+                let rz = null; try { const mw = by === 'mayor' ? this.mayorWhyText(p) : ''; rz = mw ? { who: p.mayorName || t('鎮長'), why: mw } : (this._whyTop(p, 'against', w)[0] || null); } catch (e) {}
+                if (rz && rz.why) a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', rz.who ? '{id}「{title}」被否決了。{who}說：{why}' : '{id}「{title}」被否決了。反對的人多半覺得：{why}', { id: p.id, title: this.title(p), who: rz.who || '', why: rz.why }, 7, [p.proposerName]);
+                else a.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '{id}「{title}」被否決了，有點失望。', { id: p.id, title: this.title(p) }, 6, [p.proposerName]); }
             for (const [aid, v] of Object.entries(p.votes)) { const x = w.agents[aid]; if (x && v === 'for') x.moodModifier = (x.moodModifier || 0) - 1; }
             w.logMessageT?.('council', '❌ {id}「{title}」否決（{f} 贊成 / {a} 反對{auto}）', { id: p.id, title: this.title(p), f, a: ag, auto: by === 'auto' ? '，三天沒處理依票數定案' : by === 'mayor' ? `${t('，鎮長')}${p.mayorName || ''}${t('裁決：')}${this.mayorWhyText(p)}` : '' });
             w.dailyNews?.collectEvent?.('politics', `${p.id}${t('「')}${this.title(p)}${t('」')}${t('被否決')}${t('（')}${f}:${ag}${t('）')}`, 6, [p.proposerName]);
