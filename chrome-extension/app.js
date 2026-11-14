@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '9.29.2';
+const RIMTOWN_APP_VERSION = '9.29.3';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2022,6 +2022,20 @@ class RimTownApp {
         document.addEventListener('touchend', (e) => { if (inSb(e)) this._sbHoldUntil = Date.now() + 600; }, opt);
         document.addEventListener('pointercancel', () => { this._sbHoldUntil = Date.now() + 300; }, opt);
         document.addEventListener('scroll', (e) => { if (inSb(e)) hold(800); }, opt);
+        // v9.29.3 上面只擋得住「每一格模擬的自動重畫」。鎮上一有事（提案、投票、通知、成就檢查…）程式會直接重畫面板或手牌，不經過那道檢查；
+        // 剛好落在按下到放開之間，按著的按鈕就被換掉，瀏覽器不會送出點擊，看起來就是「按了沒反應」。
+        // 這裡記住正在按的是哪個元素：它所在的區塊這段時間一律先不重畫（_pressDefer），點擊送出後再補畫一次。
+        const flush = () => { this._pressEl = null; const q = this._pressQ; this._pressQ = null; if (q) for (const f of Object.values(q)) { try { f(); } catch (e) { console.warn('[press] redo', e); } } };
+        const later = (ms) => { clearTimeout(this._pressT); this._pressT = setTimeout(flush, ms); };
+        document.addEventListener('pointerdown', (e) => { this._pressEl = e.target; this._pressAt = Date.now(); clearTimeout(this._pressT); }, opt);
+        document.addEventListener('pointerup', () => { if (this._pressEl) later(400); }, opt);      // 點擊通常緊跟著來；沒來（拖走了）就 0.4 秒後補畫
+        document.addEventListener('pointercancel', () => { if (this._pressEl) later(0); }, opt);    // 變成捲動了
+        document.addEventListener('click', () => { this._pressEl = null; later(0); }, true);        // 先解除，按鈕自己的處理要重畫就能馬上畫；其餘的隨後補
+    }
+    // 正按著 root 裡面的東西：先不重畫，記下來等放開再畫（回傳 true 表示這次先跳過）。按超過 3 秒就不等了（放開的事件沒收到時不會整塊卡住）。
+    _pressDefer(root, key, redo) {
+        const el = this._pressEl; if (this._pressOff || !el || !root || Date.now() - (this._pressAt || 0) > (this._pressMax || 3000) || !root.contains(el)) { if (this._pressQ) delete this._pressQ[key]; return false; }
+        (this._pressQ || (this._pressQ = {}))[key] = redo; return true;
     }
 
     setupTabListeners() {
@@ -3013,6 +3027,7 @@ class RimTownApp {
     // v6.0.0 B14：_setupKairoUI … 等方法移到 app-mobile.js
 
     renderSidebar() {
+        if (this._pressDefer(document.getElementById('sidebar-content'), 'sidebar', () => this.renderSidebar())) return; // v9.29.3 正按著面板裡的按鈕：放開後再畫
         try { this._uiCheck?.(); } catch (e) {} // v8.8.0 漸進解鎖
         // 手機抽屜:聊天分頁給較高的面板(62vh),其他分頁 44vh 讓地圖為主
         const _sb = document.getElementById('rimtown-sidebar');
