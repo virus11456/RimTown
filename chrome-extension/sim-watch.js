@@ -25,7 +25,9 @@ const WATCH = (() => {
     // ---------- 小工具（全部只讀） ----------
     const day = (w) => { try { return w._absDay ? w._absDay() : 0; } catch (e) { return 0; } };
     const stamp = (w) => ({ d: day(w), tick: w.tickCount || 0, time: w.clock?.timeStr || '' });
-    const render = (k, p) => { try { return typeof Memory !== 'undefined' && Memory.render ? Memory.render(k, p || {}) : String(k); } catch (e) { return String(k); } };
+    // 參數裡的名字有三種寫法：字串、[中文, 英文]、{ raw: '原文' }。Memory.render 只認得字串與 {k,p}，其他的會印成 [object Object]，所以先攤平
+    const flat = (v) => (v == null ? v : Array.isArray(v) ? (v[typeof I18N !== 'undefined' && I18N.getLang?.() === 'en' ? 1 : 0] ?? v[0]) : typeof v === 'object' && !v.k ? (v.raw != null ? String(v.raw) : v.name != null ? flat(v.name) : '') : v);
+    const render = (k, p) => { try { const q = {}; for (const [n, v] of Object.entries(p || {})) q[n] = flat(v); return typeof Memory !== 'undefined' && Memory.render ? Memory.render(k, q) : String(k); } catch (e) { return String(k); } };
     const say = (x) => (x == null ? '' : typeof x === 'string' ? render(x, {}) : x.raw != null ? String(x.raw) : x.k ? render(x.k, x.p || {}) : '');
     const MK = () => (typeof MARKET !== 'undefined' ? MARKET : null);
     const UN = () => (typeof UNION !== 'undefined' ? UNION : null);
@@ -70,7 +72,7 @@ const WATCH = (() => {
         const s = stamp(w); const L = T.timeline;
         if (e.names) { const who = [], unsure = []; for (const n of e.names) { const a = byName(w, n, T); if (a) who.push(a.agentId); else if (named(w, n).length > 1) unsure.push(n); } e.who = who; delete e.names; if (unsure.length) e.whoUnsure = unsure; }
         if (e.mk) { const prev = L.slice(-12).reverse().find(x => x.mk === e.mk); if (prev) { prev.times = (prev.times || 1) + 1; prev.lastD = s.d; prev.lastTime = s.time; return prev; } }
-        const x = Object.assign({ n: (T.tn = (T.tn || 0) + 1), d: s.d, tick: s.tick, time: s.time }, e); L.push(x); if (L.length > CAP.timeline) { L.shift(); T.dropped = (T.dropped || 0) + 1; }
+        const x = Object.assign({ n: (T.tn = (T.tn || 0) + 1), d: s.d, tick: s.tick, time: s.time }, e); L.push(x); if (L.length > CAP.timeline) { let i = L.findIndex(y => y.kind === 'answer' || y.kind === 'follow'); if (i < 0) i = 0; L.splice(i, 1); T.dropped = (T.dropped || 0) + 1; } // 超過上限：先捨棄最早的個人決定，起因、組織、談判、結果這些骨架留著
         T.last = s; return x;
     }
     const setStage = (T, stage) => { T.stage = stage; };

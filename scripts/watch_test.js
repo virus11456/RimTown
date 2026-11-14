@@ -162,6 +162,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   const t5 = R.s5 && prot.find(t => t.thing === R.s5.tid && t.outcome?.code === 'fizzled');
   ok(!!t5 && !t5.scene, '場景五（沒人加入）：到的人不夠，事件以「沒有成形」結束，沒有現場', [R.s5, prot.map(t => [t.thing, t.outcome?.code])]);
   if (t5) ok(t5.people.filter(p => p.acted.some(a => a.code === 'promised')).length >= 3 && t5.people.filter(p => p.acted.some(a => a.code === 'absent')).length >= 1 && !t5.people.some(p => p.acted.some(a => a.code === 'present' || a.code === 'sent')), '場景五：答應的人留在「名單上」那一欄，沒有任何人被記成到場', t5.people.map(p => p.acted.map(a => a.code)));
+  ok(!/\[object Object\]|undefined/.test(JSON.stringify(TH.map(t => [t.title, t.timeline.map(e => [e.text, e.why, e.res]), t.people.map(p => [p.asked, p.answered, p.acted, p.result])]))), '紀錄裡的文字沒有 [object Object] 或 undefined（名字參數有攤平）');
   ok(aiOut === 0, `沒有任何像 AI 的請求離開本機（遊戲自己發出的 ${net} 個 /api/chat 都打到本機、被攔下回空白）`, aiOut);
   ok(TH.every(t => t.timeline.every(e => e.src?.mode !== 'ai')) && W.meta.ai === false, '紀錄裡沒有任何一筆決定是 AI 做的（完整智能體模式關著）');
 

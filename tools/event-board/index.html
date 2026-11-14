@@ -119,7 +119,7 @@ function renderMain() {
     <td>${cell(p.answered, a => `第 ${a.d} 天：${esc(a.text)}${a.why ? `<div class="why">理由：${esc(a.why)}<br><span title="${esc(WHY[a.whySrc])}">（${a.whySrc === 'own' ? '本人說的' : a.whySrc === 'option' ? '選項內建，不是本人說的' : '沒有紀錄'}）</span></div>` : ''}`)}</td>
     <td>${cell(p.acted, a => `第 ${a.from ?? a.d}${a.to != null && a.to !== a.from ? '～' + a.to : ''} 天：${esc(a.text)}${a.note ? ` <span class="sub" title="${esc(a.note)}">ⓘ</span>` : ''}`)}</td>
     <td>${cell(p.result, a => `第 ${a.d} 天：${esc(a.text)}`)}</td></tr>`).join('') + `</tbody></table></div>
-    <p class="note">「回答」是他當時選的，「實際行動」是之後從遊戲狀態讀到的。兩欄對不上，只代表這兩種紀錄不一致，原因有好幾種：答應了但沒有被排去、程式沒問就把他算進去、當天不在鎮上，或那一段沒有被記到。要看時間線裡那幾筆的來源才分得出來，不能直接當成「答應了沒做」。${t.type === 'wage' ? '「名字在罷工名單上」也不等於沒去上工：名單一天讀一次，人當天在哪裡沒有讀。' : ''}「沒有紀錄」是紀錄器沒有讀到，不代表沒有發生。點名字可以只看這個人。</p>${t.dropped ? `<p class="note">這件事的紀錄超過上限，最早的 ${t.dropped} 筆沒有保留。</p>` : ''}</section>`;
+    <p class="note">「回答」是他當時選的，「實際行動」是之後從遊戲狀態讀到的。兩欄對不上，只代表這兩種紀錄不一致，原因有好幾種：答應了但沒有被排去、程式沒問就把他算進去、當天不在鎮上，或那一段沒有被記到。要看時間線裡那幾筆的來源才分得出來，不能直接當成「答應了沒做」。${t.type === 'wage' ? '「名字在罷工名單上」也不等於沒去上工：名單一天讀一次，人當天在哪裡沒有讀。' : ''}「沒有紀錄」是紀錄器沒有讀到，不代表沒有發生。點名字可以只看這個人。</p>${t.dropped ? `<p class="note">這件事的時間線超過上限，有 ${t.dropped} 筆沒有保留（先捨棄較早的個人決定；起因、組織、談判、結果都留著）。每個人自己的「回答」那一欄不受影響。</p>` : ''}</section>`;
   // 現場
   h += `<section><h2>現場</h2>${sceneHtml(t)}</section>`;
   // 時間線
