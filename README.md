@@ -6,6 +6,8 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ## 現在的玩法（v9.5.2）
 
+> 這一節停在 v9.5.2。v9.19 之後的「決策核心」（村民自己拿主意的 75 件事）和最新的完整玩法、智能體大腦怎麼運作，見 [`GAMEPLAY_AND_AGENT_BRAIN.md`](GAMEPLAY_AND_AGENT_BRAIN.md)；開發、測試、部署的流程見下方[「開發、測試、部署流程」](#開發測試部署流程每次更新都照這個走)。
+
 - **上帝視角觀察者**：你不在鎮上。3D 低多邊形小鎮（three.js），日夜、季節、天氣、節慶都會變；點村民可以跟拍、看他在想什麼。
 - **完整智能體模式（預設開啟）**：提案十成由村民自己發想，投票和鎮長裁決也由 AI 依每個人的性格、記憶和交情推理。提案效果走白名單落地（資源、每日產出、心情、人際、政令加成、建設、研究、轉職、傳統、地標），所以天馬行空的點子也會真的改變小鎮。
 - **鎮上急事（v6.50.0）**：缺糧、衣服不夠、冬天沒柴、店裡缺貨、工人缺原料、公庫見底、考驗、有人過不下去、結仇、士氣低落。村民會真的受影響：變餓、受凍、做不了工、心情變差並記在心裡；拖著沒人提辦法，會抱怨、在街上吵架，甚至有人搬走。AI 每次提案、投票、裁決都看得到這些急事。
@@ -105,7 +107,7 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 |---|---|
 | `chrome-extension/` | 前端唯一來源（資料夾名稱沿用，Chrome 擴充功能版已在 v6.50.0 移除；以前的 `wordpress/` 鏡像在 v6.83.0 之後拿掉），`build.sh` 從這裡產出網站：`sim-*.js`／`simulation.js` 模擬、`app*.js` 介面、`town3d.js` 3D、`i18n*.js` 翻譯、`changelog.js` 更新紀錄 |
 | `api/` | Vercel Serverless Functions：帳號、雲端存檔、成就、排行榜、AI 對話代理 `/api/chat`（所有金鑰只放在 Vercel 環境變數，前端看不到） |
-| `scripts/` | 檢查與測試腳本（見「發版前必跑」） |
+| `scripts/` | 檢查與測試腳本（見「開發、測試、部署流程」；全套回歸 `run-all-tests.sh`、上線檢查 `live-check.sh`） |
 | `build.sh`、`vercel.json` | Vercel 建置：輸出到 `public/` |
 
 部署：正式分支是 `claude/ai-town-simulation-EOWZ8`（GitHub 預設分支），合併後 Vercel 自動部署到 rimtown.cc；開發在 `claude/llm-dialogue-memory-port-u8lf0x`。
@@ -422,9 +424,136 @@ A god's-eye AI town sandbox in the browser: every villager is an autonomous AI a
 
 ---
 
-## 發版前必跑
+## 開發、測試、部署流程（每次更新都照這個走）
 
-> **部署節奏（2026-10-11 起）**：Vercel Hobby 每天 100 次部署整個帳號共用，所以開發分支 `claude/llm-dialogue-memory-port-u8lf0x` 在 `vercel.json` 的 `git.deploymentEnabled` 設為 false（推送不產生預覽部署）；合併到 `claude/ai-town-simulation-EOWZ8`（＝正式部署）固定每天兩次：台北時間早上 08:52 與晚上 20:52，期間的版本先累積在分支；使用者明說「馬上部署」才例外。
+> 只看這一節就知道一個改動從寫程式到上線要經過哪些步驟。玩法與智能體大腦怎麼運作，見 [`GAMEPLAY_AND_AGENT_BRAIN.md`](GAMEPLAY_AND_AGENT_BRAIN.md)。
+
+### 一、寫程式的規則
+
+**安全**
+
+1. **AI 金鑰只放在 Vercel 環境變數。** 網頁原始碼、存檔、測試腳本、commit、PR 裡都不能出現金鑰。玩家不需要、也不能填自己的金鑰。
+2. 每次上線後都要掃一次線上所有程式檔（見「四、部署」），命中數必須是 0。
+
+**遊戲規則**
+
+3. **玩家是觀察者。** 玩家不能控制任何村民；能做的只有觀看和神力（事件卡、託夢、化身旅人、寫一句話、災厄工坊）。
+4. **村民的決定一律走決策核心。** 新系統如果需要「某人要不要做某件事」，用 `DECIDE.kind()` 登記成選擇點，列出做得到的選項，由本人選；不准再寫「每天有 2% 機率會做」這種擲骰。新系統要讓 AI 看得到它，用 `DECIDE.source()` 登記一句話。寫法見 `DESIGN_DECIDE.md`。
+5. **決策核心沒有開關。** 「完整智能體模式」只決定要不要問 AI；關掉時照個性和處境決定。
+6. **AI 一定要有後備。** 任何問 AI 的地方，AI 沒開、沒額度、沒回話、答非所問時，都要有規則版接手，不能讓人卡著等。
+7. **銀幣守恆。** 錢一律透過 `WALLET.pay` 等既有的結算函式從一個人轉到另一個人（或公庫）。不能憑空產生或銷毀銀幣；從外地進來的錢一定是賣了東西換來的。
+8. **存檔只能往前、舊存檔永遠讀得開。** 見下方「存檔保護規範」。新欄位在 `loadSave` 要給預設值；不改儲存路徑和鍵名；程式絕不自動刪除雲端存檔。
+
+**介面與文字**
+
+9. **只有深色主題。**
+10. **改版不能讓資訊變少。** 重新排版可以，原本看得到的資訊和功能一項都不能少。
+11. **手機一定要能用。** 390px 寬不能橫向捲動，點擊目標至少 44px，文字至少 12px。
+12. **所有給人看的文字都要能翻譯。** 寫成 `t('中文')`，英文加在 `chrome-extension/i18n-en.js`。給 AI 的題目在英文模式下也要是英文。
+13. **文字講人話。** 繁體中文、台灣用語；不用破折號；少用「不是……而是……」這類句型；首頁不用表情符號當圖示。
+
+**新增檔案**
+
+14. 新的前端檔要同時加進 `index.html`／`town.html`（看哪一頁要用）和 `sw.js` 的快取清單，否則離線快取會漏掉。
+
+### 二、每一版要改的地方
+
+| 改哪裡 | 改什麼 |
+|---|---|
+| `chrome-extension/app.js` | `RIMTOWN_APP_VERSION` |
+| `chrome-extension/sw.js` | `CACHE_NAME`（例如 `rimtown-v9.29.2`），新檔加進快取清單 |
+| `chrome-extension/changelog.js` | 用 `node scripts/gen-changelog.js --add entry.json` 加一筆（中英都要寫） |
+| `README.md` 路線圖 | 加一列 `🧪 待部署`，上線後改成 `✅ 已上線` |
+| `scripts/` | 新功能新增 `vXXXXX_test.js`；修 bug 要加一項會重現那個 bug 的檢查 |
+
+### 三、測試
+
+**1. 寫測試的規則**
+
+- **修 bug 先重現。** 加的檢查要先用舊程式跑一次、確認會失敗，再用新程式跑、確認通過。PR 裡寫出「舊程式這項失敗、新程式通過」。
+- **不准為了讓測試通過而跳過、停用或刪掉檢查。** 測試跟新的正確行為不符時，改測試，並寫清楚為什麼舊的寫法不對。
+- 測試要中英文都跑；有畫面的要包含手機尺寸。
+
+**2. 快速檢查（改完就跑，幾秒鐘）**
+
+```
+node scripts/method-audit.js     # 呼叫到的方法都有定義
+node scripts/i18n-audit.js       # 翻譯沒有重複鍵、新字串都有英文
+node scripts/cjk-punct-audit.js  # 沒包 t() 的中文標點沒有變多
+```
+
+**3. 相關測試（改哪裡跑哪裡）**
+
+```
+bash scripts/run-all-tests.sh v929 v6771 landing   # 只跑檔名含這些字的測試
+```
+
+**4. 全套回歸（每個版本送出前必跑，約 55 分鐘）**
+
+```
+bash scripts/run-all-tests.sh
+```
+
+- 會自己開本機 8126 服務，`scripts/` 裡每一支 `*_test.js` 都跑（不含要跑很久的 `loopaudit_test`），3 支同時。
+- 結果在 `test-results/summary.txt`，每支的輸出在 `test-results/<名稱>.log`。
+- 第一輪沒過的，腳本會自動單獨重跑兩次：
+  - **兩次都過**：算偶發（多半是機器滿載逾時，或測試用的鎮是隨機產生的）。要看 log 寫下原因，放進 PR 說明。
+  - **還是失敗**：就是壞了，要修好才能送出。
+- 只改首頁或文件、沒動遊戲程式時，可以只跑相關測試，但 PR 裡要寫明「沒跑全套回歸」和原因。
+
+**5. 跟行為有關的大改動**
+
+- 改到村民怎麼決定事情、錢怎麼流動時，用固定亂數種子，新舊程式各跑 60 天，把每一筆動態逐字比對（9.28.1 的做法）。
+- 改到問 AI 的題目時，要接上真的 AI 跑一輪：中文、英文各一次，記下每一次呼叫的題目、原始回覆和解析結果，確認全部有回、格式正確、選項合法（9.28.2 的做法）。
+
+**6. 畫面改動**
+
+- 截圖看過再送出：桌機、手機（390px 與 430px）、中英文。
+- 截圖給使用者看時，標明是本機還是線上、有沒有部署。
+
+### 四、部署
+
+**分支**
+
+| 分支 | 用途 |
+|---|---|
+| `claude/llm-dialogue-memory-port-u8lf0x` | 開發分支。推上去不會部署（`vercel.json` 的 `git.deploymentEnabled` 關掉，因為 Vercel 免費方案每天部署次數有限）。 |
+| `claude/ai-town-simulation-EOWZ8` | 正式分支。合併進來就自動部署到 https://rimtown.cc 。 |
+
+**步驟**
+
+1. 在開發分支改好、測試過，推上去。
+2. 開**草稿** PR 到正式分支。說明寫清楚：改了什麼、為什麼、測試結果（含偶發失敗的原因）、沒做的事。
+3. **等使用者說「部署 X」**（X 是版本號）才合併。沒說之前，任何改動都只停在開發分支。
+4. 合併前確認 PR 沒有衝突、開發分支最新的 commit 就是要上線的那一版；把草稿轉成正式，用 squash 合併。
+5. 等線上換版並掃金鑰：
+
+   ```
+   bash scripts/live-check.sh 9.29.2
+   ```
+
+   會等 rimtown.cc 的 `sw.js` 換成這個版本，再把線上所有程式和樣式檔抓下來掃金鑰樣式，命中必須是 0。
+
+6. **線上實機確認**：用瀏覽器開線上的首頁和遊戲頁（登入後），中文、英文、手機都看過，確認沒有程式錯誤、改的地方真的生效。改到 AI 的版本，要在線上接真的 AI 再確認一次。
+7. 收尾：
+   - 開發分支重新接在正式分支上（不能強制推送）：
+
+     ```
+     git fetch origin claude/ai-town-simulation-EOWZ8 claude/llm-dialogue-memory-port-u8lf0x
+     git checkout -B claude/llm-dialogue-memory-port-u8lf0x origin/claude/ai-town-simulation-EOWZ8
+     git merge -s ours origin/claude/llm-dialogue-memory-port-u8lf0x
+     git push origin claude/llm-dialogue-memory-port-u8lf0x
+     ```
+
+   - README 路線圖把這一版改成 `✅ 已上線`，放進下一個 PR。
+
+**出問題時**：上線後發現壞了，先回報使用者；要退版也要使用者同意。
+
+---
+
+## 各測試在驗什麼（舊清單，查詢用）
+
+> 這份清單從 v5 開始累積，v9.19 之後新增的測試沒有全部列進來；**實際要跑的以 `bash scripts/run-all-tests.sh` 為準**（它會跑 `scripts/` 裡全部的 `*_test.js`）。每支測試檔開頭都有註解寫它在驗什麼。
 
 ```
 node scripts/method-audit.js   # 前端 this._xxx() 呼叫都有定義(v5.66.6 起;v6.0.0 起連同 app-*.js 分檔一起掃)

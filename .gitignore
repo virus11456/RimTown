@@ -10,3 +10,4 @@ build/
 .pytest_cache/
 .claude/
 node_modules/
+test-results/
