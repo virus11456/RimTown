@@ -41,21 +41,42 @@ const instructions = {
     supplement: '只新增 impacts 與 concerns；不改舊評估、不帶選擇。不要求支持初步提案，記錄未確定事項。',
     confirmation: '依補充評估重新確認或修改選擇，格式同 choice；可回 {"withdraw":true} 撤回。不得因為先前提案就必須維持。'
 };
+// Transport kinds. Only these may reach the evaluator; anything else is rejected before any send.
+const FIXTURE = 'TEST_FIXTURE_HANDWRITTEN';
+const PROVIDER_KINDS = ['LIVE_ANTHROPIC', 'FAKE_PROVIDER_FORMAT', 'REPLAY_LIVE_RECORDING']; // built only by psy_research_live.js
+function stageRequest(config, stage, input, appraisal, proposal) {
+    return { protocol: 'psy-research-v1', contract: PSY.CONTRACT, stage, instruction: instructions[stage], input, ...(appraisal ? { appraisal } : {}), ...(proposal ? { proposal } : {}), max_output_tokens: config.maxOutputTokens, provider_settings: config.providerSettings || {} };
+}
+// One research interface for all four stages (appraisal, choice, supplement, confirmation) and every transport:
+// each call reserves budget before sending, records the request and raw response, and settles from provider usage.
 function createEvaluator(config, transport, budget, records = []) {
-    // Real provider wiring requires a separate implementation and explicit authorization.
-    if (config.mode !== 'fixture' || transport.kind !== 'TEST_FIXTURE_HANDWRITTEN') throw new Error('live_transport_disabled');
-    if (Object.keys(config.providerSettings || {}).some(k => !['temperature', 'effort', 'seed'].includes(k))) throw new Error('unsupported_provider_setting');
+    const provider = PROVIDER_KINDS.includes(transport?.kind);
+    if (provider) { if (transport.verified !== true || typeof transport.prepare !== 'function') throw new Error('live_transport_disabled'); }
+    else if (config.mode !== 'fixture' || transport?.kind !== FIXTURE) throw new Error('live_transport_disabled');
+    if (!provider && Object.keys(config.providerSettings || {}).some(k => !['temperature', 'effort', 'seed'].includes(k))) throw new Error('unsupported_provider_setting');
     const call = async (stage, input, appraisal, proposal) => {
-        const request = { protocol: 'psy-research-v1', contract: PSY.CONTRACT, stage, instruction: instructions[stage], input, ...(appraisal ? { appraisal } : {}), ...(proposal ? { proposal } : {}), max_output_tokens: config.maxOutputTokens, provider_settings: config.providerSettings };
-        const row = budget.reserve(request);
-        const record = { call: row.call, request_hash: PSY.hashOf(request), request: clone(request), model: config.model, channel: config.channel, fixture: true, status: 'started' }; records.push(record);
+        const request = stageRequest(config, stage, input, appraisal, proposal);
+        const wire = provider ? transport.prepare(request) : request; // provider body (no credentials) or the fixture request itself
+        const row = budget.reserve(wire);
+        const record = { call: row.call, request_hash: PSY.hashOf(request), request: clone(request), model: config.model, channel: config.channel, fixture: transport.kind === FIXTURE, source: transport.source || transport.kind, status: 'started' };
+        if (provider) { record.wire_hash = PSY.hashOf(wire); record.wire = clone(wire); record.started_at = new Date().toISOString(); }
+        records.push(record); const t0 = Date.now();
         try {
-            const response = await transport.send(PSY.freeze(clone(request)));
-            record.raw = clone(response); budget.settle(row, response.usage);
+            const response = await transport.send(PSY.freeze(clone(request)), wire);
+            record.raw = clone(provider ? response.raw : response); if (provider) Object.assign(record, { duration_ms: Date.now() - t0, provider: clone(response.meta || {}) });
+            budget.settle(row, response.usage);
+            // Technical pending: truncated output, bad JSON, refusal, provider errors. Never turned into a character choice.
+            if (response.fail) { record.status = 'technical_pending'; record.error = response.fail; throw Object.assign(new Error(response.fail), { fail: response.fail }); }
             record.status = 'returned'; return clone(response.value);
-        } catch (e) { if (row.status === 'reserved') { row.status = 'failed_reserved'; budget.persist(); } record.status = 'failed'; record.error = String(e.message); throw e; }
+        } catch (e) {
+            if (row.status === 'reserved') { row.status = 'failed_reserved'; budget.persist(); }
+            if (record.status !== 'technical_pending') { record.status = 'failed'; record.error = String(e.fail || e.message); }
+            if (provider && record.duration_ms === undefined) { record.duration_ms = Date.now() - t0; if (e.meta) record.provider = clone(e.meta); if (e.raw !== undefined) record.raw = clone(e.raw); }
+            throw e;
+        }
     };
-    return { id: 'research-fixture', version: '1', contract: PSY.CONTRACT, fixture: true, appraise: i => call('appraisal', i), choose: (i, a) => call('choice', i, a), supplement: (i, a, p) => call('supplement', i, a, p), confirm: (i, a, p) => call('confirmation', i, a, p) };
+    const id = provider ? (transport.evaluatorId || 'research-provider') : 'research-fixture';
+    return { id, version: provider ? String(transport.evaluatorVersion || '1') : '1', contract: PSY.CONTRACT, fixture: !provider, appraise: i => call('appraisal', i), choose: (i, a) => call('choice', i, a), supplement: (i, a, p) => call('supplement', i, a, p), confirm: (i, a, p) => call('confirmation', i, a, p) };
 }
 // Same handwritten answer for every variant: demonstrates plumbing only, not sensitivity.
 function fixtureTransport() {
@@ -72,18 +93,19 @@ function replayTransport(records) {
         return clone(row.raw);
     } };
 }
-async function run(dataset, config, transport = fixtureTransport(), budget = new Budget(config)) {
+async function run(dataset, config, transport = fixtureTransport(), budget = new Budget(config), opts = {}) {
+    const timeoutMs = opts.timeoutMs ?? config.stageTimeoutMs ?? 1000;
     const calls = [], evaluations = [];
     const evaluator = createEvaluator(config, transport, budget, calls);
     for (let repeat = 0; repeat < dataset.repeats; repeat++) for (const c of dataset.cases) {
         if (PSY.hashOf(c.input) !== c.input_hash) throw new Error('input_hash_mismatch');
-        const result = await PSY.evaluate({ input: c.input }, [evaluator], { timeoutMs: 1000 }); // No result cache; no audit or treatment labels sent.
+        const result = await PSY.evaluate({ input: c.input }, [evaluator], { timeoutMs }); // No result cache; no audit or treatment labels sent.
         evaluations.push({ case_id: c.case_id, repeat, result });
-        if (budget.locked || result.tries.some(t => /budget_|usage_exceeded/.test(t.fail || ''))) return { calls, evaluations, budget, stopped: true };
+        if (budget.locked || result.tries.some(t => /budget_|usage_exceeded|concurrent_request|unexpected_billing/.test(t.fail || ''))) return { calls, evaluations, budget, stopped: true };
     }
     return { calls, evaluations, budget, stopped: false };
 }
-module.exports = { Budget, createEvaluator, fixtureTransport, replayTransport, run };
+module.exports = { Budget, createEvaluator, fixtureTransport, replayTransport, run, stageRequest, instructions, FIXTURE, PROVIDER_KINDS };
 if (require.main === module) {
     const fs = require('fs'), path = require('path');
     (async () => {

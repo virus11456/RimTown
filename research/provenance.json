@@ -78,5 +78,79 @@
     "node scripts/psy_d1_unit_test.js",
     "node scripts/psy_d1_shadow_local_test.js 30 22 2 test-results/shadow_30",
     "node scripts/psy_d1_shadow_local_test.js 90 7 3 test-results/shadow_90"
-  ]
+  ],
+  "live_adapter_prep": {
+    "base_commit": "2ba423a9f289adef4f0a64e49357cc04f80512f1",
+    "node": "22.22.0",
+    "sdk": "@anthropic-ai/sdk 1.8.0",
+    "provider_api_requests": 0,
+    "docs_checked_on": "2026-11-14",
+    "sources": [
+      {
+        "path": "scripts/psy_research_live.js",
+        "bytes": 24100,
+        "sha256": "8e32aa30d2d3584790a3d55e711792c7a323dfee75bece8218f5277c0603ee7b"
+      },
+      {
+        "path": "scripts/psy_research_live_test.js",
+        "bytes": 23276,
+        "sha256": "a7d1dcffbec8112b2c00d73bcd0768f196e8eeb02e5d9d56e712c4b4c453c882"
+      },
+      {
+        "path": "scripts/psy_research.js",
+        "bytes": 12129,
+        "sha256": "215a1a42199eb2c457cb419dcc12740e43ce4c9739194556fbc604d3b695d2ab"
+      },
+      {
+        "path": "research/anthropic-research.json",
+        "bytes": 3129,
+        "sha256": "7e107cd289e98b72f7f224d43b8b99135d174659619c007580bb831adc69aa7b"
+      },
+      {
+        "path": "research/package.json",
+        "bytes": 221,
+        "sha256": "68323168b5d76dbb445012b544423f008f44252098573786653abd80f3acf46b"
+      },
+      {
+        "path": "research/package-lock.json",
+        "bytes": 3370,
+        "sha256": "70cd48dc2ea0d5c376fb8835c68553523f711732aa54ed3634ee3e30fd821a82"
+      },
+      {
+        "path": "research/README.md",
+        "bytes": 10152,
+        "sha256": "841285f4be04d112b396791f202bead47bc03895aecc31b4be8189550ca99cbb"
+      },
+      {
+        "path": "research/loan-pairs.json",
+        "bytes": 37208,
+        "sha256": "22726245017be80240fdbda7e5f2d402bdcb937ccc52d9cdeed0707f2338e33c"
+      },
+      {
+        "path": "HANDOFF_HUMANLIKE_D1.md",
+        "bytes": 6200,
+        "sha256": "1f011c84d280a373118656d118096d5d082c6c6acaaa91ca56ece262a8fd57fe"
+      }
+    ],
+    "commands": [
+      "node scripts/psy_research_live_test.js",
+      "node scripts/psy_research_test.js",
+      "node scripts/psy_d1_unit_test.js",
+      "unshare -rn (same three, no network namespace)",
+      "node scripts/psy_research_live.js --check",
+      "node scripts/psy_research_live.js --live (refused, exit 3)",
+      "node scripts/psy_research_live.js --fake-provider",
+      "node scripts/psy_research_live.js --replay <run.json>"
+    ],
+    "results": {
+      "live_adapter_test": "32 checks passed; global fetch calls 0",
+      "research_test": "21 checks passed",
+      "d1_unit": "140 passed, 0 failed",
+      "fake_provider_dry_run": "12 evaluations, 24 calls, offline; per-request reservation US$0.071-0.076",
+      "replay": "24 calls, identical evaluations, zero spend"
+    },
+    "local_outputs_not_uploaded": [
+      "test-results/loan-research-fake-provider/loan-pairs-sonnet55-r1/"
+    ]
+  }
 }

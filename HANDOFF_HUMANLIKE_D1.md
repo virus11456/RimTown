@@ -1,34 +1,80 @@
-# D1 交接：借錢研究接口與配對資料
+# D1 交接：借錢研究接口（Anthropic adapter，線上預設關閉）
 
-從 `b3a004047029bda9b0971deed5f2a20adb1c675e` 接續。使用者已授權將本次修改提交到 D1 分支供接手；仍不接真實 AI、不開始 D2、不合併正式分支、不手動部署。
+接續 `2ba423a`（借錢配對資料、評估器接口、預算控制）。本輪準備真實 AI 研究接口，但**沒有發出任何供應商 API 請求**：沒有測試金鑰、沒有列出模型、沒有遠端計算 token。不接管遊戲行為、不擴充失火情境、不開始 D2、不合併正式分支、不手動部署。
 
-## 已完成
+## 本輪完成
 
-- 核心不再把玩家可見的健康訊息當成角色知情；本人記憶仍可取用。補評估後需由評估器確認、改選或撤回，保留原提案和評估版本。
-- D1 單元測試 140/140。30 天（22／等級 2）和 90 天（7／等級 3）瀏覽器測試各 57/57；範圍與環境差異見 `LOCAL_REVIEW.md`。私有等待名單未直接比對。
-- `research/loan-pairs.json`：4 個人工建立的同人配對版本，每份 3 次；無指定正確動作。版本名稱與配對目的不送給評估器，結果快取停用。
-- `scripts/psy_research.js`：四階段 transport 介面、紀錄及精確重播、呼叫前預留費用、持久預算紀錄和 CLI 獨占鎖。線上模式直接拒絕，沒有 HTTP adapter，也不讀金鑰。
-- `scripts/psy_research_test.js`：21 項檢查通過，含配對差異、重播、金額／次數上限、失敗、逾時、重啟、補評估及確認階段的預算控制。
-- 固定回應實跑兩次，各 12 份評估／24 次 transport 呼叫；持久紀錄累計 48 次。模擬記帳合計 US$0.1152，實際 API 費用為零。手寫回應不是人物心理成果。
+- **研究設定**：`research/anthropic-research.json`
+  - Anthropic 官方 API、`claude-sonnet-5-5`、`https://api.anthropic.com`。
+  - 金鑰環境變數 `RIMTOWN_RESEARCH_API_KEY`；workspace ID 環境變數 `RIMTOWN_RESEARCH_WORKSPACE_ID`（非秘密）。
+  - US$5、60 次、同時 1 個、`max_tokens` 4096、零重試、不換模型、不快取。
+  - 費率、API 版本、參數支援都在 2026-11-14 依官方文件核對；來源 URL 寫在設定檔。
+- **adapter**：`scripts/psy_research_live.js`
+  - 用官方 SDK `@anthropic-ai/sdk` 1.8.0（`research/package.json`，不在網站建置內）。
+  - 四個階段都經過同一個 `createEvaluator` 與預算入口。
+  - 有請求本文、回應解析、usage 記帳（nano-USD）、截斷與錯誤分類、獨立的線上帳本、離線重播、來源標記。
+- **核心介面**：`scripts/psy_research.js`
+  - `createEvaluator` 同時接手寫回應與供應商格式的 transport；未通過驗證的 transport 一律拒絕。
+  - `run()` 可傳研究專用逾時；遊戲核心與原本的 2 秒預設都沒改。
+- **離線測試**：`scripts/psy_research_live_test.js`，32 項通過，詳見下方「測試結果」。
 
-## 檔案與操作
+## 測試結果（本輪實跑，Node v22.22.0）
 
-閱讀 `research/README.md`。在 repo 根目錄執行：
+| 指令 | 結果 |
+|---|---|
+| `node scripts/psy_research_live_test.js` | 32 checks passed；全域 fetch 呼叫 0 |
+| `node scripts/psy_research_test.js` | 21 checks passed |
+| `node scripts/psy_d1_unit_test.js` | 140 passed, 0 failed |
+| 以上三項在 `unshare -rn`（沒有網路的命名空間，連線回 `ENETUNREACH`）重跑 | 結果相同 |
+| `node scripts/psy_research_live.js --check` | 列出 5 個擋下原因：network_gate_closed、cli_live_flag_missing、live_confirmation_missing、api_key_env_missing、input_bound_assumption_unacknowledged |
+| `--live`（含設了假金鑰的情況） | 拒絕，exit 3 |
+| `--fake-provider` 演練 | 12 份評估、24 次請求（假回應，未連線）；單次預留 US$0.071～0.076；模擬結算 US$0.107（假 usage，不是真實費用） |
+| `--replay` 該次演練 | 24 次、評估結果完全相同、不記帳 |
 
-```sh
-node scripts/psy_loan_pairs.js
-node scripts/psy_research_test.js
-node scripts/psy_research.js
-```
+32 項離線測試涵蓋：
+- 四階段正常流程；補評估後維持、修改、撤回。
+- 解析：fenced JSON、壞 JSON、截斷、拒答、模型不符。
+- 錯誤：429、500、529、400、401、網路錯誤、逾時。每種都只送一次，保留預留額度，不產生選擇。
+- 預算不足時完全不呼叫傳送函式；達到請求上限就停。
+- 重啟、重複執行、程序崩潰時沒結算的預留；同時兩個請求、兩個程序搶同一批次。
+- 同一輸入三次重複是三次獨立請求。
+- 來源標記；手寫紀錄與供應商紀錄互相不能重播；離線重播零花費。
+- 全程不需要金鑰；閘門缺任一條件都擋。
+- 選擇不同的固定回應都能通過，驗證器不偏好任何答案。
 
-CLI 預算紀錄在 `test-results/loan-research-fixture/budget.json`，輸出另建 run 目錄，不覆寫前次結果。`test-results/`、本機 `.baseline`、`changes.patch` 不作為本次提交內容；後續 agent 可從上述基準 commit 取得原版。版本與結果雜湊在 `research/provenance.json`，合成配對資料和程式隨提交保存；本機原始輸出未上傳，無法僅靠雜湊還原它。
+## 真實測試前還缺的條件
 
-## 接下來
+1. **使用者明確下令開始真實測試。** 沒有這個指令，維持關閉。
+2. **金鑰存放位置確認**：程式只讀 `RIMTOWN_RESEARCH_API_KEY`。請確認這個名稱或其他安全存放方式，不要把值貼進聊天、檔案或 GitHub。
+3. **金鑰是否已綁定研究 workspace**：
+   - 已綁定：不用填 workspace ID。
+   - 未綁定：提供研究 workspace ID（非秘密）。
+4. **輸入 token 上限的依據**：目前用「請求本文 UTF-8 位元組數＋2048」，前提是每個計費 token 至少對應一個位元組。官方文件沒有寫明這一點，所以 `inputBound.assumptionAcknowledged` 預設 `false`，線上模式被擋。可以選：
+   - 接受這個前提。
+   - 改用免費的 token counting 端點（官方說是估計值，而且每次也算一個 API 請求，預算入口要另外設計）。
+5. **研究 workspace 的 `inference_geo` 預設**：未知時一律以 ×1.1 預留；若確認是 global，可以只當作紀錄。
+6. **Console 支出上限（建議）**：本機帳本是批次控制，不是帳戶層級保證。建議在 Console 對研究 workspace 另設支出上限。
+7. **開啟動作**：上述條件都齊了以後，才把 `network.allowLive` 改成 `true`，設 `RIMTOWN_RESEARCH_LIVE_CONFIRM=loan-pairs-sonnet55-r1`，再執行 `node scripts/psy_research_live.js --live`。
 
-1. 先檢視配對資料與提示契約是否充分；不能把固定拒絕的手寫回應當成正式後備。
-2. 尚未選研究模型、真實渠道、實際費率或金鑰來源。使用者授權前不要新增線上呼叫。`config.json` 的 US$5／60 次是離線控制測試設定，模型仍為 UNSET。
-3. 未來真實渠道須支援可驗證的 token 計數與輸出上限，核實所有計費項目，再接入同一預算入口；原始回應／重播標記也須區分真實回應與人工 fixture。現有保守估算不是供應商費用保證。
-4. 先人工檢查評估有沒有理解可知變動及引用依據，再看選擇；不得把「有醫療支出必須拒絕」當驗收。
-5. 失火情境暫停，住房殘留及舊請求金額側漏保留；不在本輪擴充或修正。研究金額固定，沒有修復舊遊戲側漏。
+## 已知限制
 
-PR #279 仍以開發分支為 base；#278 已 squash 合併。這輪不改 base、不合併正式分支，避免把分支整理與研究準備混在一起。推送可能觸發既有 Vercel 預覽工作，沒有手動執行部署。
+- 4096 token 包含 thinking；effort `high` 下有可能被 thinking 用完而截斷。截斷記成技術待處理，不會改答案，也不會自動重試。
+- 回應若不是單一 JSON 物件（前後夾說明文字）就算 `bad_json`；只接受整段被單一 ```json 區塊包住的情況。
+- 逾時（含 SDK 逾時與核心的每階段逾時）一律保留預留額度。核心逾時時 SDK 請求可能還在跑，下一個請求會因 `concurrent_request_open` 被擋，批次停止，不會兩個請求同時在途。
+- 拒答（`refusal`）記成技術待處理，不切換到其他模型。
+- 手寫回應與假回應的結果都不是人物心理成果；不得宣稱擬人化有成果。
+- 失火情境暫停；住房殘留狀態、舊流程用放款人現金算借款金額的問題，仍然只記錄。
+
+## 檔案
+
+| 檔案 | 用途 |
+|---|---|
+| `research/anthropic-research.json` | 研究設定（閘門關閉） |
+| `research/package.json`、`research/package-lock.json` | SDK 依賴（只在 research/） |
+| `research/README.md` | 研究說明、費率依據、閘門、預算規則、執行方式 |
+| `research/provenance.json` | 檔案雜湊與本輪測試紀錄 |
+| `scripts/psy_research_live.js` | Anthropic adapter 與 CLI |
+| `scripts/psy_research_live_test.js` | 離線測試 |
+| `scripts/psy_research.js` | 共用研究接口（手寫回應與供應商格式） |
+
+本機輸出放在 `test-results/`，不進版控。

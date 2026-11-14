@@ -1,0 +1,66 @@
+{
+  "schema": 1,
+  "batchId": "loan-pairs-sonnet55-r1",
+  "provider": "anthropic",
+  "baseURL": "https://api.anthropic.com",
+  "sdk": "@anthropic-ai/sdk",
+  "sdkVersion": "1.8.0",
+  "apiVersion": "2026-10-21",
+  "model": "claude-sonnet-5-5",
+  "channel": "anthropic-api-research-workspace",
+  "credentials": {
+    "apiKeyEnv": "RIMTOWN_RESEARCH_API_KEY",
+    "workspaceIdEnv": "RIMTOWN_RESEARCH_WORKSPACE_ID",
+    "workspaceId": null,
+    "note": "只寫環境變數名稱；金鑰值不得出現在任何檔案、紀錄或 GitHub。金鑰若已綁定研究 workspace，workspace ID 留空；未綁定時填研究 workspace ID（非秘密），送出 anthropic-workspace-id。"
+  },
+  "network": {
+    "allowLive": false,
+    "confirmEnv": "RIMTOWN_RESEARCH_LIVE_CONFIRM",
+    "note": "預設關閉。真實測試要同時：使用者明確下令開始、這裡改為 true、CLI 加 --live、環境變數 RIMTOWN_RESEARCH_LIVE_CONFIRM 等於 batchId，並通過 inputBound 等其他檢查。"
+  },
+  "maxRequests": 60,
+  "maxConcurrency": 1,
+  "maxCostNanoUSD": 5000000000,
+  "maxOutputTokens": 4096,
+  "retries": 0,
+  "modelFallback": false,
+  "resultCache": false,
+  "promptCache": false,
+  "sdkTimeoutMs": 120000,
+  "stageTimeoutMs": 150000,
+  "providerSettings": {},
+  "reasoning": {
+    "thinking": "不送（官方預設：claude-sonnet-5-5 為 adaptive thinking；不可設 disabled）",
+    "effort": "不送（官方預設：high）",
+    "display": "不送（官方預設：omitted，thinking 內容不回傳，但照樣計費）",
+    "temperature_top_p_top_k": "不送（API 2026-10-21 起送出即 400；Sonnet 5.5 原本也不接受非預設值）",
+    "seed": "Messages API 沒有這個參數",
+    "fallbacks": "不送（使用者要求關閉自動換模型）"
+  },
+  "inputBound": {
+    "method": "utf8_bytes_plus_overhead",
+    "overheadTokens": 2048,
+    "assumptionAcknowledged": false,
+    "note": "輸入上限＝請求本文 UTF-8 位元組數＋2048。前提是每個計費 token 至少對應一個位元組；官方文件沒有寫明這點，所以預設未確認、線上模式被擋。"
+  },
+  "pricing": {
+    "model": "claude-sonnet-5-5",
+    "unit": "nanoUSD_per_token",
+    "input": 2000,
+    "output": 10000,
+    "cacheWrite5m": 2500,
+    "cacheWrite1h": 4000,
+    "cacheRead": 100,
+    "geo": { "global": [1, 1], "us": [11, 10] },
+    "worstGeo": [11, 10],
+    "verifiedOn": "2026-11-14",
+    "sources": [
+      "https://platform.claude.com/docs/en/about-claude/pricing",
+      "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "https://platform.claude.com/docs/en/build-with-claude/thinking",
+      "https://platform.claude.com/docs/en/api/messages/create"
+    ],
+    "notes": "基本輸入 $2、輸出 $10、5 分鐘快取寫入 $2.50、1 小時快取寫入 $4、快取讀取 $0.10（每百萬 token）。1M context 全程同價。inference_geo 為 us 時全部 ×1.1；未指定時用 workspace 的預設，所以預留一律用 ×1.1。thinking token 以輸出計費並計入 max_tokens。沒有使用工具、伺服器工具、快取、批次、fast mode。"
+  }
+}
