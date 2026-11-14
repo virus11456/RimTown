@@ -35,7 +35,7 @@
 
     // ================= 股份 =================
     // ---------- 合夥的股東處不來：要不要出錢買斷 ----------
-    const buyoutInfo = (w, a) => { const S = SH(); return S && w.market && S.byShare(w) ? S.buyoutInfo(w, a) : null; };
+    const buyoutInfo = (w, a) => { const S = SH(); return S && w.market && DECIDE.on(w) ? S.buyoutInfo(w, a) : null; };
     DECIDE.kind('buyout', {
         title: '合夥的股東處不來', cool: 7, pri: 1.2,
         when(w, a) { const I = buyoutInfo(w, a); return I ? { k: I.k, o: I.o.agentId } : null; },
@@ -56,7 +56,7 @@
     });
 
     // ---------- 這週的帳要不要少報一點 ----------
-    const cookInfo = (w, a) => { const S = SH(); return S && w.market && S.byShare(w) ? S.cookInfo(w, a) : null; };
+    const cookInfo = (w, a) => { const S = SH(); return S && w.market && DECIDE.on(w) ? S.cookInfo(w, a) : null; };
     DECIDE.kind('cook', {
         title: '這週的帳要不要少報一點', cool: 7, pri: 1,
         when(w, a) { const I = cookInfo(w, a); return I ? { k: I.k } : null; },
@@ -77,7 +77,7 @@
     });
 
     // ---------- 要不要帶頭合股買下公營產業 ----------
-    const synInfo = (w, a) => { const S = SH(); return S && w.market && S.byShare(w) ? S.synInfo(w, a) : null; };
+    const synInfo = (w, a) => { const S = SH(); return S && w.market && DECIDE.on(w) ? S.synInfo(w, a) : null; };
     DECIDE.kind('syndicate', {
         title: '要不要帶頭合股買下公營產業', cool: 7, pri: 1.3,
         when(w, a) { const I = synInfo(w, a); return I ? { k: I.k } : null; },
@@ -98,7 +98,7 @@
     });
 
     // ---------- 要不要認購自家店的股份 ----------
-    const staffInfo = (w, a) => { const S = SH(); return S && w.market && S.byShare(w) ? S.staffInfo(w, a) : null; };
+    const staffInfo = (w, a) => { const S = SH(); return S && w.market && DECIDE.on(w) ? S.staffInfo(w, a) : null; };
     DECIDE.kind('staffshare', {
         title: '要不要認購自家店的股份', cool: 14, pri: 1,
         when(w, a) { const I = staffInfo(w, a); return I ? { k: I.k } : null; },
@@ -123,7 +123,7 @@
     { const K = DECIDE.KINDS.pinch;
       if (K && !K._mort) { K._mort = true; const _opts = K.options;
         K.options = function (w, a, ctx) {
-            const out = _opts.call(this, w, a, ctx) || []; const E = ES(); let I = null; try { I = E && E.byShare?.(w) ? E.mortInfo(w, a) : null; } catch (e) {}
+            const out = _opts.call(this, w, a, ctx) || []; const E = ES(); let I = null; try { I = E && DECIDE.on(w) ? E.mortInfo(w, a) : null; } catch (e) {}
             if (I) out.push({ id: 'mortgage', text: { k: '拿自己的房子去銀行抵押，借 {n} 銀幣（20 天內還清；還不出來房子會被銀行收走）', p: { n: I.n } }, say: '拿房子去銀行抵押借錢', why: '房子還在，總比餓肚子好',
                 base: 1.6, lean: { safe: -0.2, face: 0.3 }, // 有房子又手頭很緊的人，大約四次裡有一次會選抵押(沒有朋友可以開口時更常)；以前是每天四成機率直接押
                 run: (w2, a2) => { const got = E.mortBy(w2, a2); return got ? { k: '抵押借到 {n} 銀幣', p: { n: got } } : { k: '銀行不肯借' }; } });
@@ -131,7 +131,7 @@
         }; } }
 
     // ---------- 銀行在擠兌：存款要不要領出來 ----------
-    const runInfo = (w, a) => { const B = BK(); return B && w.bank && B.byShare(w) ? B.runInfo(w, a) : null; };
+    const runInfo = (w, a) => { const B = BK(); return B && w.bank && DECIDE.on(w) ? B.runInfo(w, a) : null; };
     DECIDE.kind('bankrun', {
         title: '銀行在擠兌，存款要不要領出來', cool: 1, pri: 2.5,
         when(w, a) { const I = runInfo(w, a); return I ? { d: I.day } : null; },
@@ -153,7 +153,7 @@
     });
 
     // ---------- 銀行在賣債券：要不要買 ----------
-    const bondInfo = (w, a) => { const B = BK(); return B && w.bank && B.byShare(w) ? B.bondInfo(w, a) : null; };
+    const bondInfo = (w, a) => { const B = BK(); return B && w.bank && DECIDE.on(w) ? B.bondInfo(w, a) : null; };
     DECIDE.kind('bond', {
         title: '銀行在賣債券，要不要買', cool: 3, pri: 1.6, // 只賣兩天：排在「手上有閒錢」這類不急的事前面，才來得及問到人
         when(w, a) { const I = bondInfo(w, a); return I ? { o: I.id } : null; },

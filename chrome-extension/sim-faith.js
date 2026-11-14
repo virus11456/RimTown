@@ -94,7 +94,6 @@ const FAITH = (() => {
     const tierLv = (w) => (typeof TIERS !== 'undefined' ? TIERS.level(w) : 0);
     const placeOf = (w, R) => SK[R.sk].place[Math.max(0, Math.min(3, tierLv(w)))];
     // 神職私吞奉獻(擲骰版與決策核心共用):拿走基金的三成,真相頁看得到
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } };
     function embezzle(w, R, priest) { const n = Math.floor(R.fund * 0.3); R.fund -= n; try { WALLET.add(w, priest, n); DARK.secret(w, { kind: 'scheme', culprit: priest.agentId, victim: priest.agentId, k: '{a}從{r}的奉獻裡私吞了 {n} 銀幣', p: { a: priest.name, r: R.name[0], n } }); } catch (e) {} return n; }
     // v9.26.0 給決策核心:管奉獻箱的神職(跟以前擲骰的是同一批人:基金有 40 銀幣以上、不是苦行的人)
     function embezzleInfo(w, a) {
@@ -122,7 +121,6 @@ const FAITH = (() => {
             if (poor.length) { const each = Math.floor(rest / poor.length * 100) / 100; poor.forEach((p, i) => WALLET.add(w, p, i === 0 ? r2(rest - each * (poor.length - 1)) : each)); } else payLocal(w, 'timber', rest, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
     }
     // v9.22.0 要不要奉獻、奉獻多少，交給信徒本人決定(sim-decide-life.js)；這裡只剩結算。聖堂型每七天的什一是教規，照舊。擲骰的版本留給直接呼叫 daily() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     // 大筆捐獻:神職與同信仰的人對他更有好感(捐錢換聲望)
     function bigGift(w, F, R, a, big) {
         give(w, F, R, big); R.big = (R.big || 0) + 1;
@@ -193,7 +191,6 @@ const FAITH = (() => {
         }
     }
     // 祈禱:日子難過時向神祈求
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.27.0 祈禱、傳教、改宗交給本人決定
     const WISH = { hungry: '別讓家裡斷糧', sick: '讓病快點好起來', poor: '能有份穩定的收入', low: '讓日子好過一點' };
     function trouble(w, a) {
         const th = (a.thoughts || []).map(x => x.kind || x.type || x);
@@ -292,7 +289,7 @@ const FAITH = (() => {
             .concat([]);
     }
     const nonBelievers = (w) => npcs(w).filter(a => !S(w).of[a.agentId]?.rel).length;
-    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, byChoice, embezzleInfo, embezzleBy, byCrowd, prayInfo, prayBy, preachInfo, preachBy, convertInfo, convertBy };
+    return { S, SK, KEYS, daily, setTax, taxVote, TAX_RATE, onCard, relOf, pietyOf, brief, townBrief, chip, view, nonBelievers, makeReligion, rng, hash, bumpP, placeOf, believers, giftInfo, donate, embezzleInfo, embezzleBy, prayInfo, prayBy, preachInfo, preachBy, convertInfo, convertBy };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') { PROPOSAL_KINDS.faith_tax = { icon: '⛪', label: '宗教稅' }; PROPOSAL_KINDS.faith_untax = { icon: '⛪', label: '宗教稅' }; }
 if (typeof VOTE_WHY !== 'undefined') { VOTE_WHY.faith = VOTE_WHY.faith || '信仰的立場'; VOTE_WHY.purse = VOTE_WHY.purse || '看自己的荷包'; }

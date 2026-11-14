@@ -32,7 +32,6 @@ const WALLET = (() => {
     // 材料折算銀幣(自己出錢 = 把材料錢付給公庫)
     const PRICE = { silver: 1, wood: 2, stone: 3, food: 1, meals: 2, metal: 5, iron: 5, tools: 6, clothing: 6, cloth: 4, medicine: 6, furniture: 8, bread: 2 };
     // v9.25.0 平常怎麼花錢、提案的錢誰出，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     // 花錢的習慣:frugal 能省就省(七天花一次)、normal 偶爾花(兩天一次)、indulge 想買就買(天天)
     const HABIT = { frugal: 7, normal: 2, indulge: 1 };
     const habitOf = (w, a) => { const h = w.wallet?.habit?.[a.agentId]; return h && HABIT[h.k] ? h.k : (trait(a, 'greedy') || trait(a, 'ascetic') ? 'frugal' : 'normal'); }; // 還沒拿過主意的人:貪心、克己的省,其他人普通
@@ -185,7 +184,6 @@ const WALLET = (() => {
         }
     }
     // 選舉:不老實又有錢的候選人私下塞錢拉票
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 買不買票由候選人自己決定
     const BUY_VOTE = 10;
     const buyable = (w, a, all) => all.filter(v => v !== a && get(w, v) < 40 && aff(v, a) > -30);
     function buyVotes(w, a, all) {
@@ -270,7 +268,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, byFun, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
+    return { S, get, add, take, pay, costValue, daily, issues, decideFund, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失

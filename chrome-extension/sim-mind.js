@@ -56,7 +56,7 @@ const MIND = (() => {
             // 報紙的立場
             try { const P = typeof PRESS !== 'undefined' ? PRESS.paperOf(w, a) : null; if (P) { const tr = PRESS.trust(w, a, P) * 0.02; if (P.st === 'cons') { o.king = clamp(o.king + tr); o.tech = clamp(o.tech - tr); o.faith = clamp(o.faith + tr); } if (P.st === 'prog') { o.king = clamp(o.king - tr); o.tech = clamp(o.tech + tr); o.out = clamp(o.out + tr); } if (P.st === 'crown') o.king = clamp(o.king + tr * 1.5); } } catch (e) {}
             // 親身經歷:窮的人更討厭稅
-            if (cash(w, a) < 5 && !(typeof DECIDE !== 'undefined' && DECIDE.pol && DECIDE.on?.(w))) o.tax = clamp(o.tax - 0.02); // v9.21.0 本人會自己重新想(選擇點 rethink),不再天天自動扣
+            // v9.21.0 窮的人對稅的看法由本人自己重新想(選擇點 rethink),這裡不再天天自動扣
         }
     }
     // 投票時立場相近的候選人加分(每個議題差距越小越好)

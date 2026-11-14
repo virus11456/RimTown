@@ -100,8 +100,6 @@ const BIZ = (() => {
         const amb = w.mind?.amb || {};
         return (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= ((w.bank?.open && typeof BANK !== 'undefined' && BANK.lendable(w.bank) >= 80) ? 15 : 30); // v8.8.0 銀行借得到錢,手頭少一點也敢創業
     }
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
-    const byWork = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.23.0 拆夥
     // 給決策核心：他現在開得成店嗎 → { type(店的種類), cost, partner(本錢不夠時找得到的合夥人), loan(要跟銀行借) }
     function startInfo(w, a) {
         if (!W() || !w.wallet || !a) return null; const B = S(w); if (!room(w, B) || !canOpen(w, a)) return null;
@@ -122,7 +120,7 @@ const BIZ = (() => {
     const whoName = (w, id) => { const a = w.agents[id]; if (a && !a.isDead && a.name) return t(a.name); const tr = (w.events?._travellingAgents || []).find(x => x?.agentData?.agentId === id)?.agentData?.name; if (tr) return t(tr) + t('（出遠門）'); const nm = a?.name || w.departedNames?.[id] || w._nameCache?.[id]; return nm ? t(nm) + t('（已不在鎮上）') : t('已不在鎮上的人'); };
     function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: TYPES[s.type].icon, name: en() ? s.name[1] : s.name[0], type: t(TYPES[s.type].zh), owner: whoName(w, s.owner), partner: s.partner ? whoName(w, s.partner) : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
     function chip(w, a) { const s = shopOf(w, a); if (!s) return ''; return `${TYPES[s.type].icon} ${s.owner === a.agentId ? t('老闆') : t('合夥人')}${t('：')}${en() ? s.name[1] : s.name[0]}`; }
-    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan, startInfo, start, byChoice, split, splitInfo, splitBy, byWork };
+    return { TYPES, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan, startInfo, start, split, splitInfo, splitBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

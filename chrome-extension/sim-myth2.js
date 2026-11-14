@@ -124,7 +124,6 @@ const MYTHSOC = (() => {
             else { for (const o of all) if (!gene(w, o)) bump(w, o, -3); /* 不知道是誰幹的,大家都怕 */ if (x[1] === 'wolf' || x[1] === 'night') askHunt(w, X, d, c, x[1]); } // v9.27.0 有決策核心時,搜不搜由純人派帶頭的人決定
         }
     }
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const huntOk = (X) => { const P = X.grp.pure; return !!P && (P.members || []).length >= 2 && !X.hunts.some(h => !h.done); };
     const huntLead = (w, X) => { const P = X.grp.pure; const hs = (P?.members || []).map(id => w.agents[id]).filter(a => a && !a.isDead).slice(0, 4); return { hs, lead: w.agents[P?.leader] || hs[0] || null }; };
     // v9.27.0 給決策核心:出了不知道是誰幹的事,純人派帶頭的人自己決定要不要帶隊搜捕(抓到誰、抓得對不對仍然看運氣)

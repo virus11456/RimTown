@@ -93,7 +93,6 @@ const CLASS = (() => {
         }
         // 有錢人花錢買爵位(錢進公庫);舊貴族看不起:買不買由有錢人自己決定(titleBy)
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     function buyTitle(w, C, all, buyer, d) {
             if (WALLET.pay(w, buyer, null, BUY_PRICE, t('{a}買爵位').replace('{a}', buyer.name))) {
                 C.titles[buyer.agentId] = { rank: 0, since: d, how: 'bought', bought: true }; C.lv[buyer.agentId] = compute(w, buyer);
@@ -116,7 +115,7 @@ const CLASS = (() => {
         return (en() ? 'Social standing: ' : '社會地位' + t('：')) + label(w, a) + (tt ? t('（') + tt + t('）') : '');
     }
     function pyramid(w) { const out = [0, 0, 0, 0, 0, 0]; for (const a of npcs(w)) out[level(w, a)]++; return out; }
-    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE, byFun, titleInfo, titleBy };
+    return { NAMES, RANKS, S, compute, level, label, titleOf, canMingle, daily, describe, pyramid, BUY_PRICE, titleInfo, titleBy };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

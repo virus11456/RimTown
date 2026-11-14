@@ -38,7 +38,6 @@ const UNION = (() => {
     const leadBase = (w, a) => (has(a, 'charismatic') ? 3 : 0) + (has(a, 'abrasive') ? 1 : 0) + (has(a, 'pessimist') ? 0.5 : 0) + (a.skills?.skills?.社交?.level || 0) * 0.4 + grievance(w, a) * 2;
     const leaderScore = (w, a) => leadBase(w, a) + Math.random();
     // v9.21.0 決策核心階段 3:要不要帶頭組工會、加入、退出、跟不跟罷工、老闆答不答應,交給本人決定(sim-decide-pol.js);這裡只留「做得到什麼」和「做了怎麼結算」
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.pol && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
 
     // ---------- 組工會、入會、退會、會費 ----------
@@ -252,7 +251,7 @@ const UNION = (() => {
         const U = S(w); return { on: U.on, name: U.name, leader: w.agents[U.leader]?.name || '', members: Object.keys(U.members).length, fund: Math.round(U.fund), strikes: U.strikes, won: U.won, lost: U.lost, bribed: U.bribed, fired: U.fired, striking: Object.keys(U.strike).length };
     }
     return { S, daily, membership, dues, bargain, strikeDay, idle, bias, brief, describe, view, isMember, grievance, sectorOf, STRIKE_PAY,
-        byChoice, canOrganize, start, join, leave, talkInfo, deal, bribe, fireLead, walkout, cross, answer, leadBase, privateWorkers };
+        canOrganize, start, join, leave, talkInfo, deal, bribe, fireLead, walkout, cross, answer, leadBase, privateWorkers };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { strike_lost: { mood: -6, opinion: 0, days: 3, label: t('罷工失敗') } });

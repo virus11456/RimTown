@@ -75,7 +75,6 @@ const PRESS = (() => {
     }
     // 收買報社(擲骰版與決策核心共用):隨便找一家還沒被買走的,記者有原則就不收
     const BRIBE = 60;
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 收不收買報社由候選人自己決定
     const freePapers = (R) => R.papers.filter(P => P.st !== 'board' && P.st !== 'crown' && !P.bribedBy && !P.banned);
     function elecOf(w, R, E, d) {
         const cands = (E.candidates || []).filter(c => w.agents[c.agentId]); if (cands.length < 2) return null;

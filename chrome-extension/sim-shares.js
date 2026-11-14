@@ -39,10 +39,8 @@ const SHARES = (function () {
     const MAXH = 6; // v9.8.0 一家最多六個股東(以前四個;通過員工認股以後,自家工人另外可以認股,最多八個)
     const maxH = (w) => (S(w).sh.law.staff ? 8 : MAXH);
     // v9.22.0 有人眼紅想入股時，當家賣不賣交給本人決定(sim-decide-life.js)；擲骰的版本留給直接呼叫 weekly() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     // v9.24.0 買斷股東、帳上動手腳、帶頭合股、工人認股，交給本人決定(sim-decide-share.js)；擲骰的版本留給直接呼叫 weekly()／syndicate() 的情況
-    const byShare = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.share && !!DECIDE.on?.(w); } catch (e) { return false; } };
 
     function S(w) {
         const M = M_().S(w); M.shares = M.shares && typeof M.shares === 'object' ? M.shares : {};
@@ -411,7 +409,7 @@ const SHARES = (function () {
     function row(w, k) { const s = stakes(w, k); const ks = Object.keys(s); if (ks.length < 2) return ''; return ks.sort((a, b) => s[b] - s[a]).map(h => `${t(nameOf(w, h))} ${s[h]}%`).join(t('・')); }
     function view(w) { const X = S(w).sh; return { st: X.st, hist: X.hist.map(([d, k, txt, p]) => ({ d, k, s: nm(k), txt: t(txt), a: t(p.a || ''), b: t(p.b || '') })), lastDiv: X.lastDiv }; }
 
-    return { S, maxH, note, enact, vote, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, envySell, envyNo, askInfo, answerBuy, byChoice, byShare, synPlan, synInfo, synBy, staffInfo, staffBy, buyout, buyoutInfo, buyoutBy, cookInfo, cookBy, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
+    return { S, maxH, note, enact, vote, staffPropose, stakes, holders, holdings, pctOf, norm, transfer, priceOf, valueOf, profit7, syndicate, rescue, departures, reconcile, weekly, envySell, envyNo, askInfo, answerBuy, synPlan, synInfo, synBy, staffInfo, staffBy, buyout, buyoutInfo, buyoutBy, cookInfo, cookBy, caught, oust, daily, inherit, brief, describe, row, view, MAXH };
 })();
 
 if (typeof MARKET !== 'undefined') {

@@ -255,7 +255,6 @@ const MARKET = (() => {
     const isHungry = (w, a) => (S(w).hungry[a.agentId] || 0);
     function markFed(w, a, fed) { const M = S(w); if (fed) delete M.hungry[a.agentId]; else M.hungry[a.agentId] = (M.hungry[a.agentId] || 0) + 1; }
     // v9.23.0 餓到活不下去時要不要離鄉，交給本人決定(sim-decide-work.js)；擲骰的版本留給直接呼叫 hunger() 的情況
-    const byWork = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
     function leaveHungry(w, a) {
         const M = S(w); if (!a || (a.age || 30) < 16 || !w.leaveTown) return false; M.left = (M.left || 0) + 1;
         log(w, '🎒 {a}在鎮上活不下去，收拾行李去別處討生活。', { a: a.name }, a.name);
@@ -320,7 +319,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, leaveHungry, byWork, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
+    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, leaveHungry, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {

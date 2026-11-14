@@ -20,7 +20,6 @@ const HOUSING = (() => {
     }
     const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
     // v9.22.0 要不要翻修交給住戶本人決定(sim-decide-life.js)；這裡只剩「翻修要多少、料夠不夠」和結算。擲骰的版本留給直接呼叫 daily() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const matOf = (lv) => ((typeof ECON !== 'undefined') ? ECON.houseMat(lv + 1) : null);
     const matOk = (w, mat) => !mat || !!(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat));
     // 結算：付錢、用料、升一級、同住的人心情變好。回傳 true／false(錢不夠)／'mat'(鎮上料不夠)
@@ -56,7 +55,7 @@ const HOUSING = (() => {
     const levels = (w) => S(w).lv;
     const styleOf = (w, home) => STYLE[S(w).lv[home] ?? maxLv(w)];
     const stats = (w) => { const H = S(w), top = maxLv(w); const v = Object.values(H.lv); return { top, total: v.length, upgraded: v.filter(x => x >= top).length, styles: [0, 1, 2].map(i => v.filter(x => x === i).length) }; };
-    return { S, houseOf, daily, levels, maxLv, styleOf, stats, STYLE, COST, info, renovateBy, byChoice };
+    return { S, houseOf, daily, levels, maxLv, styleOf, stats, STYLE, COST, info, renovateBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

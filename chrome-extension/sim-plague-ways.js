@@ -76,7 +76,6 @@ const PLAGUEWAYS = (function () {
         const ps = (w.proposals?.items || []).filter(p => p.kind === 'cal_' + k && (p.createdDay ?? 0) >= (X.day ?? 0) - 1); const p = ps[ps.length - 1];
         return p && p.votes?.[a.agentId] === 'for' ? p : null;
     }
-    const byDark = (w) => { try { return typeof DARK !== 'undefined' && !!DARK.byDark && DARK.byDark(w); } catch (e) { return false; } }; // v9.26.0 守不守規定由本人決定
     // 這個人今天受哪一條規定管、有多想溜(以前擲骰用的那個機率)
     function sneakOdds(w, X, a, d, f) {
         const p = P(X); if (p.home[a.agentId] > d) return null;

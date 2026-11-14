@@ -144,7 +144,6 @@ const CROWN = (() => {
         else issue(ruleDecree(w, C));
     }
     // ---------- 政變 ----------
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const plotCand = (w, k) => npcs(w).filter(a => a !== k && prestige(w, a) >= 20 && aff(a, k) < 10).sort((x, y) => (aff(x, k) - prestige(w, x)) - (aff(y, k) - prestige(w, y)))[0] || null;
     function startPlot(w, C, k, am, d) {
         C.plot = { leader: am.agentId, members: [am.agentId], start: d, ready: d + 6 + Math.floor(Math.random() * 5) };

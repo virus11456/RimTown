@@ -441,7 +441,6 @@ const THINGS = (() => {
         }
     }
     // ---------- v9.27.0 給決策核心 ----------
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const baseOk = (X, T) => { const A0 = Object.values(X.att[T.id] || {}); const hateN = A0.filter(v => v <= -40).length; return Object.values(X.victims).some(x => x.id === T.id) || (A0.length > 0 && hateN / A0.length >= 0.2); };
     const canCall = (X, T, d) => !T.call && d - (T.protest?.day ?? -99) >= 30 && d - (X.lastProtest ?? -99) >= 7 && baseOk(X, T);
     // 這個人最看不慣鎮上哪一樣新東西、現在可以做哪些有後果的事(勸常去的自己人別去、帶頭號召抗議)。跟以前擲骰的是同一批人:有看法、不是老闆、今天沒有因為自己是少數而不敢講
@@ -544,7 +543,7 @@ const THINGS = (() => {
         const X = w.things; if (!X) return [];
         return Object.values(X.list || {}).filter(T => !T.gone).map(T => { const A = Object.entries(X.att[T.id] || {}).filter(([id]) => w.agents[id]); const vs = A.map(x => x[1]); return { id: T.id, icon: T.icon, name: nm(T), love: vs.filter(v => v >= 40).length, like: vs.filter(v => v >= 10 && v < 40).length, meh: vs.filter(v => v > -10 && v < 10).length, dislike: vs.filter(v => v <= -10 && v > -40).length, hate: vs.filter(v => v <= -40).length, n: vs.length, protest: T.protest, silent: silentN(w, X, T), boycott: T.boycott && day(w) <= T.boycott.until ? { lead: t(w.agents[T.boycott.lead]?.name || ''), left: T.boycott.until - day(w) } : null, stance: T.stance ? { side: T.stance.side, who: t(w.agents[T.stance.who]?.name || '') } : null, consensus: T.consensus || 0, flip: T.maj || 0, quotes: A.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2).map(([id, v]) => { const why = X.why[T.id]?.[id]; let s = ''; try { s = why ? Memory.render(why.k, why.p) : ''; } catch (e) {} return { who: t(w.agents[id].name), v, s }; }) }; });
     }
-    return { S, register, retire, get, live, att, feel, victim, useMult, buyMult, camps, splitIssue, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, goTonight, tick, syncMap, HOOKS, WHY, byCrowd, actInfo, actBy, rallyInfo, rallyBy, rescueInfo, rescueBy };
+    return { S, register, retire, get, live, att, feel, victim, useMult, buyMult, camps, splitIssue, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, goTonight, tick, syncMap, HOOKS, WHY, actInfo, actBy, rallyInfo, rallyBy, rescueInfo, rescueBy };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { thing_ban: { icon: '🚫', label: '禁止新東西' } });

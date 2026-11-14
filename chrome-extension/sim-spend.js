@@ -148,7 +148,6 @@ const SPEND = (() => {
         log(w, '🎓 {a}花 {n} 銀幣送{k}去{t}讀書。', { a: a.name, n: Math.round(fee), k: k.name, t: townName(w) }, a.name); mem(w, a, '我把錢省下來送{k}去外地讀書，希望他將來有出息。', { k: k.name }, 7); mem(w, k, '我要去外地讀書了。', {}, 7);
         return { cost: fee, kid: k };
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const tips = (w, a, pf) => { const h = WALLET.habitOf ? WALLET.habitOf(w, a) : 'normal'; return h === 'indulge' || (h === 'normal' && aff(a, pf) >= 20); }; // 想買就買的人都給；普通的人給認識的人；省的人不給
     function daily(w) {
         if (!W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d;
@@ -174,7 +173,7 @@ const SPEND = (() => {
     }
     function view(w) { const X = S(w); return { ...X.st, edu: Object.keys(X.edu).filter(k => !k.startsWith('art_')).length, studying: Object.keys(X.school).filter(id => !X.edu[id] && !X.drop?.[id]).length, drop: Object.keys(X.drop || {}).length }; }
     function brief(w, a) { const X = w.spend; if (!X) return ''; if (X.edu?.[a.agentId]) return t('你小時候家裡送你去外地讀過書，工資比別人高一些。'); if (X.school?.[a.agentId] != null) return t('家裡花錢送你去外地讀書。'); return ''; }
-    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, thrift, byFun, tips };
+    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, thrift, tips };
 })();
 
 const WORKS = (() => {
@@ -272,7 +271,6 @@ const CASINO = (() => {
         return Math.min(0.7, p);
     }
     // v9.25.0 去不去賭、押多少、借不借錢翻本、賭債還不出來怎麼辦、要不要開賭場，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const openCand = (w) => { const px = INFL.p(w); return here(w).filter(a => cash(w, a) >= 250 * px && (has(a, 'greedy') || has(a, 'ambitious') || has(a, 'charismatic')) && a.job?.key !== 'priest').sort((x, y) => cash(w, y) - cash(w, x))[0] || null; };
     function open(w, C, d, who) {
         const px = INFL.p(w); const cand = who || openCand(w);
@@ -414,7 +412,7 @@ const CASINO = (() => {
         const C = w.casino; if (!C) return ''; if (a.agentId === C.owner && C.open) return t('你在鎮上開賭場，莊家長期下來總是贏。');
         const st = C.streak?.[a.agentId] || 0; if (st >= 2) return t('你最近在賭場一直輸，滿腦子只想把錢贏回來。'); if ((C.v?.[a.agentId] || 0) >= 5) return t('你常去賭場碰碰運氣。'); return '';
     }
-    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, byFun, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy };
+    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy };
 })();
 
 // ---------- 接上其他系統 ----------

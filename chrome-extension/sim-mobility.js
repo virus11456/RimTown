@@ -111,7 +111,6 @@ const MOBILITY = (() => {
         }
     }
     // 誰可以去學、找誰學、拜師
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.work && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const freeOf = (w, a) => { const M = S(w); return !M.ap[a.agentId] && !Object.values(M.ap).some(P => P.m === a.agentId) && !w.isAway?.(a.agentId) && !w.exile?.pending?.[a.agentId]; };
     // 沒什麼出路的年輕人：18～35 歲、階層不高、不是工匠、還沒出師過
     const canLearn = (w, a) => { const M = S(w); return freeOf(w, a) && (a.age ?? 30) >= ADULT && (a.age ?? 30) <= 35 && lvOf(w, a) <= 1 && !CRAFT.includes(a.job?.key) && a.job?.key !== 'mayor' && !M.done[a.agentId]; };
@@ -153,7 +152,6 @@ const MOBILITY = (() => {
             if (prev) { mem(w, prev, '{a}的手藝已經比我好了，名匠的名號換人了。', { a: a.name }, 6); prev.moodModifier = (prev.moodModifier || 0) - 4; }
         }
     }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const commFee = (a) => Math.min(40, 10 + (skillOfJob(a)?.lv || 0));
     function commDo(w, M, a, b, loud) {
         const fee = commFee(a); if (!WALLET.pay(w, b, a, fee, t('名匠訂做'))) return 0;
@@ -207,7 +205,7 @@ const MOBILITY = (() => {
         let up = 0, down = 0; for (const a of all) { const o = M.o?.[a.agentId]; if (o == null) continue; const c = lvOf(w, a); if (c > o) up++; else if (c < o) down++; }
         return { up, down, n: all.length, masters: npcs(w).filter(a => isMaster(a, w)).length, appr: Object.keys(M.ap || {}).length, st: M.st || {}, hist: (M.hist || []).slice(0, 3) };
     }
-    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, byChoice, byFun, commInfo, commBy, spreeInfo, spreeBy, masters, spree, tag, masterTag, brief, view, how };
+    return { S, CRAFT, APPR_DAYS, MASTER_LV, MASTER_PAY, isMaster, skillOfJob, adjust, daily, apprentice, learnInfo, learnBy, commInfo, commBy, spreeInfo, spreeBy, masters, spree, tag, masterTag, brief, view, how };
 })();
 
 if (typeof CLASS !== 'undefined') { const _d = CLASS.daily; CLASS.daily = function (w, ...rest) { const r = _d.call(this, w, ...rest); try { MOBILITY.daily(w); } catch (e) { console.warn('[Mobility] daily', e); } return r; }; }

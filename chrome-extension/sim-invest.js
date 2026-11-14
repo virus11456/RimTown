@@ -27,7 +27,6 @@ const INVEST = (() => {
     const dep = (w, a) => (a && w.bank?.open ? (w.bank.dep?.[a.agentId] || 0) : 0);
     const MK = () => MARKET, SH = () => SHARES;
     // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算。擲骰的版本留給直接呼叫(沒有決策核心)的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const nm = (k) => MK().name(k);
 
@@ -285,7 +284,7 @@ const INVEST = (() => {
     function partners(w, k) { const R = MK().rivalOf(w, k); const s = R && sh(w, R); if (!s) return ''; return Object.keys(s).sort((a, b) => s[b] - s[a]).map(id => `${t(w.agents[id]?.name || '')} ${s[id]}%`).join(t('・')); }
     function view(w) { const X = S(w); return { st: X.st, bank: pct1(bankYield(w)), best: (() => { try { const M = SH().S(w); return Object.keys(MK().SECTORS).filter(k => M.owners[k] && perPct(w, k) > 0).map(k => ({ s: nm(k), y: Math.round(perPct(w, k) * 10) / 10 })).sort((a, b) => b.y - a.y).slice(0, 3); } catch (e) { return []; } })() }; }
 
-    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, askInfo, answer, cashOuts, cashOut, lowOf, byChoice, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
+    return { S, bankYield, trackBank, firmYield, perPct, payback, askPrice, hurdle, fund, quotes, buy, askInfo, answer, cashOuts, cashOut, lowOf, partner, setup, sh, rivalDividend, rivalClosed, rivalMerged, onDeath, weekly, brief, describe, partners, view };
 })();
 if (typeof window !== 'undefined') window.INVEST = INVEST;
 

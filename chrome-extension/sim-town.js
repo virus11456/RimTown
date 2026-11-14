@@ -893,7 +893,7 @@ class ElectionSystem {
         this.active = true; this.phase = 'campaign'; this.campaignDaysLeft = 3; this.votingDaysLeft = 0; this.votes = {};
         this.byElection = !!opts.byElection; this.voteWhy = {}; this._llmPending = {}; this._campPending = false;
         // v9.21.0 決策核心階段 3:選前幾天問過「要不要出來選」的人,說要選的排最前面、說不選的排最後(沒被問到的照聲望);補選來不及問,照舊
-        const will = (!opts.byElection && typeof DECIDE !== 'undefined' && DECIDE.pol && DECIDE.on?.(world) && DECIDE.runIntent) ? DECIDE.runIntent(world) : null;
+        const will = (!opts.byElection && typeof DECIDE !== 'undefined' && DECIDE.runIntent) ? DECIDE.runIntent(world) : null;
         const scored = eligible.map(a => {
             let score = this._runScore(world, a) + Math.random() * 6;
             if (will) score += will[a.agentId] === 1 ? 100 : will[a.agentId] === -1 ? -100 : 0;

@@ -68,7 +68,6 @@ const RIVAL = (() => {
     // ---------- 一件一件的事 ----------
     // ---------- 挖角的結算(留下／被挖走) ----------
     // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)；擲骰的版本留給直接呼叫 event() 的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const canLeave = (w) => npcs(w).length >= 12; // 人太少的小村不會真的被挖空
     function poachStay(w, V, p, a, skill) {
@@ -207,7 +206,7 @@ const RIVAL = (() => {
         const L = (typeof TIERS !== 'undefined' && TIERS.LV) ? TIERS.LV : [{ icon: '🏡' }, { icon: '🏘️' }, { icon: '🏙️' }, { icon: '🏰' }];
         return { name: t(pname(p)), icon: L[p.lv ?? 1]?.icon || '🏘️', us: usOf(w), them: Math.round(V.them), rel, stance: t(stanceOf(rel)), st: V.st, dep: V.dep || 0, log: V.log.slice(-4).reverse().map(x => ({ text: R(x.k, x.p), good: x.good, ago: day(w) - x.d })) };
     }
-    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf, poachInfo, poachAnswer, byChoice };
+    return { S, ensure, pick, daily, event, effects, townBrief, talk, view, EV, stanceOf, poachInfo, poachAnswer };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

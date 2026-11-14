@@ -41,7 +41,6 @@ const WAYS = (function () {
     const proud = (a) => hasT(a, 'abrasive') || hasT(a, 'charismatic') || hasT(a, 'greedy') || hasT(a, 'jealous');
     function setFace(w, a, v) { S(w).face[a.agentId] = Math.max(0, Math.min(100, Math.round(v))); }
     function loseFace(w, a, n) { setFace(w, a, faceOf(w, a) - n * (proud(a) ? 1.4 : 1)); }
-    const byCrowd = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const stepFriend = (w, a) => adults(w).filter(x => x !== a && aff(a, x) >= 30 && aff(x, a) >= 20).sort((x, y) => aff(a, y) - aff(a, x))[0] || null;
     function casualDo(w, a, d) { const X = S(w); X.lastCasual = d; log(w, '🎭 {a}的提案被大比數否決之後，逢人就說：「我本來就只是隨口提提。」', { a: a.name }, a.name); bump(X, 'casual'); }
     function stepDo(w, a, fr) {
@@ -242,7 +241,6 @@ const WAYS = (function () {
         }
     }
     // ---------- v9.20.0 冷戰的三種收場(決策核心用):先開口 → 對方點頭和好／裝作沒看到;或乾脆不往來 ----------
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const coldRec = (w, a, b) => { const c = S(w).cold[key2(a.agentId, b.agentId)]; return c && c.until > day(w) ? c : null; };
     function reach(w, a, b) { const c = coldRec(w, a, b); if (!c) return false; c.by = a.agentId; mem(w, a, '冷戰這麼久，我決定先跟{b}開口。', { b: b.name }, 5); if (typeof DECIDE !== 'undefined') DECIDE.enqueue(w, b, 'reached', { a: a.agentId }); return true; }
     function thaw(w, a, b) { // a 先開口,b 點頭

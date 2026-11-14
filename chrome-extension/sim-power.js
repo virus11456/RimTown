@@ -41,7 +41,6 @@ const POWER = (() => {
 
     // ---------- 一、政治獻金 ----------
     // v9.21.0 決策核心階段 3:捐不捐、捐給誰、收不收,交給本人決定(sim-decide-pol.js);這裡只留「誰捐得起、可以捐給誰」和「錢怎麼過手」
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.pol && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const here = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     // 現在可以捐給誰:選舉期間是候選人(依聲勢排),平常是首長和議員
     function targetsOf(w) {
@@ -239,7 +238,7 @@ const POWER = (() => {
             owned: (R?.papers || []).filter(Pp => Pp.owner).map(Pp => { const id = Pp.owner; const a = w.agents[id]; const nm = (a && !a.isDead && a.name) || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || ''; const gone = !nm; const nm2 = nm || a?.name || w.departedNames?.[id] || w._nameCache?.[id] || ''; return [t(Pp.name[0]), nm2 ? t(nm2) + (gone ? t('（已不在鎮上）') : '') : t('已不在鎮上的人')]; }) }; // v9.18.1 老闆過世或搬走時,以前名字會變成空的「（）」
     }
     return { S, daily, donations, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
-        byChoice, targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
+        targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { outraged: { mood: -4, opinion: 0, days: 2, label: t('看了新聞很憤怒') } });

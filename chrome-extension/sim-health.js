@@ -179,7 +179,6 @@ const HEALTH = (() => {
     // 手術失敗:家屬可能怪醫生(好感大跌,醫生心情差;被告上法庭的戲份交給既有的審判提案)
     function malpractice(w, a, doc) { if (!doc) return; for (const f of family(w, a)) { const r = f.relationships?.getOrCreate?.(doc.agentId, doc.name); if (r) r.affinity = Math.max(-100, (r.affinity || 0) - 20); } doc.moodModifier = (doc.moodModifier || 0) - 6; mem(w, doc, '{a}的手術沒成功，家屬很不諒解。', { a: a.name }, 7); }
     function rec(w, H, a, r, p) { H.log.push([day(w), a.name, r, p]); if (H.log.length > 12) H.log.splice(0, H.log.length - 12); }
-    const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     const BRIBE = 80;
     function bribeDo(w, all, H, q, a, doc) {
         if (!WL() || !WL().take(w, a, BRIBE)) return false; const rich = [q, a];
@@ -296,7 +295,7 @@ const HEALTH = (() => {
         if (!bad.length && !al.length) return ''; return `${t('身體')}${t('：')}${[...al, ...bad].join(t('、'))}`;
     }
     function townBrief(w) { if (!w.health) return ''; const v = view(w); const n = v.patients.length; if (!n && !v.queue.length) return ''; return `${t('鎮上有 {n} 個病人').replace('{n}', n)}${v.queue.length ? t('，{n} 人等移植').replace('{n}', v.queue.length) : ''}${v.flu ? t('，風寒正在流行') : ''}`; }
-    return { W: null, PARTS, PN, PI, KN, S, body, setPart, hurt, eff, ails, addAil, workMult, speed, sleepMult, deathMult, jobFit, pay, successRate, deathRisk, canSurgery, transplantable, surgery, onDeath, daily, view, agentView, brief, townBrief, vote, setAid, proposal, family, byFun, bribeInfo, bribeBy };
+    return { W: null, PARTS, PN, PI, KN, S, body, setPart, hurt, eff, ails, addAil, workMult, speed, sleepMult, deathMult, jobFit, pay, successRate, deathRisk, canSurgery, transplantable, surgery, onDeath, daily, view, agentView, brief, townBrief, vote, setAid, proposal, family, bribeInfo, bribeBy };
 })();
 
 // ---------- 研究:第五時代「生技」(城市以上＋機械時代全部研究完＋研究院) ----------

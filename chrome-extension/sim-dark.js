@@ -169,9 +169,6 @@ const DARK = (() => {
     // ---------- 道歉與原諒 ----------
     const APOLOGY = ['對不起，之前是我不對。', '那件事我一直很過意不去，真的很抱歉。', '我知道說什麼都晚了，但我還是想跟你道歉。'];
     // v9.20.0 村民自己拿主意時由決策核心決定(sim-decide-soc.js)；這裡只剩「怎麼結算」。下面擲骰的版本留給沒有決策核心的情況
-    const byChoice = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.soc && !!DECIDE.on?.(w); } catch (e) { return false; } };
-    const byLife = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.life && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.22.0 陰謀陷害交給本人決定
-    const byDark = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.dark && !!DECIDE.on?.(w); } catch (e) { return false; } }; // v9.26.0 說謊、選戰手段、傳話交給本人決定
     const wrongById = (w, id) => (S(w).wrongs || []).find(x => x.id === id) || null;
     const wrongId = (w, x) => { const D = S(w); if (!x.id) { D.wn = (D.wn || 0) + 1; x.id = D.wn; } return x.id; };
     // 這筆帳是什麼事(給決策核心看的一句話)。who 做的人、vName 受害的人;整句已經寫好人名的(被拆穿的秘密)就照原句
@@ -706,8 +703,8 @@ const DARK = (() => {
         return out;
     }
     return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump,
-        today: day, byChoice, byLife, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY,
-        byDark, campInfo, smearBy, hollowBy, pilferInfo, pilferBy, comfortInfo, comfortBy, tradeInfo, tradeSet, shorting, tattleInfo, tattleBy };
+        today: day, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY,
+        campInfo, smearBy, hollowBy, pilferInfo, pilferBy, comfortInfo, comfortBy, tradeInfo, tradeSet, shorting, tattleInfo, tattleBy };
 })();
 
 // ---- 掛勾:每日、存檔、AI(要不要講壞話由本人決定，不再掛在聊天上) ----
