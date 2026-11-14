@@ -32,7 +32,7 @@ const stage = () => {
   const inv = DECIDE.involved(w, a, facts).map(x => x.name); out.involved = inv.length === 1 && inv[0] === b.name;
   const past0 = DECIDE.pastLines(w, a, K, facts, 46); out.past0 = past0;
   const opts = K.options(w, a, ctx); const pr = DECIDE.prompt(w, K, [{ a, K, ctx, opts }]); const ce = w.conversationEngine;
-  out.prompt = { len: pr.length, max: ce._promptMax ? ce._promptMax() : 0, hasBlock: pr.includes('【跟這件事有關的往事】'), hasMem: pr.includes('沒還') && pr.includes('笑我窮'), noUnrelated: !pr.split('【跟這件事有關的往事】')[1]?.split('【遇到的事】')[0]?.includes('天氣'), hasFeel: pr.includes('"feel"') && pr.includes('賭氣'), hasSay: pr.includes('"say"'), hasHuman: pr.includes('嚥不下這口氣') };
+  out.prompt = { len: pr.length, max: ce._promptMax ? ce._promptMax() : 0, hasBlock: pr.includes('【跟這件事有關的往事】'), hasMem: pr.includes('沒還') && pr.includes('笑我窮'), noUnrelated: !pr.split('【跟這件事有關的往事】').pop().split('【遇到的事】')[0].includes('天氣'), hasFeel: pr.includes('"feel"') && pr.includes('賭氣'), hasSay: pr.includes('"say"'), hasHuman: pr.includes('嚥不下這口氣') };
   // 2. AI 回答：不划算的選擇，有出於什麼，嘴上說的跟心裡想的不一樣
   const m0 = b.memory.entries.length;
   DECIDE.applyAi(w, a, K, ctx, opts, { pick: 'no', why: '他欠我十銀幣還當眾笑我窮，我才不去捧他的場', feel: '賭氣', say: '那天我店裡走不開' });
