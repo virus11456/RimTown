@@ -372,7 +372,9 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
             const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
-            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < AI_KIND && (!cur || bump)) { X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
+            // v10.1.0 自己另有名額的類別（aiOwn：公告欄的回應、回信）：一天幾個人由它自己定，不佔全鎮每天 10 個人的名額。不然名額都被每天固定會遇到的事用完，回應的人永遠輪不到 AI 說話
+            const own = +o.K.aiOwn || 0;
+            if (ai && (own || X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX)) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || AI_KIND) && (!cur || bump)) { if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);

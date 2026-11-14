@@ -154,6 +154,16 @@ const ui = ({ only }) => {
   for (const k of ['plans', 'notes', 'letters', 'rumors']) { const x = await page.evaluate(ui, { only: k }); const only = { plans: x.plan === x.cards, notes: x.note === x.cards, letters: x.letter === x.cards, rumors: x.rumor === x.cards }[k]; ok(x.cards >= 1 && only, `篩選鈕「${k}」只留那一種`, { cards: x.cards, plan: x.plan, note: x.note, letter: x.letter, rumor: x.rumor }); }
   const old = await page.evaluate(() => { const app = window.rimtownApp; app._bdOnly = null; app._ppTab = 'plans'; app.renderSidebar(); const root = document.getElementById('sidebar-content'); return { tab: app._ppTab, only: app._bdOnly, on: document.querySelector('.pp-tab.on')?.dataset.ppTab, cards: root.querySelectorAll('.sk-card').length, plan: root.querySelectorAll('.sk-card:not(.bd-card)').length }; }); ok(old.tab === 'mail' && old.only === 'plans' && old.on === 'mail' && old.cards >= 1 && old.cards === old.plan, '以前記住的「企劃」分頁自動帶到往來裡的企劃', old);
   const clicked = await page.evaluate(async () => { const app = window.rimtownApp; app._bdOnly = 'all'; app.renderSidebar(); document.querySelector('[data-bd-only="rumors"]').click(); const a = app._bdOnly; const b = document.querySelector('.bd-card .pv-who:not([disabled])'); const id = b?.dataset.pvGo; b?.click(); return { a, sel: app.selectedAgentId === id }; }); ok(clicked.a === 'rumors' && clicked.sel, '篩選鈕與卡片上的人名按了有反應', clicked);
+  // 回應的人有自己的 AI 名額：全鎮每天的名額用完了，看到告示的人還是有 4 個由 AI 說話（一次問完）
+  const own = await page.evaluate(async () => { const app = window.rimtownApp; const w = app.world; const ce = w.conversationEngine; const X = DECIDE.S(w); BOARD.S(w).quiet = true; w.decide.q = [];
+    const A = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)); const by = A[0], rs = A.slice(1, 6);
+    const _aj = ce._askJson, _ok = ce.fullAgentOk, _fm = w.fullAgentMode; let calls = 0, people = 0; ce.fullAgentOk = () => true; w.fullAgentMode = true;
+    ce._askJson = async (prompt) => { calls++; const n = (String(prompt).match(/=== \d+\. /g) || []).length; people += n; return Array.from({ length: n }, (_, i) => ({ n: i + 1, pick: 'agree', why: '他說的我也遇過', feel: '義氣', say: '這事我挺你' })); };
+    X._asked = DECIDE.AI_MAX; X._kAsked = {}; const asked0 = X._asked; // 假裝今天全鎮的名額已經用完
+    const B = BOARD.create(w, by, { kind: 'gripe', text: '最近東西越來越貴，日子怎麼過', readers: rs, ai: true }); DECIDE.drain(w, X, w._absDay()); await DECIDE.flush();
+    ce._askJson = _aj; ce.fullAgentOk = _ok; w.fullAgentMode = _fm;
+    return { calls, people, voiced: B.re.filter(q => q.y && q.pub).length, answered: B.re.filter(q => q.s !== 'asked').length, n: B.re.length, asked: X._asked - asked0 }; });
+  ok(own.calls === 1 && own.people === 4 && own.voiced === 4 && own.answered === 5 && own.asked === 0, '看到告示的人有自己的 AI 名額：一次問 4 個人，第 5 個照個性；不佔全鎮每天的名額', own);
   ok(errs.length === 0, '桌機沒有程式錯誤', errs.slice(0, 3)); await page.close();
   // 手機 390px，中英
   for (const lang of ['zh', 'en']) {

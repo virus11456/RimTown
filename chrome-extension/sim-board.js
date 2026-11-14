@@ -63,8 +63,8 @@ const BOARD = (() => {
     function create(w, a, o) {
         if (!w.observerMode || !ok(w, a) || !KINDS[o.kind]) return null;
         const X = S(w); const K = KINDS[o.kind]; const who = (x) => (x && x.agentId ? x : byName(w, x));
-        const text = typeof o.text === 'string' ? { raw: clean(o.text, en() ? 220 : 80) } : o.text; if (!say(text)) return null;
-        const why = typeof o.why === 'string' ? (clean(o.why, en() ? 160 : 60) ? { raw: clean(o.why, en() ? 160 : 60) } : null) : (o.why || null);
+        const text = typeof o.text === 'string' ? { raw: clean(o.text, en() ? 320 : 120) } : o.text; if (!say(text)) return null;
+        const why = typeof o.why === 'string' ? (clean(o.why, en() ? 240 : 90) ? { raw: clean(o.why, en() ? 240 : 90) } : null) : (o.why || null);
         let to = who(o.to); if (to && (to === a || !ok(w, to))) to = null; if (K.priv && !to) return null;
         let about = who(o.about); if (about && (about === a || !inTown(w, about))) about = null;
         const locs = w.townMap?.locations || {}; const place = locs[o.place] ? o.place : (locs.tavern ? 'tavern' : 'town_square');
@@ -110,10 +110,10 @@ ${t('你可以在鎮上的公告欄貼一張告示（全鎮都看得到），或
 ${L.join('\n')}
 ${t('【你認識的人】')}${known}
 ${t('【可以約的地方】')}${pls}
-${recent ? `${t('【公告欄上最近已經有的（不要一樣）】')}${recent}\n` : ''}${t('只輸出 JSON：{"kind":"hire|sell|lost|gripe|invite|letter","text":"告示或信的內容，你自己的口氣（40 字內）","to":"收信人的名字（只有 letter 要填）","want":"meet|sorry|love|thanks|warn（只有 letter 要填）","about":"你在抱怨的那個人（只有 gripe，抱怨的是事情就留空）","price":酬勞或賣價 0~20,"place":"地點代號（邀約或約見面才填）","hour":幾點 8~21,"why":"你心裡真正的盤算，不會給別人看（30 字內）"}；現在沒有想寫的就輸出 {"skip":true}')}
+${recent ? `${t('【公告欄上最近已經有的（不要一樣）】')}${recent}\n` : ''}${t('只輸出 JSON：{"kind":"hire|sell|lost|gripe|invite|letter","text":"告示或信的內容，你自己的口氣（60 字內，話要講完）","to":"收信人的名字（只有 letter 要填）","want":"meet|sorry|love|thanks|warn（只有 letter 要填）","about":"你在抱怨的那個人（只有 gripe，抱怨的是事情就留空）","price":酬勞或賣價 0~20,"place":"地點代號（邀約或約見面才填）","hour":幾點 8~21,"why":"你心裡真正的盤算，不會給別人看（40 字內）"}；現在沒有想寫的就輸出 {"skip":true}')}
 ${t('kind 的意思：hire 徵人幫忙、sell 有東西要賣、lost 東西不見了、gripe 公開抱怨、invite 公開邀大家、letter 私下寫信給一個人。')}`;
         try { ce._countNpcLlmUse?.(w); } catch (e) {}
-        const j = await ce._askJson(en() && typeof I18N !== 'undefined' && I18N.localizeNames ? I18N.localizeNames(prompt, true) : prompt, 280);
+        const j = await ce._askJson(en() && typeof I18N !== 'undefined' && I18N.localizeNames ? I18N.localizeNames(prompt, true) : prompt, 360);
         if (j && j.skip === true) return { skip: true };
         if (!j || typeof j !== 'object' || Array.isArray(j) || !j.text || !KINDS[j.kind] || j.kind === 'event' || j.kind === 'clear') return null;
         return { kind: String(j.kind), text: String(j.text), why: String(j.why || ''), to: j.to, about: j.about, want: String(j.want || ''), price: +j.price || 0, place: String(j.place || ''), hour: +j.hour || 18, ai: true };
@@ -204,7 +204,7 @@ ${t('kind 的意思：hire 徵人幫忙、sell 有東西要賣、lost 東西不�
         const loc = (n) => (en() && typeof I18N !== 'undefined' && I18N.localizeNames ? I18N.localizeNames(n, true) : n); const v = sub ? aff(sp, sub) : 0;
         const prompt = `${t('你正在扮演「')}${sp.name}${t('」（')}${t('性格')}${t('：')}${(sp.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('）。')}${t('你聽來一件關於{b}的事：「{x}」').replace('{b}', R.aboutName).replace('{x}', say(gText(g)))}
 ${t('你跟{b}的交情：{v}。').replace('{b}', R.aboutName).replace('{v}', t(v > 40 ? '很要好' : v > 10 ? '有交情' : v < -25 ? '有過節' : v < -5 ? '不太對盤' : '普通'))}${t('現在你要把這件事講給{c}聽。').replace('{c}', li.name)}
-${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}')}`;
+${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。只寫事情本身，不要稱呼對方、不要寫對方的名字（這句話之後還會被別人拿去轉述）。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}')}`;
         try { ce._countNpcLlmUse?.(w); } catch (e) {}
         const j = await ce._askJson(loc(prompt), 160); if (!j || typeof j !== 'object' || !j.say || w.board !== X || !X.rumors.includes(R)) return;
         const s = clean(j.say, en() ? 200 : 70); if (!s) return; H.x = { raw: s }; H.spin = clean(j.spin, 12); H.ai = 1; g.content = s; g.contentT = null; R._cur = JSON.stringify(gText(g)); tell(w, 'rumor', R);
@@ -234,8 +234,8 @@ ${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實
     }
 
     if (typeof DECIDE !== 'undefined') {
-        DECIDE.kind('boardRead', { title: '看到公告欄上的告示', scan: false, pri: 1.5, cool: 0, when: () => null, facts: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? factsOf(w, B) : ''; }, options: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? optsOf(w, x, B) : []; } });
-        DECIDE.kind('letterGot', { title: '收到一封信', scan: false, pri: 2, cool: 0, when: () => null, facts: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? factsOf(w, B) : ''; }, options: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? letterOpts(w, x, B) : []; } });
+        DECIDE.kind('boardRead', { title: '看到公告欄上的告示', scan: false, pri: 1.5, cool: 0, aiOwn: 4, when: () => null, facts: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? factsOf(w, B) : ''; }, options: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? optsOf(w, x, B) : []; } });
+        DECIDE.kind('letterGot', { title: '收到一封信', scan: false, pri: 2, cool: 0, aiOwn: 2, when: () => null, facts: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? factsOf(w, B) : ''; }, options: (w, x, ctx) => { const B = get(w, ctx.bid); return B ? letterOpts(w, x, B) : []; } });
         DECIDE.kind('rumorHit', { title: '聽到有人在傳自己的閒話', scan: false, pri: 2, cool: 0, when: () => null,
             facts: (w, x, ctx) => { const R = getR(w, ctx.rid); if (!R) return ''; const last = [...R.hops].reverse().find(h => h.x); return t('鎮上有人在傳你的閒話：「{x}」').replace('{x}', say(last ? last.x : R.text0)) + (R.srcName ? t('聽說最早是{s}講的。').replace('{s}', R.srcName) : t('不知道是誰先說的。')) + t(R.fake ? '這件事不是真的。' : '這件事不算冤枉你。') + t('已經傳了 {n} 手。').replace('{n}', R.hops.length); },
             options: (w, x, ctx) => rumorOpts(w, x, getR(w, ctx.rid)) });
