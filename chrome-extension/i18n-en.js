@@ -13419,7 +13419,7 @@
         '你聽來一件關於{b}的事：「{x}」': 'You heard something about {b}: “{x}”',
         '你跟{b}的交情：{v}。': 'Your standing with {b}: {v}. ',
         '現在你要把這件事講給{c}聽。': 'Now you are about to pass it on to {c}.',
-        '照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。只寫事情本身，不要稱呼對方、不要寫對方的名字（這句話之後還會被別人拿去轉述）。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}': 'Given your personality and how you stand with the person, how would you tell it? You may tell it straight, embellish it, soften it in their favour, or twist it. Write only the matter itself: do not address the listener or use their name (others will repeat this line later). Output JSON only: {"say":"what you say when passing it on (under 30 words)","spin":"straight|exaggerated|played down|twisted"}',
+        '照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。{b}的名字一定要留在句子裡。不要稱呼聽你說話的人、也不要寫他的名字（這句話之後還會被別人拿去轉述）。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}': 'Given your personality and how you stand with the person, how would you tell it? You may tell it straight, embellish it, soften it in their favour, or twist it. Keep {b}’s name in the sentence. Do not address the person you are talking to or use their name (others will repeat this line later). Output JSON only: {"say":"what you say when passing it on (under 30 words)","spin":"straight|exaggerated|played down|twisted"}',
         '有人在傳我的閒話：「{x}」': 'People are passing talk about me: “{x}”',
         '還在想怎麼辦': 'still deciding what to do',
         '找上門對質': 'went to confront them',

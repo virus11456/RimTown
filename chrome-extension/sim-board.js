@@ -204,10 +204,12 @@ ${t('kind 的意思：hire 徵人幫忙、sell 有東西要賣、lost 東西不�
         const loc = (n) => (en() && typeof I18N !== 'undefined' && I18N.localizeNames ? I18N.localizeNames(n, true) : n); const v = sub ? aff(sp, sub) : 0;
         const prompt = `${t('你正在扮演「')}${sp.name}${t('」（')}${t('性格')}${t('：')}${(sp.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('）。')}${t('你聽來一件關於{b}的事：「{x}」').replace('{b}', R.aboutName).replace('{x}', say(gText(g)))}
 ${t('你跟{b}的交情：{v}。').replace('{b}', R.aboutName).replace('{v}', t(v > 40 ? '很要好' : v > 10 ? '有交情' : v < -25 ? '有過節' : v < -5 ? '不太對盤' : '普通'))}${t('現在你要把這件事講給{c}聽。').replace('{c}', li.name)}
-${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。只寫事情本身，不要稱呼對方、不要寫對方的名字（這句話之後還會被別人拿去轉述）。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}')}`;
+${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實說、加油添醋、替他講好話，或講歪。{b}的名字一定要留在句子裡。不要稱呼聽你說話的人、也不要寫他的名字（這句話之後還會被別人拿去轉述）。只輸出 JSON：{"say":"你轉述時說的話（40 字內）","spin":"照實|誇大|淡化|講歪"}').split('{b}').join(R.aboutName)}`;
         try { ce._countNpcLlmUse?.(w); } catch (e) {}
         const j = await ce._askJson(loc(prompt), 160); if (!j || typeof j !== 'object' || !j.say || w.board !== X || !X.rumors.includes(R)) return;
-        const s = clean(j.say, en() ? 200 : 70); if (!s) return; H.x = { raw: s }; H.spin = clean(j.spin, 12); H.ai = 1; g.content = s; g.contentT = null; R._cur = JSON.stringify(gText(g)); tell(w, 'rumor', R);
+        const s = clean(j.say, en() ? 200 : 70); if (!s) return; const named = s.includes(R.aboutName) || s.includes(nameL(R.aboutName)) || (en() && typeof I18N !== 'undefined' && I18N.localizeNames && s.includes(I18N.localizeNames(R.aboutName, true)));
+        if (!named) return; // 把被講的人的名字講丟了：這一句不採用，八卦照原樣傳下去
+        H.x = { raw: s }; H.spin = clean(j.spin, 12); H.ai = 1; g.content = s; g.contentT = null; R._cur = JSON.stringify(gText(g)); tell(w, 'rumor', R);
     }
     // 傳到本人耳裡：負面的由他自己決定（回傳 true 表示已經接手，原本寫死的「當面對質」先不跑）
     function reach(w, g) {
