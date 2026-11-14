@@ -107,6 +107,24 @@ const open = async (browser, o = {}) => {
     ok(errs.length === 0, `${lang} 手機：沒有頁面錯誤`, errs.slice(0, 3));
     await ctx.close();
   }
+  // 9.29.1 iPhone Pro Max（430 寬）英文、已登入：副標換兩行，把「中文」擠成直排。各寬度、登入前後，上方列每個字都只有一行
+  for (const lang of ['zh', 'en']) {
+    const { ctx, page } = await open(browser, { lang });
+    await page.waitForFunction(() => window.rimtownLanding && window.rimtownLanding.auth, null, { timeout: 30000 }); await page.waitForTimeout(lang === 'en' ? 1200 : 300);
+    const bad = [];
+    for (const w of [320, 360, 390, 414, 430, 600, 768]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      for (const li of [false, true]) {
+        const r = await page.evaluate((li) => { const a = window.rimtownLanding; a.auth.loggedIn = li; try { LANDING3D.unmount(); } catch (e) {} a._renderLanding();
+          const nav = document.querySelector('.lp-top'), sub = nav.querySelector('.lp-brand span'), kids = [nav.querySelector('.lp-brand'), nav.querySelector('.landing-lang'), nav.querySelector('.lp-top-cta')].map(x => x.getBoundingClientRect());
+          const one = (x) => { const fs = parseFloat(getComputedStyle(x).fontSize); return x.getBoundingClientRect().height <= Math.max(parseFloat(getComputedStyle(x).minHeight) || 0, fs * 1.7) + 1; };
+          return { lang: [...nav.querySelectorAll('.landing-lang button')].every(one), cta: one(nav.querySelector('.lp-top-cta')), sub: getComputedStyle(sub).display === 'none', apart: kids[0].right <= kids[1].left + 0.5 && kids[1].right <= kids[2].left + 0.5, inside: kids[2].right <= innerWidth + 0.5 }; }, li);
+        if (!(r.lang && r.cta && r.sub && r.apart && r.inside)) bad.push({ w, li, ...r });
+      }
+    }
+    ok(bad.length === 0, `${lang} 手機與平板（320～768 寬，登入前後）：上方列的語言切換和按鈕都只有一行、不重疊、不超出畫面，副標藏起來`, bad.slice(0, 3));
+    await ctx.close();
+  }
 
   // ---------- 偏好減少動態 ----------
   console.log('— 減少動態與沒有 WebGL');
