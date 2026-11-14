@@ -25,6 +25,7 @@ const FLAGS = ['soc', 'pol', 'life', 'work', 'share', 'fun', 'dark', 'crowd', 'l
   const reads = []; for (const [f, s] of Object.entries(src)) { const m = s.match(new RegExp('DECIDE\\.(' + FLAGS.join('|') + ')\\b(?! *= *true)', 'g')); if (m) reads.push(f + ':' + [...new Set(m)].join('/')); }
   ok(reads.length === 0, '沒有任何程式去讀「這一批有沒有載入」的記號來決定要不要擲骰', reads);
   const declared = new Set(); for (const f of onDisk) for (const m of src[f].matchAll(/\bkind\('([A-Za-z_]+)'/g)) declared.add(m[1]);
+  for (const s of Object.values(src)) for (const m of s.matchAll(/\bDECIDE\.kind\('([A-Za-z_]+)'/g)) declared.add(m[1]); // v9.33.0 起別的系統也會登記選擇點（例如個人企劃的「有人來找他」）
 
   // ---------- 2) 實際跑 ----------
   console.log('— 實際跑');
