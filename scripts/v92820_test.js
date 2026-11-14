@@ -24,7 +24,7 @@ const open = async (browser, lang) => {
   // ---------- 1) 房子 ----------
   console.log('— 誰住哪一棟');
   { const { ctx, page, errs } = await open(browser, 'zh');
-    const snap = () => page.evaluate(() => { const w = window.rimtownApp.world; const H = HOUSING.S(w); const m = {}; for (const a of Object.values(w.agents)) if (!a.isPlayer && !a.isDead) m[a.agentId] = HOUSING.houseOf(w, a); return { m, home: Object.fromEntries(Object.values(w.agents).map(a => [a.agentId, a.homeLocation + (a.isDead ? '(dead)' : '')])), zones: Object.keys(window.rimtownApp.tileMap._houseSubZones || {}).length, lv: { ...H.lv }, n: Object.keys(m).length, sameObj: window.rimtownApp.tileMap._agentHouseMap === w.housing.map, saved: Object.keys(w.serialize().housing?.map || {}).length }; });
+    const snap = () => page.evaluate(() => { const w = window.rimtownApp.world; const H = HOUSING.S(w); const m = {}; for (const a of Object.values(w.agents)) if (!a.isPlayer && !a.isDead) m[a.agentId] = HOUSING.houseOf(w, a); return { partners: { ...(window.rimtownApp.tileMap.agentPartners || {}) }, m, home: Object.fromEntries(Object.values(w.agents).map(a => [a.agentId, a.homeLocation + (a.isDead ? '(dead)' : '')])), zones: Object.keys(window.rimtownApp.tileMap._houseSubZones || {}).length, lv: { ...H.lv }, n: Object.keys(m).length, sameObj: window.rimtownApp.tileMap._agentHouseMap === w.housing.map, saved: Object.keys(w.serialize().housing?.map || {}).length }; });
     const first = await page.evaluate(async () => {
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {}; app._showCornerNotice = () => {};
       const w = app.world; w.observerMode = true; for (let d = 0; d < 12; d++) for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); }
@@ -40,7 +40,8 @@ const open = async (browser, lang) => {
     const before = await snap();
     await page.reload({ waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(2500);
     const after = await snap();
-    const moved = Object.keys(before.m).filter(id => after.m[id] !== undefined && after.m[id] !== before.m[id]);
+    // 重新整理後遊戲會繼續跑幾秒：剛好在這時候成婚的人搬去跟另一半住是正常的（婚後團圓），不算換房
+    const moved = Object.keys(before.m).filter(id => after.m[id] !== undefined && after.m[id] !== before.m[id] && (before.partners[id] || '') === (after.partners[id] || ''));
     ok(first.ok && before.n >= 15 && before.sameObj && before.saved >= before.n - 2, '誰住哪一棟記在世界狀態裡，存檔帶得走', { n: before.n, sameObj: before.sameObj, saved: before.saved });
     ok(moved.length === 0 && after.n >= before.n - 1, '存檔後重新整理：沒有人換房子', { moved: moved.slice(0, 5).map(id => `${id}: ${before.m[id]} → ${after.m[id]}`), before: before.n, after: after.n });
     ok(after.m[first.richId] === first.hRich && after.lv[first.hRich] === 2, '翻修過的房子，重新整理後還是原來那個人在住', { was: first.hRich, now: after.m[first.richId], lv: after.lv[first.hRich] });
