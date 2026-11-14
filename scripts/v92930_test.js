@@ -13,7 +13,9 @@ async function open(browser, vp, touch) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
   await page.evaluate(() => { const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; app._gameAlert = () => {}; app._showSeasonRecap = () => {};
     w.reset(); w.observerMode = true; ORIGIN.seed(w, 2, { seed: 22 }); w.observerMode = true; w.fullAgentMode = false; app._fullAgentOn = () => false; for (let i = 0; i < 96 * 2; i++) { w.paused = false; w.tick(); } app.state = w.getState();
-    window.__clk = []; document.addEventListener('click', (e) => { const b = e.target.closest?.('button,summary,[data-action],[data-gh]'); window.__clk.push({ hit: !!b, mark: b?.dataset?.probe || '' }); }, true);
+    window.__clk = []; document.addEventListener('click', (e) => { const b = e.target.closest?.('button,summary,[data-action],[data-gh]'); window.__clk.push({ hit: !!b, mark: b?.dataset?.probe || '', same: !!b && b === window.__downEl }); }, true);
+    // 按下去的那一顆是哪個元素（判斷「按下的那顆有沒有收到點擊」用，不靠事先做的記號）
+    window.__downEl = null; document.addEventListener('pointerdown', (e) => { window.__downEl = e.target.closest?.('button,summary,[data-action],[data-gh]') || null; }, true);
     document.querySelectorAll('#season-recap,.rt-modal-overlay').forEach(x => x.remove()); });
   return { page, errs };
 }
@@ -56,9 +58,16 @@ const pickBtn = ({ sel, mark }) => { const root = document.querySelector(sel); i
     await page.waitForTimeout(500); await page.evaluate(() => { window.rimtownApp._goTab('economy'); }); await page.evaluate(pickBtn, { sel: '#sidebar-content > div:last-child', mark: 'map' });
     await page.mouse.move(300, 400); await page.mouse.down(); const mapP = await page.evaluate(() => { window.rimtownApp.renderSidebar(); return document.contains(window.__probe); }); await page.mouse.up(); ok(mapP === false, '按在地圖上的時候，面板照常重畫');
     // 遊戲照常跑 5 倍速：連按 30 次，每次都要送到
-    await page.waitForTimeout(500); await page.evaluate(() => { const app = window.rimtownApp; app._goTab('proposals'); app._setSpeed(5); app._setPaused?.(false); app.world.paused = false; if (!app.simInterval) app.startSimulation(); app._pressMax = 600000; const _t = app.world.tick.bind(app.world); let n = 0; app.world.tick = function () { const r = _t(); if (++n % 2 === 0) { try { app.renderSidebar(); } catch (e) {} } return r; }; }); // 模擬「鎮上常常有事」：每兩格就有程式直接重畫
-    let sent = 0, got = 0; for (let i = 0; i < 30; i++) { const p = await page.evaluate(pickBtn, { sel: '#sidebar-content', mark: 'live' + i }); if (!p) continue; await page.evaluate(() => { window.__clk.length = 0; }); await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.waitForTimeout(90 + (i % 5) * 40); await page.mouse.up(); await page.waitForTimeout(60); sent++; if (await page.evaluate((m) => window.__clk.some(c => c.hit && c.mark === m), 'live' + i)) got++; await page.waitForTimeout(150); }
-    ok(sent >= 20 && got === sent, `5 倍速、常常有事的時候連按 ${sent} 次，${got} 次送到`, { sent, got });
+    await page.waitForTimeout(500); await page.evaluate(() => { const app = window.rimtownApp; app._goTab('proposals'); app._setSpeed(5); app._setPaused?.(false); app.world.paused = false; if (!app.simInterval) app.startSimulation(); app._pressMax = 600000; const _t = app.world.tick.bind(app.world); let n = 0; window.__live = { ticks: 0, redraw: 0, during: 0 }; app.world.tick = function () { const r = _t(); window.__live.ticks++; if (++n % 2 === 0) { window.__live.redraw++; if (window.__pressing) window.__live.during++; try { app.renderSidebar(); } catch (e) {} } return r; }; document.addEventListener('pointerdown', () => { window.__pressing = true; }, true); document.addEventListener('pointerup', () => { window.__pressing = false; }, true); }); // 模擬「鎮上常常有事」：每兩格就有程式直接重畫
+    const run30 = async (off) => { await page.evaluate((off) => { window.rimtownApp._pressOff = off; window.rimtownApp._pressEl = null; window.rimtownApp._pressQ = null; }, off); let sent = 0, got = 0; for (let i = 0; i < 30; i++) { const p = await page.evaluate(pickBtn, { sel: '#sidebar-content', mark: 'live' + i }); if (!p) continue; await page.evaluate(() => { window.__clk.length = 0; }); await page.mouse.move(p.x, p.y); await page.mouse.down(); await page.waitForTimeout(90 + (i % 5) * 40); await page.mouse.up(); await page.waitForTimeout(60);
+      // 判斷標準是「按下去的那一顆有沒有收到點擊」。原本用事先貼的記號判斷：從貼記號到真的按下去隔了三次往返，
+      // 機器很忙時中間剛好重畫一次，記號就不見了，按下去的是新畫出來的同一顆，點擊有送到卻被算成沒送到（回歸時 30 次裡漏算 1 次）
+      const r = await page.evaluate(() => ({ down: !!window.__downEl, same: window.__clk.some(c => c.same) })); if (r.down) { sent++; if (r.same) got++; } await page.waitForTimeout(150); } const live = await page.evaluate(() => { const v = Object.assign({}, window.__live); window.__live.ticks = window.__live.redraw = window.__live.during = 0; return v; }); return { sent, got, live }; };
+    // 這一項只是「遊戲真的在跑的時候連按沒有出事」的檢查，不是漏接的證明。在這台測試機上每一格（含重畫）要跑半秒左右，
+    // 瀏覽器把滑鼠事件排在兩格之間處理，重畫幾乎不會落在按住的那段時間裡：我試過關掉保護跑同一段，30 次也全部送到。
+    // 漏接的證明是上面「按下去 → 插入一次重畫 → 放開」那幾項，那幾項有關掉保護的對照組。
+    const { sent, got, live } = await run30(false);
+    ok(sent >= 20 && got === sent, `5 倍速、常常有事的時候連按 ${sent} 次，${got} 次送到（期間跑了 ${live.ticks} 格、重畫 ${live.redraw} 次，其中 ${live.during} 次落在按住的時候）`, { sent, got, live });
     ok(errs.length === 0, '桌機沒有程式錯誤', errs.slice(0, 3)); await page.close();
   }
   { // ===== 手機：手指 =====
