@@ -83,8 +83,8 @@ const stage = () => {
     const _aj = ce._askJson, _ok = ce.fullAgentOk, _fm = w.fullAgentMode; let asked = 0; ce.fullAgentOk = () => true; w.fullAgentMode = true; ce._askJson = async () => { asked++; return { n: 1, pick: 'join', why: '他難得開口', feel: '義氣' }; };
     const P = SCHEME.create(w, host, { tone: 'fun', title: '在河邊辦一場釣魚比賽', helpers: [guest], ai: true }); DECIDE.drain(w, X, w._absDay()); await DECIDE.flush();
     const q = P.ask.find(e => e.id === guest.agentId); ce._askJson = _aj; ce.fullAgentOk = _ok; w.fullAgentMode = _fm;
-    return { asked, s: q?.s, y: q?.y?.raw, ai: X.st.ai - st0.ai, miss: X.st.aiMiss - st0.miss }; });
-  ok(bare.asked === 1 && bare.s === 'yes' && bare.y === '他難得開口' && bare.ai === 1 && bare.miss === 0, '只問一個人、AI 直接回一個物件（沒包陣列）：回答照樣算數', bare);
+    const last = (X.log[guest.agentId] || []).slice(-1)[0]; return { asked, s: q?.s, y: q?.y?.raw, ai: !!last?.ai, kind: last?.kind }; }); // 只看被問的那個人：之後的版本企劃一建立還會順手貼公告、多問一批人，全域的計數會變
+  ok(bare.asked >= 1 && bare.s === 'yes' && bare.y === '他難得開口' && bare.ai === true && bare.kind === 'schemeAsk', '只問一個人、AI 直接回一個物件（沒包陣列）：回答照樣算數', bare);
   // 介面：心聲卡片
   const card = page.locator('.pv-card').filter({ hasText: '笑我窮' }).first();
   ok(await card.count() === 1 && /出於：賭氣/.test(await card.innerText()) && /心裡想/.test(await card.innerText()) && /嘴上說/.test(await card.innerText()) && /走不開/.test(await card.innerText()), '心聲卡片：看得到「出於：賭氣」、心裡想的、嘴上說的', (await card.innerText().catch(() => '')).slice(0, 200));
