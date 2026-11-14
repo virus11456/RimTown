@@ -13219,6 +13219,7 @@
         '這一類還沒有東西。': 'Nothing of this kind yet.',
         '選一個人': 'Pick a person',
         // v9.32.0 心聲卡片與念頭泡泡
+        '有人說出了自己的想法：在提案頁的「心聲」看他們遇到事情時自己說的話。': 'Someone has spoken their mind: open “Voices” on the Proposals page to read what villagers said in their own words.',
         '心聲': 'Voices',
         '拿定主意': 'Made up their mind',
         '「{x}」': '\u201c{x}\u201d',

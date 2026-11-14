@@ -14,6 +14,7 @@ const UI_UNLOCKS = [
     { key: 'relmap', icon: '💞', label: '關係', why: '大家開始有交情和心結了：在這裡看誰跟誰要好、誰跟誰不合。', ok: (w, d) => d >= 6 },
     { key: 'pp-town', icon: '🏘️', label: '鎮況', why: '鎮上開始有急事和小團體：在提案頁的「鎮況」看大家在煩什麼。', ok: (w, d) => d >= 8 },
     { key: 'pp-truth', icon: '🕵️', label: '真相', why: '有人開始說謊、設局了：只有你看得到的「真相」打開了。', ok: (w, d) => d >= 15 || (d >= 6 && (w.dark?.secrets || []).some(s => s.found)) },
+    { key: 'pp-voices', icon: '💭', label: '心聲', why: '有人說出了自己的想法：在提案頁的「心聲」看他們遇到事情時自己說的話。', ok: (w) => (w.notes?.list || []).length > 0 }, // v9.32.0 有第一句話才出現（AI 關著時不會有）
     { key: 'industry', icon: '🏭', label: '產業', why: '鎮上出現了老闆和店家：在這裡看產業、股東、店鋪和銀行。', ok: (w, d, U) => d >= 20 || (w.research?.currentEra?.() || 1) >= 2 || (d >= 8 && bizN(w) > (U.__bz ?? Infinity)) }, // 開局幾天就會有人合股買下公營產業,太早打開反而看不懂,至少等一週
     { key: 'gh-track', icon: '🔭', label: '反應追蹤', why: '你打出了第一張事件卡：在這裡看村民怎麼反應、七天後變成怎樣。', ok: (w) => (w.eventCards?.stats?.played || 0) >= 1 || (w.eventCards?.played || []).length > 0 },
     { key: 'gh-lab', icon: '🧪', label: '災厄工坊', why: '小鎮撐過一季了：你可以在災厄工坊親手設計一場災難。', ok: (w, d) => d >= 28 || !!w.calamity?.cur || (w.calamity?.hist || []).length > 0 || !!w.worldcal?.cur || (w.worldcal?.hist || []).length > 0 },
