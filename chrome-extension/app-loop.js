@@ -264,6 +264,7 @@ Object.assign(RimTownApp.prototype, {
             }
         });
         tm.agentPartners = partners;
+        try { if (typeof HOUSING !== 'undefined') HOUSING.bind(this.world, tm); } catch (e) {} // v9.28.2 誰住哪一棟跟著世界(存檔)走
         const needed = (npcs.length - couples * 2) + couples + 1; // 單身各一間+夫妻一間+玩家一間
         tm.ensureHouseCapacity?.(needed);
     },

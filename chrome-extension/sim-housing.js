@@ -9,12 +9,28 @@ const HOUSING = (() => {
     const maxLv = (w) => Math.max(0, Math.min(2, era(w) - 1));
     // 村民實際住哪一棟(地圖把住宅區分成一棟棟房子,夫妻同住);地圖還沒好時退回住宅區
     function houseOf(w, a) {
-        try { const tm = typeof window !== 'undefined' && window.rimtownApp?.world === w ? window.rimtownApp.tileMap : null; const id = tm?.getAgentHouseId?.(a.agentId, a.homeLocation); if (id) return id; } catch (e) {}
+        try { const tm = typeof window !== 'undefined' && window.rimtownApp?.world === w ? window.rimtownApp.tileMap : null; if (tm) bind(w, tm); const id = tm?.getAgentHouseId?.(a.agentId, a.homeLocation); if (id) return id; } catch (e) {}
         return a.homeLocation || null;
     }
+    // v9.28.2 誰住哪一棟是這個鎮的狀態(跟著存檔走)，不是畫面的狀態。
+    // 以前這張對照表只放在地圖層、不存檔：重新整理後照「誰先被問到」重排，大半的人換了房子，翻修過的房子變成別人在住。
+    // 這裡把地圖層用的那張表換成世界自己的這一張；地圖重畫(換鎮、讀檔)後再接一次。
+    function bind(w, tm) {
+        if (!tm || !w) return; if (!w.housing || typeof w.housing.lv !== 'object') w.housing = { lv: {}, ver: 0 };
+        const H = w.housing; if (!H.map || typeof H.map !== 'object') H.map = {};
+        if (tm._agentHouseMap === H.map) return;
+        const Z = () => tm._houseSubZones || {}; if (!Object.keys(Z()).length) return; // 地圖還沒畫好，晚點再接
+        // 存檔裡有人住在加蓋的小屋：先把小屋蓋回來(一次蓋一棟)，還是沒有的才重新分配
+        const need = () => Object.values(H.map).filter(h => !Z()[h]).length;
+        for (let i = 0; i < 60 && need() > 0; i++) { const n0 = Object.keys(Z()).length; try { tm.ensureHouseCapacity?.(n0 + 1); } catch (e) { break; } if (Object.keys(Z()).length === n0) break; }
+        for (const [id, h] of Object.entries(H.map)) if (!Z()[h]) delete H.map[id];
+        tm._agentHouseMap = H.map;
+    }
+    // 人走了(過世、搬離)房子就空出來；出遠門的留著
+    function prune(w) { const M = w.housing?.map; if (!M) return; for (const id of Object.keys(M)) { const a = w.agents?.[id]; if ((!a || a.isDead) && !w.isAway?.(id)) delete M[id]; } }
     function S(w) {
         if (!w.housing || typeof w.housing.lv !== 'object') w.housing = { lv: {}, ver: 0 };
-        const H = w.housing;
+        const H = w.housing; if (!H.map || typeof H.map !== 'object') H.map = {};
         for (const a of npcs(w)) { const h = houseOf(w, a); if (h && H.lv[h] === undefined) { H.lv[h] = maxLv(w); H.ver++; } } // 新房子照當下時代蓋
         return H;
     }
@@ -51,11 +67,11 @@ const HOUSING = (() => {
         if (r === true) { try { if (typeof WAYS !== 'undefined') WAYS.onRenovate(w, I.home, a); } catch (e) {} }
         return r;
     }
-    function daily(w) { S(w); } // 翻修由住戶自己決定(renovateBy)；這裡只把新蓋的房子記成當下時代的樣式
+    function daily(w) { prune(w); S(w); } // 翻修由住戶自己決定(renovateBy)；這裡只把新蓋的房子記成當下時代的樣式
     const levels = (w) => S(w).lv;
     const styleOf = (w, home) => STYLE[S(w).lv[home] ?? maxLv(w)];
     const stats = (w) => { const H = S(w), top = maxLv(w); const v = Object.values(H.lv); return { top, total: v.length, upgraded: v.filter(x => x >= top).length, styles: [0, 1, 2].map(i => v.filter(x => x === i).length) }; };
-    return { S, houseOf, daily, levels, maxLv, styleOf, stats, STYLE, COST, info, renovateBy };
+    return { S, houseOf, bind, prune, daily, levels, maxLv, styleOf, stats, STYLE, COST, info, renovateBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
@@ -65,8 +81,8 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.housing = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.housing) d.housing = { lv: this.housing.lv }; return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.housing) d.housing = { lv: this.housing.lv, map: this.housing.map || {} }; return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.housing = (data?.housing && typeof data.housing.lv === 'object') ? { lv: data.housing.lv, ver: 1 } : null; } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.housing = (data?.housing && typeof data.housing.lv === 'object') ? { lv: data.housing.lv, ver: 1, map: (data.housing.map && typeof data.housing.map === 'object') ? data.housing.map : {} } : null; } catch (e) {} return r; };
 }
 if (typeof globalThis !== 'undefined') globalThis.HOUSING = HOUSING;
