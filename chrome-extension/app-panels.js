@@ -1200,21 +1200,34 @@ Object.assign(RimTownApp.prototype, {
                 <button type="button" class="pv-more" data-action="notes-open" data-val="${esc(e.who)}">📓 ${t('翻開他的手記')}</button></div>`).join('')
                 : `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">💭</span>${only ? t('還沒有人不照現成選項、自己拿主意。') : t('還沒有人說出自己的想法。開著「完整智能體模式」讓時間走一陣子，他們遇到事情時說的話會出現在這裡，地圖上也會冒出來。')}</div>`;
         } catch (e) { V = ''; } }
-        let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth', 'voices'].includes(tab)) tab = 'props';
+        // v9.33.0 個人企劃：私人的事，自己出錢、自己找人。P 編號卡片：誰發起、找了誰、各自怎麼回、當天誰到、成不成
+        let nPlan = 0, G = '';
+        if (typeof SCHEME !== 'undefined') { try {
+            const st = SCHEME.stats(this.world); nPlan = st.live; const L = SCHEME.view(this.world, 20); const dayN = (n) => t('第 {n} 天').replace('{n}', n);
+            const who = (id, name, on) => `<button type="button" class="pv-who" data-pv-go="${esc(id)}"${on ? '' : ' disabled'}>${esc(name)}</button>`;
+            G = L.length ? L.map(P => `<div class="sk-card sk-${P.stage}${P.out ? (P.out.ok ? ' sk-ok' : ' sk-bad') : ''}${P.secret ? ' sk-secret' : ''}"><div class="sk-head"><span class="sk-id">${P.id}</span><span class="sk-tone">${P.icon} ${esc(P.toneName)}</span>${P.secret ? `<span class="sk-sec" title="${esc(t('鎮上的人不知道，只有你看得到'))}">🤫 ${t('只有你看得到')}</span>` : ''}<span class="sk-stage">${esc(P.stageName)}</span></div>
+                <div class="sk-title">${esc(P.title)}</div><div class="sk-by">${who(P.by, P.byName, P.here)}${P.targetName ? `<span class="sk-arrow">→</span>${who(P.target, P.targetName, !!this.world.agents[P.target])}` : ''}<span class="sk-meta">${dayN(P.d0)}${P.ai ? ` · ✍️ ${t('他自己想的')}` : ` · ${t('照個性推估')}`}</span></div>
+                ${P.why ? `<p class="sk-why">${esc(t('「{x}」').replace('{x}', P.why))}</p>` : ''}
+                <div class="sk-plan">📍 ${esc(P.placeName)} · ${dayN(P.when)} ${P.hour}:00${P.cost ? ` · 💰 ${P.cost}` : ''}${P.warned ? ` · <b class="sk-warn">⚠️ ${t('走漏風聲了')}</b>` : ''}</div>
+                ${P.ask.length ? `<ul class="sk-ask">${P.ask.map(q => `<li class="sk-a sk-a-${q.s}">${who(q.id, q.name, !!this.world.agents[q.id])}<span class="sk-ans">${esc(q.label)}${q.came ? ` · ✅ ${t('到場')}` : q.noShow ? ` · ❌ ${t('沒來')}` : ''}</span>${q.y ? `<span class="sk-say">${esc(t('「{x}」').replace('{x}', q.y))}</span>` : ''}</li>`).join('')}</ul>` : `<div class="sk-solo">${t('一個人做，沒找人。')}</div>`}
+                ${P.out ? `<div class="sk-out">${P.out.ok ? '🎉' : '💨'} ${esc(P.out.text)}</div>` : ''}</div>`).join('')
+                : `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">🎯</span>${t('還沒有人私下張羅什麼。讓時間走幾天，村民想到自己的事就會出現在這裡。')}</div>`;
+        } catch (e) { G = ''; } }
+        let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth', 'voices', 'plans'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}" title="${t(label)}" aria-label="${t(label)}"><i class="pp-ti" aria-hidden="true">${icon}</i> <span class="pp-tl">${t(label)}</span>${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
         const ppEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en'; // v9.32.0 英文標籤比較長，四個以上放不下：沒選到的分頁只留圖示和數字
-        let html = `<div class="proposals-panel"><div class="pp-tabs${ppEn ? ' pp-icons' : ''}" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}${typeof NOTES !== 'undefined' && NOTES.feed ? tabBtn('voices', '💭', '心聲', nVoice) : ''}</div>`;
+        let html = `<div class="proposals-panel"><div class="pp-tabs${ppEn ? ' pp-icons' : typeof SCHEME !== 'undefined' ? ' pp-many' : ''}" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}${typeof NOTES !== 'undefined' && NOTES.feed ? tabBtn('voices', '💭', '心聲', nVoice) : ''}${typeof SCHEME !== 'undefined' ? tabBtn('plans', '🎯', '企劃', nPlan) : ''}</div>`;
         if (typeof NOTES !== 'undefined' && tab === 'props') { // v9.31.0 鎮民手記的入口：放在提案頁最上面，附最近一則「自己拿的主意」
             const nN = NOTES.count(this.world); const lt = NOTES.latest(this.world, 1)[0];
             html += `<div class="notes-entry"><button type="button" class="pp-more notes-open" data-action="notes-open">📓 ${t('鎮民手記')}${t('：')}${t('看他們各自想了什麼')}${nN ? ` <small>${t('{n} 筆').replace('{n}', nN)}</small>` : ''}</button>${lt ? `<button type="button" class="notes-latest" data-action="notes-open" data-val="${esc(lt.who)}">💡 ${esc(lt.name)}${t('：')}${esc(lt.text)}</button>` : ''}</div>`;
         }
         { // v9.18.0 提案流程說明改成一步一格的流程（文字一字不少），鎮況／真相維持一行
-            const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。', voices: '他們遇到事情時自己說的話，都是 AI 當下寫的原句。💡 是他不照現成選項、自己想出來的做法。' }[tab]);
+            const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。', voices: '他們遇到事情時自己說的話，都是 AI 當下寫的原句。💡 是他不照現成選項、自己想出來的做法。', plans: '村民私下張羅的事：自己出錢、自己找人，不經過表決。答應、到場、成不成是三回事。' }[tab]);
             if (tab === 'props') { const steps = hint.split(/(?<=[，。])|(?<=[,.])\s+/).map(x => x.trim().replace(/[，。,.]$/, '')).filter(Boolean);
                 html += `<div class="pp-tabhint pp-flow" title="${esc(hint)}">${steps.map((x, i) => `<span class="pp-step${i === steps.length - 1 && steps.length > 1 ? ' last' : ''}"><i aria-hidden="true">${i === steps.length - 1 && steps.length > 1 ? '👁️' : i + 1}</i>${esc(x)}</span>`).join('<b class="pp-sep" aria-hidden="true">›</b>')}</div>`; } // v9.23.1 類別改名:以前借用 pg-flow／pg-arr,被金流卡與收合箭頭的樣式蓋到(多出 ▾、箭頭被推到最右、底下多一條虛線)
             else html += `<div class="pp-tabhint">${hint}</div>`;
         }
-        html += tab === 'town' ? T : tab === 'truth' ? S : tab === 'voices' ? V : P;
+        html += tab === 'town' ? T : tab === 'truth' ? S : tab === 'voices' ? V : tab === 'plans' ? G : P;
         if (tab === 'props') for (const k of stampShown) this._stampSeen.add(k);
         html += '</div>';
         // v6.54.0 內容沒變就不重畫(側欄每格都會呼叫;以前每次都整頁重建,提案一多就卡)。剛蓋的章(pp-stamp-new)不算變化,讓動畫播完
