@@ -118,7 +118,7 @@ const INVEST = (() => {
     function buy(w, a, k, ch) {
         const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
         const { p, price, boss } = q;
-        if (ch && byChoice(w) && here(w, boss)) {
+        if (ch && here(w, boss)) {
             if (X.ask[k] && day(w) - X.ask[k].d <= 3) return { ok: false, busy: true, k, boss }; // 已經有人在跟當家談了
             X.ask[k] = { by: a.agentId, d: day(w) }; try { DECIDE.enqueue(w, boss, 'sell', { k, by: a.agentId, src: 'inv' }); } catch (e) { delete X.ask[k]; return { ok: false }; }
             return { ok: false, asked: true, k, p, price, boss };
@@ -163,15 +163,13 @@ const INVEST = (() => {
         return null;
     }
     // ch = 交給股東本人決定：這裡只記「連續幾週不如銀行」，不擲骰
-    function cashOuts(w, all, d, ch) {
+    function cashOuts(w, all, d) { // 記下每一份股份連續幾週不如放銀行；要不要退股由股東自己決定(cashOutBy)
         const X = S(w); const M = SH().S(w); const by = bankYield(w); if (!(by > 0) || typeof BANK === 'undefined') return;
         for (const k of Object.keys(MK().SECTORS)) {
             const bossId = M.owners[k]; const boss = w.agents[bossId]; if (!boss) continue; const y = firmYield(w, k);
             for (const h of Object.keys(SH().stakes(w, k))) {
                 if (h === bossId) continue; const a = w.agents[h]; if (!a) continue; const key = k + '|' + h;
                 X.low[key] = y < by * 0.8 ? (X.low[key] || 0) + 1 : 0;
-                if (X.low[key] < 3 || ch || Math.random() > 0.5) continue;
-                cashOut(w, all, k, h);
             }
         }
     }
@@ -265,7 +263,7 @@ const INVEST = (() => {
         if (!w.observerMode || !w.market || typeof WALLET === 'undefined' || !w.wallet || typeof SHARES === 'undefined') return;
         const X = S(w); const d = day(w); if (X.day === d) return; X.day = d;
         trackBank(w); const all = npcs(w);
-        try { cashOuts(w, all, d, byChoice(w)); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
+        try { cashOuts(w, all, d); } catch (e) { console.warn('[Invest] weekly', e); } // v9.19.0 入股改由決策核心處理
     }
 
     // ---------- 給 AI 與觀察者 ----------

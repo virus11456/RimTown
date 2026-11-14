@@ -200,11 +200,8 @@ const HEALTH = (() => {
         for (const a of all) for (const p of PARTS) { if (body(w, a)[p] > 25 || !transplantable(w, p)) continue; if (H.q.some(q => q.id === a.agentId && q.p === p)) continue; H.q.push({ id: a.agentId, p, d }); mem(w, a, '醫生說我的{p}要換，只能排隊等人捐。', { p: t(PN[p]) }, 7); }
         H.q = H.q.filter(q => { const a = w.agents[q.id]; return a && !a.isDead && body(w, a)[q.p] <= 40; });
         H.bank = H.bank.filter(o => d - o.d <= 3); // 器官放不久
-        // 插隊:有錢人塞紅包給醫生
+        // 插隊:塞不塞紅包給醫生，由排隊的人自己決定(bribeBy)
         const docs = all.filter(a => a.job?.key === 'doctor');
-        if (H.q.length > 1 && docs.length && !byFun(w) && Math.random() < 0.15) { // v9.25.0 交給本人:塞不塞紅包由排隊的人自己決定(bribeBy)
-            const rich = H.q.slice(1).map(q => [q, w.agents[q.id]]).filter(([, a]) => a && WL() && WL().get(w, a) >= 300).sort((x, y) => WL().get(w, y[1]) - WL().get(w, x[1]))[0];
-            const doc = docs.find(x => !trait(x, 'kind')); if (rich && doc) bribeDo(w, all, H, rich[0], rich[1], doc); }
         // 配對:捐贈器官或培養器官
         for (const q of H.q.slice()) {
             const a = w.agents[q.id]; if (!a) continue; let src = H.bank.find(o => o.p === q.p);

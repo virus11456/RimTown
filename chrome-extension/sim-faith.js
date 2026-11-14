@@ -141,7 +141,7 @@ const FAITH = (() => {
         if (big) bigGift(w, F, I.R, a, n); else { give(w, F, I.R, n); mem(w, a, '我奉獻了 {n} 銀幣給{r}。', { n, r: I.R.name[0] }, 3); }
         return n;
     }
-    function daily(w, ch) {
+    function daily(w) {
         const F = S(w), d = day(w); if (F.lastDay === d) return; F.lastDay = d;
         const all = npcs(w);
         try { if (d % 5 === 2) taxProposal(w, F, d); } catch (e) {}
@@ -151,10 +151,8 @@ const FAITH = (() => {
             if (f.piety >= 50 && (a.mood || 50) < 50) a.moodModifier = (a.moodModifier || 0) + 1; // 信仰讓人撐得住
             const cash = money(w, a);
             if (typeof WALLET !== 'undefined' && w.wallet && cash > 20) {
-                const rate = R.sk === 'sheng' && d % 7 === 0 ? 0.05 : (!ch && f.piety >= 60 && Math.random() < 0.15 ? 0.02 : 0); // 聖堂型每七天什一(簡化為 5%)；ch = 平常的奉獻交給本人決定
+                const rate = R.sk === 'sheng' && d % 7 === 0 ? 0.05 : 0; // 聖堂型每七天什一(簡化為 5%)；平常的奉獻、大筆捐獻由本人決定(giftBy)
                 const n = Math.floor(cash * rate); if (n >= 1 && WALLET.take(w, a, n)) give(w, F, R, n);
-                // v7.0.0 有錢的虔誠信徒偶爾大筆捐獻:神職與同信仰的人對他更有好感(捐錢換聲望)
-                else if (!ch && cash >= 150 && f.piety >= 50 && Math.random() < 0.03) { const big = Math.min(40, Math.floor(cash * 0.08)); if (big >= 5 && WALLET.take(w, a, big)) bigGift(w, F, R, a, big); }
             }
         }
         for (const R of F.rels) {
@@ -171,9 +169,7 @@ const FAITH = (() => {
             if (R.sk === 'zu') for (const a of bs) for (const pn of a._parentNames || []) { const p = bs.find(o => o.name === pn); if (p) { a.relationships.getOrCreate(p.agentId, p.name).modifyAffinity(0.3); } }
             // 禮教型:敬重首長(王都時國王民心微升)
             if (R.sk === 'li' && bs.length && w.crown && w.crown.king && !w.crown.republic) w.crown.legit = Math.min(100, (w.crown.legit || 50) + 0.05 * bs.length / Math.max(1, all.length) * 10);
-            // 神職貪污(偶爾,真相頁看得到)
-            const priest = bs.find(a => a.job?.key === 'priest');
-            if (!byDark(w) && priest && R.fund >= 40 && Math.random() < 0.04 && !has(priest, 'ascetic')) embezzle(w, R, priest); // v9.26.0 有決策核心時,拿不拿由神職自己決定
+            // 神職貪污(真相頁看得到):拿不拿由神職自己決定(embezzleBy)
             // 節日
             const season = ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock?.season); if (season === R.festSeason && w.clock?.day === R.festDay && R._festDay !== d) {
                 R._festDay = d; for (const a of bs) { a.moodModifier = (a.moodModifier || 0) + 6; bumpP(w, a, 2); }
@@ -183,7 +179,6 @@ const FAITH = (() => {
         }
         grief(w, F);
         pray(w, F, d);
-        preach(w, F);
     }
     // 喪親:有人更虔誠,有人失去信仰
     function grief(w, F) {
@@ -213,14 +208,7 @@ const FAITH = (() => {
         return wish;
     }
     function pray(w, F, d) {
-        for (const id of Object.keys(F.prayers)) if (d - F.prayers[id].day > 4) delete F.prayers[id];
-        if (byCrowd(w)) return; // 要不要祈禱由本人決定
-        for (const a of npcs(w)) {
-            const R = relOf(w, a); const f = F.of[a.agentId]; if (!R || !f || f.piety < 40 || F.prayers[a.agentId]) continue;
-            const why = trouble(w, a);
-            if (!why || Math.random() > 0.25) continue;
-            prayDo(w, F, a, R, why, d);
-        }
+        for (const id of Object.keys(F.prayers)) if (d - F.prayers[id].day > 4) delete F.prayers[id]; // 要不要祈禱由本人決定(prayBy)
     }
     // v9.27.0 給決策核心:這個人現在是不是日子難過、又夠虔誠(跟以前擲骰的是同一批人)
     function prayInfo(w, a) { const F = S(w); const R = relOf(w, a); const f = F.of[a?.agentId]; if (!a || !R || !f || f.piety < 40 || F.prayers[a.agentId]) return null; const why = trouble(w, a); return why ? { R, why, wish: WISH[why], piety: Math.round(f.piety) } : null; }
@@ -239,16 +227,6 @@ const FAITH = (() => {
         }
     }
     const refuseDo = (w, a, o, R) => mem(w, o, '{a}一直勸我信{r}，我不想。', { a: a.name, r: R.name[0] }, 4);
-    function preach(w, F) {
-        if (F.rels.length < 1 || byCrowd(w)) return; // v9.27.0 有決策核心時,去不去勸、改不改宗都由本人決定
-        for (const a of npcs(w)) {
-            const R = relOf(w, a); const f = F.of[a.agentId]; if (!R || !f || f.piety < 70) continue;
-            if (Math.random() > zealOf(R)) continue;
-            const friends = preachFriends(w, F, a, R);
-            const o = friends[Math.floor(Math.random() * friends.length)]; if (!o) continue;
-            if (Math.random() < 0.5 - resistOf(F, o) * 0.6) convertDo(w, F, a, o, R); else refuseDo(w, a, o, R);
-        }
-    }
     // v9.27.0 給決策核心:很虔誠、又有信別的(或不信)的好朋友的人,可以去勸;被勸的人自己決定改不改
     function preachInfo(w, a) {
         const F = S(w); const R = relOf(w, a); const f = F.of[a?.agentId]; if (!a || !R || !f || f.piety < 70) return null;
@@ -324,7 +302,7 @@ if (typeof EventCardSystem !== 'undefined') {
 }
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) FAITH.daily(w, FAITH.byChoice(w)); } catch (e) { console.warn('[Faith] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) FAITH.daily(w); } catch (e) { console.warn('[Faith] daily', e); } return r; };
     const _rv = PS._ruleVote; // v7.0.0 宗教課稅提案的投票
     PS._ruleVote = function (w, p, a, ...rest) { if ((p.kind === 'faith_tax' || p.kind === 'faith_untax') && w.faith) { const r = FAITH.taxVote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
 }

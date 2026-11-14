@@ -163,16 +163,9 @@ const CROWN = (() => {
     }
     function joinBy(w, a) { const I = joinInfo(w, a); if (!I) return false; joinDo(w, S(w).plot, I.L, a); return true; }
     function plot(w, C, k, d) {
-        if (!C.plot) {
-            if (C.legit >= 35 || byCrowd(w) || Math.random() > 0.2) return; // v9.27.0 有決策核心時,動不動手由最有可能的那個人自己決定
-            const am = plotCand(w, k);
-            if (!am) return;
-            startPlot(w, C, k, am, d);
-            return;
-        }
+        if (!C.plot) return; // 動不動手由最有可能的那個人自己決定(plotBy)
         const P = C.plot, L = w.agents[P.leader]; if (!L || L.isDead) { C.plot = null; return; }
-        // 拉人:跟主謀交好、跟國王處不好的人
-        if (!byCrowd(w)) for (const o of npcs(w)) if (joinable(w, P, L, k, o) && Math.random() < 0.25) joinDo(w, P, L, o); // v9.27.0 有決策核心時,加不加入由被拉的人自己決定
+        // 拉人:跟主謀交好、跟國王處不好的人，加不加入由被拉的人自己決定(joinBy)
         // 被忠臣識破
         const loyal = npcs(w).filter(o => o !== L && !P.members.includes(o.agentId) && aff(o, k) > 30);
         let caught = false; try { caught = loyal.some(o => Math.random() < 0.02 * DARK.insight(o)); } catch (e) { caught = Math.random() < 0.04; }

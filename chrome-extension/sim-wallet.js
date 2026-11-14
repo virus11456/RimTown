@@ -84,7 +84,6 @@ const WALLET = (() => {
         const W = S(w), today = day(w), all = npcs(w); if (!all.length || W.lastDay === today) return; W.lastDay = today;
         payday(w, W, all); try { if (typeof MARKET !== 'undefined') MARKET.payroll(w, W, all); } catch (e) { console.warn('[Market] payroll', e); } living(w, W, all);
         try { social(w, W, all, today); } catch (e) { console.warn('[Wallet] social', e); }
-        try { election(w, W, all); } catch (e) { console.warn('[Wallet] election', e); }
         try { if (typeof MARKET !== 'undefined') MARKET.daily(w, W, all); } catch (e) { console.warn('[Market] daily', e); } // v6.89.0 產權、調薪、挨餓
         for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) { const v = +W.bal[id] || 0; delete W.bal[id]; if (v && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -v); } // v8.8.0 帶走的錢記到「搬走帶走」 // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)
     }
@@ -114,7 +113,7 @@ const WALLET = (() => {
         const cooks = all.filter(a => a.job?.key === 'cook'), tailors = all.filter(a => a.job?.key === 'tailor');
         const tipCap = 6, tips = new Map();
         const tip = (pool, n, reason, payer) => { const cand = pool.filter(x => x !== payer); if (!cand.length) { toTown(w, n, reason); return; } const who = cand[Math.floor(Math.random() * cand.length)]; const got = tips.get(who) || 0; const give = Math.max(0, Math.min(n, tipCap - got)); if (give > 0) { bizIncome(w, who, give); tips.set(who, got + give); } if (n - give > 0) toTown(w, n - give, reason); };
-        const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0; const fun = byFun(w);
+        const winter = w.clock?.season === '冬季'; const d = day(w); let hungryToday = 0;
         // v7.7.0 小孩買衣服、柴火由家裡的大人出;家裡沒人出得起才用自己的錢
         const payBy = (a, n) => { if ((a.age ?? 30) >= 16) return take(w, a, n); try { const f = (typeof HEALTH !== 'undefined' ? HEALTH.family(w, a) : []).filter(o => (o.age ?? 30) >= 16 && get(w, o) >= n + 3).sort((x, y) => get(w, y) - get(w, x))[0]; if (f && take(w, f, n)) return true; } catch (e) {} return take(w, a, n); };
         // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
@@ -136,7 +135,7 @@ const WALLET = (() => {
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多);v6.90.0 越有錢花得越多(大約跟財富的平方根成正比)
-            const bal = get(w, a); if (bal > 70 && (fun ? (d + a.agentId.length * 3) % HABIT[habitOf(w, a)] === 0 : Math.random() < (trait(a, 'greedy') ? 0.15 : 0.45))) { /* v9.25.0 交給本人:照他自己的花錢習慣，幾天花一次 */ const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
+            const bal = get(w, a); if (bal > 70 && (d + a.agentId.length * 3) % HABIT[habitOf(w, a)] === 0) { /* 照他自己的花錢習慣，幾天花一次 */ const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
                 if (payBy(a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }
@@ -200,16 +199,6 @@ const WALLET = (() => {
         }
         return got;
     }
-    function election(w, W, all) {
-        const el = w.election; if (!el || el.phase !== 'campaign' || !Array.isArray(el.candidates)) return;
-        if (byDark(w)) return;
-        for (const c of el.candidates) {
-            const a = w.agents[c.agentId || c.id]; if (!a || get(w, a) < 60) continue;
-            let honest = 3; try { honest = DARK.honesty(a); } catch (e) {}
-            if (honest > 1.8 || Math.random() > 0.5) continue;
-            buyVotes(w, a, all);
-        }
-    }
     // v9.26.0 給決策核心:這個候選人現在買不買得了票(跟以前擲骰的是同一批人:手上有 60 銀幣、不夠老實、鎮上有手頭緊的人)
     function voteBuyInfo(w, a) {
         const el = w.election; if (!a || !w.wallet || !el || el.phase !== 'campaign' || !Array.isArray(el.candidates) || !el.candidates.some(c => (c.agentId || c.id) === a.agentId) || get(w, a) < 60) return null;
@@ -232,8 +221,7 @@ const WALLET = (() => {
     function decideFund(w, ps, p) {
         const c = costValue(ps._cost(p)); if (!(c > 0)) return null;
         const a = w.agents[p.proposerId]; if (!a) return { by: 'town', value: c };
-        const mine = get(w, a); const fun = byFun(w);
-        if (!fun && mine >= c * 1.2 && (trait(a, 'kind') || trait(a, 'charismatic') || c <= mine * 0.35 || Math.random() < 0.35)) return { by: 'self', pledges: { [a.agentId]: c }, value: c };
+        const mine = get(w, a);
         const pledges = {}; let sum = 0;
         const mineGive = Math.floor(Math.min(mine * 0.5, c)); if (mineGive >= 5) { pledges[a.agentId] = mineGive; sum += mineGive; }
         for (const f of npcs(w).filter(x => x !== a && aff(x, a) >= 25 && get(w, x) >= 20).sort((x, y) => aff(y, a) - aff(x, a))) {
@@ -241,7 +229,7 @@ const WALLET = (() => {
         }
         const base = sum >= c && Object.keys(pledges).length >= 2 ? { by: 'crowd', pledges, value: c } : { by: 'town', value: c };
         // v9.25.0 自己出得起時，要不要自掏腰包由提案人決定：先照「湊錢／公庫」記著，他拿了主意再改(fundBy)
-        if (fun && mine >= c * 1.2) { base.ask = true; base.alt = base.by; if (base.by === 'crowd') base.altPledges = pledges; }
+        if (mine >= c * 1.2) { base.ask = true; base.alt = base.by; if (base.by === 'crowd') base.altPledges = pledges; }
         return base;
     }
     // 提案人現在能不能決定這個提案的錢誰出(還在表決、錢還沒收、他自己出得起)

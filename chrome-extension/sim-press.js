@@ -105,12 +105,7 @@ const PRESS = (() => {
     }
     function electionDay(w, R, E, d) {
         const cands = elecOf(w, R, E, d); if (!cands) return;
-        // 收買:有錢又不老實的候選人花錢買報社
-        if (!byDark(w)) for (const c of cands) {
-            const a = w.agents[c.agentId]; if (!a || R.elec.bribes[c.agentId] || money(w, a) < 150) continue;
-            let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest >= 3 || Math.random() > 0.35) continue;
-            bribePaper(w, R, a);
-        }
+        // 收買:要不要花錢買報社,由有錢又不老實的候選人自己決定(bribeBy)
         for (const P of R.papers) {
             if (P.banned && !P.underground) continue; if (P.st === 'board') { if (!R.elec.endorsed[P.id]) { R.elec.endorsed[P.id] = 'none'; story(w, P, 'platform', '候選人：{list}', { list: cands.map(c => c.name).join(' / ') }); } continue; }
             const ed = w.agents[P.journo];

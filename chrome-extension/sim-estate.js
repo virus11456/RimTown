@@ -175,12 +175,7 @@ const ESTATE = (() => {
             const id = 'U' + (++E.n); E.units[id] = { id, owner: null, occ: null, lv: 0, built: day(w), pub: 1 }; E.stats.publicBuilt = (E.stats.publicBuilt || 0) + 1;
             if (k === 0) log(w, '🏗️ 鎮上缺房子，公庫出錢蓋了公有房舍。', {}, '');
           } }
-        // 抵押:屋主缺錢,拿房子跟銀行借
-        const B = w.bank;
-        if (B && B.open && typeof BANK !== 'undefined' && !byShare(w)) for (const u of Object.values(E.units)) {
-            const o = ownerAgent(w, u); if (!o || B.loans?.[o.agentId] || cash(w, o) >= 8 || Math.random() > 0.4) continue;
-            mortDo(w, B, o, u);
-        }
+        // 抵押:屋主缺錢要不要拿房子跟銀行借，由他自己決定(mortBy)
     }
     function mortDo(w, B, o, u) {
         const n = BANK.lend(w, B, o, Math.round(valueOf(w, u) * 0.4), '房屋抵押'); if (n && B.loans[o.agentId]) { B.loans[o.agentId].collateral = u.id; mem(w, o, '拿房子去銀行抵押，借了 {n} 銀幣。', { n }, 7); }

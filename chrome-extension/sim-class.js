@@ -91,11 +91,7 @@ const CLASS = (() => {
                 try { w.dailyNews?.collectEvent?.('politics', `${cand.a.name}${t('獲封')}${t(r.zh)}`, 7, [cand.a.name]); } catch (e) {}
             }
         }
-        // 有錢人花錢買爵位(錢進公庫);舊貴族看不起
-        if (!byFun(w) && Math.random() < 0.15 && typeof WALLET !== 'undefined' && w.wallet) { // v9.25.0 交給本人:買不買爵位由有錢人自己決定(titleBy)
-            const buyer = all.filter(a => !C.titles[a.agentId] && money(w, a) >= BUY_PRICE * 1.3).sort((x, y) => money(w, y) - money(w, x))[0];
-            if (buyer) buyTitle(w, C, all, buyer, d);
-        }
+        // 有錢人花錢買爵位(錢進公庫);舊貴族看不起:買不買由有錢人自己決定(titleBy)
     }
     const byFun = (w) => { try { return typeof DECIDE !== 'undefined' && !!DECIDE.fun && !!DECIDE.on?.(w); } catch (e) { return false; } };
     function buyTitle(w, C, all, buyer, d) {

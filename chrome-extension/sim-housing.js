@@ -52,18 +52,7 @@ const HOUSING = (() => {
         if (r === true) { try { if (typeof WAYS !== 'undefined') WAYS.onRenovate(w, I.home, a); } catch (e) {} }
         return r;
     }
-    function daily(w, ch) {
-        const H = S(w), top = maxLv(w); if (typeof WALLET === 'undefined' || !w.wallet) return;
-        if (ch) return; // 交給住戶自己決定
-        const byHome = {}; for (const a of npcs(w)) { const h = houseOf(w, a); if (h) (byHome[h] || (byHome[h] = [])).push(a); }
-        let done = 0;
-        for (const [home, people] of Object.entries(byHome).sort(() => Math.random() - 0.5)) {
-            if (done >= 2) break; const lv = H.lv[home] ?? top; if (lv >= top) continue;
-            const cost = COST[lv + 1]; const payer = people.slice().sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
-            if (!payer || WALLET.get(w, payer) < cost * 1.2 || Math.random() > 0.35) continue;
-            if (renovate(w, home, people, payer, lv) === true) done++;
-        }
-    }
+    function daily(w) { S(w); } // 翻修由住戶自己決定(renovateBy)；這裡只把新蓋的房子記成當下時代的樣式
     const levels = (w) => S(w).lv;
     const styleOf = (w, home) => STYLE[S(w).lv[home] ?? maxLv(w)];
     const stats = (w) => { const H = S(w), top = maxLv(w); const v = Object.values(H.lv); return { top, total: v.length, upgraded: v.filter(x => x >= top).length, styles: [0, 1, 2].map(i => v.filter(x => x === i).length) }; };
@@ -71,7 +60,7 @@ const HOUSING = (() => {
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { const d = this._abs(w); if (w.observerMode && this._houseDay !== d) { this._houseDay = d; HOUSING.daily(w, HOUSING.byChoice(w)); } } catch (e) { console.warn('[Housing] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { const d = this._abs(w); if (w.observerMode && this._houseDay !== d) { this._houseDay = d; HOUSING.daily(w); } } catch (e) { console.warn('[Housing] daily', e); } return r; };
 }
 if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;

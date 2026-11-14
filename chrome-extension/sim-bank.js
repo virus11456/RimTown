@@ -119,7 +119,7 @@ const BANK = (() => {
         if (!R.injected && banker && !banker.isDead && B.reserve < totalDep(B)) inject(w, B, banker, R);
         if (!R.bonds && banker && !banker.isDead && B.reserve < totalDep(B) * 0.8) { R.bonds = issueBonds(w, B, d, Math.ceil(totalDep(B) - B.reserve), true) || -1; }
         if (!R.asked && B.reserve < totalDep(B) * 0.6) { askBailout(w, B, d, R); if (R.asked === 'pending') return; }
-        if (!byShare(w)) for (const id of Object.keys(B.dep)) { const a = w.agents[id]; if (!a || Math.random() > 0.6) continue; withdraw(w, B, a, B.dep[id]); } // 交給本人決定時，由存戶自己去領(runBy)
+        // 要不要去領，由存戶自己決定(runBy)
         if (totalDep(B) > 0 && B.reserve < 1 && !R.asked) { askBailout(w, B, d, R); if (R.asked === 'pending') return; } // 一天就被領光:倒閉前還是要先問政府
         if (totalDep(B) > 0 && B.reserve < 1) return fail(w, B, d);
         if (d - B.runDay >= 3) { B.status = 'ok'; B.run = null; B.bad = Math.round((B.bad || 0) * 0.3); B.lastRunEnd = d; log(w, '🏦 銀行撐過了擠兌，大家慢慢放心了。', {}); }
@@ -136,26 +136,9 @@ const BANK = (() => {
     // 債券:三十天到期;擠兌時利息較高(一成二)才有人敢買,平時八分
     function issueBonds(w, B, d, goal, inRun) {
         const banker = w.agents[B.banker]; if (!banker || goal < 5) return 0;
-        const rate = inRun ? 0.12 : 0.08; B.lastIssue = d; let raised = 0, buyers = 0;
+        const rate = inRun ? 0.12 : 0.08; B.lastIssue = d;
         log(w, '📜 銀行家{a}發行債券：三十天到期，利息 {r}%{why}。', { a: banker.name, r: Math.round(rate * 100), why: inRun ? '（想撐過擠兌）' : '（補充準備金）' }, banker.name);
-        if (byShare(w)) { if (B.offer) closeOffer(w, B); B.offer = { id: 'OF' + (B.offerN = (B.offerN || 0) + 1), d, until: d + 2, goal: Math.ceil(goal), rate, inRun: !!inRun, raised: 0, buyers: 0, got: {} }; return 0; } // 開賣兩天，誰要買由本人決定(bondBy)，到期再結算(closeOffer)
-        const cands = npcs(w).filter(a => a !== banker && cash(w, a) >= 20).sort((x, y) => cash(w, y) - cash(w, x));
-        for (const a of cands) {
-            if (raised >= goal) break;
-            const trust = aff(a, banker); const prudent = has(a, 'stoic') || has(a, 'hardworking') || has(a, 'perfectionist');
-            if (trust < -10) continue;
-            let p = (inRun ? 0.2 : 0.25) + (trust > 30 ? 0.25 : trust > 10 ? 0.1 : 0) + (prudent ? 0.1 : 0) + (has(a, 'optimist') ? 0.1 : 0) - (has(a, 'pessimist') || has(a, 'neurotic') ? 0.15 : 0);
-            if (inRun && (B.dep[a.agentId] || 0) > 0) p -= 0.1; // 自己的存款都在擔心了
-            if (Math.random() > p) continue;
-            const n = Math.floor(Math.min(cash(w, a) * 0.4, goal - raised)); if (n < 5 || !WALLET.take(w, a, n)) continue;
-            B.bonds.push({ id: 'BD' + (B.bondN = (B.bondN || 0) + 1), holder: a.agentId, n, rate, issued: d, due: d + 30 });
-            B.reserve += n; raised += n; buyers++;
-            mem(w, a, '我買了 {n} 銀幣的銀行債券，三十天後連本帶利拿回來。', { n }, 5);
-        }
-        if (buyers) log(w, '📜 {k} 個人買了債券，銀行籌到 {n} 銀幣。', { k: buyers, n: raised }, banker.name);
-        else log(w, '📜 沒有人敢買銀行的債券。', {}, banker.name);
-        mem(w, banker, buyers ? '我發行債券籌到了 {n} 銀幣。' : '我發行債券，結果沒有人買。', { n: raised }, 6);
-        return raised;
+        if (B.offer) closeOffer(w, B); B.offer = { id: 'OF' + (B.offerN = (B.offerN || 0) + 1), d, until: d + 2, goal: Math.ceil(goal), rate, inRun: !!inRun, raised: 0, buyers: 0, got: {} }; return 0; // 開賣兩天，誰要買由本人決定(bondBy)，到期再結算(closeOffer)
     }
     // ---------- v9.24.0 交給本人決定的版本 ----------
     // 債券的認購期結束：公布賣了多少

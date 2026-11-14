@@ -139,7 +139,7 @@ const MARKET = (() => {
         assign(w, all, d);
         if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d); risk(w, all); }
         endStrikes(w, all, d);
-        hunger(w, all, byWork(w));
+        hunger(w, all);
     }
     // 產業估價:底價＋每個工人＋最近一週的利潤。公營產業的工資由公庫付、帳上看不到,要用估計的工資扣掉(以前漏扣,估價虛高到沒人買得起)
     const value = (w, k, all) => { const h = S(w).hist[k] || []; const ws = workersOf(w, k, all); const owned = !!ownerOf(w, k);
@@ -261,7 +261,7 @@ const MARKET = (() => {
         log(w, '🎒 {a}在鎮上活不下去，收拾行李去別處討生活。', { a: a.name }, a.name);
         try { return !!w.leaveTown(a.agentId, t('在鎮上活不下去，去別處討生活')); } catch (e) { return false; }
     }
-    function hunger(w, all, ch) {
+    function hunger(w, all) { // 挨餓的人要不要離鄉，由本人決定(leaveBy)
         const M = S(w);
         for (const id of Object.keys(M.hungry)) if (!w.agents[id]) delete M.hungry[id];
         for (const a of all) {
@@ -277,7 +277,6 @@ const MARKET = (() => {
                 try { w.lifecycle._killNpc(w, a); } catch (e) { console.warn('[Market] starve', e); }
                 continue;
             }
-            if (!ch && (a.age || 30) >= 16 && Math.random() < 0.05 && w.leaveTown) leaveHungry(w, a);
         }
     }
     // 老闆過世:配偶或成年子女繼承

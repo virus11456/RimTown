@@ -68,30 +68,14 @@ const POWER = (() => {
         return true;
     }
     function turnDown(w, dn, tg, n) { const P = S(w); P.stats.refused++; mem(w, tg, '{d}想塞 {n} 銀幣給我當政治獻金，我拒絕了。', { d: dn.name, n }, 6); mem(w, dn, '我想捐錢給{p}，被拒絕了。', { p: tg.name }, 5); }
-    // 金主開口:本人決定時交給對方(選擇點 gift),隔天有答案;否則照個性擲骰
-    function offer(w, dn, tg, n, campaign, dice) {
+    // 金主開口:交給對方決定(選擇點 gift),隔天有答案;對方不在鎮上問不到時,才照他的個性推一個結果
+    function offer(w, dn, tg, n, campaign) {
         if (!dn || !tg || tg === dn) return null;
-        if (!dice && byChoice(w) && here(w, tg)) { try { DECIDE.enqueue(w, tg, 'gift', { dn: dn.agentId, n, camp: campaign ? 1 : 0 }); return 'asked'; } catch (e) {} }
+        if (here(w, tg)) { try { DECIDE.enqueue(w, tg, 'gift', { dn: dn.agentId, n, camp: campaign ? 1 : 0 }); return 'asked'; } catch (e) {} }
         const honest = (has(tg, 'kind') && !has(tg, 'greedy') && Math.random() < 0.6) || (!has(tg, 'greedy') && Math.random() < 0.15);
         if (honest) { turnDown(w, dn, tg, n); return 'refused'; }
         return give(w, dn, tg, n, campaign) ? 'given' : null;
     }
-    function donations(w, d) {
-        if (tierLv(w) < 1 || !WL()) return;
-        const E = w.election; const { campaign, list: targets } = targetsOf(w); if (!targets.length) return;
-        const donors = npcs(w).filter(a => !targets.includes(a) && canDonate(w, a));
-        for (const dn of donors) {
-            if (Math.random() > (has(dn, 'greedy') ? 0.55 : 0.35)) continue;
-            // 押寶:選舉時押聲勢最好的(偶爾兩邊都捐),平常捐給首長或議員
-            let tg = targets[0];
-            if (campaign) tg = (Math.random() < 0.7 ? targets[0] : targets[Math.floor(Math.random() * targets.length)]) || tg;
-            else if (Math.random() > 0.6) tg = targets[Math.floor(Math.random() * targets.length)];
-            if (!tg || tg === dn) continue;
-            offer(w, dn, tg, giftSize(w, dn), campaign, true);
-        }
-    }
-
-    // ---------- 二、第四權:報社平時監督 ----------
     function readersOf(w, Pp) { const R = w.press; return npcs(w).filter(a => R?.reads?.[a.agentId] === Pp.id); }
     // 報社老闆會不會壓這則新聞:新聞的主角是老闆自己、老闆捐過錢的人、或捐錢給老闆的人
     function captured(w, Pp, ids) {
@@ -223,7 +207,7 @@ const POWER = (() => {
         for (const id of Object.keys(P.scandal)) { P.scandal[id] = Math.max(0, P.scandal[id] - 0.02); if (P.scandal[id] === 0) delete P.scandal[id]; } // 醜聞慢慢被淡忘
         for (const [k, until] of Object.entries(P.pressure)) if (until < d) delete P.pressure[k];
         if (!w.election?.active) P.camp = {};
-        if (d % 7 === 5 && !byChoice(w)) donations(w, d); // v9.21.0 觀察者模式下捐不捐由金主自己決定(選擇點 donate)
+        // 捐不捐由金主自己決定(選擇點 donate)
         if (d % 7 === 1) { watchdog(w, d); buyPapers(w, d); }
         recall(w, d);
         if (P.log.length > 30) P.log = P.log.slice(-30);

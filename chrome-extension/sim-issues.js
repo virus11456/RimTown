@@ -97,7 +97,7 @@ const TOWN_ISSUES = (() => {
     const ACTIVE = ['open', 'shelved', 'approved'];
 
     // ---------- 每天 ----------
-    function daily(w, P, day, ch) {
+    function daily(w, P, day) {
         const I = P.issues || (P.issues = {});
         const now = detect(w), seen = new Set();
         const all = npcs(w); if (!all.length) return;
@@ -109,7 +109,7 @@ const TOWN_ISSUES = (() => {
             // 處理中的提案被否決/失敗,或做完了問題還在 → 又變成沒人管
             if (it.by) { const q = (P.items || []).find(x => x.id === it.by); if (!q || !ACTIVE.includes(q.status)) it.by = null; }
             if (!it.by) it.idle = (it.idle || 0) + 1;
-            try { effect(w, P, it, day, all, ch); } catch (e) { console.warn('[Issues] effect', e); }
+            try { effect(w, P, it, day, all); } catch (e) { console.warn('[Issues] effect', e); }
         }
         // 過去了
         for (const k of Object.keys(I)) {
@@ -143,18 +143,14 @@ const TOWN_ISSUES = (() => {
         const P = w.proposals; if (!P || !LEAVE_WHY[key]) return false; const day = P._abs ? P._abs(w) : 0; if (!canLeave(w, P, a, day, npcs(w))) return false;
         P.issueLeaveDay = day; return !!w.leaveTown?.(a.agentId, t(LEAVE_WHY[key]));
     }
-    function effect(w, P, it, day, all, ch) {
+    function effect(w, P, it, day, all) { // 待不下去要不要走，由本人決定(leaveBy)
         const idle = it.by ? 0 : (it.idle || 0), age = day - (it.since || day) + 1, x = text(it);
         const pick = (n) => rnd(all, n);
-        const leave = (a, reason) => {
-            if (ch || !canLeave(w, P, a, day, all)) return false;
-            P.issueLeaveDay = day; return w.leaveTown?.(a.agentId, reason);
-        };
         switch (it.key.split(':')[0]) {
             case 'food':
                 for (const a of all) { a.needs && (a.needs.hunger = Math.max(0, a.needs.hunger - (it.sev >= 3 ? 18 : 10))); a.addThought?.('hungry', w); }
                 if (age % 3 === 1) for (const a of all) mem(w, a, '存糧不夠，這幾天只能吃半飽，肚子一直餓。', {}, 6);
-                if (it.sev >= 3 && idle >= 5 && Math.random() < 0.12) { const a = all.slice().sort((p, q) => (p.mood || 0) - (q.mood || 0))[0]; leave(a, t('鎮上沒東西吃')); }
+                if (it.sev >= 3 && idle >= 5) Math.random(); /*RNG-SHIM*/
                 break;
             case 'clothing': {
                 const cold = w.clock?.season === '冬季';
@@ -175,7 +171,7 @@ const TOWN_ISSUES = (() => {
             case 'misery': {
                 const a = w.agents[it.who?.[0]]; if (!a) break;
                 if (idle >= 3) { a.addThought?.('ignored', w); if (idle === 3) mem(w, a, '我都這樣了，鎮上卻沒有人來關心我。', {}, 7); }
-                if (idle >= 7 && Math.random() < 0.15) leave(a, t('覺得沒人在乎自己'));
+                if (idle >= 7) Math.random(); /*RNG-SHIM*/
                 break;
             }
             case 'feud': {
@@ -199,7 +195,7 @@ const TOWN_ISSUES = (() => {
                 if (age % 3 === 1) for (const a of pick(3)) { a.addThought?.('town_broke', w); mem(w, a, '公庫快見底了，聽說連守衛的薪俸都快發不出來。', {}, 5); }
                 break;
             case 'gloom':
-                if (idle >= 5 && Math.random() < 0.1) { const a = all.slice().sort((p, q) => (p.mood || 0) - (q.mood || 0))[0]; leave(a, t('鎮上氣氛太差')); }
+                if (idle >= 5) Math.random(); /*RNG-SHIM*/
                 break;
         }
         // 拖著沒人管:第 3 天開始抱怨,之後每 4 天一次;鎮長被點名
@@ -241,7 +237,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;
     PS.daily = function (w) {
-        try { if (w.observerMode) { const day = this._abs(w); if (this._issueDay !== day) { this._issueDay = day; TOWN_ISSUES.daily(w, this, day, TOWN_ISSUES.byChoice(w)); } } } catch (e) { console.warn('[Issues] daily', e); }
+        try { if (w.observerMode) { const day = this._abs(w); if (this._issueDay !== day) { this._issueDay = day; TOWN_ISSUES.daily(w, this, day); } } } catch (e) { console.warn('[Issues] daily', e); }
         return _daily.call(this, w);
     };
     const _createWith = PS._createWith;

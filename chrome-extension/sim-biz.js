@@ -48,7 +48,7 @@ const BIZ = (() => {
         if (partner) mem(w, partner, '我出錢跟{a}合夥開「{n}」。', { a: a.name, n: S2.name[0] }, 7);
         return S2;
     }
-    function trade(w, B, d, ch) {
+    function trade(w, B, d) {
         const all = npcs(w);
         for (const s of B.shops) {
             if (s.closed) continue; const o = w.agents[s.owner]; if (!o && w.isAway?.(s.owner)) continue; if (!o || o.isDead) { close(w, s, 'gone'); continue; } // v6.87.0 老闆出遠門就先歇業,回來照開
@@ -60,7 +60,7 @@ const BIZ = (() => {
             let paidOut = 0; if (s.till > 0) { const pay = (a, n) => (WALLET.bizIncome ? WALLET.bizIncome(w, a, n) : WALLET.add(w, a, n)); const pp = s.partner && w.agents[s.partner] && !w.agents[s.partner].isDead ? w.agents[s.partner] : null; pay(o, s.till * (pp ? 0.5 : 1)); if (pp) pay(pp, s.till * 0.5); paidOut = s.till; s.till = 0; }
             { const kept = sales * s.price - paidOut; if (kept > 0.001) w.stockpile?.add?.('silver', Math.round(kept * 100) / 100, w.tickCount, t('店租與營業開銷')); } // v8.8.0 每天的開銷(攤位、柴火、進貨)付給公庫,不再憑空消失 // v6.81.0 店裡的進帳先繳營業稅
             if (s.lossDays >= 15 || (s.till < -40)) close(w, s, 'broke');
-            if (d % 7 === 0) weekly(w, s, ch);
+            if (d % 7 === 0) weekly(w, s);
         }
     }
     // 拆夥的結算：兩人翻臉，店由老闆自己開下去
@@ -79,12 +79,8 @@ const BIZ = (() => {
     }
     function splitBy(w, a) { const I = splitInfo(w, a); return I ? split(w, I.s) : false; }
     // ch = 要不要拆夥交給本人決定(sim-decide-work.js「合夥的店不賺錢」)
-    function weekly(w, s, ch) {
-        const o = w.agents[s.owner], p = s.partner ? w.agents[s.partner] : null;
-        if (p && !s.closed && !ch) {
-            const grumpy = has(p, 'jealous') || has(o, 'jealous') || has(o, 'lazy') || has(p, 'lazy');
-            if (s.week < 5 && grumpy && Math.random() < 0.3) split(w, s);
-        }
+    function weekly(w, s) { // 合夥人要不要拆夥由他自己決定(splitBy)
+        const o = w.agents[s.owner];
         if (s.week >= 25 && Math.random() < 0.5) mem(w, o, '「{n}」這週生意很好，賺了 {m} 銀幣。', { n: s.name[0], m: Math.round(s.week) }, 5);
         s.last = s.week; s.week = 0; // v9.23.0 記下這一週賺多少(合夥人看這個決定要不要拆夥)
     }
@@ -93,14 +89,9 @@ const BIZ = (() => {
         if (why === 'broke' && o) { log(w, '🏚️ 「{n}」撐不下去，倒閉了。', { n: s.name[0] }, o.name); mem(w, o, '我的店「{n}」倒了，好不甘心。', { n: s.name[0] }, 8); o.moodModifier = (o.moodModifier || 0) - 8; }
         const B = S(w); B.closed.push({ name: s.name, type: s.type, profit: Math.round(s.profit), day: day(w) }); if (B.closed.length > 6) B.closed.shift(); B.shops = B.shops.filter(x => !x.closed);
     }
-    function daily(w, ch, chW) {
+    function daily(w) { // 想不想自己開店由本人決定(見 sim-decide-life.js「想不想自己開店」)
         if (!W() || !w.wallet) return; const B = S(w), d = day(w); if (B.lastDay === d) return; B.lastDay = d;
-        trade(w, B, d, chW);
-        // 有人想創業(ch = 交給本人決定，見 sim-decide-life.js「想不想自己開店」)
-        if (!ch && room(w, B)) {
-            const c = npcs(w).filter(a => canOpen(w, a));
-            const a = c.sort(() => Math.random() - 0.5)[0]; if (a && Math.random() < 0.15) open(w, B, a, d);
-        }
+        trade(w, B, d);
     }
     // 鎮上還容得下新店嗎(每六個人一家，最少兩家)
     const room = (w, B) => B.shops.length < Math.max(2, Math.floor(npcs(w).length / 6));
@@ -135,7 +126,7 @@ const BIZ = (() => {
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
-    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) BIZ.daily(w, BIZ.byChoice(w), BIZ.byWork(w)); } catch (e) { console.warn('[Biz] daily', e); } return r; };
+    PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) BIZ.daily(w); } catch (e) { console.warn('[Biz] daily', e); } return r; };
 }
 // 珍品殺價
 if (typeof GOODS !== 'undefined') {

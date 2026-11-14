@@ -221,20 +221,6 @@ const DARK = (() => {
         for (const x of D.wrongs) { if (x.done) continue; if (!w.agents[x.by] || !w.agents[x.to] || today - x.day > 20) x.done = true; }
         if (D.wrongs.length > 30) D.wrongs = D.wrongs.filter(x => !x.done).concat(D.wrongs.filter(x => x.done).slice(-6)).slice(-30);
     }
-    function apologies(w) {
-        const D = S(w), today = day(w);
-        for (const x of D.wrongs) {
-            if (x.done || today - x.day < 2 || today - (x.last || 0) < 3) continue;
-            const a = w.agents[x.by], b = w.agents[x.to]; if (!a || !b) { x.done = true; continue; }
-            if (today - x.day > 20) { x.done = true; continue; }
-            const pa = clamp(0.15 + (has(a, 'kind') ? 0.25 : 0) + (honesty(a) - 2) * 0.05 - (has(a, 'abrasive') ? 0.1 : 0) - Math.max(0, malice(a)) * 0.03, 0.02, 0.6);
-            if (Math.random() >= pa) continue;
-            const line = sorryS(w, x, a, b);
-            const pf = clamp((has(b, 'kind') ? 0.7 : has(b, 'optimist') ? 0.6 : has(b, 'stoic') ? 0.5 : (has(b, 'jealous') || has(b, 'abrasive')) ? 0.25 : has(b, 'neurotic') ? 0.35 : 0.45) - x.w * 0.08 + (x.tries - 1) * 0.1, 0.05, 0.9);
-            if (Math.random() < pf) forgiveS(w, x, a, b, line); else refuseS(w, x, a, b);
-        }
-        if (D.wrongs.length > 30) D.wrongs = D.wrongs.filter(x => !x.done).concat(D.wrongs.filter(x => x.done).slice(-6)).slice(-30);
-    }
     // ---------- 報復:沒被原諒/不肯原諒的人,記恨又不老實的可能反擊,恩怨變成連載 ----------
     // how: 'warn' 到處提醒大家小心他／'sabotage' 偷偷動他的東西
     function avengeS(w, x, v, c, how) {
@@ -266,17 +252,6 @@ const DARK = (() => {
         try { if (typeof WAYS !== 'undefined') WAYS.quarrel(w, v, c); } catch (e) {}
         return 'fight';
     }
-    function revenge(w) {
-        const D = S(w), today = day(w);
-        for (const x of D.wrongs) {
-            if (x.revenged || x.forgiven || today - x.day < 2) continue;
-            const v = w.agents[x.to], c = w.agents[x.by]; if (!v || !c) continue;
-            if (malice(v) < 1 && !has(v, 'abrasive') && !has(v, 'jealous')) continue;
-            if (Math.random() >= 0.06 + x.w * 0.02) continue;
-            avengeS(w, x, v, c, Math.random() < 0.5 ? 'warn' : 'sabotage');
-            break;
-        }
-    }
     function discover(w) {
         const D = S(w), today = day(w); const all = npcs(w);
         for (const s of D.secrets) {
@@ -293,18 +268,7 @@ const DARK = (() => {
     // ---------- 講壞話(兩人聊天時) ----------
     const DISS_TRUE = ['{who}做事老是拖拖拉拉，交代的事都做不好。', '{who}那個人很自私，只顧自己。', '{who}講話很難聽，你跟他相處要小心。', '{who}最近很愛出風頭，看了就煩。'];
     const DISS_LIE = ['我看到{who}偷偷拿了公庫的東西。', '{who}在背後笑你，說你什麼都不懂。', '聽說{who}欠了一屁股債還不還。', '{who}答應幫人的事，轉頭就忘了，還怪別人。'];
-    function badmouth(w, speaker, listener) {
-        const D = S(w), today = day(w);
-        if (D.spoke[speaker.agentId] === today) return null;
-        if (aff(speaker, listener) < 5) return null;
-        const f = foeOf(w, speaker, listener); if (!f) return null;
-        let p = 0.12 + malice(speaker) * 0.04 + (f.g.s > 70 ? 0.1 : 0);
-        if (has(speaker, 'kind')) p *= 0.3;
-        if (Math.random() >= clamp(p, 0, 0.5)) return null;
-        const lie = Math.random() < clamp((3 - honesty(speaker)) / 5, 0, 0.7);
-        return speak(w, speaker, listener, f.b, f.g.why, lie);
-    }
-    // 說出口之後(擲骰版與決策核心共用):傳成流言、聽的人怎麼想、編造的變成秘密
+    // 說出口之後(要不要講、講真的還是編的由本人決定):傳成流言、聽的人怎麼想、編造的變成秘密
     function speak(w, speaker, listener, foe, why, lie) {
         const D = S(w), today = day(w);
         D.spoke[speaker.agentId] = today;
@@ -318,9 +282,8 @@ const DARK = (() => {
         if ((has(listener, 'kind') || honesty(listener) >= 4) && aff(listener, foe) >= 30) {
             rel(listener, speaker)?.modifyAffinity?.(-3); bump(w, listener, 'helped');
             mem(w, listener, '{a}在背後說{c}的壞話，我替{c}說了幾句話。', { a: speaker.name, c: foe.name }, 5);
-            // v9.26.0 要不要去告訴當事人,由聽到的人自己決定(決策核心「聽到有人說朋友壞話」);沒有決策核心才擲骰
-            if (byDark(w)) { try { DECIDE.enqueue(w, listener, 'tattle', { foe: foe.agentId, by: speaker.agentId, line }); } catch (e) {} }
-            else if (Math.random() < 0.35) confront(w, foe, speaker, line);
+            // 要不要去告訴當事人,由聽到的人自己決定(決策核心「聽到有人說朋友壞話」)
+            try { DECIDE.enqueue(w, listener, 'tattle', { foe: foe.agentId, by: speaker.agentId, line }); } catch (e) {}
         } else {
             // v6.52.0 信不信要看說的人名聲:老實的人講的比較有人信,愛八卦、陰險的人講的大家打折聽
             const cred = credibility(w, speaker);
@@ -447,8 +410,7 @@ const DARK = (() => {
             // v6.54.0 真的借了錢(個人錢包):想還但沒錢就再寬限幾天;有錢才真的還
             const W = d.cash && typeof WALLET !== 'undefined' && w.wallet;
             // v9.20.0 還不還由借錢的人自己決定(決策核心「借的錢到期了」)。過了四天還沒下文(人不在鎮上、被關…)才在這裡收尾:有錢又老實就還,不然算賴帳
-            if (W && byChoice(w)) { if (today < d.due + 4) continue; if (WALLET.get(w, r) >= d.n && honesty(r) >= 2.5) debtRepay(w, d); else debtDodge(w, d); continue; }
-            if (W && (honesty(r) >= 2.5 || Math.random() < 0.4) && WALLET.get(w, r) < d.n && (d.tries || 0) < 2) { debtExtend(w, d); continue; }
+            if (W) { if (today < d.due + 4) continue; if (WALLET.get(w, r) >= d.n && honesty(r) >= 2.5) debtRepay(w, d); else debtDodge(w, d); continue; }
             if ((honesty(r) >= 2.5 || Math.random() < 0.4) && debtRepay(w, d)) continue;
             debtDodge(w, d);
         }
@@ -459,13 +421,13 @@ const DARK = (() => {
             const sellers = all.filter(a => SELLERS.includes(a.job?.key)); if (!sellers.length) return;
             const s = pick(sellers), b = pick(all.filter(a => a !== s));
             const i = Math.floor(Math.random() * 3); const k = ['嫌{s}賣得太貴', '買到{s}做的東西沒幾天就壞了', '要{s}退錢被拒絕'][i]; const k2 = ['賣太貴', '東西做得不好', '不肯退錢'][i];
-            const cheat = byDark(w) ? shorting(w, s) : honesty(s) <= 1.5 && Math.random() < 0.6; // v9.26.0 有沒有偷斤減兩,看這個賣家自己定的做法
+            const cheat = shorting(w, s); // 有沒有偷斤減兩,看這個賣家自己定的做法
             rel(b, s)?.modifyAffinity?.(-6); b.addThought?.('cheated', w, s.agentId, s.name); rel(s, b)?.modifyAffinity?.(-2);
             mem(w, b, '今天{k}，以後不想再跟他買了。', { k: fill(k, { s: s.name }) }, 5);
             mem(w, s, '{b}又來找麻煩，說我{k}。', { b: b.name, k: t(k2) }, 4);
             log(w, 'social', '🛒 {b}跟{s}吵起來了：{k}。{c}', { b: b.name, s: s.name, k: fill(k, { s: s.name }), c: cheat ? t('🎭（{s}真的有偷斤減兩）').replace('{s}', s.name) : t('🎭（其實是原料漲價，{s}沒有騙人）').replace('{s}', s.name) }, b.name);
             if (cheat) { bump(w, s, 'lies'); wrong(w, s, b, 1, '賣東西坑了{v}', { v: b.name }); }
-            if (cheat && byDark(w)) { try { if (typeof WALLET !== 'undefined' && w.wallet) WALLET.pay(w, b, s, SHORT_GAIN); } catch (e) {} } // 坑到的錢是真的從買的人口袋到他口袋
+            if (cheat) { try { if (typeof WALLET !== 'undefined' && w.wallet) WALLET.pay(w, b, s, SHORT_GAIN); } catch (e) {} } // 坑到的錢是真的從買的人口袋到他口袋
             if (cheat) secret(w, { kind: 'cover', culprit: s.agentId, victim: b.agentId, k: '{s}賣東西真的偷斤減兩，坑了{b}', p: { s: s.name, b: b.name } });
             else D.mis.push({ kind: 'price', a: b.agentId, b: s.agentId, day: today });
         } else if (roll < 0.55) { // 借錢
@@ -524,16 +486,6 @@ const DARK = (() => {
         secret(w, { kind: 'promise', culprit: a.agentId, victim: null, k: '{a}的選舉承諾「{x}」是空頭支票', p: { a: a.name, x: t(promise) } });
         return promise;
     }
-    function campaign(w) {
-        const E = w.election; if (!E?.active || E.phase !== 'campaign' || !Array.isArray(E.candidates)) return;
-        if (byDark(w)) return; // v9.26.0 選戰怎麼打由候選人自己決定(決策核心「選戰怎麼打」)
-        for (const c of E.candidates) {
-            const a = w.agents[c.agentId]; if (!a || a.isPlayer) continue;
-            if (honesty(a) > 2 || Math.random() > 0.3) continue;
-            const opp = E.candidates.map(x => w.agents[x.agentId]).filter(x => x && x !== a && !x.isPlayer);
-            if (opp.length && malice(a) >= 1 && Math.random() < 0.6) smear(w, a, pick(opp)); else hollow(w, a);
-        }
-    }
     // v9.26.0 給決策核心:這個候選人現在能用哪些手段(跟以前擲骰的是同一批人:不夠老實的才會動這個念頭)
     function campInfo(w, a) {
         const E = w.election; if (!a || !E?.active || E.phase !== 'campaign' || !Array.isArray(E.candidates) || !E.candidates.some(c => c.agentId === a.agentId)) return null;
@@ -570,17 +522,6 @@ const DARK = (() => {
         bump(w, a, 'helped');
         secret(w, { kind: 'white', culprit: a.agentId, victim: sad.agentId, k: '{a}說「大家都很喜歡{b}」是善意的謊言', p: { a: a.name, b: sad.name } });
     }
-    function lies(w) {
-        if (byDark(w)) return; // v9.26.0 要不要拿、要不要推給別人、要不要說善意的謊,由本人決定
-        const all = npcs(w); const sp = w.stockpile;
-        for (const a of all) {
-            if (honesty(a) <= 1 && (has(a, 'lazy') || has(a, 'glutton')) && Math.random() < 0.06 && sp) {
-                const f = foeOf(w, a, null);
-                pilferDo(w, a, f && malice(a) >= 1.5 ? f.b : null);
-            }
-            if (comfortOk(a) && Math.random() < 0.05) { const sad = sadFriend(w, a); if (sad) comfortDo(w, a, sad); }
-        }
-    }
     // v9.26.0 給決策核心。會動這些念頭的,跟以前擲骰的是同一批人;做不做由他自己決定
     function pilferInfo(w, a) {
         if (!a || !pilferOk(w, a)) return null; const food = has(a, 'glutton');
@@ -611,21 +552,12 @@ const DARK = (() => {
     function tattleBy(w, a, c) { const I = tattleInfo(w, a, c); if (!I) return null; mem(w, a, '我把{a}在背後說的話告訴了{c}。', { a: I.by.name, c: I.foe.name }, 5); confront(w, I.foe, I.by, I.line); return I; }
 
     // ---------- 陰謀:籌劃 → 動手 → 可能被拆穿 ----------
-    function schemes(w, ch) {
+    function schemes(w) { // 要不要動手陷害由本人決定(sim-decide-life.js「跟某人結怨很深」)；這裡只負責讓籌劃好的事發生
         const D = S(w), today = day(w), all = npcs(w);
         // 動手(籌劃一兩天後)
         for (const s of D.secrets.filter(x => x.stage === 'plan' && today - x.day >= 1)) {
             const c = w.agents[s.culprit], v = w.agents[s.victim]; if (!c || !v) { s.stage = 'off'; s.found = true; continue; }
             s.stage = 'done'; s.day = today; act(w, s, c, v);
-        }
-        if (ch) return; // v9.22.0 要不要動手陷害交給本人決定(sim-decide-life.js「跟某人結怨很深」)
-        if (D.secrets.filter(x => x.stage === 'plan').length >= 2) return;
-        for (const c of rnd(all, all.length)) {
-            if (malice(c) < 2 || honesty(c) > 2 || (today - (D.cool[c.agentId] ?? -99)) < 20) continue;
-            const f = foeOf(w, c, null); if (!f || f.g.s < 50) continue;
-            if (Math.random() > 0.15) continue;
-            const v = f.b; plot(w, c, v, pick(schemeKinds(w, v, today)), f.g.why);
-            break;
         }
     }
     // 現在能用哪幾招對付他(對方有提案在表決 → 可以私下拉票；對方的提案剛通過 → 可以搶功)
@@ -740,19 +672,16 @@ const DARK = (() => {
         if (D.mis.length > 20) D.mis = D.mis.filter(m => !m.done).concat(D.mis.filter(m => m.done).slice(-6)).slice(-20);
     }
 
-    function daily(w, ch) {
+    function daily(w) {
         S(w);
         try { rivalries(w); } catch (e) { console.warn('[Dark] rivalries', e); }
         try { disputes(w); } catch (e) { console.warn('[Dark] disputes', e); }
-        try { campaign(w); } catch (e) { console.warn('[Dark] campaign', e); }
-        try { lies(w); } catch (e) { console.warn('[Dark] lies', e); }
         try { const T = w.dark.trade; if (T) for (const id of Object.keys(T)) if (!w.agents[id] && !w.isAway?.(id)) delete T[id]; } catch (e) {}
-        try { schemes(w, ch); } catch (e) { console.warn('[Dark] schemes', e); }
+        try { schemes(w); } catch (e) { console.warn('[Dark] schemes', e); }
         try { misunderstand(w); } catch (e) { console.warn('[Dark] mis', e); }
         try { discover(w); } catch (e) { console.warn('[Dark] discover', e); }
-        // v9.20.0 道歉、原諒、報復改由本人決定(決策核心);沒有決策核心時才用擲骰的版本
-        if (byChoice(w)) { try { tidyWrongs(w); } catch (e) { console.warn('[Dark] wrongs', e); } }
-        else { try { apologies(w); } catch (e) { console.warn('[Dark] apologies', e); } try { revenge(w); } catch (e) { console.warn('[Dark] revenge', e); } }
+        // 道歉、原諒、報復由本人決定(決策核心);這裡只收掉沒人管的舊帳
+        try { tidyWrongs(w); } catch (e) { console.warn('[Dark] wrongs', e); }
         try { cliqueDaily(w); } catch (e) { console.warn('[Dark] cliques', e); }
         try { laborDaily(w); } catch (e) { console.warn('[Dark] labor', e); }
     }
@@ -781,14 +710,7 @@ const DARK = (() => {
         byDark, campInfo, smearBy, hollowBy, pilferInfo, pilferBy, comfortInfo, comfortBy, tradeInfo, tradeSet, shorting, tattleInfo, tattleBy };
 })();
 
-// ---- 掛勾:聊天時講壞話、每日、存檔、AI ----
-if (typeof GossipNetwork !== 'undefined') {
-    const _sg = GossipNetwork.prototype.spreadGossip;
-    GossipNetwork.prototype.spreadGossip = function (speaker, listener, world) {
-        try { if (world?.observerMode && speaker && listener && !speaker.isPlayer && !listener.isPlayer && !DARK.byChoice(world)) DARK.badmouth(world, speaker, listener); /* v9.20.0 要不要講壞話改由本人決定(決策核心「看某人不順眼」) */ } catch (e) { console.warn('[Dark] badmouth', e); }
-        return _sg.call(this, speaker, listener, world);
-    };
-}
+// ---- 掛勾:每日、存檔、AI(要不要講壞話由本人決定，不再掛在聊天上) ----
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.verdict = { icon: '⚖️', label: '審判' };
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
@@ -803,7 +725,7 @@ if (typeof ProposalSystem !== 'undefined') {
     };
     const _daily = ProposalSystem.prototype.daily;
     ProposalSystem.prototype.daily = function (w) {
-        try { const d = this._abs(w); if (w.observerMode && this._darkDay !== d) { this._darkDay = d; DARK.daily(w, DARK.byLife(w)); } } catch (e) { console.warn('[Dark] daily', e); }
+        try { const d = this._abs(w); if (w.observerMode && this._darkDay !== d) { this._darkDay = d; DARK.daily(w); } } catch (e) { console.warn('[Dark] daily', e); }
         return _daily.call(this, w);
     };
 }
