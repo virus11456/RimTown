@@ -1,0 +1,8 @@
+{
+  "name": "rimtown-research",
+  "private": true,
+  "description": "離線研究工具的依賴（不屬於網站建置；網站只發佈 chrome-extension/）",
+  "dependencies": {
+    "@anthropic-ai/sdk": "1.8.0"
+  }
+}

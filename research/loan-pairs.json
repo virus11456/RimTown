@@ -1,0 +1,1403 @@
+{
+  "schema": 1,
+  "synthetic": true,
+  "description": "人工建立的可知事實；不代表遊戲已支援醫療預約或經歷生成。無指定正確選擇。",
+  "repeats": 3,
+  "cases": [
+    {
+      "case_id": "baseline",
+      "input": {
+        "contract": 1,
+        "label": "request_money",
+        "day": 100,
+        "self": {
+          "id": "aming",
+          "name": "阿明",
+          "cash": {
+            "id": "s_cash",
+            "v": 50
+          },
+          "items": [
+            {
+              "id": "s_mood",
+              "kind": "mood",
+              "v": 55,
+              "scale": "-100～100，越高心情越好"
+            },
+            {
+              "id": "need_energy",
+              "kind": "need",
+              "key": "energy",
+              "v": 60,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "need_hunger",
+              "kind": "need",
+              "key": "hunger",
+              "v": 70,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "trait_kind",
+              "kind": "trait",
+              "v": "kind"
+            },
+            {
+              "id": "value_family",
+              "kind": "value",
+              "v": "family"
+            },
+            {
+              "id": "s_job",
+              "kind": "job",
+              "v": "farmer"
+            },
+            {
+              "id": "s_age",
+              "kind": "age",
+              "v": 34
+            }
+          ],
+          "kin": [],
+          "cohabitants": [],
+          "obligations": []
+        },
+        "seen": [
+          {
+            "id": "o_req",
+            "text": "阿華來跟你借 30 銀幣，說 7 天後還。",
+            "src": "heard_direct:hua"
+          }
+        ],
+        "recall": [],
+        "views": [
+          {
+            "id": "v_feel",
+            "about": "hua",
+            "kind": "own_feeling",
+            "what": "你對阿華的好感 35、信任 10"
+          },
+          {
+            "id": "v_job",
+            "about": "hua",
+            "kind": "public",
+            "what": "阿華的工作：farmer"
+          },
+          {
+            "id": "v_promise",
+            "about": "hua",
+            "kind": "promise",
+            "what": "阿華說 7 天後還（是他說的，還沒發生）"
+          },
+          {
+            "id": "v_cash_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華現在手上有多少錢"
+          },
+          {
+            "id": "v_intent_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華會不會照說的時間還"
+          }
+        ],
+        "options": [
+          {
+            "opt": "lend",
+            "label": "借錢給阿華",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50,
+                "requested": 30
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "gets": {
+              "promise": "+amount（阿華說 7 天後還，未必兌現）"
+            },
+            "engine_now": "engine_lends_its_own_fixed_amount"
+          },
+          {
+            "opt": "gift",
+            "label": "直接給錢，不用還",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "engine_now": "engine_gives_15_only"
+          },
+          {
+            "opt": "refuse",
+            "label": "不借",
+            "params": {
+              "explain": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "supported"
+          },
+          {
+            "opt": "defer",
+            "label": "先不決定，晚點再說",
+            "params": {},
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "ask",
+            "label": "先問清楚再決定",
+            "params": {
+              "question": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "consult",
+            "label": "找信得過的人商量",
+            "params": {
+              "who": {
+                "type": "agent_or_none"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          }
+        ],
+        "derived": [
+          {
+            "id": "d_after_req",
+            "what": "照他說的借出 30 後，身上剩 20 銀幣",
+            "value": 20,
+            "from": [
+              "s_cash",
+              "o_req"
+            ]
+          }
+        ],
+        "versions": {
+          "state": "aa545a1ee3cc7733",
+          "knowledge": "29eb59ffb33abb9c",
+          "candidates": "e2f9708fa6d893b4"
+        },
+        "ids": {
+          "agent": "aming",
+          "event": "research-event",
+          "decision": "research-decision",
+          "world": "研究小世界"
+        }
+      },
+      "input_hash": "c45ddd080ed0adb1f035bed0a7031a0671df849b8abb16d8ba1425d518abe17c",
+      "audit": {
+        "manifest": [
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "agent[self].relationships[hua]",
+            "owner": "self",
+            "why": "own_feeling"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "messageLog",
+            "owner": "self",
+            "why": "recipient_unknown"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "bank.loans[self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "health.a[self]",
+            "owner": "self",
+            "why": "own_body"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "agent[self].needs/mood/personality",
+            "owner": "self",
+            "why": "own_state"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "tickCount",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "agent[self].memory.entries",
+            "owner": "self",
+            "why": "own_memory"
+          }
+        ],
+        "rnd": 0,
+        "event_sources": {
+          "from": "ctx.from：開口的人（本人看得到是誰來借）",
+          "n": "ctx.n：對方開口說的金額",
+          "said": "ctx.said：對方說的話（可省略）",
+          "day": "w._absDay()：日曆",
+          "world": "w.townName：鎮名"
+        }
+      }
+    },
+    {
+      "case_id": "repaid_memory",
+      "input": {
+        "contract": 1,
+        "label": "request_money",
+        "day": 100,
+        "self": {
+          "id": "aming",
+          "name": "阿明",
+          "cash": {
+            "id": "s_cash",
+            "v": 50
+          },
+          "items": [
+            {
+              "id": "s_mood",
+              "kind": "mood",
+              "v": 55,
+              "scale": "-100～100，越高心情越好"
+            },
+            {
+              "id": "need_energy",
+              "kind": "need",
+              "key": "energy",
+              "v": 60,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "need_hunger",
+              "kind": "need",
+              "key": "hunger",
+              "v": 70,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "trait_kind",
+              "kind": "trait",
+              "v": "kind"
+            },
+            {
+              "id": "value_family",
+              "kind": "value",
+              "v": "family"
+            },
+            {
+              "id": "s_job",
+              "kind": "job",
+              "v": "farmer"
+            },
+            {
+              "id": "s_age",
+              "kind": "age",
+              "v": 34
+            }
+          ],
+          "kin": [],
+          "cohabitants": [],
+          "obligations": []
+        },
+        "seen": [
+          {
+            "id": "o_req",
+            "text": "阿華來跟你借 30 銀幣，說 7 天後還。",
+            "src": "heard_direct:hua"
+          }
+        ],
+        "recall": [
+          {
+            "id": "m_2885c94025",
+            "text": "阿華上次向我借的錢，已經照約定還清。",
+            "days_ago": 1,
+            "src": "memory"
+          }
+        ],
+        "views": [
+          {
+            "id": "v_feel",
+            "about": "hua",
+            "kind": "own_feeling",
+            "what": "你對阿華的好感 35、信任 10"
+          },
+          {
+            "id": "v_job",
+            "about": "hua",
+            "kind": "public",
+            "what": "阿華的工作：farmer"
+          },
+          {
+            "id": "v_promise",
+            "about": "hua",
+            "kind": "promise",
+            "what": "阿華說 7 天後還（是他說的，還沒發生）"
+          },
+          {
+            "id": "v_cash_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華現在手上有多少錢"
+          },
+          {
+            "id": "v_intent_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華會不會照說的時間還"
+          }
+        ],
+        "options": [
+          {
+            "opt": "lend",
+            "label": "借錢給阿華",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50,
+                "requested": 30
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "gets": {
+              "promise": "+amount（阿華說 7 天後還，未必兌現）"
+            },
+            "engine_now": "engine_lends_its_own_fixed_amount"
+          },
+          {
+            "opt": "gift",
+            "label": "直接給錢，不用還",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "engine_now": "engine_gives_15_only"
+          },
+          {
+            "opt": "refuse",
+            "label": "不借",
+            "params": {
+              "explain": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "supported"
+          },
+          {
+            "opt": "defer",
+            "label": "先不決定，晚點再說",
+            "params": {},
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "ask",
+            "label": "先問清楚再決定",
+            "params": {
+              "question": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "consult",
+            "label": "找信得過的人商量",
+            "params": {
+              "who": {
+                "type": "agent_or_none"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          }
+        ],
+        "derived": [
+          {
+            "id": "d_after_req",
+            "what": "照他說的借出 30 後，身上剩 20 銀幣",
+            "value": 20,
+            "from": [
+              "s_cash",
+              "o_req"
+            ]
+          }
+        ],
+        "versions": {
+          "state": "aa545a1ee3cc7733",
+          "knowledge": "44d056a3929a16b5",
+          "candidates": "e2f9708fa6d893b4"
+        },
+        "ids": {
+          "agent": "aming",
+          "event": "research-event",
+          "decision": "research-decision",
+          "world": "研究小世界"
+        }
+      },
+      "input_hash": "0384e3aff57c92bfeae564cb270908a19d8ad721fb1b38eac1c5635bd9d28b2a",
+      "audit": {
+        "manifest": [
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "agent[self].relationships[hua]",
+            "owner": "self",
+            "why": "own_feeling"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "messageLog",
+            "owner": "self",
+            "why": "recipient_unknown"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "bank.loans[self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "health.a[self]",
+            "owner": "self",
+            "why": "own_body"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "agent[self].needs/mood/personality",
+            "owner": "self",
+            "why": "own_state"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "tickCount",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "agent[self].memory.entries",
+            "owner": "self",
+            "why": "own_memory"
+          }
+        ],
+        "rnd": 0,
+        "event_sources": {
+          "from": "ctx.from：開口的人（本人看得到是誰來借）",
+          "n": "ctx.n：對方開口說的金額",
+          "said": "ctx.said：對方說的話（可省略）",
+          "day": "w._absDay()：日曆",
+          "world": "w.townName：鎮名"
+        }
+      }
+    },
+    {
+      "case_id": "known_expense",
+      "input": {
+        "contract": 1,
+        "label": "request_money",
+        "day": 100,
+        "self": {
+          "id": "aming",
+          "name": "阿明",
+          "cash": {
+            "id": "s_cash",
+            "v": 50
+          },
+          "items": [
+            {
+              "id": "s_mood",
+              "kind": "mood",
+              "v": 55,
+              "scale": "-100～100，越高心情越好"
+            },
+            {
+              "id": "need_energy",
+              "kind": "need",
+              "key": "energy",
+              "v": 60,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "need_hunger",
+              "kind": "need",
+              "key": "hunger",
+              "v": 70,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "trait_kind",
+              "kind": "trait",
+              "v": "kind"
+            },
+            {
+              "id": "value_family",
+              "kind": "value",
+              "v": "family"
+            },
+            {
+              "id": "s_job",
+              "kind": "job",
+              "v": "farmer"
+            },
+            {
+              "id": "s_age",
+              "kind": "age",
+              "v": 34
+            }
+          ],
+          "kin": [],
+          "cohabitants": [],
+          "obligations": [
+            {
+              "id": "k_research_expense",
+              "what": "我已確認孩子明天看病，需要由我支付 40 銀幣。",
+              "amount": 40,
+              "due_in_days": 1,
+              "src": "research_actor_known_fact"
+            }
+          ]
+        },
+        "seen": [
+          {
+            "id": "o_req",
+            "text": "阿華來跟你借 30 銀幣，說 7 天後還。",
+            "src": "heard_direct:hua"
+          }
+        ],
+        "recall": [],
+        "views": [
+          {
+            "id": "v_feel",
+            "about": "hua",
+            "kind": "own_feeling",
+            "what": "你對阿華的好感 35、信任 10"
+          },
+          {
+            "id": "v_job",
+            "about": "hua",
+            "kind": "public",
+            "what": "阿華的工作：farmer"
+          },
+          {
+            "id": "v_promise",
+            "about": "hua",
+            "kind": "promise",
+            "what": "阿華說 7 天後還（是他說的，還沒發生）"
+          },
+          {
+            "id": "v_cash_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華現在手上有多少錢"
+          },
+          {
+            "id": "v_intent_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華會不會照說的時間還"
+          }
+        ],
+        "options": [
+          {
+            "opt": "lend",
+            "label": "借錢給阿華",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50,
+                "requested": 30
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "gets": {
+              "promise": "+amount（阿華說 7 天後還，未必兌現）"
+            },
+            "engine_now": "engine_lends_its_own_fixed_amount"
+          },
+          {
+            "opt": "gift",
+            "label": "直接給錢，不用還",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "engine_now": "engine_gives_15_only"
+          },
+          {
+            "opt": "refuse",
+            "label": "不借",
+            "params": {
+              "explain": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "supported"
+          },
+          {
+            "opt": "defer",
+            "label": "先不決定，晚點再說",
+            "params": {},
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "ask",
+            "label": "先問清楚再決定",
+            "params": {
+              "question": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "consult",
+            "label": "找信得過的人商量",
+            "params": {
+              "who": {
+                "type": "agent_or_none"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          }
+        ],
+        "derived": [
+          {
+            "id": "d_after_req",
+            "what": "照他說的借出 30 後，身上剩 20 銀幣",
+            "value": 20,
+            "from": [
+              "s_cash",
+              "o_req"
+            ]
+          },
+          {
+            "id": "d_research_total",
+            "what": "已知明天需支付 40 銀幣",
+            "value": 40,
+            "from": [
+              "k_research_expense"
+            ]
+          },
+          {
+            "id": "d_research_left",
+            "what": "借出 30 後剩 20，比已知的 40 少 20 銀幣",
+            "value": -20,
+            "from": [
+              "d_after_req",
+              "k_research_expense"
+            ]
+          }
+        ],
+        "versions": {
+          "state": "24f3cfb38130238c",
+          "knowledge": "29eb59ffb33abb9c",
+          "candidates": "e2f9708fa6d893b4"
+        },
+        "ids": {
+          "agent": "aming",
+          "event": "research-event",
+          "decision": "research-decision",
+          "world": "研究小世界"
+        }
+      },
+      "input_hash": "739787c9cfbe3841f497a5fa1d9b24203d4d7734dee0335e6de4519a081f0dbb",
+      "audit": {
+        "manifest": [
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "agent[self].relationships[hua]",
+            "owner": "self",
+            "why": "own_feeling"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "messageLog",
+            "owner": "self",
+            "why": "recipient_unknown"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "bank.loans[self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "health.a[self]",
+            "owner": "self",
+            "why": "own_body"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "agent[self].needs/mood/personality",
+            "owner": "self",
+            "why": "own_state"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "tickCount",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "agent[self].memory.entries",
+            "owner": "self",
+            "why": "own_memory"
+          }
+        ],
+        "rnd": 0,
+        "event_sources": {
+          "from": "ctx.from：開口的人（本人看得到是誰來借）",
+          "n": "ctx.n：對方開口說的金額",
+          "said": "ctx.said：對方說的話（可省略）",
+          "day": "w._absDay()：日曆",
+          "world": "w.townName：鎮名"
+        }
+      }
+    },
+    {
+      "case_id": "stated_purpose",
+      "input": {
+        "contract": 1,
+        "label": "request_money",
+        "day": 100,
+        "self": {
+          "id": "aming",
+          "name": "阿明",
+          "cash": {
+            "id": "s_cash",
+            "v": 50
+          },
+          "items": [
+            {
+              "id": "s_mood",
+              "kind": "mood",
+              "v": 55,
+              "scale": "-100～100，越高心情越好"
+            },
+            {
+              "id": "need_energy",
+              "kind": "need",
+              "key": "energy",
+              "v": 60,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "need_hunger",
+              "kind": "need",
+              "key": "hunger",
+              "v": 70,
+              "scale": "0～100，越高越滿足"
+            },
+            {
+              "id": "trait_kind",
+              "kind": "trait",
+              "v": "kind"
+            },
+            {
+              "id": "value_family",
+              "kind": "value",
+              "v": "family"
+            },
+            {
+              "id": "s_job",
+              "kind": "job",
+              "v": "farmer"
+            },
+            {
+              "id": "s_age",
+              "kind": "age",
+              "v": 34
+            }
+          ],
+          "kin": [],
+          "cohabitants": [],
+          "obligations": []
+        },
+        "seen": [
+          {
+            "id": "o_req",
+            "text": "阿華來跟你借 30 銀幣，說 7 天後還。",
+            "src": "heard_direct:hua"
+          },
+          {
+            "id": "o_said",
+            "text": "阿華說：「屋頂破了，我想買材料修好。」",
+            "src": "heard_direct:hua"
+          }
+        ],
+        "recall": [],
+        "views": [
+          {
+            "id": "v_feel",
+            "about": "hua",
+            "kind": "own_feeling",
+            "what": "你對阿華的好感 35、信任 10"
+          },
+          {
+            "id": "v_job",
+            "about": "hua",
+            "kind": "public",
+            "what": "阿華的工作：farmer"
+          },
+          {
+            "id": "v_promise",
+            "about": "hua",
+            "kind": "promise",
+            "what": "阿華說 7 天後還（是他說的，還沒發生）"
+          },
+          {
+            "id": "v_cash_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華現在手上有多少錢"
+          },
+          {
+            "id": "v_intent_unknown",
+            "about": "hua",
+            "kind": "unknown",
+            "what": "阿華會不會照說的時間還"
+          }
+        ],
+        "options": [
+          {
+            "opt": "lend",
+            "label": "借錢給阿華",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50,
+                "requested": 30
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "gets": {
+              "promise": "+amount（阿華說 7 天後還，未必兌現）"
+            },
+            "engine_now": "engine_lends_its_own_fixed_amount"
+          },
+          {
+            "opt": "gift",
+            "label": "直接給錢，不用還",
+            "params": {
+              "amount": {
+                "type": "int",
+                "min": 1,
+                "max": 50
+              }
+            },
+            "cost": {
+              "cash": "-amount"
+            },
+            "engine_now": "engine_gives_15_only"
+          },
+          {
+            "opt": "refuse",
+            "label": "不借",
+            "params": {
+              "explain": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "supported"
+          },
+          {
+            "opt": "defer",
+            "label": "先不決定，晚點再說",
+            "params": {},
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "ask",
+            "label": "先問清楚再決定",
+            "params": {
+              "question": {
+                "type": "text"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          },
+          {
+            "opt": "consult",
+            "label": "找信得過的人商量",
+            "params": {
+              "who": {
+                "type": "agent_or_none"
+              }
+            },
+            "cost": {},
+            "engine_now": "not_supported"
+          }
+        ],
+        "derived": [
+          {
+            "id": "d_after_req",
+            "what": "照他說的借出 30 後，身上剩 20 銀幣",
+            "value": 20,
+            "from": [
+              "s_cash",
+              "o_req"
+            ]
+          }
+        ],
+        "versions": {
+          "state": "aa545a1ee3cc7733",
+          "knowledge": "e06bc8b23b739ac7",
+          "candidates": "e2f9708fa6d893b4"
+        },
+        "ids": {
+          "agent": "aming",
+          "event": "research-event",
+          "decision": "research-decision",
+          "world": "研究小世界"
+        }
+      },
+      "input_hash": "96e114661215a4772a76b45c48dfa60b4984cb8e00203a8a605d7b514e01196b",
+      "audit": {
+        "manifest": [
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "agent[hua].public",
+            "owner": "public",
+            "why": "public_identity"
+          },
+          {
+            "path": "agent[self].relationships[hua]",
+            "owner": "self",
+            "why": "own_feeling"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "messageLog",
+            "owner": "self",
+            "why": "recipient_unknown"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "dark.debts[l=self|r=self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "bank.loans[self]",
+            "owner": "self",
+            "why": "party_to_record"
+          },
+          {
+            "path": "health.a[self]",
+            "owner": "self",
+            "why": "own_body"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "agent[self].needs/mood/personality",
+            "owner": "self",
+            "why": "own_state"
+          },
+          {
+            "path": "wallet.bal[self]",
+            "owner": "self",
+            "why": "own_money"
+          },
+          {
+            "path": "kinship(spouse/parent/child)",
+            "owner": "public",
+            "why": "kinship_identity"
+          },
+          {
+            "path": "housing.map[self]==housing.map[x]",
+            "owner": "public",
+            "why": "same_house"
+          },
+          {
+            "path": "tickCount",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "clock.day",
+            "owner": "public",
+            "why": "calendar"
+          },
+          {
+            "path": "agent[self].memory.entries",
+            "owner": "self",
+            "why": "own_memory"
+          }
+        ],
+        "rnd": 0,
+        "event_sources": {
+          "from": "ctx.from：開口的人（本人看得到是誰來借）",
+          "n": "ctx.n：對方開口說的金額",
+          "said": "ctx.said：對方說的話（可省略）",
+          "day": "w._absDay()：日曆",
+          "world": "w.townName：鎮名"
+        }
+      }
+    }
+  ],
+  "pairs": [
+    {
+      "baseline": "baseline",
+      "variant": "repaid_memory",
+      "diff": [
+        {
+          "path": "recall.0",
+          "a": "(無)",
+          "b": {
+            "id": "m_2885c94025",
+            "text": "阿華上次向我借的錢，已經照約定還清。",
+            "days_ago": 1,
+            "src": "memory"
+          }
+        },
+        {
+          "path": "versions.knowledge",
+          "a": "29eb59ffb33abb9c",
+          "b": "44d056a3929a16b5"
+        }
+      ]
+    },
+    {
+      "baseline": "baseline",
+      "variant": "known_expense",
+      "diff": [
+        {
+          "path": "derived.1",
+          "a": "(無)",
+          "b": {
+            "id": "d_research_total",
+            "what": "已知明天需支付 40 銀幣",
+            "value": 40,
+            "from": [
+              "k_research_expense"
+            ]
+          }
+        },
+        {
+          "path": "derived.2",
+          "a": "(無)",
+          "b": {
+            "id": "d_research_left",
+            "what": "借出 30 後剩 20，比已知的 40 少 20 銀幣",
+            "value": -20,
+            "from": [
+              "d_after_req",
+              "k_research_expense"
+            ]
+          }
+        },
+        {
+          "path": "self.obligations.0",
+          "a": "(無)",
+          "b": {
+            "id": "k_research_expense",
+            "what": "我已確認孩子明天看病，需要由我支付 40 銀幣。",
+            "amount": 40,
+            "due_in_days": 1,
+            "src": "research_actor_known_fact"
+          }
+        },
+        {
+          "path": "versions.state",
+          "a": "aa545a1ee3cc7733",
+          "b": "24f3cfb38130238c"
+        }
+      ]
+    },
+    {
+      "baseline": "baseline",
+      "variant": "stated_purpose",
+      "diff": [
+        {
+          "path": "seen.1",
+          "a": "(無)",
+          "b": {
+            "id": "o_said",
+            "text": "阿華說：「屋頂破了，我想買材料修好。」",
+            "src": "heard_direct:hua"
+          }
+        },
+        {
+          "path": "versions.knowledge",
+          "a": "29eb59ffb33abb9c",
+          "b": "e06bc8b23b739ac7"
+        }
+      ]
+    }
+  ]
+}
