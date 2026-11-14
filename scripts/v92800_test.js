@@ -1,6 +1,6 @@
 // v9.28.0 決策核心批次 F（感情與衝突）
 // 告白與答不答應、求婚與答不答應、偷情、分手、離婚、當街跟死對頭吵、去鄰鎮作客：改由本人決定，不再擲骰。
-// 驗：選擇點都登記了、每日流程不再擲骰（沒有決策核心時仍照舊擲骰）、每個選項的結算、個性與處境不同分數不同、AI 版、存讀檔、中英文
+// 驗：選擇點都登記了、每日流程不再擲骰、每個選項的結算、個性與處境不同分數不同、AI 版、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -32,7 +32,6 @@ async function run(browser, lang) {
     const lastLog = (a) => (X.log[a.agentId] || []).slice(-1)[0] || null;
     const TEST = [A, B, C, D, E2, F, G, H]; const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
     const NEW = ['confess', 'wooed', 'propose', 'proposed', 'affair', 'breakup', 'divorce', 'feud', 'visit'];
-    const noLove = (f) => { DECIDE.love = false; try { return f(); } finally { DECIDE.love = true; } }; // 沒有這一批決策核心時的行為(舊的擲骰)
     const logs = (n = 30) => (w.messageLog || []).slice(-n).map(m => (w.logText ? w.logText(m) : String(m.content || ''))).join('\n');
     const towns0 = w.otherTowns; const send0 = w.onSendVisitor;
     const clean = () => {
@@ -58,7 +57,7 @@ async function run(browser, lang) {
     const couple = (a, b, s, ago) => { for (const [x, y] of [[a, b], [b, a]]) { const r = R(x, y); r.status = s; r.statusSince = w.tickCount - ago; } };
 
     // ---------- 1) 登記 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), love: DECIDE.love === true, on: w._byLove(), off: noLove(() => w._byLove()) };
+    out.kinds = { all: NEW.every(k => !!K[k]), love: DECIDE.love === true, on: DECIDE.on(w) };
 
     // ---------- 2) 告白、答不答應 ----------
     clean(); { crush(A, B); const c1 = K.confess.when(w, A); keep('confess', 'confess', A);
@@ -74,8 +73,7 @@ async function run(browser, lang) {
         set(A, B, { romanticInterest: 70 }); const r2 = go(B, 'wooed', 'yes', cx); out.woo.yes = { res: !!r2, dating: st(A, B) === 'dating' && st(B, A) === 'dating', again: ids(B, 'wooed', cx), noMore: K.confess.when(w, A) }; }
       // 流程：告白的當下就問被告白的人
       clean(); crush(A, B); const p0 = (X.pick['wooed.yes'] || 0) + (X.pick['wooed.no'] || 0); fix(0.5, () => { go(A, 'confess', 'go:' + B.agentId); DECIDE.drain(w, X, d0()); }); out.conf.flow = (X.pick['wooed.yes'] || 0) + (X.pick['wooed.no'] || 0) - p0;
-      // 沒有決策核心：照舊擲骰
-      clean(); crush(A, B); noLove(() => relDay(0.01)); out.conf.dice = st(A, B) === 'dating'; }
+    }
 
     // ---------- 3) 求婚、答不答應 ----------
     clean(); { crush(A, B); couple(A, B, 'dating', 400); set(A, B, { affinity: 60, romanticInterest: 65 }); set(B, A, { affinity: 60, romanticInterest: 65 }); const c1 = K.propose.when(w, A); keep('propose', 'propose', A);
@@ -88,7 +86,7 @@ async function run(browser, lang) {
       if (cx) { keep('proposed', 'proposed', B, cx); out.pro = { ids: ids(B, 'proposed', cx) };
         go(B, 'proposed', 'later', cx); out.pro.later = { still: st(A, B) === 'dating', cool: (X.cool[A.agentId + '|propose'] || 0) >= d0() + 14, log: /💍/.test(logs(6)) };
         const r2 = go(B, 'proposed', 'yes', cx); out.pro.yes = { res: !!r2, married: st(A, B) === 'married' && st(B, A) === 'married', wedding: typeof CEREMONY === 'undefined' || JSON.stringify(w.ceremony || {}).includes(A.agentId) }; }
-      clean(); crush(A, B); couple(A, B, 'dating', 400); set(A, B, { affinity: 60, romanticInterest: 65 }); set(B, A, { affinity: 60, romanticInterest: 65 }); noLove(() => relDay(0.01)); out.prop.dice = st(A, B) === 'married'; }
+    }
 
     // ---------- 4) 對別人動了心：偷情 ----------
     clean(); { couple(A, B, 'married', 900); set(A, B, { affinity: 10 }); set(B, A, { affinity: 30 }); set(A, C, { romanticInterest: 70, affinity: 50 }); set(C, A, { romanticInterest: 60, affinity: 40 });
@@ -97,8 +95,7 @@ async function run(browser, lang) {
       const s0 = sc(A, 'affair', 'stay'); traits(A, ['kind']); const sKind = sc(A, 'affair', 'stay'); traits(A, ['hardworking']); out.aff.sc = { s0, sKind, go: sc(A, 'affair', 'go:' + C.agentId) };
       relDay(0.01); out.aff.untouched = !R(A, C).isCheating;
       const res = go(A, 'affair', 'go:' + C.agentId); out.aff.run = { res: !!res, cheat: R(A, C).isCheating && R(C, A).isCheating, still: st(A, B) === 'married', one: K.affair.when(w, A) };
-      clean(); couple(A, B, 'married', 900); set(A, B, { affinity: 10 }); set(A, C, { romanticInterest: 70, affinity: 50 }); set(C, A, { romanticInterest: 60, affinity: 40 });
-      const lo = A.agentId < B.agentId; noLove(() => relDay(0.01)); out.aff.dice = lo ? R(A, C).isCheating : null; }
+    }
 
     // ---------- 5) 感情淡了：分手 ----------
     clean(); { couple(A, B, 'dating', 200); set(A, B, { affinity: -20, romanticInterest: 30 }); set(B, A, { affinity: 10, romanticInterest: 30 });
@@ -106,7 +103,7 @@ async function run(browser, lang) {
       const b20 = sc(A, 'breakup', 'break'); set(A, B, { affinity: -60 }); const b60 = sc(A, 'breakup', 'break'); set(A, B, { affinity: -20 }); out.brk.sc = { b20, b60 };
       relDay(0.01); out.brk.untouched = st(A, B) === 'dating';
       const res = go(A, 'breakup', 'break'); out.brk.run = { res: !!res, ex: st(A, B) === 'ex' && st(B, A) === 'ex', log: /分手|broke up/i.test(logs(6)) };
-      clean(); couple(A, B, 'dating', 200); set(A, B, { affinity: -20 }); set(B, A, { affinity: -20 }); noLove(() => relDay(0.01)); out.brk.dice = st(A, B) === 'ex'; }
+    }
 
     // ---------- 6) 婚姻走不下去：離婚 ----------
     clean(); { couple(A, B, 'married', 900); set(A, B, { affinity: -50 }); set(B, A, { affinity: -40 });
@@ -116,7 +113,7 @@ async function run(browser, lang) {
       const sKid = sc(A, 'divorce', 'stay'); keep('divorceKid', 'divorce', A); kid._parentNames = kp; kid.age = ka; out.div.sc = { s0, sKid };
       relDay(0.01); out.div.untouched = st(A, B) === 'married';
       const res = go(A, 'divorce', 'divorce'); out.div.run = { res: !!res, ex: st(A, B) === 'ex' && st(B, A) === 'ex', log: /離婚|divorced/i.test(logs(6)) };
-      clean(); couple(A, B, 'married', 900); set(A, B, { affinity: -50 }); set(B, A, { affinity: -50 }); noLove(() => relDay(0.01)); out.div.dice = st(A, B) === 'ex'; }
+    }
 
     // ---------- 7) 碰上死對頭：當街吵 ----------
     clean(); { set(A, B, { affinity: -50 }); set(B, A, { affinity: -50 }); set(A, C, { affinity: -40 }); set(C, A, { affinity: -40 });
@@ -124,7 +121,7 @@ async function run(browser, lang) {
       const g0 = sc(A, 'feud', 'go:' + B.agentId); traits(A, ['abrasive']); const gAb = sc(A, 'feud', 'go:' + B.agentId); traits(A, ['stoic']); const gSt = sc(A, 'feud', 'go:' + B.agentId); traits(A, ['hardworking']); out.feud.sc = { g0, gAb, gSt };
       fix(0.01, () => w._processFeuds()); out.feud.untouched = !w._feudCooldown[[A.agentId, B.agentId].sort().join('|')];
       const a0 = R(A, B).affinity; const res = fix(0.9, () => go(A, 'feud', 'go:' + B.agentId)); out.feud.run = { res: !!res, worse: R(A, B).affinity < a0, log: /大吵|shouting match|row/i.test(logs(8)), cool: !K.feud.options(w, A, K.feud.when(w, A)).some(o => o.id === 'go:' + B.agentId) };
-      clean(); set(A, B, { affinity: -50 }); set(B, A, { affinity: -50 }); noLove(() => fix(0.01, () => w._processFeuds())); out.feud.dice = !!w._feudCooldown[[A.agentId, B.agentId].sort().join('|')]; }
+    }
 
     // ---------- 8) 去鄰鎮作客（真的出門會把人移出鎮上，這裡把「送出門」換成記一筆） ----------
     clean(); { const sent = []; w.otherTowns = [{ id: 'tx1', name: 'Oakvale' }] /* 鎮名用不需翻譯的字，英文版才能檢查有沒有漏翻 */; const sv = w.sendVisitorTo; w.sendVisitorTo = (a, town, n) => { sent.push([a.agentId, town.id, n]); return true; };
@@ -135,7 +132,6 @@ async function run(browser, lang) {
       X.q = []; const pk0 = vp(); fix(0.01, () => w._visitorDaily()); out.vis.flow = { asked: vp() - pk0, q: X.q.length }; sent.length = 0; X.q = [];
       go(A, 'visit', 'stay', cx); out.vis.stay = { again: X.q.length === 1 && X.q[0].kind === 'visit' && X.q[0].ctx.again === 0 && X.q[0].a !== A.agentId, sent: sent.length }; X.q = [];
       const res = go(A, 'visit', 'go', cx); out.vis.go = { res: !!res, sent: sent.length === 1 && sent[0][0] === A.agentId && sent[0][1] === 'tx1' && sent[0][2] === 3 };
-      sent.length = 0; noLove(() => fix(0.01, () => w._visitorDaily())); out.vis.dice = sent.length === 1;
       w.sendVisitorTo = sv; w.otherTowns = towns0; }
 
     // ---------- 9) 接到每天的決策流程（AI 沒開） ----------
@@ -177,7 +173,7 @@ async function run(browser, lang) {
     return out;
   });
   const L = `[${lang}] `;
-  ok(r.kinds.all && r.kinds.love && r.kinds.on && !r.kinds.off, L + '九個選擇點都登記了，小鎮知道感情與衝突交給本人', r.kinds);
+  ok(r.kinds.all && r.kinds.love && r.kinds.on, L + '九個選擇點都登記了，小鎮知道感情與衝突交給本人', r.kinds);
   // 告白
   ok(r.conf.ctx && r.conf.ids.join() === `wait,go:${r.conf.ids[1]?.split(':')[1]}` && !r.conf.oneSided, L + '告白：只問互相有意思的單身村民；單戀不問', r.conf);
   ok(r.conf.sc.gShy < r.conf.sc.g0 && r.conf.sc.gRom > r.conf.sc.g0, L + '告白：害羞的人比較不敢說，多情的人比較敢', r.conf.sc);
@@ -185,32 +181,29 @@ async function run(browser, lang) {
   ok(r.woo && r.woo.ids.join() === 'no,yes' && r.woo.sc.yLow < r.woo.sc.y0, L + '被告白：可以婉拒或答應；沒那麼心動的人比較會婉拒', r.woo);
   ok(r.woo && r.woo.no.single && r.woo.no.sad && r.woo.no.ri && r.woo.no.cool && r.woo.no.log, L + '被告白：婉拒的話告白的人難過、心冷了一點、二十天內不再開口', r.woo?.no);
   ok(r.woo && r.woo.yes.res && r.woo.yes.dating && !r.woo.yes.again?.length && !r.woo.yes.noMore, L + '被告白：答應就開始交往，不再問告白', r.woo?.yes);
-  ok(r.conf.dice, L + '告白：沒有決策核心時照舊擲骰', r.conf.dice);
   // 求婚
   ok(r.prop.ctx && r.prop.ids.join() === 'wait,propose' && !r.prop.young, L + '求婚：只問交往夠久、感情夠好的人', r.prop);
   ok(r.prop.sc.pFam > r.prop.sc.p0 && r.prop.sc.pFree < r.prop.sc.p0, L + '求婚：重視家庭的人比較想結婚，重視自由的人比較不想', r.prop.sc);
   ok(r.prop.untouched && r.prop.run.res && r.prop.run.queued && r.prop.run.notYet, L + '求婚：每天的流程不再擲骰；本人決定求婚，另一半當下被問', r.prop);
   ok(r.pro && r.pro.ids.join() === 'later,yes' && r.pro.later.still && r.pro.later.cool && r.pro.later.log, L + '被求婚：說還沒準備好的話還是在交往，求婚的人十五天內不再開口', r.pro);
   ok(r.pro && r.pro.yes.res && r.pro.yes.married && r.pro.yes.wedding, L + '被求婚：答應就訂婚、排婚禮', r.pro?.yes);
-  ok(r.prop.dice, L + '求婚：沒有決策核心時照舊擲骰', r.prop.dice);
   // 偷情
   ok(r.aff.ctx && r.aff.ids.join() === `stay,go:${r.aff.ids[1]?.split(':')[1]}` && !r.aff.happy && r.aff.romantic, L + '偷情：只問感情不好（或多情）又對彼此有意思的第三人', r.aff);
   ok(r.aff.sc.sKind > r.aff.sc.s0, L + '偷情：善良的人比較會守住現在的感情', r.aff.sc);
   ok(r.aff.untouched && r.aff.run.res && r.aff.run.cheat && r.aff.run.still && !r.aff.run.one, L + '偷情：每天的流程不再擲骰；本人決定就偷偷在一起（婚姻還在），一次只有一段', r.aff.run);
-  ok(r.aff.dice !== false, L + '偷情：沒有決策核心時照舊擲骰', r.aff.dice);
   // 分手
   ok(r.brk.ctx && r.brk.ids.join() === 'stay,break' && !r.brk.fresh && r.brk.sc.b60 > r.brk.sc.b20, L + '分手：只問感情淡了的情侶；越僵越想分', r.brk);
-  ok(r.brk.untouched && r.brk.run.res && r.brk.run.ex && r.brk.run.log && r.brk.dice, L + '分手：每天的流程不再擲骰；本人決定就分手；沒有決策核心時照舊擲骰', r.brk);
+  ok(r.brk.untouched && r.brk.run.res && r.brk.run.ex && r.brk.run.log, L + '分手：每天的流程不再擲骰；本人決定就分手', r.brk);
   // 離婚
   ok(r.div.ctx && r.div.ids.join() === 'stay,divorce' && !r.div.oneSided && r.div.sc.sKid > r.div.sc.s0, L + '離婚：只問兩邊都很糟的夫妻；有小孩的比較想撐下去', r.div);
-  ok(r.div.untouched && r.div.run.res && r.div.run.ex && r.div.run.log && r.div.dice, L + '離婚：每天的流程不再擲骰；本人決定就離婚；沒有決策核心時照舊擲骰', r.div);
+  ok(r.div.untouched && r.div.run.res && r.div.run.ex && r.div.run.log, L + '離婚：每天的流程不再擲骰；本人決定就離婚', r.div);
   // 對嗆
   ok(r.feud.ctx && r.feud.ids[0] === 'calm' && r.feud.ids.length === 3 && !r.feud.mild, L + '對嗆：只問互相仇視的兩個人（可以選跟誰吵）', r.feud);
   ok(r.feud.sc.gAb > r.feud.sc.g0 && r.feud.sc.gSt < r.feud.sc.g0, L + '對嗆：脾氣衝的人比較會吵，沉穩的人比較會忍', r.feud.sc);
-  ok(r.feud.untouched && r.feud.run.res && r.feud.run.worse && r.feud.run.log && r.feud.run.cool && r.feud.dice, L + '對嗆：每天的流程不再擲骰；本人決定就當街吵、五天內不再跟同一人吵；沒有決策核心時照舊擲骰', r.feud);
+  ok(r.feud.untouched && r.feud.run.res && r.feud.run.worse && r.feud.run.log && r.feud.run.cool, L + '對嗆：每天的流程不再擲骰；本人決定就當街吵、五天內不再跟同一人吵', r.feud);
   // 出訪
   ok(r.vis.ids.join() === 'stay,go' && r.vis.sad === 0 && r.vis.closed === 0 && r.vis.sc.gAdv > r.vis.sc.g0, L + '出訪：心情好的人被問要不要去；心情差或對方封路不問；愛冒險的人比較想去', r.vis);
-  ok(r.vis.flow.asked === 1 && r.vis.stay.again && r.vis.stay.sent === 0 && r.vis.go.res && r.vis.go.sent && r.vis.dice, L + '出訪：每天的流程改成問一個人；不去就再問另一個；去就出門；沒有決策核心時照舊擲骰', r.vis);
+  ok(r.vis.flow.asked === 1 && r.vis.stay.again && r.vis.stay.sent === 0 && r.vis.go.res && r.vis.go.sent, L + '出訪：每天的流程改成問一個人；不去就再問另一個；去就出門', r.vis);
   // 流程
   ok(r.rule.kind === 'confess' && r.rule.id.startsWith('go:') && r.rule.ai === 0 && r.rule.answered === 'wooed' && r.rule.dating, L + '接到每天的決策流程：AI 沒開時照個性決定（多情又有魅力的人會告白，對方當下回答）', r.rule);
   ok(r.ai.id === 'stay' && r.ai.ai === 1 && r.ai.why === 'W-DIV' && r.ai.still && r.ai.plan === 'N-NEXT' && r.ai.menu, L + 'AI 版：由 AI 決定婚姻要不要撐下去並說理由', r.ai);

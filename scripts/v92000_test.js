@@ -42,7 +42,7 @@ async function run(browser, lang) {
     const wrong = (by, to, wt, age) => { DARK.wrong(w, by, to, wt, '在背後說{v}壞話', { v: to.name }); const x = D.wrongs[D.wrongs.length - 1]; x.day = td() - (age ?? 3); return x; };
 
     // ---------- 1) 登記、舊的擲骰不再跑 ----------
-    out.kinds = { all: ['owe', 'sorry', 'forgive', 'grudge', 'vent', 'makeup', 'reached'].every(k => !!K[k]), soc: DECIDE.soc === true, on: DARK.byChoice(w), queued: K.forgive.scan === false && K.reached.scan === false, same: td() === d0() };
+    out.kinds = { all: ['owe', 'sorry', 'forgive', 'grudge', 'vent', 'makeup', 'reached'].every(k => !!K[k]), soc: DECIDE.soc === true, on: DECIDE.on(w), queued: K.forgive.scan === false && K.reached.scan === false, same: td() === d0() };
     clean(); { const x = wrong(A, B, 2, 3); traits(B, ['abrasive', 'jealous']); const n0 = (w.messageLog || []).length; fix(0.001, () => DARK.daily(w)); out.noDice = { tries: x.tries, revenged: !!x.revenged, log: /道歉|報復|報一箭/.test((w.messageLog || []).slice(n0).map(m => m.content).join('|')) }; }
     clean(); { rel(A, B, 50); rel(A, C, -80); fix(0.001, () => w.gossipNetwork.spreadGossip(A, B, w)); out.noGossipDice = { spoke: D.spoke[A.agentId], rep: D.rep[A.agentId]?.badmouth || 0 }; }
 

@@ -42,7 +42,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const fam = npcs().find(x => x !== a && x !== o); if (F.rels[1]) F.of[fam.agentId] = { rel: F.rels[1].id, piety: 80 }; o._parentNames = [fam.name];
       for (const x of Object.values(a.relationships.relationships)) if (x.targetId !== o.agentId && x.affinity >= 30) x.affinity = 29; // 傳教挑朋友清單的第一位:讓 o 是唯一夠熟的朋友(以前隨機小鎮裡 a 若已有別的熟朋友就會勸別人)
       a.relationships.getOrCreate(o.agentId, o.name).affinity = 50; F.of[a.agentId].piety = 95; const affFam0 = fam.relationships.getOrCreate(o.agentId, o.name).affinity;
-      F.lastDay = null; fix(0.01, () => FAITH.daily(w)); if (F.of[o.agentId].rel !== R.id && FAITH.byCrowd?.(w)) FAITH.convertBy(w, o, { by: a.agentId, rel: R.id }, true); /* v9.27.0 去不去勸、改不改信由本人決定(不再擲骰)：這裡讓被勸的人決定改信 */ out.converted = F.of[o.agentId].rel === R.id && logHas(/改信|converted/);
+      F.lastDay = null; fix(0.01, () => FAITH.daily(w)); if (F.of[o.agentId].rel !== R.id) FAITH.convertBy(w, o, { by: a.agentId, rel: R.id }, true); /* v9.27.0 去不去勸、改不改信由本人決定(不再擲骰)：這裡讓被勸的人決定改信 */ out.converted = F.of[o.agentId].rel === R.id && logHas(/改信|converted/);
       out.discord = !F.rels[1] || fam.relationships.getOrCreate(o.agentId, o.name).affinity < affFam0;
       // 喪親
       const mourner = npcs().find(x => x !== a && x !== o && x !== fam && F.of[x.agentId]?.rel); F.of[mourner.agentId].piety = 20; const lost = npcs().find(x => x !== mourner && x !== a);

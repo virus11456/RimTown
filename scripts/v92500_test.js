@@ -1,7 +1,7 @@
 // v9.25.0 決策核心批次 C（花錢與享樂）
 // 平常怎麼花錢（買點好東西、表演賞錢）、找名匠訂做、痛快花一筆、去不去賭場與押多少、借錢翻本、賭債還不出來、輸到一無所有、
 // 要不要開賭場、買不買爵位、等移植塞不塞紅包、提案的錢誰出：改由本人決定，不再擲骰。
-// 驗：選擇點都登記了、每日流程不再擲骰（沒有決策核心時仍照舊擲骰）、每個選項的結算、個性與處境不同分數不同、AI 版、銀幣守恆、存讀檔、中英文
+// 驗：選擇點都登記了、每日流程不再擲骰、每個選項的結算、個性與處境不同分數不同、AI 版、銀幣守恆、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -36,7 +36,6 @@ async function run(browser, lang) {
     const lastLog = (a) => (X.log[a.agentId] || []).slice(-1)[0] || null;
     const TEST = [A, B, C, D, E, F, G, H]; const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
     const NEW = ['habit', 'bespoke', 'gamble', 'gamedebt', 'ruined', 'opencasino', 'title', 'bribe', 'fund'];
-    const noFun = (f) => { DECIDE.fun = false; try { return f(); } finally { DECIDE.fun = true; } }; // 沒有這一批決策核心時的行為(舊的擲骰)
     const left = []; const _leave = w.leaveTown; w.leaveTown = (id) => { left.push(id); return true; }; // 測試裡不真的讓人離開
     const tier0 = w.tierState.lv;
     const clean = () => {
@@ -58,7 +57,7 @@ async function run(browser, lang) {
     const texts = {}; const keep = (name, key, a, ctx, only) => { try { const c = ctx || K[key].when(w, a); texts[name] = { fact: K[key].facts(w, a, c), ops: K[key].options(w, a, c).filter(o => !only || only.includes(o.id)).map(o => [o.text, o.say, o.why]) }; } catch (e) { texts[name] = { err: String(e) }; } };
 
     // ---------- 1) 登記 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), fun: DECIDE.fun === true, on: WALLET.byFun(w) && SPEND.byFun(w) && CASINO.byFun(w) && MOBILITY.byFun(w) && CLASS.byFun(w) && HEALTH.byFun(w), spare: !!K.spare?._fun };
+    out.kinds = { all: NEW.every(k => !!K[k]), fun: DECIDE.fun === true, on: DECIDE.on(w), spare: !!K.spare?._fun };
 
     // ---------- 2) 平常怎麼花錢 ----------
     clean(); { Bal[A.agentId] = 200; Bal[B.agentId] = 50; const c1 = K.habit.when(w, A); keep('habit', 'habit', A);
@@ -72,7 +71,7 @@ async function run(browser, lang) {
       const _sale = MARKET.sale; let lux = 0; MARKET.sale = function (ww, k, n) { if (k === 'luxury') lux++; return _sale.apply(this, arguments); };
       const days = (k, v, fn) => { lux = 0; const base = _ad() + 40; for (let i = 0; i < 14; i++) { DAY = base + i; for (const a of all()) Bal[a.agentId] = 30; Bal[A.agentId] = 200; if (k) Wl.habit[A.agentId] = { k, d: DAY, c: 200 }; Wl.lastDay = null; fn(() => fix(v, () => WALLET.daily(w))); } DAY = null; return lux; };
       const same = (f) => f();
-      out.habit.lux = { indulge: days('indulge', 0.99, same), normal: days('normal', 0.99, same), frugal: days('frugal', 0.99, same), diceLo: days(null, 0.01, noFun), diceHi: days(null, 0.99, noFun) };
+      out.habit.lux = { indulge: days('indulge', 0.99, same), normal: days('normal', 0.99, same), frugal: days('frugal', 0.99, same) };
       MARKET.sale = _sale; }
 
     // ---------- 3) 看表演給不給賞錢 ----------
@@ -80,8 +79,7 @@ async function run(browser, lang) {
       for (const a of [A, B, C, D]) Bal[a.agentId] = 100; Wl.habit[A.agentId].k = 'indulge'; Wl.habit[C.agentId].k = 'normal'; Wl.habit[D.agentId].k = 'normal'; rel(C, E, 30); rel(D, E, 0);
       out.tips = { a: SPEND.tips(w, A, E), b: SPEND.tips(w, B, E), c: SPEND.tips(w, C, E), d: SPEND.tips(w, D, E) };
       const b0 = TEST.map(a => Bal[a.agentId]); const n0 = Sp.st.showN || 0; Sp.lastDay = null; const cons = conserved(() => fix(0.01, () => SPEND.daily(w))); const df = TEST.map((a, i) => Math.round((Bal[a.agentId] - b0[i]) * 100) / 100);
-      out.tips.run = { show: (Sp.st.showN || 0) - n0, a: df[0] < 0, b: df[1] === 0, c: df[2] < 0, d: df[3] === 0, e: df[4] > 0, cons };
-      for (const a of [A, B, C, D]) Bal[a.agentId] = 100; Bal[E.agentId] = 30; const b1 = [B, D].map(a => Bal[a.agentId]); Sp.lastDay = null; noFun(() => fix(0.01, () => SPEND.daily(w))); out.tips.dice = [B, D].every((a, i) => Bal[a.agentId] < b1[i]); }
+      out.tips.run = { show: (Sp.st.showN || 0) - n0, a: df[0] < 0, b: df[1] === 0, c: df[2] < 0, d: df[3] === 0, e: df[4] > 0, cons }; }
 
     // ---------- 4) 找名匠訂做、痛快花一筆（手上有閒錢多兩個選項） ----------
     clean(); { F.job = new Job('blacksmith'); Mb.mst.blacksmith = F.agentId; Bal[A.agentId] = 300; const low = MOBILITY.commInfo(w, A); Cl.lv[A.agentId] = 3;
@@ -94,10 +92,9 @@ async function run(browser, lang) {
       // 痛快花一筆：出身好、手頭寬、又懶散愛玩的人才有
       Mb.o[A.agentId] = 3; traits(A, ['lazy']); Bal[A.agentId] = 300; const S1 = MOBILITY.spreeInfo(w, A); const c2 = K.spare.when(w, A); const id2 = ids(A, 'spare'); texts.spree = { fact: K.spare.facts(w, A, c2), ops: K.spare.options(w, A, c2).filter(o => o.id === 'spree').map(o => [o.text, o.say, o.why]) };
       traits(A, ['lazy', 'hardworking']); const hard = MOBILITY.spreeInfo(w, A); traits(A, ['lazy']);
-      const s0 = Mb.st.spree || 0; fix(0.01, () => MOBILITY.spree(w, all(), d0())); const untouched = (Mb.st.spree || 0) === s0 && Bal[A.agentId] === 300; // 交給本人：骰子再順也不會自己揮霍
+      const s0 = Mb.st.spree || 0; const untouched = typeof MOBILITY.spree === 'undefined' && (Mb.st.spree || 0) === s0 && Bal[A.agentId] === 300; // 交給本人：每三天替人揮霍的流程已經拿掉
       let r2 = null; const cons2 = conserved(() => { r2 = go(A, 'spare', 'spree', c2); });
-      out.spree = { n: S1?.n, opt: id2.includes('spree'), hard, untouched, res: r2?.k, paid: Math.round(300 - Bal[A.agentId]), cons: cons2, st: (Mb.st.spree || 0) - s0 };
-      Bal[A.agentId] = 300; const s1 = Mb.st.spree || 0; noFun(() => fix(0.01, () => MOBILITY.spree(w, all(), d0()))); out.spree.dice = (Mb.st.spree || 0) - s1; }
+      out.spree = { n: S1?.n, opt: id2.includes('spree'), hard, untouched, res: r2?.k, paid: Math.round(300 - Bal[A.agentId]), cons: cons2, st: (Mb.st.spree || 0) - s0 }; }
 
     // ---------- 5) 今晚要不要去賭場 ----------
     clean(); { const closed = K.gamble.when(w, A); casino(); Bal[A.agentId] = 100; const c1 = K.gamble.when(w, A); keep('gamble', 'gamble', A);
@@ -118,9 +115,7 @@ async function run(browser, lang) {
       let r3 = null; const cons3 = conserved(() => { r3 = fix(0.99, () => go(A, 'gamble', 'credit')); });
       out.gam.credit = { ids: idC, res: r3?.k, debt: Cs.debt[A.agentId]?.n, due: Cs.debt[A.agentId]?.day === d0(), left: Math.round(Bal[A.agentId]), cons: cons3, again: ids(A, 'gamble')?.includes('credit') || false };
       // 每天結帳：今天累積的輸贏進帳本，再重新開始記
-      const net0 = Cs.net.length; const tn = Cs.today?.n; Cs.lastDay = null; fix(0.99, () => CASINO.daily(w)); out.gam.close = { tn, pushed: Cs.net.length - net0, reset: Cs.today?.n === 0 };
-      // 沒有決策核心時照舊擲骰
-      for (const a of all()) Bal[a.agentId] = 100; Bal[F.agentId] = 500; const v1 = Cs.st.visits; Cs.lastDay = null; noFun(() => fix(0.01, () => CASINO.daily(w))); out.gam.dice = Cs.st.visits - v1; }
+      const net0 = Cs.net.length; const tn = Cs.today?.n; Cs.lastDay = null; fix(0.99, () => CASINO.daily(w)); out.gam.close = { tn, pushed: Cs.net.length - net0, reset: Cs.today?.n === 0 }; }
 
     // ---------- 6) 賭債拖了三週還不出來 ----------
     clean(); { casino(); for (const a of all()) if (a !== F) Bal[a.agentId] = 20; Cs.debt[A.agentId] = { n: 20, day: d0() - 10 }; Bal[A.agentId] = 0; const early = K.gamedebt.when(w, A); Cs.debt[A.agentId].day = d0() - 22; Bal[B.agentId] = 80;
@@ -132,8 +127,7 @@ async function run(browser, lang) {
       const th0 = Cs.st.theft, fl0 = Cs.st.fled; Cs.lastDay = null; fix(0.01, () => CASINO.daily(w)); const untouched = Cs.st.theft === th0 && Cs.st.fled === fl0 && left.length === 0 && !!Cs.debt[A.agentId];
       const f0 = Bal[F.agentId], b0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = go(A, 'gamedebt', 'steal'); });
       out.debt.steal = { untouched, res: res?.k, mark: Math.round(b0 - Bal[B.agentId]), own: Math.round(Bal[F.agentId] - f0), cleared: !Cs.debt[A.agentId], theft: Cs.st.theft - th0, cons, secret: (w.dark?.secrets || []).slice(-1)[0]?.culprit === A.agentId };
-      Cs.debt[A.agentId] = { n: 20, day: d0() - 22 }; const r2 = go(A, 'gamedebt', 'flee'); out.debt.flee = { res: r2?.k, left: left.includes(A.agentId), cleared: !Cs.debt[A.agentId], fled: Cs.st.fled - fl0 };
-      left.length = 0; Cs.debt[A.agentId] = { n: 20, day: d0() - 22 }; Bal[A.agentId] = 0; Bal[B.agentId] = 80; const th1 = Cs.st.theft; Cs.lastDay = null; noFun(() => fix(0.01, () => CASINO.daily(w))); out.debt.dice = Cs.st.theft - th1; }
+      Cs.debt[A.agentId] = { n: 20, day: d0() - 22 }; const r2 = go(A, 'gamedebt', 'flee'); out.debt.flee = { res: r2?.k, left: left.includes(A.agentId), cleared: !Cs.debt[A.agentId], fled: Cs.st.fled - fl0 }; }
 
     // ---------- 7) 在賭場輸到一無所有 ----------
     clean(); { casino(); Bal[A.agentId] = 10; Cs.streak[A.agentId] = 2; Cs.lost[A.agentId] = [[d0(), 60]];
@@ -153,7 +147,6 @@ async function run(browser, lang) {
       Cs.lastDay = null; fix(0.01, () => CASINO.daily(w)); const untouched = !Cs.open; // 交給本人：骰子再順也沒有人自己開賭場
       let res = null; const cons = conserved(() => { res = go(A, 'opencasino', 'open'); });
       out.open.run = { untouched, res: res?.k, open: Cs.open, owner: Cs.owner === A.agentId, paid: Math.round(400 - Bal[A.agentId]), cons, after: K.opencasino.when(w, A), log: /賭場|gambling/i.test(logs(6)) };
-      try { if (Cs.thing && typeof THINGS !== 'undefined') THINGS.retire(w, Cs.thing); } catch (e) {} Object.assign(Cs, { open: false, owner: null, thing: null }); Bal[A.agentId] = 400; Cs.lastDay = null; noFun(() => fix(0.01, () => CASINO.daily(w))); out.open.dice = Cs.open && Cs.owner === A.agentId;
       try { if (Cs.thing && typeof THINGS !== 'undefined') THINGS.retire(w, Cs.thing); } catch (e) {} }
 
     // ---------- 9) 要不要花錢買爵位 ----------
@@ -164,8 +157,7 @@ async function run(browser, lang) {
       out.title.sc = { buy, buyA, pass, passA };
       Cl.lastGrant = d0(); fix(0.01, () => CLASS.daily(w)); const untouched = !Cl.titles[A.agentId] && Bal[A.agentId] === 500; // 交給本人：骰子再順也不會自己買
       const s0 = w.stockpile.get('silver'); let res = null; const cons = conserved(() => { res = go(A, 'title', 'buy'); });
-      out.title.run = { untouched, res: res?.k, bought: !!Cl.titles[A.agentId]?.bought, paid: Math.round(500 - Bal[A.agentId]), town: Math.round(w.stockpile.get('silver') - s0), cons, after: K.title.when(w, A), snub: (C.relationships.relationships[A.agentId]?.affinity || 0) < 0 };
-      delete Cl.titles[A.agentId]; Bal[A.agentId] = 500; Cl.lastGrant = d0(); noFun(() => fix(0.01, () => CLASS.daily(w))); out.title.dice = !!Cl.titles[A.agentId]?.bought; }
+      out.title.run = { untouched, res: res?.k, bought: !!Cl.titles[A.agentId]?.bought, paid: Math.round(500 - Bal[A.agentId]), town: Math.round(w.stockpile.get('silver') - s0), cons, after: K.title.when(w, A), snub: (C.relationships.relationships[A.agentId]?.affinity || 0) < 0 }; }
 
     // ---------- 10) 等移植，要不要塞紅包插隊 ----------
     clean(); { G.job = new Job('doctor'); Hh.q = [{ id: B.agentId, p: 'c', d: d0() }, { id: A.agentId, p: 'c', d: d0() }]; HEALTH.setPart(w, A, 'c', 20); HEALTH.setPart(w, B, 'c', 20); Bal[A.agentId] = 400;
@@ -192,7 +184,6 @@ async function run(browser, lang) {
       out.fund.more = { crowd: p2.fund.by === 'crowd' && Object.keys(p2.fund.pledges).length >= 2, town: p3.fund.by === 'town' && !p3.fund.ask };
       // 批准時照他選的收錢
       const s0 = w.stockpile.get('silver'); const cons = conserved(() => WALLET.collect(w, p)); out.fund.collect = { paid: Math.round(100 - Bal[A.agentId]), want: 60, town: Math.round(w.stockpile.get('silver') - s0), cons };
-      const d1 = noFun(() => fix(0.01, () => WALLET.decideFund(w, ps, { proposerId: B.agentId }))); out.fund.dice = d1?.by === 'self' && !d1.ask;
       w.proposals.items = w.proposals.items.filter(x => !['L900', 'L901', 'L902'].includes(x.id)); }
 
     // ---------- 12) 接到每天的決策流程（傾向版） ----------
@@ -239,17 +230,14 @@ async function run(browser, lang) {
   ok(r.habit.sc.frG > r.habit.sc.fr && r.habit.sc.indG > r.habit.sc.ind && r.habit.sc.defG === 'frugal', L + '花錢習慣：貪心的比較想省、愛吃的比較想享受', r.habit.sc);
   ok(r.habit.run.k === 'indulge' && r.habit.run.c === 200 && !r.habit.run.again && r.habit.run.richer && r.habit.run.later && r.habit.run.now === 'indulge', L + '花錢習慣：定下來以後一個月內不再問；身家多了一倍或過了一個月才重新想', r.habit.run);
   ok(r.habit.lux.indulge === 14 && r.habit.lux.normal === 7 && r.habit.lux.frugal === 2, L + '買點好東西：照習慣花（不擲骰）——想買就買的天天花、普通的兩天一次、省的一週一次', r.habit.lux);
-  ok(r.habit.lux.diceLo === 14 && r.habit.lux.diceHi === 0, L + '買點好東西：沒有決策核心時照舊擲骰', r.habit.lux);
   // 賞錢
   ok(r.tips.a && !r.tips.b && r.tips.c && !r.tips.d, L + '賞錢：想買就買的人都給、普通的人只給熟人、省的人不給', r.tips);
   ok(r.tips.run.show === 1 && r.tips.run.a && r.tips.run.b && r.tips.run.c && r.tips.run.d && r.tips.run.e && r.tips.run.cons, L + '賞錢：表演當天照習慣給（不擲骰），錢進表演的人口袋、銀幣守恆', r.tips.run);
-  ok(r.tips.dice, L + '賞錢：沒有決策核心時照舊擲骰', r.tips.dice);
   // 名匠、揮霍
   ok(!r.comm.low && r.comm.m && r.comm.fee > 0 && r.comm.opt && !r.comm.master && !r.comm.spree0, L + '名匠訂做：只問有錢、算得上工匠商人以上的人；名匠自己不問', r.comm);
   ok(r.comm.sc.ordF > r.comm.sc.ord && r.comm.sc.passA > r.comm.sc.pass && r.comm.untouched, L + '名匠訂做：跟名匠交情好的比較想訂、克己的比較不想；每週的流程不再擲骰替人下訂', r.comm);
   ok(r.comm.run.res && r.comm.run.paid === r.comm.fee && r.comm.run.got >= r.comm.fee - 5 && r.comm.run.n === 1 && r.comm.run.cons && !r.comm.run.again && r.comm.run.log, L + '名匠訂做：本人決定訂做，錢付給名匠、銀幣守恆；一位名匠一週只接一件', r.comm.run);
   ok(r.spree.n === 54 && r.spree.opt && !r.spree.hard && r.spree.untouched && r.spree.res && r.spree.paid === 54 && r.spree.cons && r.spree.st === 1, L + '揮霍：出身好、手頭寬、懶散愛玩的人多一個「痛快花一筆」；每三天的流程不再擲骰；本人決定才花，銀幣守恆', r.spree);
-  ok(r.spree.dice === 1, L + '揮霍：沒有決策核心時照舊擲骰', r.spree.dice);
   // 賭場
   ok(!r.gam.closed && r.gam.ctx && r.gam.ids.join() === 'skip,small,big' && !r.gam.owner && !r.gam.broke, L + '賭場：開著才問；可以不去、小玩、押大的；老闆自己和沒錢的人不問', r.gam);
   ok(r.gam.sc.smallG > r.gam.sc.small && r.gam.sc.skipA > r.gam.sc.skip && r.gam.sc.bigS > r.gam.sc.big && r.gam.sc.skipS < r.gam.sc.skip && r.gam.sc.idsS.includes('all'), L + '賭場：貪心的比較想去、克己的比較不想；連輸以後更想押大的、多一個「全押翻本」', r.gam.sc);
@@ -257,24 +245,20 @@ async function run(browser, lang) {
   ok(r.gam.run.win.res && r.gam.run.win.a === 35 && r.gam.run.win.f === 35 && r.gam.run.win.streak === 0 && r.gam.run.cons2, L + '賭場：押大的贏了，莊家照數賠、銀幣守恆', r.gam.run.win);
   ok(r.gam.credit.ids.includes('credit') && r.gam.credit.res && r.gam.credit.debt === 20 && r.gam.credit.due && r.gam.credit.cons && !r.gam.credit.again, L + '賭場：連輸又沒錢的人可以跟莊家賒帳（記成賭債，一次只能欠一筆）', r.gam.credit);
   ok(r.gam.close.pushed === 1 && r.gam.close.reset, L + '賭場：每天結帳把大家自己來賭的輸贏記進帳本，再重新開始記', r.gam.close);
-  ok(r.gam.dice > 0, L + '賭場：沒有決策核心時照舊擲骰', r.gam.dice);
   // 賭債
   ok(!r.debt.early && r.debt.ctx && r.debt.ids.join() === 'hide,steal,flee' && !r.debt.other && r.debt.sc.stealK < r.debt.sc.steal - 1, L + '賭債：拖了三週才問，可以繼續躲、去偷、跑路；心軟的人很不想偷', r.debt);
   ok(r.debt.steal.untouched && r.debt.steal.res && r.debt.steal.mark === 20 && r.debt.steal.own === 20 && r.debt.steal.cleared && r.debt.steal.theft === 1 && r.debt.steal.cons && r.debt.steal.secret, L + '賭債：每天的流程不再擲骰；本人決定去偷，偷來的錢還給莊家、記成祕密、銀幣守恆', r.debt.steal);
   ok(r.debt.flee.res && r.debt.flee.left && r.debt.flee.cleared && r.debt.flee.fled === 1, L + '賭債：本人決定跑路就離開小鎮', r.debt.flee);
-  ok(r.debt.dice === 1, L + '賭債：沒有決策核心時照舊擲骰', r.debt.dice);
   // 輸光
   ok(r.ruin.ruin === 1 && r.ruin.asked && r.ruin.noDice && r.ruin.tot > 0 && r.ruin.opt.ids.join() === 'stay,flee' && r.ruin.opt.fleeO > r.ruin.opt.flee + 1 && r.ruin.opt.stay > r.ruin.opt.flee && r.ruin.opt.res && r.ruin.opt.left, L + '輸到一無所有：不再擲骰決定跑不跑，改問本人（還欠銀行錢的比較想走）', r.ruin);
   // 開賭場
   ok(!r.open.village && !r.open.young && r.open.ctx && r.open.ids.join() === 'pass,open' && !r.open.second, L + '開賭場：城鎮以上、建鎮二十天後，只問最有條件開的那個人', r.open);
   ok(r.open.sc.openA > r.open.sc.open && r.open.sc.passK > r.open.sc.pass, L + '開賭場：有企圖心的比較想開、心軟的比較不想', r.open.sc);
   ok(r.open.run.untouched && r.open.run.res && r.open.run.open && r.open.run.owner && r.open.run.paid > 0 && r.open.run.cons && !r.open.run.after && r.open.run.log, L + '開賭場：每天的流程不再擲骰；本人決定開，本錢付出去、銀幣守恆', r.open.run);
-  ok(r.open.dice, L + '開賭場：沒有決策核心時照舊擲骰', r.open.dice);
   // 爵位
   ok(!r.title.town && r.title.ctx && r.title.ids.join() === 'pass,buy' && !r.title.poor, L + '買爵位：城市以上、錢夠的人才問', r.title);
   ok(r.title.sc.buyA > r.title.sc.buy && r.title.sc.passA > r.title.sc.pass, L + '買爵位：有企圖心的比較想買、克己的比較不想', r.title.sc);
   ok(r.title.run.untouched && r.title.run.res && r.title.run.bought && r.title.run.paid === r.title.price && r.title.run.town === r.title.price && r.title.run.cons && !r.title.run.after && r.title.run.snub, L + '買爵位：每天的流程不再擲骰；本人決定買，錢進公庫、受封的貴族看不起他、銀幣守恆', r.title.run);
-  ok(r.title.dice, L + '買爵位：沒有決策核心時照舊擲骰', r.title.dice);
   // 紅包
   ok(r.bribe.ctx && r.bribe.pos === 2 && r.bribe.ids.join() === 'wait,bribe' && !r.bribe.first && !r.bribe.kindDoc && !r.bribe.poor, L + '塞紅包：只問排在後面、出得起的人；排第一的不問、醫生心軟就沒這條路', r.bribe);
   ok(r.bribe.sc.waitK > r.bribe.sc.wait && r.bribe.sc.brBad > r.bribe.sc.br, L + '塞紅包：心軟的比較願意等、病得越重越想插隊', r.bribe.sc);
@@ -284,7 +268,6 @@ async function run(browser, lang) {
   ok(r.fund.opt.ids.join() === 'self,crowd,town' && r.fund.opt.cost === 60 && r.fund.opt.crowd === 1 && r.fund.opt.selfK > r.fund.opt.self && r.fund.opt.selfG < r.fund.opt.self && !r.fund.opt.other, L + '提案出資：可以自己出、找朋友湊、讓公庫出；心軟的比較願意自己出、貪心的比較不願意；只問提案人', r.fund.opt);
   ok(r.fund.run.by === 'self' && r.fund.run.mine === 60 && !r.fund.run.again && /60/.test(r.fund.run.text) && r.fund.more.crowd && r.fund.more.town, L + '提案出資：本人選了就照他選的記（自己出／朋友湊／公庫），不會再問第二次', { run: r.fund.run, more: r.fund.more });
   ok(r.fund.collect.paid === 60 && r.fund.collect.town === 60 && r.fund.collect.cons, L + '提案出資：批准時照他選的收錢，銀幣守恆', r.fund.collect);
-  ok(r.fund.dice, L + '提案出資：沒有決策核心時照舊擲骰', r.fund.dice);
   // 流程
   ok(r.rule.kind === 'habit' && r.rule.id === 'indulge' && r.rule.ai === 0 && r.rule.habit === 'indulge', L + '接到每天的決策流程：AI 沒開時照個性決定（愛吃又樂觀的人選想買就買）', r.rule);
   ok(r.ai.id === 'buy' && r.ai.ai === 1 && r.ai.why === 'W-TITLE' && r.ai.bought && r.ai.plan === 'N-NEXT' && r.ai.menu && r.ai.money, L + 'AI 版：由 AI 決定買爵位並說理由', r.ai);

@@ -1,6 +1,6 @@
 // v9.24.0 決策核心批次 B（股份與借貸）
 // 買斷處不來的股東、帳上動不動手腳、帶頭合股買公營產業、工人認不認股、拿房子去抵押、擠兌時領不領、買不買債券：改由本人決定，不再擲骰。
-// 驗：六個選擇點都登記了＋「手頭很緊」多一個抵押的選項、每日／每週流程不再擲骰（沒有決策核心時仍照舊擲骰）、
+// 驗：六個選擇點都登記了＋「手頭很緊」多一個抵押的選項、每日／每週流程不再擲骰、
 //     每個選項的結算、個性與處境不同分數不同、AI 版、銀幣守恆、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
@@ -35,7 +35,6 @@ async function run(browser, lang) {
     const lastLog = (a) => (X.log[a.agentId] || []).slice(-1)[0] || null;
     const TEST = [A, B, C, D, E, F, G, H]; const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
     const Kf = 'kitchen'; const NEW = ['buyout', 'cook', 'syndicate', 'staffshare', 'bankrun', 'bond'];
-    const noShare = (f) => { DECIDE.share = false; try { return f(); } finally { DECIDE.share = true; } }; // 沒有這一批決策核心時的行為(舊的擲骰)
     const clean = () => {
       X.cool = {}; X.q = [];
       for (const a of all()) { Bal[a.agentId] = 30; delete X.log[a.agentId]; delete X.plan[a.agentId]; a.mood = 50; if (a.job?.key === 'cook') a.job = new Job('guard'); }
@@ -57,7 +56,7 @@ async function run(browser, lang) {
     const pctOf = (a) => SHARES.pctOf(w, Kf, a.agentId);
 
     // ---------- 1) 登記 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), share: DECIDE.share === true, on: SHARES.byShare(w) && BANK.byShare(w) && ESTATE.byShare(w), scan: NEW.every(k => K[k].scan !== false), pinch: !!K.pinch };
+    out.kinds = { all: NEW.every(k => !!K[k]), share: DECIDE.share === true, on: DECIDE.on(w), scan: NEW.every(k => K[k].scan !== false), pinch: !!K.pinch };
 
     // ---------- 2) 合夥的股東處不來 ----------
     clean(); { stake({ A: 70, B: 30 }); rel(A, B, -50); rel(B, A, -50); Bal[A.agentId] = 500; const price = SHARES.priceOf(w, Kf, 30);
@@ -66,11 +65,11 @@ async function run(browser, lang) {
       const bear = sc(A, 'buyout', 'bear'), buy = sc(A, 'buyout', 'buy'); traits(A, ['hardworking', 'abrasive']); const buyA = sc(A, 'buyout', 'buy'); traits(A, ['hardworking', 'kind']); const bearK = sc(A, 'buyout', 'bear'); traits(A, ['hardworking']);
       Bal[A.agentId] = price + 5; const bearTight = sc(A, 'buyout', 'bear'); Bal[A.agentId] = price - 1; const poor = K.buyout.when(w, A); Bal[A.agentId] = 500; rel(A, B, 10); rel(B, A, 10); const fine = K.buyout.when(w, A); rel(A, B, -50); rel(B, A, -50);
       out.buy.sc = { bear, buy, buyA, bearK, bearTight, poor, fine };
-      // 每週流程交給本人：骰子再順也不會自己買斷；沒有決策核心時照舊擲骰
-      const s0 = SX.st.split; fix(0.99, () => SHARES.weekly(w, all(), d0(), true, true)); const kept = pctOf(B) === 30 && SX.st.split === s0;
+      // 每週流程交給本人：骰子再順也不會自己買斷
+      const s0 = SX.st.split; fix(0.99, () => SHARES.weekly(w, all(), d0())); const kept = pctOf(B) === 30 && SX.st.split === s0;
       const b0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = go(A, 'buyout', 'buy'); });
       out.buy.run = { kept, res: res?.k, mine: pctOf(A), his: pctOf(B), paid: Math.round(Bal[B.agentId] - b0), cons, split: SX.st.split - s0, log: /買斷|buy out/.test(logs(6)), after: K.buyout.when(w, A) };
-      stake({ A: 70, B: 30 }); Bal[A.agentId] = 500; const s1 = SX.st.split; fix(0.1, () => SHARES.weekly(w, all(), d0(), false, false)); out.buy.dice = { split: SX.st.split - s1, his: pctOf(B) }; }
+    }
 
     // ---------- 3) 這週的帳要不要少報一點 ----------
     clean(); { stake({ A: 70, B: 30 }); traits(A, ['hardworking']); const honestMan = K.cook.when(w, A); traits(A, ['greedy']); const c1 = K.cook.when(w, A); keep('cook', 'cook', A);
@@ -79,11 +78,11 @@ async function run(browser, lang) {
       traits(A, ['greedy', 'kind']); const honestKind = sc(A, 'cook', 'honest'); traits(A, ['greedy']);
       out.cook.sc = { honest, cook, honestAudit, cookPoor, honestKind };
       // 交給本人：沒打定主意，每週分紅再怎麼擲骰都照實分；打定主意，下次分紅才少報
-      const c0 = SX.st.cheat; fix(0.01, () => SHARES.weekly(w, all(), d0(), true, true)); const noPlan = SX.st.cheat - c0;
+      const c0 = SX.st.cheat; fix(0.01, () => SHARES.weekly(w, all(), d0())); const noPlan = SX.st.cheat - c0;
       const res = go(A, 'cook', 'cook'); const planned = SX.cook?.[Kf] === d0(); const again = K.cook.when(w, A);
-      const c1b = SX.st.cheat; const consW = conserved(() => fix(0.99, () => SHARES.weekly(w, all(), d0(), true, true))); // 0.99：不會被翻帳本的股東抓到
+      const c1b = SX.st.cheat; const consW = conserved(() => fix(0.99, () => SHARES.weekly(w, all(), d0()))); // 0.99：不會被翻帳本的股東抓到
       out.cook.run = { noPlan, res: res?.k, planned, again, cheat: SX.st.cheat - c1b, owed: !!SX.cheat[Kf], cleared: SX.cook?.[Kf] == null, consW };
-      SX.cheat = {}; const c2 = SX.st.cheat; fix(0.01, () => SHARES.weekly(w, all(), d0(), false, false)); out.cook.dice = SX.st.cheat - c2; }
+      SX.cheat = {}; }
 
     // ---------- 4) 要不要帶頭合股買下公營產業 ----------
     clean(); { delete M.owners[Kf]; delete M.shares[Kf]; const price = SHARES.valueOf(w, Kf);
@@ -93,11 +92,10 @@ async function run(browser, lang) {
       const pass = sc(A, 'syndicate', 'pass'), lead = sc(A, 'syndicate', 'lead'); traits(A, ['hardworking', 'ambitious']); const leadA = sc(A, 'syndicate', 'lead'); traits(A, ['hardworking', 'thrifty']); const passT = sc(A, 'syndicate', 'pass'); traits(A, ['hardworking']);
       out.syn.sc = { pass, lead, leadA, passT };
       // 每天的流程交給本人：骰子再順也沒有人自己湊錢買
-      fix(0.01, () => SHARES.syndicate(w, all(), d0(), true)); const untouched = !M.owners[Kf];
+      fix(0.01, () => SHARES.syndicate(w, all(), d0())); const untouched = !M.owners[Kf];
       let res = null; const cons = conserved(() => { res = go(A, 'syndicate', 'lead'); }); const s = M.shares[Kf] || {};
       out.syn.run = { untouched, res: res?.k, owner: M.owners[Kf] === A.agentId, holders: Object.keys(s).length, sum: Object.values(s).reduce((x, y) => x + y, 0), friendIn: (s[B.agentId] || 0) > 0, cons, log: logs(6).slice(-400), after: K.syndicate.when(w, A) };
       delete M.owners[Kf]; delete M.shares[Kf]; Bal[A.agentId] = Math.round(price * 0.6); Bal[B.agentId] = Math.round(price * 0.5); Bal[E.agentId] = Math.round(price * 0.5);
-      fix(0.1, () => SHARES.syndicate(w, all(), d0())); out.syn.dice = M.owners[Kf] === A.agentId;
       // 朋友不夠、湊不齊：不會問他要不要帶頭
       delete M.owners[Kf]; delete M.shares[Kf]; Bal[A.agentId] = Math.round(price * 0.6); Bal[B.agentId] = 5; Bal[E.agentId] = 5; out.syn.short = K.syndicate.when(w, A); }
 
@@ -107,10 +105,10 @@ async function run(browser, lang) {
       out.staff = { off, price, ctx: c1 && c1.k === Kf, ids: ids(C, 'staffshare'), boss: K.staffshare.when(w, A), other: K.staffshare.when(w, E), poor: K.staffshare.when(w, D) };
       const keepS = sc(C, 'staffshare', 'keep'), buy = sc(C, 'staffshare', 'buy'); rel(C, A, 60); const buyF = sc(C, 'staffshare', 'buy'); rel(C, A, 0); traits(C, ['hardworking', 'thrifty']); const keepT = sc(C, 'staffshare', 'keep'); traits(C, ['hardworking']);
       out.staff.sc = { keepS, buy, buyF, keepT };
-      const n0 = SX.st.staff || 0; fix(0.01, () => SHARES.staffBuy(w, all(), true)); const untouched = pctOf(C) === 0;
+      const n0 = SX.st.staff || 0; fix(0.01, () => SHARES.weekly(w, all(), d0())); const untouched = pctOf(C) === 0;
       let res = null; const cons = conserved(() => { res = go(C, 'staffshare', 'buy'); });
       out.staff.run = { untouched, res: res?.k, pct: pctOf(C), boss: pctOf(A), cons, n: (SX.st.staff || 0) - n0, after: K.staffshare.when(w, C), log: /認購|stake/.test(logs(6)) };
-      Bal[D.agentId] = price + 60; fix(0.1, () => SHARES.staffBuy(w, all(), false)); out.staff.dice = pctOf(D); }
+    }
 
     // ---------- 6) 手頭很緊：名下有房子的人可以拿去抵押 ----------
     clean(); { const u = Object.values(Es.units)[0]; u.owner = H.agentId; Bal[H.agentId] = 3; Bal[G.agentId] = 3; const val = ESTATE.valueOf(w, u);
@@ -121,7 +119,7 @@ async function run(browser, lang) {
       fix(0.01, () => ESTATE.market(w)); const untouched = !Bk.loans[H.agentId];
       const r0 = Bk.reserve; let res = null; const cons = conserved(() => { res = go(H, 'pinch', 'mortgage'); }); const L = Bk.loans[H.agentId];
       out.mort.run = { untouched, res: res?.k, got: Math.round(Bal[H.agentId] - 3), col: L?.collateral === u.id, reserve: Math.round(r0 - Bk.reserve), cons, again: ids(H, 'pinch')?.includes('mortgage') || false };
-      delete Bk.loans[H.agentId]; Bal[H.agentId] = 3; noShare(() => fix(0.1, () => ESTATE.market(w))); out.mort.dice = !!Bk.loans[H.agentId]; u.owner = null; }
+      delete Bk.loans[H.agentId]; u.owner = null; }
 
     // ---------- 7) 銀行在擠兌 ----------
     clean(); { Bk.dep[C.agentId] = 100; Bk.reserve = 500; const calm = K.bankrun.when(w, C); Bk.status = 'run'; Bk.runDay = d0(); Bk.run = { injected: 0, asked: null };
@@ -137,7 +135,7 @@ async function run(browser, lang) {
       out.run.run = { untouched, half, cons1, cons2, res: r2?.k, got: Math.round(Bal[C.agentId] - b0), left: Bk.dep[C.agentId] || 0, after: K.bankrun.when(w, C) };
       // 銀行沒錢了：領不到
       Bk.dep[D.agentId] = 80; Bk.reserve = 0; const r3 = go(D, 'bankrun', 'all'); out.run.dry = { res: r3?.k, left: Bk.dep[D.agentId] };
-      Bk.reserve = 500; Bk.dep = { [G.agentId]: 60 }; noShare(() => fix(0.1, () => BANK.bankRun(w, Bk, d0()))); out.run.dice = !Bk.dep[G.agentId]; }
+    }
 
     // ---------- 8) 銀行在賣債券 ----------
     clean(); { Bal[C.agentId] = 100; Bal[D.agentId] = 100; const none = K.bond.when(w, C);
@@ -153,7 +151,7 @@ async function run(browser, lang) {
       O.until = d0() - 1; const late = K.bond.when(w, D); fix(0.99, () => { Bk.lastDay = -1; BANK.daily(w); }); out.bond.close = { late, gone: !Bk.offer, log: /買了債券|bought bonds|bonds/i.test(logs(6)) };
       // 擠兌時發的債券：題目會講明
       Bk.bonds = []; BANK.issueBonds(w, Bk, d0(), 60, true); keep('bondRun', 'bond', D); out.bond.runRate = Bk.offer?.rate; Bk.offer = null;
-      Bk.bonds = []; Bal[C.agentId] = 100; noShare(() => fix(0.01, () => BANK.issueBonds(w, Bk, d0(), 80, false))); out.bond.dice = { sold: Bk.bonds.length, offer: !!Bk.offer }; }
+    }
 
     // ---------- 9) 接到每天的決策流程（傾向版） ----------
     const today = () => { X.lastDay = -1; DECIDE.daily(w); };
@@ -193,38 +191,31 @@ async function run(browser, lang) {
   ok(r.buy.ctx && r.buy.ids.join() === 'bear,buy' && !r.buy.holder, L + '買斷：只問當家（有處不來又買得起的股東時）', r.buy);
   ok(r.buy.sc.buyA > r.buy.sc.buy && r.buy.sc.bearK > r.buy.sc.bear && r.buy.sc.bearTight > r.buy.sc.bear && !r.buy.sc.poor && !r.buy.sc.fine, L + '買斷：脾氣衝的比較想買、心軟或買完手頭太緊的比較想忍；買不起或沒翻臉就不問', r.buy.sc);
   ok(r.buy.run.kept && r.buy.run.res && r.buy.run.mine === 100 && r.buy.run.his === 0 && r.buy.run.paid === r.buy.price && r.buy.run.cons && r.buy.run.split === 1 && r.buy.run.log && !r.buy.run.after, L + '買斷：每週流程不再擲骰；本人決定買，股份歸他、錢付給對方、銀幣守恆', r.buy.run);
-  ok(r.buy.dice.split === 1 && r.buy.dice.his === 0, L + '買斷：沒有決策核心時照舊擲骰', r.buy.dice);
   // 做帳
   ok(!r.cook.honestMan && r.cook.ctx && r.cook.ids.join() === 'honest,cook' && !r.cook.holder, L + '做帳：只問有股東要分紅、又動得了這種念頭的當家', r.cook);
   ok(r.cook.sc.honestAudit > r.cook.sc.honest + 0.9 && r.cook.sc.cookPoor > r.cook.sc.cook && r.cook.sc.honestKind > r.cook.sc.honest, L + '做帳：帳本公開後幾乎沒人敢、缺錢的比較想、心軟的比較不想', r.cook.sc);
   ok(r.cook.run.noPlan === 0 && r.cook.run.res && r.cook.run.planned && !r.cook.run.again && r.cook.run.cheat === 1 && r.cook.run.owed && r.cook.run.cleared && r.cook.run.consW, L + '做帳：沒打定主意就照實分（不擲骰）；打定主意後，下一次分紅才少報、只生效一次、銀幣守恆', r.cook.run);
-  ok(r.cook.dice === 1, L + '做帳：沒有決策核心時照舊擲骰', r.cook.dice);
   // 合股
   ok(r.syn.ctx && r.syn.ids.join() === 'pass,lead' && !r.syn.friend && r.syn.parts >= 2 && !r.syn.short, L + '合股：只問最有條件帶頭的人；朋友湊不齊就不問', r.syn);
   ok(r.syn.sc.leadA > r.syn.sc.lead && r.syn.sc.passT > r.syn.sc.pass, L + '合股：有企圖心的比較想帶頭、節儉的比較不想', r.syn.sc);
   ok(r.syn.run.untouched && r.syn.run.res && r.syn.run.owner && r.syn.run.holders >= 2 && r.syn.run.sum === 100 && r.syn.run.friendIn && r.syn.run.cons && !r.syn.run.after, L + '合股：每天的流程不再擲骰；本人決定帶頭，朋友出錢、他當家、銀幣守恆', r.syn.run);
-  ok(r.syn.dice, L + '合股：直接呼叫舊函式照舊擲骰', r.syn.dice);
   // 認股
   ok(!r.staff.off && r.staff.ctx && r.staff.ids.join() === 'keep,buy' && !r.staff.boss && !r.staff.other && !r.staff.poor, L + '認股：通過員工認股後，只問在那家做工、錢夠的工人', r.staff);
   ok(r.staff.sc.buyF > r.staff.sc.buy && r.staff.sc.keepT > r.staff.sc.keepS, L + '認股：跟老闆交情好的比較想買、節儉的比較想把錢留著', r.staff.sc);
   ok(r.staff.run.untouched && r.staff.run.res && r.staff.run.pct === 5 && r.staff.run.boss === 95 && r.staff.run.cons && r.staff.run.n === 1 && !r.staff.run.after, L + '認股：每週流程不再替工人決定；本人決定買，拿到 5%、錢付給當家、銀幣守恆', r.staff.run);
-  ok(r.staff.dice === 5, L + '認股：沒有決策核心時照舊擲骰（挑最有錢的工人）', r.staff.dice);
   // 抵押
   ok(r.mort.owner && !r.mort.tenant && r.mort.n === r.mort.want && !r.mort.loaned, L + '抵押：手頭很緊又有自己房子的人多一個選項（可借房價四成）；沒房子或已經有貸款的沒有', r.mort);
   ok(r.mort.run.untouched && r.mort.run.res && r.mort.run.got === r.mort.n && r.mort.run.col && r.mort.run.reserve === r.mort.n && r.mort.run.cons && !r.mort.run.again, L + '抵押：每天的流程不再擲骰；本人決定抵押，借到錢、房子記成抵押品、銀幣守恆', r.mort.run);
-  ok(r.mort.dice, L + '抵押：沒有決策核心時照舊擲骰', r.mort.dice);
   // 擠兌
   ok(!r.run.calm && r.run.ctx && r.run.ids.join() === 'stay,half,all' && !r.run.nodep, L + '擠兌：只在擠兌時問有存款的人，可以不領、領一半、全領', r.run);
   ok(r.run.sc.stayF > r.run.sc.stay && r.run.sc.allN > r.run.sc.all && !r.run.sc.closed, L + '擠兌：信得過銀行家的比較願意不領、容易緊張的比較想全領；銀行暫停營業那天不問', r.run.sc);
   ok(r.run.run.untouched && r.run.run.half.res && r.run.run.half.got === 50 && r.run.run.half.left === 50 && r.run.run.got === 100 && r.run.run.left === 0 && r.run.run.cons1 && r.run.run.cons2 && !r.run.run.after, L + '擠兌：每天的流程不再替存戶領錢；本人決定領一半／全領，錢照數到手、銀幣守恆', r.run.run);
   ok(r.run.dry.res && r.run.dry.left === 80, L + '擠兌：銀行沒錢了就領不到，存款還記著', r.run.dry);
-  ok(r.run.dice, L + '擠兌：沒有決策核心時照舊擲骰', r.run.dice);
   // 債券
   ok(!r.bond.none && r.bond.ret === 0 && r.bond.offer && r.bond.sold0 === 0 && r.bond.ctx && r.bond.ids.join() === 'pass,buy' && r.bond.n === 40 && !r.bond.banker && !r.bond.foe && !r.bond.poor && r.bond.logIssue, L + '債券：發行後開賣兩天，不再當場擲骰；只問手上有錢、跟銀行家沒翻臉的人（最多買手上四成）', r.bond);
   ok(r.bond.sc.buyT > r.bond.sc.buy + 0.5 && r.bond.sc.passP > r.bond.sc.pass, L + '債券：信得過銀行家的比較想買、悲觀的比較不想', r.bond.sc);
   ok(r.bond.run.res && r.bond.run.paid === 40 && r.bond.run.reserve === 40 && r.bond.run.bonds === 1 && r.bond.run.holder && r.bond.run.due && r.bond.run.raised === 40 && r.bond.run.cons && !r.bond.run.again && r.bond.run.nextN === 40, L + '債券：本人決定買，錢進銀行準備金、三十天後到期、銀幣守恆；買過的不再問', r.bond.run);
   ok(!r.bond.close.late && r.bond.close.gone && r.bond.close.log && r.bond.runRate === 0.12, L + '債券：認購期過了就結算、公布賣了多少；擠兌時發的利息一成二', { c: r.bond.close, rate: r.bond.runRate });
-  ok(r.bond.dice.sold >= 1 && !r.bond.dice.offer, L + '債券：沒有決策核心時照舊當場擲骰賣', r.bond.dice);
   // 流程
   ok(r.rule.kind === 'bankrun' && r.rule.id === 'all' && r.rule.ai === 0 && r.rule.left === 0, L + '接到每天的決策流程：AI 沒開時照個性決定（容易緊張又悲觀的人把存款全領出來）', r.rule);
   ok(r.ai.id === 'buy' && r.ai.ai === 1 && r.ai.why === 'W-BOND' && r.ai.bonds === 1 && r.ai.plan === 'N-NEXT' && r.ai.menu && r.ai.money && r.ai.fact, L + 'AI 版：由 AI 決定買債券並說理由（就算他跟銀行家交情普通）', r.ai);

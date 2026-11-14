@@ -44,17 +44,18 @@ async function run(browser, lang, mobile) {
       { const [A, Mst] = take(2); strip(A); strip(Mst); A.age = 20; A.job = new Job('farmer'); setCash(A, 50); Mst.job = new Job('blacksmith'); setCash(Mst, 300); A.personality.traits = ['hardworking'];
         Mst.relationships.getOrCreate(A.agentId, A.name).affinity = 60; day();
         for (const id of Object.keys(MB.ap)) delete MB.ap[id]; delete MB.done[A.agentId];
-        const keep = adults().filter(o => o !== A); const saved = keep.map(o => [o, o.job]); // 只讓 A 當候選
+        const keep = Object.values(w.agents).filter(o => !o.isPlayer && !o.isDead && o !== A); const saved = keep.map(o => [o, o.job]); // 鎮上只留 Mst 一個師傅(拜師時是從全鎮的工匠裡找，18、19 歲的工匠也算)
         const tr0 = Math.random; Math.random = () => 0.1; const d0 = w._absDay(); let started = false;
         try { for (const o of keep) if (o !== Mst && o.job && ['blacksmith', 'carpenter', 'tailor', 'cook', 'trader', 'doctor', 'researcher'].includes(o.job.key)) o.job = new Job('farmer');
-          const d7 = Math.ceil(d0 / 7) * 7; MOBILITY.apprentice(w, [A, Mst], d7); started = MB.ap[A.agentId]?.m === Mst.agentId;
+          MOBILITY.learnBy(w, A); /* 要不要拜師由本人決定：這裡替他拿主意 */ started = MB.ap[A.agentId]?.m === Mst.agentId;
         } finally { Math.random = tr0; for (const [o, j] of saved) if (o !== Mst) o.job = j; }
+        { const sk = A.skills.get('工藝'); if (sk?.isIncapable) sk.passion = '無'; } /* 天生學不來這門手藝的人經驗不會長：這裡驗的是學徒會進步，先排除這種人 */
         const xp0 = A.skills.get('工藝')?.xp || 0; const P = MB.ap[A.agentId]; if (P) P.d0 = w._absDay() - 30;
         MOBILITY.apprentice(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), w._absDay() + 1);
         out.appr = { started, job: A.job?.key, done: MB.done[A.agentId], xp: (A.skills.get('工藝')?.xp || 0) > xp0, log: logs().slice(-10).some(s => /出師當上了|finished the apprenticeship/.test(s)), start: logs().slice(-14).some(s => /為師|apprentice to learn/.test(s)) }; }
       // G. 敗家:出身好又懶散的人揮霍,錢付給店家(總額不變)
       { const [X] = take(1); strip(X); MB.o[X.agentId] = 3; X.personality.traits = ['lazy']; setCash(X, 1000); const t0 = MONEY.total(w); const c0 = WALLET.get(w, X); const r0 = Math.random; Math.random = () => 0.01;
-        try { MOBILITY.spree(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), 3); if (MOBILITY.byFun?.(w)) MOBILITY.spreeBy(w, X); /* v9.25.0 要不要痛快花一筆交給本人決定：這裡替他拿主意 */ } finally { Math.random = r0; }
+        try { MOBILITY.spreeBy(w, X); /* 要不要痛快花一筆交給本人決定：這裡替他拿主意 */ } finally { Math.random = r0; }
         out.spree = { spent: Math.round(c0 - WALLET.get(w, X)), cons: Math.abs(MONEY.total(w) - t0) < 0.01 }; }
       // H. 鎮況面板、存讀檔
       { const B = app._townBlocks(null, ['tier']); const panel = /階層流動|Social mobility/.test(B.tier || '') && /白手起家|rose from nothing|家道中落|fell on hard times/.test(B.tier || '');

@@ -65,10 +65,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         WALLET.S(w); for (const a of npcs()) WALLET.add(w, a, 2000);
         w.stockpile.resources.wood = 0; w.stockpile.resources.stone = 0;
         const H = HOUSING.S ? HOUSING.S(w) : w.housing; const before = JSON.stringify(H?.lv || {});
-        const _r3 = Math.random; Math.random = () => 0.1; try { for (let i = 0; i < 5; i++) HOUSING.daily(w); } finally { Math.random = _r3; }
+        const _r3 = Math.random; const reno = () => { for (let i = 0; i < 5; i++) for (const a of npcs()) HOUSING.renovateBy(w, a); }; /* 翻修由住戶自己決定：這裡替他們拿主意 */ Math.random = () => 0.1; try { reno(); } finally { Math.random = _r3; }
         out.houseNoMat = JSON.stringify((HOUSING.S ? HOUSING.S(w) : w.housing)?.lv || {}) === before;
         w.stockpile.resources.wood = 500; w.stockpile.resources.stone = 500;
-        Math.random = () => 0.1; try { for (let i = 0; i < 5; i++) HOUSING.daily(w); } finally { Math.random = _r3; }
+        Math.random = () => 0.1; try { reno(); } finally { Math.random = _r3; }
         out.houseMat = { changed: JSON.stringify((HOUSING.S ? HOUSING.S(w) : w.housing)?.lv || {}) !== before, woodUsed: w.stockpile.get('wood') < 500 }; w.research.currentEra = _era;
       }
       // 8) 升格要建材:達標三天但缺料就等;補料後升格並扣料

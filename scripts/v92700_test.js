@@ -1,7 +1,7 @@
 // v9.27.0 決策核心批次 E（信仰與群眾行動）
 // 祈禱、勸朋友改宗與改不改信、對鎮上新東西做點什麼（去用／推薦／抱怨／勸人／號召抗議）、跟不跟抗議與到場聲援、
 // 拿錢拉被害慘的朋友一把、純人派帶隊搜捕、起意政變與加入政變、提案被否決後嘴硬與朋友給台階：改由本人決定，不再擲骰。
-// 驗：選擇點都登記了、每日流程不再擲骰（沒有決策核心時仍照舊擲骰）、每個選項的結算、個性與處境不同分數不同、AI 版、銀幣守恆、存讀檔、中英文
+// 驗：選擇點都登記了、每日流程不再擲骰、每個選項的結算、個性與處境不同分數不同、AI 版、銀幣守恆、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -36,7 +36,6 @@ async function run(browser, lang) {
     const lastLog = (a) => (X.log[a.agentId] || []).slice(-1)[0] || null;
     const TEST = [A, B, C, D, E2, F, G, H]; const all = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
     const NEW = ['pray', 'preach', 'convert', 'thing', 'rally', 'rescue', 'hunt', 'plot', 'joinplot', 'rejected', 'step'];
-    const noCrowd = (f) => { DECIDE.crowd = false; try { return f(); } finally { DECIDE.crowd = true; } }; // 沒有這一批決策核心時的行為(舊的擲骰)
     const tier0 = w.tierState.lv; const owners0 = { ...Mk.owners }; const jobs0 = {}; for (const a of all()) jobs0[a.agentId] = a.job?.key;
     for (const a of all()) if (a.job?.key === 'priest') a.job = new Job('farmer'); // 神職只留測試指定的那一位
     const sec = (who, re) => (Dk.secrets || []).filter(s => s.culprit === who.agentId && re.test(String(s.k))).length;
@@ -66,16 +65,16 @@ async function run(browser, lang) {
     const thing = (owner) => { const T = THINGS.register(w, { kind: 'building', key: 'tb' + Math.floor(Math.random() * 1e6), name: ['測試館', 'Test Hall'], icon: '🏗️', facts: '測試用的新建築。', tags: { fun: 1 }, ttl: 45, owner: owner ? owner.agentId : null }); return T; };
 
     // ---------- 1) 登記 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), crowd: DECIDE.crowd === true, on: THINGS.byCrowd(w) && FAITH.byCrowd(w), off: noCrowd(() => THINGS.byCrowd(w)) };
+    out.kinds = { all: NEW.every(k => !!K[k]), crowd: DECIDE.crowd === true, on: DECIDE.on(w) };
 
     // ---------- 2) 日子難過：祈禱 ----------
     clean(); { Fa.of[A.agentId] = { rel: R.id, piety: 60 }; A.mood = 20; const c1 = K.pray.when(w, A); keep('pray', 'pray', A);
       Fa.of[B.agentId] = { rel: R.id, piety: 60 }; Fa.of[C.agentId] = { rel: R.id, piety: 30 }; C.mood = 20;
       out.pray = { why: c1?.why, ids: ids(A, 'pray'), fine: K.pray.when(w, B), faint: K.pray.when(w, C) };
       const p60 = sc(A, 'pray', 'pray'); Fa.of[A.agentId].piety = 95; const p95 = sc(A, 'pray', 'pray'); Fa.of[A.agentId].piety = 60; out.pray.sc = { p60, p95, skip: sc(A, 'pray', 'skip') };
-      Fa.lastDay = null; fix(0.01, () => FAITH.daily(w, true)); out.pray.untouched = !Fa.prayers[A.agentId]; Fa.of[A.agentId] = { rel: R.id, piety: 60 }; A.mood = 20;
+      Fa.lastDay = null; fix(0.01, () => FAITH.daily(w)); out.pray.untouched = !Fa.prayers[A.agentId]; Fa.of[A.agentId] = { rel: R.id, piety: 60 }; A.mood = 20;
       const res = go(A, 'pray', 'pray'); out.pray.run = { res: !!res, wish: !!Fa.prayers[A.agentId]?.wish, again: K.pray.when(w, A), log: /🙏/.test(logs()) };
-      Fa.prayers = {}; Fa.of[A.agentId] = { rel: R.id, piety: 60 }; A.mood = 20; Fa.lastDay = null; noCrowd(() => fix(0.01, () => FAITH.daily(w, true))); out.pray.dice = !!Fa.prayers[A.agentId]; }
+    }
 
     // ---------- 3) 勸朋友信教、改不改信 ----------
     clean(); { Fa.of[A.agentId] = { rel: R.id, piety: 80 }; rel(A, B, 50); rel(B, A, 50); const c1 = K.preach.when(w, A); keep('preach', 'preach', A);
@@ -83,7 +82,7 @@ async function run(browser, lang) {
       out.preach = { ctx: !!c1, ids: ids(A, 'preach'), mild: K.preach.when(w, C), zeal: FAITH.preachInfo(w, A)?.zeal };
       Fa.of[B.agentId] = { rel: R.id, piety: 40 }; out.preach.same = K.preach.when(w, A); Fa.of[B.agentId] = { rel: null, piety: 0 };
       const go0 = sc(A, 'preach', 'go:' + B.agentId); traits(A, ['shy']); const goShy = sc(A, 'preach', 'go:' + B.agentId); traits(A, ['hardworking']); out.preach.sc = { go0, goShy };
-      Fa.lastDay = null; fix(0.01, () => FAITH.daily(w, true)); out.preach.untouched = !Fa.of[B.agentId].rel && X.q.length === 0; Fa.of[A.agentId] = { rel: R.id, piety: 80 }; Fa.of[B.agentId] = { rel: null, piety: 0 };
+      Fa.lastDay = null; fix(0.01, () => FAITH.daily(w)); out.preach.untouched = !Fa.of[B.agentId].rel && X.q.length === 0; Fa.of[A.agentId] = { rel: R.id, piety: 80 }; Fa.of[B.agentId] = { rel: null, piety: 0 };
       const res = go(A, 'preach', 'go:' + B.agentId); const q = X.q.slice(); const cx = q[0]?.ctx; X.q = [];
       out.preach.run = { res: !!res, queued: q.length === 1 && q[0].kind === 'convert' && q[0].a === B.agentId, notYet: !Fa.of[B.agentId].rel };
       if (cx) { keep('convert', 'convert', B, cx); out.conv = { ids: ids(B, 'convert', cx), p: FAITH.convertInfo(w, B, cx)?.p };
@@ -92,7 +91,7 @@ async function run(browser, lang) {
         out.conv.run = { kept, res: !!r2, rel: Fa.of[B.agentId].rel === R.id, piety: Fa.of[B.agentId].piety, after: ids(B, 'convert', cx) }; }
       // 接到流程：去勸 → 當下就問被勸的人
       Fa.of[B.agentId] = { rel: null, piety: 0 }; const p0 = (X.pick['convert.yes'] || 0) + (X.pick['convert.no'] || 0); fix(0.5, () => { go(A, 'preach', 'go:' + B.agentId); DECIDE.drain(w, X, d0()); }); out.preach.flow = (X.pick['convert.yes'] || 0) + (X.pick['convert.no'] || 0) - p0;
-      Fa.of[A.agentId] = { rel: R.id, piety: 80 }; Fa.of[B.agentId] = { rel: null, piety: 0 }; X.q = []; Fa.lastDay = null; noCrowd(() => fix(0.01, () => FAITH.daily(w, true))); out.preach.dice = Fa.of[B.agentId].rel === R.id; }
+    }
 
     // ---------- 4) 鎮上有你看不慣的東西：勸自己人別去、帶頭號召抗議 ----------
     clean(); { let regs = [B.agentId]; THINGS.HOOKS.testhall = { regulars: () => regs }; const T = THINGS.register(w, { kind: 'testhall', key: 'th' + Math.floor(Math.random() * 1e6), name: ['測試館', 'Test Hall'], icon: '🏗️', facts: '測試用的新東西。', tags: { fun: 1 }, ttl: 45, owner: F.agentId }); const At = Th.att[T.id];
@@ -123,8 +122,7 @@ async function run(browser, lang) {
         go(C, 'rally', 'join', cC); go(D, 'rally', 'join', cD); go(E2, 'rally', 'join', cE); go(G, 'rally', 'join', cG); go(H, 'rally', 'join', cH);
         out.rally.joined = { who: T.call.who.length, fans: T.call.fans.length, again: ids(C, 'rally', cC) };
         DAY = _ad() + 5; thDay(0.99); out.rally.run = { n: T.protest?.n, counter: T.protest?.counter, prot: Th.st.prot - p0, gone: !T.call, late: THINGS.rallyInfo(w, B, { tid: T.id, side: 'con' }) }; }
-      // 沒有決策核心：照舊擲骰（骰到就當天抗議）
-      DAY = _ad() + 60; Th.lastProtest = -99; const T2 = THINGS.register(w, { kind: 'testhall', key: 'th2' + Math.floor(Math.random() * 1e6), name: ['測試館二', 'Test Hall Two'], facts: 'x', tags: { fun: 1 }, ttl: 45, owner: null }); T.gone = true; const A2 = Th.att[T2.id]; A2[A.agentId] = -80; A2[C.agentId] = -60; A2[D.agentId] = -50; Th.victims[H.agentId] = { id: T2.id, day: d0(), k: '', p: {} }; /* 已經有人被害：抗議有群眾基礎 */ const p1 = Th.st.prot; noCrowd(() => thDay(0.01)); out.thing.dice = Th.st.prot - p1; DAY = null; delete THINGS.HOOKS.testhall; }
+      T.gone = true; DAY = null; delete THINGS.HOOKS.testhall; }
 
     // ---------- 5) 朋友被害慘了 ----------
     clean(); { const T = thing(null); Th.victims[B.agentId] = { id: T.id, day: d0() - 5, k: '', p: {} }; rel(A, B, 60); Bal[A.agentId] = 200; traits(A, ['kind']); const I = THINGS.rescueInfo(w, A); keep('rescue', 'rescue', A);
@@ -133,7 +131,7 @@ async function run(browser, lang) {
       const gK = sc(A, 'rescue', 'give'); traits(A, ['greedy']); rel(A, B, 60); const gG = sc(A, 'rescue', 'give'); traits(A, ['kind']); out.rescue.sc = { gK, gG };
       thDay(0.01); out.rescue.untouched = !Th.victims[B.agentId].helped; Bal[A.agentId] = 200; Bal[B.agentId] = 30;
       let r1 = null; const c1 = conserved(() => { r1 = go(A, 'rescue', 'give'); }); out.rescue.run = { res: !!r1, paid: 200 - Bal[A.agentId], got: Bal[B.agentId] - 30, by: Th.victims[B.agentId].helped === A.agentId, cons: c1, after: K.rescue.when(w, A) };
-      Th.victims[B.agentId] = { id: T.id, day: d0() - 5, k: '', p: {} }; Bal[A.agentId] = 200; noCrowd(() => thDay(0.01)); out.rescue.dice = !!Th.victims[B.agentId].helped; }
+    }
 
     // ---------- 6) 要不要帶隊搜捕 ----------
     clean(); { My.g[E2.agentId] = { k: 'wolf', d: 0 }; Ms.grp.pure = { members: [A.agentId, C.agentId, D.agentId], leader: A.agentId }; const cx = { cul: E2.agentId, kind: 'wolf', d: d0() };
@@ -144,7 +142,7 @@ async function run(browser, lang) {
       out.hunt.asked = { q: q.length, who: q[0]?.a === A.agentId, noHunt: Ms.st.hunts === n0 };
       const pure = () => { Ms.grp.pure = { members: [A.agentId, C.agentId, D.agentId], leader: A.agentId }; Ms.hunts = []; }; pure(); /* 每天的流程會重組派系，先擺回來 */
       const res = fix(0.4, () => go(A, 'hunt', 'hunt', cx)); out.hunt.run = { res: !!res, n: Ms.st.hunts - n0, sus: Ms.hunts[0]?.sus === E2.agentId, lead: Ms.hunts[0]?.lead === A.agentId, open: MYTHSOC.huntInfo(w, A, cx) };
-      pure(); w.myth.inc.push([d0() + 1, 'wolf', E2.agentId, false]); DAY = _ad() + 1; Ms.incDay = d0() - 1; Ms.lastDay = -1; const n1 = Ms.st.hunts; noCrowd(() => fix(0.4, () => MYTHSOC.daily(w))); out.hunt.dice = Ms.st.hunts - n1; DAY = null; w.myth.inc = (w.myth.inc || []).filter(x => x[2] !== E2.agentId); }
+      DAY = null; w.myth.inc = (w.myth.inc || []).filter(x => x[2] !== E2.agentId); }
 
     // ---------- 7) 政變 ----------
     clean(); { w.tierState.lv = 3; Object.assign(Cr, { king: B.agentId, republic: false, legit: 20, plot: null }); Cl.titles[A.agentId] = { rank: 1 }; rel(A, B, -30);
@@ -159,8 +157,6 @@ async function run(browser, lang) {
       const j0 = sc(C, 'joinplot', 'join'); rel(C, B, -80); const jHate = sc(C, 'joinplot', 'join'); rel(C, B, -20); out.join.sc = { j0, jHate };
       const m0 = Cr.plot.members.length; { const P = Cr.plot; P.ready = d0() + 9; Cr.lastDay = null; fix(0.99, () => CROWN.daily(w)); } out.join.untouched = !!Cr.plot && Cr.plot.members.length === m0;
       const r2 = go(C, 'joinplot', 'join'); out.join.run = { res: !!r2, n: Cr.plot?.members.length, in: Cr.plot?.members.includes(C.agentId), after: K.joinplot.when(w, C) };
-      // 沒有決策核心：照舊擲骰
-      Object.assign(Cr, { king: B.agentId, republic: false, legit: 20, plot: null }); Dk.secrets = []; noCrowd(() => { Cr.lastDay = null; fix(0.01, () => CROWN.daily(w)); }); out.plot.dice = !!Cr.plot;
       Object.assign(Cr, { king: null, plot: null }); w.tierState.lv = tier0; }
 
     // ---------- 8) 提案被大比數否決：嘴硬、給台階 ----------
@@ -175,8 +171,7 @@ async function run(browser, lang) {
       // 小輸不問；過了兩天也不問
       X.q = []; const small = { id: 'LR8', proposerId: A.agentId, votes: { [C.agentId]: 'against', [B.agentId]: 'for', [D.agentId]: 'for' }, result: '' }; const p1 = pk(); fix(0.5, () => WAYS.onRejected(w, small)); out.rej.small = pk() - p1;
       out.rej.stale = WAYS.stepInfo(w, B, { a: A.agentId, t: 'x', d: d0() - 5 });
-      // 沒有決策核心：照舊擲骰
-      Wx.lastCasual = -99; WAYS.setFace(w, A, 40); const st0 = { ...(Wx.st || {}) }; const f2 = WAYS.faceOf(w, A); noCrowd(() => fix(0.1, () => WAYS.onRejected(w, p))); out.rej.dice = { casual: Wx.lastCasual === d0(), step: WAYS.faceOf(w, A) - f2 }; }
+    }
 
     // ---------- 9) 接到每天的決策流程（AI 沒開） ----------
     clean(); { Fa.of[A.agentId] = { rel: R.id, piety: 95 }; A.mood = 20; only(A); others(A, ['pray']);
@@ -214,26 +209,24 @@ async function run(browser, lang) {
     return out;
   });
   const L = `[${lang}] `;
-  ok(r.kinds.all && r.kinds.crowd && r.kinds.on && !r.kinds.off, L + '十一個選擇點都登記了，各系統都知道這些事交給本人', r.kinds);
+  ok(r.kinds.all && r.kinds.crowd && r.kinds.on, L + '十一個選擇點都登記了，各系統都知道這些事交給本人', r.kinds);
   // 祈禱
   ok(r.pray.why === 'low' && r.pray.ids.join() === 'skip,pray' && !r.pray.fine && !r.pray.faint, L + '祈禱：只問日子難過、又夠虔誠的信徒', r.pray);
   ok(r.pray.sc.p95 > r.pray.sc.p60, L + '祈禱：越虔誠越會祈禱', r.pray.sc);
   ok(r.pray.untouched && r.pray.run.res && r.pray.run.wish && !r.pray.run.again && r.pray.run.log, L + '祈禱：每天的流程不再擲骰；本人決定祈禱就記下心願，幾天內不再問', r.pray.run);
-  ok(r.pray.dice, L + '祈禱：沒有決策核心時照舊擲骰', r.pray.dice);
   // 傳教
   ok(r.preach.ctx && r.preach.ids.join() === `no,go:${r.preach.ids[1]?.split(':')[1]}` && !r.preach.mild && !r.preach.same && r.preach.zeal > 0, L + '傳教：只問很虔誠、又有信別的（或不信）的好朋友的人', r.preach);
   ok(r.preach.sc.goShy < r.preach.sc.go0, L + '傳教：害羞的人比較不會去勸', r.preach.sc);
   ok(r.preach.untouched && r.preach.run.res && r.preach.run.queued && r.preach.run.notYet && r.preach.flow === 1, L + '傳教：每天的流程不再擲骰；本人決定去勸，被勸的人當下被問、還沒改信', r.preach);
   ok(r.conv && r.conv.ids.join() === 'no,yes' && r.conv.p > 0.4 && r.conv.sc.yes0 > r.conv.sc.yesDevout + 0.5, L + '改信：不信教的人比較容易被勸動，本來就很虔誠的人很難', r.conv);
   ok(r.conv && r.conv.run.kept && r.conv.run.res && r.conv.run.rel && r.conv.run.piety === 45 && !r.conv.run.after?.length, L + '改信：說不改就不改；決定改信就真的改（虔誠度從 45 開始），不會再問', r.conv?.run);
-  ok(r.preach.dice, L + '傳教：沒有決策核心時照舊擲骰', r.preach.dice);
   // 新東西
   ok(!r.thing.like && !r.thing.owner && !r.thing.none && r.thing.chat >= 1, L + '新東西：喜歡的人、老闆、沒看法的人不問；去用、推薦、抱怨這些日常閒聊照舊由每天的流程處理', r.thing);
   ok(r.thing.tid && r.thing.persIds.join() === 'quiet,persuade' && !r.thing.weak && !r.thing.silent && !r.thing.nothing, L + '新東西：不喜歡、又有自己人常往那裡跑的人，可以決定要不要去勸；看法很淡、今天不敢講、沒事可做的人不問', r.thing);
   ok(r.thing.plan.res && r.thing.plan.intent === 'persuade' && !r.thing.plan.again && r.thing.pers.n === 1 && r.thing.pers.ok === 1 && r.thing.pers.quit && r.thing.pers.cleared, L + '新東西：本人決定去勸，隔天真的去勸；勸動了對方答應不再去', { plan: r.thing.plan, pers: r.thing.pers });
   ok(r.thing.hateIds.join() === 'quiet,persuade,protest' && r.thing.noRegIds.join() === 'quiet,protest', L + '新東西：夠討厭、鎮上也有夠多人討厭時，多一個「號召抗議」', { ids: r.thing.hateIds, noReg: r.thing.noRegIds });
   ok(r.thing.sc.qK > r.thing.sc.q0 && r.thing.sc.q90 > r.thing.sc.q0 && r.thing.sc.prC > r.thing.sc.pr0 && r.thing.sc.prS < r.thing.sc.pr0, L + '新東西：心軟的比較會去勸、越討厭越想做點什麼；有魅力的比較敢帶頭、害羞的不敢', r.thing.sc);
-  ok(r.thing.untouched && r.thing.dice === 1, L + '新東西：每天的流程不替人帶頭抗議；沒有決策核心時照舊擲骰（骰到當天就抗議）', { untouched: r.thing.untouched, dice: r.thing.dice });
+  ok(r.thing.untouched, L + '新東西：每天的流程不替人帶頭抗議', r.thing.untouched);
   // 抗議
   ok(r.rally.call && r.rally.notYet && r.rally.asked === 'con,con,pro,pro,pro' && !r.rally.owner && !r.rally.noMore, L + '號召抗議：帶頭的人貼告示，當天不集合；不喜歡的人被問跟不跟、喜歡的人被問要不要聲援，老闆不問', r.rally);
   ok(r.rally.ids?.join() === 'stay,join' && r.rally.pC > r.rally.pD && r.rally.sc.c > r.rally.sc.d, L + '號召抗議：越討厭、跟帶頭的人越熟，越會跟', r.rally);
@@ -243,24 +236,21 @@ async function run(browser, lang) {
   ok(r.rescue.n > 0 && r.rescue.ids.join() === 'wait,give' && !r.rescue.poor && !r.rescue.stranger && !r.rescue.self, L + '接濟：只問跟受害的人交情好、手頭又有餘裕的人', r.rescue);
   ok(r.rescue.sc.gK > r.rescue.sc.gG + 0.4, L + '接濟：心軟的比較會幫、貪心的比較不會', r.rescue.sc);
   ok(r.rescue.untouched && r.rescue.run.res && r.rescue.run.paid === r.rescue.n && r.rescue.run.got === r.rescue.n && r.rescue.run.by && r.rescue.run.cons && !r.rescue.run.after, L + '接濟：每天的流程不再擲骰；本人決定拿錢，錢進受害的人口袋、銀幣守恆，幫過不會再問', r.rescue.run);
-  ok(r.rescue.dice, L + '接濟：沒有決策核心時照舊擲骰', r.rescue.dice);
   // 搜捕
   ok(r.hunt.n === 3 && r.hunt.ids.join() === 'hold,hunt' && !r.hunt.member && !r.hunt.old, L + '搜捕：只問純人派帶頭的人；事情過了兩天就不問', r.hunt);
   ok(r.hunt.sc.hK < r.hunt.sc.h0 && r.hunt.sc.hW < r.hunt.sc.h0, L + '搜捕：心軟的比較不會動手；抓錯過人以後更猶豫', r.hunt.sc);
   ok(r.hunt.asked.q === 1 && r.hunt.asked.who && r.hunt.asked.noHunt, L + '搜捕：出事的當下問帶頭的人，不擲骰', r.hunt.asked);
-  ok(r.hunt.run.res && r.hunt.run.n === 1 && r.hunt.run.sus && r.hunt.run.lead && r.hunt.dice === 1, L + '搜捕：本人決定帶隊就真的去抓（抓到誰仍然看運氣）；沒有決策核心時照舊擲骰', { run: r.hunt.run, dice: r.hunt.dice });
+  ok(r.hunt.run.res && r.hunt.run.n === 1 && r.hunt.run.sus && r.hunt.run.lead, L + '搜捕：本人決定帶隊就真的去抓（抓到誰仍然看運氣）', r.hunt.run);
   // 政變
   ok(r.plot.legit === 20 && r.plot.ids.join() === 'wait,plot' && !r.plot.nobody && !r.plot.king && !r.plot.loved, L + '政變：國王民心低時，只問鎮上最有聲望、又跟國王處不來的那個人', r.plot);
   ok(r.plot.sc.pA > r.plot.sc.p0, L + '政變：有野心的人比較會動手', r.plot.sc);
   ok(r.plot.untouched && r.plot.run.res && r.plot.run.leader && r.plot.run.n === 1 && r.plot.run.sec === 1 && !r.plot.run.again, L + '政變：每天的流程不再擲骰；本人決定動手才開始密謀，真相頁記著', r.plot.run);
   ok(r.join.n === 1 && r.join.ids.join() === 'refuse,join' && !r.join.loyal && !r.join.leader && !r.join.king && r.join.sc.jHate > r.join.sc.j0, L + '加入政變：只問跟主謀交好、又看國王不順眼的人；越討厭國王越會加入', r.join);
   ok(r.join.untouched && r.join.run.res && r.join.run.n === 2 && r.join.run.in && !r.join.run.after, L + '加入政變：每天的流程不再擲骰拉人；本人決定加入才算數', r.join);
-  ok(r.plot.dice, L + '政變：沒有決策核心時照舊擲骰', r.plot.dice);
   // 嘴硬、台階
   ok(r.rej.asked === 2 && r.rej.q === 0 && r.rej.lost && r.rej.ids.join() === 'quiet,casual' && r.rej.sids.join() === 'stay,step' && r.rej.small === 0 && !r.rej.stale, L + '提案被否決：大比數否決的當下問提案人和他最要好的朋友（不擲骰）；小輸不問', r.rej);
   ok(r.rej.sc.cS < r.rej.sc.c0 && r.rej.sc.sS < r.rej.sc.s0, L + '提案被否決：沉穩的人比較不嘴硬、害羞的朋友比較不會出面', r.rej.sc);
   ok(r.rej.casual.res && r.rej.casual.log && r.rej.casual.last && !r.rej.casual.again?.length && r.rej.step.res && r.rej.step.face === 10 && r.rej.step.aff === 6 && r.rej.step.owe, L + '提案被否決：本人決定嘴硬；朋友決定出面，提案人面子回來一點、記下這份人情', { casual: r.rej.casual, step: r.rej.step });
-  ok(r.rej.dice.casual && r.rej.dice.step === -5, /* 先丟 15 面子，朋友給台階拿回 10 */ L + '提案被否決：沒有決策核心時照舊擲骰', r.rej.dice);
   // 流程
   ok(r.rule.kind === 'pray' && r.rule.id === 'pray' && r.rule.ai === 0 && r.rule.prayed, L + '接到每天的決策流程：AI 沒開時照個性決定（很虔誠的人日子難過就祈禱）', r.rule);
   ok(r.ai.id === 'give' && r.ai.ai === 1 && r.ai.why === 'W-RES' && r.ai.helped && r.ai.plan === 'N-NEXT' && r.ai.menu && r.ai.money, L + 'AI 版：由 AI 決定拿錢拉朋友一把並說理由', r.ai);

@@ -25,7 +25,7 @@
     const val = (a, v) => (a?.personality?.values || []).includes(v);
     const rel = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId] || null : null);
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-    const on = (w) => { try { return !!DECIDE.love && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const on = (w) => { try { return !!DECIDE.on?.(w); } catch (e) { return false; } };
     const safe = (f) => { try { return f() || null; } catch (e) { return null; } };
     const tilt = (P) => { P = clampN(P, 0.004, 0.996); return P <= 0.5 ? Math.sqrt(6.48 * P) - 1.8 : 1.8 - Math.sqrt(6.48 * (1 - P)); };
     const within = (p, days) => 1 - Math.pow(1 - p, days);

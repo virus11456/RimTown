@@ -32,8 +32,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 客人上門
       const m0 = WALLET.get(w, o1), f0 = WALLET.get(w, fr); for (const a of npcs()) if (![o1, o2, o3, fr].includes(a)) w.wallet.bal[a.agentId] = 50;
       D++; fix(0.001, () => BIZ.trade(w, B, D)); out.earn = WALLET.get(w, o1) > m0; out.split = WALLET.get(w, fr) > f0;
-      // 合夥拆夥(生意差又愛計較)
-      s2.week = 0; D = 1302 + (7 - (1302 % 7)); s2.partner = fr.agentId; fix(0.01, () => BIZ.weekly(w, s2)); out.dispute = !s2.partner && logHas(/鬧翻|fell out/);
+      // 合夥拆夥(生意差：每週只記下賺多少，拆不拆由合夥人自己決定)
+      s2.week = 0; D = 1302 + (7 - (1302 % 7)); s2.partner = fr.agentId; fix(0.01, () => BIZ.weekly(w, s2)); const kept = s2.partner === fr.agentId && !!BIZ.splitInfo(w, fr); BIZ.splitBy(w, fr); out.dispute = kept && !s2.partner && logHas(/鬧翻|fell out/);
       // 倒閉
       s3.lossDays = 14; s3.till = -10; for (const a of npcs()) w.wallet.bal[a.agentId] = 0; D++; fix(0.99, () => BIZ.trade(w, B, D)); out.broke = !B.shops.includes(s3) && logHas(/倒閉|closed down/);
       // 殺價

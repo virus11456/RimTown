@@ -1,6 +1,6 @@
 // v9.22.0 決策核心階段 4（自己的事）
 // 當家賣不賣股份、股東退不退股、要不要翻修房子（自己出錢或借錢）、要不要奉獻、記恨的人要不要動手、要不要開店、被挖角走不走：改由本人決定，不再擲骰。
-// 驗：七個選擇點都登記了、每日流程不再擲骰（直接呼叫舊函式仍照舊）、每個選項的結算、個性與處境不同分數不同、
+// 驗：七個選擇點都登記了、每日流程不再擲骰、每個選項的結算、個性與處境不同分數不同、
 //     連鎖（有人來談入股 → 當家回答；對手鎮來挖角 → 本人回答）、新科技的態度兩邊一致、AI 版、銀幣守恆、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
@@ -55,7 +55,7 @@ async function run(browser, lang) {
     const texts = {}; const keep = (key, a, ctx) => { try { const c = ctx || K[key].when(w, a); texts[key] = { fact: K[key].facts(w, a, c), ops: K[key].options(w, a, c).map(o => [o.text, o.say, o.why]) }; } catch (e) { texts[key] = { err: String(e) }; } };
 
     // ---------- 1) 登記 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), life: DECIDE.life === true, on: [INVEST, SHARES, HOUSING, FAITH, BIZ, RIVAL].every(S => S.byChoice(w)) && DARK.byLife(w), queued: ['sell', 'poach'].every(k => K[k].scan === false) && ['cashout', 'renovate', 'tithe', 'scheme', 'startup'].every(k => K[k].scan !== false) };
+    out.kinds = { all: NEW.every(k => !!K[k]), life: DECIDE.life === true, on: DECIDE.on(w), queued: ['sell', 'poach'].every(k => K[k].scan === false) && ['cashout', 'renovate', 'tithe', 'scheme', 'startup'].every(k => K[k].scan !== false) };
 
     // ---------- 2) 有人來談入股 → 當家自己決定 ----------
     clean(); { Bal[B.agentId] = 800; const q = INVEST.quotes(w, B).find(x => x.k === Kf);
@@ -77,24 +77,22 @@ async function run(browser, lang) {
     clean(); { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf, true); Bal[B.agentId] = 3; const s0 = JSON.stringify(M.shares[Kf]); drain(); // 等的這段時間買的人錢花掉了
       out.gone = { same: JSON.stringify(M.shares[Kf]) === s0, pending: !!IV.ask[Kf], log: !!lastLog(A) };
       IV.ask[Kf] = { by: C.agentId, d: d0() - 5 }; Bal[B.agentId] = 800; out.gone.expired = INVEST.buy(w, B, Kf, true).asked === true && IV.ask[Kf].by === B.agentId; } // 三天沒下文的舊邀約不擋路
-    // 直接呼叫（沒說交給本人）仍照舊擲骰
+    // 沒說要問當家（例如當家不在鎮上）：當場談成或被回絕
     clean(); { Bal[B.agentId] = 800; const r2 = fix(0.01, () => INVEST.buy(w, B, Kf)); out.direct = { ok: r2.ok === true, stake: SHARES.pctOf(w, Kf, B.agentId), q: X.q.length }; }
     // 眼紅入股：每週流程只記下「有人來談」，當家決定
     clean(); { traits(C, ['hardworking', 'jealous']); Bal[C.agentId] = 2000; Bal[A.agentId] = 100; M.hist[Kf] = Array.from({ length: 7 }, () => [80, 10]);
-      fix(0.1, () => SHARES.weekly(w, all, d0(), true)); const C2 = (X.q.find(x => x.kind === 'sell' && x.ctx.src === 'envy') || {}).ctx;
+      fix(0.1, () => SHARES.weekly(w, all, d0())); const C2 = (X.q.find(x => x.kind === 'sell' && x.ctx.src === 'envy') || {}).ctx;
       out.envy = { asked: !!SX.ask[Kf], by: SX.ask[Kf]?.by === C.agentId, stake: SHARES.pctOf(w, Kf, C.agentId), ctx: !!C2, ids: C2 && ids(A, 'sell', C2) };
       if (C2) { texts.sellEnvy = { fact: K.sell.facts(w, A, C2), ops: [] }; traits(A, ['hardworking', 'greedy']); const c0 = Bal[C.agentId]; const cons = conserved(() => drain()); out.envy.sold = { id: lastLog(A)?.id, stake: SHARES.pctOf(w, Kf, C.agentId), paid: Math.round(c0 - Bal[C.agentId]), cons, log: /📈/.test(logs(6)), pending: !!SX.ask[Kf] }; } }
-    clean(); { traits(C, ['hardworking', 'jealous']); Bal[C.agentId] = 2000; Bal[A.agentId] = 100; M.hist[Kf] = Array.from({ length: 7 }, () => [80, 10]); fix(0.1, () => SHARES.weekly(w, all, d0())); out.envyDice = { stake: SHARES.pctOf(w, Kf, C.agentId), q: X.q.length }; }
 
     // ---------- 3) 股份分紅不如銀行 → 股東自己決定退不退 ----------
     clean(); { M.shares[Kf] = { [A.agentId]: 70, [D.agentId]: 30 }; M.hist[Kf] = Array.from({ length: 7 }, () => [10, 10]); IV.bankY = 0.03; Bal[A.agentId] = 900;
-      for (let i = 0; i < 3; i++) fix(0.1, () => INVEST.cashOuts(w, all, d0(), true)); // 交給本人：只記週數
+      for (let i = 0; i < 3; i++) fix(0.1, () => INVEST.cashOuts(w, all, d0())); // 只記週數
       const c1 = K.cashout.when(w, D); out.out = { weeks: IV.low[Kf + '|' + D.agentId], stake: SHARES.pctOf(w, Kf, D.agentId), ctx: c1, boss: K.cashout.when(w, A), ids: ids(D, 'cashout') }; keep('cashout', D);
       const k3 = sc(D, 'cashout', 'keep'), o3 = sc(D, 'cashout', 'out'); IV.low[Kf + '|' + D.agentId] = 6; const o6 = sc(D, 'cashout', 'out'); rel(D, A, 60); const kf = sc(D, 'cashout', 'keep'); rel(D, A, 0);
       out.out.sc = { k3, o3, o6, kf }; IV.low[Kf + '|' + D.agentId] = 2; out.out.early = K.cashout.when(w, D); IV.low[Kf + '|' + D.agentId] = 4;
       const dep0 = BK.dep[D.agentId] || 0; let res = null; const cons = conserved(() => { res = opt(D, 'cashout', 'out').run(w, D); });
       out.out.done = { stake: SHARES.pctOf(w, Kf, D.agentId), boss: SHARES.pctOf(w, Kf, A.agentId), dep: Math.round((BK.dep[D.agentId] || 0) - dep0) > 0, cons, res: !!res, log: /🏦/.test(logs(5)), after: K.cashout.when(w, D) }; }
-    clean(); { M.shares[Kf] = { [A.agentId]: 70, [D.agentId]: 30 }; M.hist[Kf] = Array.from({ length: 7 }, () => [10, 10]); IV.bankY = 0.03; Bal[A.agentId] = 900; for (let i = 0; i < 3; i++) fix(0.1, () => INVEST.cashOuts(w, all, d0())); out.outDice = SHARES.pctOf(w, Kf, D.agentId); }
 
     // ---------- 4) 家裡的房子舊了 ----------
     const _era = w.research.currentEra; w.research.currentEra = () => 3; const Hs = HOUSING.S(w); const home = HOUSING.houseOf(w, E); const mates = all.filter(o => HOUSING.houseOf(w, o) === home);
@@ -107,7 +105,7 @@ async function run(browser, lang) {
       traits(E, ['hardworking', 'ascetic']); const asc = sc(E, 'renovate', 'pay'); traits(E, ['hardworking']); WAYS.S(w).envy[home] = d0(); const envy = sc(E, 'renovate', 'pay'); delete WAYS.S(w).envy[home];
       out.reno.sc = { pay, wait, tight, asc, envy };
       // 每日流程交給本人：有錢也不會自動翻修
-      fix(0.01, () => HOUSING.daily(w, true)); out.reno.noDice = Hs.lv[home] === 0;
+      fix(0.01, () => HOUSING.daily(w)); out.reno.noDice = Hs.lv[home] === 0;
       const r0 = WAYS.S(w).reno.length, c0 = Bal[E.agentId]; let res = null; const cons = conserved(() => { res = opt(E, 'renovate', 'pay').run(w, E); });
       out.reno.done = { lv: Hs.lv[home], paid: Math.round(c0 - Bal[E.agentId]), cost, cons, res: !!res, log: /🔨/.test(logs(5)), envyHook: WAYS.S(w).reno.length === r0 + 1, after: K.renovate.when(w, E) && Hs.lv[home] < HOUSING.maxLv(w) }; }
     clean(); stock(); { Hs.lv[home] = 0; for (const o of mates) Bal[o.agentId] = 1; Bal[E.agentId] = 20; // 手頭不夠：只能借
@@ -119,9 +117,8 @@ async function run(browser, lang) {
       delete BK.loans[E.agentId]; Hs.lv[home] = 0; Bal[E.agentId] = 20; BK.loans[E.agentId] = { owed: 10, principal: 10, rate: 0.1, day: d0(), due: d0() + 20 }; out.loan.inDebt = K.renovate.when(w, E); delete BK.loans[E.agentId]; }
     clean(); { Hs.lv[home] = 0; for (const o of mates) Bal[o.agentId] = 1; Bal[E.agentId] = cost * 2; const sp = w.stockpile; const keepRes = {}; for (const k of Object.keys(sp.resources || {})) { if (k !== 'silver' && k !== 'food') { keepRes[k] = sp.resources[k]; sp.resources[k] = 0; } }
       out.noMat = { lack: !!HOUSING.info(w, E)?.lack, ctx: K.renovate.when(w, E) }; for (const k of Object.keys(keepRes)) sp.resources[k] = keepRes[k]; }
-    // 直接呼叫（沒說交給本人）仍照舊擲骰；銀行與「跟鄰居比」的每日流程不再替人借錢
-    clean(); stock(); { Hs.lv[home] = 0; for (const o of mates) Bal[o.agentId] = 1; Bal[E.agentId] = cost * 2; fix(0.01, () => { for (let i = 0; i < 6; i++) HOUSING.daily(w); }); out.renoDice = Hs.lv[home] >= 1; }
-    out.renoSrc = { bank: /HOUSING\.byChoice/.test(BANK.daily.toString()), ways: /HOUSING\.byChoice/.test(WAYS.daily.toString()) };
+    // 銀行與「跟鄰居比」的每日流程不再替人借錢翻修
+    out.renoSrc = { bank: !/HOUSING\.(houseOf|renovateBy|COST)/.test(BANK.daily.toString()), ways: !/envyBorrow\(/.test(WAYS.daily.toString()) };
     w.research.currentEra = _era;
 
     // ---------- 5) 要不要奉獻 ----------
@@ -133,11 +130,9 @@ async function run(browser, lang) {
       Bal[F.agentId] = 400; const idsRich = ids(F, 'tithe'); const big = sc(F, 'tithe', 'big'); traits(F, ['hardworking', 'greedy']); const bigG = sc(F, 'tithe', 'big'), skipG = sc(F, 'tithe', 'skip'); traits(F, ['hardworking']);
       out.tithe.sc = { s80, s50, skip, big, bigG, skipG, idsRich };
       // 每日流程交給本人：虔誠又有錢也不會自動奉獻
-      { const g0 = Rl.got || 0, c0 = Bal[F.agentId]; Fa.lastDay = -1; fix(0.01, () => FAITH.daily(w, true)); out.tithe.noDice = Bal[F.agentId] === c0 && (Rl.big || 0) === (Rl.big || 0) && Math.round((Rl.got || 0) - g0) === 0; }
+      { const g0 = Rl.got || 0, c0 = Bal[F.agentId]; Fa.lastDay = -1; fix(0.01, () => FAITH.daily(w)); out.tithe.noDice = Bal[F.agentId] === c0 && (Rl.big || 0) === (Rl.big || 0) && Math.round((Rl.got || 0) - g0) === 0; }
       Bal[F.agentId] = 100; { const g0 = Rl.got || 0, c0 = Bal[F.agentId]; let res = null; const cons = conserved(() => { res = opt(F, 'tithe', 'small').run(w, F); }); out.tithe.small = { paid: c0 - Bal[F.agentId], got: Math.round(((Rl.got || 0) - g0) * 100) / 100, cons, res: !!res, mem: /奉獻|gave/.test(mems(F, 3)) }; }
       Bal[F.agentId] = 400; { const g0 = Rl.got || 0, b0 = Rl.big || 0, c0 = Bal[F.agentId]; let res = null; const cons = conserved(() => { res = fix(0.9, () => opt(F, 'tithe', 'big').run(w, F)); }); out.tithe.big = { paid: c0 - Bal[F.agentId], got: Math.round((Rl.got || 0) - g0), n: (Rl.big || 0) - b0, cons, res: !!res, log: /🙏/.test(logs(4)) }; }
-      // 直接呼叫仍照舊擲骰
-      Bal[F.agentId] = 100; { const c0 = Bal[F.agentId]; Fa.lastDay = -1; fix(0.01, () => FAITH.daily(w)); out.tithe.dice = Bal[F.agentId] < c0; }
       Rl.sk = sk0; } else out.tithe = { skip: true };
 
     // ---------- 6) 跟某人結怨很深 ----------
@@ -147,28 +142,27 @@ async function run(browser, lang) {
       rel(G, H, -40); const shallow = K.scheme.when(w, G); rel(G, H, -90); const deep = sc(G, 'scheme', 'sabotage'); rel(G, H, -70);
       out.scheme.sc = { hot, hold, mild, kind, shallow, deep, frame: sc(G, 'scheme', 'frame') };
       // 每日流程交給本人：惡意再深、骰子再順也不會自動動手
-      w.proposals._darkDay = -1; fix(0.01, () => DARK.daily(w, true)); out.scheme.noDice = (w.dark.secrets || []).filter(s => s.stage === 'plan').length === 0;
+      w.proposals._darkDay = -1; fix(0.01, () => DARK.daily(w)); out.scheme.noDice = (w.dark.secrets || []).filter(s => s.stage === 'plan').length === 0;
       const res = opt(G, 'scheme', 'sabotage').run(w, G); const s1 = (w.dark.secrets || []).find(s => s.stage === 'plan');
       out.scheme.done = { res: !!res, plan: !!s1 && s1.kind === 'sabotage' && s1.culprit === G.agentId && s1.victim === H.agentId, log: /🕵️/.test(logs(4)), cool: K.scheme.when(w, G) };
-      if (s1) { s1.day = d0() - 2; fix(0.99, () => DARK.daily(w, true)); out.scheme.acted = s1.stage === 'done'; } // 籌劃一兩天後照舊動手
-      // 直接呼叫仍照舊擲骰
-      w.dark.secrets = []; w.dark.cool = {}; fix(0.01, () => DARK.daily(w)); out.scheme.dice = (w.dark.secrets || []).some(s => ['frame', 'sabotage', 'lobby', 'credit'].includes(s.kind)); }
+      if (s1) { s1.day = d0() - 2; fix(0.99, () => DARK.daily(w)); out.scheme.acted = s1.stage === 'done'; } // 籌劃一兩天後照舊動手
+    }
 
     // ---------- 7) 想不想自己開店 ----------
     clean(); { const Bz = BIZ.S(w); traits(B, ['hardworking', 'creative']); Bal[B.agentId] = 100;
       out.shop = { ctx: !!K.startup.when(w, B), ids: ids(B, 'startup'), mayor: K.startup.when(w, holder) }; keep('startup', B);
       const open = sc(B, 'startup', 'open'), wait = sc(B, 'startup', 'wait'); MIND.S(w).amb[B.agentId] = { key: 'rich', since: d0() }; const rich = sc(B, 'startup', 'open'); delete MIND.S(w).amb[B.agentId];
       traits(B, []); const plain = K.startup.when(w, B); traits(B, ['hardworking', 'creative']); out.shop.sc = { open, wait, rich, plain };
-      Bz.lastDay = -1; fix(0.01, () => BIZ.daily(w, true)); out.shop.noDice = Bz.shops.length === 0;
+      Bz.lastDay = -1; fix(0.01, () => BIZ.daily(w)); out.shop.noDice = Bz.shops.length === 0;
       const c0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = opt(B, 'startup', 'open').run(w, B); });
       out.shop.done = { n: Bz.shops.length, owner: Bz.shops[0]?.owner === B.agentId, paid: Math.round(c0 - Bal[B.agentId]), cons, res: !!res, again: K.startup.when(w, B) };
       const cap = Math.max(2, Math.floor(Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).length / 6)); traits(C, ['hardworking', 'creative']); Bal[C.agentId] = 100; const before = !!K.startup.when(w, C);
       while (Bz.shops.length < cap) Bz.shops.push({ owner: 'x' + Bz.shops.length, name: ['測', 'T'], type: 'stall' }); out.shop.full = { before, after: K.startup.when(w, C) };
-      Bz.shops = []; Bz.lastDay = -1; fix(0.01, () => BIZ.daily(w)); out.shop.dice = Bz.shops.length === 1; Bz.shops = []; }
+      Bz.shops = []; }
 
     // ---------- 8) 別鎮開高薪來挖角 ----------
     clean(); { const V = RIVAL.S(w); const p = RIVAL.ensure(w); for (const o of all) for (const s of Object.values(o.skills?.skills || {})) s.xp = 0; H.skills.skills['工藝'].xp = 9000; H.age = 30;
-      const n0 = Object.keys(w.agents).length; const ok1 = RIVAL.event(w, 'talent', true); const q = X.q.find(x => x.kind === 'poach');
+      const n0 = Object.keys(w.agents).length; const ok1 = RIVAL.event(w, 'talent'); const q = X.q.find(x => x.kind === 'poach');
       out.poach = { place: !!p, ok: ok1 === 'talent', q: !!q && q.a === H.agentId, same: Object.keys(w.agents).length === n0, asked: V.st.asked >= 1, ids: q && ids(H, 'poach', q.ctx) };
       if (q) { keep('poach', H, q.ctx); const C3 = q.ctx; const stay = sc(H, 'poach', 'stay', C3), go = sc(H, 'poach', 'go', C3);
         traits(H, ['hardworking', 'greedy']); const goG = sc(H, 'poach', 'go', C3); traits(H, ['hardworking']); for (const o of [A, B, C, D]) rel(H, o, 60); const stayF = sc(H, 'poach', 'stay', C3); for (const o of [A, B, C, D]) rel(H, o, 0);
@@ -230,14 +224,12 @@ async function run(browser, lang) {
   ok(r.sold.id === 'yes' && r.sold.kind === 'sell' && r.sold.stake === r.sold.p && r.sold.boss === 100 - r.sold.p && r.sold.got === r.sold.price && r.sold.paid === r.sold.price && r.sold.dearer && r.sold.cons && r.sold.log && !r.sold.pending && r.sold.still, '當家答應：股份和錢真的過手，他還是當家（銀幣守恆）', r.sold);
   ok(r.refused.id === 'no' && r.refused.stake === 0 && r.refused.same && r.refused.cold && r.refused.log && !r.refused.pending, '當家回絕：錢一塊沒動，來談的人對他冷了一點', r.refused);
   ok(r.gone.same && !r.gone.pending && r.gone.expired, '等回話時買的人錢不夠了：不成交；三天沒下文的邀約不擋別人', r.gone);
-  ok(r.direct.ok && r.direct.stake > 0 && r.direct.q === 0, '直接呼叫 INVEST.buy（沒說交給本人）仍照舊擲骰', r.direct);
+  ok(r.direct.ok && r.direct.stake > 0 && r.direct.q === 0, '沒說要問當家時（例如當家不在鎮上）：當場談成', r.direct);
   ok(r.envy.asked && r.envy.by && r.envy.stake === 0 && r.envy.ctx && r.envy.ids?.join() === 'yes,no' && r.envy.sold?.id === 'yes' && r.envy.sold.stake > 0 && r.envy.sold.paid > 0 && r.envy.sold.cons && r.envy.sold.log && !r.envy.sold.pending, '眼紅入股：每週流程只記下有人來談，當家答應才成交（銀幣守恆）', r.envy);
-  ok(r.envyDice.stake > 0 && r.envyDice.q === 0, '直接呼叫 SHARES.weekly 仍照舊擲骰', r.envyDice);
   // 退股
   ok(r.out.weeks === 3 && r.out.stake === 30 && r.out.ctx && r.out.boss === null && r.out.ids?.join() === 'keep,out' && r.out.early === null, '分紅連三週不如銀行：只記週數，不替股東賣；不到三週、當家自己都不會遇到', r.out);
   ok(gt(r.out.sc.o6, r.out.sc.o3) && gt(r.out.sc.kf, r.out.sc.k3), '拖得越久越想退；跟當家交情好的比較願意等', r.out.sc);
   ok(r.out.done.stake === 0 && r.out.done.boss === 100 && r.out.done.dep && r.out.done.cons && r.out.done.res && r.out.done.log && r.out.done.after === null, '決定退股：股份賣回給當家、錢存進銀行（銀幣守恆）', r.out.done);
-  ok(r.outDice === 0, '直接呼叫 INVEST.cashOuts 仍照舊擲骰', r.outDice);
   // 翻修
   ok(r.reno.poor === null && r.reno.ctx && r.reno.ids?.join() === 'wait,pay' && r.reno.other === null && r.reno.noDice, '房子舊了：錢不夠又借不到的人沒有這件事；家裡最有錢的人作主；每日流程不再擲骰', r.reno);
   ok(gt(r.reno.sc.pay, r.reno.sc.tight) && gt(r.reno.sc.pay, r.reno.sc.asc) && gt(r.reno.sc.envy, r.reno.sc.pay), '越寬裕越想翻修；清心寡欲的人不想；看到鄰居翻修的人更想', r.reno.sc);
@@ -245,25 +237,23 @@ async function run(browser, lang) {
   ok(r.loan.ids?.join() === 'wait,loan' && gt(r.loan.sc.envy, r.loan.sc.plain) && gt(r.loan.sc.plain, r.loan.sc.asc) && gt(r.loan.sc.wait, r.loan.sc.plain), '手頭不夠只能借：多半先不借；眼紅鄰居的人比較敢借', r.loan);
   ok(r.loan.done.lv === 1 && r.loan.done.debt && r.loan.done.cons && r.loan.done.res && r.loan.done.envyGone && r.loan.done.log && r.loan.inDebt === null, '決定借錢翻修：欠銀行一筆、房子翻修好；已經欠銀行錢的人不能再借', r.loan);
   ok(r.noMat.lack && r.noMat.ctx === null, '鎮上建材不夠：沒有這件事', r.noMat);
-  ok(r.renoDice && r.renoSrc.bank && r.renoSrc.ways, '直接呼叫 HOUSING.daily 仍照舊擲骰；銀行、「跟鄰居比」的每日流程不再替人借錢翻修', { dice: r.renoDice, ...r.renoSrc });
+  ok(r.renoSrc.bank && r.renoSrc.ways, '銀行、「跟鄰居比」的每日流程不再替人借錢翻修', r.renoSrc);
   // 奉獻
   if (!r.tithe.skip) {
     ok(r.tithe.poor === null && r.tithe.cold === null && r.tithe.ids?.join() === 'skip,small' && r.tithe.sc.idsRich?.join() === 'skip,small,big' && r.tithe.noDice, '奉獻：手頭緊、不虔誠的人沒有這件事；有錢的多一個「大筆捐獻」；每日流程不再擲骰', r.tithe);
     ok(gt(r.tithe.sc.s80, r.tithe.sc.s50) && gt(r.tithe.sc.s80, r.tithe.sc.skip) && gt(r.tithe.sc.big, r.tithe.sc.bigG) && gt(r.tithe.sc.skipG, r.tithe.sc.skip), '越虔誠越願意奉獻；貪心的人捨不得', r.tithe.sc);
     ok(r.tithe.small.paid === 2 && r.tithe.small.got === 2 && r.tithe.small.cons && r.tithe.small.res && r.tithe.small.mem, '隨手奉獻：錢進了教團基金（銀幣守恆）', r.tithe.small);
     ok(r.tithe.big.paid === 32 && r.tithe.big.got === 32 && r.tithe.big.n === 1 && r.tithe.big.cons && r.tithe.big.res && r.tithe.big.log, '大筆捐獻：大家都看見（銀幣守恆）', r.tithe.big);
-    ok(r.tithe.dice, '直接呼叫 FAITH.daily 仍照舊擲骰', r.tithe.dice);
   }
   // 陰謀
   ok(r.scheme.ctx && r.scheme.ids?.[0] === 'hold' && r.scheme.ids.includes('frame') && r.scheme.ids.includes('sabotage') && r.scheme.noDice, '結怨很深：可以忍、可以栽贓、可以破壞；每日流程不再擲骰', r.scheme);
   ok(gt(r.scheme.sc.hot, r.scheme.sc.mild) && gt(r.scheme.sc.deep, r.scheme.sc.hot) && gt(r.scheme.sc.hot, r.scheme.sc.frame) && r.scheme.sc.kind === null && r.scheme.sc.shallow === null, '心眼越壞、怨越深越想動手；善良的人、怨不深的人沒有這件事', r.scheme.sc);
   ok(r.scheme.done.res && r.scheme.done.plan && r.scheme.done.log && r.scheme.done.cool === null && r.scheme.acted, '決定動手：開始籌劃，一兩天後照舊動手；二十天內不會再想下一次', { ...r.scheme.done, acted: r.scheme.acted });
-  ok(r.scheme.dice, '直接呼叫 DARK.daily 仍照舊擲骰', r.scheme.dice);
   // 開店
   ok(r.shop.ctx && r.shop.ids?.join() === 'wait,open' && r.shop.mayor === null && r.shop.sc.plain === null && r.shop.noDice, '想不想開店：有本錢、有那個心的人才會遇到；每日流程不再擲骰', r.shop);
   ok(gt(r.shop.sc.rich, r.shop.sc.open) && gt(r.shop.sc.wait, r.shop.sc.open), '一心想致富的人比較想開；一般人多半再想想', r.shop.sc);
   ok(r.shop.done.n === 1 && r.shop.done.owner && r.shop.done.paid === 60 && r.shop.done.cons && r.shop.done.res && r.shop.done.again === null, '決定開店：本錢付出去、店真的開了（銀幣守恆）；已經有店的人不會再遇到', r.shop.done);
-  ok(r.shop.full.before && r.shop.full.after === null && r.shop.dice, '鎮上的店滿了就沒有這件事；直接呼叫 BIZ.daily 仍照舊擲骰', { ...r.shop.full, dice: r.shop.dice });
+  ok(r.shop.full.before && r.shop.full.after === null, '鎮上的店滿了就沒有這件事', r.shop.full);
   // 挖角
   ok(r.poach.place && r.poach.ok && r.poach.q && r.poach.same && r.poach.asked && r.poach.ids?.join() === 'stay,go', '對手鎮來挖角：不擲骰，先問本人', r.poach);
   ok(gt(r.poach.sc.goG, r.poach.sc.go) && gt(r.poach.sc.stayF, r.poach.sc.stay) && gt(r.poach.sc.stay, r.poach.sc.staySad), '貪心的想走；朋友多的想留；日子過得悶的比較留不住', r.poach.sc);

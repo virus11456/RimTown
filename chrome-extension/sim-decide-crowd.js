@@ -33,7 +33,7 @@
     const MS = () => (typeof MYTHSOC !== 'undefined' ? MYTHSOC : null);
     const CR = () => (typeof CROWN !== 'undefined' ? CROWN : null);
     const WY = () => (typeof WAYS !== 'undefined' ? WAYS : null);
-    const on = (w) => { try { return !!DECIDE.crowd && !!DECIDE.on?.(w); } catch (e) { return false; } };
+    const on = (w) => { try { return !!DECIDE.on?.(w); } catch (e) { return false; } };
     const safe = (f) => { try { return f() || null; } catch (e) { return null; } };
     // 兩個選項、當天心情起伏 ±0.9 時，起跑分數差多少會讓這個選項大約有 P 的機會被選中
     const tilt = (P) => { P = clampN(P, 0.004, 0.996); return P <= 0.5 ? Math.sqrt(6.48 * P) - 1.8 : 1.8 - Math.sqrt(6.48 * (1 - P)); };

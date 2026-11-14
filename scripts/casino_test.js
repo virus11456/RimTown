@@ -14,7 +14,7 @@ async function run(browser, lang, vp) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(400);
   const r = await page.evaluate(async () => {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; w.observerMode = true; w.fullAgentMode = false; const out = {};
-    if (typeof DECIDE !== 'undefined') DECIDE.fun = false; // v9.25.0 去不去賭、押多少、開不開賭場改由本人決定(v92500_test.js 在驗)；這支驗的是賭場本身的結算(下注、賒帳、討債、輸光、觀光客)，所以用舊的擲骰來驅動
+    // 去不去賭、押多少、開不開賭場、輸光了跑不跑，都由本人決定（選擇點本身在 v92500_test.js 驗）；這支驗的是賭場的結算（下注、大獎、輸光、觀光客、禁賭），所以這裡讓當事人拿主意：指定選項、或照個性決定
     const tick = (n) => { for (let k = 0; k < n; k++) { w.paused = false; w.tick(); } };
     tick(96 * 21); // 開張要第 20 天以後
     const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && !w.isAway?.(a.agentId));
@@ -24,29 +24,32 @@ async function run(browser, lang, vp) {
     const conserved = (f) => { const t0 = T(), p0 = P0(); f(); return { ok: Math.abs((T() - t0) - (P0() - p0)) < 0.02, d: Math.round(((T() - t0) - (P0() - p0)) * 100) / 100 }; };
     const _lv = TIERS.level; let TIER = 0; TIERS.level = () => TIER;
     const C = CASINO.S(w); const run1 = (v) => { C.lastDay = -1; return v == null ? CASINO.daily(w) : fix(v, () => CASINO.daily(w)); };
+    const K = DECIDE.KINDS; const DX = DECIDE.S(w);
+    const pick = (a, key, id) => { const c = K[key].when(w, a); const o = c && K[key].options(w, a, c).find(x => x.id === id); return o ? o.run(w, a, c) : null; }; // 本人選了這個選項
+    const night = (list) => { for (const a of list) if (w.agents[a.agentId] && !a.isDead) DECIDE.ruleOnce(w, a, 'gamble'); run1(); }; // 一個晚上：每個人照自己的個性決定去不去、押多少，然後賭場結帳
     try {
       INFL.S(w).p = 1; INFL.S(w).wage = 1; INFL.sync(w);
       // ---------- 1) 開張:村莊不開,城鎮以上有野心的有錢人開 ----------
       const all = npcs(); const boss = all.find(a => a.job?.key !== 'priest'); boss.personality.traits = ['greedy', 'ambitious']; for (const a of all) B[a.agentId] = 30; B[boss.agentId] = 600;
-      TIER = 0; run1(0.001); out.village = !C.open;
-      TIER = 1; const oc = conserved(() => run1(0.001));
+      TIER = 0; run1(0.001); pick(boss, 'opencasino', 'open'); out.village = !C.open && !K.opencasino.when(w, boss);
+      TIER = 1; run1(0.001); out.noDice = !C.open; /* 每天的流程不會自己開賭場 */ const oc = conserved(() => pick(boss, 'opencasino', 'open'));
       out.open = { open: C.open, owner: C.owner === boss.agentId, paid: B[boss.agentId] < 600, cons: oc, log: /開了一家賭場|opened a casino|to open a casino/.test(logs()), name: C.name };
       // ---------- 2) 十賭九輸:三十天自然下注,莊家淨賺、多數賭客變少 ----------
       B[boss.agentId] = 100000; const gam = all.filter(a => a !== boss).slice(0, 12); for (const a of gam) { a.personality.traits = ['greedy', 'optimist']; B[a.agentId] = 100; }
       const g0 = Object.fromEntries(gam.map(a => [a.agentId, 100])); if (w.bank) w.bank.open = false;
-      const v0 = C.st.visits, h0 = C.st.house, pd0 = C.st.paid; const hc = conserved(() => { for (let k = 0; k < 60; k++) run1(); });
+      const v0 = C.st.visits, h0 = C.st.house, pd0 = C.st.paid; const hc = conserved(() => { for (let k = 0; k < 60; k++) night(gam); });
       // 樣本要大才看得出莊家優勢:每天把賭客的錢重設成 100,連跑 1500 天,累計每個人的輸贏
       const cum = {}; const v1 = C.st.visits, h1 = C.st.house, pd1 = C.st.paid; out.lossN0 = C.st.lossN || 0;
-      for (let k = 0; k < 1500; k++) { for (const a of gam) if (w.agents[a.agentId]) { B[a.agentId] = 100; } B[boss.agentId] = 100000; run1(); for (const a of gam) if (w.agents[a.agentId]) cum[a.agentId] = (cum[a.agentId] || 0) + (B[a.agentId] - 100); }
+      for (let k = 0; k < 1500; k++) { for (const a of gam) if (w.agents[a.agentId]) { B[a.agentId] = 100; } B[boss.agentId] = 100000; night(gam); for (const a of gam) if (w.agents[a.agentId]) cum[a.agentId] = (cum[a.agentId] || 0) + (B[a.agentId] - 100); }
       const went = gam.filter(a => (C.v[a.agentId] || 0) > 0 && a.agentId in cum); const lost = went.filter(a => cum[a.agentId] < 0);
       out.edge = { visits: C.st.visits - v1, house: Math.round(C.st.house - h1), paid: Math.round(C.st.paid - pd1), net: Math.round((C.st.house - h1) - (C.st.paid - pd1)), went: went.length, lost: lost.length, cons: hc, d60: C.st.visits - v0 > 0, lossRate: Math.round(((C.st.lossN || 0) - (out.lossN0 || 0)) / Math.max(1, C.st.visits - v1) * 1000) / 1000, edge: Math.round(((1 - CASINO.EDGE) - (CASINO.EDGE - CASINO.JACK) - CASINO.JACK * CASINO.JACKX) * 1000) / 1000 /* 每押 1：輸的機率 − 小贏 − 大獎 */ };
       if (w.bank) w.bank.open = true;
       // ---------- 3) 一夕致富:中大獎 25 倍;莊家付不出就倒 ----------
       for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 100000; const lucky = gam.find(a => w.agents[a.agentId]); B[lucky.agentId] = 50; C.streak = {};
-      const j0 = C.st.jack; const jc = conserved(() => run1(0.001)); out.jack = { n: C.st.jack - j0, got: B[lucky.agentId], open: C.open, cons: jc, log: /押中了大獎|hit the jackpot/.test(logs()) };
-      B[boss.agentId] = 10; B[lucky.agentId] = 50; const bc = conserved(() => run1(0.001)); out.broke = { closed: !C.open, why: C.closedWhy, ownerCash: B[boss.agentId], cons: bc, log: /傾家蕩產|lost everything/.test(logs()) };
+      const j0 = C.st.jack; const jc = conserved(() => fix(0.001, () => pick(lucky, 'gamble', 'small'))); out.jack = { n: C.st.jack - j0, got: B[lucky.agentId], open: C.open, cons: jc, log: /押中了大獎|hit the jackpot/.test(logs()) };
+      B[boss.agentId] = 10; B[lucky.agentId] = 50; const bc = conserved(() => fix(0.001, () => pick(lucky, 'gamble', 'small'))); out.broke = { closed: !C.open, why: C.closedWhy, ownerCash: B[boss.agentId], cons: bc, log: /傾家蕩產|lost everything/.test(logs()) };
       // 重新開張(下一個有錢人)
-      for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 600; run1(0.001); out.reopen = C.open;
+      for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 600; run1(0.001); pick(boss, 'opencasino', 'open'); out.reopen = C.open;
       // ---------- 4) 家破人亡:輸光、配偶離開、欠銀行的人連夜跑路 ----------
       B[boss.agentId] = 100000; const vic = gam.find(a => a !== lucky && w.agents[a.agentId]); const sp = all.find(a => a !== vic && a !== boss && a !== lucky && w.agents[a.agentId]);
       for (const rr of Object.values(vic.relationships.relationships || {})) if (rr.status === 'married') rr.status = 'friend';
@@ -54,8 +57,9 @@ async function run(browser, lang, vp) {
       for (const a of all) B[a.agentId] = Math.min(B[a.agentId] ?? 0, 4); B[boss.agentId] = 100000; B[vic.agentId] = 5; const d = w._absDay();
       C.streak[vic.agentId] = 4; C.lost[vic.agentId] = [[d, 60]]; const BK = BANK.S(w); BK.loans = BK.loans || {}; BK.loans[vic.agentId] = { owed: 20, principal: 20, rate: 0.1, day: d, due: d + 30 };
       THINGS.S(w).att[C.thing][vic.agentId] = 90; C.debt[vic.agentId] = { n: 1, day: d }; /* 很愛賭、已經跟莊家賒過帳（不會再賒） */
-      const r0 = C.st.ruin, f0 = C.st.fled, dv0 = C.st.divorce; const rc = conserved(() => run1(0.45));
-      out.ruin = { dbg: { cash: B[vic.agentId], v: C.v[vic.agentId], st: C.streak[vic.agentId], dealer: C.dealer === vic.agentId, owner: C.owner === vic.agentId, open: C.open, mult: THINGS.useMult(w, C.thing, vic), lost: (C.lost[vic.agentId] || []).length }, ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
+      const r0 = C.st.ruin, f0 = C.st.fled, dv0 = C.st.divorce; DX.q = []; let asked = null;
+      const rc = conserved(() => fix(0.45, () => { pick(vic, 'gamble', 'all'); asked = DX.q.find(q => q.a === vic.agentId && q.kind === 'ruined') || null; DECIDE.drain(w, DX, w._absDay()); })); // 輸光的當下被問要不要跑路，照個性決定
+      out.ruin = { asked: !!asked && asked.ctx?.owes === true, last: (DX.log[vic.agentId] || []).slice(-1)[0]?.id, dbg: { cash: B[vic.agentId], v: C.v[vic.agentId], st: C.streak[vic.agentId], dealer: C.dealer === vic.agentId, owner: C.owner === vic.agentId, open: C.open, mult: THINGS.useMult(w, C.thing, vic), lost: (C.lost[vic.agentId] || []).length }, ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
       // ---------- 5) 城市以上:外地賭客來玩(觀光收入,從外地流進來) ----------
       for (const a of npcs()) if (a.agentId !== C.owner) B[a.agentId] = 1; TIER = 2; const ownC = B[C.owner]; const M = MONEY.S(w); const day0 = M.days?.[w._absDay()]?.tourism || 0; const t0 = C.st.tourists;
       const tc = conserved(() => run1(0.5)); out.tour = { n: C.st.tourists - t0, owner: B[C.owner] > ownC, flow: (M.days?.[w._absDay()]?.tourism || 0) - day0, cons: tc };
@@ -69,7 +73,7 @@ async function run(browser, lang, vp) {
       if (pr) {
         const own = w.agents[C.owner];
         let of = 0, hf = 0; for (let k = 0; k < 20; k++) { delete pr.votes[own.agentId]; w.proposals._ruleVote(w, pr, own); if (pr.votes[own.agentId] === 'for') of++; delete pr.votes[preacher.agentId]; w.proposals._ruleVote(w, pr, preacher); if (pr.votes[preacher.agentId] === 'for') hf++; }
-        out.ban.votes = { of, hf }; pr.status = 'approved'; w.proposals._execute(w, pr, w._absDay()); out.ban.ok = C.ban && !C.open; run1(0.001); out.ban.stays = !C.open; out.ban.log = /決定禁賭|ban gambling/.test(logs()); out.ban.retired = !!X.list[C.thing]?.gone;
+        out.ban.votes = { of, hf }; pr.status = 'approved'; w.proposals._execute(w, pr, w._absDay()); out.ban.ok = C.ban && !C.open; for (const a of npcs()) B[a.agentId] = 1; B[boss.agentId] = 600; run1(0.001); pick(boss, 'opencasino', 'open'); out.ban.stays = !C.open && !K.opencasino.when(w, boss); out.ban.log = /決定禁賭|ban gambling/.test(logs()); out.ban.retired = !!X.list[C.thing]?.gone;
       }
       out.brief = CASINO.brief(w, all.find(a => (C.v[a.agentId] || 0) >= 5) || all[0]);
       // ---------- 存讀檔 ----------
@@ -82,7 +86,7 @@ async function run(browser, lang, vp) {
   });
   const en = lang === 'en';
   ok(r.village, '村莊不會開賭場', r.village);
-  ok(r.open.open && r.open.owner && r.open.paid && r.open.log && r.open.name, '城鎮以上，有野心的有錢人花錢開賭場', r.open);
+  ok(r.noDice && r.open.open && r.open.owner && r.open.paid && r.open.log && r.open.name, '城鎮以上，有野心的有錢人自己決定花錢開賭場（每天的流程不會替他開）', { noDice: r.noDice, open: r.open });
   ok(r.open.cons.ok, '開賭場的錢付給工匠，全鎮的錢不多不少', r.open.cons);
   ok(r.edge.visits >= 250 && r.edge.lossRate >= 0.57 && r.edge.lossRate <= 0.67 && r.edge.edge >= 0.15, '每押有六成以上輸，莊家每押理論上抽一成五以上（大獎運氣不算）', r.edge);
   ok(r.edge.went >= 5 && r.edge.lost / r.edge.went > 0.5, '常去賭的人多數輸錢（運氣好中大獎的少數例外）', r.edge);
@@ -93,7 +97,7 @@ async function run(browser, lang, vp) {
   ok(r.reopen, '之後別的有錢人還能再開', r.reopen);
   ok(r.ruin.ruin === 1 && r.ruin.log, '輸光又一直想翻本的人家破人亡', r.ruin);
   ok(r.ruin.divorce === 1 && r.ruin.spouse === 'ex', '配偶受不了帶著孩子離開', r.ruin);
-  ok(r.ruin.fled === 1 && r.ruin.gone, '欠銀行錢的人連夜跑路', r.ruin);
+  ok(r.ruin.asked && r.ruin.last === 'flee' && r.ruin.fled === 1 && r.ruin.gone, '輸光的當下問本人要不要走；還欠銀行錢的人決定連夜跑路', r.ruin);
   ok(r.tour.n > 0 && r.tour.owner && r.tour.flow > 0 && r.tour.cons.ok, '城市以上外地賭客來玩，錢記成「外地賭客與觀光」流入', r.tour);
   ok(r.tour.townNo, '城鎮還沒有外地賭客', r.tour);
   ok(r.ban.prop && r.ban.thing, '被賭場害慘的家庭多了，有人提案禁止賭場（通用的「禁止新東西」）', r.ban);

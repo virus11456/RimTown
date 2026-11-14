@@ -149,7 +149,6 @@ const TOWN_ISSUES = (() => {
             case 'food':
                 for (const a of all) { a.needs && (a.needs.hunger = Math.max(0, a.needs.hunger - (it.sev >= 3 ? 18 : 10))); a.addThought?.('hungry', w); }
                 if (age % 3 === 1) for (const a of all) mem(w, a, '存糧不夠，這幾天只能吃半飽，肚子一直餓。', {}, 6);
-                if (it.sev >= 3 && idle >= 5) Math.random(); /*RNG-SHIM*/
                 break;
             case 'clothing': {
                 const cold = w.clock?.season === '冬季';
@@ -170,7 +169,6 @@ const TOWN_ISSUES = (() => {
             case 'misery': {
                 const a = w.agents[it.who?.[0]]; if (!a) break;
                 if (idle >= 3) { a.addThought?.('ignored', w); if (idle === 3) mem(w, a, '我都這樣了，鎮上卻沒有人來關心我。', {}, 7); }
-                if (idle >= 7) Math.random(); /*RNG-SHIM*/
                 break;
             }
             case 'feud': {
@@ -192,9 +190,6 @@ const TOWN_ISSUES = (() => {
             }
             case 'treasury':
                 if (age % 3 === 1) for (const a of pick(3)) { a.addThought?.('town_broke', w); mem(w, a, '公庫快見底了，聽說連守衛的薪俸都快發不出來。', {}, 5); }
-                break;
-            case 'gloom':
-                if (idle >= 5) Math.random(); /*RNG-SHIM*/
                 break;
         }
         // 拖著沒人管:第 3 天開始抱怨,之後每 4 天一次;鎮長被點名

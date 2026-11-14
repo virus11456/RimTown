@@ -46,7 +46,7 @@ async function run(lang) {
       m.relationships.getOrCreate(a.agentId, a.name).affinity = 50; m.relationships.getOrCreate(b.agentId, b.name).affinity = 50;
       for (const x of P) if (x !== a && x !== b && x !== m) { const q = x.relationships.relationships; if (q[a.agentId]) q[a.agentId].affinity = Math.min(q[a.agentId].affinity, 0); }
       w._feudCooldown = {}; const n0 = w.messageLog.length; Math.random = () => 0;
-      try { if (w._byLove?.()) w.publicFeud(a, b); else w._processFeuds(); } finally { Math.random = r0; } /* v9.28.0 吵不吵由本人決定；決定吵了之後，兩邊都要好的人照舊可能出面勸架 */
+      try { w.publicFeud(a, b); } finally { Math.random = r0; } /* v9.28.0 吵不吵由本人決定；決定吵了之後，兩邊都要好的人照舊可能出面勸架 */
       const ls = w.messageLog.slice(n0).filter(x => x.p && ((x.p.a === a.name && x.p.b === b.name) || (x.p.a === b.name && x.p.b === a.name))).map(x => x.k || x.content); out.peace = { log: ls.some(x => /打圓場/.test(String(x))), row: ls.some(x => /大吵一架/.test(String(x))), aff: ra.affinity }; }
     // 7. 報紙:報社的報導、外地消息各自一版,不再塞進民生經濟
     { const R = PRESS.S(w); const pp = R.papers[0]; PRESS.story(w, pp, 'test', '鎮上新開了一家{x}。', { x: '茶館' });

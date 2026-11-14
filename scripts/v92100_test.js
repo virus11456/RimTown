@@ -1,6 +1,6 @@
 // v9.21.0 決策核心階段 3（政治）
 // 帶頭組工會、加入、退出、跟不跟罷工、老闆答不答應加薪、捐不捐政治獻金、收不收、要不要出來選、立場隨處境改變：改由本人決定，不再擲骰。
-// 驗：九個選擇點都登記了、每日流程不再擲骰（直接呼叫舊函式仍照舊）、每個選項的結算、個性與處境不同分數不同、
+// 驗：九個選擇點都登記了、每日流程不再擲骰、每個選項的結算、個性與處境不同分數不同、
 //     連鎖（工會來談 → 老闆回答 → 罷工 → 會員跟不跟；金主開口 → 政治人物收不收）、說要選的人真的成為候選人、AI 版、銀幣守恆、存讀檔、中英文
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium } = require('playwright');
@@ -56,15 +56,13 @@ async function run(browser, lang) {
     const NEW = ['organize', 'union', 'unionout', 'strike', 'demand', 'donate', 'gift', 'run', 'rethink'];
 
     // ---------- 1) 登記、每日流程不再擲骰 ----------
-    out.kinds = { all: NEW.every(k => !!K[k]), pol: DECIDE.pol === true, on: UNION.byChoice(w) && POWER.byChoice(w), queued: ['strike', 'demand', 'gift'].every(k => K[k].scan === false) && ['organize', 'union', 'unionout', 'donate', 'run', 'rethink'].every(k => K[k].scan !== false) };
+    out.kinds = { all: NEW.every(k => !!K[k]), pol: DECIDE.pol === true, on: DECIDE.on(w), queued: ['strike', 'demand', 'gift'].every(k => K[k].scan === false) && ['organize', 'union', 'unionout', 'donate', 'run', 'rethink'].every(k => K[k].scan !== false) };
     clean(); { // 骰子給到「一定會組工會、一定會捐錢」的值:每日流程也不會替人決定
       const od = w._absDay; const g0 = P.stats.gifts; Bal[R.agentId] = 900;
       w._absDay = () => 703; U.lastDay = -1; fix(0.001, () => UNION.daily(w)); const noFound = !U.on;
       w._absDay = () => 705; P.lastDay = -1; fix(0.001, () => POWER.daily(w)); const noGift = P.stats.gifts === g0;
       w._absDay = od; U.lastDay = -1; P.lastDay = -1;
-      // 直接呼叫舊函式(非觀察者模式的後備)仍然照舊擲骰
-      fix(0.01, () => UNION.found(w, all, d0())); const legacyFound = U.on && Object.keys(U.members).length >= 4;
-      out.noDice = { noFound, noGift, legacyFound, src: /byChoice\(w\)/.test(String(UNION.daily)) }; }
+      out.noDice = { noFound, noGift, src: !/found\(/.test(String(UNION.daily)) && typeof UNION.found === 'undefined' && typeof POWER.donations === 'undefined' }; }
 
     // ---------- 2) 帶頭組工會 ----------
     clean(); { traits(W1, ['charismatic']); traits(W2, ['shy']);
@@ -84,7 +82,7 @@ async function run(browser, lang) {
       opt(W2, 'unionout', 'stay').run(w, W2); out.quit.stay = !!U.members[W2.agentId]; }
 
     // ---------- 4) 工會來談 → 老闆自己回答 ----------
-    const talk = () => { U.talks = {}; U.ask = {}; X.q = []; fix(0.5, () => UNION.bargain(w, all, d0(), true)); };
+    const talk = () => { U.talks = {}; U.ask = {}; X.q = []; fix(0.5, () => UNION.bargain(w, all, d0())); };
     clean(); { union(W1, workers); U.fund = 500; Bal[boss.agentId] = 5000; Bal[W1.agentId] = 100; const p0 = M.pay.farm; talk();
       out.ask = { asked: U.ask.farm != null, q: X.q.filter(q => q.kind === 'demand' && q.a === boss.agentId).length, same: M.pay.farm === p0, log: /📣/.test(logs(4)), ids: ids(boss, 'demand', { k: 'farm' }), fact: K.demand.facts(w, boss, { k: 'farm' }) };
       const C = { k: 'farm' }; out.ask.plain = { yes: sc(boss, 'demand', 'yes', C), no: sc(boss, 'demand', 'no', C), fire: sc(boss, 'demand', 'fire', C), bribe: sc(boss, 'demand', 'bribe', C) };
@@ -174,7 +172,7 @@ async function run(browser, lang) {
     const today = () => { X.lastDay = -1; DECIDE.daily(w); };
     const only = (...keep) => { const s = new Set(keep.map(a => a.agentId)); for (const a of all) if (!s.has(a.agentId)) for (const k of Object.keys(K)) X.cool[a.agentId + '|' + k] = d0() + 9; };
     const others = (a, keys) => { for (const k of Object.keys(K)) if (!keys.includes(k)) X.cool[a.agentId + '|' + k] = d0() + 9; };
-    clean(); w.fullAgentMode = true; { union(W1, workers); U.fund = 500; Bal[boss.agentId] = 5000; Bal[W1.agentId] = 100; U.talks = {}; fix(0.5, () => UNION.bargain(w, all, d0(), true)); only(boss); others(boss, ['demand']); prompts = [];
+    clean(); w.fullAgentMode = true; { union(W1, workers); U.fund = 500; Bal[boss.agentId] = 5000; Bal[W1.agentId] = 100; U.talks = {}; fix(0.5, () => UNION.bargain(w, all, d0())); only(boss); others(boss, ['demand']); prompts = [];
       reply = (p) => /來談|come to negotiate/.test(p) ? [{ n: 1, pick: 'a', why: 'W-DEAL', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const e = lastLog(boss); const pD = prompts.find(p => /來談|come to negotiate/.test(p)) || '';
       out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, pay: M.pay.farm, plan: DECIDE.view(w, boss).plan, feed: /🧭/.test(logs(8)), menu: /other＝/.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
@@ -200,7 +198,6 @@ async function run(browser, lang) {
   const gt = (a, b) => typeof a === 'number' && typeof b === 'number' && a > b;
   ok(r.kinds.all && r.kinds.pol && r.kinds.on && r.kinds.queued, '九個政治選擇點都登記了；「工會宣布罷工」「工會來談加薪」「有人送政治獻金來」只在別人找上門時出現', r.kinds);
   ok(r.noDice.noFound && r.noDice.noGift && r.noDice.src, '每日流程不再擲骰：骰子給到一定會組工會、一定會捐錢的值，也不會替人決定', r.noDice);
-  ok(r.noDice.legacyFound, '直接呼叫舊函式（非觀察者模式的後備）照舊擲骰', r.noDice);
   // 組工會
   ok(r.org.can >= 4 && r.org.ids.join() === 'wait,lead', '工資被壓、四個人以上不滿：最適合帶頭的幾個人會遇到「要不要帶頭」', r.org);
   ok(r.org.village === 0 && r.org.paid === 0, '村莊、城鎮組不起工會；工資照常發的時候沒有這件事', { village: r.org.village, paid: r.org.paid });

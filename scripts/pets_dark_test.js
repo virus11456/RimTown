@@ -52,18 +52,21 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       A.personality.traits = ['jealous', 'abrasive']; C.personality.traits = ['kind']; B.personality.traits = ['optimist'];
       const set = (x, y, v) => { x.relationships.getOrCreate(y.agentId, y.name).affinity = v; };
       set(A, B, 40); set(A, C, -70); set(B, C, 0);
+      // 要不要講壞話、陷害、說善意的謊、打選戰用什麼手段，都由本人決定；這裡讓當事人選了那個選項，驗選了以後發生的事
+      const on0 = { obs: !!w.observerMode, wallet: !!w.wallet }; w.observerMode = true; WALLET.S(w); // 剛開的小鎮還沒過第一天、錢包還沒建：先建好，本人才拿得了主意
+      const KD = DECIDE.KINDS; const choose = (a, key, id, ctx) => { const c = ctx || KD[key].when(w, a); const o = c && KD[key].options(w, a, c).find(x => x.id === id); return o ? o.run(w, a, c) : null; };
       // 講壞話
-      DARK.S(w).spoke = {}; low(); const bm = DARK.badmouth(w, A, B); back();
+      DARK.S(w).spoke = {}; low(); const bm = !!choose(A, 'vent', 'true', { foe: C.agentId, l: B.agentId, why: 'dislike', s: 70 }); back();
       const g = (w.gossipNetwork.activeGossip || []).filter(x => x.tone === 'diss' && x.source === A.name).pop();
       const bMem = (B.memory.entries || []).slice(-3).map(e => e.content).join(' | ');
       // 正直的朋友會幫忙說話、可能告訴本人
-      const K = ag[4]; K.personality.traits = ['kind']; set(A, K, 40); set(K, C, 60); DARK.S(w).spoke = {}; low(); DARK.badmouth(w, A, K); back();
+      const K = ag[4]; K.personality.traits = ['kind']; set(A, K, 40); set(K, C, 60); DARK.S(w).spoke = {}; low(); choose(A, 'vent', 'true', { foe: C.agentId, l: K.agentId, why: 'dislike', s: 70 }); back();
       const kMem = (K.memory.entries || []).slice(-2).map(e => e.content).join(' | '); const cTh = (C.thoughts || []).map(x => x.kind);
       // 陰謀:A 恨 V
       set(A, V, -90); V.personality.traits = []; DARK.S(w).cool = {};
       const D = DARK.S(w); const n0 = D.secrets.length;
       const d0 = w.proposals._abs(w);
-      w.proposals._abs = () => d0; low(); DARK.daily(w); back();
+      w.proposals._abs = () => d0; Math.random = () => 0.5; let sch = null; try { sch = DECIDE.ruleOnce(w, A, 'scheme', true); } finally { back(); } // 照個性決定(不加運氣)：有深仇又陰險的 A 會不會動手
       const plan = D.secrets.slice(n0).find(s => s.stage === 'plan');
       w.proposals._abs = () => d0 + 1; Math.random = () => 0.5; DARK.daily(w); back();
       const acted = plan && plan.stage;
@@ -82,12 +85,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const shyTh = (shy.thoughts || []).map(x => x.kind);
       // 善意的謊言
       const kindA = ag[8], sad = ag[9]; kindA.personality.traits = ['kind']; sad.mood = 10; set(kindA, sad, 50);
-      const s0 = D.secrets.length; Math.random = () => 0.01; try { DARK.daily(w); } finally { back(); }
+      const s0 = D.secrets.length; Math.random = () => 0.01; try { choose(kindA, 'comfort', 'lie'); } finally { back(); }
       const white = D.secrets.slice(s0).some(s => s.kind === 'white');
       // 競選對手
       const E = w.election; const oldE = { active: E.active, phase: E.phase, candidates: E.candidates };
       const X = ag[10], Y = ag[11]; X.personality.traits = ['gossip', 'jealous']; E.active = true; E.phase = 'campaign'; E.candidates = [{ agentId: X.agentId, name: X.name }, { agentId: Y.agentId, name: Y.name }];
-      const g0 = DARK.grudge(w, X, Y); const s1 = D.secrets.length; Math.random = () => 0.05; try { DARK.daily(w); } finally { back(); }
+      const g0 = DARK.grudge(w, X, Y); const s1 = D.secrets.length; const dirtyIds = (KD.dirty.when(w, X) ? KD.dirty.options(w, X, KD.dirty.when(w, X)) : []).map(o => String(o.id).split(':')[0]); Math.random = () => 0.05; try { choose(X, 'dirty', 'smear:' + Y.agentId); choose(X, 'dirty', 'hollow'); } finally { back(); }
       const dirty = D.secrets.slice(s1).some(s => s.culprit === X.agentId && (s.kind === 'slander' || s.kind === 'promise'));
       Object.assign(E, oldE);
       // AI 知道自己的恩怨與秘密
@@ -96,18 +99,18 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const blob = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(blob);
       // 提案頁:只有你知道的真相
       app.state = w.getState(); app._ppTab = 'truth'; const box = document.createElement('div'); app.renderProposals(box);
-      return { bm, g: !!g, gTone: g?.tone, bMem, kMem, cTh, plan: !!plan, kind: plan?.kind, acted, vTh, viewN: view.secrets.length, aTh, vTh2, trust, mis: mis?.kind, cleared, shyTh, white, g0: g0.why, dirty, brief, rtSecrets: (w2.dark?.secrets || []).length, panel: box.innerHTML.includes('pp-secrets') };
+      return { on0, on: DECIDE.on(w), sch: sch?.id, dirtyIds, bm, g: !!g, gTone: g?.tone, bMem, kMem, cTh, plan: !!plan, kind: plan?.kind, acted, vTh, viewN: view.secrets.length, aTh, vTh2, trust, mis: mis?.kind, cleared, shyTh, white, g0: g0.why, dirty, brief, rtSecrets: (w2.dark?.secrets || []).length, panel: box.innerHTML.includes('pp-secrets') };
     });
     ok(dk.bm && dk.g && dk.gTone === 'diss' && /說|told|said/.test(dk.bMem), '講壞話:跟朋友抱怨仇人，壞話會傳出去、聽的人記得', { bm: dk.bm, mem: dk.bMem.slice(0, 120) });
     ok(/替|stood up/.test(dk.kMem), '正直又跟被講的人要好的朋友會幫忙說話', dk.kMem.slice(0, 150));
-    ok(dk.plan && dk.acted === 'done', '有深仇又陰險的人會籌劃陷害，隔天動手', { plan: dk.plan, kind: dk.kind, acted: dk.acted });
+    ok(dk.plan && dk.acted === 'done', '有深仇又陰險的人會籌劃陷害，隔天動手', { on0: dk.on0, on: dk.on, pick: dk.sch, plan: dk.plan, kind: dk.kind, acted: dk.acted });
     ok(dk.viewN > 0 && dk.panel, '玩家看得到真相（提案頁「只有你知道的真相」）', { n: dk.viewN, panel: dk.panel });
     ok(dk.aTh.includes('exposed') && dk.trust < 0, '被拆穿：信任崩盤、心情大跌', { aTh: dk.aTh, trust: dk.trust });
     ok(['frame', 'sabotage', 'lobby', 'credit'].includes(dk.kind) && (dk.kind === 'lobby' || dk.vTh.some(k => ['wrongly_blamed', 'work_ruined', 'credit_stolen'].includes(k))), '被陷害的人真的受影響（被冤枉、工作被破壞…）', { kind: dk.kind, vTh: dk.vTh });
     ok(dk.mis && dk.cleared, '誤會會發生，也會解開', { mis: dk.mis, cleared: dk.cleared });
     ok(dk.mis !== 'cold' || dk.shyTh.includes('misunderstood') || dk.shyTh.includes('cleared_up'), '內向的人被誤會會覺得委屈，解開後鬆一口氣', dk.shyTh);
-    ok(dk.white, '善良的人會說善意的謊言安慰朋友', null);
-    ok(dk.g0 === 'election' && dk.dirty, '競選對手之間有恩怨，不老實的候選人會抹黑對手或開空頭支票', { g0: dk.g0, dirty: dk.dirty });
+    ok(dk.white, '善良的人決定說善意的謊言安慰朋友，真相頁記著', null);
+    ok(dk.g0 === 'election' && dk.dirtyIds.includes('smear') && dk.dirtyIds.includes('hollow') && dk.dirty, '競選對手之間有恩怨，不老實的候選人可以抹黑對手或開空頭支票（選了就記成祕密）', { g0: dk.g0, ids: dk.dirtyIds, dirty: dk.dirty });
     ok(/記恨|grudge/.test(dk.brief), 'AI 知道自己記恨誰', dk.brief.slice(0, 200));
     ok(dk.rtSecrets > 0, '秘密存讀檔', dk.rtSecrets);
     // ---------- 同行搶生意 ----------

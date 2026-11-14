@@ -58,7 +58,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const a of [P1, P2, P3, P4]) X.att[a.agentId] = -80; run(0.99);
       const hunters = (X.grp.pure?.members || []).slice(0, 4).map(id => w.agents[id]); for (const h of hunters) { const rr = h.relationships.getOrCreate(N1.agentId, N1.name); rr.affinity = -100; }
       X.hunts = []; const d = w._absDay(); HEALTH.S(w).a[N1.agentId] = [];
-      const h1 = fix(0.55, () => MYTHSOC.hunt(w, X, d, npcs(), C3, 'night'));
+      const hl = () => w.agents[X.grp.pure?.leader] || hunters[0]; const cx = { cul: C3.agentId, kind: 'night', d }; // 要不要帶隊搜捕由純人派帶頭的人決定：這裡讓他決定去
+      const h1 = fix(0.55, () => MYTHSOC.huntBy(w, hl(), cx));
       out.hunt = { made: !!h1, wrong: h1 && !h1.right && h1.sus === N1.agentId, beat: h1?.beat, hurt: HEALTH.ails(w, N1).some(x => x.k === 'injury'), hated: kinds(N1).includes('myth_hated') };
       w.proposals.items = w.proposals.items.filter(p => p.kind !== 'verdict'); const lead = w.agents[h1?.lead]; h1 && (h1.reveal = d); const wr0 = X.st.wrongful; const n1a = MYTHSOC.att(w, N3);
       fix(0.99, () => MYTHSOC.reveal(w, X, d, npcs()));
@@ -67,7 +68,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 審判罰款從被告錢包出(守恆)
       if (vp) { vp.pen = 'fine'; w.wallet.bal[lead.agentId] = 50; const t0 = inTown(), s0 = sp.get('silver'); DARK.punish(w, w.proposals, vp); out.fine = { paid: 50 - WALLET.get(w, lead), tre: Math.round(sp.get('silver') - s0), drift: Math.round((inTown() - t0) * 100) / 100 }; }
       // 8) 平權令下抓對人:只能交給守衛,不能私刑
-      X.rights = true; X.hunts = []; const c0 = X.st.caught; const h2 = fix(0.1, () => MYTHSOC.hunt(w, X, d, npcs(), C3, 'night')); out.hunt2 = { right: !!h2?.right, beat: h2?.beat, caught: X.st.caught - c0 }; X.rights = false;
+      X.rights = true; X.hunts = []; const c0 = X.st.caught; const h2 = fix(0.1, () => MYTHSOC.huntBy(w, hl(), cx)); out.hunt2 = { right: !!h2?.right, beat: h2?.beat, caught: X.st.caught - c0 }; X.rights = false;
       // 9) 報紙:八卦報炒恐慌、革新報平反,讀者看法跟著變
       PRESS.S(w); const mk = (id, st, jo) => ({ id, st, name: [id === 'PG' ? '測試閒話報' : '測試新報', id], cred: 60, owner: null, journo: jo.agentId, bribedBy: null, banned: false, underground: false, stories: [], fame: 0 });
       w.press.papers = w.press.papers.filter(P => !['PG', 'PP'].includes(P.id)).concat([mk('PG', 'gossip', P1), mk('PP', 'prog', N2)]); w.press.reads[N3.agentId] = 'PG'; w.press.reads[N1.agentId] = 'PP'; X.pd = {};

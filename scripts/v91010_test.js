@@ -39,7 +39,7 @@ async function run(browser, lang) {
         // 慕名訂做:錢從有錢人付給名匠,全鎮總數不變
         const rich = adults().filter(o => o !== X && !MOBILITY.isMaster(o)); for (const o of rich.slice(0, 3)) { w.wallet.bal[o.agentId] = 1000; o.job = o.job || new Job('farmer'); }
         const c0 = WALLET.get(w, X), t0 = MONEY.total(w); const d3 = Math.ceil((w._absDay() - 3) / 7) * 7 + 3; fix(0.1, () => MOBILITY.masters(w, all(), d3));
-        if (MOBILITY.byFun?.(w)) for (let i = 0; i < 6 && WALLET.get(w, X) <= c0; i++) { const o = rich[i % 3]; const I = MOBILITY.commInfo(w, o); if (!I) break; MOBILITY.commBy(w, o, I.m.agentId); } // v9.25.0 訂不訂做交給有錢人自己決定：這裡替他們拿主意(一位名匠一週只接一件，所以輪到 X 為止)
+        for (let i = 0; i < 6 && WALLET.get(w, X) <= c0; i++) { const o = rich[i % 3]; const I = MOBILITY.commInfo(w, o); if (!I) break; MOBILITY.commBy(w, o, I.m.agentId); } // v9.25.0 訂不訂做交給有錢人自己決定：這裡替他們拿主意(一位名匠一週只接一件，所以輪到 X 為止)
         out.comm = { got: Math.round(WALLET.get(w, X) - c0), cons: Math.abs(MONEY.total(w) - t0) < 0.01 }; out.masterX = X.agentId; out.yLost = !MOBILITY.isMaster(Y); }
       // E. 收徒:名匠優先(就算交情比較淺),20 天出師
       { const [Mst, Pal] = take(2); const A = adults().filter(o => !used.has(o.agentId) && o !== Mst && o !== Pal).find(o => { o.job = new Job('farmer'); w.wallet.bal[o.agentId] = 30; delete CLASS.S(w).titles[o.agentId]; return CLASS.compute(w, o) <= 1; }); used.add(A.agentId); take(0); A.age = 20; // 學徒要找真的是平民以下的人(官職、頭銜都會拉高階層)
@@ -47,7 +47,7 @@ async function run(browser, lang) {
         Mst.job = new Job('carpenter'); setLv(Mst, '建造', 20, 1e6); Pal.job = new Job('carpenter'); setLv(Pal, '建造', 5); w.wallet.bal[Pal.agentId] = 500;
         Mst.relationships.getOrCreate(A.agentId, A.name).affinity = 5; Pal.relationships.getOrCreate(A.agentId, A.name).affinity = 80;
         for (const id of Object.keys(MB.ap)) delete MB.ap[id]; MB.day = null; CLASS.daily(w); for (const id of Object.keys(MB.ap)) delete MB.ap[id];
-        const d7 = Math.ceil(w._absDay() / 7) * 7; fix(0.1, () => MOBILITY.apprentice(w, [A, Mst, Pal], d7)); const P = MB.ap[A.agentId];
+        fix(0.1, () => MOBILITY.learnBy(w, A)); /* 要不要拜師由本人決定：這裡替他拿主意，看他找上誰 */ const P = MB.ap[A.agentId];
         out.appr = { m: P?.m === Mst.agentId, fast: !!P?.fast, dbg: { aLv: CLASS.level(w, A), aAge: A.age, aJob: A.job?.key, mM: MOBILITY.isMaster(Mst), mLv: CLASS.level(w, Mst), pLv: CLASS.level(w, Pal), aff: Mst.relationships.relationships[A.agentId]?.affinity, P: P ? P.m : null, away: [w.isAway(A.agentId), w.isAway(Mst.agentId)], ap: Object.keys(MB.ap).length, ex: !!w.exile?.pending?.[A.agentId] } };
         if (P) { P.d0 = w._absDay() - 20; MOBILITY.apprentice(w, [A, Mst, Pal], w._absDay() + 1); }
         out.appr.done = MB.done[A.agentId] === 'carpenter' && A.job?.key === 'carpenter'; out.appr.log = logs().slice(-8).some(s => /學了 20 天|20 days learning/.test(s)); }
