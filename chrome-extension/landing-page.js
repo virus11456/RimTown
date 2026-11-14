@@ -567,9 +567,9 @@ Object.assign(RimTownApp.prototype, {
                 const set = (i) => { flow.dataset.step = i; flow.querySelectorAll('.lp-step').forEach((s, k) => { s.classList.toggle('on', k === i); s.classList.toggle('done', k < i); s.querySelector('button')?.setAttribute('aria-pressed', k === i ? 'true' : 'false'); }); flow.querySelectorAll('.lp-rec-row').forEach((r, k) => { r.classList.toggle('on', k === i); r.classList.toggle('done', k < i); }); };
                 let auto = !still, seen = false, i = 0;
                 flow.querySelectorAll('.lp-step-btn').forEach((b, k) => b.addEventListener('click', () => { auto = false; i = k; set(k); }));
-                flow.addEventListener('pointerenter', () => { flow._hold = true; }); flow.addEventListener('pointerleave', () => { flow._hold = false; });
+                flow.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') flow._hold = true; }); flow.addEventListener('pointerleave', () => { flow._hold = false; }); /* 手指點一下也會觸發 pointerenter，以前會一直停住 */
                 if (still) flow.classList.add('all');
-                if ('IntersectionObserver' in window) { this._lpFlowObs?.disconnect(); this._lpFlowObs = new IntersectionObserver(es => { seen = es.some(e => e.isIntersecting); }, { root: el, threshold: 0.35 }); this._lpFlowObs.observe(flow); } else seen = true;
+                if ('IntersectionObserver' in window) { this._lpFlowObs?.disconnect(); this._lpFlowObs = new IntersectionObserver(es => { seen = es.some(e => e.isIntersecting); }, { root: el, rootMargin: '-35% 0px -35% 0px', threshold: 0 }); this._lpFlowObs.observe(flow); /* 手機上這一區比畫面高很多，以前要露出 35% 才算看到，永遠達不到 */ } else seen = true;
                 this._lpFlowT = setInterval(() => { if (!auto || !seen || flow._hold || document.hidden || !this._landingActive) return; i = (i + 1) % 5; set(i); }, 3800);
             }
         } catch (e) {}

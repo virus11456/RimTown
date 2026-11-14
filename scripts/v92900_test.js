@@ -104,7 +104,31 @@ const open = async (browser, o = {}) => {
     ok(m.wide <= m.cw + 1 && m.over.length === 0, `${lang} 手機：不會橫向捲動，沒有東西超出畫面`, m);
     ok(m.title < m.stageTop + 4 && m.stageTop < m.vh && m.card !== 'absolute' && m.links === 'none', `${lang} 手機：標題在上、3D 小鎮在第一屏、決定卡放在小鎮下面`, m);
     ok(m.cta >= 40 && m.btn >= 44, `${lang} 手機：按鈕夠大好按`, { cta: m.cta, btn: m.btn });
+    // 9.29.1 手機上「一個決定是怎麼來的」：這一區比畫面高，以前永遠不算「看到」，停在第 1 步、下面四列淡到 30%；手指點一下也會停住
+    const fp = await page.evaluate(async () => { document.querySelector('.lp-rec').scrollIntoView({ block: 'center' }); const rows = [...document.querySelectorAll('.lp-rec-row')]; const at = () => rows.findIndex(r => r.classList.contains('on'));
+      const op = Math.min(...rows.map(r => parseFloat(getComputedStyle(r).opacity))); const s0 = at(); await new Promise(r => setTimeout(r, 4600)); return { tall: Math.round(document.querySelector('#lp-flow').getBoundingClientRect().height / innerHeight * 10) / 10, op, s0, s1: at() }; });
+    await page.tap('.lp-rec-top'); const s2 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on'))); await page.waitForTimeout(4600);
+    const s3 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on')));
+    ok(fp.op >= 0.99 && fp.s1 !== fp.s0 && s3 !== s2, `${lang} 手機：決定紀錄每一列都看得清楚，捲到這裡步驟會自己往下走，點一下也不會停住`, { ...fp, s2, s3 });
     ok(errs.length === 0, `${lang} 手機：沒有頁面錯誤`, errs.slice(0, 3));
+    await ctx.close();
+  }
+  // 9.29.1 iPhone Pro Max（430 寬）英文、已登入：副標換兩行，把「中文」擠成直排。各寬度、登入前後，上方列每個字都只有一行
+  for (const lang of ['zh', 'en']) {
+    const { ctx, page } = await open(browser, { lang });
+    await page.waitForFunction(() => window.rimtownLanding && window.rimtownLanding.auth, null, { timeout: 30000 }); await page.waitForTimeout(lang === 'en' ? 1200 : 300);
+    const bad = [];
+    for (const w of [320, 360, 390, 414, 430, 600, 768]) {
+      await page.setViewportSize({ width: w, height: 800 });
+      for (const li of [false, true]) {
+        const r = await page.evaluate((li) => { const a = window.rimtownLanding; a.auth.loggedIn = li; try { LANDING3D.unmount(); } catch (e) {} a._renderLanding();
+          const nav = document.querySelector('.lp-top'), sub = nav.querySelector('.lp-brand span'), kids = [nav.querySelector('.lp-brand'), nav.querySelector('.landing-lang'), nav.querySelector('.lp-top-cta')].map(x => x.getBoundingClientRect());
+          const one = (x) => { const fs = parseFloat(getComputedStyle(x).fontSize); return x.getBoundingClientRect().height <= Math.max(parseFloat(getComputedStyle(x).minHeight) || 0, fs * 1.7) + 1; };
+          return { lang: [...nav.querySelectorAll('.landing-lang button')].every(one), cta: one(nav.querySelector('.lp-top-cta')), sub: getComputedStyle(sub).display === 'none', apart: kids[0].right <= kids[1].left + 0.5 && kids[1].right <= kids[2].left + 0.5, inside: kids[2].right <= innerWidth + 0.5 }; }, li);
+        if (!(r.lang && r.cta && r.sub && r.apart && r.inside)) bad.push({ w, li, ...r });
+      }
+    }
+    ok(bad.length === 0, `${lang} 手機與平板（320～768 寬，登入前後）：上方列的語言切換和按鈕都只有一行、不重疊、不超出畫面，副標藏起來`, bad.slice(0, 3));
     await ctx.close();
   }
 
