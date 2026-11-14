@@ -26,7 +26,7 @@ const INVEST = (() => {
     const cash = (w, a) => (a && typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const dep = (w, a) => (a && w.bank?.open ? (w.bank.dep?.[a.agentId] || 0) : 0);
     const MK = () => MARKET, SH = () => SHARES;
-    // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算。擲骰的版本留給直接呼叫(沒有決策核心)的情況
+    // v9.22.0 當家賣不賣、股東退不退，交給本人決定(sim-decide-life.js)；這裡只剩報價和結算
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const nm = (k) => MK().name(k);
 
@@ -114,14 +114,15 @@ const INVEST = (() => {
         try { SH().note?.(w, k, '看利息入股', { a: a.name }); } catch (e) {}
         return { ok: true, k, p, price, boss };
     }
-    function buy(w, a, k, ch) {
+    function buy(w, a, k) {
         const X = S(w); const q = quotes(w, a).find(x => x.k === k); if (!q) return { ok: false };
         const { p, price, boss } = q;
-        if (ch && here(w, boss)) {
+        if (here(w, boss)) { // 當家在鎮上：賣不賣由他自己決定
             if (X.ask[k] && day(w) - X.ask[k].d <= 3) return { ok: false, busy: true, k, boss }; // 已經有人在跟當家談了
             X.ask[k] = { by: a.agentId, d: day(w) }; try { DECIDE.enqueue(w, boss, 'sell', { k, by: a.agentId, src: 'inv' }); } catch (e) { delete X.ask[k]; return { ok: false }; }
             return { ok: false, asked: true, k, p, price, boss };
         }
+        // 當家不在鎮上，問不到本人：照他的個性與交情推估
         const yes = cash(w, boss) < 30 || has(boss, 'greedy') ? 0.85 : (has(boss, 'stubborn') || hasV(boss, '傳統')) ? 0.2 : aff(boss, a) >= 30 ? 0.65 : 0.45;
         if (Math.random() > yes) return refuse(w, a, q);
         return close(w, a, q);
@@ -161,7 +162,6 @@ const INVEST = (() => {
         for (const k of Object.keys(MK().SECTORS)) { if ((X.low[k + '|' + a.agentId] || 0) < 3) continue; const D = outDeal(w, all, k, a.agentId); if (D) return { k, weeks: X.low[k + '|' + a.agentId], y: firmYield(w, k), by: bankYield(w), ...D }; }
         return null;
     }
-    // ch = 交給股東本人決定：這裡只記「連續幾週不如銀行」，不擲骰
     function cashOuts(w, all, d) { // 記下每一份股份連續幾週不如放銀行；要不要退股由股東自己決定(cashOutBy)
         const X = S(w); const M = SH().S(w); const by = bankYield(w); if (!(by > 0) || typeof BANK === 'undefined') return;
         for (const k of Object.keys(MK().SECTORS)) {

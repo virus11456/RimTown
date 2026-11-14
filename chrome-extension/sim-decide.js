@@ -436,7 +436,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             try { if (typeof INVEST !== 'undefined') for (const q of INVEST.quotes(w, a).sort((x, y) => (y.y - x.y)).slice(0, 2)) {
                 const sName = MARKET.name(q.k); const prem = clampN((q.y - q.by - INVEST.hurdle(a)) * 100, -2, 2); // 分紅比銀行利息好多少（已經扣掉這個人要的風險補貼）
                 out.push({ id: 'invest:' + q.k, text: { k: '花 {n} 銀幣向{o}買{s} {p}% 的股份（照現在的生意，一週分紅大約是本錢的 {y}%；銀行存款一週 {r}%）', p: { n: q.price, o: q.boss.name, s: sName, p: q.p, y: pct1(q.y), r: pct1(q.by) } }, say: { k: '花 {n} 銀幣入股{s}', p: { n: q.price, s: sName } }, why: '分紅比銀行利息好，錢要拿去生錢。', base: 0.6 + prem * 0.5, lean: { gain: 0.9, safe: -0.3 },
-                    run: (w2, a2) => { const r = INVEST.buy(w2, a2, q.k, true); /* v9.22.0 賣不賣由當家自己決定(sim-decide-life.js) */ return r.ok ? { k: '買到{s} {p}% 的股份', p: { s: sName, p: r.p } } : r.asked ? { k: '去找{o}談入股了', p: { o: r.boss.name } } : r.refused ? { k: '{o}不肯賣', p: { o: r.boss.name } } : { k: '沒談成' }; } });
+                    run: (w2, a2) => { const r = INVEST.buy(w2, a2, q.k); /* v9.22.0 賣不賣由當家自己決定(sim-decide-life.js) */ return r.ok ? { k: '買到{s} {p}% 的股份', p: { s: sName, p: r.p } } : r.asked ? { k: '去找{o}談入股了', p: { o: r.boss.name } } : r.refused ? { k: '{o}不肯賣', p: { o: r.boss.name } } : { k: '沒談成' }; } });
             } } catch (e) {}
             if (typeof SPEND !== 'undefined') {
                 // 宴客

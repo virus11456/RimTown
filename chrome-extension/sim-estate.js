@@ -15,7 +15,7 @@ const ESTATE = (() => {
     const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'economy', k, p || {}, imp, []); } catch (e) {} };
     const WL = () => (typeof WALLET !== 'undefined' ? WALLET : null);
     const cash = (w, a) => (WL() && a ? WL().get(w, a) : 0);
-    // v9.24.0 屋主要不要拿房子去抵押，交給本人決定(sim-decide-share.js：「手頭很緊」多一個選項)；擲骰的版本留給沒有決策核心的情況
+    // v9.24.0 屋主要不要拿房子去抵押，交給本人決定(sim-decide-share.js：「手頭很緊」多一個選項)
     const tier = (w) => { try { return typeof TIERS !== 'undefined' ? TIERS.level(w) : 0; } catch (e) { return 0; } };
     const land = (w) => { try { return typeof CIVIC !== 'undefined' && CIVIC.landPrice ? CIVIC.landPrice(w) : 50; } catch (e) { return 50; } };
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', Math.round(n * 100) / 100, w.tickCount, why); };

@@ -38,7 +38,7 @@ const COMPETE = (() => {
     const incOf = (w, k, R, all) => MK().workersOf(w, k, all).filter(a => a.agentId !== w.market.owners[k] && !(R && R.emp?.[a.agentId]));
 
     // ---------- 1. 有人在對面開店 ----------
-    // v9.23.0 要不要在對面開店、要不要跳槽，交給本人決定(sim-decide-work.js)；這裡只剩「誰夠格」和結算。擲骰的版本留給直接呼叫 entry()／weekly() 的情況
+    // v9.23.0 要不要在對面開店、要不要跳槽，交給本人決定(sim-decide-work.js)；這裡只剩「誰夠格」和結算
     const openCost = (w, k, all) => Math.round(30 + MK().workersOf(w, k, all).length * 8);
     // 這個人有多想、多適合在這一行開店(不含當天的運氣)
     const drive = (w, a, k, boss) => (has(a, 'greedy') ? 2 : 0) + (has(a, 'hardworking') ? 1 : 0) + (has(a, 'charismatic') ? 1 : 0) + (hasV(a, '財富') ? 2 : 0) + (MK().JOB2S[a.job?.key] === k ? 2 : 0) - (aff(a, boss) > 40 ? 2 : 0);
@@ -76,7 +76,7 @@ const COMPETE = (() => {
         const Mk = MK(); const d = day(w); const all = npcs(w); const I = openInfo(w, a); if (!I || I.k !== k || Mk.rivalOf(w, k)) return null;
         if (!WALLET.take(w, a, I.cost)) return null; return openShop(w, all, k, a, d, null);
     }
-    // ch = 交給本人決定：這裡只記「這一行連幾週好賺」；一個人開不起、要找朋友合夥的那種照舊
+    // 要不要開店交給本人決定：這裡只記「這一行連幾週好賺」；一個人開不起、要找朋友合夥的那種照舊
     function entry(w, all, d) {
         const M = S(w); const Mk = MK();
         for (const k of Object.keys(Mk.SECTORS)) {
@@ -167,7 +167,7 @@ const COMPETE = (() => {
     const fkey = (f) => f.k + (f.rival ? ':R' : '');
     function firmRev(w, f) { const M = S(w); const h = f.rival ? (M.rival[f.k]?.hist || []) : (M.hist[f.k] || []); return h.reduce((s, [r]) => s + r, 0); }
     function firmStaff(w, f, all) { const R = MK().rivalOf(w, f.k); return f.rival ? empOf(w, f.k, R, all) : incOf(w, f.k, R, all); }
-    // 掌櫃揩油(擲骰版與決策核心共用):拿走這家店近期營收的 8%,老闆有三成五的機會查出來
+    // 掌櫃揩油:拿走這家店近期營收的 8%,老闆有三成五的機會查出來
     const skimAmt = (w, f, o) => Math.min(bal(w, o), r2(firmRev(w, f) * 0.08));
     function skim(w, M, key, f, o, m) {
         const Mk = MK(); const amt = skimAmt(w, f, o); if (!(amt >= 1) || !WALLET.take(w, o, amt)) return null; WALLET.add(w, m, amt); M.cst.skim++;

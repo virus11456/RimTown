@@ -53,7 +53,7 @@ const POWER = (() => {
     function richLine(w) { const d = day(w); if (_top.w === w && _top.d === d) return _top.v; const all = npcs(w); const rich = all.map(a => cash(w, a)).sort((x, y) => y - x); _top = { w, d, v: Math.max(100, rich[Math.floor(all.length * 0.08)] || 100) }; return _top.v; }
     const canDonate = (w, a) => tierLv(w) >= 1 && !!WL() && ((isOwner(w, a) && cash(w, a) >= 60) || cash(w, a) >= richLine(w));
     const giftSize = (w, dn) => Math.max(5, Math.min(80, Math.round(cash(w, dn) * 0.08)));
-    // 錢過手(擲骰版和本人決定共用)
+    // 錢過手
     function give(w, dn, tg, n, campaign, d = day(w)) {
         const P = S(w); const Wl = WL(); if (!Wl || !dn || !tg || tg === dn || n < 1 || !Wl.take(w, dn, n)) return false; Wl.add(w, tg, n);
         const m = P.inf[tg.agentId] = P.inf[tg.agentId] || {}; m[dn.agentId] = (m[dn.agentId] || 0) + n;

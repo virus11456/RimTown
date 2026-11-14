@@ -93,7 +93,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       SHARES.enact(w, { kind: 'sh_audit' }); const ch0 = M.sh.st.cheat; fix(0.3, () => SHARES.weekly(w, npcs(), d));
       out.audit = { prop: !!ap, vMinor, vBoss, law: !!M.sh.law.audit, noCheat: M.sh.st.cheat === ch0, kind: !!PROPOSAL_KINDS.sh_audit };
       // 員工認股:工人贊成、當家反對;通過後有存款的工人認購自家產業 5%
-      const wk = MARKET.workersOf(w, K, npcs()).find(a => a.agentId !== A.agentId && !M.shares[K]?.[a.agentId]);
+      const wk = MARKET.workersOf(w, K, npcs()).find(a => a.agentId !== A.agentId && !M.shares[K]?.[a.agentId] && !Object.keys(MARKET.SECTORS).some(k => M.owners[k] === a.agentId)); // 單純的工人(跑了幾週後，有錢的工人可能自己也當了別家的當家，那種人會反對)
       const vWorker = wk ? fix(0.5, () => SHARES.vote(w, { kind: 'sh_staff' }, wk)).v : 'for', vOwner = fix(0.5, () => SHARES.vote(w, { kind: 'sh_staff' }, A)).v;
       M.shares[K] = { [A.agentId]: 80, [Bb.agentId]: 20 }; SHARES.enact(w, { kind: 'sh_staff' }); if (wk) B[wk.agentId] = 2000; const t16 = total();
       const info16 = wk ? SHARES.staffInfo(w, wk) : null; if (wk) fix(0.1, () => SHARES.staffBy(w, wk, K)); out.staff = { info: wk ? info16?.k === K : true, vWorker, vOwner, law: !!M.sh.law.staff, bought: wk ? Object.keys(M.shares[K]).some(h => h !== A.agentId && h !== Bb.agentId && M.shares[K][h] === 5 && MARKET.workersOf(w, K, npcs()).some(x => x.agentId === h)) : true, drift: Math.round((total() - t16) * 100) / 100 };

@@ -31,7 +31,7 @@ const WALLET = (() => {
     const MEAL = MEAL0;
     // 材料折算銀幣(自己出錢 = 把材料錢付給公庫)
     const PRICE = { silver: 1, wood: 2, stone: 3, food: 1, meals: 2, metal: 5, iron: 5, tools: 6, clothing: 6, cloth: 4, medicine: 6, furniture: 8, bread: 2 };
-    // v9.25.0 平常怎麼花錢、提案的錢誰出，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
+    // v9.25.0 平常怎麼花錢、提案的錢誰出，交給本人決定(sim-decide-fun.js)
     // 花錢的習慣:frugal 能省就省(七天花一次)、normal 偶爾花(兩天一次)、indulge 想買就買(天天)
     const HABIT = { frugal: 7, normal: 2, indulge: 1 };
     const habitOf = (w, a) => { const h = w.wallet?.habit?.[a.agentId]; return h && HABIT[h.k] ? h.k : (trait(a, 'greedy') || trait(a, 'ascetic') ? 'frugal' : 'normal'); }; // 還沒拿過主意的人:貪心、克己的省,其他人普通

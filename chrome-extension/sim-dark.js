@@ -167,7 +167,7 @@ const DARK = (() => {
     }
     // ---------- 道歉與原諒 ----------
     const APOLOGY = ['對不起，之前是我不對。', '那件事我一直很過意不去，真的很抱歉。', '我知道說什麼都晚了，但我還是想跟你道歉。'];
-    // v9.20.0 村民自己拿主意時由決策核心決定(sim-decide-soc.js)；這裡只剩「怎麼結算」。下面擲骰的版本留給沒有決策核心的情況
+    // v9.20.0 村民自己拿主意時由決策核心決定(sim-decide-soc.js)；這裡只剩「怎麼結算」
     const wrongById = (w, id) => (S(w).wrongs || []).find(x => x.id === id) || null;
     const wrongId = (w, x) => { const D = S(w); if (!x.id) { D.wn = (D.wn || 0) + 1; x.id = D.wn; } return x.id; };
     // 這筆帳是什麼事(給決策核心看的一句話)。who 做的人、vName 受害的人;整句已經寫好人名的(被拆穿的秘密)就照原句
@@ -370,7 +370,7 @@ const DARK = (() => {
     }
     // ---------- 日常糾紛:買賣、借錢不還、鄰居、情敵(都會變成恩怨) ----------
     const SELLERS = ['trader', 'cook', 'blacksmith', 'tailor', 'carpenter', 'tavern', 'doctor'];
-    // ---------- 朋友之間借的錢:三種結算(擲骰版與決策核心共用) ----------
+    // ---------- 朋友之間借的錢:三種結算 ----------
     function debtRepay(w, d) {
         const l = w.agents[d.l], r = w.agents[d.r]; if (!l || !r) { d.done = true; return false; }
         const W = d.cash && typeof WALLET !== 'undefined' && w.wallet; if (W && !WALLET.pay(w, r, l, d.n)) return false;

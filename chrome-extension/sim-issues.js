@@ -123,7 +123,7 @@ const TOWN_ISSUES = (() => {
         }
     }
     // 真的發生在村民身上的事
-    // v9.23.0 鎮上的事拖著沒人管時，要不要搬走交給本人決定(sim-decide-work.js「想不想離開這個鎮」)；這裡只剩「誰會動這個念頭」和結算。擲骰的版本留給直接呼叫 daily() 的情況
+    // v9.23.0 鎮上的事拖著沒人管時，要不要搬走交給本人決定(sim-decide-work.js「想不想離開這個鎮」)；這裡只剩「誰會動這個念頭」和結算
     // 這個人現在走得了嗎(小孩、鎮長不會自己走；鎮上只剩六個人不走；三天內已經有人為了這種事走了就先不走)
     const canLeave = (w, P, a, day, all) => !!a && (a.age ?? 30) >= 16 /* v9.9.4 小孩不會自己離鎮 */ && !String(a.agentId).startsWith('visit_') && all.length > 6 && (day - (P.issueLeaveDay ?? -99)) >= 3 && a.job?.key !== 'mayor';
     const LEAVE_WHY = { food: '鎮上沒東西吃', misery: '覺得沒人在乎自己', gloom: '鎮上氣氛太差' };

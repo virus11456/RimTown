@@ -254,7 +254,7 @@ const MARKET = (() => {
     }
     const isHungry = (w, a) => (S(w).hungry[a.agentId] || 0);
     function markFed(w, a, fed) { const M = S(w); if (fed) delete M.hungry[a.agentId]; else M.hungry[a.agentId] = (M.hungry[a.agentId] || 0) + 1; }
-    // v9.23.0 餓到活不下去時要不要離鄉，交給本人決定(sim-decide-work.js)；擲骰的版本留給直接呼叫 hunger() 的情況
+    // v9.23.0 餓到活不下去時要不要離鄉，交給本人決定(sim-decide-work.js)
     function leaveHungry(w, a) {
         const M = S(w); if (!a || (a.age || 30) < 16 || !w.leaveTown) return false; M.left = (M.left || 0) + 1;
         log(w, '🎒 {a}在鎮上活不下去，收拾行李去別處討生活。', { a: a.name }, a.name);

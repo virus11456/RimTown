@@ -18,7 +18,7 @@ const BANK = (() => {
     const cash = (w, a) => (W() && w.wallet ? WALLET.get(w, a) : 0);
     const r1 = (n) => Math.round(n * 10) / 10;
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
-    // v9.24.0 擠兌時領不領、債券買不買，交給本人決定(sim-decide-share.js)；擲骰的版本留給沒有決策核心的情況
+    // v9.24.0 擠兌時領不領、債券買不買，交給本人決定(sim-decide-share.js)
     const treasury = (w) => w.stockpile?.get?.('silver') || 0;
     const INTEREST = 0.1; // 紓困借款利息
     function S(w) {

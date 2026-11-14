@@ -54,7 +54,7 @@ const UNION = (() => {
         for (const id of Object.keys(U.members)) mem(w, w.agents[id], id === lead.agentId ? '我帶頭成立了工會，大家團結起來才不會一直被壓榨。' : '我加入了{a}組的工會，希望大家一起爭取到合理的工資。', { a: lead.name }, 7);
         U.history.push({ d, k: 'found', who: lead.name }); return true;
     }
-    // 入會、退會(擲骰版和本人決定共用)
+    // 入會、退會
     function join(w, a, d = day(w)) { const U = S(w); if (!U.on || !a || U.members[a.agentId] || !sectorOf(w, a)) return false; U.members[a.agentId] = d; mem(w, a, '我加入了{u}，大家團結才有籌碼。', { u: U.name }, 6); rel(a, w.agents[U.leader])?.modifyAffinity?.(4); return true; }
     function leave(w, a, why) { const U = S(w); if (!a || !U.members[a.agentId] || U.leader === a.agentId) return false; delete U.members[a.agentId]; delete U.sour[a.agentId];
         mem(w, a, why === 'lost' ? '我退出工會了，罷工根本沒用。' : '日子過得去了，我退出了工會，會費省下來。', {}, why === 'lost' ? 5 : 4); return true; }

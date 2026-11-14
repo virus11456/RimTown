@@ -93,7 +93,7 @@ const FAITH = (() => {
     const bumpP = (w, a, n) => { const f = w.faith?.of?.[a.agentId]; if (f) f.piety = Math.max(0, Math.min(100, f.piety + n)); };
     const tierLv = (w) => (typeof TIERS !== 'undefined' ? TIERS.level(w) : 0);
     const placeOf = (w, R) => SK[R.sk].place[Math.max(0, Math.min(3, tierLv(w)))];
-    // 神職私吞奉獻(擲骰版與決策核心共用):拿走基金的三成,真相頁看得到
+    // 神職私吞奉獻:拿走基金的三成,真相頁看得到
     function embezzle(w, R, priest) { const n = Math.floor(R.fund * 0.3); R.fund -= n; try { WALLET.add(w, priest, n); DARK.secret(w, { kind: 'scheme', culprit: priest.agentId, victim: priest.agentId, k: '{a}從{r}的奉獻裡私吞了 {n} 銀幣', p: { a: priest.name, r: R.name[0], n } }); } catch (e) {} return n; }
     // v9.26.0 給決策核心:管奉獻箱的神職(跟以前擲骰的是同一批人:基金有 40 銀幣以上、不是苦行的人)
     function embezzleInfo(w, a) {
@@ -120,7 +120,7 @@ const FAITH = (() => {
             const poor = npcs(w).filter(a => money(w, a) < 15).sort((x, y) => money(w, x) - money(w, y)).slice(0, 3);
             if (poor.length) { const each = Math.floor(rest / poor.length * 100) / 100; poor.forEach((p, i) => WALLET.add(w, p, i === 0 ? r2(rest - each * (poor.length - 1)) : each)); } else payLocal(w, 'timber', rest, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
     }
-    // v9.22.0 要不要奉獻、奉獻多少，交給信徒本人決定(sim-decide-life.js)；這裡只剩結算。聖堂型每七天的什一是教規，照舊。擲骰的版本留給直接呼叫 daily() 的情況
+    // v9.22.0 要不要奉獻、奉獻多少，交給信徒本人決定(sim-decide-life.js)；這裡只剩結算。聖堂型每七天的什一是教規，照舊
     // 大筆捐獻:神職與同信仰的人對他更有好感(捐錢換聲望)
     function bigGift(w, F, R, a, big) {
         give(w, F, R, big); R.big = (R.big || 0) + 1;

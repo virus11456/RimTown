@@ -59,9 +59,9 @@ async function run(browser, lang) {
 
     // ---------- 2) 有人來談入股 → 當家自己決定 ----------
     clean(); { Bal[B.agentId] = 800; const q = INVEST.quotes(w, B).find(x => x.k === Kf);
-      const r1 = fix(0.01, () => INVEST.buy(w, B, Kf, true)); // 骰子給到「一定賣」的值：也不會替當家決定
+      const r1 = fix(0.01, () => INVEST.buy(w, B, Kf)); // 骰子給到「一定賣」的值：也不會替當家決定
       const C1 = (X.q.find(x => x.kind === 'sell') || {}).ctx;
-      out.ask = { quote: !!q, asked: r1.asked === true, ok: r1.ok, stake: SHARES.pctOf(w, Kf, B.agentId), q: X.q.filter(x => x.kind === 'sell' && x.a === A.agentId).length, pending: !!IV.ask[Kf], busy: INVEST.buy(w, C, Kf, true).busy === true || !INVEST.quotes(w, C).length, ids: C1 && ids(A, 'sell', C1) };
+      out.ask = { quote: !!q, asked: r1.asked === true, ok: r1.ok, stake: SHARES.pctOf(w, Kf, B.agentId), q: X.q.filter(x => x.kind === 'sell' && x.a === A.agentId).length, pending: !!IV.ask[Kf], busy: INVEST.buy(w, C, Kf).busy === true || !INVEST.quotes(w, C).length, ids: C1 && ids(A, 'sell', C1) };
       keep('sell', A, C1);
       const base = { yes: sc(A, 'sell', 'yes', C1), no: sc(A, 'sell', 'no', C1) };
       traits(A, ['hardworking', 'greedy']); const greedy = sc(A, 'sell', 'yes', C1); traits(A, ['hardworking', 'stubborn']); const stubNo = sc(A, 'sell', 'no', C1); traits(A, ['hardworking']);
@@ -72,13 +72,13 @@ async function run(browser, lang) {
       traits(A, ['hardworking', 'greedy']); const q2 = INVEST.askInfo(w, Kf)?.q; /* 貪心的當家開價比較高，同樣的預算買到的比例比較少 */ const a0 = Bal[A.agentId], b0 = Bal[B.agentId]; const cons = conserved(() => drain());
       out.sold = { id: lastLog(A)?.id, kind: lastLog(A)?.kind, stake: SHARES.pctOf(w, Kf, B.agentId), boss: SHARES.pctOf(w, Kf, A.agentId), got: Math.round(Bal[A.agentId] - a0), paid: Math.round(b0 - Bal[B.agentId]), price: q2?.price, p: q2?.p, dearer: q2 && q && q2.price / q2.p > q.price / q.p, cons, log: /📊/.test(logs(6)), pending: !!IV.ask[Kf], still: M.owners[Kf] === A.agentId };
     }
-    clean(); { Bal[B.agentId] = 800; Bal[A.agentId] = 100; traits(A, ['hardworking', 'stubborn']); const af0 = aff(B, A); INVEST.buy(w, B, Kf, true); const b0 = Bal[B.agentId]; drain();
+    clean(); { Bal[B.agentId] = 800; Bal[A.agentId] = 100; traits(A, ['hardworking', 'stubborn']); const af0 = aff(B, A); INVEST.buy(w, B, Kf); const b0 = Bal[B.agentId]; drain();
       out.refused = { id: lastLog(A)?.id, stake: SHARES.pctOf(w, Kf, B.agentId), same: Bal[B.agentId] === b0, cold: aff(B, A) < af0, log: /🙅/.test(logs(6)), pending: !!IV.ask[Kf] }; }
-    clean(); { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf, true); Bal[B.agentId] = 3; const s0 = JSON.stringify(M.shares[Kf]); drain(); // 等的這段時間買的人錢花掉了
+    clean(); { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf); Bal[B.agentId] = 3; const s0 = JSON.stringify(M.shares[Kf]); drain(); // 等的這段時間買的人錢花掉了
       out.gone = { same: JSON.stringify(M.shares[Kf]) === s0, pending: !!IV.ask[Kf], log: !!lastLog(A) };
-      IV.ask[Kf] = { by: C.agentId, d: d0() - 5 }; Bal[B.agentId] = 800; out.gone.expired = INVEST.buy(w, B, Kf, true).asked === true && IV.ask[Kf].by === B.agentId; } // 三天沒下文的舊邀約不擋路
-    // 沒說要問當家（例如當家不在鎮上）：當場談成或被回絕
-    clean(); { Bal[B.agentId] = 800; const r2 = fix(0.01, () => INVEST.buy(w, B, Kf)); out.direct = { ok: r2.ok === true, stake: SHARES.pctOf(w, Kf, B.agentId), q: X.q.length }; }
+      IV.ask[Kf] = { by: C.agentId, d: d0() - 5 }; Bal[B.agentId] = 800; out.gone.expired = INVEST.buy(w, B, Kf).asked === true && IV.ask[Kf].by === B.agentId; } // 三天沒下文的舊邀約不擋路
+    // 當家不在鎮上（問不到本人）：照他的個性與交情推估，當場談成或被回絕
+    clean(); { Bal[B.agentId] = 800; const loc0 = A.currentLocation; A.currentLocation = 'exploration'; const r2 = fix(0.01, () => INVEST.buy(w, B, Kf)); A.currentLocation = loc0; out.direct = { ok: r2.ok === true, stake: SHARES.pctOf(w, Kf, B.agentId), q: X.q.length }; }
     // 眼紅入股：每週流程只記下「有人來談」，當家決定
     clean(); { traits(C, ['hardworking', 'jealous']); Bal[C.agentId] = 2000; Bal[A.agentId] = 100; M.hist[Kf] = Array.from({ length: 7 }, () => [80, 10]);
       fix(0.1, () => SHARES.weekly(w, all, d0())); const C2 = (X.q.find(x => x.kind === 'sell' && x.ctx.src === 'envy') || {}).ctx;
@@ -188,7 +188,7 @@ async function run(browser, lang) {
     const today = () => { X.lastDay = -1; DECIDE.daily(w); };
     const only = (...keepA) => { const s = new Set(keepA.map(a => a.agentId)); for (const a of all) if (!s.has(a.agentId)) for (const k of Object.keys(K)) X.cool[a.agentId + '|' + k] = d0() + 9; };
     const others = (a, keys) => { for (const k of Object.keys(K)) if (!keys.includes(k)) X.cool[a.agentId + '|' + k] = d0() + 9; };
-    clean(); w.fullAgentMode = true; { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf, true); only(A); others(A, ['sell']); prompts = [];
+    clean(); w.fullAgentMode = true; { Bal[B.agentId] = 800; traits(A, ['hardworking', 'greedy']); INVEST.buy(w, B, Kf); only(A); others(A, ['sell']); prompts = [];
       reply = (p) => /想出|is offering/.test(p) ? [{ n: 1, pick: 'b', why: 'W-KEEP', next: 'N-NEXT' }] : null;
       today(); await DECIDE.flush(); await DECIDE.flush(); const e = lastLog(A); const pD = prompts.find(p => /想出|is offering/.test(p)) || '';
       out.ai = { id: e?.id, ai: e?.ai, why: e?.why?.raw, stake: SHARES.pctOf(w, Kf, B.agentId), plan: DECIDE.view(w, A).plan, feed: /🧭/.test(logs(8)), menu: /other＝/.test(pD), money: /【錢】|\[Money\]/.test(pD), cjk: /[一-鿿]/.test(pD), bits: (pD.match(/[^\n]{0,20}[一-鿿][^\n]{0,20}/g) || []).slice(0, 6) }; }
@@ -201,7 +201,7 @@ async function run(browser, lang) {
     ce.fullAgentOk = save.ok; ce._askJson = save.ask; w.fullAgentMode = false;
 
     // ---------- 11) 存讀檔、跑幾天 ----------
-    clean(); { Bal[B.agentId] = 800; INVEST.buy(w, B, Kf, true); SX.ask.farm = { by: C.agentId, pct: 20, price: 50, d: d0() };
+    clean(); { Bal[B.agentId] = 800; INVEST.buy(w, B, Kf); SX.ask.farm = { by: C.agentId, pct: 20, price: 50, d: d0() };
       const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); out.save = { inv: w2.market?.inv?.ask?.[Kf]?.by === B.agentId, envy: w2.market?.sh?.ask?.farm?.by === C.agentId, q: (w2.decide?.q || []).some(x => x.kind === 'sell') }; }
     clean(); { let err = null; try { for (let d = 0; d < 8; d++) for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } } catch (e) { err = String(e.stack || e); }
       out.days = { err, pick: Object.keys(X.pick).filter(k => new RegExp('^(' + NEW.join('|') + ')\\.').test(k)), q: X.q.length }; }
@@ -224,7 +224,7 @@ async function run(browser, lang) {
   ok(r.sold.id === 'yes' && r.sold.kind === 'sell' && r.sold.stake === r.sold.p && r.sold.boss === 100 - r.sold.p && r.sold.got === r.sold.price && r.sold.paid === r.sold.price && r.sold.dearer && r.sold.cons && r.sold.log && !r.sold.pending && r.sold.still, '當家答應：股份和錢真的過手，他還是當家（銀幣守恆）', r.sold);
   ok(r.refused.id === 'no' && r.refused.stake === 0 && r.refused.same && r.refused.cold && r.refused.log && !r.refused.pending, '當家回絕：錢一塊沒動，來談的人對他冷了一點', r.refused);
   ok(r.gone.same && !r.gone.pending && r.gone.expired, '等回話時買的人錢不夠了：不成交；三天沒下文的邀約不擋別人', r.gone);
-  ok(r.direct.ok && r.direct.stake > 0 && r.direct.q === 0, '沒說要問當家時（例如當家不在鎮上）：當場談成', r.direct);
+  ok(r.direct.ok && r.direct.stake > 0 && r.direct.q === 0, '當家不在鎮上、問不到本人時：照他的個性與交情推估，當場談成', r.direct);
   ok(r.envy.asked && r.envy.by && r.envy.stake === 0 && r.envy.ctx && r.envy.ids?.join() === 'yes,no' && r.envy.sold?.id === 'yes' && r.envy.sold.stake > 0 && r.envy.sold.paid > 0 && r.envy.sold.cons && r.envy.sold.log && !r.envy.sold.pending, '眼紅入股：每週流程只記下有人來談，當家答應才成交（銀幣守恆）', r.envy);
   // 退股
   ok(r.out.weeks === 3 && r.out.stake === 30 && r.out.ctx && r.out.boss === null && r.out.ids?.join() === 'keep,out' && r.out.early === null, '分紅連三週不如銀行：只記週數，不替股東賣；不到三週、當家自己都不會遇到', r.out);

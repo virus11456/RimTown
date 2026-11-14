@@ -38,9 +38,9 @@ const SHARES = (function () {
     const SEC = () => Object.keys(M_().SECTORS);
     const MAXH = 6; // v9.8.0 一家最多六個股東(以前四個;通過員工認股以後,自家工人另外可以認股,最多八個)
     const maxH = (w) => (S(w).sh.law.staff ? 8 : MAXH);
-    // v9.22.0 有人眼紅想入股時，當家賣不賣交給本人決定(sim-decide-life.js)；擲骰的版本留給直接呼叫 weekly() 的情況
+    // v9.22.0 有人眼紅想入股時，當家賣不賣交給本人決定(sim-decide-life.js)
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
-    // v9.24.0 買斷股東、帳上動手腳、帶頭合股、工人認股，交給本人決定(sim-decide-share.js)；擲骰的版本留給直接呼叫 weekly()／syndicate() 的情況
+    // v9.24.0 買斷股東、帳上動手腳、帶頭合股、工人認股，交給本人決定(sim-decide-share.js)
 
     function S(w) {
         const M = M_().S(w); M.shares = M.shares && typeof M.shares === 'object' ? M.shares : {};

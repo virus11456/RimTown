@@ -73,7 +73,7 @@ const PRESS = (() => {
         for (const v of npcs(w)) { const best = cands.map(c => ({ c, s: aff(v, w.agents[c.agentId]) + Math.random() * 10 })).sort((a, b) => b.s - a.s)[0]; if (best) tally[best.c.agentId]++; }
         return cands.map(c => ({ c, n: tally[c.agentId] })).sort((a, b) => b.n - a.n);
     }
-    // 收買報社(擲骰版與決策核心共用):隨便找一家還沒被買走的,記者有原則就不收
+    // 收買報社:隨便找一家還沒被買走的,記者有原則就不收
     const BRIBE = 60;
     const freePapers = (R) => R.papers.filter(P => P.st !== 'board' && P.st !== 'crown' && !P.bribedBy && !P.banned);
     function elecOf(w, R, E, d) {

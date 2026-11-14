@@ -269,7 +269,7 @@ const CASINO = (() => {
         if (typeof THINGS !== 'undefined' && C.thing) p *= THINGS.useMult(w, C.thing, a); // v9.0.0 喜不喜歡賭場、有沒有答應家人戒賭
         return Math.min(0.7, p);
     }
-    // v9.25.0 去不去賭、押多少、借不借錢翻本、賭債還不出來怎麼辦、要不要開賭場，交給本人決定(sim-decide-fun.js)；沒有決策核心時照舊擲骰
+    // v9.25.0 去不去賭、押多少、借不借錢翻本、賭債還不出來怎麼辦、要不要開賭場，交給本人決定(sim-decide-fun.js)
     const openCand = (w) => { const px = INFL.p(w); return here(w).filter(a => cash(w, a) >= 250 * px && (has(a, 'greedy') || has(a, 'ambitious') || has(a, 'charismatic')) && a.job?.key !== 'priest').sort((x, y) => cash(w, y) - cash(w, x))[0] || null; };
     function open(w, C, d, who) {
         const px = INFL.p(w); const cand = who || openCand(w);

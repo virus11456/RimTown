@@ -67,7 +67,7 @@ const RIVAL = (() => {
 
     // ---------- 一件一件的事 ----------
     // ---------- 挖角的結算(留下／被挖走) ----------
-    // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)；擲骰的版本留給直接呼叫 event() 的情況
+    // v9.22.0 被挖角時走不走，交給本人決定(sim-decide-life.js「別鎮開高薪來挖角」)
     const here = (w, a) => !!a && !a.isDead && w.agents?.[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
     const canLeave = (w) => npcs(w).length >= 12; // 人太少的小村不會真的被挖空
     function poachStay(w, V, p, a, skill) {

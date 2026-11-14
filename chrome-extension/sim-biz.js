@@ -78,7 +78,7 @@ const BIZ = (() => {
         return { s, other, mine: s.owner === a.agentId, last: Math.round(s.last) };
     }
     function splitBy(w, a) { const I = splitInfo(w, a); return I ? split(w, I.s) : false; }
-    // ch = 要不要拆夥交給本人決定(sim-decide-work.js「合夥的店不賺錢」)
+    // 要不要拆夥交給本人決定(sim-decide-work.js「合夥的店不賺錢」)
     function weekly(w, s) { // 合夥人要不要拆夥由他自己決定(splitBy)
         const o = w.agents[s.owner];
         if (s.week >= 25 && Math.random() < 0.5) mem(w, o, '「{n}」這週生意很好，賺了 {m} 銀幣。', { n: s.name[0], m: Math.round(s.week) }, 5);
