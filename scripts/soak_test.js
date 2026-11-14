@@ -3,7 +3,7 @@
 //   cd chrome-extension && python3 -m http.server 8126 &  ;  node scripts/soak_test.js [http://127.0.0.1:8126] [days=35] [theme=frontier]
 // 用真正的 world.tick() 跑 N 天,每天像玩家一樣做委託/押商隊/聊天意圖/選天賦,每 10 天存檔讀檔接著跑;
 // 檢查:無 page error、物資皆有限數、委託板/考驗/成長/商隊都有在動、getState 可序列化、讀檔後能繼續。
-const BASE = process.argv[2] || 'http://127.0.0.1:8126';
+const BASE = process.argv[2] || (process.env.BASE || 'http://127.0.0.1:8126').replace(/\/$/, '');
 const DAYS = parseInt(process.argv[3] || '35', 10);
 const THEME = process.argv[4] || 'frontier';
 const MODE = process.argv[5] || 'full';

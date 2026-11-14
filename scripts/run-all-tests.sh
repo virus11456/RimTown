@@ -4,15 +4,17 @@
 #       bash scripts/run-all-tests.sh v92 v6771  # 只跑檔名含這些字的
 # 結果：test-results/summary.txt（每支一行：結束碼 名稱 通過/失敗數），各支輸出在 test-results/<名稱>.log
 # 需要本機 8126 服務 chrome-extension/；沒開的話這支腳本會自己開，跑完關掉。
+#       PORT=8137 bash scripts/run-all-tests.sh  # 換一個埠（同一台機器上別的工作區也在跑測試時用，免得連到別人的檔案）
 # 不跑 loopaudit_test（一次要跑很多天的生態檢查，太久；要用時單獨跑）。
 set -u
 cd "$(dirname "$0")/.."
 OUT=test-results; rm -rf "$OUT"; mkdir -p "$OUT"
 PAR=${PAR:-3}; TMO=${TMO:-600}
+PORT=${PORT:-8126}; export BASE=${BASE:-http://localhost:$PORT/}
 
 SRV=""
-if ! curl -s -o /dev/null http://localhost:8126/index.html; then
-  (cd chrome-extension && exec python3 -m http.server 8126 >/dev/null 2>&1) & SRV=$!
+if ! curl -s -o /dev/null "http://localhost:$PORT/index.html"; then
+  (cd chrome-extension && exec python3 -m http.server "$PORT" >/dev/null 2>&1) & SRV=$!
   sleep 1
 fi
 trap '[ -n "$SRV" ] && kill $SRV 2>/dev/null' EXIT

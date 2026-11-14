@@ -66,7 +66,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const tr = npcs().find(a => a.agentId !== B.banker && a !== kid && !a.isPlayer && a.job);
       { const MK = w.market || {}; for (const k of Object.keys(MK.owners || {})) if (MK.owners[k] === tr.agentId) { MK.owners[k] = null; if (MK.shares) delete MK.shares[k]; } for (const sh of Object.values(MK.shares || {})) if (sh && sh[tr.agentId] != null) delete sh[tr.agentId]; } /* v8.7 合股可能讓他當老闆(出門也要發薪):先拿掉 */
       Wl.bal[tr.agentId] = 77; const CL = CLASS.S(w); CL.titles[tr.agentId] = { k: 'knight', day: day }; const BZ = BIZ.S(w);
-      BZ.shops.push({ id: 'BT', type: 'stall', owner: tr.agentId, partner: null, name: ['測試攤', 'Test stall'], price: 3, till: 0, profit: 0, week: 0, opened: day, lossDays: 0, closed: false });
+      BZ.shops.push({ id: 'BT', type: 'curio' /* v9.30.0 雜貨攤拿掉了(跟產業「商行」重疊),改用接手的古玩鋪 */, owner: tr.agentId, partner: null, name: ['測試攤', 'Test stall'], price: 3, till: 0, profit: 0, week: 0, opened: day, lossDays: 0, closed: false });
       B.loans[tr.agentId] = { owed: 25, principal: 25, rate: 0.1, day: day - 40, due: day - 20 }; CIVIC.S(w).jail[tr.agentId] = w._absDay() + 30;
       kid._parentNames = [dying.name, 'someone'];
       w.events._sendAgentTravelling(w, tr, { k: '去外地看看', p: {} }, 3);

@@ -991,6 +991,7 @@ Object.assign(RimTownApp.prototype, {
                 B.biz += `<div class="pp-issues pp-biz"><h4 class="pp-h">🏪 ${t('鎮上的店')} <span class="pp-count">${V.shops.length}</span></h4>`;
                 for (const s2 of V.shops) B.biz += `<div class="pp-tier-line">${s2.icon} <b>${esc(s2.name)}</b> <small>${esc(s2.type)} · ${t('老闆')}${t('：')}${esc(s2.owner)}${s2.partner ? ' · ' + t('合夥人') + t('：') + esc(s2.partner) : ''} · ${t('定價')} ${s2.price} · ${t('累計盈虧')} ${s2.profit}</small></div>`;
                 if (V.closed.length) B.biz += `<div class="pp-issue-hint">${t('倒閉的店')}${t('：')}${V.closed.map(c => esc(c.name)).join(t('、'))}</div>`;
+                B.biz += `<div class="pp-issue-hint">${t('店是村民自己開的小生意，賣大家有閒錢才會買的東西（聽書喝茶、首飾、字畫、藥材），沒有夥計，生意不好就會倒。跟產業不一樣：產業賣的是每天都要買的東西。')}</div>`; // v9.30.0
                 B.biz += `</div>`; } } } catch (e) {}
         }
         if (W('bank')) {
