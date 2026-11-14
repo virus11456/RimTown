@@ -266,7 +266,7 @@ const DECIDE = (() => {
             return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${t('【遇到的事】')}${K.facts(w, o.a, o.ctx)}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
-        const text = `${t('你是模擬小鎮的村民決策引擎。下面幾位村民各自遇到一件要拿主意的事。請替每個人依「他自己的」錢、立場、人際、個性和以前做過的決定，選出他真的會做的那一項。人不一定理性：小氣、衝動、愛面子、記仇、心軟都可以；不必討好任何人，也不必每個人選一樣。')}
+        const text = `${t('你是模擬小鎮的村民決策引擎。下面幾位村民各自遇到一件要拿主意的事。請替每個人依「他自己的」錢、立場、人際、個性和以前做過的決定，選出他真的會做的那一項。人不一定理性：小氣、衝動、愛面子、記仇、心軟都可以；不必討好任何人，也不必每個人選一樣。')}${t('現成的選項如果都不像這個人會做的，就選 other，寫他自己想出來的做法：異想天開、小心眼、賭氣、想討好誰都可以，只要像他。')}
 ${t('【鎮況】')}${String(ce._townBrief(w) || '').slice(0, cap(420, 1200))}
 
 ${people}
@@ -346,7 +346,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
             const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
-            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < AI_KIND && (!cur || bump)) { X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
+            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < AI_KIND && (!cur || bump)) { X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);

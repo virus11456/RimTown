@@ -13218,6 +13218,16 @@
         '後來': 'Then',
         '這一類還沒有東西。': 'Nothing of this kind yet.',
         '選一個人': 'Pick a person',
+        // v9.32.0 心聲卡片與念頭泡泡
+        '心聲': 'Voices',
+        '拿定主意': 'Made up their mind',
+        '「{x}」': '\u201c{x}\u201d',
+        '{a}自己拿了主意': '{a} came up with their own idea',
+        '翻手記': 'Open notebook',
+        '還沒有人不照現成選項、自己拿主意。': 'Nobody has gone off-script with an idea of their own yet.',
+        '還沒有人說出自己的想法。開著「完整智能體模式」讓時間走一陣子，他們遇到事情時說的話會出現在這裡，地圖上也會冒出來。': 'Nobody has spoken their mind yet. Keep Full Agent Mode on and let time pass: what they say when something comes up will appear here and pop up on the map.',
+        '他們遇到事情時自己說的話，都是 AI 當下寫的原句。💡 是他不照現成選項、自己想出來的做法。': 'What they said when something came up, exactly as the AI wrote it. 💡 marks an idea of their own that was not among the given options.',
+        '現成的選項如果都不像這個人會做的，就選 other，寫他自己想出來的做法：異想天開、小心眼、賭氣、想討好誰都可以，只要像他。': ' If none of the given options is what this person would really do, pick other and write what they would come up with themselves: fanciful, petty, spiteful or eager to please is all fine, as long as it is like them.',
         // v9.18.0 全介面改版
         '還沒公布': 'Not announced yet', '已達標': 'Target met', '目標': 'Target', '還剩': 'Left', '每季第 5 天公布這一季的考驗': 'Each season\'s trial is announced on day 5', '季末結算：撐過有永久加成': 'Settled at season end: pass it for a permanent bonus', '沒撐過會有人搬走': 'Fail it and some people move away', '過去的考驗': 'Past trials',
         '單位：{u}': 'Unit: {u}', '（已不在鎮上）': ' (no longer in town)', '（出遠門）': ' (away)', '當年辯論的票數': 'Votes in the path debate', '目前票數': 'Current votes', '產業上限': 'Industry cap', '已開啟': 'Opened', '正在設局': 'Schemes', '謊言': 'Lies', '善意謊言': 'White lies', '誤會': 'Misunderstandings',

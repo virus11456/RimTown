@@ -1519,3 +1519,27 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 @media (prefers-reduced-motion:no-preference){.nb-page{animation:epicIn .22s ease-out}}
 .notes-book .nb-entry{padding:12px 14px}
 .nqc-notes{display:block;width:100%;min-height:44px;margin-top:8px;padding:8px 12px;border-radius:10px;border:1px solid rgba(240,179,90,.45);background:rgba(240,179,90,.10);color:inherit;font:inherit;text-align:left;cursor:pointer}
+/* v9.32.0 心聲卡片（提案頁的「心聲」分頁）與地圖上的念頭泡泡 */
+.pv-chips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 4px 10px}
+.pv-chip{min-height:40px;padding:4px 12px;border-radius:99px;border:1px solid #39435a;background:#222a3a;color:inherit;font:inherit;font-size:13px;cursor:pointer}
+.pv-chip.on{background:#3a2c14;border-color:#f0b35a;color:#f0b35a}
+.pv-chip.pv-book{margin-left:auto}
+.pv-card{border:1px solid #2b3446;border-left:3px solid #74b3f0;border-radius:10px;padding:10px 12px;margin:0 4px 10px;background:rgba(255,255,255,.03)}
+.pv-card.pv-idea{border-left-color:#f0b35a;background:rgba(240,179,90,.07)}
+.pv-top{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:4px}
+.pv-who{min-height:36px;padding:2px 10px;border-radius:99px;border:1px solid #39435a;background:#222a3a;color:#f0b35a;font:inherit;font-weight:600;cursor:pointer}
+.pv-who:disabled{color:#9aa7b8;cursor:default}
+.pv-who:hover:not(:disabled),.pv-who:focus-visible{border-color:#f0b35a}
+.pv-kind{font-size:12px;color:#9aa7b8}.pv-idea .pv-kind{color:#f0b35a}
+.pv-day{font-size:12px;color:#9aa7b8;margin-left:auto}
+.pv-q{font-size:13px;color:#9aa7b8}.pv-what{font-weight:600;margin:2px 0}
+.pv-say{margin:4px 0;line-height:1.7;font-size:15px}.pv-res{font-size:13px;color:#9aa7b8}
+.pv-more{margin-top:6px;min-height:36px;padding:2px 0;border:0;background:none;color:#9aa7b8;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.pv-more:hover,.pv-more:focus-visible{color:#f0b35a}
+.rimtown-container .town3d-overlay > .t3d-thought{max-width:230px;width:max-content;white-space:normal;overflow-wrap:anywhere;word-break:break-word;padding:6px 10px;border-radius:12px;border-bottom-left-radius:3px;background:var(--ob-bubble,rgba(46,42,68,.96));color:var(--text-primary,#fff);border:1px solid #74b3f0;box-shadow:0 3px 10px rgba(0,0,0,.35);font-size:12px;line-height:1.45;pointer-events:auto;cursor:pointer}
+.rimtown-container .t3d-thought b{display:block;color:#74b3f0;font-size:10px;margin-bottom:1px}
+.rimtown-container .town3d-overlay > .t3d-thought.is-idea{border-color:#f0b35a;background:rgba(58,44,20,.97)}
+.rimtown-container .t3d-thought.is-idea b{color:#f0b35a}
+.rimtown-container .town3d-overlay > .t3d-thought.is-think{padding:3px 9px;border-radius:99px;border-color:rgba(255,255,255,.28);background:rgba(30,30,44,.82);color:#cfd6e2;font-size:11px}
+.rimtown-container .t3d-thought.is-think i{font-style:normal;margin-right:4px}
+@media (max-width:820px){.rimtown-container .town3d-overlay > .t3d-thought{max-width:180px;font-size:11px}.pv-chip.pv-book{margin-left:0}}

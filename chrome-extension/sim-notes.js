@@ -5,6 +5,7 @@
 //   2. 他做決定時自己說的理由（AI 回答時親口寫的；程式內建的固定句子不收）
 //   3. 他提過的案、寫過的日記，以及其他系統已經存著的作品（由 SOURCES 讀，不另外複製一份）
 // 不做什麼：不替任何人做決定、不用亂數、不寫記憶、不改好感與錢。只多存一份手記（w.notes，進存檔）。
+// v9.32.0 再加兩樣：心聲卡片（feed，給提案頁的「心聲」分頁）、地圖上的念頭泡泡（onThought，只通知畫面，不存任何東西）。
 // 必須在 simulation.js、sim-decide.js、sim-proposals.js、sim-mind.js、sim-epic.js 之後載入。
 'use strict';
 
@@ -30,10 +31,29 @@ const NOTES = (() => {
     function onDecided(o) {
         const w = o.w; if (!w || !w.observerMode || o.src !== 'ai' || !o.a) return;
         const own = o.why && typeof o.why === 'object' && o.why.raw != null && String(o.why.raw).trim();
-        if (o.op.free) { add(w, { who: o.a.agentId, nm: o.a.name, t: 'idea', q: o.K.title || '', x: o.op.say || o.op.text, y: own ? { raw: String(o.why.raw) } : null, r: o.res || null }); return; }
-        if (!own) return; // AI 沒寫理由時用的是選項內建的句子，那不是他說的，不收
-        add(w, { who: o.a.agentId, nm: o.a.name, t: 'pick', q: o.K.title || '', x: o.op.say || o.op.text, y: { raw: String(o.why.raw) }, r: o.res || null });
+        if (o.op.free) return add(w, { who: o.a.agentId, nm: o.a.name, t: 'idea', q: o.K.title || '', x: o.op.say || o.op.text, y: own ? { raw: String(o.why.raw) } : null, r: o.res || null });
+        if (!own) return null; // AI 沒寫理由時用的是選項內建的句子，那不是他說的，不收
+        return add(w, { who: o.a.agentId, nm: o.a.name, t: 'pick', q: o.K.title || '', x: o.op.say || o.op.text, y: { raw: String(o.why.raw) }, r: o.res || null });
     }
+    // ---------- v9.32.0 念頭：通知畫面（地圖泡泡、角落卡）。只傳話，不存、不改世界、不用亂數 ----------
+    const SUBS = [];
+    const onThought = (f) => { if (typeof f === 'function' && !SUBS.includes(f)) SUBS.push(f); return () => { const i = SUBS.indexOf(f); if (i >= 0) SUBS.splice(i, 1); }; };
+    const tell = (o) => { for (const f of SUBS) { try { f(o); } catch (x) {} } };
+    function onEvent(ev, o) {
+        if (ev === 'thinking') { if (SUBS.length && o?.w?.observerMode && o.a) tell({ w: o.w, kind: 'think', id: o.a.agentId, q: o.K?.title ? render(o.K.title, {}) : '' }); return; }
+        if (ev !== 'decided') return;
+        const e = onDecided(o); if (!SUBS.length || !o?.a) return;
+        if (!e) { tell({ w: o.w, kind: 'clear', id: o.a.agentId }); return; } // 照個性決定、或 AI 沒有自己的話：把「正在想」收掉就好
+        tell({ w: o.w, kind: e.t === 'idea' ? 'idea' : 'say', id: e.who, name: nameOf(o.w, e.who, e.nm), q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r), i: e.i });
+    }
+    // 心聲卡片：最近的幾筆（自己拿的主意＋做決定時自己說的話），新的在前
+    function feed(w, n = 30, only) {
+        const L = S(w).list; const out = [];
+        for (let i = L.length - 1; i >= 0 && out.length < n; i--) { const e = L[i]; if (only && e.t !== only) continue;
+            out.push({ i: e.i, who: e.who, name: nameOf(w, e.who, e.nm), here: !!w.agents?.[e.who] && !w.agents[e.who].isDead, t: e.t, d: e.d, tm: e.tm || '', q: e.q ? render(e.q, {}) : '', what: say(e.x), text: say(e.y), res: say(e.r) }); }
+        return out;
+    }
+    const stats = (w) => { const L = S(w).list; const d = day(w); let ideas = 0, today = 0; for (const e of L) { if (e.t === 'idea') ideas++; if (e.d === d) today++; } return { all: L.length, ideas, today }; };
 
     // ---------- 其他系統已經存著的東西（看的時候才讀，不另外複製） ----------
     // 每個來源回傳這個人的條目：{ d, t, icon, label, title, text, ai, ref }
@@ -113,8 +133,8 @@ const NOTES = (() => {
         el.tabIndex = -1; draw(); document.body.appendChild(el); el.focus();
     }
 
-    if (typeof DECIDE !== 'undefined' && DECIDE.observe) DECIDE.observe((ev, o) => { if (ev === 'decided') { try { onDecided(o); } catch (e) { console.warn('[Notes]', e); } } });
-    return { S, add, entriesOf, people, count, latest, openBook, SOURCES, KIND };
+    if (typeof DECIDE !== 'undefined' && DECIDE.observe) DECIDE.observe((ev, o) => { try { onEvent(ev, o); } catch (e) { console.warn('[Notes]', e); } });
+    return { S, add, entriesOf, people, count, latest, feed, stats, onThought, openBook, SOURCES, KIND };
 })();
 
 // ---- 存讀檔 ----

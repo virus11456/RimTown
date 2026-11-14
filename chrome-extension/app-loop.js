@@ -633,6 +633,15 @@ Object.assign(RimTownApp.prototype, {
         try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
         try { this._ghFab?.(); } catch (e) {} // v6.48.0
     },
+    // v9.32.0 念頭泡泡：村民正在想、說出口、自己拿主意時，地圖上頭頂冒出來；自己拿的主意另外出一張角落卡。只是畫面，不改世界。
+    _hookThoughts() { if (this._thoughtsHooked || typeof NOTES === 'undefined' || !NOTES.onThought) return; this._thoughtsHooked = true; NOTES.onThought((o) => { try { this._onThought(o); } catch (e) {} }); },
+    _onThought(o) {
+        if (!o || o.w !== this.world) return; const tm = this.tileMap; const esc = (x) => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+        if (o.kind === 'clear') { tm?.clearThought?.(o.id); return; }
+        if (o.kind === 'think') { tm?.setThought?.(o.id, { kind: 'think', text: o.q || '…', ms: 30000 }); return; }
+        tm?.setThought?.(o.id, { kind: o.kind, name: o.name, text: o.kind === 'idea' ? o.what : (o.text || o.what), ms: o.kind === 'idea' ? 16000 : 10000, hold: true }); // 等他醒著、看得到時才冒出來
+        if (o.kind === 'idea') this._showCornerNotice({ icon: '💡', title: esc(t('{a}自己拿了主意').replace('{a}', o.name)), name: esc(o.what), desc: o.text ? esc(t('「{x}」').replace('{x}', o.text)) : '', go: { agentId: o.id }, open: () => NOTES.openBook(this, o.id), openLabel: t('翻手記') });
+    },
     _onEventCard(kind, e, npc, text) {
         if (kind === 'played') {
             const go = e.affected?.length ? { agentId: e.affected[0] } : { locId: e.loc || 'town_square' };
