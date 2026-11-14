@@ -125,15 +125,16 @@ const stageC = (id) => {
   for (const [lang, name] of [['zh', '手機中文'], ['en', '手機英文']]) {
     const m = await open(browser, lang, { width: 390, height: 844 }); const A2 = await m.page.evaluate(stageA); const B2 = await m.page.evaluate(stageB);
     ok(A2.asked >= 1 && B2.notes.length >= 2, `${name}：照樣問得到、收得到`, [A2.asked, B2.notes.length]);
-    await m.page.evaluate(() => { const app = window.rimtownApp; try { app._openMobileDrawer?.(); app._setDrawer?.(true); } catch (e) {} app.activeTab = 'proposals'; app._ppTab = 'voices'; app.renderSidebar(); });
+    await m.page.evaluate(() => { const app = window.rimtownApp; app._kairoCardOpen = true; app.activeTab = 'proposals'; app._ppTab = 'voices'; app.renderSidebar(); }); // 手機上面板是浮動卡片，要先打開
     await m.page.waitForTimeout(600);
     const lay = await m.page.evaluate(() => { const tabs = document.querySelector('.pp-tabs'); const wide = document.documentElement.scrollWidth > window.innerWidth + 1; const tr = tabs ? tabs.getBoundingClientRect() : null;
       const small = [...document.querySelectorAll('.pv-chip, .pv-who, .pv-more, .pp-tab')].filter(b => b.offsetParent && b.getBoundingClientRect().height < 36).map(b => b.className + ':' + Math.round(b.getBoundingClientRect().height));
       const over = [...document.querySelectorAll('.pv-card, .pv-chips, .pp-tab')].filter(b => b.offsetParent && b.getBoundingClientRect().right > window.innerWidth + 1).map(b => b.className);
-      return { wide, tabsW: tr ? Math.round(tr.width) : -1, tabsScroll: tabs ? tabs.scrollWidth - tabs.clientWidth : -1, small, over, cards: document.querySelectorAll('.pv-card').length, txt: (document.querySelector('.proposals-panel')?.innerText || '').slice(0, 400) }; });
+      const rw = (b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect().width; }; const cut = tabs ? [...tabs.querySelectorAll('.pp-tab')].filter(b => rw(b) > b.clientWidth + 1).map(b => b.textContent.trim()) : ['no bar']; const shown = [...document.querySelectorAll('.pv-card')].filter(b => b.offsetParent).length;
+      return { wide, cut, shown, small, over, cards: document.querySelectorAll('.pv-card').length, txt: (document.querySelector('.proposals-panel')?.innerText || '').slice(0, 400) }; });
     ok(!lay.wide && lay.over.length === 0, `${name}：沒有橫向捲動，卡片和分頁都在畫面內`, lay);
     ok(lay.small.length === 0, `${name}：按鈕夠大點得到`, lay.small);
-    ok(lay.cards === B2.notes.length, `${name}：卡片都在`, [lay.cards, B2.notes.length]);
+    ok(lay.cards === B2.notes.length && lay.shown === lay.cards && lay.cut.length === 0, `${name}：面板真的打開了，卡片都看得到，子分頁的字沒被切掉`, [lay.cards, B2.notes.length, lay.shown, lay.cut]);
     if (lang === 'en') ok(/Voices/.test(lay.txt) && /Own ideas/.test(lay.txt) && !/心聲|自己拿的主意|拿定主意|翻開他的手記/.test(lay.txt), '英文模式：介面文字是英文（村民寫的原句照原樣）', lay.txt.slice(0, 200));
     await m.page.screenshot({ path: path.join(SHOTS, `mobile-${lang}.png`) }); ok(m.errs.length === 0, `${name}：沒有頁面錯誤`, m.errs.slice(0, 3)); await m.page.context().close();
   }

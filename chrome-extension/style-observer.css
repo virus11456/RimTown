@@ -1527,14 +1527,14 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .pv-card{border:1px solid #2b3446;border-left:3px solid #74b3f0;border-radius:10px;padding:10px 12px;margin:0 4px 10px;background:rgba(255,255,255,.03)}
 .pv-card.pv-idea{border-left-color:#f0b35a;background:rgba(240,179,90,.07)}
 .pv-top{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin-bottom:4px}
-.pv-who{min-height:36px;padding:2px 10px;border-radius:99px;border:1px solid #39435a;background:#222a3a;color:#f0b35a;font:inherit;font-weight:600;cursor:pointer}
+.pv-who{min-height:40px;padding:2px 10px;border-radius:99px;border:1px solid #39435a;background:#222a3a;color:#f0b35a;font:inherit;font-weight:600;cursor:pointer}
 .pv-who:disabled{color:#9aa7b8;cursor:default}
 .pv-who:hover:not(:disabled),.pv-who:focus-visible{border-color:#f0b35a}
 .pv-kind{font-size:12px;color:#9aa7b8}.pv-idea .pv-kind{color:#f0b35a}
 .pv-day{font-size:12px;color:#9aa7b8;margin-left:auto}
 .pv-q{font-size:13px;color:#9aa7b8}.pv-what{font-weight:600;margin:2px 0}
 .pv-say{margin:4px 0;line-height:1.7;font-size:15px}.pv-res{font-size:13px;color:#9aa7b8}
-.pv-more{margin-top:6px;min-height:36px;padding:2px 0;border:0;background:none;color:#9aa7b8;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.pv-more{margin-top:6px;min-height:40px;padding:2px 0;border:0;background:none;color:#9aa7b8;font:inherit;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .pv-more:hover,.pv-more:focus-visible{color:#f0b35a}
 .rimtown-container .town3d-overlay > .t3d-thought{max-width:230px;width:max-content;white-space:normal;overflow-wrap:anywhere;word-break:break-word;padding:6px 10px;border-radius:12px;border-bottom-left-radius:3px;background:var(--ob-bubble,rgba(46,42,68,.96));color:var(--text-primary,#fff);border:1px solid #74b3f0;box-shadow:0 3px 10px rgba(0,0,0,.35);font-size:12px;line-height:1.45;pointer-events:auto;cursor:pointer}
 .rimtown-container .t3d-thought b{display:block;color:#74b3f0;font-size:10px;margin-bottom:1px}
@@ -1543,3 +1543,8 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 .rimtown-container .town3d-overlay > .t3d-thought.is-think{padding:3px 9px;border-radius:99px;border-color:rgba(255,255,255,.28);background:rgba(30,30,44,.82);color:#cfd6e2;font-size:11px}
 .rimtown-container .t3d-thought.is-think i{font-style:normal;margin-right:4px}
 @media (max-width:820px){.rimtown-container .town3d-overlay > .t3d-thought{max-width:180px;font-size:11px}.pv-chip.pv-book{margin-left:0}}
+/* 子分頁變多以後：圖示與文字分開包，英文（標籤長）沒選到的分頁只留圖示和數字 */
+.rimtown-container .pp-tabs .pp-ti{font-style:normal}
+.rimtown-container .pp-tabs .pp-tab{min-width:0}
+.rimtown-container .pp-tabs.pp-icons .pp-tab:not(.on) .pp-tl{display:none}
+.rimtown-container .pp-tabs.pp-icons .pp-tab.on{flex:2 1 auto}
