@@ -452,9 +452,8 @@ class World {
         const cands = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead
             && a.job?.key !== 'mayor' && !a.agentId.startsWith('visit_') && (a.mood || 50) > 40);
         if (!cands.length) return;
-        // v9.28.0 決策核心開著時，被問到的人自己決定去不去（sim-decide-love.js）；不去的話再問一個人
-        if (this._byLove()) { try { DECIDE.enqueue(this, pickRandom(cands), 'visit', { town: target.id, stay: randInt(3, 5), again: 1 }); DECIDE.drain(this, DECIDE.S(this), this._absDay()); } catch (e) { console.warn('[RimTown] visit ask', e); } return; }
-        this.sendVisitorTo(pickRandom(cands), target, randInt(3, 5));
+        // v9.28.0 被問到的人自己決定去不去（sim-decide-love.js）；不去的話再問一個人
+        try { DECIDE.enqueue(this, pickRandom(cands), 'visit', { town: target.id, stay: randInt(3, 5), again: 1 }); DECIDE.drain(this, DECIDE.S(this), this._absDay()); } catch (e) { console.warn('[RimTown] visit ask', e); }
     }
     sendVisitorTo(agent, town, stayDays = 4) {
         if (!agent || agent.isPlayer || agent.agentId.startsWith('visit_') || !town?.id) return false;
@@ -666,7 +665,7 @@ class World {
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
         this._feudCooldown = this._feudCooldown || {};
         const day = this._absDay(); // v6.43.2 含季節(以前換季時天數倒退,季末吵過架的兩人整個下一季都被冷卻擋住)
-        const seen = new Set(); const love = this._byLove();
+        const seen = new Set();
         for (const a of npcs) {
             for (const [tid, rel] of Object.entries(a.relationships.relationships)) {
                 const b = this.agents[tid];
@@ -689,9 +688,7 @@ class World {
                     this.queueDramaScene('severance', a, b);
                     continue;
                 }
-                // (b) 廣場對嗆(每對至少隔 5 天)；v9.28.0 決策核心開著時由本人決定要不要當面吵（sim-decide-love.js）
-                if (!love && rel.affinity <= -35 && relB.affinity <= -35
-                    && (day - (this._feudCooldown[key] || -99)) >= 5 && Math.random() < 0.15) this.publicFeud(a, b);
+                // (b) 廣場對嗆：由本人決定要不要當面吵（v9.28.0，sim-decide-love.js）
             }
         }
     }
@@ -1054,7 +1051,7 @@ class World {
         return legacy;
     }
     _processRelationships() {
-        const love = this._byLove(); // v9.28.0 決策核心開著時，告白、求婚、偷情、分手、離婚由本人決定（sim-decide-love.js），這裡不擲骰
+        // v9.28.0 告白、求婚、偷情、分手、離婚由本人決定（sim-decide-love.js），這裡不擲骰
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer);
         for (const agent of npcs) {
             for (const rel of Object.values(agent.relationships.relationships)) {
@@ -1180,41 +1177,6 @@ class World {
                     if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'rivalry', agent, other);
                 }
 
-                // --- Start Dating ---（v9.28.0 決策核心開著時由本人決定要不要告白，見 sim-decide-love.js）
-                if (!love && !rel.status && !otherRel.status) {
-                    const agentHasPartner = agent.relationships.getPartner();
-                    const otherHasPartner = other.relationships.getPartner();
-                    if (!agentHasPartner && !otherHasPartner &&
-                        rel.romanticInterest > 50 && otherRel.romanticInterest > 35 &&
-                        rel.affinity > 30 && otherRel.affinity > 20 && Math.random() < 0.2) this.startDating(agent, other);
-                }
-
-                // --- Proposal / Marriage (from dating) ---
-                if (!love && rel.status === 'dating' && otherRel.status === 'dating') {
-                    const datingDuration = this.tickCount - rel.statusSince;
-                    // Need to have been dating for a while, high affinity and romantic
-                    if (datingDuration > 300 && rel.affinity > 50 && rel.romanticInterest > 55 &&
-                        otherRel.affinity > 45 && otherRel.romanticInterest > 45 && Math.random() < 0.10) this.marry(agent, other);
-                }
-
-                // --- Cheating ---
-                if (!love && (rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
-                    // Check if agent has high romantic interest in someone else
-                    for (const otherRel2 of Object.values(agent.relationships.relationships)) {
-                        if (otherRel2.targetId === rel.targetId) continue;
-                        const third = this.agents[otherRel2.targetId];
-                        if (!third || third.isPlayer) continue;
-                        const thirdRel = third.relationships.getOrCreate(agent.agentId, agent.name);
-                        // Both need romantic interest, and agent has low affinity with partner or is neurotic/romantic
-                        const isVulnerable = rel.affinity < 20 || agent.personality.traits.includes('romantic') || agent.personality.traits.includes('neurotic');
-                        if (isVulnerable && otherRel2.romanticInterest > 50 && thirdRel.romanticInterest > 40 &&
-                            otherRel2.affinity > 30 && Math.random() < 0.06) { // v5.22.0 加溫:偷情更容易發生(修羅場的火種)
-                            this.startAffair(agent, other, third);
-                            break; // Only one affair at a time
-                        }
-                    }
-                }
-
                 // --- Discovery of cheating leads to breakup/divorce ---
                 if ((rel.status === 'dating' || rel.status === 'married') && !rel.isCheating) {
                     // Check if partner is cheating
@@ -1249,17 +1211,6 @@ class World {
                     }
                 }
 
-                // --- Natural breakup (dating, low affinity) ---
-                if (!love && rel.status === 'dating' && otherRel.status === 'dating') {
-                    const duration = this.tickCount - rel.statusSince;
-                    if (duration > 100 && (rel.affinity < -10 || otherRel.affinity < -10 || (rel.romanticInterest < 15 && otherRel.romanticInterest < 15)) && Math.random() < 0.1) this.breakUp(agent, other);
-                }
-
-                // --- Divorce (married, very low affinity for a long time) ---
-                if (!love && rel.status === 'married' && otherRel.status === 'married') {
-                    const duration = this.tickCount - rel.statusSince;
-                    if (duration > 300 && rel.affinity < -30 && otherRel.affinity < -20 && Math.random() < 0.05) this.divorce(agent, other);
-                }
             }
         }
     }
@@ -1710,7 +1661,7 @@ class World {
 
     // --- v5.1.0 名場面直播:NPC 感情大事件時生成 AI 對話劇,推播給玩家吃瓜 ---
     // ================= v9.28.0 感情：給決策核心問本人用的查詢（xxxCands）與執行；擲骰版也呼叫同一個執行 =================
-    _byLove() { try { return typeof DECIDE !== 'undefined' && !!DECIDE.love && !!DECIDE.on?.(this); } catch (e) { return false; } }
+
     _loveOk(a) { return !!a && !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'); } // 出遠門的人不在 agents 裡
     // 對誰心動、而且看得出對方也有意思（以前就是這個門檻再每天擲 20%）
     confessCands(a) {
