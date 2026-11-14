@@ -2,6 +2,8 @@
 // 用法：
 //   node scripts/watch_record.js record  <天數=120> <城鎮等級=3> <種子=7> <輸出.js>
 //       固定亂數種子建一座城、跑 N 天，把事件追蹤板的資料寫成 tools/event-board/data/ 可以直接載入的 .js
+//   node scripts/watch_record.js repro   <天數>     <城鎮等級=3> <種子=7> [none|loaded|on]
+//       同一種設定跑兩次，確認測試環境自己可以重現；不一樣時印出從第幾天開始分岔
 //   node scripts/watch_record.js compare <天數=60>  <城鎮等級=3> <種子=7>
 //       同一顆種子跑四次：不載入紀錄器（兩次，確認測試環境自己可重現）／載入但沒接上／載入並接上，比較整份存檔的雜湊
 //       （不排除任何欄位）、亂數取用次數、tick、記憶筆數、決策統計、AI 名額。四次必須完全相同（紀錄器不能影響模擬）。
@@ -25,7 +27,12 @@ async function run(browser, watch, days) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 });
   if (watch !== 'none') await page.addScriptTag({ content: fs.readFileSync(WATCH_SRC, 'utf8') });
   const r = await page.evaluate(async ({ TIER, SEED, days, watch }) => {
-    const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = new World(); app.world = w;
+    const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null;
+    // 頁面開機到這裡之間，開機那座隨機小鎮已經照真實時間跑了幾格（跑幾格看機器當時多忙），可能在瀏覽器儲存空間寫了東西
+    // （發現過的鄰鎮登記簿、解鎖紀錄、自動存檔）。模擬會讀這些，所以先清到只剩測試自己設的那幾個鍵，並記下清掉了什麼
+    const boot = { ticks: app.world?.tickCount ?? null, removed: [] };
+    { const keep = new Set(['rimtown-lang', 'rimtown_jwt', 'rimtown_tutorial_done', 'rimtown_invite_ok', 'rimtown_gh_intro', 'rimtown_ui_all', 'rimtown_3d_quality']); for (const k of Object.keys(localStorage)) if (!keep.has(k)) { boot.removed.push(k); localStorage.removeItem(k); } try { sessionStorage.clear(); } catch (e) {} }
+    const w = new World(); app.world = w;
     let s = SEED >>> 0, calls = 0; Math.random = () => { calls++; s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
     // 時間也固定：Date.now() 與 new Date() 都走同一個假時鐘（存檔的 savedAt 用的是 new Date()，只換 Date.now 的話每次跑都不同）
     let clk = 1700000000000; const RealDate = Date; class FixedDate extends RealDate { constructor(...a) { if (a.length) super(...a); else super(clk += 7); } static now() { return (clk += 7); } } window.Date = FixedDate;
@@ -40,12 +47,14 @@ async function run(browser, watch, days) {
     if (watch === 'on') WATCH.attach(w);
     // 整段同步跑完，中途不把控制權交還給瀏覽器。交還的話，畫面更新、計時器和非同步回呼會在不固定的時間點插進來取用亂數，
     // 同一顆種子每次跑出來就不一樣（實測過：連「不載入紀錄器」跑兩次都不同），比較就沒有意義。
-    for (let d = 0; d < days; d++) for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); }
+    const rngDay = []; // 每天結束時亂數一共被取用了幾次：兩次跑的結果不一樣時，用來找是從哪一天開始分岔
+    for (let d = 0; d < days; d++) { for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } rngDay.push(calls); }
     const all = Object.values(w.agents).filter(a => !a.isPlayer);
     const out = { ver: RIMTOWN_APP_VERSION, tick: w.tickCount, day: w._absDay(), rng: calls, pop: all.filter(a => !a.isDead).length, tier: typeof TIERS !== 'undefined' ? TIERS.level(w) : null,
       mem: all.reduce((n, a) => n + (a.memory?.entries?.length || 0), 0), memText: all.map(a => (a.memory?.entries || []).length + ':' + (a.memory?.entries?.slice(-1)[0]?.tick ?? '')).join(','),
       decide: JSON.stringify(DECIDE.S(w).st) + JSON.stringify(DECIDE.S(w).pick), llmUsed: w.npcLlmUsedToday || 0, union: w.union ? { on: w.union.on, strikes: w.union.strikes, won: w.union.won, lost: w.union.lost, hist: (w.union.history || []).map(h => h.k).join(',') } : null,
       mstrikes: w.market?.strikes || 0, prot: w.things?.st?.prot || 0, houses: Object.keys(w.housing?.map || {}).length + ' 人分到 ' + new Set(Object.values(w.housing?.map || {})).size + ' 棟', save: JSON.stringify(w.serialize()) };
+    out.rngDay = rngDay; out.boot = boot; out.lsAfter = Object.keys(localStorage).sort().join(',');
     if (watch === 'on') out.watch = WATCH.export(w, { seed: SEED, tier: TIER, days });
     out.hasWatchKey = Object.keys(w).filter(k => /watch/i.test(k)).length;
     return out;
@@ -69,11 +78,20 @@ async function run(browser, watch, days) {
     const diffPaths = (x, y) => { const out = []; (function d(a, b, p) { if (out.length > 5000) return; if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') { if (a !== b) out.push(p); return; } const ka = Object.keys(a), kb = Object.keys(b); if (ka.length === kb.length && ka.join('\u0001') !== kb.join('\u0001') && ka.slice().sort().join('\u0001') === kb.slice().sort().join('\u0001')) out.push(p + ' (順序)'); for (const k of new Set([...ka, ...kb])) d(a[k], b[k], p + '.' + k); })(x, y, ''); return out; };
     for (const m of ['none2', 'loaded', 'on']) { const dp = diffPaths(rows.none.saveRaw, rows[m].saveRaw); if (dp.length) ok = false;
       console.log(`存檔逐欄比較 none vs ${m}（整份存檔，沒有排除任何欄位）：不同 ${dp.length} 處` + (dp.length ? '  例：' + dp.slice(0, 8).join(' ') : '')); }
+    for (const m of ['none2', 'loaded', 'on']) { const i = rows.none.rngDay.findIndex((v, j) => v !== rows[m].rngDay[j]); if (i >= 0) console.log(`亂數取用次數 none vs ${m}：第 ${i + 1} 天開始不同（${rows.none.rngDay[i]} 對 ${rows[m].rngDay[i]}）`); }
     if (!repro) console.log('基準不可重現時，下面的 PASS／FAIL 不能當成紀錄器有沒有影響模擬的證據。');
+    for (const m of ['none', 'none2', 'loaded', 'on']) console.log(`開機狀態 ${m}：開機那座鎮跑了 ${rows[m].boot.ticks} 格；清掉的儲存鍵 ${rows[m].boot.removed.length} 個` + (rows[m].boot.removed.length ? '（' + rows[m].boot.removed.slice(0, 6).join('、') + '）' : ''));
+    { const v = ['none', 'none2', 'loaded', 'on'].map(m => rows[m].lsAfter); const same = v.every(x => x === v[0]); if (!same) ok = false; console.log((same ? 'SAME ' : 'DIFF ') + '跑完後瀏覽器儲存空間的鍵' + (same ? '' : '  ' + v.map(x => x.slice(0, 80)).join(' | '))); }
     console.log(`errors none/loaded/on: ${rows.none.errs.length}/${rows.loaded.errs.length}/${rows.on.errs.length}; world keys named watch: ${rows.on.hasWatchKey}; AI requests: ${rows.on.net}`);
     console.log(ok && !rows.on.hasWatchKey ? `PASS  紀錄器開關前後完全相同（等級 ${TIER}、種子 ${SEED}、${DAYS} 天）` : 'FAIL  紀錄器影響了模擬');
     await browser.close(); process.exit(ok ? 0 : 1);
   }
+  if (MODE === 'repro') { // 只確認測試環境自己可不可以重現：同一種設定跑兩次（預設不載入紀錄器；第七個參數可指定 none／loaded／on）
+    const kind = process.argv[6] || 'none'; const a = await run(browser, kind, DAYS), b = await run(browser, kind, DAYS); await browser.close();
+    const i = a.rngDay.findIndex((v, j) => v !== b.rngDay[j]); const same = a.saveHash === b.saveHash && i < 0;
+    console.log(JSON.stringify({ kind, days: DAYS, same, firstDiffDay: i < 0 ? null : i + 1, rng: [a.rng, b.rng], boot: [a.boot, b.boot], saveHash: [a.saveHash.slice(0, 12), b.saveHash.slice(0, 12)] }));
+    if (!same) { const out = []; (function d(x, y, p) { if (out.length > 40) return; if (typeof x !== typeof y || x === null || y === null || typeof x !== 'object') { if (x !== y) out.push(p); return; } for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) d(x[k], y[k], p + '.' + k); })(a.saveRaw, b.saveRaw, ''); console.log('存檔不同的欄位（前 40 個）：' + out.join(' ')); }
+    process.exit(same ? 0 : 1); }
   const r = await run(browser, 'on', DAYS); await browser.close();
   const W = r.watch; W.meta.label = `真實遊戲紀錄：等級 ${TIER}、種子 ${SEED}、${DAYS} 天（AI 關閉，規則版）`;
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
