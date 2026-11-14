@@ -68,7 +68,7 @@ async function run(browser, lang) {
       Bal[A.agentId] = 450; const richer = !!K.habit.when(w, A); keep('habitCur', 'habit', A); Bal[A.agentId] = 200; DAY = _ad() + 31; const later = !!K.habit.when(w, A); DAY = null;
       out.habit.run = { res, k: set?.k, c: set?.c, again, richer, later, now: WALLET.habitOf(w, A) };
       // 買點好東西：照習慣幾天花一次（不擲骰）。只讓 A 手頭有餘裕，數 14 天裡花了幾次
-      const _sale = MARKET.sale; let lux = 0; MARKET.sale = function (ww, k, n) { if (k === 'luxury') lux++; return _sale.apply(this, arguments); };
+      const _sale = MARKET.sale; let lux = 0; MARKET.sale = function (ww, k, n) { if (k === 'luxury' && n >= 12) lux++; /* 只數 A 的：他手上 200，一次花十五上下；別人當天收入高、剛好也買的話，手上才七十出頭，一次只花五六塊 */ return _sale.apply(this, arguments); };
       const days = (k, v, fn) => { lux = 0; const base = _ad() + 40; for (let i = 0; i < 14; i++) { DAY = base + i; for (const a of all()) Bal[a.agentId] = 30; Bal[A.agentId] = 200; if (k) Wl.habit[A.agentId] = { k, d: DAY, c: 200 }; Wl.lastDay = null; fn(() => fix(v, () => WALLET.daily(w))); } DAY = null; return lux; };
       const same = (f) => f();
       out.habit.lux = { indulge: days('indulge', 0.99, same), normal: days('normal', 0.99, same), frugal: days('frugal', 0.99, same) };
