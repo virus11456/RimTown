@@ -324,7 +324,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         { const live = []; for (const o of list) {
             if (P0.get(o.a.agentId)?.tok !== o.tok) continue;
             const a = w.agents[o.a.agentId]; const ctx = (a && !a.isDead && inTown(w, a)) ? (K.scan ? whenOf(w, a, K) : o.ctx) : null; const opts = ctx ? optsOf(w, a, K, ctx) : [];
-            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
+            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
             o.a = a; o.ctx = ctx; o.opts = opts; live.push(o); }
           if (!live.length) { drain(w, X, d); return; } list = live; }
         try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 120); } } catch (e) { j = null; }
@@ -332,8 +332,8 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         list.forEach((o, i) => {
             if (P0.get(o.a.agentId)?.tok !== o.tok) return; // 等太久，已經先照個性決定了
             P0.delete(o.a.agentId); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
-            const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) return; // 等的這段時間事情已經過去了
-            const opts = optsOf(w, a, K, ctx); if (!opts.length) return;
+            const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) { if (OBS.length) emit('dropped', { w, a, K }); return; } // 等的這段時間事情已經過去了
+            const opts = optsOf(w, a, K, ctx); if (!opts.length) { if (OBS.length) emit('dropped', { w, a, K }); return; }
             const row = Array.isArray(j) ? (j.find(r => parseInt(r?.n, 10) === i + 1) || null) : null;
             let e = null; try { if (row) e = applyAi(w, X, a, K, ctx, opts, row, d); } catch (x) { console.warn('[Decide] ai', x); }
             if (!e) { if (aiOn(w) || j) X.st.aiMiss++; resolveRule(w, X, { a, K, ctx, opts }, d); }

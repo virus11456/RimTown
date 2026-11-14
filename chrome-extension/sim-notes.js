@@ -41,6 +41,7 @@ const NOTES = (() => {
     const tell = (o) => { for (const f of SUBS) { try { f(o); } catch (x) {} } };
     function onEvent(ev, o) {
         if (ev === 'thinking') { if (SUBS.length && o?.w?.observerMode && o.a) tell({ w: o.w, kind: 'think', id: o.a.agentId, q: o.K?.title ? render(o.K.title, {}) : '' }); return; }
+        if (ev === 'dropped') { if (SUBS.length && o?.a) tell({ w: o.w, kind: 'clear', id: o.a.agentId }); return; } // 問到一半事情過去了：把「正在想」收掉
         if (ev !== 'decided') return;
         const e = onDecided(o); if (!SUBS.length || !o?.a) return;
         if (!e) { tell({ w: o.w, kind: 'clear', id: o.a.agentId }); return; } // 照個性決定、或 AI 沒有自己的話：把「正在想」收掉就好
