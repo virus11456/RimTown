@@ -31,8 +31,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const a of all) B[a.agentId] = 5; M.owners[K] = null; delete M.shares[K]; M.hist[K] = [];
       const price = SHARES.valueOf(w, K); B[A.agentId] = Math.round(price * 0.55); B[Bb.agentId] = Math.round(price * 0.5); B[C.agentId] = Math.round(price * 0.5);
       tr(A, ['hardworking']); setAff(Bb, A, 60); setAff(C, A, 50); setAff(D, A, -10);
-      const t0 = total(); fix(0.1, () => SHARES.syndicate(w, npcs(), d)); const s1 = SHARES.stakes(w, K);
-      out.syn = { owner: M.owners[K] === A.agentId, holders: Object.keys(s1).length, sum: Object.values(s1).reduce((x, y) => x + y, 0), lead: s1[A.agentId] >= Math.max(...Object.values(s1)), drift: Math.round((total() - t0) * 100) / 100, st: M.sh.st.syn, log: (w.messageLog || []).slice(-6).some(m => /🤝/.test(String(m.content || ''))) };
+      const t0 = total(); fix(0.1, () => SHARES.syndicate(w, npcs(), d)); const synWait = !M.owners[K] && SHARES.synInfo(w, A)?.lead === A; /* 每天的流程不替人湊錢：帶不帶頭由他自己決定 */ fix(0.1, () => SHARES.synBy(w, A, K)); const s1 = SHARES.stakes(w, K);
+      out.syn = { wait: synWait, owner: M.owners[K] === A.agentId, holders: Object.keys(s1).length, sum: Object.values(s1).reduce((x, y) => x + y, 0), lead: s1[A.agentId] >= Math.max(...Object.values(s1)), drift: Math.round((total() - t0) * 100) / 100, st: M.sh.st.syn, log: (w.messageLog || []).slice(-6).some(m => /🤝/.test(String(m.content || ''))) };
       // 2) 每週分紅:照股份分利潤的六成
       M.shares[K] = { [A.agentId]: 50, [Bb.agentId]: 30, [C.agentId]: 20 }; M.owners[K] = A.agentId; tr(A, ['kind']); B[A.agentId] = 500; B[Bb.agentId] = 50; B[C.agentId] = 50;
       M.hist[K] = Array.from({ length: 7 }, () => [30, 10]); const prof = SHARES.profit7(w, K); const b0 = B[Bb.agentId], c0 = B[C.agentId]; const t2 = total();
@@ -40,10 +40,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.div = { b: Math.round((B[Bb.agentId] - b0) * 100) / 100, c: Math.round((B[C.agentId] - c0) * 100) / 100, expB: Math.round(prof * 0.6 * 0.3 * 100) / 100, drift: Math.round((total() - t2) * 100) / 100 };
       // 3) 做假帳:貪心的當家少分,細心的股東抓到;不嘴硬就把錢吐回去
       tr(A, ['greedy']); tr(Bb, ['perfectionist']); M.shares[K] = { [A.agentId]: 50, [Bb.agentId]: 30, [C.agentId]: 20 }; M.owners[K] = A.agentId; B[A.agentId] = 500; setAff(Bb, A, 20); setAff(A, Bb, 20); M.sh.angry = {};
-      const b1 = B[Bb.agentId]; const t3 = total(); fix(0.05, () => SHARES.weekly(w, npcs(), d));
-      out.cheat = { caught: M.sh.st.caught >= 1, gotFull: Math.round((B[Bb.agentId] - b1) * 100) / 100, exp: Math.round(prof * 0.6 * 0.3 * 100) / 100, affDrop: (Bb.relationships.relationships[A.agentId]?.affinity || 0) < 20, drift: Math.round((total() - t3) * 100) / 100 };
+      const b1 = B[Bb.agentId]; const t3 = total(); const ch3 = M.sh.st.cheat; fix(0.05, () => SHARES.weekly(w, npcs(), d)); const honest = M.sh.st.cheat === ch3; /* 沒打定主意：照實分 */
+      const b1b = B[Bb.agentId]; SHARES.cookBy(w, A, K); fix(0.05, () => SHARES.weekly(w, npcs(), d));
+      out.cheat = { honest, cooked: M.sh.st.cheat === ch3 + 1, caught: M.sh.st.caught >= 1, gotFull: Math.round((B[Bb.agentId] - b1b) * 100) / 100, exp: Math.round(prof * 0.6 * 0.3 * 100) / 100, affDrop: (Bb.relationships.relationships[A.agentId]?.affinity || 0) < 20, drift: Math.round((total() - t3) * 100) / 100 };
       // 嘴硬:不吐錢,其他股東也生氣
-      tr(A, ['greedy', 'stubborn']); M.sh.angry = {}; setAff(C, A, 20); fix(0.05, () => SHARES.weekly(w, npcs(), d));
+      tr(A, ['greedy', 'stubborn']); M.sh.angry = {}; setAff(C, A, 20); SHARES.cookBy(w, A, K); fix(0.05, () => SHARES.weekly(w, npcs(), d));
       out.deny = { angryC: !!(M.sh.angry[K] || {})[C.agentId], angryB: !!(M.sh.angry[K] || {})[Bb.agentId] };
       // 4) 股東會奪權:不滿的股東加起來比當家多
       M.shares[K] = { [A.agentId]: 40, [Bb.agentId]: 35, [C.agentId]: 25 }; M.owners[K] = A.agentId; M.sh.angry[K] = { [Bb.agentId]: d, [C.agentId]: d };
@@ -56,11 +57,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.rescue = { sold: (s5[A.agentId] || 0) < 100, boss: M.owners[K] === A.agentId, unpaid: M.unpaid[A.agentId] === 0, cash: B[A.agentId] > 2, buyer: Object.keys(s5).find(h => h !== A.agentId) === D.agentId, drift: Math.round((total() - t5) * 100) / 100 };
       // 6) 眼紅入股:生意好,有錢又眼紅的人出高價
       M.shares[K] = { [A.agentId]: 100 }; M.owners[K] = A.agentId; tr(A, ['greedy']); B[A.agentId] = 10; tr(E, ['jealous']); B[E.agentId] = 3000; M.hist[K] = Array.from({ length: 7 }, () => [40, 5]);
-      const t6 = total(); fix(0.1, () => SHARES.weekly(w, npcs(), d)); const s6 = SHARES.stakes(w, K);
-      out.buy = { holders: Object.keys(s6).length, fan: Object.keys(s6).some(h => h !== A.agentId), st: M.sh.st.buy, drift: Math.round((total() - t6) * 100) / 100 };
+      const t6 = total(); DECIDE.S(w).q = []; fix(0.1, () => SHARES.weekly(w, npcs(), d)); const asked6 = M.sh.ask[K]?.by === E.agentId && Object.keys(SHARES.stakes(w, K)).length === 1 && DECIDE.S(w).q.some(x => x.kind === 'sell' && x.a === A.agentId); /* 先問當家，還沒成交 */ DECIDE.S(w).q = []; const sold6 = fix(0.1, () => SHARES.answerBuy(w, K, true)); const s6 = SHARES.stakes(w, K);
+      out.buy = { asked: asked6, sold: sold6, holders: Object.keys(s6).length, fan: Object.keys(s6).some(h => h !== A.agentId), st: M.sh.st.buy, drift: Math.round((total() - t6) * 100) / 100 };
       // 7) 拆夥:翻臉,當家買斷
       M.shares[K] = { [A.agentId]: 70, [C.agentId]: 30 }; M.owners[K] = A.agentId; B[A.agentId] = 3000; setAff(A, C, -60); setAff(C, A, -60); M.hist[K] = Array.from({ length: 7 }, () => [5, 5]); const t7 = total();
-      fix(0.1, () => SHARES.weekly(w, npcs(), d)); out.split = { only: Object.keys(SHARES.stakes(w, K)).length === 1, st: M.sh.st.split, drift: Math.round((total() - t7) * 100) / 100 };
+      fix(0.1, () => SHARES.weekly(w, npcs(), d)); const kept7 = Object.keys(SHARES.stakes(w, K)).length === 2 && SHARES.buyoutInfo(w, A)?.o === C; /* 每週流程不替當家買斷 */ SHARES.buyoutBy(w, A, K, C.agentId); out.split = { kept: kept7, only: Object.keys(SHARES.stakes(w, K)).length === 1, st: M.sh.st.split, drift: Math.round((total() - t7) * 100) / 100 };
       // 8) 整家被賣給外人:舊當家把賣價照股份分給股東
       M.shares[K] = { [A.agentId]: 60, [Bb.agentId]: 40 }; M.owners[K] = A.agentId; const before = {}; for (const k of Object.keys(MARKET.SECTORS)) before[k] = { own: M.owners[K === k ? k : k], s: M.shares[k] ? JSON.parse(JSON.stringify(M.shares[k])) : null };
       const v8 = SHARES.valueOf(w, K); B[A.agentId] = v8 + 5; const bb8 = B[Bb.agentId]; M.owners[K] = E.agentId; SHARES.reconcile(w, before);
@@ -86,7 +87,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       M.sh.law = {}; w.proposals.items = (w.proposals.items || []).filter(p => !/^sh_/.test(p.kind));
       M.shares[K] = { [A.agentId]: 50, [Bb.agentId]: 30, [C.agentId]: 20 }; for (const x of [A, Bb, C]) if (!w.agents[x.agentId]) w.agents[x.agentId] = x;
       M.owners[K] = A.agentId; tr(A, ['greedy']); tr(Bb, ['perfectionist']); B[A.agentId] = 500; M.hist[K] = Array.from({ length: 7 }, () => [30, 10]);
-      fix(0.05, () => SHARES.weekly(w, npcs(), d)); const ap = (w.proposals.items || []).find(p => p.kind === 'sh_audit');
+      SHARES.cookBy(w, A, K); fix(0.05, () => SHARES.weekly(w, npcs(), d)); const ap = (w.proposals.items || []).find(p => p.kind === 'sh_audit');
       for (const k of Object.keys(MARKET.SECTORS)) if (k !== K && M.owners[k] === Bb.agentId) M.owners[k] = null; /* 別家的當家會反對,這裡只看小股東 */
       const vMinor = fix(0.5, () => SHARES.vote(w, { kind: 'sh_audit' }, Bb)).v, vBoss = fix(0.5, () => SHARES.vote(w, { kind: 'sh_audit' }, A)).v;
       SHARES.enact(w, { kind: 'sh_audit' }); const ch0 = M.sh.st.cheat; fix(0.3, () => SHARES.weekly(w, npcs(), d));
@@ -95,7 +96,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const wk = MARKET.workersOf(w, K, npcs()).find(a => a.agentId !== A.agentId && !M.shares[K]?.[a.agentId]);
       const vWorker = wk ? fix(0.5, () => SHARES.vote(w, { kind: 'sh_staff' }, wk)).v : 'for', vOwner = fix(0.5, () => SHARES.vote(w, { kind: 'sh_staff' }, A)).v;
       M.shares[K] = { [A.agentId]: 80, [Bb.agentId]: 20 }; SHARES.enact(w, { kind: 'sh_staff' }); if (wk) B[wk.agentId] = 2000; const t16 = total();
-      fix(0.1, () => SHARES.staffBuy(w, npcs())); out.staff = { vWorker, vOwner, law: !!M.sh.law.staff, bought: wk ? Object.keys(M.shares[K]).some(h => h !== A.agentId && h !== Bb.agentId && M.shares[K][h] === 5 && MARKET.workersOf(w, K, npcs()).some(x => x.agentId === h)) : true, drift: Math.round((total() - t16) * 100) / 100 };
+      const info16 = wk ? SHARES.staffInfo(w, wk) : null; if (wk) fix(0.1, () => SHARES.staffBy(w, wk, K)); out.staff = { info: wk ? info16?.k === K : true, vWorker, vOwner, law: !!M.sh.law.staff, bought: wk ? Object.keys(M.shares[K]).some(h => h !== A.agentId && h !== Bb.agentId && M.shares[K][h] === 5 && MARKET.workersOf(w, K, npcs()).some(x => x.agentId === h)) : true, drift: Math.round((total() - t16) * 100) / 100 };
       // 15) 介面
       M.shares[K] = { [A.agentId]: 60, [Bb.agentId]: 40 }; M.owners[K] = A.agentId; app._setPaused?.(true);
       const mobile = innerWidth <= 768; if (mobile && app._openKairoTab) app._openKairoTab('industry'); else { app.activeTab = 'industry'; app.renderSidebar(); } await new Promise(r => setTimeout(r, 400));
@@ -104,14 +105,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       return out;
     });
     const zh = lang === 'zh';
-    ok(r.syn.owner && r.syn.holders >= 2 && r.syn.sum === 100 && r.syn.lead && r.syn.drift === 0 && r.syn.st >= 1 && r.syn.log, '招股：沒人一個人買得起，帶頭的人找交情好的朋友合股買下，股份照出資、帶頭的人最多、由他當家；錢進公庫、銀幣守恆', r.syn);
+    ok(r.syn.wait && r.syn.owner && r.syn.holders >= 2 && r.syn.sum === 100 && r.syn.lead && r.syn.drift === 0 && r.syn.st >= 1 && r.syn.log, '招股：沒人一個人買得起，帶頭的人找交情好的朋友合股買下，股份照出資、帶頭的人最多、由他當家；錢進公庫、銀幣守恆', r.syn);
     ok(Math.abs(r.div.b - r.div.expB) < 0.6 && r.div.c > 0 && r.div.drift === 0, '每週分紅：利潤的六成照股份分給股東', r.div);
-    ok(r.cheat.caught && r.cheat.affDrop && Math.abs(r.cheat.gotFull - r.cheat.exp) < 1 && r.cheat.drift === 0, '做假帳：貪心的當家少分，細心的股東翻帳本抓到；不嘴硬的當家把錢補回去', r.cheat);
+    ok(r.cheat.honest && r.cheat.cooked && r.cheat.caught && r.cheat.affDrop && Math.abs(r.cheat.gotFull - r.cheat.exp) < 1 && r.cheat.drift === 0, '做假帳：當家沒打定主意就照實分；打定主意少分，細心的股東翻帳本抓到；不嘴硬的當家把錢補回去', r.cheat);
     ok(r.deny.angryC && r.deny.angryB, '嘴硬的當家死不認帳，其他股東也跟著生氣', r.deny);
     ok(r.oust.owner && r.oust.st >= 1 && r.oust.safe, '股東會：不滿的股東加起來比當家多就換人當家；當家股份過半拉不下來', r.oust);
     ok(r.rescue.sold && r.rescue.boss && r.rescue.unpaid && r.rescue.cash && r.rescue.buyer && r.rescue.drift === 0, '賣股週轉：當家欠薪沒錢，先賣一部分股份給有錢人發工資，自己還是當家', r.rescue);
-    ok(r.buy.holders === 2 && r.buy.fan && r.buy.st >= 1 && r.buy.drift === 0, '眼紅入股：生意好，有錢又眼紅的人出高價買股份', r.buy);
-    ok(r.split.only && r.split.st >= 1 && r.split.drift === 0, '拆夥：當家和股東翻臉，當家買斷對方的股份', r.split);
+    ok(r.buy.asked && r.buy.sold === 'sold' && r.buy.holders === 2 && r.buy.fan && r.buy.st >= 1 && r.buy.drift === 0, '眼紅入股：生意好，有錢又眼紅的人出高價來談，當家答應就成交', r.buy);
+    ok(r.split.kept && r.split.only && r.split.st >= 1 && r.split.drift === 0, '拆夥：當家和股東翻臉，當家買斷對方的股份', r.split);
     ok(Math.abs(r.sold.cut - r.sold.exp) < 1 && r.sold.reset, '整家被賣給外人：舊當家把賣價照股份分給其他股東', r.sold);
     ok(r.leave.boss && r.leave.sum === 100 && r.leave.noA, '當家搬走：由股份最多的股東接手（不會直接變公營）', r.leave);
     ok(r.inh.heir && r.inh.noC && r.inh.boss, '股東過世：股份由配偶繼承', r.inh);
@@ -120,7 +121,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.ach.length, '成就：合股做生意、股東會變天', r.ach);
     ok(!r.runErr && r.run.sums && r.run.bossIn, '真的跑 15 天：不出錯，每家持股加起來 100%、當家一定是股東', { e: r.runErr, run: r.run });
     ok(r.audit.prop && r.audit.vMinor === 'for' && r.audit.vBoss === 'against' && r.audit.law && r.audit.noCheat && r.audit.kind, '提案：做假帳醜聞後有人提「產業帳本公開」，小股東贊成、當家反對；通過後很少人敢動手腳', r.audit);
-    ok(r.staff.vWorker === 'for' && r.staff.vOwner === 'against' && r.staff.law && r.staff.bought && r.staff.drift === 0, '提案：「員工認股」工人贊成、當家反對；通過後有存款的工人認購自家產業 5%', r.staff);
+    ok(r.staff.vWorker === 'for' && r.staff.vOwner === 'against' && r.staff.law && r.staff.info && r.staff.bought && r.staff.drift === 0, '提案：「員工認股」工人贊成、當家反對；通過後有存款的工人認購自家產業 5%', r.staff);
     ok(r.ui.sec && r.ui.holders && r.ui.meta && !r.ui.undef && !r.ui.cjk.length && !r.ui.overflow, `介面：產業列出股東與持股、股份統計（${zh ? '中文' : '英文'}、${W}px）`, r.ui);
     ok(!errs.length, '沒有錯誤', errs.slice(0, 3));
     await ctx.close();

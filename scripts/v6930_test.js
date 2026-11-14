@@ -27,35 +27,37 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const o of all.slice(9)) if (o.job?.key === 'farmer') o.job = new Job('guard');
       M.owners = M.owners || {}; for (const k of Object.keys(MARKET.SECTORS)) M.owners[k] = null; M.owners.farm = boss.agentId; M.pay.farm = 0.6;
       // 1) 組工會
-      TIERS.S(w); w.tierState.lv = 1; U.on = false; withR(0.01, () => UNION.found(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d)); out.noUnionInTown = !U.on;
-      w.tierState.lv = 2; withR(0.01, () => UNION.found(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d));
-      out.founded = U.on && Object.keys(U.members).length >= 4 && !!w.agents[U.leader]; out.uname = U.name;
+      // 帶不帶頭、入不入會由本人決定：這裡替他們拿主意(每日流程不會自己組起來)
+      const X = DECIDE.S(w); const ans = (how) => { const asked = U.ask.farm != null; const r = asked ? UNION.answer(w, 'farm', how) : null; X.q = []; return r; }; /* 老闆對加薪要求的回答 */
+      TIERS.S(w); w.tierState.lv = 1; U.on = false; out.noUnionInTown = !workers.some(a => UNION.canOrganize(w, a)) && !U.on;
+      w.tierState.lv = 2; U.lastDay = -1; withR(0.01, () => UNION.daily(w)); const noAuto = !U.on; const lead0 = workers.find(a => UNION.canOrganize(w, a)); if (lead0) { UNION.start(w, lead0, [], d); for (const a of workers) UNION.join(w, a, d); }
+      out.founded = noAuto && !!lead0 && U.on && Object.keys(U.members).length >= 4 && !!w.agents[U.leader]; out.uname = U.name;
       for (const a of workers) U.members[a.agentId] = d; const L = w.agents[U.leader];
       // 2) 會費
       for (const a of workers) Wl.bal[a.agentId] = 50; const f0 = U.fund; UNION.dues(w); out.dues = U.fund > f0;
       // 3) 談判:心腸軟、賺錢的老闆讓步
-      Wl.bal[boss.agentId] = 5000; M.hist.farm = [[500, 10]]; U.talks = {}; const p0 = M.pay.farm; withR(0.01, () => UNION.bargain(w, all, d)); out.deal = M.pay.farm > p0;
+      Wl.bal[boss.agentId] = 5000; M.hist.farm = [[500, 10]]; U.talks = {}; const p0 = M.pay.farm; withR(0.01, () => UNION.bargain(w, all, d)); const asked3 = U.ask.farm != null && M.pay.farm === p0; /* 先問老闆，還沒結果 */ out.deal = asked3 && ans('yes') === 'deal' && M.pay.farm > p0;
       // 4) 吝嗇老闆拒絕 → 工會罷工;只有會員罷工、沒工資
       M.pay.farm = 0.6; boss.personality.traits = ['greedy']; U.talks = {}; U.fund = 500; L.personality.traits = (L.personality.traits || []).filter(x => x !== 'greedy'); Wl.bal[L.agentId] = 100;
       const scab = workers[workers.length - 1]; delete U.members[scab.agentId];
-      withR(0.9, () => UNION.bargain(w, all, d)); out.strike = !!U.strike.farm; out.memberIdle = UNION.idle(w, workers[1]) || UNION.idle(w, workers[2]); out.scabWorks = !UNION.idle(w, scab);
+      withR(0.9, () => { UNION.bargain(w, all, d); ans('no'); }); out.strike = !!U.strike.farm; out.memberIdle = UNION.idle(w, workers[1]) || UNION.idle(w, workers[2]); out.scabWorks = !UNION.idle(w, scab);
       const sm = workers.find(a => U.members[a.agentId] && a !== L) || workers[1]; const b0 = Wl.bal[sm.agentId], s0 = Wl.bal[scab.agentId]; MARKET.payroll(w, Wl, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead)); out.noPay = Wl.bal[sm.agentId] === b0; out.scabPaid = Wl.bal[scab.agentId] > s0;
       // 5) 罷工補貼 + 老闆撐不住讓步
       const sp0 = Wl.bal[sm.agentId], fd0 = U.fund; withR(0.01, () => UNION.strikeDay(w, d + 1)); out.strikePay = Wl.bal[sm.agentId] > sp0 && U.fund < fd0; out.won = !U.strike.farm && M.pay.farm > 0.6;
       // 6) 罷工失敗:基金見底
-      M.pay.farm = 0.6; U.talks = {}; U.fund = 500; withR(0.9, () => UNION.bargain(w, all, d + 20)); U.fund = 0; const lost0 = U.lost; withR(0.99, () => UNION.strikeDay(w, d + 21)); out.lost = U.lost > lost0 && !U.strike.farm;
+      M.pay.farm = 0.6; U.talks = {}; U.fund = 500; withR(0.9, () => { UNION.bargain(w, all, d + 20); ans('no'); }); U.fund = 0; const lost0 = U.lost; withR(0.99, () => UNION.strikeDay(w, d + 21)); out.lost = U.lost > lost0 && !U.strike.farm;
       // 7) 收買領袖(真相頁)
-      M.pay.farm = 0.6; U.talks = {}; U.strike = {}; L.personality.traits = [...(L.personality.traits || []), 'greedy']; const lb0 = Wl.bal[L.agentId]; withR(0.3, () => UNION.bargain(w, all, d + 40));
+      M.pay.farm = 0.6; U.talks = {}; U.strike = {}; L.personality.traits = [...(L.personality.traits || []), 'greedy']; const lb0 = Wl.bal[L.agentId]; withR(0.3, () => { UNION.bargain(w, all, d + 40); ans('bribe'); });
       const sec = (DARK.S(w).secrets || []).find(x => x.kind === 'union_bribe' && x.culprit === L.agentId); out.bribe = !!sec && Wl.bal[L.agentId] > lb0;
       // 8) 收賄曝光 → 領袖被趕下台
       if (sec) sec.found = true; for (const a of workers) U.members[a.agentId] = d; delete U.members[scab.agentId]; UNION.membership(w, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead), d + 41); out.ousted = U.leader && U.leader !== L.agentId;
       // 9) 開除帶頭的人
       const L2 = w.agents[U.leader]; L2.personality.traits = (L2.personality.traits || []).filter(x => x !== 'greedy'); Wl.bal[L2.agentId] = 100; M.pay.farm = 0.6; U.talks = {}; U.strike = {}; U.fund = 0;
-      withR(0.5, () => UNION.bargain(w, all, d + 60)); out.fired = Object.keys(U.firedUntil).length > 0 && Object.keys(U.firedUntil).some(id => UNION.idle(w, w.agents[id]));
+      withR(0.5, () => { UNION.bargain(w, all, d + 60); ans('fire'); }); out.fired = Object.keys(U.firedUntil).length > 0 && Object.keys(U.firedUntil).some(id => UNION.idle(w, w.agents[id]));
       // 10) 選舉:會員投領袖、不投老闆;老闆不投工會領袖
       const voter = workers.find(a => U.members[a.agentId] && a.agentId !== U.leader); out.biasMember = UNION.bias(w, voter, U.leader); out.biasBossCand = UNION.bias(w, voter, boss.agentId); out.biasBoss = UNION.bias(w, boss, U.leader);
       // 11) 工會推領袖選鎮長
-      try { const E = w.election; if (E) { E.active = false; withR(0.01, () => E._startElection(w)); out.unionCand = (E.candidates || []).some(c => c.agentId === U.leader && c.union); out.elecDbg = { c: (E.candidates || []).map(c => [c.agentId, !!c.union]), L: U.leader, m: Object.keys(U.members).length, res: E._residents(w).length, on: U.on, lv: TIERS.level(w) }; E.active = false; E.phase = null; } } catch (e) { out.elecErr = e.message; }
+      try { const E = w.election; if (E) { E.active = false; (X.run = X.run || {})[U.leader] = { d: w._absDay(), y: 1 }; /* 領袖說了要選 */ withR(0.01, () => E._startElection(w)); out.unionCand = (E.candidates || []).some(c => c.agentId === U.leader && c.union); out.elecDbg = { c: (E.candidates || []).map(c => [c.agentId, !!c.union]), L: U.leader, m: Object.keys(U.members).length, res: E._residents(w).length, on: U.on, lv: TIERS.level(w) }; E.active = false; E.phase = null; } } catch (e) { out.elecErr = e.message; }
       // 12) AI、詳情、經濟頁
       const CE = Object.create(ConversationEngine.prototype); out.brief = (CE._agentBrief(w, voter, null).mem || []).join(' | '); out.bossBrief = (CE._agentBrief(w, boss, null).mem || []).join(' | ');
       const save = app.world; app.state = w.getState(); app.selectedAgent = voter.agentId; const box = document.createElement('div'); box.style.width = (window.innerWidth < 500 ? 340 : 420) + 'px'; document.body.appendChild(box);
@@ -72,7 +74,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     });
     const zh = lang === 'zh';
     ok(r.noUnionInTown, '還是村莊、城鎮時不會有工會', r.noUnionInTown);
-    ok(r.founded && (zh ? /工人聯合會/.test(r.uname) : /Union/.test(r.uname)), '被壓薪的工人一多，有人號召成立工會', { f: r.founded, n: r.uname });
+    ok(r.founded && (zh ? /工人聯合會/.test(r.uname) : /Union/.test(r.uname)), '被壓薪的工人一多，有人帶頭就能成立工會（每日流程不會自己組）', { f: r.founded, n: r.uname });
     ok(r.dues, '會員每週繳會費存成罷工基金', r.dues);
     ok(r.deal, '工會找賺錢、心腸軟的老闆談，老闆讓步加薪', r.deal);
     ok(r.strike && r.memberIdle && r.scabWorks, '吝嗇老闆拒絕 → 工會罷工；只有會員罷工，沒入會的照常上工', { s: r.strike, m: r.memberIdle, sc: r.scabWorks });
@@ -83,7 +85,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.ousted, '收賄曝光，會員把領袖趕下台、換人帶', r.ousted);
     ok(r.fired, '強硬的老闆開除帶頭的人（兩週沒工作）', r.fired);
     ok(r.biasMember > 0 && r.biasBossCand < 0 && r.biasBoss < 0, '選舉：會員投領袖、不投老闆；老闆不投工會領袖', { m: r.biasMember, b: r.biasBossCand, bb: r.biasBoss });
-    ok(r.unionCand && !r.elecErr, '工會推領袖出來選鎮長', { c: r.unionCand, e: r.elecErr, d: r.elecDbg });
+    ok(r.unionCand && !r.elecErr, '工會領袖說要選就成為候選人，工會表態支持', { c: r.unionCand, e: r.elecErr, d: r.elecDbg });
     ok(zh ? /工會/.test(r.brief) : /union/i.test(r.brief), 'AI 知道自己是工會會員', r.brief);
     ok(zh ? /工會/.test(r.bossBrief) : /union/i.test(r.bossBrief), '老闆的 AI 知道自己有多少工人入了會', r.bossBrief);
     ok(!r.detailErr && (zh ? /工會|開除/.test(r.detail) : /Union|Fired/i.test(r.detail)), '村民詳情的「生計」寫出工會身分', { d: r.detail, e: r.detailErr });

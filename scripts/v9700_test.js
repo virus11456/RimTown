@@ -25,8 +25,8 @@ async function run(lang) {
     ent.personality.traits = ['greedy', 'hardworking']; WALLET.add(w, ent, 500); ent.relationships.getOrCreate(boss.agentId, boss.name).affinity = 0; // 交情普通(好朋友不太會跟你搶生意) WALLET.add(w, boss, 200);
     M.hist[k] = Array.from({ length: 7 }, () => [120, 10]); M.good[k] = 1; delete w.cycle?.cap;
     // 1. 有人在對面開店
-    { const t0 = T(), b0 = WALLET.get(w, ent); Math.random = () => 0; try { COMPETE.entry(w, all(), d); } finally { Math.random = r0; }
-      const R = MARKET.rivalOf(w, k); out.entry = { open: !!R, owner: R?.owner === ent.agentId, emp: R ? Object.keys(R.emp).length : 0, paid: Math.round(b0 - WALLET.get(w, ent)), total: Math.round((T() - t0) * 100) / 100, price: R?.price, pay: R?.pay }; }
+    { const t0 = T(), b0 = WALLET.get(w, ent); Math.random = () => 0; let waited = false; try { COMPETE.entry(w, all(), d); waited = !MARKET.rivalOf(w, k) && COMPETE.openInfo(w, ent)?.k === k; /* 每週流程只記下這一行好賺，開不開由他自己決定 */ COMPETE.openBy(w, ent, k); } finally { Math.random = r0; }
+      const R = MARKET.rivalOf(w, k); out.entry = { waited, open: !!R, owner: R?.owner === ent.agentId, emp: R ? Object.keys(R.emp).length : 0, paid: Math.round(b0 - WALLET.get(w, ent)), total: Math.round((T() - t0) * 100) / 100, price: R?.price, pay: R?.pay }; }
     // 2. 兩家分客人,打折省下的錢回到村民手上,總數不變
     { const R = MARKET.rivalOf(w, k); for (const a of Object.values(w.agents)) if (!a.isPlayer && !a.isDead) WALLET.get(w, a); /* 剛搬來的人第一次開錢包會帶安家費(記在移民),先開好才不會混進這一筆 */ const bi = WALLET.get(w, boss), br = WALLET.get(w, ent), t0 = T(), sv0 = M.saved || 0; MARKET.sell(w, k, 100, 'test');
       out.split = { share: MARKET.shareOf(w, k), inc: Math.round((WALLET.get(w, boss) - bi) * 100) / 100, riv: Math.round((WALLET.get(w, ent) - br) * 100) / 100, rebate: Math.round(((M.saved || 0) - sv0) * 100) / 100, total: Math.round((T() - t0) * 100) / 100 }; }
@@ -34,7 +34,7 @@ async function run(lang) {
     { const R = MARKET.rivalOf(w, k); const e1 = Object.keys(R.emp)[0]; const ea = w.agents[e1]; const bi = WALLET.get(w, boss), br = WALLET.get(w, ent), be = WALLET.get(w, ea); MARKET.payroll(w, WALLET.S(w), all());
       out.pay = { riv: Math.round((br - WALLET.get(w, ent)) * 100) / 100, emp: Math.round((WALLET.get(w, ea) - be) * 100) / 100, rcost: R.cost }; }
     // 4. 搶工人:對面工資高兩成,工人跳槽;被挖的老闆有賺錢就加薪
-    { const R = MARKET.rivalOf(w, k); R.pay = 1.3; M.pay[k] = 1; const n0 = Object.keys(R.emp).length; R.hist = Array.from({ length: 7 }, () => [60, 10]); Math.random = () => 0; try { COMPETE.weekly(w, all(), d); } finally { Math.random = r0; }
+    { const R = MARKET.rivalOf(w, k); R.pay = 1.3; M.pay[k] = 1; const n0 = Object.keys(R.emp).length; R.hist = Array.from({ length: 7 }, () => [60, 10]); Math.random = () => 0; try { for (const c of cooks) COMPETE.hop(w, c, k); /* 跳不跳槽由工人自己決定：這裡替他們拿主意 */ COMPETE.weekly(w, all(), d); } finally { Math.random = r0; }
       out.poach = { before: n0, after: Object.keys(MARKET.rivalOf(w, k)?.emp || {}).length, incPay: M.pay[k], incPrice: M.price[k] }; }
     // 5. 對手連虧三週又沒錢就收攤,工人回去
     { const R = MARKET.rivalOf(w, k); R.loss = 2; R.hist = Array.from({ length: 7 }, () => [0, 30]); WALLET.take(w, ent, Math.max(0, WALLET.get(w, ent) - 10)); M.hist[k] = Array.from({ length: 7 }, () => [80, 10]);
@@ -68,7 +68,7 @@ async function run(lang) {
   });
   console.log(`\n[${lang}]`);
   if (lang === 'zh') {
-    ok(r.entry.open && r.entry.owner && r.entry.emp >= 1 && r.entry.paid > 0 && r.entry.total === 0, '生意好的產業有人在對面開店、挖人，開店錢付給本地工匠（總數不變）', r.entry);
+    ok(r.entry.waited && r.entry.open && r.entry.owner && r.entry.emp >= 1 && r.entry.paid > 0 && r.entry.total === 0, '生意好的產業有人在對面開店、挖人，開店錢付給本地工匠（總數不變）', r.entry);
     ok(r.entry.price < 1 && r.entry.pay > 1, '開幕打折、工資開得比較高', r.entry);
     ok(r.split.share > 0 && r.split.share < 1 && r.split.inc > 0 && r.split.riv > 0 && r.split.rebate > 0 && r.split.total === 100, '兩家分客人，打折省下的錢回到村民手上（100 銀幣一分不少地分給兩家、營業稅和村民）', r.split);
     ok(r.pay.riv > 0 && r.pay.emp > 0 && r.pay.rcost > 0, '對手店的工人由對手老闆發薪', r.pay);

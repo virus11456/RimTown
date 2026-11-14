@@ -27,10 +27,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 1) 政治獻金:貪心的首長收下
       L.personality.traits = ['greedy']; Wl.bal[boss.agentId] = 500; DARK.S(w);
       for (const a of all) if (a !== boss) Wl.bal[a.agentId] = Math.min(Wl.bal[a.agentId] || 0, 20); const lb0 = Wl.bal[L.agentId] || 0;
-      withR(0.01, () => POWER.donations(w, d)); out.donated = (P.inf[L.agentId] || {})[boss.agentId] > 0 && (Wl.bal[L.agentId] || 0) > lb0;
+      // 捐不捐、收不收由本人決定：金主開口後先問對方，這裡替他回答
+      const X = DECIDE.S(w); const gift = (take) => { X.q = []; const n = POWER.giftSize(w, boss); const r = POWER.offer(w, boss, L, n, false); const q = X.q.find(x => x.kind === 'gift' && x.a === L.agentId); X.q = []; if (r !== 'asked' || !q) return false; if (take) POWER.give(w, boss, L, q.ctx.n, !!q.ctx.camp); else POWER.turnDown(w, boss, L, q.ctx.n); return true; };
+      const can = POWER.canDonate(w, boss); out.asked = can && withR(0.01, () => gift(true)); out.donated = out.asked && (P.inf[L.agentId] || {})[boss.agentId] > 0 && (Wl.bal[L.agentId] || 0) > lb0;
       out.secret = (DARK.S(w).secrets || []).some(x => x.kind === 'donation' && x.culprit === L.agentId && !x.found);
       // 2) 心腸軟又不貪的人拒收
-      const L0 = JSON.stringify(P.inf[L.agentId]); L.personality.traits = ['kind']; const ref0 = P.stats.refused; withR(0.01, () => POWER.donations(w, d + 1)); out.refused = P.stats.refused > ref0 && JSON.stringify(P.inf[L.agentId]) === L0;
+      const L0 = JSON.stringify(P.inf[L.agentId]); L.personality.traits = ['kind']; const ref0 = P.stats.refused; withR(0.01, () => gift(false)); out.refused = P.stats.refused > ref0 && JSON.stringify(P.inf[L.agentId]) === L0;
       // 3) 收了錢:審到對金主不利的案子(最低工資)會偏向反對;投票也是
       P.inf[L.agentId] = { [boss.agentId]: 60 }; const pmw = { kind: 'minwage', votes: {}, why: {}, category: 'welfare' }; out.sway = POWER.sway(w, L, pmw);
       const ps = w.proposals; const lean0 = (() => { const sv = P.inf[L.agentId]; P.inf[L.agentId] = {}; ps._w = w; const v = ps._mayorLean(L, { ...pmw }); P.inf[L.agentId] = sv; return v; })(); ps._w = w; const lean1 = ps._mayorLean(L, { ...pmw }); ps._w = null; out.lean = [lean0, lean1];

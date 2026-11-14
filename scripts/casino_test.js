@@ -51,7 +51,7 @@ async function run(browser, lang, vp) {
       // 重新開張(下一個有錢人)
       for (const a of all) B[a.agentId] = 1; B[boss.agentId] = 600; run1(0.001); pick(boss, 'opencasino', 'open'); out.reopen = C.open;
       // ---------- 4) 家破人亡:輸光、配偶離開、欠銀行的人連夜跑路 ----------
-      B[boss.agentId] = 100000; const vic = gam.find(a => a !== lucky && w.agents[a.agentId]); const sp = all.find(a => a !== vic && a !== boss && a !== lucky && w.agents[a.agentId]);
+      B[boss.agentId] = 100000; const vic = gam.find(a => a !== lucky && w.agents[a.agentId] && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)); /* 要人在鎮上的：出門探險的人不會被問要不要跑路 */ const sp = all.find(a => a !== vic && a !== boss && a !== lucky && w.agents[a.agentId]);
       for (const rr of Object.values(vic.relationships.relationships || {})) if (rr.status === 'married') rr.status = 'friend';
       vic.personality.traits = ['greedy']; vic.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; sp.relationships.getOrCreate(vic.agentId, vic.name).status = 'married';
       for (const a of all) B[a.agentId] = Math.min(B[a.agentId] ?? 0, 4); B[boss.agentId] = 100000; B[vic.agentId] = 5; const d = w._absDay();
@@ -59,7 +59,7 @@ async function run(browser, lang, vp) {
       THINGS.S(w).att[C.thing][vic.agentId] = 90; C.debt[vic.agentId] = { n: 1, day: d }; /* 很愛賭、已經跟莊家賒過帳（不會再賒） */
       const r0 = C.st.ruin, f0 = C.st.fled, dv0 = C.st.divorce; DX.q = []; let asked = null;
       const rc = conserved(() => fix(0.45, () => { pick(vic, 'gamble', 'all'); asked = DX.q.find(q => q.a === vic.agentId && q.kind === 'ruined') || null; DECIDE.drain(w, DX, w._absDay()); })); // 輸光的當下被問要不要跑路，照個性決定
-      out.ruin = { asked: !!asked && asked.ctx?.owes === true, last: (DX.log[vic.agentId] || []).slice(-1)[0]?.id, dbg: { cash: B[vic.agentId], v: C.v[vic.agentId], st: C.streak[vic.agentId], dealer: C.dealer === vic.agentId, owner: C.owner === vic.agentId, open: C.open, mult: THINGS.useMult(w, C.thing, vic), lost: (C.lost[vic.agentId] || []).length }, ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
+      out.ruin = { asked: !!asked && asked.ctx?.owes === true, last: (DX.log[vic.agentId] || []).slice(-1)[0]?.id, dbg: { loc: vic.currentLocation, qLeft: DX.q.length, cash: B[vic.agentId], v: C.v[vic.agentId], st: C.streak[vic.agentId], dealer: C.dealer === vic.agentId, owner: C.owner === vic.agentId, open: C.open, mult: THINGS.useMult(w, C.thing, vic), lost: (C.lost[vic.agentId] || []).length }, ruin: C.st.ruin - r0, divorce: C.st.divorce - dv0, fled: C.st.fled - f0, spouse: sp.relationships.relationships[vic.agentId]?.status, gone: !w.agents[vic.agentId] || w.agents[vic.agentId].isDead || vic.currentLocation === 'left', cons: rc, log: /連吃飯的錢都沒了|can't even afford food/.test(logs()) && /連夜跑路|slipped out of town/.test(logs()) };
       // ---------- 5) 城市以上:外地賭客來玩(觀光收入,從外地流進來) ----------
       for (const a of npcs()) if (a.agentId !== C.owner) B[a.agentId] = 1; TIER = 2; const ownC = B[C.owner]; const M = MONEY.S(w); const day0 = M.days?.[w._absDay()]?.tourism || 0; const t0 = C.st.tourists;
       const tc = conserved(() => run1(0.5)); out.tour = { n: C.st.tourists - t0, owner: B[C.owner] > ownC, flow: (M.days?.[w._absDay()]?.tourism || 0) - day0, cons: tc };
