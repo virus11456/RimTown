@@ -2,6 +2,7 @@
 // 用法：
 //   node scripts/watch_record.js record  <天數=120> <城鎮等級=3> <種子=7> <輸出.js>
 //       固定亂數種子建一座城、跑 N 天，把事件追蹤板的資料寫成 tools/event-board/data/ 可以直接載入的 .js
+//   node scripts/watch_record.js trace   <天數>     <城鎮等級=3> <種子=7> [none|loaded|on]   只跑一次，印出亂數取用次數與存檔雜湊
 //   node scripts/watch_record.js repro   <天數>     <城鎮等級=3> <種子=7> [none|loaded|on]
 //       同一種設定跑兩次，確認測試環境自己可以重現；不一樣時印出從第幾天開始分岔
 //   node scripts/watch_record.js compare <天數=60>  <城鎮等級=3> <種子=7>
@@ -67,7 +68,13 @@ async function run(browser, watch, days) {
 }
 
 (async () => {
-  const browser = await chromium.launch();
+  // 預設關掉瀏覽器的最佳化編譯器（TurboFan、Maglev），只留直譯器與基準編譯器。
+  // 原因（實測）：遊戲有些計算在「最佳化過」與「沒最佳化過」的程式碼裡結果有極小差異，而哪一段程式什麼時候被最佳化，
+  // 取決於整個頁面跑過哪些程式。於是任何跟遊戲無關的程式（紀錄器、量測用的外殼，甚至一行純字串處理）都會讓同一顆種子
+  // 在大約第 150 天之後走向不同。關掉最佳化之後，不載入與接上紀錄器跑 151 天的存檔完全相同。
+  // 要用一般模式跑：WATCH_JIT=1 node scripts/watch_record.js ...
+  const JIT = process.env.WATCH_JIT === '1'; const browser = await chromium.launch(JIT ? {} : { args: ['--js-flags=--no-turbofan --no-maglev'] });
+  console.log(JIT ? '引擎：一般模式（有最佳化編譯器；長時間的結果會被無關的程式影響）' : '引擎：關掉最佳化編譯器（結果不受無關的程式影響，但比較慢）');
   if (MODE === 'compare') {
     const rows = {}; for (const m of ['none', 'none2', 'loaded', 'on']) { rows[m] = await run(browser, m === 'none2' ? 'none' : m, DAYS); delete rows[m].watch; }
     const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'houses', 'saveHash', 'saveBytes']; let ok = true; // net（開機時遊戲自己發的 /api/chat，本機攔下）另外印，不列入比較
@@ -86,6 +93,8 @@ async function run(browser, watch, days) {
     console.log(ok && !rows.on.hasWatchKey ? `PASS  紀錄器開關前後完全相同（等級 ${TIER}、種子 ${SEED}、${DAYS} 天）` : 'FAIL  紀錄器影響了模擬');
     await browser.close(); process.exit(ok ? 0 : 1);
   }
+  if (MODE === 'trace') { // 只跑一次，印出每天結束時亂數取用的次數與存檔雜湊。用來在不同設定之間對照（例如 WATCH_JIT=1 與預設）
+    const kind = process.argv[6] || 'none'; const a = await run(browser, kind, DAYS); await browser.close(); console.log(JSON.stringify({ kind, days: DAYS, jit: JIT, rng: a.rng, saveHash: a.saveHash.slice(0, 16), rngDayLast: a.rngDay.slice(-3) })); process.exit(0); }
   if (MODE === 'repro') { // 只確認測試環境自己可不可以重現：同一種設定跑兩次（預設不載入紀錄器；第七個參數可指定 none／loaded／on）
     const kind = process.argv[6] || 'none'; const a = await run(browser, kind, DAYS), b = await run(browser, kind, DAYS); await browser.close();
     const i = a.rngDay.findIndex((v, j) => v !== b.rngDay[j]); const same = a.saveHash === b.saveHash && i < 0;
@@ -93,7 +102,7 @@ async function run(browser, watch, days) {
     if (!same) { const out = []; (function d(x, y, p) { if (out.length > 40) return; if (typeof x !== typeof y || x === null || y === null || typeof x !== 'object') { if (x !== y) out.push(p); return; } for (const k of new Set([...Object.keys(x), ...Object.keys(y)])) d(x[k], y[k], p + '.' + k); })(a.saveRaw, b.saveRaw, ''); console.log('存檔不同的欄位（前 40 個）：' + out.join(' ')); }
     process.exit(same ? 0 : 1); }
   const r = await run(browser, 'on', DAYS); await browser.close();
-  const W = r.watch; W.meta.label = `真實遊戲紀錄：等級 ${TIER}、種子 ${SEED}、${DAYS} 天（AI 關閉，規則版）`;
+  const W = r.watch; W.meta.label = `真實遊戲紀錄：等級 ${TIER}、種子 ${SEED}、${DAYS} 天（AI 關閉，規則版）`; W.meta.jit = JIT;
   fs.mkdirSync(path.dirname(OUT), { recursive: true });
   fs.writeFileSync(OUT, '// 由 scripts/watch_record.js 產生的真實遊戲紀錄（不是展示資料）。不要手改。\n(window.RIMTOWN_EVENT_DATA = window.RIMTOWN_EVENT_DATA || []).push(' + JSON.stringify(W) + ');\n');
   const by = {}; for (const T of W.threads) { const k = T.type + ':' + (T.outcome?.code || T.stage); by[k] = (by[k] || 0) + 1; }
