@@ -104,6 +104,12 @@ const open = async (browser, o = {}) => {
     ok(m.wide <= m.cw + 1 && m.over.length === 0, `${lang} 手機：不會橫向捲動，沒有東西超出畫面`, m);
     ok(m.title < m.stageTop + 4 && m.stageTop < m.vh && m.card !== 'absolute' && m.links === 'none', `${lang} 手機：標題在上、3D 小鎮在第一屏、決定卡放在小鎮下面`, m);
     ok(m.cta >= 40 && m.btn >= 44, `${lang} 手機：按鈕夠大好按`, { cta: m.cta, btn: m.btn });
+    // 9.29.1 手機上「一個決定是怎麼來的」：這一區比畫面高，以前永遠不算「看到」，停在第 1 步、下面四列淡到 30%；手指點一下也會停住
+    const fp = await page.evaluate(async () => { document.querySelector('.lp-rec').scrollIntoView({ block: 'center' }); const rows = [...document.querySelectorAll('.lp-rec-row')]; const at = () => rows.findIndex(r => r.classList.contains('on'));
+      const op = Math.min(...rows.map(r => parseFloat(getComputedStyle(r).opacity))); const s0 = at(); await new Promise(r => setTimeout(r, 4600)); return { tall: Math.round(document.querySelector('#lp-flow').getBoundingClientRect().height / innerHeight * 10) / 10, op, s0, s1: at() }; });
+    await page.tap('.lp-rec-top'); const s2 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on'))); await page.waitForTimeout(4600);
+    const s3 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on')));
+    ok(fp.op >= 0.99 && fp.s1 !== fp.s0 && s3 !== s2, `${lang} 手機：決定紀錄每一列都看得清楚，捲到這裡步驟會自己往下走，點一下也不會停住`, { ...fp, s2, s3 });
     ok(errs.length === 0, `${lang} 手機：沒有頁面錯誤`, errs.slice(0, 3));
     await ctx.close();
   }
