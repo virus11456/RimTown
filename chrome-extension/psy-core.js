@@ -14,8 +14,16 @@
 //   PSY.validateInput / validateAppraisal / validateChoice
 //   PSY.ReplayEvaluator(fixtures)          人工標記的固定回應重播（只供工程測試，不是角色行為）
 //   PSY.ResearchLog、PSY.diff、PSY.sha256、PSY.stable
+//
+// 界線：只檢查一致性、不替角色決定。
+//   引擎（adapter＋讀取器）負責：事實、確定的算術、資源與執行限制。
+//   評估器（角色）負責：主觀理解、推測、在乎什麼、願意承受哪些代價、最後選哪個。
+//   驗證器只檢查：資訊來源、格式、引用、確定的算術、方案與行動是否一致。
+//   驗證器不要求、也不偏好最理性、最道德、最安全或最符合人格的答案；沒有「什麼處境就該選什麼」的規則，不會要求換答案，
+//   算術寫錯只記錄，不改角色的選擇。
 const PSY = (() => {
     const CONTRACT = 1;
+    const BOUNDARY = '只檢查一致性、不替角色決定';
 
     // ---------------- 小工具：穩定序列化、SHA-256、深凍結、深拷貝 ----------------
     const stable = (v) => {
@@ -63,12 +71,19 @@ const PSY = (() => {
             // 本人是當事人的紀錄（自己借出去／借進來的錢）
             ownLoans() { note('dark.debts[l=self|r=self]', 'self', 'party_to_record'); return clone((w.dark?.debts || []).filter(d => d.l === selfId || d.r === selfId).map(d => ({ l: d.l, r: d.r, n: d.n, day: d.day, due: d.due, done: !!d.done }))); },
             ownBankLoan() { note('bank.loans[self]', 'self', 'party_to_record'); const L = w.bank?.loans?.[selfId]; return L ? { owed: Math.round((L.owed || 0) * 100) / 100 } : null; },
-            // 同住家人：誰是家人是公開的身分關係；家人的病痛視為同一戶看得見的事
-            household() { note('family(spouse/parents/children)', 'household', 'household_identity'); const out = []; const RR = self.relationships?.relationships || {};
-                for (const id of Object.keys(RR).sort()) { const o = w.agents[id]; if (o && !o.isDead && RR[id].status === 'married') out.push({ id, name: o.name, rel: 'spouse', age: o.age ?? null }); }
-                for (const o of Object.values(w.agents).sort((x, y) => String(x.agentId).localeCompare(String(y.agentId)))) { if (!o || o.isDead || o === self) continue; if ((self._parentNames || []).includes(o.name) && !out.some(x => x.id === o.agentId)) out.push({ id: o.agentId, name: o.name, rel: 'parent', age: o.age ?? null }); if ((o._parentNames || []).includes(self.name) && !out.some(x => x.id === o.agentId)) out.push({ id: o.agentId, name: o.name, rel: 'child', age: o.age ?? null }); }
+            // ---- 親屬、同住、病況：三件事分開，由讀取器自己判斷，不接受 adapter 傳進來的名單 ----
+            // 親屬：身分關係（配偶、父母、子女），是公開的事實；知道誰是家人，不代表知道他的私事（包括病況）
+            kin() { note('kinship(spouse/parent/child)', 'public', 'kinship_identity'); const out = []; const RR = self.relationships?.relationships || {};
+                for (const id of Object.keys(RR).sort()) { const o = w.agents[id]; if (o && !o.isDead && RR[id].status === 'married') out.push({ id, name: o.name, rel: 'spouse' }); }
+                for (const o of Object.values(w.agents).sort((x, y) => String(x.agentId).localeCompare(String(y.agentId)))) { if (!o || o.isDead || o === self) continue; if ((self._parentNames || []).includes(o.name) && !out.some(x => x.id === o.agentId)) out.push({ id: o.agentId, name: o.name, rel: 'parent' }); if ((o._parentNames || []).includes(self.name) && !out.some(x => x.id === o.agentId)) out.push({ id: o.agentId, name: o.name, rel: 'child' }); }
                 return out; },
-            ailmentsOf(id, hh) { const ok = isSelf(id) || (hh || []).some(x => x.id === id); if (!ok) throw new BoundaryError('read_other_health:' + id); note('health.a[' + (isSelf(id) ? 'self' : 'household') + ']', isSelf(id) ? 'self' : 'household', 'visible_in_household'); return clone((w.health?.a?.[id] || []).map(x => ({ k: x.k, s: x.s, p: x.p }))); },
+            // 同住：住同一棟房子（遊戲的住房對照）。對照裡沒有本人時一律當作沒有同住的人，不猜。同住也不代表知道對方的病況
+            cohabitants() { note('housing.map[self]==housing.map[x]', 'public', 'same_house'); const M = w.housing?.map || {}; const h = M[selfId]; if (!h) return []; return Object.keys(M).filter(id => id !== selfId && M[id] === h && w.agents[id] && !w.agents[id].isDead).sort(); },
+            // 病況：只有本人自己的。別人的病況（家人、同住的人也一樣）不從健康表讀；本人知道的只有公開消息（publicMessages）和自己的記憶
+            ownAilments() { note('health.a[self]', 'self', 'own_body'); return clone((w.health?.a?.[selfId] || []).map(x => ({ k: x.k, s: x.s, p: x.p, level: x.s >= 2 ? 'heavy' : 'light' }))); },
+            healthOf(id) { if (!isSelf(id)) throw new BoundaryError('read_other_health:' + id); return R.ownAilments(); },
+            // 公開消息：鎮上的訊息紀錄（所有人都看得到）。只回結構化的模板編號與參數，由 adapter 對照成事實
+            publicMessages(types) { note('messageLog[' + (types || []).join('|') + ']', 'public', 'public_news'); return clone((w.messageLog || []).filter(m => m && m.k && (!types || types.includes(m.type))).map(m => ({ d: m.d ?? null, k: m.k, p: m.p || {} }))); },
             // 公開資訊：名字、大致年紀、職業
             publicOf(id) { const o = w.agents?.[id]; note('agent[' + id + '].public', 'public', 'public_identity'); return o ? { id, name: o.name, job: o.job?.key || null, age: o.age ?? null } : null; },
             day() { note('clock.day', 'public', 'calendar'); return typeof w._absDay === 'function' ? w._absDay() : 0; },
@@ -106,16 +121,28 @@ const PSY = (() => {
         try {
             const R = reader(w, event.agent);
             const dom = adapter.build(R, event);
-            const st = R.selfState(); const cashV = R.selfCash(); const hh = R.household(); const nowT = R.tick(); const d = R.day();
+            const st = R.selfState(); const cashV = R.selfCash(); const kin = R.kin(); const co = R.cohabitants(); const nowT = R.tick(); const d = R.day();
             const mems = R.selfMemories();
             const rec = recallPure(mems, dom.focus?.text || '', dom.focus?.names || [], opts.recallN || 6, nowT);
-            const recall = rec.map(x => ({ id: memId(x.e), text: x.e.content, days_ago: Math.round((nowT - x.e.tick) / 96), src: 'memory' }));
-            const self = { id: event.agent, name: st.name, cash: cashV == null ? { id: 's_cash', v: null, status: 'unknown' } : { id: 's_cash', v: cashV }, age: st.age, mood: st.mood, needs: st.needs, traits: st.traits, values: st.values, job: st.job, household: hh, obligations: dom.obligations || [] };
+            // 遊戲偶爾把同一件事在同一刻記兩次（90 天長跑實測）：編號相同時第二筆加序號，資訊照實保留、編號仍然固定
+            const usedM = {}; const recall = rec.map(x => { const b = memId(x.e); usedM[b] = (usedM[b] || 0) + 1; return { id: usedM[b] > 1 ? b + '_' + usedM[b] : b, text: x.e.content, days_ago: Math.round((nowT - x.e.tick) / 96), src: 'memory' }; });
+            // 本人狀態：每一項都有穩定編號，評估器可以引用；引擎只給數值與量尺，不給重要性、權重或該選什麼
+            const items = [];
+            if (st.mood != null) items.push({ id: 's_mood', kind: 'mood', v: st.mood, scale: '-100～100，越高心情越好' });
+            for (const k of Object.keys(st.needs).sort()) items.push({ id: 'need_' + k, kind: 'need', key: k, v: st.needs[k], scale: '0～100，越高越滿足' });
+            // 遊戲資料裡同一特質偶爾重複出現（長跑實測）；重複沒有額外意義，去重後再編號
+            for (const t of [...new Set(st.traits)]) items.push({ id: 'trait_' + t, kind: 'trait', v: t });
+            for (const v of [...new Set(st.values)]) items.push({ id: 'value_' + v, kind: 'value', v });
+            if (st.job) items.push({ id: 's_job', kind: 'job', v: st.job });
+            if (st.age != null) items.push({ id: 's_age', kind: 'age', v: st.age });
+            const nameOf = (id) => w.agents?.[id]?.name || null; // 同住者的名字是公開的
+            const self = { id: event.agent, name: st.name, cash: cashV == null ? { id: 's_cash', v: null, status: 'unknown' } : { id: 's_cash', v: cashV }, items,
+                kin: kin.map(x => ({ id: 'kin_' + x.id, who: x.id, name: x.name, rel: x.rel })), cohabitants: co.map(id => ({ id: 'co_' + id, who: id, name: nameOf(id) })), obligations: dom.obligations || [] };
             const options = (dom.options || []).concat(GENERIC.map(g => clone(g)));
             const body = { contract: CONTRACT, label: dom.label || null, day: d, self, seen: dom.seen || [], recall, views: dom.views || [], options, derived: dom.derived || [] };
             body.versions = { state: hashOf(body.self).slice(0, 16), knowledge: hashOf([body.seen, body.recall, body.views]).slice(0, 16), candidates: hashOf(body.options).slice(0, 16) };
             const ids = { agent: event.agent, event: event.id, decision: event.decision || event.id, world: event.world || null };
-            r = { input: freeze({ ...body, ids }), audit: { manifest: R.manifest, rnd: 0 } };
+            r = { input: freeze({ ...body, ids }), audit: { manifest: R.manifest, rnd: 0, event_sources: adapter.EVENT_SOURCES || null } };
         } catch (e) {
             r = { input: null, audit: { error: e.name === 'BoundaryError' ? 'boundary:' + e.message : 'snapshot_error:' + e.message, rnd: 0 } };
         } finally { Math.random = mr; }
@@ -125,7 +152,7 @@ const PSY = (() => {
     // 所有可以被引用的編號
     function idSet(input) {
         const s = new Set(); if (!input) return s; const add = (x) => x && x.id && s.add(x.id);
-        add(input.self?.cash); (input.self?.obligations || []).forEach(add); (input.seen || []).forEach(add); (input.recall || []).forEach(add); (input.views || []).forEach(add); (input.derived || []).forEach(add);
+        add(input.self?.cash); ['items', 'kin', 'cohabitants', 'obligations'].forEach(k => (input.self?.[k] || []).forEach(add)); (input.seen || []).forEach(add); (input.recall || []).forEach(add); (input.views || []).forEach(add); (input.derived || []).forEach(add);
         (input.options || []).forEach(o => s.add('opt:' + o.opt)); return s;
     }
 
@@ -137,8 +164,8 @@ const PSY = (() => {
         if (input.contract !== CONTRACT) errs.push('contract_mismatch');
         const walk = (v, p) => { if (v && typeof v === 'object') for (const k of Object.keys(v)) { if (FORBIDDEN_INPUT_KEYS.includes(k)) errs.push('forbidden_key:' + p + k); walk(v[k], p + k + '.'); } };
         walk(input, '');
-        const ids = []; const push = (x) => x && x.id && ids.push(x.id); push(input.self?.cash); (input.self?.obligations || []).forEach(push); ['seen', 'recall', 'views', 'derived'].forEach(k => (input[k] || []).forEach(push));
-        if (new Set(ids).size !== ids.length) errs.push('duplicate_ids');
+        const ids = []; const push = (x) => x && x.id && ids.push(x.id); push(input.self?.cash); ['items', 'kin', 'cohabitants', 'obligations'].forEach(k => (input.self?.[k] || []).forEach(push)); ['seen', 'recall', 'views', 'derived'].forEach(k => (input[k] || []).forEach(push));
+        { const seen = new Set(), dup = new Set(); for (const x of ids) { if (seen.has(x)) dup.add(x); seen.add(x); } if (dup.size) errs.push('duplicate_ids:' + [...dup].join(',')); }
         const ops = (input.options || []).map(o => o.opt); if (new Set(ops).size !== ops.length) errs.push('duplicate_options');
         // 對他人的看法：引擎只能提供本人的感受、本人經歷、對方說過的話（承諾不是事實）、轉述、公開資訊、未知；不能替角色推測
         for (const v of input.views || []) if (!VIEW_KINDS.includes(v.kind)) errs.push('view_kind:' + v.id + ':' + v.kind);
@@ -148,7 +175,7 @@ const PSY = (() => {
     const STATUS = ['derived', 'inferred', 'unknown'];
     const nums = (s) => (String(s).match(/-?\d+(?:\.\d+)?/g) || []).map(Number);
     function sourceText(input, id) {
-        const pools = [[input.self?.cash], input.self?.obligations, input.seen, input.recall, input.views, input.derived];
+        const pools = [[input.self?.cash], input.self?.items, input.self?.kin, input.self?.cohabitants, input.self?.obligations, input.seen, input.recall, input.views, input.derived];
         for (const p of pools) for (const x of p || []) if (x && x.id === id) return stable(x);
         if (id.startsWith('opt:')) { const o = (input.options || []).find(z => 'opt:' + z.opt === id); return o ? stable(o) : ''; }
         return '';
@@ -161,17 +188,24 @@ const PSY = (() => {
         if (!Array.isArray(ap.concerns) || !ap.concerns.length) errors.push('no_concerns');
         const cids = new Set(); for (const c of ap.concerns || []) { if (!c.id || cids.has(c.id)) errors.push('concern_id:' + c.id); cids.add(c.id); if (!c.what) errors.push('concern_text:' + c.id); for (const e of c.ev || []) if (!ids.has(e)) errors.push('unknown_source:' + e); if (!(c.ev || []).length) notes.push('concern_without_source:' + c.id); }
         if (!ap.reading || !ap.reading.what) errors.push('no_reading');
-        const optIds = (input.options || []).map(o => o.opt); const covered = new Map();
+        const optIds = (input.options || []).map(o => o.opt); const covered = new Map(); const seenSig = new Set();
         for (const im of ap.impacts || []) {
             if (!optIds.includes(im.opt)) { errors.push('impact_unknown_option:' + im.opt); continue; }
             covered.set(im.opt, (covered.get(im.opt) || 0) + 1);
+            // 有參數的動作要評估「具體參數」：借 30 和借 10 是兩個方案，各自要有後果說明
+            const spec = (input.options.find(o => o.opt === im.opt) || {}).params || {}; const ip = im.params || {};
+            for (const k of Object.keys(ip)) if (!(k in spec)) errors.push('impact_unknown_param:' + im.opt + ':' + k);
+            for (const k of bindingKeys(spec)) { if (!(k in ip)) errors.push('impact_missing_params:' + im.opt + ':' + k); else if (!paramOk(spec[k], ip[k])) errors.push('impact_bad_param:' + im.opt + ':' + k); }
+            const sig = im.opt + '|' + stable(pickKeys(ip, bindingKeys(spec))); if (seenSig.has(sig)) errors.push('duplicate_impact:' + sig); seenSig.add(sig);
             for (const k of ['like', 'dislike']) for (const c of im[k] || []) if (!cids.has(c)) errors.push('impact_unknown_concern:' + im.opt + ':' + c);
+            // 評估器可以寫出它算的「做了之後身上剩多少」；和引擎算的不同時只記錄（算錯是事實錯誤，不是選錯），不作廢、不改選擇
+            if (im.cash_after !== undefined) { const real = costArith(input, im); if (real !== '' && String(im.cash_after) !== real) notes.push('arith_mismatch:' + im.opt + ':' + im.cash_after + '≠' + real); }
             for (const x of im.expect || []) {
                 if (!STATUS.includes(x.status)) errors.push('expect_status:' + im.opt);
                 for (const e of x.ev || []) if (!ids.has(e)) errors.push('unknown_source:' + e);
                 if (x.status === 'derived') {
                     if (!(x.ev || []).length) notes.push('unsupported_assertion:' + im.opt + ':' + x.what);
-                    else { const src = (x.ev || []).map(e => sourceText(input, e)).join(' '); const srcN = new Set(nums(src).map(String)); for (const n of nums(x.what)) if (!srcN.has(String(n))) notes.push('number_not_in_sources:' + im.opt + ':' + n); }
+                    else { const src = (x.ev || []).map(e => sourceText(input, e)).join(' ') + ' ' + stable(im.params || {}) + ' ' + costArith(input, im); const srcN = new Set(nums(src).map(String)); for (const n of nums(x.what)) if (!srcN.has(String(n))) notes.push('number_not_in_sources:' + im.opt + ':' + n); }
                 }
                 if (x.status === 'inferred' && !(x.ev || []).length) notes.push('inference_without_basis:' + im.opt);
             }
@@ -190,6 +224,11 @@ const PSY = (() => {
         if (spec.type === 'agent_or_none') return v === undefined || v === null || typeof v === 'string';
         return false;
     }
+    // 驗證器自己做的成本算術：動作成本寫成 cash: '-amount' 時，「剩多少」＝本人現金 − 參數金額（引擎事實，不涉心理）
+    function costArith(input, im) { const op = (input.options || []).find(o => o.opt === im.opt); const c = input.self?.cash?.v; const amt = im.params?.amount; if (!op || op.cost?.cash !== '-amount' || typeof c !== 'number' || typeof amt !== 'number') return ''; return String(Math.round((c - amt) * 100) / 100); }
+    // 會改變後果的參數（金額、對象）；說話內容這類文字參數不算
+    const bindingKeys = (spec) => Object.keys(spec || {}).filter(k => spec[k] && spec[k].type !== 'text').sort();
+    const pickKeys = (o, ks) => { const r = {}; for (const k of ks) if (o && k in o) r[k] = o[k]; return r; };
     function validateChoice(input, ap, ch) {
         const errors = []; if (!ch || typeof ch !== 'object') return { ok: false, errors: ['not_object'] };
         if (ch.contract !== CONTRACT) errors.push('contract_mismatch');
@@ -199,10 +238,18 @@ const PSY = (() => {
         for (const k of Object.keys(ps)) if (!paramOk(ps[k], given[k])) errors.push('bad_param:' + k);
         const cids = new Set((ap.concerns || []).map(c => c.id)); for (const c of ch.because || []) if (!cids.has(c)) errors.push('because_unknown:' + c);
         if (!(ch.because || []).length) errors.push('no_because');
-        const considered = new Set((ap.impacts || []).map(i => i.opt)); if (!considered.has(ch.opt)) errors.push('chose_unconsidered_option');
+        // 選擇必須是「已評估過的那個方案」：動作相同、會改變後果的參數也相同（評估借 30，不能直接選借 10）
+        const bk = bindingKeys(ps); const mine = stable(pickKeys(given, bk));
+        const sameOpt = (ap.impacts || []).filter(i => i.opt === ch.opt);
+        if (!sameOpt.length) errors.push('chose_unconsidered_option');
+        else if (!sameOpt.some(i => stable(pickKeys(i.params || {}, bk)) === mine)) errors.push('choice_not_evaluated:' + ch.opt + mine);
         for (const k of OUTCOME_KEYS) if (k in ch || (ch.act && k in ch.act)) errors.push('claims_outcome:' + k);
         for (const k of ['concerns', 'impacts', 'reading', 'not_considered']) if (k in ch) errors.push('choice_rewrites_' + k);
-        if (ch.act && ch.act.opt && ch.act.opt !== ch.opt) errors.push('act_mismatch');
+        // act 只是把 opt＋params 再寫一次給世界執行器看；不能多出別的欄位，也不能和 params 矛盾
+        if (ch.act !== undefined) {
+            if (!ch.act || typeof ch.act !== 'object') errors.push('act_not_object');
+            else { if (ch.act.opt !== ch.opt) errors.push('act_mismatch:opt'); for (const k of Object.keys(ch.act)) { if (k === 'opt') continue; if (!(k in ps)) errors.push('act_unknown_key:' + k); else if (stable(ch.act[k]) !== stable(given[k])) errors.push('act_mismatch:' + k); } }
+        }
         return { ok: errors.length === 0, errors };
     }
 
@@ -231,7 +278,7 @@ const PSY = (() => {
         const finish = () => { if (log) log.add(rec); return rec; };
         if (!input) { rec.fail = snap?.audit?.error || 'no_input'; return finish(); }
         const ie = validateInput(input); if (ie.length) { rec.fail = 'invalid_input'; rec.notes = ie; return finish(); }
-        if (cache) for (const ev of chain) { if (!conforms(ev)) continue; const hit = cache.get(cacheKey(input, ev)); if (hit) { Object.assign(rec, { status: 'done', appraisal: hit.appraisal, appraisal_hash: hit.appraisal_hash, choice: hit.choice, evaluator: hit.evaluator, from_cache: true, notes: hit.notes.slice() }); return finish(); } }
+        if (cache) for (const ev of chain) { if (!conforms(ev)) continue; const hit = cache.get(cacheKey(input, ev)); if (hit) { Object.assign(rec, { status: 'done', appraisal: hit.appraisal, appraisal_hash: hit.appraisal_hash, appraisal_versions: hit.appraisal_versions, appraisal_first: hit.appraisal_first, order: hit.order, choice: hit.choice, evaluator: hit.evaluator, from_cache: true, notes: hit.notes.slice() }); return finish(); } }
         for (const ev of chain) {
             const tr = { evaluator: ev && ev.id ? ev.id + '@' + ev.version : 'unknown', fail: null };
             rec.tries.push(tr);
@@ -240,17 +287,42 @@ const PSY = (() => {
                 const view = freeze(clone(input)); // 評估器拿到的是唯讀副本，看不到 audit
                 const a0 = parse(await withTimeout(Promise.resolve(ev.appraise(view)), timeoutMs)); if (a0.err) { tr.fail = a0.err + '@appraisal'; continue; }
                 const va = validateAppraisal(input, a0.v); if (!va.ok) { tr.fail = 'invalid_appraisal'; tr.errors = va.errors; continue; }
-                const ap = freeze(clone(a0.v)); const aHash = hashOf(ap);
+                let ap = freeze(clone(a0.v)); let aHash = hashOf(ap); const first = { ap, hash: aHash };
+                const versions = [{ v: 1, hash: aHash }]; const order = ['appraisal#1'];
                 const c0 = parse(await withTimeout(Promise.resolve(ev.choose(view, ap)), timeoutMs)); if (c0.err) { tr.fail = c0.err + '@choice'; continue; }
-                const vc = validateChoice(input, ap, c0.v); if (!vc.ok) { tr.fail = vc.errors.some(e => e.startsWith('illegal_option')) ? 'illegal_option' : 'invalid_choice'; tr.errors = vc.errors; continue; }
-                if (hashOf(ap) !== aHash) { tr.fail = 'appraisal_mutated'; continue; }
-                Object.assign(rec, { status: 'done', fail: null, appraisal: ap, appraisal_hash: aHash, choice: freeze(clone(c0.v)), evaluator: { id: ev.id, version: ev.version, fixture: !!ev.fixture }, notes: va.notes });
-                if (cache) cache.set(cacheKey(input, ev), { appraisal: rec.appraisal, appraisal_hash: aHash, choice: rec.choice, evaluator: rec.evaluator, notes: va.notes.slice() });
+                const choice = freeze(clone(c0.v)); order.push('choice'); let notes = va.notes.slice();
+                let vc = validateChoice(input, ap, choice);
+                // 補評估：選了沒評估過的方案（例如評估了借 30，最後想借 10），評估器可以補上這個方案的評估。
+                // 補的評估是新的一版、另外凍結；第一版保留、順序照實記下（補評估發生在選擇之後）。核心不改選擇，也不要求換答案。
+                const onlyUneval = !vc.ok && vc.errors.every(e => e.startsWith('choice_not_evaluated') || e === 'chose_unconsidered_option');
+                if (onlyUneval && typeof ev.supplement === 'function') {
+                    const s0 = parse(await withTimeout(Promise.resolve(ev.supplement(view, ap, choice)), timeoutMs)); if (s0.err) { tr.fail = s0.err + '@supplement'; continue; }
+                    const extra = s0.v || {}; const bad = Object.keys(extra).filter(k => !['impacts', 'concerns'].includes(k));
+                    if (bad.length) { tr.fail = 'invalid_supplement'; tr.errors = bad.map(k => 'supplement_has_' + k); continue; }
+                    const ap2 = clone(ap); ap2.concerns = (ap2.concerns || []).concat(extra.concerns || []); ap2.impacts = (ap2.impacts || []).concat(extra.impacts || []);
+                    ap2.not_considered = (ap2.not_considered || []).filter(nc => !(extra.impacts || []).some(i => i.opt === nc.opt));
+                    const v2 = validateAppraisal(input, ap2); if (!v2.ok) { tr.fail = 'invalid_supplement'; tr.errors = v2.errors; continue; }
+                    ap = freeze(ap2); aHash = hashOf(ap); versions.push({ v: 2, hash: aHash, prev: versions[0].hash, after: 'choice', reason: vc.errors.slice() }); order.push('appraisal#2');
+                    notes = v2.notes.slice(); vc = validateChoice(input, ap, choice);
+                }
+                if (!vc.ok) { tr.fail = vc.errors.some(e => e.startsWith('illegal_option')) ? 'illegal_option' : 'invalid_choice'; tr.errors = vc.errors; continue; }
+                if (hashOf(first.ap) !== first.hash || hashOf(ap) !== aHash) { tr.fail = 'appraisal_mutated'; continue; }
+                order.push('accepted');
+                Object.assign(rec, { status: 'done', fail: null, appraisal: ap, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: versions.length > 1 ? first.ap : null, order, choice, evaluator: { id: ev.id, version: ev.version, fixture: !!ev.fixture }, notes });
+                if (cache) cache.set(cacheKey(input, ev), { appraisal: rec.appraisal, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: rec.appraisal_first, order, choice: rec.choice, evaluator: rec.evaluator, notes: notes.slice() });
                 return finish();
             } catch (e) { tr.fail = e.fail || ('error:' + e.message); }
         }
         // 全部失敗：技術性待處理。不替角色選任何行動，也不寫進心理。
         rec.status = 'pending'; rec.fail = rec.tries.length ? rec.tries[rec.tries.length - 1].fail : 'no_evaluator'; return finish();
+    }
+
+    // ---------------- 語意抽查（給人看，不自動判定）----------------
+    // 格式與來源由驗證器自動檢查；「引用的資料真的支持這句話嗎」屬於語意，這裡只挑出樣本、把關心的事與它引用的原文並排，
+    // 由人工標註 review。挑樣本用決策編號的雜湊排序（固定、不用亂數）。沒有關鍵字對照表，也不打分數。
+    function spotSample(rows, inputsByDecision, n = 5) {
+        const done = rows.filter(r => r.status === 'done' && r.appraisal && r.ids?.decision).slice().sort((a, b) => (sha256(a.ids.decision) < sha256(b.ids.decision) ? -1 : 1)).slice(0, n);
+        return done.map(r => { const inp = inputsByDecision[r.ids.decision]; return { decision: r.ids.decision, concerns: (r.appraisal.concerns || []).map(c => ({ id: c.id, what: c.what, cited: (c.ev || []).map(e => ({ id: e, text: inp ? sourceText(inp, e) : '(找不到輸入)' })) })), choice: r.choice ? { opt: r.choice.opt, params: r.choice.params, because: r.choice.because } : null, review: 'pending_human' }; });
     }
 
     // ---------------- 研究紀錄與比較 ----------------
@@ -270,18 +342,25 @@ const PSY = (() => {
     // ---------------- 影子掛勾 ----------------
     // 包住選擇點的候選清單函式：原函式先跑、回傳值原封不動；之後只拍快照放進外部 sink。
     // 不呼叫 run、不碰 AI、不寫世界。任何錯誤都吞掉並記在 sink 裡，不會影響原流程。
+    // 「同一個請求」由引擎傳進來的 ctx 物件辨認（同一件事在 AI 回覆後、或隔天被重新列出選項時，ctx 是同一個物件）。
+    // 同一請求再被列出時：輸入沒變就不重拍（sink.onSkip 通知）；輸入變了（處境改變）就拍新版本，標明取代前一版。
+    // 決策編號 = 事件編號 + '#v' + 版本，研究紀錄因此不會把同一事件的不同版本當成重複回應。
     function tap(DECIDE, adapter, sink) {
         const K = DECIDE?.KINDS?.[adapter.observes]; if (!K || K._psyTapped) return () => {};
-        const orig = K.options; const seen = new Set();
+        const orig = K.options; const byCtx = new WeakMap();
         K.options = function (w, a, ctx) {
             const out = orig.apply(this, arguments);
             try {
-                const ev = adapter.eventOf(w, a, ctx); const key = ev && ev.id;
-                if (ev && !seen.has(key)) {
-                    seen.add(key);
-                    const before = (w.decide?.log?.[a.agentId] || []).length; // 給測試核對「快照在決定之前」，不給評估器
-                    const s = snapshot(w, adapter, ev); s.audit.log_len_before = before; s.audit.kind = adapter.observes; sink.push(s);
-                }
+                const ev0 = adapter.eventOf(w, a, ctx); if (!ev0) return out;
+                const keyed = ctx && typeof ctx === 'object'; let st = keyed ? byCtx.get(ctx) : null;
+                if (!st) { st = { id: ev0.id, keys: [] }; if (keyed) byCtx.set(ctx, st); }
+                const ver = st.keys.length; const ev = Object.assign({}, ev0, { id: st.id, decision: st.id + '#v' + ver });
+                const before = (w.decide?.log?.[a.agentId] || []).length; // 給測試核對「快照在決定之前」，不給評估器
+                const s = snapshot(w, adapter, ev); const k = s.input ? inputKey(s.input) : null;
+                if (k && ver && st.keys[ver - 1] === k) { if (typeof sink.onSkip === 'function') sink.onSkip({ event: st.id, agent: a.agentId }); return out; }
+                st.keys.push(k);
+                Object.assign(s.audit, { event: st.id, version: ver, supersedes: ver ? st.id + '#v' + (ver - 1) : null, log_len_before: before, kind: adapter.observes });
+                sink.push(s);
             } catch (e) { sink.push({ input: null, audit: { error: 'tap_error:' + e.message } }); }
             return out;
         };
@@ -289,6 +368,6 @@ const PSY = (() => {
         return () => { K.options = orig; delete K._psyTapped; };
     }
 
-    return { CONTRACT, stable, sha256, hashOf, freeze, clone, BoundaryError, reader, recallPure, snapshot, idSet, validateInput, validateAppraisal, validateChoice, conforms, ReplayEvaluator, inputKey, cacheKey, evaluate, ResearchLog, diff, tap, GENERIC };
+    return { CONTRACT, BOUNDARY, spotSample, sourceText, stable, sha256, hashOf, freeze, clone, BoundaryError, reader, recallPure, snapshot, idSet, validateInput, validateAppraisal, validateChoice, conforms, ReplayEvaluator, inputKey, cacheKey, evaluate, ResearchLog, diff, tap, GENERIC };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = PSY; else if (typeof globalThis !== 'undefined') globalThis.PSY = PSY;
