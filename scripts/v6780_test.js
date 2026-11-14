@@ -54,7 +54,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(!!c && c.live && c.head.length > 3 && c.secs.length >= 2 && c.items.length >= 3, '今天這期：報頭、頭條、各版新聞，標示今日編輯中', c && { live: c.live, head: c.head, secs: c.secs, n: c.items.length });
       ok(c && (lang === 'zh' ? c.name.trim() === '觀察者日報' && /第 \d+ 期/.test(c.meta) : /Observer Daily/.test(c.name) && /Issue \d+/.test(c.meta)), '報頭有報名與期數', c && { name: c.name, meta: c.meta });
       ok(c && !/八點檔|下集預告|敬請鎖定|播出中|Next time|On air|Tonight/.test(c.text), '不再有八點檔的說法', c && c.text.slice(0, 120));
-      const merged = c ? [c.head].concat(c.items).filter(x => { const m = x.match(/廣場對嗆 (\d+) 起|×(\d+)/); return m && +(m[1] || m[2]) >= 5; }) : [];
+      const merged = c ? [c.head].concat(c.items).filter(x => { const m = x.match(/廣場對嗆 (\d+) 起|Public Showdown ×(\d+)/); return m && +(m[1] || m[2]) >= 5; }) : []; // 只認對嗆那一則；買賣新聞裡的「餐食×7」也有 ×數字，不能算進來
       ok(c && !c.theater && merged.length === 1, '小鎮劇場拿掉，同一天 5 場廣場對嗆合併成一則', c && { theater: c.theater, merged });
       ok(c && c.folds.length >= 1 && c.folds.every(f => !f.open) && c.skillRows <= 1, '村民對話與逐筆紀錄預設收起，技能升級合併成一行', c && { folds: c.folds, skill: c.skillRows });
       ok(c && !c.prevDis && c.nextDis, '今天這期：可以翻上一期，沒有下一期', c && { prev: c.prevDis, next: c.nextDis });
