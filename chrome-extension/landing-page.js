@@ -562,15 +562,31 @@ Object.assign(RimTownApp.prototype, {
         this._wireBrainDemo(el);
         // 一個決定是怎麼來的:五個步驟自動往下走,點任何一步就停在那一步
         try {
-            const flow = el.querySelector('#lp-flow'); clearInterval(this._lpFlowT);
+            // 一個決定是怎麼來的：往下捲時照順序一步一步亮。哪一步最靠近畫面中間就亮哪一步，右邊（手機在下面）的紀錄跟著亮同一列。
+            // 9.29.2 以前是每 3.8 秒自己換一步，捲動時對不上；手機上這一區比畫面高很多，還常常停在第 1 步
+            const flow = el.querySelector('#lp-flow'); clearInterval(this._lpFlowT); this._lpFlowObs?.disconnect();
             if (flow) {
-                const set = (i) => { flow.dataset.step = i; flow.querySelectorAll('.lp-step').forEach((s, k) => { s.classList.toggle('on', k === i); s.classList.toggle('done', k < i); s.querySelector('button')?.setAttribute('aria-pressed', k === i ? 'true' : 'false'); }); flow.querySelectorAll('.lp-rec-row').forEach((r, k) => { r.classList.toggle('on', k === i); r.classList.toggle('done', k < i); }); };
-                let auto = !still, seen = false, i = 0;
-                flow.querySelectorAll('.lp-step-btn').forEach((b, k) => b.addEventListener('click', () => { auto = false; i = k; set(k); }));
-                flow.addEventListener('pointerenter', (e) => { if (e.pointerType === 'mouse') flow._hold = true; }); flow.addEventListener('pointerleave', () => { flow._hold = false; }); /* 手指點一下也會觸發 pointerenter，以前會一直停住 */
+                const steps = [...flow.querySelectorAll('.lp-step')], rows = [...flow.querySelectorAll('.lp-rec-row')], rec = flow.querySelector('.lp-rec');
+                let cur = -1, pin = -1, pinAt = 0;
+                const set = (i) => { if (i === cur) return; cur = i; flow.dataset.step = i; steps.forEach((s, k) => { s.classList.toggle('on', k === i); s.classList.toggle('done', k < i); s.querySelector('button')?.setAttribute('aria-pressed', k === i ? 'true' : 'false'); }); rows.forEach((r, k) => { r.classList.toggle('on', k === i); r.classList.toggle('done', k < i); }); };
+                set(0);
+                // 點某一步：直接跳到那一步，之後再捲一段才又跟著捲動走
+                steps.forEach((s, k) => s.querySelector('.lp-step-btn')?.addEventListener('click', () => { pin = k; pinAt = el.scrollTop; set(k); fit(); }));
+                // 電腦版紀錄卡固定在右邊；卡片比畫面高時，往上推一點，讓亮的那一列一定看得到
+                const fit = () => { if (!rec) return; const sticky = getComputedStyle(rec).position === 'sticky'; const row = rows[cur]; if (!sticky || !row) { rec.style.transform = ''; return; }
+                    const vh = el.clientHeight || window.innerHeight, top = parseFloat(getComputedStyle(rec).top) || 0, rt = row.offsetTop, rb = rt + row.offsetHeight;
+                    const shift = Math.max(0, Math.min(rb + top - (vh - 20), rt + top - 76)); rec.style.transform = shift > 0 ? `translateY(${-Math.round(shift)}px)` : ''; };
                 if (still) flow.classList.add('all');
-                if ('IntersectionObserver' in window) { this._lpFlowObs?.disconnect(); this._lpFlowObs = new IntersectionObserver(es => { seen = es.some(e => e.isIntersecting); }, { root: el, rootMargin: '-35% 0px -35% 0px', threshold: 0 }); this._lpFlowObs.observe(flow); /* 手機上這一區比畫面高很多，以前要露出 35% 才算看到，永遠達不到 */ } else seen = true;
-                this._lpFlowT = setInterval(() => { if (!auto || !seen || flow._hold || document.hidden || !this._landingActive) return; i = (i + 1) % 5; set(i); }, 3800);
+                onScroll.push(() => {
+                    if (pin >= 0 && Math.abs(el.scrollTop - pinAt) < 120) return; pin = -1;
+                    const box = el.getBoundingClientRect(), vh = el.clientHeight || window.innerHeight, fr = flow.getBoundingClientRect();
+                    if (fr.bottom < box.top || fr.top > box.top + vh) return;
+                    const mid = box.top + vh * 0.45, stacked = !rec || getComputedStyle(rec).position !== 'sticky';
+                    // 手機上紀錄卡排在步驟下面，捲到紀錄卡時看紀錄卡那一列；電腦版只看左邊的步驟
+                    const cands = stacked ? [...steps, ...rows] : steps; let best = cur < 0 ? 0 : cur, bd = Infinity;
+                    cands.forEach((c, j) => { const r = c.getBoundingClientRect(); const d = mid < r.top ? r.top - mid : (mid > r.bottom ? mid - r.bottom : 0); if (d < bd) { bd = d; best = j % steps.length; } });
+                    set(best); fit();
+                });
             }
         } catch (e) {}
         // 從一個人到整個世界:捲動進度 → 鏡頭位置;旁邊的七個點可以直接跳

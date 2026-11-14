@@ -62,6 +62,12 @@ const open = async (browser, o = {}) => {
     // 一個決定是怎麼來的
     const fl = await page.evaluate(async () => { const el = document.getElementById('landing'); document.querySelector('#lp-flow').scrollIntoView({ block: 'center' }); await new Promise(r => setTimeout(r, 300)); const f = document.querySelector('#lp-flow'); const steps = [...f.querySelectorAll('.lp-step')], rows = [...f.querySelectorAll('.lp-rec-row')]; steps[3].querySelector('button').click(); const a = { on: steps.findIndex(s => s.classList.contains('on')), row: rows.findIndex(s => s.classList.contains('on')), pressed: steps[3].querySelector('button').getAttribute('aria-pressed') }; await new Promise(r => setTimeout(r, 4500)); return { ...a, stays: steps.findIndex(s => s.classList.contains('on')), n: steps.length, rows: rows.length, quote: f.querySelector('blockquote')?.textContent || '', ba: document.querySelectorAll('.lp-ba > div').length, picks: document.querySelectorAll('.lp-picks li').length }; });
     ok(fl.n === 5 && fl.rows === 5 && fl.on === 3 && fl.row === 3 && fl.pressed === 'true' && fl.stays === 3, '五個步驟對應一筆實測紀錄；點了某一步就停在那一步', fl);
+    const fs = await page.evaluate(async () => { const el = document.getElementById('landing'), f = document.querySelector('#lp-flow'), rows = [...f.querySelectorAll('.lp-rec-row')];
+      const start = f.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - el.clientHeight * 0.6, endY = start + f.offsetHeight; const seq = []; let hidden = 0;
+      for (let y = start; y <= endY; y += 40) { el.scrollTop = y; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); await new Promise(r => setTimeout(r, 400));
+        const k = rows.findIndex(r => r.classList.contains('on')); const rr = rows[k].getBoundingClientRect(); if (f.getBoundingClientRect().top < innerHeight * 0.4 && (rr.top < 60 || rr.bottom > innerHeight + 1)) hidden++; if (seq[seq.length - 1] !== k) seq.push(k); }
+      return { seq: seq.join(''), hidden }; });
+    ok(fs.seq === '01234' && fs.hidden === 0, '電腦版：往下捲時步驟照 1～5 的順序亮，右邊紀錄亮的那一列都在畫面裡', fs);
     ok(/梁貝兒/.test(fl.quote) && fl.ba === 2 && fl.picks === 3, '保留「以前／現在」對照與「三個人三種選擇」', fl);
     // 從一個人到整個世界
     const sc = await page.evaluate(async () => { const steps = [...document.querySelectorAll('.lp-scale-step')], dots = [...document.querySelectorAll('[data-lp-scale]')]; steps[4].scrollIntoView({ block: 'center' }); await new Promise(r => setTimeout(r, 2500)); const a = { on: dots.findIndex(d => d.classList.contains('on')), stepOn: steps.findIndex(s => s.classList.contains('on')), live: !!document.querySelector('#lp-scale-stage.lp-stage-live .lp-scale-canvas'), p: LANDING3D.scale?.impl?.p, cam: LANDING3D.scale?.cam?.position?.y }; dots[1].click(); for (let i = 0; i < 60 && Math.abs((LANDING3D.scale?.impl?.p ?? 9) - 1) > 0.2; i++) await new Promise(r => setTimeout(r, 400)); /* 平滑捲動在沒有顯示卡的測試機上很慢,等它到位 */ return { ...a, n: steps.length, dots: dots.length, after: dots.findIndex(d => d.classList.contains('on')), p2: LANDING3D.scale?.impl?.p, cam2: LANDING3D.scale?.cam?.position?.y, views: LANDING3D.VIEWS.length }; });
@@ -104,12 +110,12 @@ const open = async (browser, o = {}) => {
     ok(m.wide <= m.cw + 1 && m.over.length === 0, `${lang} 手機：不會橫向捲動，沒有東西超出畫面`, m);
     ok(m.title < m.stageTop + 4 && m.stageTop < m.vh && m.card !== 'absolute' && m.links === 'none', `${lang} 手機：標題在上、3D 小鎮在第一屏、決定卡放在小鎮下面`, m);
     ok(m.cta >= 40 && m.btn >= 44, `${lang} 手機：按鈕夠大好按`, { cta: m.cta, btn: m.btn });
-    // 9.29.1 手機上「一個決定是怎麼來的」：這一區比畫面高，以前永遠不算「看到」，停在第 1 步、下面四列淡到 30%；手指點一下也會停住
-    const fp = await page.evaluate(async () => { document.querySelector('.lp-rec').scrollIntoView({ block: 'center' }); const rows = [...document.querySelectorAll('.lp-rec-row')]; const at = () => rows.findIndex(r => r.classList.contains('on'));
-      const op = Math.min(...rows.map(r => parseFloat(getComputedStyle(r).opacity))); const s0 = at(); await new Promise(r => setTimeout(r, 4600)); return { tall: Math.round(document.querySelector('#lp-flow').getBoundingClientRect().height / innerHeight * 10) / 10, op, s0, s1: at() }; });
-    await page.tap('.lp-rec-top'); const s2 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on'))); await page.waitForTimeout(4600);
-    const s3 = await page.evaluate(() => [...document.querySelectorAll('.lp-rec-row')].findIndex(r => r.classList.contains('on')));
-    ok(fp.op >= 0.99 && fp.s1 !== fp.s0 && s3 !== s2, `${lang} 手機：決定紀錄每一列都看得清楚，捲到這裡步驟會自己往下走，點一下也不會停住`, { ...fp, s2, s3 });
+    // 9.29.2 手機上「一個決定是怎麼來的」：每一列都看得清楚；往下捲過紀錄卡，第 1～5 列照順序亮（9.29.1 以前停在第 1 步、下面淡到 30%）
+    const fp = await page.evaluate(async () => { const el = document.getElementById('landing'), rows = [...document.querySelectorAll('.lp-rec-row')], rec = document.querySelector('.lp-rec');
+      const op = Math.min(...rows.map(r => parseFloat(getComputedStyle(r).opacity))); const start = rec.getBoundingClientRect().top - el.getBoundingClientRect().top + el.scrollTop - el.clientHeight * 0.5, endY = start + rec.offsetHeight;
+      const seq = []; for (let y = start; y <= endY; y += 40) { el.scrollTop = y; await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))); const k = rows.findIndex(r => r.classList.contains('on')); if (seq[seq.length - 1] !== k) seq.push(k); }
+      return { tall: Math.round(document.querySelector('#lp-flow').getBoundingClientRect().height / innerHeight * 10) / 10, op, seq: seq.join('') }; });
+    ok(fp.op >= 0.99 && fp.seq.slice(fp.seq.indexOf('0')) === '01234', `${lang} 手機：決定紀錄每一列都看得清楚，往下捲時第 1～5 列照順序亮`, fp);
     ok(errs.length === 0, `${lang} 手機：沒有頁面錯誤`, errs.slice(0, 3));
     await ctx.close();
   }
