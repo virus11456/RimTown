@@ -124,7 +124,7 @@ async function run(browser, lang) {
       const steal = sc(A, 'gamedebt', 'steal'); traits(A, ['kind']); const stealK = sc(A, 'gamedebt', 'steal'); traits(A, ['hardworking']);
       out.debt.sc = { steal, stealK };
       // 每天的流程交給本人：骰子再順也不會自己去偷、自己跑路
-      const th0 = Cs.st.theft, fl0 = Cs.st.fled; Cs.lastDay = null; fix(0.01, () => CASINO.daily(w)); const untouched = Cs.st.theft === th0 && Cs.st.fled === fl0 && left.length === 0 && !!Cs.debt[A.agentId];
+      const th0 = Cs.st.theft, fl0 = Cs.st.fled; Cs.lastDay = null; Bal[B.agentId] = 20; /* 這個鎮裡 B 剛好是 A 的家人時，手上有錢會替他還掉賭債，就驗不到後面了 */ fix(0.01, () => CASINO.daily(w)); Bal[B.agentId] = 80; const untouched = Cs.st.theft === th0 && Cs.st.fled === fl0 && left.length === 0 && !!Cs.debt[A.agentId];
       const f0 = Bal[F.agentId], b0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = go(A, 'gamedebt', 'steal'); });
       out.debt.steal = { untouched, res: res?.k, mark: Math.round(b0 - Bal[B.agentId]), own: Math.round(Bal[F.agentId] - f0), cleared: !Cs.debt[A.agentId], theft: Cs.st.theft - th0, cons, secret: (w.dark?.secrets || []).slice(-1)[0]?.culprit === A.agentId };
       Cs.debt[A.agentId] = { n: 20, day: d0() - 22 }; const r2 = go(A, 'gamedebt', 'flee'); out.debt.flee = { res: r2?.k, left: left.includes(A.agentId), cleared: !Cs.debt[A.agentId], fled: Cs.st.fled - fl0 }; }
