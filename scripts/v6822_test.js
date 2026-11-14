@@ -35,19 +35,21 @@ const init = ({ lang, jwt, enter }) => {
       const lazy3d = await page.evaluate(() => { const nav = performance.getEntriesByType('navigation')[0]; const th = performance.getEntriesByType('resource').find(e => /three\.min\.js/.test(e.name)); return !th || th.startTime >= nav.domContentLoadedEventEnd; }); // v6.98.0 首頁主視覺的 3D 村民:three.js 等畫面出來後才載
       ok(r.landing && r.regBtn && !r.world, '首頁顯示介紹與註冊／登入，沒有建立遊戲世界', r);
       ok(!heavy.length && lazy3d && r.scripts <= 14, '首頁沒有下載遊戲地圖、模擬或更新紀錄；3D 主視覺的 three.js 畫面出來後才載', { heavy, lazy3d, scripts: r.scripts });
-      ok(r.anims.length > 0 && r.anims.every(t => t === 'svg'), '星空動畫只動整層圖層（不是 SVG 裡的每顆星）', r.anims);
+      ok(r.anims.length === 0, '首頁沒有一直在跑的 CSS 動畫（v9.29.0 首屏的動態交給 3D 畫布，捲出畫面就停）', r.anims);
       // 捲出畫面暫停
-      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 1200)); /* 高負載時 IntersectionObserver 回報較慢 */ const h = document.querySelector('.lp-hero'); return { off: h.classList.contains('lp-off'), state: getComputedStyle(document.querySelector('.lp-sky-l')).animationPlayState }; });
-      ok(off.off && off.state === 'paused', '主視覺捲出畫面就暫停動畫', off);
+      await page.waitForFunction(() => typeof LANDING3D !== 'undefined' && LANDING3D.hero && LANDING3D.hero.frame > 0, null, { timeout: 30000 }).catch(() => {});
+      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; await new Promise(r => setTimeout(r, 1500)); /* 高負載時 IntersectionObserver 回報較慢 */ const f0 = LANDING3D.hero?.frame; await new Promise(r => setTimeout(r, 700)); return { idle: document.querySelector('#lp-stage').classList.contains('lp-stage-idle'), f0, f1: LANDING3D.hero?.frame }; });
+      ok(off.idle && off.f0 > 0 && off.f1 === off.f0, '主視覺捲出畫面就暫停（3D 不再畫）', off);
       await page.waitForFunction(() => typeof RIMTOWN_CHANGELOG !== 'undefined' && document.querySelectorAll('#landing-log .landing-log-item').length >= 5, null, { timeout: 10000 }).catch(() => {}); // 更新紀錄 640KB,忙的時候要多等一下
       const log = await page.evaluate(() => ({ items: document.querySelectorAll('#landing-log .landing-log-item').length, loaded: typeof RIMTOWN_CHANGELOG !== 'undefined' }));
       ok(log.loaded && log.items >= 5, '捲到更新紀錄附近才載入並顯示', log);
       // 繪製量:動畫跑著時幾乎不重畫
-      const cdp = await ctx.newCDPSession(page); await page.evaluate(() => { document.getElementById('landing').scrollTop = 0; }); await page.waitForTimeout(500);
+      // v9.29.0 首屏是 3D 畫布，看得到的時候本來就一直在畫；這裡量的是捲到下面（3D 停了）之後，頁面本身是靜止的
+      const cdp = await ctx.newCDPSession(page); await page.evaluate(() => { document.querySelector('#landing-faq').scrollIntoView({ block: 'start' }); }); await page.waitForTimeout(1500);
       const ev = []; cdp.on('Tracing.dataCollected', d => ev.push(...d.value)); await cdp.send('Tracing.start', { categories: 'devtools.timeline', transferMode: 'ReportEvents' }); await page.waitForTimeout(3000);
       const done = new Promise(r => cdp.once('Tracing.tracingComplete', r)); await cdp.send('Tracing.end'); await done;
       const paints = ev.filter(e => e.name === 'Paint').length;
-      ok(paints < 20, '首頁動畫播放 3 秒幾乎沒有重新繪製', paints);
+      ok(paints < 20, '3D 捲出畫面之後，首頁停 3 秒幾乎沒有重新繪製', paints);
       // 登入 → 進遊戲頁
       await page.evaluate(() => document.getElementById('landing-login').click()); await page.waitForTimeout(300);
       await page.fill('#auth-login-user', 'tester'); await page.fill('#auth-login-pass', 'pw'); await page.click('#auth-login-btn');

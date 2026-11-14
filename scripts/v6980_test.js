@@ -24,7 +24,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
         const bands = [...document.querySelectorAll('#landing-features .lp-chapter')].map(b => ({ id: b.id, h2: !!b.querySelector('h2'), lead: (b.querySelector('.lp-ch-lead')?.textContent || '').length, topics: [...b.querySelectorAll('.lp-topic')].map(t => ({ id: t.id, h3: !!t.querySelector('h3'), sum: (t.querySelector('.lp-topic-sum')?.textContent || '').length, pts: t.querySelectorAll('.lp-points dt').length })), log: b.querySelectorAll('.lp-scene li').length, bridge: !!b.querySelector('.lp-ch-bridge') }));
         const toc = [...document.querySelectorAll('.lp-chnav a')].map(a => a.getAttribute('href'));
         const core = { pillars: n('#landing-core .lp-pillar'), chain: [...document.querySelectorAll('#landing-chain li .lp-chain-tag')].map(a => a.getAttribute('href')) };
-        return { bands, toc, live: !!document.querySelector('.lp-stage-live canvas'), bubbles: [...document.querySelectorAll('.lp-bubble.on')].map(b => b.textContent),
+        return { bands, toc, live: !!document.querySelector('.lp-stage-live canvas'), bubbles: [...document.querySelectorAll('#lp-stage > .lp-dc .lp-dc-why')].map(b => b.textContent).filter(Boolean), /* v9.29.0 對話泡泡換成決定卡:誰、選項、理由 */
           news: n('.lp-new'), imgs: [...L.querySelectorAll('img')].map(i => i.getAttribute('src')), cards: n('#landing-features .landing-card'),
           cjk: (txt.match(/[一-鿿]{2,}/g) || []).filter(s => s !== '邊境鎮' && s !== '中文'), sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: L.scrollWidth, lcw: L.clientWidth,
           v3: typeof VILLAGER3D !== 'undefined', jc: typeof JOB_COLORS !== 'undefined', core };
@@ -32,8 +32,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const order = await page.evaluate(() => { const nav = performance.getEntriesByType('navigation')[0]; const th = performance.getEntriesByType('resource').find(e => /three\.min\.js/.test(e.name)); return { inHtml: !!document.querySelector('script[src*="three.min.js"]:not([async])'), after: th ? th.startTime >= nav.domContentLoadedEventEnd : null }; });
       ok(!order.inHtml && order.after === true, 'three.js 不在首頁 HTML 裡，畫面出來後才載（不拖慢首屏）', order);
       ok(r.live && r.v3 && r.jc, '主視覺是 3D 方塊村民（跟遊戲同一套 villager3d.js）', { live: r.live, v3: r.v3 });
-      ok(r.bubbles.length >= 1 && r.bubbles.every(b => lang === 'en' ? !/[一-鿿]/.test(b) : /[一-鿿]/.test(b)), '村民頭上會冒出對應語言的對話泡泡', r.bubbles);
-      ok(r.bands.length === 7 && r.bands.every(b => b.h2 && b.lead > 40 && b.topics.length >= 2 && b.log >= 2 && b.log <= 3 && b.bridge && b.topics.every(t => t.h3 && t.sum > 10 && t.pts >= 3 && t.pts <= 4)), 'v9.1.1 七章：各有標題、核心導言、2～4 個主題（每個有一句摘要＋點開的 3～4 個重點）、遊戲紀錄、接到下一章的一句話', r.bands);
+      ok(r.bubbles.length >= 1 && r.bubbles.every(b => lang === 'en' ? !/[一-鿿]/.test(b) : /[一-鿿]/.test(b)), '首屏的決定卡用對應語言寫出村民的理由', r.bubbles);
+      ok(r.bands.length === 7 && r.bands.every(b => b.h2 && b.lead > 40 && b.topics.length >= 2 && b.log >= 2 && b.bridge && b.topics.every(t => t.h3 && t.sum > 10 && t.pts >= 3 && t.pts <= 7)), 'v9.1.1 七章：各有標題、核心導言、2～4 個主題（每個有一句摘要＋點開的重點；v9.29.0 補了新功能，最多 7 個）、每個主題的遊戲紀錄、接到下一章的一句話', r.bands);
       ok(r.core.pillars === 3 && r.core.chain.length >= 5 && r.core.chain.every(h => r.bands.some(b => '#' + b.id === h)), '核心：三根柱子＋一件事怎麼牽動整個鎮（每一步連到所屬章節）', r.core);
       ok(r.cards === 0, '玩法不是卡片牆', r.cards);
       ok(r.toc.length === r.bands.length && r.toc.every((h, i) => h === '#' + r.bands[i].id), '章節導覽連到每一章', r.toc);
