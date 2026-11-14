@@ -141,7 +141,7 @@
 .lp-step-ic { color: var(--lp-accent); display: inline-flex; }
 .lp-step h3 { font-size: 1.1rem; font-weight: 700; }
 .lp-step p { color: var(--lp-ink2); font-size: 0.94rem; line-height: 1.8; margin-top: 2px; }
-.lp-rec { position: sticky; top: 92px; border-radius: 20px; background: linear-gradient(180deg, var(--lp-card2), var(--lp-card)); border: 1px solid var(--lp-line2); padding: 8px 22px 12px; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35); }
+.lp-rec { position: sticky; top: 92px; transition: transform 0.35s ease; border-radius: 20px; background: linear-gradient(180deg, var(--lp-card2), var(--lp-card)); border: 1px solid var(--lp-line2); padding: 8px 22px 12px; box-shadow: 0 30px 70px rgba(0, 0, 0, 0.35); }
 .lp-rec-top { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 14px 0 12px; border-bottom: 1px solid var(--lp-line); }
 .lp-rec-top span { font-size: 0.75rem; letter-spacing: 0.14em; color: var(--lp-accent); font-weight: 700; }
 .lp-rec-top b { font-family: var(--lp-serif); font-size: 1.05rem; }
