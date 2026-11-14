@@ -46,7 +46,7 @@ async function run(browser, watch, days) {
   //   savedAt＝存檔當下的真實時間；housing.map＝誰住哪一棟，取決於頁面開機時畫面那一層先排好的房屋配置。
   // 比較時把這兩個欄位拿掉再算雜湊，並另外列出「拿掉之前有幾處不同、在哪裡」，不藏起來。
   const saveObj = JSON.parse(r.save); r.saveRaw = saveObj; const norm = JSON.parse(r.save); delete norm.savedAt; if (norm.housing) delete norm.housing.map;
-  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(JSON.stringify(norm)).digest('hex'); r.saveBytes = r.save.length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
+  r.errs = errs; r.net = net; r.saveHash = crypto.createHash('sha256').update(JSON.stringify(norm)).digest('hex'); r.saveBytes = JSON.stringify(norm).length; r.memHash = crypto.createHash('sha256').update(r.memText).digest('hex').slice(0, 16); delete r.save; delete r.memText;
   await page.context().close(); return r;
 }
 
@@ -54,12 +54,13 @@ async function run(browser, watch, days) {
   const browser = await chromium.launch();
   if (MODE === 'compare') {
     const rows = {}; for (const m of ['none', 'none2', 'loaded', 'on']) { rows[m] = await run(browser, m === 'none2' ? 'none' : m, DAYS); delete rows[m].watch; }
-    const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'saveHash', 'saveBytes', 'net']; let ok = true;
+    const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'saveHash', 'saveBytes']; let ok = true; // net（開機時遊戲自己發的 /api/chat，本機攔下）另外印，不列入比較
     // 先確認測試環境自己可重現：不載入紀錄器跑兩次要完全相同，否則下面的比較不能算數
     const repro = keys.every(k => JSON.stringify(rows.none[k]) === JSON.stringify(rows.none2[k])); console.log((repro ? 'SAME ' : 'DIFF ') + '基準重跑  不載入紀錄器跑兩次' + (repro ? '完全相同' : '就不一樣：測試環境不可重現，以下比較不能算數')); if (!repro) ok = false;
     for (const k of keys) { const v = ['none', 'loaded', 'on'].map(m => JSON.stringify(rows[m][k])); const same = v[0] === v[1] && v[1] === v[2]; if (!same) ok = false; console.log((same ? 'SAME ' : 'DIFF ') + k.padEnd(10) + ' ' + (k === 'decide' ? crypto.createHash('sha256').update(v[0]).digest('hex').slice(0, 12) : v[0].slice(0, 70)) + (same ? '' : '  | ' + v[1].slice(0, 40) + ' | ' + v[2].slice(0, 40))); }
-    const diffPaths = (x, y) => { const out = []; (function d(a, b, p) { if (out.length > 5000) return; if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') { if (a !== b) out.push(p); return; } for (const k of new Set([...Object.keys(a), ...Object.keys(b)])) d(a[k], b[k], p + '.' + k); })(x, y, ''); return out; };
-    const volatile = (p) => p === '.savedAt' || p.startsWith('.housing.map.');
+    // 值不同記路徑；值都一樣但鍵的先後順序不同，記成「路徑 (順序)」。順序不同代表有東西被提早建立，也算影響
+    const diffPaths = (x, y) => { const out = []; (function d(a, b, p) { if (out.length > 5000) return; if (typeof a !== typeof b || a === null || b === null || typeof a !== 'object') { if (a !== b) out.push(p); return; } const ka = Object.keys(a), kb = Object.keys(b); if (ka.length === kb.length && ka.join('\u0001') !== kb.join('\u0001') && ka.slice().sort().join('\u0001') === kb.slice().sort().join('\u0001')) out.push(p + ' (順序)'); for (const k of new Set([...ka, ...kb])) d(a[k], b[k], p + '.' + k); })(x, y, ''); return out; };
+    const volatile = (p) => p === '.savedAt' || p.startsWith('.housing.map');
     for (const m of ['none2', 'loaded', 'on']) { const dp = diffPaths(rows.none.saveRaw, rows[m].saveRaw); const other = dp.filter(p => !volatile(p)); if (other.length) ok = false;
       console.log(`存檔逐欄比較 none vs ${m}：savedAt 與 housing.map 不同 ${dp.length - other.length} 處（跟模擬無關，基準重跑也會不同）；其他欄位不同 ${other.length} 處` + (other.length ? '  例：' + other.slice(0, 5).join(' ') : '')); }
     console.log(`errors none/loaded/on: ${rows.none.errs.length}/${rows.loaded.errs.length}/${rows.on.errs.length}; world keys named watch: ${rows.on.hasWatchKey}; AI requests: ${rows.on.net}`);
