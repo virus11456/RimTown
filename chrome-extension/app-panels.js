@@ -1192,6 +1192,10 @@ Object.assign(RimTownApp.prototype, {
         let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (!['props', 'town', 'truth'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}">${icon} ${t(label)}${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
         let html = `<div class="proposals-panel"><div class="pp-tabs" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}</div>`;
+        if (typeof NOTES !== 'undefined' && tab === 'props') { // v9.31.0 鎮民手記的入口：放在提案頁最上面，附最近一則「自己拿的主意」
+            const nN = NOTES.count(this.world); const lt = NOTES.latest(this.world, 1)[0];
+            html += `<div class="notes-entry"><button type="button" class="pp-more notes-open" data-action="notes-open">📓 ${t('鎮民手記')}${t('：')}${t('看他們各自想了什麼')}${nN ? ` <small>${t('{n} 筆').replace('{n}', nN)}</small>` : ''}</button>${lt ? `<button type="button" class="notes-latest" data-action="notes-open" data-val="${esc(lt.who)}">💡 ${esc(lt.name)}${t('：')}${esc(lt.text)}</button>` : ''}</div>`;
+        }
         { // v9.18.0 提案流程說明改成一步一格的流程（文字一字不少），鎮況／真相維持一行
             const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。' }[tab]);
             if (tab === 'props') { const steps = hint.split(/(?<=[，。])|(?<=[,.])\s+/).map(x => x.trim().replace(/[，。,.]$/, '')).filter(Boolean);
