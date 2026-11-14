@@ -358,7 +358,9 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             P0.delete(o.a.agentId); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
             const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) { if (OBS.length) emit('dropped', { w, a, K }); return; } // 等的這段時間事情已經過去了
             const opts = optsOf(w, a, K, ctx); if (!opts.length) { if (OBS.length) emit('dropped', { w, a, K }); return; }
-            const row = Array.isArray(j) ? (j.find(r => parseInt(r?.n, 10) === i + 1) || null) : null;
+            // v10.0.0 只問一個人時，模型有時直接回一個物件、沒包成陣列（真模型實測 40 次裡有 10 個人的回答因此作廢）：照樣收；只有一個人、回來也只有一筆時不必對序號
+            const arr = Array.isArray(j) ? j : (j && typeof j === 'object' && j.pick != null ? [j] : null);
+            const row = arr ? (arr.find(r => parseInt(r?.n, 10) === i + 1) || (list.length === 1 && arr.length === 1 && arr[0] && typeof arr[0] === 'object' ? arr[0] : null)) : null;
             let e = null; try { if (row) e = applyAi(w, X, a, K, ctx, opts, row, d); } catch (x) { console.warn('[Decide] ai', x); }
             if (!e) { if (aiOn(w) || j) X.st.aiMiss++; resolveRule(w, X, { a, K, ctx, opts }, d); }
         });
