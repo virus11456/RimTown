@@ -82,8 +82,8 @@ const PSY = (() => {
             // 病況：只有本人自己的。別人的病況（家人、同住的人也一樣）不從健康表讀；本人知道的只有公開消息（publicMessages）和自己的記憶
             ownAilments() { note('health.a[self]', 'self', 'own_body'); return clone((w.health?.a?.[selfId] || []).map(x => ({ k: x.k, s: x.s, p: x.p, level: x.s >= 2 ? 'heavy' : 'light' }))); },
             healthOf(id) { if (!isSelf(id)) throw new BoundaryError('read_other_health:' + id); return R.ownAilments(); },
-            // 公開消息：鎮上的訊息紀錄（所有人都看得到）。只回結構化的模板編號與參數，由 adapter 對照成事實
-            publicMessages(types) { note('messageLog[' + (types || []).join('|') + ']', 'public', 'public_news'); return clone((w.messageLog || []).filter(m => m && m.k && (!types || types.includes(m.type))).map(m => ({ d: m.d ?? null, k: m.k, p: m.p || {} }))); },
+            // 訊息紀錄沒有可靠的角色接收證據；保守不提供。本人記憶由 selfMemories 提供。
+            publicMessages(types) { note('messageLog', 'self', 'recipient_unknown'); return []; },
             // 公開資訊：名字、大致年紀、職業
             publicOf(id) { const o = w.agents?.[id]; note('agent[' + id + '].public', 'public', 'public_identity'); return o ? { id, name: o.name, job: o.job?.key || null, age: o.age ?? null } : null; },
             day() { note('clock.day', 'public', 'calendar'); return typeof w._absDay === 'function' ? w._absDay() : 0; },
@@ -278,7 +278,7 @@ const PSY = (() => {
         const finish = () => { if (log) log.add(rec); return rec; };
         if (!input) { rec.fail = snap?.audit?.error || 'no_input'; return finish(); }
         const ie = validateInput(input); if (ie.length) { rec.fail = 'invalid_input'; rec.notes = ie; return finish(); }
-        if (cache) for (const ev of chain) { if (!conforms(ev)) continue; const hit = cache.get(cacheKey(input, ev)); if (hit) { Object.assign(rec, { status: 'done', appraisal: hit.appraisal, appraisal_hash: hit.appraisal_hash, appraisal_versions: hit.appraisal_versions, appraisal_first: hit.appraisal_first, order: hit.order, choice: hit.choice, evaluator: hit.evaluator, from_cache: true, notes: hit.notes.slice() }); return finish(); } }
+        if (cache) for (const ev of chain) { if (!conforms(ev)) continue; const hit = cache.get(cacheKey(input, ev)); if (hit) { Object.assign(rec, { status: 'done', appraisal: hit.appraisal, appraisal_hash: hit.appraisal_hash, appraisal_versions: hit.appraisal_versions, appraisal_first: hit.appraisal_first, initial_choice: hit.initial_choice, order: hit.order, choice: hit.choice, evaluator: hit.evaluator, from_cache: true, notes: hit.notes.slice() }); return finish(); } }
         for (const ev of chain) {
             const tr = { evaluator: ev && ev.id ? ev.id + '@' + ev.version : 'unknown', fail: null };
             rec.tries.push(tr);
@@ -290,7 +290,7 @@ const PSY = (() => {
                 let ap = freeze(clone(a0.v)); let aHash = hashOf(ap); const first = { ap, hash: aHash };
                 const versions = [{ v: 1, hash: aHash }]; const order = ['appraisal#1'];
                 const c0 = parse(await withTimeout(Promise.resolve(ev.choose(view, ap)), timeoutMs)); if (c0.err) { tr.fail = c0.err + '@choice'; continue; }
-                const choice = freeze(clone(c0.v)); order.push('choice'); let notes = va.notes.slice();
+                let choice = freeze(clone(c0.v)); const initialChoice = choice; order.push('choice'); let notes = va.notes.slice();
                 let vc = validateChoice(input, ap, choice);
                 // 補評估：選了沒評估過的方案（例如評估了借 30，最後想借 10），評估器可以補上這個方案的評估。
                 // 補的評估是新的一版、另外凍結；第一版保留、順序照實記下（補評估發生在選擇之後）。核心不改選擇，也不要求換答案。
@@ -303,13 +303,19 @@ const PSY = (() => {
                     ap2.not_considered = (ap2.not_considered || []).filter(nc => !(extra.impacts || []).some(i => i.opt === nc.opt));
                     const v2 = validateAppraisal(input, ap2); if (!v2.ok) { tr.fail = 'invalid_supplement'; tr.errors = v2.errors; continue; }
                     ap = freeze(ap2); aHash = hashOf(ap); versions.push({ v: 2, hash: aHash, prev: versions[0].hash, after: 'choice', reason: vc.errors.slice() }); order.push('appraisal#2');
-                    notes = v2.notes.slice(); vc = validateChoice(input, ap, choice);
+                    notes = v2.notes.slice();
+                    if (typeof ev.confirm !== 'function') { tr.fail = 'confirmation_required'; continue; }
+                    const confirmed = parse(await withTimeout(Promise.resolve(ev.confirm(view, ap, choice)), timeoutMs));
+                    if (confirmed.err) { tr.fail = confirmed.err + '@confirmation'; continue; }
+                    if (confirmed.v?.withdraw === true) { order.push('withdrawn'); Object.assign(rec, { status: 'withdrawn', initial_choice: initialChoice, appraisal: ap, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: first.ap, order, evaluator: { id: ev.id, version: ev.version, fixture: !!ev.fixture }, notes }); return finish(); }
+                    choice = freeze(clone(confirmed.v)); order.push('confirmation');
+                    vc = validateChoice(input, ap, choice);
                 }
                 if (!vc.ok) { tr.fail = vc.errors.some(e => e.startsWith('illegal_option')) ? 'illegal_option' : 'invalid_choice'; tr.errors = vc.errors; continue; }
                 if (hashOf(first.ap) !== first.hash || hashOf(ap) !== aHash) { tr.fail = 'appraisal_mutated'; continue; }
                 order.push('accepted');
-                Object.assign(rec, { status: 'done', fail: null, appraisal: ap, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: versions.length > 1 ? first.ap : null, order, choice, evaluator: { id: ev.id, version: ev.version, fixture: !!ev.fixture }, notes });
-                if (cache) cache.set(cacheKey(input, ev), { appraisal: rec.appraisal, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: rec.appraisal_first, order, choice: rec.choice, evaluator: rec.evaluator, notes: notes.slice() });
+                Object.assign(rec, { status: 'done', fail: null, appraisal: ap, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: versions.length > 1 ? first.ap : null, initial_choice: versions.length > 1 ? initialChoice : null, order, choice, evaluator: { id: ev.id, version: ev.version, fixture: !!ev.fixture }, notes });
+                if (cache) cache.set(cacheKey(input, ev), { appraisal: rec.appraisal, appraisal_hash: aHash, appraisal_versions: versions, appraisal_first: rec.appraisal_first, initial_choice: rec.initial_choice, order, choice: rec.choice, evaluator: rec.evaluator, notes: notes.slice() });
                 return finish();
             } catch (e) { tr.fail = e.fail || ('error:' + e.message); }
         }
@@ -371,3 +377,4 @@ const PSY = (() => {
     return { CONTRACT, BOUNDARY, spotSample, sourceText, stable, sha256, hashOf, freeze, clone, BoundaryError, reader, recallPure, snapshot, idSet, validateInput, validateAppraisal, validateChoice, conforms, ReplayEvaluator, inputKey, cacheKey, evaluate, ResearchLog, diff, tap, GENERIC };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = PSY; else if (typeof globalThis !== 'undefined') globalThis.PSY = PSY;
+

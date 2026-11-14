@@ -1,0 +1,82 @@
+{
+  "base_commit": "b3a004047029bda9b0971deed5f2a20adb1c675e",
+  "node": "24.22.1",
+  "playwright": "1.57.0",
+  "live_ai_calls": 0,
+  "sources": [
+    {
+      "path": "chrome-extension/psy-core.js",
+      "bytes": 40195,
+      "sha256": "010cacc1a4e631fce00b041028895d7562cf2426b2bf9bd1b00e98e69338d96e"
+    },
+    {
+      "path": "chrome-extension/psy-world.js",
+      "bytes": 7446,
+      "sha256": "424e9f614a5c6becbab11bab1c3fd62ba3247f7c6c1a2e545b5b08340f78497e"
+    },
+    {
+      "path": "scripts/psy_d1_unit_test.js",
+      "bytes": 49356,
+      "sha256": "ef6c246db1e6f2eab9cf94848150206d9f1c9cbf13ecbbd118bd735622c8dd1b"
+    },
+    {
+      "path": "scripts/psy_d1_shadow_local_test.js",
+      "bytes": 32045,
+      "sha256": "ff7dfb45ae4b1d2c373991c54019144d611ede06d4b45a89fb35b8095b640187"
+    },
+    {
+      "path": "scripts/psy_loan_pairs.js",
+      "bytes": 3223,
+      "sha256": "3b67ced043e6d83e744bb7dec9862bf27eaf96a60a84f102f7c46f2b7e7b4884"
+    },
+    {
+      "path": "scripts/psy_research.js",
+      "bytes": 9949,
+      "sha256": "87be6a4d0fe5f44b7a268ac19a71b8752544149fb914b58f77f591ea034fbe33"
+    },
+    {
+      "path": "scripts/psy_research_test.js",
+      "bytes": 7205,
+      "sha256": "8df90c00c78f535d516724468006da9157991e1d044bb3ded6691534e58d6c58"
+    },
+    {
+      "path": "research/config.json",
+      "bytes": 419,
+      "sha256": "b7455cc34f5bf826ec58886bc849dadfca75d9aff8d98948045202437403c7ae"
+    },
+    {
+      "path": "research/loan-pairs.json",
+      "bytes": 37208,
+      "sha256": "22726245017be80240fdbda7e5f2d402bdcb937ccc52d9cdeed0707f2338e33c"
+    }
+  ],
+  "local_outputs_not_uploaded": [
+    {
+      "path": "test-results/shadow_30/shadow_summary.json",
+      "bytes": 5212,
+      "sha256": "db555e062fa19603a4dd741e7de22f5e3fd733134122ef3cdce675c6f93ed084"
+    },
+    {
+      "path": "test-results/shadow_90/shadow_summary.json",
+      "bytes": 5301,
+      "sha256": "7348ca6b838f479b07b94db778718dc77f7f294bffbb46ce3df7c0a75c4c338c"
+    },
+    {
+      "path": "test-results/loan-research-fixture/test-output.txt",
+      "bytes": 1103,
+      "sha256": "cac7c05277c2cd43c790e361121c0edcb285839d3fc98474da46588c6edfaeff"
+    },
+    {
+      "path": "test-results/loan-research-fixture/budget.json",
+      "bytes": 13026,
+      "sha256": "45b47050dca83281b341a9c4a14c5a071fd490cb16426399ed0f31cf372fa7bb"
+    }
+  ],
+  "commands": [
+    "node scripts/psy_research_test.js",
+    "node scripts/psy_research.js",
+    "node scripts/psy_d1_unit_test.js",
+    "node scripts/psy_d1_shadow_local_test.js 30 22 2 test-results/shadow_30",
+    "node scripts/psy_d1_shadow_local_test.js 90 7 3 test-results/shadow_90"
+  ]
+}

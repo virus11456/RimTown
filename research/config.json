@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "mode": "fixture",
+  "model": "UNSET",
+  "channel": "local-fixture",
+  "providerSettings": {},
+  "maxCalls": 60,
+  "maxCostMicros": 5000000,
+  "maxOutputTokens": 4096,
+  "inputOverheadTokens": 1024,
+  "pricing": {
+    "inputMicrosPerToken": 4,
+    "outputMicrosPerToken": 20,
+    "description": "離線預算測試的假設費率，非已選定模型或報價；啟用渠道前必須核實。"
+  }
+}

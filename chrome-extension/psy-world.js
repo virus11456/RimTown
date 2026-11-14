@@ -22,14 +22,14 @@ const PSY_WORLD = (() => {
         '😞 {a}移植的{p}被身體排斥了。': { who: 'a', part: 'p' },
     };
     const render = (k, p) => String(k).replace(/\{(\w+)\}/g, (_, x) => (p && p[x] != null ? (typeof p[x] === 'object' ? (p[x].raw ?? '') : p[x]) : ''));
-    // 本人經公開消息知道的、關於某人的健康消息（不讀健康表；消息之後有沒有好轉，本人不知道）
+    // 預留健康消息處理：目前讀取器不提供未證明本人收到的全鎮消息
     function healthNews(R, name) {
         const out = []; const today = R.day();
         for (const m of R.publicMessages(['health'])) { const T = HEALTH_NEWS[m.k]; if (!T || m.p[T.who] !== name) continue; out.push({ text: render(m.k, m.p), d: m.d, days_ago: m.d == null ? null : today - m.d, charge: T.charge || null, fee: T.fee ? Number(m.p[T.fee]) : null }); }
         return out;
     }
 
-    // 本人知道的支出與債務：自己欠人的錢、銀行貸款、自己的病；家人有公開的受傷／開刀消息時，依診所規則可能被收的錢。
+    // 本人知道的支出與債務：自己欠人的錢、銀行貸款、自己的病；未證明本人收到的消息不提供。
     // 家人沒有任何消息時，明白寫「你沒有消息」，不從健康表補。
     function obligations(R) {
         const me = R.selfId; const out = []; let j = 0; const today = R.day();
@@ -69,3 +69,4 @@ const PSY_WORLD = (() => {
     return { FEE_LIGHT, FEE_HEAVY_MIN, FEE_HEAVY_MAX, FAMILY_KEEP, PART, HEALTH_NEWS, r2, render, healthNews, obligations, totals, counted, personViews };
 })();
 if (typeof module !== 'undefined' && module.exports) module.exports = PSY_WORLD; else if (typeof globalThis !== 'undefined') globalThis.PSY_WORLD = PSY_WORLD;
+

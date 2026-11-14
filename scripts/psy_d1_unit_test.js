@@ -124,7 +124,7 @@ const fx = (input, over) => ({ [PSY.inputKey(input)]: fixtureFor(input, over) })
     console.log('— 研究紀錄、重複回應、重播一致');
     { const log = new PSY.ResearchLog(); const E = PSY.ReplayEvaluator(fx(I)); await PSY.evaluate(s0, [E], { log }); await PSY.evaluate(s0, [E], { log }); ok(log.rows.length === 1 && log.rejected[0]?.reason === 'duplicate_response', '同一決策的第二份回應被拒收');
       const a = await PSY.evaluate(s0, [PSY.ReplayEvaluator(fx(I))]); const b = await PSY.evaluate(s0, [PSY.ReplayEvaluator(fx(I))]); ok(PSY.stable(a) === PSY.stable(b), '同一份回應重播兩次，紀錄逐字相同');
-      const w2 = news(world(), OWED, { a: '小明', n: 60 }); const dd = PSY.diff(I, snap(w2).input); ok(dd.some(x => x.path.startsWith('self.obligations')) && dd.some(x => x.path.startsWith('derived')), '差異比較列出改變的欄位', dd.map(x => x.path).join(' ')); }
+      const w2 = world(); w2.wallet.bal.aming = 40; const dd = PSY.diff(I, snap(w2).input); ok(dd.some(x => x.path.startsWith('self.cash')) && dd.some(x => x.path.startsWith('derived')), '差異比較列出改變的欄位', dd.map(x => x.path).join(' ')); }
 
     console.log('— 輸入驗證：不准帶分數、不准引擎替角色推測');
     { const bad = Object.assign({}, LOAN, { build(R, e) { const d = LOAN.build(R, e); d.options[0].base = 1.2; d.views.push({ id: 'v_x', about: 'hua', kind: 'inferred', what: '他會還' }); return d; } }); const s = PSY.snapshot(world(), bad, ev()); const er = PSY.validateInput(s.input);
@@ -138,13 +138,14 @@ const fx = (input, over) => ({ [PSY.inputKey(input)]: fixtureFor(input, over) })
       ok(a.self.kin.some(k => k.who === 'kid' && k.rel === 'child') && a.self.cohabitants.some(c => c.who === 'kid'), '親屬與同住分開列出（兩者都不等於知道病況）');
       const w1 = world(); w1.health.a.kid = [{ k: 'disease', s: 3, p: 'c' }]; ok(PSY.hashOf(snap(w1).input) === PSY.hashOf(a), '孩子的健康表怎麼改，輸入都一樣（讀取器不讀別人的健康表）');
       ok(!a.self.obligations.some(o => o.src === 'cohabitant') && !PSY.stable(a).includes('assumed_visible'), '不再用「同住看得見」推定病況');
-      // 合法已知：本人看得到的公開消息（測試裡明確建立）
-      const w2 = news(world(), FIGHT, { a: '阿強', b: '小明', l: '小明', p: '腳' }); const b = snap(w2).input; const kn = b.self.obligations.find(o => o.who === 'kid');
-      ok(kn && kn.src === 'public_news' && kn.basis === 'messageLog@99' && kn.amount_min === 0 && kn.amount_max === 120 && /1 天前/.test(kn.what) && /不知道/.test(kn.what), '有公開消息：照消息與診所規則給 0～120 的可能支出，寫明日期與「後來好了沒有不知道」', JSON.stringify(kn));
-      ok(b.derived.some(d => d.id === 'd_after_req_vs_known' && /要看實際收費/.test(d.what)), '可能支出是範圍 → 算術只說「要看實際收費」', JSON.stringify(b.derived.map(d => d.what)));
-      const w3 = news(world(), OWED, { a: '小明', n: 60 }); const c = snap(w3).input; ok(c.self.obligations.some(o => o.who === 'kid' && o.amount_max === 60), '消息寫明金額 → 上限用消息裡的金額');
-      const w4 = news(world(), FIGHT, { a: '阿強', b: '阿華', l: '阿華', p: '手' }); const d = snap(w4).input;
-      ok(!d.self.obligations.some(o => o.who === 'hua') && d.views.some(v => v.about === 'hua' && v.kind === 'public' && /阿華的手受了傷/.test(v.what)), '不是家人的公開消息：不算本人支出，只作為對對方的公開資訊');
+      // 玩家可見紀錄沒有角色接收依據：不可作為角色知情。
+      const w2 = news(world(), FIGHT, { a: '阿強', b: '小明', l: '小明', p: '腳' });
+      const b = snap(w2).input; const kn = b.self.obligations.find(o => o.who === 'kid');
+      ok(kn.status === 'unknown' && !PSY.stable(b).includes('腳受了傷'), '玩家可見消息不代表角色收到');
+      const w3 = news(world(), OWED, { a: '小明', n: 60 });
+      ok(snap(w3).input.self.obligations.find(o => o.who === 'kid').status === 'unknown', '沒有接收證據不得推定病況或費用');
+      const w4 = news(world(), FIGHT, { a: '阿強', b: '阿華', l: '阿華', p: '手' });
+      ok(!snap(w4).input.views.some(v => v.id.startsWith('v_news')), '他人的消息不能直接進入觀點');
       const w5 = world(); w5.agents.aming.memory.entries.push({ tick: 9550, content: '小明的腳腫起來了，走路一拐一拐。', importance: 6, category: 'observation', relatedAgents: ['小明'] }); const e = snap(w5, ev({ from: 'kid', n: 5 })).input;
       ok(e.recall.some(m => /小明的腳腫/.test(m.text)), '本人自己的記憶（親眼看到）可以取用；不從健康表補');
       const w6 = world(); w6.agents.aming.relationships.relationships.hua.status = 'married'; w6.health.a.hua = [{ k: 'fever', s: 1, p: 'l' }]; const f = snap(w6).input;
@@ -165,7 +166,7 @@ const fx = (input, over) => ({ [PSY.inputKey(input)]: fixtureFor(input, over) })
       ok(snap(world()).audit.event_sources === LOAN.EVENT_SOURCES, '快照稽核帶著事件內容來源');
       const R = PSY.reader(world(), 'aming'); const d = LOAN.build(R, ev()); const opt = d.options.map(o => o.opt + ':' + JSON.stringify(o.params)).join('|');
       const w2 = world(); w2.wallet.bal.hua = 7777; w2.health.a.kid = []; const R2 = PSY.reader(w2, 'aming'); ok(LOAN.build(R2, ev()).options.map(o => o.opt + ':' + JSON.stringify(o.params)).join('|') === opt, '候選清單只依本人現金：改別人的錢與健康表，候選完全相同');
-      ok(R.manifest.every(m => ['self', 'public'].includes(m.owner)) && R.manifest.some(m => m.why === 'public_news') && !R.manifest.some(m => /health\.a\[(?!self)/.test(m.path)), 'adapter 的讀取路徑全記在清單裡：只有本人與公開資料', [...new Set(R.manifest.map(m => m.path))].join(' '));
+      ok(R.manifest.every(m => ['self', 'public'].includes(m.owner)) && R.manifest.some(m => m.why === 'recipient_unknown') && !R.manifest.some(m => /health\.a\[(?!self)/.test(m.path)), 'adapter 的讀取路徑全記在清單裡：只有本人與公開資料', [...new Set(R.manifest.map(m => m.path))].join(' '));
       const code = (f) => fs.readFileSync(path.join(__dirname, '../chrome-extension/' + f), 'utf8').split('\n').filter(l => !/^\s*\/\//.test(l) && !/^if \(typeof module/.test(l)).join('\n');
       ok(!/\bwindow\b|globalThis|rimtownApp|document\.|localStorage|\bw\.(wallet|health|bank|dark|agents)/.test(code('psy-loan.js') + code('psy-world.js')), 'adapter 原始碼不讀全域物件，也不直接讀世界的錢包、健康、銀行、債務'); }
 
@@ -190,14 +191,19 @@ const fx = (input, over) => ({ [PSY.inputKey(input)]: fixtureFor(input, over) })
     console.log('— 修正二（續）：合法改方案、補評估、超出資源、算術錯誤只記錄');
     { const s1 = snap(world()); const I1 = s1.input; const K1 = PSY.inputKey(I1);
       const only30 = () => { const f = fixtureFor(I1); f.appraisal.impacts = f.appraisal.impacts.filter(i => !(i.opt === 'lend' && i.params.amount === 10)); return f; };
-      const sup = (impacts, extra = {}) => Object.assign({}, PSY.ReplayEvaluator({ [K1]: only30() }), { id: 'fixture-sup', supplement: async () => Object.assign({ impacts }, extra) });
+      const sup = (impacts, extra = {}) => Object.assign({}, PSY.ReplayEvaluator({ [K1]: only30() }), { id: 'fixture-sup', supplement: async () => Object.assign({ impacts }, extra), confirm: async (_input, _appraisal, choice) => choice });
       const im10 = { opt: 'lend', params: { amount: 10 }, expect: [{ what: '借出 10 後身上剩 40 銀幣', who: ['aming'], status: 'derived', ev: ['s_cash'] }], like: ['c1', 'c2'], dislike: [], unsure: [] };
       let r = await PSY.evaluate(s1, [sup([im10])]);
       ok(r.status === 'done' && r.choice.opt === 'lend' && r.choice.params.amount === 10, '評估了借 30、最後想借 10：補上借 10 的評估後接受，選擇原封不動', r.fail + JSON.stringify(r.tries));
       ok(r.appraisal_versions?.length === 2 && r.appraisal_versions[1].prev === r.appraisal_versions[0].hash && r.appraisal_versions[1].after === 'choice' && Object.isFrozen(r.appraisal) && Object.isFrozen(r.appraisal_first), '補評估是新的一版、另外凍結，第一版保留');
-      ok(r.order.join('>') === 'appraisal#1>choice>appraisal#2>accepted' && !r.appraisal_first.impacts.some(i => i.params?.amount === 10) && PSY.hashOf(r.appraisal_first) === r.appraisal_versions[0].hash, '順序照實記下：補評估發生在選擇之後；第一版內容沒被改', r.order && r.order.join('>'));
+      ok(r.order.join('>') === 'appraisal#1>choice>appraisal#2>confirmation>accepted' && !r.appraisal_first.impacts.some(i => i.params?.amount === 10) && PSY.hashOf(r.appraisal_first) === r.appraisal_versions[0].hash, '順序照實記下：補評估發生在選擇之後；第一版內容沒被改', r.order && r.order.join('>'));
       r = await PSY.evaluate(s1, [sup([Object.assign({}, im10, { params: { amount: 15 } })])]); ok(r.status === 'pending' && r.tries[0].fail === 'invalid_choice' && r.choice === null, '補的評估對不上選擇（補了 15、選 10）→ 不接受，也不替角色改成 15');
       r = await PSY.evaluate(s1, [sup([im10], { choice: { opt: 'refuse' } })]); ok(r.tries[0].fail === 'invalid_supplement' && r.tries[0].errors.includes('supplement_has_choice'), '補評估不能順便改選擇');
+      { const E = sup([im10]); delete E.confirm; const rr = await PSY.evaluate(s1, [E]); ok(rr.status === 'pending' && rr.fail === 'confirmation_required', '沒有確認能力時不自動定案'); }
+      { const E = sup([im10]); E.confirm = async () => ({ withdraw: true }); const rr = await PSY.evaluate(s1, [E]); ok(rr.status === 'withdrawn' && rr.choice === null && rr.order.at(-1) === 'withdrawn', '角色可撤回，與技術待處理分開'); }
+      { const E = sup([im10]); E.confirm = async () => { const f = fixtureFor(I1); return Object.assign({}, f.choice, { opt: 'refuse', params: {}, act: { opt: 'refuse' } }); }; const rr = await PSY.evaluate(s1, [E]); ok(rr.status === 'done' && rr.choice.opt === 'refuse', '補評估後角色可改選已評估方案'); }
+      { const E = sup([im10]); E.confirm = async () => { const f = fixtureFor(I1); f.choice.params.amount = 15; f.choice.act.amount = 15; return f.choice; }; const rr = await PSY.evaluate(s1, [E]); ok(rr.status === 'pending' && rr.choice === null, '再次改成未評估參數不自動接受'); }
+      { const E = sup([im10]); E.confirm = async () => new Promise(() => {}); const rr = await PSY.evaluate(s1, [E], { timeoutMs: 10 }); ok(rr.status === 'pending' && rr.choice === null, '確認逾時為技術待處理'); }
       r = await PSY.evaluate(s1, [PSY.ReplayEvaluator({ [K1]: only30() })]); ok(r.status === 'pending' && r.choice === null, '沒有補評估能力的評估器：選了沒評估的方案就是待處理，核心不替它挑一個評估過的');
       // 合法地改成其他方案：同一份評估，選拒絕、借 30、先問清楚都一樣通過（驗證器沒有偏好的答案）
       const alts = { refuse: { opt: 'refuse', params: {}, act: { opt: 'refuse' } }, lend30: { opt: 'lend', params: { amount: 30 }, act: { opt: 'lend', amount: 30 } }, ask: { opt: 'ask', params: { question: '你要做什麼用？' }, act: { opt: 'ask', question: '你要做什麼用？' } } };
@@ -284,3 +290,4 @@ const fx = (input, over) => ({ [PSY.inputKey(input)]: fixtureFor(input, over) })
 
     console.log(`\n${pass} passed, ${fail} failed`); if (fail) { console.log(fails.join('\n')); process.exit(1); }
 })();
+
