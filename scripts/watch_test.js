@@ -247,6 +247,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const ids = await p.evaluate(() => ({ wed: D.threads.find(t => t.type === 'ceremony')?.id, same: D.threads.find(t => t.timeline.some(e => e.whoUnsure))?.id }));
     await p.evaluate((id) => open(id), ids.wed); await p.waitForSelector('#fr');
     ok(/賓客/.test(await p.locator('.legend').innerText()) && /被排去會場/.test(await p.locator('main table').innerText()), `追蹤板（${name}）：婚禮有現場可以重看，賓客那一欄寫的是「被排去會場」`);
+    ok(await p.locator('.step.skip').count() === 0, `追蹤板（${name}）：婚禮有記到現場時，「進行中」那一步不會被劃掉`);
     await p.locator('#fr').fill('1'); await p.locator('#fr').dispatchEvent('input'); await p.locator('#cv').scrollIntoViewIfNeeded(); await p.screenshot({ path: path.join(SHOTS, `${name}-wedding.png`) });
     await p.evaluate((id) => open(id), ids.same); await p.waitForSelector('.tl li');
     { const bb = await p.locator('.tl .badge', { hasText: '同名，沒有接到人' }).first().boundingBox().catch(() => null); ok(!!bb && bb.height < 80 && bb.width <= vp.width, `追蹤板（${name}）：同名的那一筆在時間線上有標示，標籤大小正常`, bb); } await p.locator('.tl').scrollIntoViewIfNeeded(); await p.screenshot({ path: path.join(SHOTS, `${name}-samename.png`) });
