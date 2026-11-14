@@ -422,6 +422,9 @@ Object.assign(RimTownApp.prototype, {
                 + dv.rows.map(r => `<div class="nqc-dec"><div class="nqc-dec-h"><span class="nqc-dec-when">${r.ago <= 0 ? t('今天') : t('{n} 天前').replace('{n}', r.ago)}</span>${r.kind ? `<span class="nqc-dec-kind">${esc2(r.kind)}</span>` : ''}<span class="nqc-dec-src${r.ai ? ' ai' : ''}">${r.ai ? '🤖 ' + t('AI 自己想的') : t('依個性推估')}</span></div><div class="nqc-dec-what">${r.free ? '💭 ' : ''}${esc2(r.what)}</div>${r.why ? `<div class="nqc-dec-why">「${esc2(r.why)}」</div>` : ''}${r.res ? `<div class="nqc-dec-res">→ ${esc2(r.res)}</div>` : ''}</div>`).join('')
                 + `</details>`;
         } catch (e) {}
+        try { // v9.31.0 鎮民手記：這個人有東西可翻時，卡片上給一個入口
+            if (typeof NOTES !== 'undefined') { const nb = NOTES.entriesOf(this.world, agentId).length; if (nb) decHtml += `<button type="button" class="nqc-notes" data-action="notes-open" data-val="${esc2(agentId)}">📓 ${t('翻開他的手記')} (${nb})</button>`; }
+        } catch (e) {}
         const relHtml = (lines.length ? lines.map(l => `<div class="nqc-rel">${l}</div>`).join('') : `<div class="nqc-rel nqc-dim">${t('目前沒有戀愛或仇恨傳聞')}</div>`)
             + (chips.length ? `<div class="nqc-chips">${chips.map(c => typeof c === 'string' ? `<span class="nqc-chip">${esc2(c)}</span>` : `<span class="nqc-chip ${c.cls || ''}">${esc2(c.text)}</span>`).join('')}</div>` : '')
             + (inner.length ? `<details class="nqc-more"><summary>${inner.some(l => l.startsWith('🎭')) ? '🎭' : '💭'} ${t('心事')} (${inner.length}) ▾</summary>${inner.map(l => `<div class="nqc-rel">${esc2(l)}</div>`).join('')}</details>` : '') + decHtml;
