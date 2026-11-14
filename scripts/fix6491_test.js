@@ -23,26 +23,31 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const reset = () => { P.items = P.items.filter(p => p.status !== 'open'); P.proposerCooldown = {}; };
       // 讓一位村民過得很慘 → 系統應該看到「救濟」之類的狀況
       const ag = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); ag[0].mood = 5; ag[1].mood = 8;
-      let invent = 0, choose = 0, withHints = 0, topIn = 0; const N = 20;
+      let invent = 0, choose = 0, withHints = 0, topIn = 0, own = 0, ownHints = 0; const N = 20;
+      // 9.28.2:有一部分提案請村民提「自己的點子」,那種題目不附鎮況(避免大家都去提同一件急事)
+      const OWN = t('鎮上眼前的急事已經有人在處理了。這一次請提一件跟那些急事無關、屬於你自己的事：你的工作、你在乎的人、你的心願，或你一直想讓鎮上變得不一樣的地方。'); const isOwn = (p) => p.includes(OWN);
       for (let i = 0; i < N; i++) {
         reset(); const cands = P._candidates(w, day); const before = prompts.length;
         P._generate(w, day); await new Promise(res => setTimeout(res, 20));
         const mine = prompts.slice(before);
         const inv = mine.find(p => p !== '__CHOOSE__' && /JSON/.test(p) && /effects/.test(p));
-        if (inv) { invent++; const hasHint = /\n- /.test(inv) || /\n1\. /.test(inv); if (hasHint) withHints++;
-          if (cands.length) { const top = cands.slice().sort((x, y) => y.weight - x.weight)[0].make(ag[0]); const tt = P._fill(top.tk, top.tp); if (inv.includes(String(tt).slice(0, 6))) topIn++; } }
+        if (inv) { invent++; const hasHint = /\n- /.test(inv) || /\n1\. /.test(inv);
+          if (isOwn(inv)) { own++; if (hasHint) ownHints++; }
+          else { if (hasHint) withHints++;
+            if (cands.length) { const top = cands.slice().sort((x, y) => y.weight - x.weight)[0].make(ag[0]); const tt = P._fill(top.tk, top.tp); if (inv.includes(String(tt).slice(0, 6))) topIn++; } } }
         if (mine.includes('__CHOOSE__')) choose++;
       }
       // 沒有任何候選狀況時:仍有機會自己想,且不會出錯
       const _c = P._candidates; P._candidates = () => []; let noCand = 0;
       for (let i = 0; i < 20; i++) { reset(); const b = prompts.length; P._generate(w, day); await new Promise(res => setTimeout(res, 10)); if (prompts.length > b) noCand++; }
       P._candidates = _c;
-      return { invent, choose, withHints, topIn, N, noCand, share: ProposalSystem.FREE_SHARE };
+      return { invent, choose, withHints, topIn, own, ownHints, N, noCand, share: ProposalSystem.FREE_SHARE };
     });
     ok(r.share === 1, 'FREE_SHARE = 1', r.share);
     ok(r.invent === r.N && r.choose === 0, '20 次提案全部走 AI 自己發想,沒有走「從點子裡挑」', r);
-    ok(r.withHints === r.N, '每次的提示詞都附上系統看到的鎮況', r);
-    ok(r.topIn >= r.N - 2, '最急的狀況排在提示裡', r);
+    ok(r.withHints === r.N - r.own && r.withHints >= 6, '處理急事的那種題目,每次都附上系統看到的鎮況', r);
+    ok(r.ownHints === 0, '請村民提自己點子的那種題目,不附鎮況', r);
+    ok(r.topIn >= r.N - r.own - 2, '最急的狀況排在提示裡', r);
     ok(r.noCand > 0 && r.noCand < 20, '系統沒看到任何狀況時,村民偶爾還是會自己想', r.noCand);
     ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
