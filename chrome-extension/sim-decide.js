@@ -220,12 +220,16 @@ const DECIDE = (() => {
     const optsOf = (w, a, K, ctx) => { try { return (K.options(w, a, ctx) || []).filter(Boolean); } catch (e) { console.warn('[Decide] options', K.key, e); return []; } };
     const whenOf = (w, a, K) => { try { return K.when(w, a) || null; } catch (e) { return null; } };
 
-    function record(w, X, a, K, op, why, res, src, d) {
+    // 觀察點：只把「誰被問到、誰決定了什麼」通知給外面的觀察工具(sim-watch.js)；沒有人聽的時候什麼都不做，也不影響任何結果
+    const OBS = []; const observe = (f) => { if (typeof f === 'function' && !OBS.includes(f)) OBS.push(f); };
+    const emit = (ev, o) => { for (const f of OBS) { try { f(ev, o); } catch (x) {} } };
+    function record(w, X, a, K, op, why, res, src, d, ctx) {
         const e = { d, kind: K.key, id: op.id, what: op.say || op.text, why: why || null, res: res || null, ai: src === 'ai' ? 1 : 0 }; if (op.free) e.free = 1;
         // mute:「先不動」這類選項,照個性推估時不寫進紀錄(天天都是「放在心裡，不說」會把真正的決定擠掉);AI 自己想的照樣記(他有說理由)
         if (!(op.mute && src !== 'ai')) { const L = X.log[a.agentId] || (X.log[a.agentId] = []); L.push(e); if (L.length > LOG_CAP) L.splice(0, L.length - LOG_CAP); }
         const key = String(op.id).split(':')[0]; X.pick[K.key + '.' + key] = (X.pick[K.key + '.' + key] || 0) + 1;
         if (src === 'ai') X.st.ai++; else X.st.rule++;
+        if (OBS.length) emit('decided', { w, a, K, op, why: why || null, res: res || null, src, d, ctx: ctx || null });
         return e;
     }
     // 傾向版：算分、挑最高的（NOISE 是當天的心情起伏，不是「幾 % 機率會做」）
@@ -234,7 +238,7 @@ const DECIDE = (() => {
         const Ln = lean(w, a); let best = null, bs = -Infinity;
         for (const op of opts) { const s = score(Ln, op) + (Math.random() - 0.5) * noise; if (s > bs) { bs = s; best = op; } }
         let res = null; try { res = best.run(w, a, ctx) || null; } catch (e) { console.warn('[Decide] run', K.key, best.id, e); }
-        return record(w, X, a, K, best, best.why || null, res, 'rule', d);
+        return record(w, X, a, K, best, best.why || null, res, 'rule', d, ctx);
     }
 
     // ---------- AI 版 ----------
@@ -306,7 +310,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); const cs = codes(opts).map(c => c.toLowerCase()); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
             const op = opts[cs.indexOf(pk)] || opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
             let res = null; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); }
-            e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d);
+            e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d, ctx);
             if (!op.quiet) { log(w, 'social', '🧭 {a}想了想，決定{x}：「{y}」', { a: a.name, x: op.say || op.text, y: why ? { raw: why } : (op.why || '') }, a.name); if (why) mem(w, a, '我想過了，決定{x}：{y}', { x: op.say || op.text, y: { raw: why } }, 5); }
         }
         if (e && next) X.plan[a.agentId] = { x: { raw: next }, d };
@@ -359,7 +363,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (offers.length) dispatch(w, X, offers, d);
         }
     }
-    function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); }
+    function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
 
     // ================= 4. 每天 =================
     function daily(w) {
@@ -404,7 +408,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
