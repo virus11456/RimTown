@@ -94,7 +94,6 @@ const SPEND = (() => {
         if (!w.spend || typeof w.spend !== 'object') w.spend = { lastDay: null, school: {}, edu: {}, st: { show: 0, showN: 0, feast: 0, feastN: 0, art: 0, artN: 0, trip: 0, tripN: 0, fee: 0, feeN: 0 } };
         const X = w.spend; X.school = X.school || {}; X.edu = X.edu || {}; X.st = X.st || {}; return X;
     }
-    const thrift = (a) => (has(a, 'ascetic') || has(a, 'stoic') ? 0.4 : 1) * (has(a, 'greedy') ? 0.6 : 1) * (has(a, 'glutton') || has(a, 'optimist') || has(a, 'romantic') || has(a, 'generous') ? 1.4 : 1); // 克己的人少花、貪心的人捨不得、愛享受的人多花
     const townName = (w) => { const L = (w.otherTowns || []).map(x => x?.name || x?.townName).filter(Boolean); return L.length ? t(L[Math.floor(Math.random() * L.length)]) : t('王都'); };
     // ---------- v9.19.0 花錢的動作(由決策核心呼叫) ----------
     // 每個動作分兩半:xxxPlan(w, a) 只回答「現在做得到嗎、要花多少、跟誰」(不動任何東西);xxx(w, a) 真的結算。
@@ -173,7 +172,7 @@ const SPEND = (() => {
     }
     function view(w) { const X = S(w); return { ...X.st, edu: Object.keys(X.edu).filter(k => !k.startsWith('art_')).length, studying: Object.keys(X.school).filter(id => !X.edu[id] && !X.drop?.[id]).length, drop: Object.keys(X.drop || {}).length }; }
     function brief(w, a) { const X = w.spend; if (!X) return ''; if (X.edu?.[a.agentId]) return t('你小時候家裡送你去外地讀過書，工資比別人高一些。'); if (X.school?.[a.agentId] != null) return t('家裡花錢送你去外地讀書。'); return ''; }
-    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, thrift, tips };
+    return { S, daily, view, brief, feastPlan, feast, artPlan, art, tripPlan, trip, enrolPlan, enrol, tips };
 })();
 
 const WORKS = (() => {

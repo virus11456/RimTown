@@ -237,7 +237,7 @@ const POWER = (() => {
         return { gifts: P.stats.gifts || 0, donated: Math.round(P.stats.donated || 0), refused: P.stats.refused || 0, exposed: P.stats.exposed || 0, spiked: P.stats.spiked || 0, fired: P.stats.fired || 0, bought: P.stats.bought || 0, recalls: P.stats.recalls || 0, sued: P.stats.sued || 0, raised: P.stats.raised || 0, withdrawn: P.stats.withdrawn || 0,
             owned: (R?.papers || []).filter(Pp => Pp.owner).map(Pp => { const id = Pp.owner; const a = w.agents[id]; const nm = (a && !a.isDead && a.name) || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || ''; const gone = !nm; const nm2 = nm || a?.name || w.departedNames?.[id] || w._nameCache?.[id] || ''; return [t(Pp.name[0]), nm2 ? t(nm2) + (gone ? t('（已不在鎮上）') : '') : t('已不在鎮上的人')]; }) }; // v9.18.1 老闆過世或搬走時,以前名字會變成空的「（）」
     }
-    return { S, daily, donations, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
+    return { S, daily, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
         targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
 })();
 

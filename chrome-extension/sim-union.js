@@ -9,7 +9,6 @@ const UNION = (() => {
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
-    const aff = (a, id) => a?.relationships?.relationships?.[id]?.affinity || 0;
     const rel = (a, b) => (a && b ? a.relationships?.getOrCreate?.(b.agentId, b.name) : null);
     const mem = (w, a, k, p, imp = 6) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };

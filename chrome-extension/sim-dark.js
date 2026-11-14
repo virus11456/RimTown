@@ -14,7 +14,6 @@ const DARK = (() => {
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
-    const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
     const rel = (a, b) => a.relationships?.getOrCreate?.(b.agentId, b.name);
     const aff = (a, b) => a.relationships?.relationships?.[b.agentId]?.affinity || 0;
     const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(String(v)); return s; };
@@ -702,7 +701,7 @@ const DARK = (() => {
         out.hurt = D ? [...new Set((D.wrongs || []).filter(x => !x.done && x.to === a.agentId && !x.forgiven).map(x => w.agents[x.by]?.name).filter(Boolean))].slice(0, 2) : [];
         return out;
     }
-    return { daily, badmouth, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, apologies, revenge, bump,
+    return { daily, confront, grudge, foeOf, secret, reveal, view, about, malice, honesty, insight, S, reputation, repLabel, credibility, cliqueVote, cliqueOf, verdictVote, punish, proposeVerdict, wrong, bump,
         today: day, schemeInfo, plot, malice, wrongById, wrongId, wrongLine, apologize, answer, deny, avenge: avengeS, letGo, faceUp, speak, talkOut, debtRepay, debtPart, debtExtend, debtDodge, WHY,
         campInfo, smearBy, hollowBy, pilferInfo, pilferBy, comfortInfo, comfortBy, tradeInfo, tradeSet, shorting, tattleInfo, tattleBy };
 })();
