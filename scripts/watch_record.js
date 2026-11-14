@@ -3,8 +3,8 @@
 //   node scripts/watch_record.js record  <天數=120> <城鎮等級=3> <種子=7> <輸出.js>
 //       固定亂數種子建一座城、跑 N 天，把事件追蹤板的資料寫成 tools/event-board/data/ 可以直接載入的 .js
 //   node scripts/watch_record.js compare <天數=60>  <城鎮等級=3> <種子=7>
-//       同一顆種子跑三次：不載入紀錄器／載入但沒接上／載入並接上，比較存檔雜湊、亂數取用次數、tick、
-//       記憶筆數、決策統計、AI 名額。三次必須完全相同（紀錄器不能影響模擬）。
+//       同一顆種子跑四次：不載入紀錄器（兩次，確認測試環境自己可重現）／載入但沒接上／載入並接上，比較存檔雜湊、亂數取用次數、tick、
+//       記憶筆數、決策統計、AI 名額。四次必須完全相同（紀錄器不能影響模擬）。
 // 需要本機 8126 服務 chrome-extension/：  python3 -m http.server 8126 -d chrome-extension
 const { chromium } = require('playwright');
 const fs = require('fs'); const path = require('path'); const crypto = require('crypto');
@@ -30,7 +30,9 @@ async function run(browser, watch, days) {
     w.reset(); w.observerMode = true; ORIGIN.seed(w, TIER, { seed: SEED }); w.observerMode = true; w.fullAgentMode = false; WALLET.S(w);
     try { app.state = w.getState(); app._generateTileMapLayout(); } catch (e) {}
     if (watch === 'on') WATCH.attach(w);
-    for (let d = 0; d < days; d++) { for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } if (d % 10 === 9) await new Promise(r => setTimeout(r, 0)); }
+    // 整段同步跑完，中途不把控制權交還給瀏覽器。交還的話，畫面更新、計時器和非同步回呼會在不固定的時間點插進來取用亂數，
+    // 同一顆種子每次跑出來就不一樣（實測過：連「不載入紀錄器」跑兩次都不同），比較就沒有意義。
+    for (let d = 0; d < days; d++) for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); }
     const all = Object.values(w.agents).filter(a => !a.isPlayer);
     const out = { ver: RIMTOWN_APP_VERSION, tick: w.tickCount, day: w._absDay(), rng: calls, pop: all.filter(a => !a.isDead).length, tier: typeof TIERS !== 'undefined' ? TIERS.level(w) : null,
       mem: all.reduce((n, a) => n + (a.memory?.entries?.length || 0), 0), memText: all.map(a => (a.memory?.entries || []).length + ':' + (a.memory?.entries?.slice(-1)[0]?.tick ?? '')).join(','),
@@ -47,8 +49,10 @@ async function run(browser, watch, days) {
 (async () => {
   const browser = await chromium.launch();
   if (MODE === 'compare') {
-    const rows = {}; for (const m of ['none', 'loaded', 'on']) { rows[m] = await run(browser, m, DAYS); delete rows[m].watch; }
+    const rows = {}; for (const m of ['none', 'none2', 'loaded', 'on']) { rows[m] = await run(browser, m === 'none2' ? 'none' : m, DAYS); delete rows[m].watch; }
     const keys = ['tick', 'day', 'rng', 'pop', 'mem', 'memHash', 'decide', 'llmUsed', 'saveHash', 'saveBytes', 'net']; let ok = true;
+    // 先確認測試環境自己可重現：不載入紀錄器跑兩次要完全相同，否則下面的比較不能算數
+    const repro = keys.every(k => JSON.stringify(rows.none[k]) === JSON.stringify(rows.none2[k])); console.log((repro ? 'SAME ' : 'DIFF ') + '基準重跑  不載入紀錄器跑兩次' + (repro ? '完全相同' : '就不一樣：測試環境不可重現，以下比較不能算數')); if (!repro) ok = false;
     for (const k of keys) { const v = ['none', 'loaded', 'on'].map(m => JSON.stringify(rows[m][k])); const same = v[0] === v[1] && v[1] === v[2]; if (!same) ok = false; console.log((same ? 'SAME ' : 'DIFF ') + k.padEnd(10) + ' ' + (k === 'decide' ? crypto.createHash('sha256').update(v[0]).digest('hex').slice(0, 12) : v[0].slice(0, 70)) + (same ? '' : '  | ' + v[1].slice(0, 40) + ' | ' + v[2].slice(0, 40))); }
     console.log(`errors none/loaded/on: ${rows.none.errs.length}/${rows.loaded.errs.length}/${rows.on.errs.length}; world keys named watch: ${rows.on.hasWatchKey}; AI requests: ${rows.on.net}`);
     console.log(ok && !rows.on.hasWatchKey ? `PASS  紀錄器開關前後完全相同（等級 ${TIER}、種子 ${SEED}、${DAYS} 天）` : 'FAIL  紀錄器影響了模擬');
