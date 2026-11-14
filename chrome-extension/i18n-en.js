@@ -13219,6 +13219,7 @@
         '這一類還沒有東西。': 'Nothing of this kind yet.',
         '選一個人': 'Pick a person',
         // v9.33.0 個人企劃
+        '有人私下張羅起自己的事：在提案頁的「企劃」看他找了誰、誰答應、成不成。': 'Someone has started arranging a private scheme: open “Schemes” on the Proposals page to see who they asked, who agreed and how it turned out.',
         '看企劃': 'View scheme',
         '開始了': 'has begun',
         '鎮上的人不知道，只有你看得到': 'The townsfolk do not know; only you can see this',
@@ -13335,6 +13336,7 @@
         '村民私下張羅的事：自己出錢、自己找人，不經過表決。答應、到場、成不成是三回事。': 'What villagers arrange privately: their own money, their own recruits, no vote. Agreeing, showing up and succeeding are three separate things.',
         '發起的企劃': 'Schemes started',
         // v9.32.0 心聲卡片與念頭泡泡
+        '有人說出了自己的想法：在提案頁的「心聲」看他們遇到事情時自己說的話。': 'Someone has spoken their mind: open “Voices” on the Proposals page to read what villagers said in their own words.',
         '心聲': 'Voices',
         '拿定主意': 'Made up their mind',
         '「{x}」': '\u201c{x}\u201d',

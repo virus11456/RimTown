@@ -648,7 +648,7 @@ Object.assign(RimTownApp.prototype, {
         if (typeof SCHEME === 'undefined' || !P) return; const esc = (x) => String(x ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
         const v = SCHEME.view(this.world, 40).find(x => x.id === P.id); if (!v) return; const open = () => { this.activeTab = 'proposals'; this._ppTab = 'plans'; try { this.renderSidebar(); } catch (e) {} };
         if (ev === 'new') this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t(v.secret ? '{a}私下打著主意' : '{a}想辦一件事').replace('{a}', v.byName)}`), name: esc(v.title), desc: v.why ? esc(t('「{x}」').replace('{x}', v.why)) : '', go: { agentId: v.by }, open, openLabel: t('看企劃') });
-        else if (ev === 'start') { try { this.tileMap?.setThought?.(v.by, { kind: 'idea', name: v.byName, text: v.title, ms: 14000 }); } catch (e) {} this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t('開始了')}`), name: esc(v.title), desc: esc(v.placeName), go: { locId: v.place }, open, openLabel: t('看企劃') }); }
+        else if (ev === 'start') { try { if (v.ai) this.tileMap?.setThought?.(v.by, { kind: 'idea', name: v.byName, text: v.title, ms: 14000 }); } catch (e) {} /* 泡泡裡只放他自己說的話：照個性套樣板的企劃不冒泡泡，只跳通知 */ this._showCornerNotice({ icon: v.icon, title: esc(`${v.id} · ${t('開始了')}`), name: esc(v.title), desc: esc(v.placeName), go: { locId: v.place }, open, openLabel: t('看企劃') }); }
         else if (ev === 'done' && v.out) this._showCornerNotice({ icon: v.out.ok ? '🎉' : '💨', title: esc(`${v.id} · ${v.title}`), name: '', desc: esc(v.out.text), go: v.here ? { agentId: v.by } : null, open, openLabel: t('看企劃') });
     },
     _onEventCard(kind, e, npc, text) {
