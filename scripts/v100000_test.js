@@ -32,7 +32,7 @@ const stage = () => {
   const inv = DECIDE.involved(w, a, facts).map(x => x.name); out.involved = inv.length === 1 && inv[0] === b.name;
   const past0 = DECIDE.pastLines(w, a, K, facts, 46); out.past0 = past0;
   const opts = K.options(w, a, ctx); const pr = DECIDE.prompt(w, K, [{ a, K, ctx, opts }]); const ce = w.conversationEngine;
-  out.prompt = { len: pr.length, max: ce._promptMax ? ce._promptMax() : 0, hasBlock: pr.includes('【跟這件事有關的往事】'), hasMem: pr.includes('沒還') && pr.includes('笑我窮'), noUnrelated: !pr.split('【跟這件事有關的往事】')[1]?.split('【遇到的事】')[0]?.includes('天氣'), hasFeel: pr.includes('"feel"') && pr.includes('賭氣'), hasSay: pr.includes('"say"'), hasHuman: pr.includes('嚥不下這口氣') };
+  out.prompt = { len: pr.length, max: ce._promptMax ? ce._promptMax() : 0, hasBlock: pr.includes('【跟這件事有關的往事】'), hasMem: pr.includes('沒還') && pr.includes('笑我窮'), noUnrelated: !pr.split('【跟這件事有關的往事】').pop().split('【遇到的事】')[0].includes('天氣'), hasFeel: pr.includes('"feel"') && pr.includes('賭氣'), hasSay: pr.includes('"say"'), hasHuman: pr.includes('嚥不下這口氣') };
   // 2. AI 回答：不划算的選擇，有出於什麼，嘴上說的跟心裡想的不一樣
   const m0 = b.memory.entries.length;
   DECIDE.applyAi(w, a, K, ctx, opts, { pick: 'no', why: '他欠我十銀幣還當眾笑我窮，我才不去捧他的場', feel: '賭氣', say: '那天我店裡走不開' });
@@ -77,6 +77,14 @@ const stage = () => {
   ok(!R.unionErr && R.union?.talkSelf && R.union?.cantJoin && R.union?.cantOrg, '工會：名下有產業的人不能入會、不能帶頭，也不會出現領袖跟自己談判', [R.union, R.unionErr]);
   ok(R.union?.after && !R.union.after.stillMember && R.union.after.leader !== R.union.after.lWas && R.union.after.newLeader, '工會：領袖買下產業當了老闆，就退出工會、換人當領袖', R.union?.after);
   ok(!R.rejErr && R.rej && R.rej.status === 'rejected' && R.rej.hasWhy, '提案被否決：提案人記得反對的人說了什麼', [R.rej, R.rejErr]);
+  // 真模型只問一個人時常常直接回一個物件（沒包成陣列）：照樣要收
+  const bare = await page.evaluate(async () => { const app = window.rimtownApp; const w = app.world; const ce = w.conversationEngine; const X = DECIDE.S(w); const st0 = { ai: X.st.ai, miss: X.st.aiMiss };
+    const A = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)); const host = A[A.length - 1], guest = A[A.length - 2]; SCHEME.S(w).quiet = true; for (const P of SCHEME.S(w).list) if (P.stage === 'recruit' || P.stage === 'set') P.stage = 'dropped';
+    const _aj = ce._askJson, _ok = ce.fullAgentOk, _fm = w.fullAgentMode; let asked = 0; ce.fullAgentOk = () => true; w.fullAgentMode = true; ce._askJson = async () => { asked++; return { n: 1, pick: 'join', why: '他難得開口', feel: '義氣' }; };
+    const P = SCHEME.create(w, host, { tone: 'fun', title: '在河邊辦一場釣魚比賽', helpers: [guest], ai: true }); DECIDE.drain(w, X, w._absDay()); await DECIDE.flush();
+    const q = P.ask.find(e => e.id === guest.agentId); ce._askJson = _aj; ce.fullAgentOk = _ok; w.fullAgentMode = _fm;
+    return { asked, s: q?.s, y: q?.y?.raw, ai: X.st.ai - st0.ai, miss: X.st.aiMiss - st0.miss }; });
+  ok(bare.asked === 1 && bare.s === 'yes' && bare.y === '他難得開口' && bare.ai === 1 && bare.miss === 0, '只問一個人、AI 直接回一個物件（沒包陣列）：回答照樣算數', bare);
   // 介面：心聲卡片
   const card = page.locator('.pv-card').filter({ hasText: '笑我窮' }).first();
   ok(await card.count() === 1 && /出於：賭氣/.test(await card.innerText()) && /心裡想/.test(await card.innerText()) && /嘴上說/.test(await card.innerText()) && /走不開/.test(await card.innerText()), '心聲卡片：看得到「出於：賭氣」、心裡想的、嘴上說的', (await card.innerText().catch(() => '')).slice(0, 200));

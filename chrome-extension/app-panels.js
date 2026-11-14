@@ -1211,6 +1211,7 @@ Object.assign(RimTownApp.prototype, {
                 ${P.ask.length ? `<ul class="sk-ask">${P.ask.map(q => `<li class="sk-a sk-a-${q.s}">${who(q.id, q.name, !!this.world.agents[q.id])}<span class="sk-ans">${q.walk ? `📌 ${t('看到告示來的')} · ` : ''}${esc(q.label)}${q.came ? ` · ✅ ${t('到場')}` : q.noShow ? ` · ❌ ${t('沒來')}` : ''}</span>${q.y ? `<span class="sk-say">${esc(t('「{x}」').replace('{x}', q.y))}</span>` : ''}</li>`).join('')}</ul>` : `<div class="sk-solo">${t('一個人做，沒找人。')}</div>`}
                 ${P.out ? `<div class="sk-out">${P.out.ok ? '🎉' : '💨'} ${esc(P.out.text)}</div>` : ''}</div>`]);
         } catch (e) {} }
+        let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (tab === 'plans') { tab = 'mail'; this._ppTab = 'mail'; if (!this._bdOnly) this._bdOnly = 'plans'; } // v10.1.0 企劃併進「往來」（要在組往來的內容之前先轉，篩選鈕才會停在企劃）
         // v10.1.0 往來：村民之間的事收在同一頁，用上面的篩選鈕切：企劃（P 編號）、公告欄（B 編號）、信（只有你看得到）、流言（R 編號）。每張卡看得到誰起的頭、誰回了什麼、最後怎樣
         let nMail = 0, M = '';
         if (typeof BOARD !== 'undefined') { try {
@@ -1233,11 +1234,10 @@ Object.assign(RimTownApp.prototype, {
             cards.sort((x, y) => (y[0] - x[0]) || (y[1] - x[1]));
             M += cards.length ? cards.map(c => c[2]).join('') : `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">📌</span>${t(only === 'rumors' ? '目前沒有傳開的流言。' : only === 'letters' ? '還沒有人寫信。' : only === 'plans' ? '還沒有人私下張羅什麼。讓時間走幾天，村民想到自己的事就會出現在這裡。' : '公告欄還是空的。讓時間走幾天，有人缺錢、缺人手、看誰不順眼或想找人作伴，就會貼出來。')}</div>`;
         } catch (e) { M = ''; } }
-        let tab = this._ppTab; if (!tab) { try { tab = localStorage.getItem('rimtown_pp_tab'); } catch (e) {} } if (tab === 'plans') { tab = 'mail'; this._ppTab = 'mail'; if (!this._bdOnly) this._bdOnly = 'plans'; } // v10.1.0 企劃併進「往來」
         if (!['props', 'town', 'truth', 'voices', 'mail'].includes(tab)) tab = 'props';
         const tabBtn = (k, icon, label, n, dot) => `<button type="button" role="tab" class="pp-tab${tab === k ? ' on' : ''}" aria-selected="${tab === k}" data-pp-tab="${k}" title="${t(label)}" aria-label="${t(label)}"><i class="pp-ti" aria-hidden="true">${icon}</i> <span class="pp-tl">${t(label)}</span>${n ? ` <span class="pp-tab-n${dot ? ' hot' : ''}">${n}</span>` : ''}</button>`;
         const ppEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en'; // v9.32.0 英文標籤比較長，四個以上放不下：沒選到的分頁只留圖示和數字
-        let html = `<div class="proposals-panel"><div class="pp-tabs${ppEn ? ' pp-icons' : typeof BOARD !== 'undefined' ? ' pp-many' : ''}" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${typeof BOARD !== 'undefined' ? tabBtn('mail', '📌', '往來', nMail) : ''}${typeof NOTES !== 'undefined' && NOTES.feed ? tabBtn('voices', '💭', '心聲', nVoice) : ''}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}</div>`;
+        let html = `<div class="proposals-panel"><div class="pp-tabs${ppEn ? ' pp-icons' : typeof BOARD !== 'undefined' ? ' pp-many' : ''}" role="tablist">${tabBtn('props', '🗳️', '提案', d.open.length)}${typeof BOARD !== 'undefined' && ((this._uiOn?.('pp-mail') ?? true) || tab === 'mail') ? tabBtn('mail', '📌', '往來', nMail) : ''}${typeof NOTES !== 'undefined' && NOTES.feed && ((this._uiOn?.('pp-voices') ?? true) || tab === 'voices') ? tabBtn('voices', '💭', '心聲', nVoice) : ''}${(this._uiOn?.('pp-town') ?? true) || tab === 'town' ? tabBtn('town', '🏘️', '鎮況', nIss, hot) : ''}${(this._uiOn?.('pp-truth') ?? true) || tab === 'truth' ? tabBtn('truth', '🕵️', '真相', nSec) : ''}</div>`;
         { // v9.18.0 提案流程說明改成一步一格的流程（文字一字不少），鎮況／真相維持一行
             const hint = t({ props: '村民自己提案、全鎮投票，大事再送議會表決，最後鎮長裁決。你只看。', town: '鎮上正在發生的事：急事、小團體、規矩與統計。', truth: '只有你看得到：誰在說謊、設局，誰誤會了誰。', voices: '他們遇到事情時自己說的話，都是 AI 當下寫的原句。💡 是他不照現成選項、自己想出來的做法。', mail: '村民之間的事，不經過表決：私下張羅的企劃、貼在公告欄的告示、寫給某個人的信、傳來傳去的閒話。誰起的頭、誰回了什麼、最後怎樣，都在卡片上。' }[tab]);
             if (tab === 'props') { const steps = hint.split(/(?<=[，。])|(?<=[,.])\s+/).map(x => x.trim().replace(/[，。,.]$/, '')).filter(Boolean);

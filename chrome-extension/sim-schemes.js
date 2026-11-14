@@ -145,7 +145,7 @@ ${t('tone 的意思：fun 熱鬧好玩、bond 拉人結伴、court 追求某人�
         DECIDE.observe((ev, o) => {
             if (ev !== 'decided' || !o?.w || !o.a) return;
             if (o.K?.key === 'schemeAsk' && o.ctx?.sid) { const P = get(o.w, o.ctx.sid); const q = P?.ask.find(e => e.id === o.a.agentId); if (q && o.src === 'ai' && o.why && o.why.raw != null) q.y = { raw: String(o.why.raw) }; return; }
-            if (o.src === 'ai' && o.op?.free && o.w.observerMode) { try { fromIdea(o.w, o.a, say(o.op.say || o.op.text), o.why && o.why.raw != null ? String(o.why.raw) : ''); } catch (e) { console.warn('[Scheme] idea', e); } }
+            if (o.src === 'ai' && o.op?.free && o.w.observerMode && o.res?.k === '這件事現在還做不到，先放在心裡') { try { fromIdea(o.w, o.a, say(o.op.say || o.op.text), o.why && o.why.raw != null ? String(o.why.raw) : ''); } catch (e) { console.warn('[Scheme] idea', e); } }
         });
     }
 

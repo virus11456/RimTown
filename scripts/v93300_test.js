@@ -102,7 +102,7 @@ const stage2 = () => {
   ok(B.notices > R.noticesNew, '開始與結果也有通知', [R.noticesNew, B.notices]);
   ok(B.saveN >= 6 && B.afterReset === 0 && B.afterLoad, '存檔帶著企劃；開新鎮會清掉；讀檔讀得回來', [B.saveN, B.afterReset, B.afterLoad]);
   ok(B.note.length >= 1 && /P\d{3}/.test(B.note[0]), '手記裡有他發起的企劃', B.note);
-  ok(await page.locator('[data-pp-tab="plans"]').count() === 1 && await page.locator('.sk-card').count() === B.cards, '提案頁多一個「企劃」分頁，一件一張卡', [await page.locator('.sk-card').count(), B.cards]);
+  ok(await page.locator('[data-bd-only="plans"]').count() === 1 && await page.locator('.sk-card').count() === B.cards, '「往來」分頁裡有企劃的篩選鈕（v10.1.0 起企劃併進往來），一件一張卡', [await page.locator('.sk-card').count(), B.cards]);
   const tabs = await page.evaluate(() => { const bar = document.querySelector('.proposals-panel .pp-tabs'); const rw = (b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect().width; };
     return { cut: [...bar.querySelectorAll('.pp-tab')].filter(b => rw(b) > b.clientWidth + 1 || b.getBoundingClientRect().right > bar.getBoundingClientRect().right + 1).map(b => b.textContent.trim() + ':' + Math.round(rw(b)) + '/' + b.clientWidth), n: bar.querySelectorAll('.pp-tab').length }; });
   ok(tabs.n === 5 && tabs.cut.length === 0, '桌機：五個子分頁都放得下，字沒有被切掉', tabs);

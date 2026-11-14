@@ -23,7 +23,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       box.querySelector('[data-pp-tab="truth"]').click(); const truth = box.querySelector('.pp-tab.on')?.dataset.ppTab; const truthBody = box.innerText.length > 10;
       box.remove(); return { tabs, first, hasVote, town, saved, truth, truthBody };
     });
-    ok(pp.tabs.join() === 'props,town,truth' && pp.first === 'props' && pp.hasVote, '提案頁分成「提案／鎮況／真相」三個子分頁，預設看提案', pp);
+    ok(pp.tabs[0] === 'props' && pp.tabs.includes('town') && pp.tabs.includes('truth') && pp.tabs.length <= 5 && pp.first === 'props' && pp.hasVote, '提案頁有「提案／鎮況／真相」等子分頁（最多五個），預設看提案', pp); // v9.32.0 起多了心聲等分頁
     // v6.53.1 定案的提案蓋章
     const st = await page.evaluate(() => {
       const app = window.rimtownApp, w = app.world, P = w.proposals; const o = P.items.filter(x => x.status === 'open');
