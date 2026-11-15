@@ -5,9 +5,10 @@
 //  2) 立場：廢除案＝當初表決這條規定的立場反過來；恢復案＝當初的立場。理由沿用
 //  3) 廢除通過 → 禁令解除；60 天內不能用原本的提案再立，也還不能提恢復。沒通過 → 90 天內不再提
 //  4) 恢復：廢除滿 60 天、夠多人想要它回來 → 有人提「恢復」；沒通過 90 天內不再提；通過 → 規定回來，日子重新算
-//  5) 其他十二條規定都能廢除、也都能恢復
+//  5) 其他十五條規定都能廢除、也都能恢復
 //  6) 村民提案立下的規矩與傳統，每一條也算一條規定：可以廢除、可以恢復
-//  7) 完整智能體：村民發想提案時看得到現行規定與被廢除的規定，可以自己提廢除或恢復（效果 repeal／restore）
+//  7) 完整智能體（最大的權限）：村民發想提案時看得到所有現行規定與被廢除的規定，不必等 60 天就能自己提廢除或恢復，
+//     可以同時有好幾件在表決；只擋同一條正在表決、同一條 10 天內才提過。還可以提案罷免首長：全鎮投票決定，首長自己不能裁決
 //  8) 舊存檔沒記是哪天禁的：用賭場歇業那天；都沒有就從第一次看到那天算
 //  9) 鎮況頁列出現行規定與被廢除的規定，各自什麼時候可以提；存檔讀檔保留；中文、英文
 // 10) 同一塊地新舊兩家賭場：招牌不再每次互相改
@@ -79,7 +80,8 @@ async function run(browser, dev, lang) {
     const setOn = { bio_safety: () => { BIO.S(w).law = d - 70; }, bio_price: () => { BIO.S(w).price = d - 70; }, bio_gmban: () => { BIO.S(w).gmban = d - 70; }, bio_halt: () => { BIO.S(w).halt = d - 70; },
       steam_air: () => { STEAM.S(w).air = d - 70; }, steam_factory: () => { STEAM.S(w).factory = d - 70; }, steam_homun: () => { STEAM.S(w).homunban = d - 70; },
       sh_audit: () => { SHARES.S(w).sh.law.audit = d - 70; }, sh_staff: () => { SHARES.S(w).sh.law.staff = d - 70; }, medaid: () => { HEALTH.setAid(w); w.health.medaidDay = d - 70; },
-      gene_rights: () => { MYTHSOC.rights(w); w.mythsoc.rightsAt = d - 70; }, antitrust_cap: () => { if (!w.cycle) w.cycle = {}; w.cycle.law = true; w.cycle.cap = 2; R().seen.antitrust_cap = d - 70; } };
+      gene_rights: () => { MYTHSOC.rights(w); w.mythsoc.rightsAt = d - 70; }, antitrust_cap: () => { if (!w.cycle) w.cycle = {}; w.cycle.law = true; w.cycle.cap = 2; R().seen.antitrust_cap = d - 70; },
+      gene_ban: () => { MYTH.S(w); MYTH.ban(w); R().seen.gene_ban = d - 70; }, tech_safety: () => { TECH.setLaw(w); w.tech.law = d - 70; }, faith_tax: () => { FAITH.setTax(w, true); w.faith.taxDay = d - 70; } };
     out.laws = {};
     for (const id of Object.keys(setOn)) {
       try { setOn[id](); const L = REPEAL.LAWS[id]; const on0 = L.on(w); const days = REPEAL.view(w).live.find(x => x.id === id)?.days; const v = fixed(0.5, () => REPEAL.vote(w, { refKey: id, kind: 'law_repeal' }, A[0]));
@@ -102,19 +104,23 @@ async function run(browser, dev, lang) {
     const eng = w.conversationEngine; const ok0 = eng.fullAgentOk, aj0 = eng._askJson, inv0 = eng.inventProposal; let prm = '';
     try { eng.fullAgentOk = () => true; eng._askJson = async (q) => { prm = q; return { skip: true }; }; await eng.inventProposal(w, A[0], []); } catch (e) { prm = 'ERR ' + e.message; }
     eng._askJson = aj0;
-    const bad1 = REPEAL.fromAI(w, A[0], { effects: [{ type: 'repeal', law: 'casino_ban' }] });   // 才 25 天，還不能提
     const bad2 = REPEAL.fromAI(w, A[0], { effects: [{ type: 'repeal', law: 'no_such' }] });
+    // 才實施 25 天的禁賭：智能體不必等 60 天，現在就能提；同一條正在表決、或 10 天內才提過，就不能再提
+    const early = REPEAL.fromAI(w, A[1], { effects: [{ type: 'repeal', law: 'casino_ban' }] }); const dup = REPEAL.fromAI(w, A[2], { effects: [{ type: 'repeal', law: 'casino_ban' }] });
+    if (early) P._decide(w, early, 'reject', 'mayor'); const soon = REPEAL.fromAI(w, A[2], { effects: [{ type: 'repeal', law: 'casino_ban' }] }); const blk1 = REPEAL.promptBlock(w, A[0]).includes('casino_ban');
+    R().last.casino_ban = d - 11; const blk2 = REPEAL.promptBlock(w, A[0]).includes('casino_ban'); R().last.casino_ban = d;
     const n0 = P.items.length; let fb = 0;
     eng.inventProposal = async () => ({ title: 'x', pitch: '煤煙沒那麼嚴重，這條法該廢了。', effects: [{ type: 'repeal', law: 'steam_air' }] });
     try { await P._inventLLM(w, d, A[5], () => { fb++; }, []); } catch (e) { fb = 'ERR ' + e.message; }
     const ai1 = P.items[P.items.length - 1]; const aiA = { made: P.items.length === n0 + 1, kind: ai1?.kind, ref: ai1?.refKey, llm: !!ai1?.llm, pitch: ai1?.pitch || '', by: ai1?.proposerId === A[5].agentId, fb };
-    const busyBlock = REPEAL.promptBlock(w); if (ai1?.kind === 'law_repeal') P._decide(w, ai1, 'reject', 'mayor');
+    const blk3 = REPEAL.promptBlock(w, A[0]);
     eng.inventProposal = async () => ({ title: 'y', pitch: '沒了補助，生病的人只能拖著。', effects: [{ type: 'restore', law: 'medaid' }] });
     try { await P._inventLLM(w, d, A[6], () => { fb++; }, []); } catch (e) { fb = 'ERR ' + e.message; }
-    const ai2 = P.items[P.items.length - 1]; const aiB = { kind: ai2?.kind, ref: ai2?.refKey, llm: !!ai2?.llm }; if (ai2?.kind === 'law_restore') P._decide(w, ai2, 'approve', 'mayor');
+    const ai2 = P.items[P.items.length - 1]; const aiB = { kind: ai2?.kind, ref: ai2?.refKey, llm: !!ai2?.llm, both: ai1?.status === 'open' && ai2?.status === 'open' && ai1 !== ai2 };
+    if (ai2?.kind === 'law_restore') P._decide(w, ai2, 'approve', 'mayor'); if (ai1?.kind === 'law_repeal') P._decide(w, ai1, 'reject', 'mayor');
     eng.fullAgentOk = ok0; eng.inventProposal = inv0;
-    out.ai = { prm: prm.split('\n').filter(l => /"type":"repeal"/.test(l) || l.includes('bio_safety') || /medaid[=＝]/.test(l)).join(' ¶ ').slice(0, 900), hasLive: prm.includes('bio_safety') && prm.includes('steam_air'), noEarly: !/casino_ban/.test(prm), hasGone: prm.includes('medaid'), fx: /"type":"repeal"/.test(prm) && /"type":"restore"/.test(prm),
-      bad1: bad1 == null, bad2: bad2 == null, a: aiA, busyBlock, b: aiB, medaidBack: !!w.health.medaid };
+    out.ai = { prm: prm.split('\n').filter(l => /"type":"repeal"/.test(l) || l.includes('bio_safety') || /medaid[=＝]/.test(l)).join(' ¶ ').slice(0, 900), hasLive: prm.includes('bio_safety') && prm.includes('steam_air') && prm.includes('casino_ban'), hasGone: /medaid[=＝]/.test(prm), fx: /"type":"repeal"/.test(prm) && /"type":"restore"/.test(prm),
+      bad2: bad2 == null, early: early?.kind === 'law_repeal' && early.refKey === 'casino_ban', dup: dup == null, soon: soon == null, blk1, blk2, a: aiA, blk3: { noOpen: !/steam_air/.test(blk3), others: /bio_safety/.test(blk3) }, b: aiB, medaidBack: !!w.health.medaid, own: ['gene_ban', 'tech_safety', 'faith_tax'].every(k => REPEAL.LAWS[k].own) };
     // ---------- 8) 舊存檔沒記是哪天禁的 ----------
     C.ban = true; C.banDay = undefined; w.things = w.things || { list: {} }; w.things.list = w.things.list || {}; w.things.list['casino:old'] = { id: 'casino:old', kind: 'casino', name: ['聚寶閣', 'Treasure Pavilion'], gone: true, goneDay: d - 25, place: 'casino' }; C.thing = 'casino:old';
     R().seen = {}; out.legacy1 = REPEAL.view(w).live.find(x => x.id === 'casino_ban')?.days;
@@ -128,6 +134,17 @@ async function run(browser, dev, lang) {
     out.hs = document.documentElement.scrollWidth > innerWidth + 1;
     const sv = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(sv);
     out.save = { has: !!sv.repeal, done: (w2.repeal?.done || []).length, banDay: w2.casino?.banDay === d - 25, live: REPEAL.view(w2).live.map(x => x.id).sort().join(), gone: REPEAL.view(w2).done.map(x => x.id).sort().join(), reset: (() => { const w3 = new World(); w3.reset(); return w3.repeal == null; })() };
+    // ---------- 罷免首長：智能體提案，全鎮投票決定 ----------
+    try { const E = w.election; const Ld = E._officeHolder(w); const asker = A.find(a => a !== Ld); const blk = REPEAL.promptBlock(w, asker); const selfBlk = REPEAL.promptBlock(w, Ld); const self = REPEAL.recallPropose(w, Ld);
+      for (const a of A) if (a !== Ld) a.relationships.getOrCreate(Ld.agentId, Ld.name).affinity = -60;
+      const liked = fixed(0.5, () => { const x = A.find(a => a !== Ld && a !== asker); const r0 = x.relationships.getOrCreate(Ld.agentId, Ld.name); r0.affinity = 80; const v = REPEAL.recallVote(w, { refKey: Ld.agentId }, x); r0.affinity = -60; return v; });
+      const inv1 = eng.inventProposal; eng.inventProposal = async () => ({ title: 'r', pitch: '他只顧自己，不適合再帶這個鎮。', effects: [{ type: 'recall' }] }); await P._inventLLM(w, d, asker, () => {}, []); eng.inventProposal = inv1;
+      const rc = P.items[P.items.length - 1]; const text = txt(rc); fixed(0.5, () => { for (const a of A) P._ruleVote(w, rc, a); });
+      const votes = { leader: rc.votes[Ld.agentId], leaderWhy: t(VOTE_WHY[rc.why[Ld.agentId]] || ''), f: P._count(rc, 'for'), a: P._count(rc, 'against'), why: t(VOTE_WHY[rc.why[asker.agentId]] || '') };
+      const again = REPEAL.recallOk(w, asker); P._mayorRule(w, rc, d, true); await sleep(50);
+      out.recall = { hasBlk: /"type":"recall"/.test(blk), blkLine: blk.split('\n').filter(l => /"type":"recall"/.test(l)).join(' '), selfBlk: /"type":"recall"/.test(selfBlk), self: self == null, kind: rc.kind, ref: rc.refKey === Ld.agentId, llm: !!rc.llm, pitch: rc.pitch, text, label: t(PROPOSAL_KINDS.recall.label), votes, liked, again: again == null,
+        status: rc.status, by: rc.decidedBy, mayorName: rc.mayorName || '', electing: !!E.active, stillMayor: Ld.job?.key === 'mayor', barred: w.power?.recalled === Ld.agentId, after: REPEAL.recallOk(w, asker) == null };
+    } catch (e) { out.recall = { err: String(e.message || e) }; }
     // ---------- 10) 同一塊地新舊兩家：招牌不互相改 ----------
     try { const tm = app.tileMap; const T1 = THINGS.register(w, { kind: 'casino', key: 'tA', name: ['舊賭場', 'Old House'], icon: '🎰', facts: 'x', place: 'casino', usable: true, build: { tmpl: 'tavern' } }); THINGS.syncMap(w, tm);
       THINGS.retire(w, T1.id); THINGS.syncMap(w, tm); const lab1 = tm.labelPositions?.casino?.name;
@@ -153,17 +170,24 @@ async function run(browser, dev, lang) {
   ok(r.backRetry.ban === false && r.backRetry.n === 0 && r.backRetry.wait > 0, '恢復沒通過：照樣沒有禁令，90 天內不再提', r.backRetry);
   ok(r.restored.made && r.restored.ban === true && r.restored.banDay && r.restored.live && r.restored.live.days === 0 && r.restored.live.wait === 60 && !r.restored.done.includes('casino_ban') && !r.restored.quiet, '90 天後再提、這次通過：禁賭回來了，日子從今天重新算（60 天後又可以提廢除）', r.restored);
   const L = r.laws; const ids = Object.keys(L); const bad = ids.filter(id => !(L[id].on0 && L[id].days === 70 && L[id].made && L[id].off && L[id].madeB && L[id].onAgain && L[id].days2 === 0 && L[id].why && L[id].v !== L[id].vb));
-  ok(ids.length === 12 && bad.length === 0 && r.lawIds.length === 13, '其他十二條規定：提得出廢除案、通過後真的解除；再提恢復、通過後真的回來（連禁賭共 13 條）', { bad: bad.map(id => [id, L[id]]), n: r.lawIds.length });
+  ok(ids.length === 15 && bad.length === 0 && r.lawIds.length === 16, '其他十五條規定：提得出廢除案、通過後真的解除；再提恢復、通過後真的回來（連禁賭共 16 條）', { bad: bad.map(id => [id, L[id]]), n: r.lawIds.length });
   ok(zh ? ids.every(id => /廢除「/.test(L[id].text) && /恢復「/.test(L[id].textB)) : ids.every(id => noZh(L[id].text + L[id].textB)), '每一條的廢除案與恢復案文字' + (zh ? '都寫得出來' : '英文都沒有殘留中文'), zh ? ids.map(id => [L[id].text, L[id].textB].map(x => String(x).slice(0, 30))) : ids.filter(id => !noZh(L[id].text + L[id].textB)).map(id => (L[id].text + ' | ' + L[id].textB).slice(0, 200)));
   const T = r.trad;
   ok(T.view && T.view.free && T.view.days === 100 && T.view.wait === 0 && /每月初一全鎮大掃除/.test(T.text) && T.votes && T.votes.own === 'against' && T.votes.ownWhy && T.votes.otherWhy, '村民立下的規矩也算一條規定：可以提廢除；立規矩的人自己反對，各有理由', { view: T.view, text: T.text, votes: T.votes });
   ok(T.off.n === 0 && T.off.done && /每月初一全鎮大掃除/.test(T.text2) && T.back.length === 1 && T.back[0][1] === true && T.back[0][2] === 'L900', '規矩被廢除後從清單拿掉；提恢復通過後回到清單，日子重新算', { off: T.off, text2: T.text2, back: T.back });
   const AI = r.ai;
-  ok(AI.hasLive && AI.noEarly && AI.hasGone && AI.fx, '智能體發想提案時看得到：能廢除的現行規定、能恢復的被廢除規定（還不能提的不列）、兩種效果怎麼寫', { prm: AI.prm, live: AI.hasLive, early: AI.noEarly, gone: AI.hasGone, fx: AI.fx });
+  ok(AI.hasLive && AI.hasGone && AI.fx, '智能體發想提案時看得到：所有現行規定（才實施 25 天的禁賭也在）、被廢除的規定、兩種效果怎麼寫', { prm: AI.prm, live: AI.hasLive, gone: AI.hasGone, fx: AI.fx });
   ok(zh || noZh(AI.prm), '給智能體的這段提示' + (zh ? '有內容' : '英文沒有殘留中文'), AI.prm);
-  ok(AI.bad1 && AI.bad2, '智能體想廢除還不能提的、或不存在的規定：不成案', { a: AI.bad1, b: AI.bad2 });
-  ok(AI.a.made && AI.a.kind === 'law_repeal' && AI.a.ref === 'steam_air' && AI.a.llm && AI.a.pitch && AI.a.by && AI.a.fb === 0 && AI.busyBlock === '', '智能體自己提「廢除清潔空氣法」：開成正式的廢除案，帶著他自己的說法；表決期間不再邀別人提第二件', { a: AI.a, busy: AI.busyBlock });
-  ok(AI.b.kind === 'law_restore' && AI.b.ref === 'medaid' && AI.b.llm && AI.medaidBack, '智能體自己提「恢復公費醫療補助」：開成恢復案，通過後補助真的回來', { b: AI.b, back: AI.medaidBack });
+  ok(AI.early && AI.bad2, '最大的權限：才實施 25 天的規定，智能體不必等 60 天就能提廢除；不存在的規定不成案', { early: AI.early, bad: AI.bad2 });
+  ok(AI.dup && AI.soon && !AI.blk1 && AI.blk2, '只擋重複：同一條正在表決、或 10 天內才提過，就不能再提（也不列在提示裡）；過了 10 天又可以', { dup: AI.dup, soon: AI.soon, blk1: AI.blk1, blk2: AI.blk2 });
+  ok(AI.a.made && AI.a.kind === 'law_repeal' && AI.a.ref === 'steam_air' && AI.a.llm && AI.a.pitch && AI.a.by && AI.a.fb === 0, '智能體自己提「廢除清潔空氣法」：開成正式的廢除案，帶著他自己的說法', AI.a);
+  ok(AI.b.kind === 'law_restore' && AI.b.ref === 'medaid' && AI.b.llm && AI.b.both && AI.blk3.noOpen && AI.blk3.others && AI.medaidBack, '另一個人同時提「恢復公費醫療補助」：兩件一起表決；通過後補助真的回來', { b: AI.b, blk3: AI.blk3, back: AI.medaidBack });
+  ok(AI.own, '本來就有自己提案的三條（基因編輯禁令、核安法、宗教捐獻稅）也進了表，智能體可以自己提；規則版不重複觸發', AI.own);
+  const RC = r.recall;
+  ok(!RC.err && RC.hasBlk && !RC.selfBlk && RC.self && (zh || noZh(RC.blkLine.replace(/[一-鿿]{2,4}(?=[.。])/, ''))), '智能體看得到「可以提案罷免首長」；首長自己看不到，也不能提罷免自己', RC);
+  ok(RC.kind === 'recall' && RC.ref && RC.llm && RC.pitch && (zh ? /罷免/.test(RC.text) && /全鎮投票決定/.test(RC.text) && RC.label === '罷免首長' : /Recall /.test(RC.text) && noZh(RC.text + RC.label)), '智能體提罷免：開成「罷免首長」案，帶著他自己的說法', { kind: RC.kind, text: RC.text, label: RC.label });
+  ok(RC.votes && RC.votes.leader === 'against' && RC.votes.leaderWhy && RC.votes.f > RC.votes.a && RC.votes.why && RC.liked.v === 'against', '立場看跟首長的交情：討厭他的贊成罷免、跟他要好的反對；首長自己反對', { votes: RC.votes, liked: RC.liked });
+  ok(RC.status !== 'open' && RC.status !== 'rejected' && RC.by === 'vote' && RC.mayorName === '' && (RC.electing || !RC.stillMayor) && RC.barred && RC.again && RC.after, '罷免案由全鎮投票決定（首長沒有裁決）：通過後提前改選，被罷免的人這次不能選；30 天內不能再提罷免', { status: RC.status, by: RC.by, electing: RC.electing, still: RC.stillMayor, barred: RC.barred });
   ok(r.legacy1 === 25 && r.legacy2 === 0, '舊存檔沒記是哪天禁的：用賭場歇業那天（25 天前）；都沒有就從今天算', { a: r.legacy1, b: r.legacy2 });
   ok(r.ui && r.ui.rows === 5 && r.ui.inView && !r.hs && (zh ? /現行規定/.test(r.ui.text) && /禁賭 實施第 25 天 · 再 35 天後可以提案廢除/.test(r.ui.text) && /生物安全法 實施第 80 天 · 可以提案廢除/.test(r.ui.text) && /「每月初一全鎮大掃除」 實施第 100 天 · 可以提案廢除/.test(r.ui.text) && /清潔空氣法 10 天前表決廢除 · 再 50 天後可以提案恢復/.test(r.ui.text) && /公費醫療補助 70 天前表決廢除 · 可以提案恢復/.test(r.ui.text) : /Rules in force/.test(r.ui.text) && /in 35 days/.test(r.ui.text) && /restoring it can be proposed/.test(r.ui.text) && noZh(r.ui.text.replace('每月初一全鎮大掃除', ''))), '鎮況頁列出現行規定（含村民立的規矩）與被廢除的規定，各自什麼時候可以提', r.ui);
   ok(r.save.has && r.save.done === 2 && r.save.banDay && r.save.live === 'bio_safety,casino_ban,trad:L900' && r.save.gone === 'medaid,steam_air' && r.save.reset, '存檔讀檔保留（哪天禁的、廢除紀錄）；開新鎮清空', r.save);

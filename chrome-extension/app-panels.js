@@ -1124,7 +1124,7 @@ Object.assign(RimTownApp.prototype, {
                 const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); stampShown.push(p.id + stampKind);
                 const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
                 const word = (en ? { ok: 'APPROVED', no: 'REJECTED', off: 'WITHDRAWN' } : { ok: '核准', no: '否決', off: '收回' })[stampKind];
-                const by = (p.decidedBy === 'override' || p.decidedBy === 'council') ? t((typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會') : p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : ''); // v6.82.0 議會否決／推翻首長否決時章上寫議會
+                const by = (p.decidedBy === 'override' || p.decidedBy === 'council') ? t((typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會') : p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : p.decidedBy === 'vote' ? t('全鎮投票') : ''); // v6.82.0 議會否決／推翻首長否決時章上寫議會
                 stamp = `<div class="pp-stamp pp-stamp-${stampKind}${fresh ? ' pp-stamp-new' : ''}${en ? ' pp-stamp-en' : ''}" aria-label="${esc(word)}"><b>${esc(word)}</b>${by ? `<small>${esc(by)}</small>` : ''}</div>`;
             }
             let html = `<div class="pp-card pp-${p.status}${stampKind ? ' pp-stamped' : ''}" data-pid="${p.id}">${stamp}
