@@ -28,6 +28,8 @@ const stageA = () => {
   const gate = new Promise(r => { T.release = r; });
   ce._askJson = async (prompt) => {
     if (!/"pick"/.test(String(prompt))) return null; const idx = T.prompts.push(String(prompt)); await gate;
+    // 一批一批照順序答：等前一批的回答套用完，才看這一批要不要再給一次「其他」。同時有兩批在等的時候，不這樣排會兩批都答「其他」
+    const prev = T.tail || Promise.resolve(); let done; T.tail = new Promise(r => { done = r; }); await prev; setTimeout(done, 0);
     const blocks = String(prompt).split(/\n?=== \d+\. /).slice(1);
     return blocks.map((b, i) => { const m = b.match(/【可以選】\s*([^＝=\s]+)\s*[＝=]/) || b.match(/\[Options\]\s*([^＝=\s]+)\s*[＝=]/i); const code = m ? m[1].trim() : 'a';
       // 每一批的第一個人都答「其他」，直到真的有一筆主意記下來為止。只給第一批第一個人的話，那個人要是同一格又遇到別的事（後到的會蓋掉前一件，前一件的回答就不採用），整支測試就沒有主意可看
