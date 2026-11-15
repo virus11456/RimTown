@@ -9,7 +9,8 @@
 //  6) 村民提案立下的規矩與傳統，每一條也算一條規定：可以廢除、可以恢復
 //  7) 完整智能體（最大的權限）：村民發想提案時看得到所有現行規定與被廢除的規定，不必等 60 天就能自己提廢除或恢復，
 //     可以同時有好幾件在表決；只擋同一條正在表決、同一條 10 天內才提過。還能提赦免（判決翻案）、調稅率與關稅
-//     罷免首長門檻高：上任滿 20 天、離選舉 15 天以上、一個任期一次、四分之一的人連署才成案；六成贊成且贊成超過全鎮四成才通過；首長自己不能裁決
+//     罷免首長門檻高：上任滿 30 天、離選舉 30 天以上、一個任期一次、四分之一的人連署才成案；六成贊成且贊成超過全鎮四成才通過；首長自己不能裁決
+// 11) 平常以正常選舉為主：一任兩年，首長與議會錯開（單數年秋季選首長、雙數年春季選議會），每年剛好一場
 //  8) 舊存檔沒記是哪天禁的：用賭場歇業那天；都沒有就從第一次看到那天算
 //  9) 鎮況頁列出現行規定與被廢除的規定，各自什麼時候可以提；存檔讀檔保留；中文、英文
 // 10) 同一塊地新舊兩家賭場：招牌不再每次互相改
@@ -167,7 +168,7 @@ async function run(browser, dev, lang) {
       const why = (fn) => { fn(); return REPEAL.recallInfo(w, asker).why || 'ok'; }; R().recallTerm = null; R().recallDay = -999; if (w.power) w.power.scandal = {};
       E.lastElectionDay = d - 30; set(60); const wSign = why(() => {}); const I0 = REPEAL.recallInfo(w, asker); const blk0 = /"type":"recall"/.test(REPEAL.promptBlock(w, asker)); const noSign = REPEAL.fromAI(w, asker, { effects: [{ type: 'recall' }] });
       set(-60); const wSettle = why(() => { E.lastElectionDay = d - 5; }); E.lastElectionDay = d - 30;
-      const c0 = [w.clock.season, w.clock.day]; w.clock.season = '夏季'; w.clock.day = 10; E.lastElectionDay = w._absDay() - 30; const wTail = REPEAL.recallInfo(w, asker).why || 'ok'; w.clock.season = c0[0]; w.clock.day = c0[1]; E.lastElectionDay = d - 30;
+      const c0 = [w.clock.season, w.clock.day, w.clock.year]; w.clock.year = 7; w.clock.season = '夏季'; w.clock.day = 10; /* 第 7 年是首長選舉年，再 6 天就開選 */ E.lastElectionDay = w._absDay() - 40; const wTail = REPEAL.recallInfo(w, asker).why || 'ok'; w.clock.season = c0[0]; w.clock.day = c0[1]; w.clock.year = c0[2]; E.lastElectionDay = d - 30;
       const wSelf = REPEAL.recallInfo(w, Ld).why; const I1 = REPEAL.recallInfo(w, asker); const blk = REPEAL.promptBlock(w, asker);
       const inv1 = eng.inventProposal; eng.inventProposal = async () => ({ title: 'r', pitch: '他只顧自己，不適合再帶這個鎮。', effects: [{ type: 'recall' }] }); await P._inventLLM(w, d, asker, () => {}, []); eng.inventProposal = inv1;
       const rc = P.items[P.items.length - 1]; const text = txt(rc); const wOpen = REPEAL.recallInfo(w, A.find(a => a !== Ld && a !== asker)).why;
@@ -178,13 +179,24 @@ async function run(browser, dev, lang) {
       // 開票二：贊成的全是贊成，可是只有少數人投票 → 沒過「超過全鎮四成」
       const few = REPEAL.recallTally(w, P, { votes: Object.fromEntries(vs.slice(0, Math.max(1, Math.floor(N * 0.3))).map(a => [a.agentId, 'for'])) });
       // 下一個任期：再提，這次大家都贊成 → 通過
-      R().recallTerm = null; R().recallDay = -999; E.lastElectionDay = d - 25; rc.key = 'recall:old'; const asker2 = A.find(a => a !== Ld && a !== asker); /* 上一個提的人剛被否決、沒面子，短期內不會再提案（人情世故） */ const why2 = REPEAL.recallInfo(w, asker2).why || 'ok'; const rc2 = REPEAL.recallPropose(w, asker2); if (rc2) { fixed(0.5, () => { for (const a of A) P._ruleVote(w, rc2, a); }); }
+      R().recallTerm = null; R().recallDay = -999; E.lastElectionDay = d - 40; rc.key = 'recall:old'; const asker2 = A.find(a => a !== Ld && a !== asker); /* 上一個提的人剛被否決、沒面子，短期內不會再提案（人情世故） */ const why2 = REPEAL.recallInfo(w, asker2).why || 'ok'; const rc2 = REPEAL.recallPropose(w, asker2); if (rc2) { fixed(0.5, () => { for (const a of A) P._ruleVote(w, rc2, a); }); }
       const votes = rc2 ? { leader: rc2.votes[Ld.agentId], leaderWhy: t(VOTE_WHY[rc2.why[Ld.agentId]] || ''), f: P._count(rc2, 'for'), a: P._count(rc2, 'against'), why: t(VOTE_WHY[rc2.why[asker2.agentId]] || '') } : null;
       if (rc2) P._mayorRule(w, rc2, d, true); await sleep(50);
       out.recall = { N, wSign, I0: { s: I0.signers, need: I0.need }, blk0, noSign: noSign == null, wSettle, wTail, wSelf, I1: { ok: I1.ok, s: I1.signers, need: I1.need }, hasBlk: /"type":"recall"/.test(blk), blkLine: blk.split('\n').filter(l => /"type":"recall"/.test(l)).join(' '),
         kind: rc.kind, ref: rc.refKey === Ld.agentId, llm: !!rc.llm, pitch: rc.pitch, text, label: t(PROPOSAL_KINDS.recall.label), wOpen, fail, few: { f: few.f, n: few.n, pass: few.pass }, why2, made2: !!rc2, votes,
         status: rc2?.status, by: rc2?.decidedBy, mayorName: rc2?.mayorName || '', electing: !!E.active, stillMayor: Ld.job?.key === 'mayor', barred: w.power?.recalled === Ld.agentId, ui: REPEAL.view(w).recall };
     } catch (e) { out.recall = { err: String(e.message || e) }; }
+    // ---------- 11) 一任兩年，首長與議會錯開 ----------
+    try { const E = w.election; const A2 = ASSEMBLY.S(w); const keep = { y: w.clock.year, s: w.clock.season, dd: w.clock.day, led: E.lastElectionDay, act: E.active, ph: E.phase, ly: A2.lastYear, el: A2.elec, fd: A2.formedDay, ad: A2._day };
+      const at = (y, s2, dd) => { w.clock.year = y; w.clock.season = s2; w.clock.day = dd; };
+      const mayorAt = (y) => { at(y, '秋季', 1); E.active = false; E.phase = 'none'; E.lastElectionDay = w._absDay() - 100; E.dailyUpdate(w); const on = !!E.active; E.active = false; E.phase = 'none'; E.candidates = []; return on; };
+      const councilAt = (y) => { at(y, '春季', 3); E.active = false; E.phase = 'none'; A2.elec = null; A2.lastYear = y - 5; A2.formedDay = w._absDay() - 100; A2._day = null; if (w.council) w.council._formed = true; ASSEMBLY.daily(w); const on = !!A2.elec; A2.elec = null; return on; };
+      const mayor = [1, 2, 3, 4, 13, 14].map(y => [y, mayorAt(y)]); const council = [1, 2, 3, 4, 13, 14].map(y => [y, councilAt(y)]);
+      at(13, '春季', 5); const n1 = [ELECT.nextMayorYear(w), ELECT.nextCouncilYear(w, false)]; at(13, '冬季', 2); const n2 = [ELECT.nextMayorYear(w), ELECT.nextCouncilYear(w, false)]; at(14, '春季', 2); const n3 = [ELECT.nextMayorYear(w), ELECT.nextCouncilYear(w, false), ELECT.nextCouncilYear(w, true)];
+      at(14, '夏季', 3); A2.lastYear = 14; const nextTxt = t(ASSEMBLY.view(w).next || ''); at(13, '夏季', 14); const days = ELECT.nextMayorDay(w) - w._absDay();
+      at(keep.y, keep.s, keep.dd); E.lastElectionDay = keep.led; E.active = keep.act; E.phase = keep.ph; A2.lastYear = keep.ly; A2.elec = keep.el; A2.formedDay = keep.fd; A2._day = keep.ad;
+      out.terms = { mayor, council, n1, n2, n3, nextTxt, days };
+    } catch (e) { out.terms = { err: String(e.message || e) }; }
     // ---------- 10) 同一塊地新舊兩家：招牌不互相改 ----------
     try { const tm = app.tileMap; const T1 = THINGS.register(w, { kind: 'casino', key: 'tA', name: ['舊賭場', 'Old House'], icon: '🎰', facts: 'x', place: 'casino', usable: true, build: { tmpl: 'tavern' } }); THINGS.syncMap(w, tm);
       THINGS.retire(w, T1.id); THINGS.syncMap(w, tm); const lab1 = tm.labelPositions?.casino?.name;
@@ -242,6 +254,10 @@ async function run(browser, dev, lang) {
   ok(r.legacy1 === 25 && r.legacy2 === 0, '舊存檔沒記是哪天禁的：用賭場歇業那天（25 天前）；都沒有就從今天算', { a: r.legacy1, b: r.legacy2 });
   ok(r.ui && r.ui.rows === 6 && (zh ? /連署 \d+／\d+ 人/.test(r.ui.text) : /of \d+ signatures/.test(r.ui.text)) && r.ui.inView && !r.hs && (zh ? /現行規定/.test(r.ui.text) && /禁賭 實施第 25 天 · 再 35 天後可以提案廢除/.test(r.ui.text) && /生物安全法 實施第 80 天 · 可以提案廢除/.test(r.ui.text) && /「每月初一全鎮大掃除」 實施第 100 天 · 可以提案廢除/.test(r.ui.text) && /清潔空氣法 10 天前表決廢除 · 再 50 天後可以提案恢復/.test(r.ui.text) && /公費醫療補助 70 天前表決廢除 · 可以提案恢復/.test(r.ui.text) : /Rules in force/.test(r.ui.text) && /in 35 days/.test(r.ui.text) && /restoring it can be proposed/.test(r.ui.text) && noZh(r.ui.text.replace('每月初一全鎮大掃除', ''))), '鎮況頁列出現行規定（含村民立的規矩）、被廢除的規定各自什麼時候可以提，以及罷免的連署門檻', r.ui);
   ok(r.save.has && r.save.done === 2 && r.save.banDay && r.save.live === 'bio_safety,casino_ban,trad:L900' && r.save.gone === 'medaid,steam_air' && r.save.reset, '存檔讀檔保留（哪天禁的、廢除紀錄）；開新鎮清空', r.save);
+  const TM = r.terms;
+  ok(!TM.err && JSON.stringify(TM.mayor) === JSON.stringify([[1, true], [2, false], [3, true], [4, false], [13, true], [14, false]]), '首長一任兩年：只有單數年的秋季第 1 天開選（第 1、3、13 年選；第 2、4、14 年不選）', TM.mayor || TM);
+  ok(!TM.err && JSON.stringify(TM.council) === JSON.stringify([[1, false], [2, true], [3, false], [4, true], [13, false], [14, true]]), '議會一任兩年：只有雙數年的春季改選，跟首長錯開，每年剛好一場', TM.council || TM);
+  ok(!TM.err && TM.n1.join() === '13,14' && TM.n2.join() === '15,14' && TM.n3.join() === '15,14,16' && TM.nextTxt && TM.days === 2, '算得出下一次是哪一年：第 13 年春天看是「首長今年、議會明年」，過了秋天首長變第 15 年；議會剛選完就是後年', TM);
   ok(r.sign && r.sign.built && (r.sign.lab1 || '').length > 0 && r.sign.lab2 === r.sign.lab3 && r.sign.lab2 !== r.sign.lab1 && r.sign.c2 === false && r.sign.c3 === false, '同一塊地舊的歇業、新的開張：招牌換成新的那家，之後不再每次互相改', r.sign);
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();

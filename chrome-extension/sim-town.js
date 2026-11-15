@@ -710,6 +710,20 @@ const ELECTION_POLICIES = [
     { id:'freedom',    label:t('個人自由'), icon:'🕊️', values:[t('自由'),t('冒險')],      traits:['creative','night_owl'] },
 ];
 
+// v10.4.0 一任兩年，首長與議會的選舉錯開：單數年秋季第 1 天選首長、雙數年春季第 3 天選議會，每年剛好一場。
+// 以前兩邊都是一年一選：剛上任就又要選，政見還沒看到成效；罷免也沒什麼意義（等幾個月就改選了）
+const ELECT = {
+    TERM_YEARS: 2,
+    mayorYear: (y) => (y % 2) === 1,
+    councilYear: (y) => (y % 2) === 0,
+    _si: (c) => Math.max(0, ['春季', '夏季', '秋季', '冬季'].indexOf(c?.season)),
+    // 下一次首長選舉在第幾年（今年是選舉年、還沒到秋季就是今年）
+    nextMayorYear(w) { const c = w.clock; const y = c.year; if (ELECT.mayorYear(y) && ELECT._si(c) < 2) return y; return ELECT.mayorYear(y + 1) ? y + 1 : y + 2; },
+    nextMayorDay(w) { return (ELECT.nextMayorYear(w) - 1) * 60 + 31; },
+    // 下一次議會改選在第幾年（held＝今年已經選過或跳過）
+    nextCouncilYear(w, held) { const c = w.clock; const y = c.year; if (ELECT.councilYear(y) && !held && ELECT._si(c) === 0 && c.day <= 6) return y; return ELECT.councilYear(y + 1) ? y + 1 : y + 2; },
+};
+if (typeof globalThis !== 'undefined') globalThis.ELECT = ELECT;
 class ElectionSystem {
     constructor() {
         this.active = false;
@@ -823,8 +837,8 @@ class ElectionSystem {
             if (this.resultsDaysLeft <= 0) { this.phase = 'none'; this.active = false; }
             return null;
         }
-        // v5.30.1 固定每年秋季第 1 天開選(競選3天→投票2天→公布);防止同年重複
-        if (!this.active && world.clock.season === '秋季' && world.clock.day === 1
+        // v5.30.1 固定秋季第 1 天開選(競選3天→投票2天→公布);防止同年重複。v10.4.0 一任兩年：只有單數年選（雙數年選議會）
+        if (!this.active && world.clock.season === '秋季' && world.clock.day === 1 && ELECT.mayorYear(world.clock.year)
             && (day - this.lastElectionDay) >= 20) {
             this._startElection(world);
         }
@@ -845,7 +859,7 @@ class ElectionSystem {
     }
 
     registerPlayerCandidate(world, policyId) {
-        if (!this.active || this.phase !== 'campaign') return { ok: false, msg: t('現在不是競選登記期間(每年秋季第 1 天開選,登記期 3 天)。') };
+        if (!this.active || this.phase !== 'campaign') return { ok: false, msg: t('現在不是競選登記期間(單數年秋季第 1 天開選,登記期 3 天)。') };
         if (this.candidates.some(c => c.agentId === 'player')) return { ok: false, msg: t('你已經登記參選了。') };
         const elig = this.playerEligibility(world);
         if (!elig.ok) return elig;

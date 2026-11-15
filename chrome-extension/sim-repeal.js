@@ -263,15 +263,15 @@ const REPEAL = (() => {
     const AIGAP = 10;
     const anyOpen = (w, id) => (w.proposals?.items || []).some(p => KINDS.includes(p.kind) && p.refKey === id && ['open', 'shelved', 'approved'].includes(p.status));
     const aiOk = (w, id) => { const R = S(w); return !anyOpen(w, id) && day(w) - Math.max(R.last[id] ?? -999, R.lastBack[id] ?? -999) >= AIGAP; };
-    // 罷免首長：也是一個提案，可是門檻高，不能想罷免就罷免（一個任期才 60 天）
-    //   什麼時候能提：上任滿 20 天、離下次選舉還有 15 天以上、這個任期還沒人提過罷免
+    // 罷免首長：也是一個提案，可是門檻高，不能想罷免就罷免。平常以正常選舉為主（一任兩年＝120 天）
+    //   什麼時候能提：上任滿 30 天、離下次選舉還有 30 天以上、這個任期還沒人提過罷免
     //   成案：全鎮至少四分之一的人願意連署（真的對他不滿的人；至少 3 人）
     //   通過：贊成票要有六成，而且贊成的人數超過全鎮四成（不能靠大家沒來投票混過去）。全鎮投票決定，不送議會，首長自己不能裁決
     //   沒過：這個任期不能再提；提的人跟首長的關係變差
-    const RC = { settle: 20, tail: 15, sign: 0.25, yes: 0.6, turnout: 0.4, minSign: 3 };
+    const RC = { settle: 30, tail: 30, sign: 0.25, yes: 0.6, turnout: 0.4, minSign: 3 };
     const holder = (w) => { try { return w.election?._officeHolder?.(w) || null; } catch (e) { return null; } };
     const titleOf = (w) => { try { return (typeof TIERS !== 'undefined') ? TIERS.leaderTitle(w) : t('鎮長'); } catch (e) { return t('鎮長'); } };
-    const nextElection = (w) => { const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 每年秋季第 1 天
+    const nextElection = (w) => { if (typeof ELECT !== 'undefined') return ELECT.nextMayorDay(w); const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 單數年秋季第 1 天
     const dislike = (w, a, L) => (a.relationships?.relationships?.[L.agentId]?.affinity || 0) / 25 - (w.power?.scandal?.[L.agentId] || 0) * 0.6 + 0.3; // <0＝不滿
     const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < -0.5); // 連署要真的不滿（沒醜聞時好感低於 -20）；真模型實測發現只要有一樁醜聞，沒意見的人也全算進來
     function recallInfo(w, a) {
