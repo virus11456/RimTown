@@ -21,7 +21,8 @@
     </style>
     <!-- v10.2.0 開機要用的資料(帳號設定、存檔清單、存檔)在這裡就先發出請求,跟底下一百多支程式同時下載;
          以前要等程式全部載完才一個接一個去抓。app.js 的 RimTownAuth._fetch 會接手這些請求,不會重發。
-         本機副本已經是最新的(而且雲端沒被別台動過)就不抓存檔本體:判斷方式跟 app-towns.js 的 _bootPick 相同 -->
+         v10.3.0 存檔只放雲端:上次玩的那座鎮的存檔不等清單回來,一開頭就跟清單同時抓(每次開頁都要下載,越早開始越好)。
+         只有舊版還留著本機副本的裝置(第一次開新版)照舊先看清單再決定:判斷方式跟 app-towns.js 的 _bootPick 相同 -->
     <script>
     (function () {
         try {
@@ -32,6 +33,9 @@
             var B = window.__rtBoot = { at: Date.now(), token: jwt, req: {} };
             B.req.settings = get('settings'); B.req.saves = get('saves');
             B.req.settings.catch(function () {});
+            var pre = function (id) { if (id && !B.req['save/' + id] && /^[a-zA-Z0-9_-]+$/.test(id)) { B.req['save/' + id] = get('save/' + id); B.req['save/' + id].catch(function () {}); } };
+            var last0 = localStorage.getItem('rimtown_last_town');
+            if (last0 && localStorage.getItem('rimtown_lt_' + last0) == null) pre(last0);
             B.req.saves.then(function (r) {
                 try {
                     var list = (r && r.ok && r.data && r.data.saves) || []; if (!list.length) return;
@@ -40,7 +44,7 @@
                     m = m || list[0];
                     var id = m.town_id, lt = localStorage.getItem('rimtown_lt_' + id), sy = localStorage.getItem('rimtown_synced_' + id), ct = Number(m.tick_count);
                     var localOk = lt != null && lt !== '' && m.tick_count != null && isFinite(ct) && isFinite(Number(lt)) && Number(lt) >= ct && (sy == null || sy === '' || Number(sy) === ct);
-                    if (!localOk && /^[a-zA-Z0-9_-]+$/.test(id)) { B.req['save/' + id] = get('save/' + id); B.req['save/' + id].catch(function () {}); }
+                    if (!localOk) pre(id);
                 } catch (e) {}
             }).catch(function () {});
         } catch (e) {}

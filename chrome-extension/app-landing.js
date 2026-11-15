@@ -296,7 +296,7 @@ Object.assign(RimTownApp.prototype, {
         } catch (e) {
             console.error('[RimTown] Cloud sync error:', e);
             this.world.logMessage('system', t('雲端同步失敗。'));
-            this._gameAlert?.(t('上傳到雲端失敗，請稍後再試。本機存檔不受影響。'), '☁️');
+            this._gameAlert?.(t('上傳到雲端失敗，請稍後再試。存上之前先不要關掉這一頁。'), '☁️');
         }
     },
 

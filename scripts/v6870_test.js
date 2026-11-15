@@ -107,7 +107,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         big.events._returnAgent(big, big.events._travellingAgents.find(t2 => t2.agentData.agentId === kid0)); big.events._travellingAgents = big.events._travellingAgents.filter(t2 => t2.agentData.agentId !== kid0);
         CROWN.daily(big); out.regentEnd = !KC.regent && CROWN.king(big)?.agentId === kid0;
       }
-      // 9) 訪客本機空間滿 → 改存 IndexedDB
+      // 9) 裝置空間滿(以前:訪客改存 IndexedDB;v7.7.1 拿掉訪客模式、v10.3.0 存檔只放雲端 → 不寫到裝置上)
       const wasLogged = app.auth?.loggedIn; if (app.auth) app.auth.loggedIn = false; let alerted = false; app._gameAlert = () => { alerted = true; };
       const realSet = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('rimtown_town_') && k !== 'rimtown_town_list') throw new Error('QuotaExceededError'); return realSet.call(this, k, v); };
       const tid = app.currentTownId || ('town_' + Date.now()); app.currentTownId = tid;
@@ -149,7 +149,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.kingKept && r.regent && r.regentLog && r.noDeath, '國王出巡：不算駕崩、不開始繼承，改由攝政', { k: r.kingKept, r: r.regent, l: r.regentLog, d: r.noDeath });
       ok(r.regentEnd, '國王回來後攝政結束', r.regentEnd);
     }
-    ok(r.idb && r.idbHas && !r.alerted && !r.saveErr, '訪客本機空間滿：存檔改放 IndexedDB，不跳「空間已滿」', { i: r.idb, h: r.idbHas, a: r.alerted, e: r.saveErr });
+    ok(!r.idb && !r.idbHas && !r.alerted && !r.saveErr, 'v10.3.0 存檔只放雲端：裝置空間滿也不相干，存檔不寫到裝置上、不出錯、不跳「空間已滿」', { i: r.idb, h: r.idbHas, a: r.alerted, e: r.saveErr });
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
   }

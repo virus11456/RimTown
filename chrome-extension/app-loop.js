@@ -306,6 +306,7 @@ Object.assign(RimTownApp.prototype, {
         if (!def) return;
         this._neighborEnsured = this._neighborEnsured && typeof this._neighborEnsured === 'object' ? this._neighborEnsured : {};
         if (this._neighborEnsured[themeKey]) return;
+        if (Date.now() < (this._neighborRetryAt?.[themeKey] || 0)) return; // v10.3.0 上次雲端存不上去:隔一分鐘再試,不要每一格都重建一座鎮
         this._neighborEnsured[themeKey] = true;
         const townName = def.name;
         try {
@@ -324,17 +325,17 @@ Object.assign(RimTownApp.prototype, {
             try { if (typeof ORIGIN !== 'undefined') { const sd = ORIGIN.hash(rimtownWorldId() + ':' + themeKey); ORIGIN.seed(nw, ORIGIN.sizeFor(townName, sd), { seed: sd }); } } catch (e) { console.warn('[RimTown] origin', e); } // v6.85.0 鄰鎮也有自己的大小與歷史
             const blob = nw.serialize();
             const tid = this._generateTownId(townName);
+            // v10.3.0 存檔只放雲端:先存上雲端,存成功才寫進城鎮列表。以前先寫列表、存檔放裝置;現在雲端沒存上就等於沒有這座鎮,
+            // 留著列表上的空殼反而讓它永遠不會再生成(下面 catch 會把「已處理」的記號拿掉,一分鐘後重試)
+            if (this.auth.loggedIn) await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() });
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) {
                 list.push({ id: tid, name: townName, savedAt: new Date().toISOString(), season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); // v6.35.0 標成鄰鎮
                 this._saveTownList(list);
             }
-            try { await this._writeOtherTown(tid, blob); this._noteSummary(tid, blob); } catch (e) {} // v6.76.1 鄰鎮副本直接放 IndexedDB
-            if (this.auth.loggedIn) {
-                try { await this.auth.cloudSave(tid, townName, blob, { season: blob.clock?.season, year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: themeKey, origin: 'neighbor', world: rimtownWorldId() }); } catch (e) {}
-            }
+            try { this._noteSummary(tid, blob); } catch (e) {}
             this._otherTownsAt = 0; // 立即讓互訪/馬車看見新鄰鎮
-        } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; }
+        } catch (e) { console.warn('[RimTown] neighbor town gen failed', e); this._neighborEnsured[themeKey] = false; (this._neighborRetryAt || (this._neighborRetryAt = {}))[themeKey] = Date.now() + 60000; }
     },
 
     _visitorMailboxTick() {
@@ -747,7 +748,7 @@ Object.assign(RimTownApp.prototype, {
     // v5.90.0 搬家提案:村民作客回來後,和對方鎮某人兩情相悅→事件選擇(讓對方搬來/讓他搬過去/不干涉);三天不選就依兩人意願自動定案
     _offerRelocation(w, ag, e) {
         const r = e.romance; if (!r || !r.localData) return true;
-        if (!this._hasLocalTown(e.visitedTownId)) return true; // 對方鎮不在本機:不提案(對方存檔改不到)
+        if (!this._hasLocalTown(e.visitedTownId) && !(Array.isArray(this._cloudSaves) && this._cloudSaves.some(x => x.town_id === e.visitedTownId))) return true; // 對方鎮不存在(雲端沒有、裝置上也沒有舊副本):不提案。v10.3.0 存檔只放雲端,以雲端清單為準
         if (w.eventChoice?.pendingEvent) return false;
         const full = Object.values(w.agents).filter(a => !a.isPlayer).length >= 30;
         const base = { romance: r, otherTownId: e.visitedTownId, otherTownName: e.visitedTownName, residentId: ag.agentId, residentName: ag.name };

@@ -49,17 +49,17 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         app._saveCurrentTown(); try { await app._quotaSpill; } catch (e) {}
         out.a = { qa: !!localStorage.getItem('rimtown_town_town_qa'), qb: !!localStorage.getItem('rimtown_town_town_qb'), curIdb: !!(await RTStore.get(cur)), curIdx: app._idbTowns.has(cur) };
         RTStore.set = oIdb;
-        // (b) IndexedDB 正常:別鎮搬過去後目前這座寫得進 localStorage,這時才刪舊副本
-        Storage.prototype.setItem = function (k, v) { if (k === key && (localStorage.getItem('rimtown_town_town_qa') || localStorage.getItem('rimtown_town_town_qb'))) throw new DOMException('full', 'QuotaExceededError'); return oSet.call(this, k, v); };
-        app._saveCurrentTown(); try { await app._quotaSpill; } catch (e) {}
+        // (b) v10.3.0 存檔只放雲端:存上雲端後,目前這座留在裝置上的舊副本才清掉;其他鎮的舊副本補傳雲端後也清掉。存檔不再寫回裝置
         Storage.prototype.setItem = oSet;
+        out.saved = await app.saveGame(); await new Promise(r => setTimeout(r, 200));
+        out.purged = await app._purgeDeviceSaves([]);
         out.b = { qaLs: !!localStorage.getItem('rimtown_town_town_qa'), qaIdb: !!(await RTStore.get('town_qa')), qbIdb: !!(await RTStore.get('town_qb')), curLs: !!localStorage.getItem(key), curIdb: !!(await RTStore.get(cur)) };
         return out;
       });
       ok(q.a.qa && q.a.qb, '空間滿而且 IndexedDB 寫不進去:別鎮唯一的本機存檔沒被刪', q.a);
       ok(q.a.curIdb && q.a.curIdx, '目前這座寫不進去時,IndexedDB 裡的舊副本也還在', q.a);
-      ok(!q.b.qaLs && q.b.qaIdb && q.b.qbIdb && q.b.curLs && !q.b.curIdb, 'IndexedDB 正常時:別鎮確定搬過去才讓位,目前這座寫好後才刪舊副本', q.b);
-      // 4) 開新遊戲:原本那座立刻搬去 IndexedDB、新的世界;設定裡的「新地圖」走同一條路
+      ok(q.saved === true && !q.b.qaLs && !q.b.qaIdb && !q.b.qbIdb && !q.b.curLs && !q.b.curIdb, 'v10.3.0 存上雲端後舊副本才清掉；其他鎮的舊副本補傳雲端後也清掉，存檔不再寫回裝置', q);
+      // 4) 開新遊戲:原本那座先存上雲端、新的世界,裝置上都不留副本;設定裡的「新地圖」走同一條路
       const nw = await page.evaluate(async () => {
         const app = window.rimtownApp, w = app.world; window.confirm = () => true; let n = 0; window.prompt = () => '測試新鎮' + (++n);
         const prev = app.currentTownId, w0 = w.worldId; await app.createNewTown();
@@ -70,8 +70,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
         const r2 = { changed: app.currentTownId !== prev2, prevLs: !!localStorage.getItem('rimtown_town_' + prev2), prevIdb: !!(await RTStore.get(prev2)), newWorld: !!w.worldId && w.worldId !== w1 };
         b.remove(); return { r1, r2 };
       });
-      ok(nw.r1.now !== nw.r1.prev && !nw.r1.prevLs && nw.r1.prevIdb && nw.r1.newWorld && nw.r1.curLs, '開新遊戲:原本那座立刻搬去 IndexedDB,localStorage 只留新的一座', nw.r1);
-      ok(nw.r2.changed && !nw.r2.prevLs && nw.r2.prevIdb && nw.r2.newWorld, '設定的「新地圖」也是新的世界,原本那座同樣搬走', nw.r2);
+      ok(nw.r1.now !== nw.r1.prev && !nw.r1.prevLs && !nw.r1.prevIdb && nw.r1.newWorld && !nw.r1.curLs, 'v10.3.0 開新遊戲:新的世界；原本那座和新的那座都只存雲端，裝置上不留副本', nw.r1);
+      ok(nw.r2.changed && !nw.r2.prevLs && !nw.r2.prevIdb && nw.r2.newWorld, '設定的「新地圖」也是新的世界,原本那座同樣不留在裝置上', nw.r2);
       ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
       await ctx.close();
     }

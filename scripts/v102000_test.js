@@ -115,21 +115,30 @@ async function clientTest(browser, dev, lang) {
   const early = ['GET settings', 'GET saves', 'GET save/t1'].map(k => S.log.find(x => x.k === k)?.at);
   ok(count(S, 'GET settings') === 1 && count(S, 'GET saves') === 1 && count(S, 'GET save/t1') === 1 && st.left.length === 0, '設定、存檔清單、存檔各只請求一次（開頭先發的被接手，沒有重發）', { n: [count(S, 'GET settings'), count(S, 'GET saves'), count(S, 'GET save/t1')], left: st.left });
   ok(st.boot && early.every(t => t && t < st.dcl), '三個請求都在程式載完之前就發出去了', { early: early.map(t => t - st.dcl) });
-  ok(st.town === 't1' && st.tick === T0 && st.synced === String(T0), '本機沒有副本：載入雲端那份，並記下同步點', st);
+  ok(st.town === 't1' && st.tick === T0 && st.synced == null, '載入雲端那份；v10.3.0 裝置上不記同步點', st);
+  // v10.3.0 存檔只放雲端:下面 2)～4) 原本測「本機副本」怎麼跟雲端比新舊,現在改測「裝置上不留存檔、每次都讀雲端」,以及舊版留下的副本怎麼收尾
+  const dev0 = () => page.evaluate(async () => ({ ls: !!localStorage.getItem('rimtown_town_t1'), lt: localStorage.getItem('rimtown_lt_t1'), sy: localStorage.getItem('rimtown_synced_t1'), idb: ((await RTStore.keys()) || []).length }));
   await page.evaluate(() => { window.rimtownApp._saveCurrentTown(); }); await page.waitForTimeout(400);
-  ok(await page.evaluate(() => localStorage.getItem('rimtown_lt_t1')) === String(T0), '寫本機副本時另外記下它的進度', null); await page.close();
-  // 2) 本機副本跟雲端一樣新:不下載雲端存檔
+  let dv = await dev0(); ok(!dv.ls && dv.lt == null && dv.idb === 0, 'v10.3.0 存檔不寫到裝置上，也不記它的進度', dv); await page.close();
+  // 2) 再開一次:還是讀雲端那份(下載一次),沒有新進度不回傳
   page = await open(ctx, S); st = await page.evaluate(() => ({ town: window.rimtownApp.currentTownId, tick: window.rimtownApp.world.tickCount }));
-  ok(count(S, 'GET save/t1') === 0 && count(S, 'GET saves') === 1 && st.town === 't1' && st.tick === T0 && S.posts.length === 0, '本機副本已經是最新的：不下載雲端存檔，也不必回填', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
-  // 3) 本機比雲端新(同一台多玩了一段還沒上雲端):用本機的,並回填雲端
+  ok(count(S, 'GET save/t1') === 1 && count(S, 'GET saves') === 1 && st.town === 't1' && st.tick === T0 && S.posts.length === 0, 'v10.3.0 每次開頁都讀雲端那份（下載一次），沒有新進度不回傳', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
+  // 3a) 多玩了一段還沒上雲端就關掉:裝置上不留,重開回到雲端那份
   await page.evaluate(() => { const a = window.rimtownApp; a.world.tickCount += 4; a._saveCurrentTown(); }); await page.waitForTimeout(400); await page.close();
-  page = await open(ctx, S); await page.waitForTimeout(1200); st = await page.evaluate(() => ({ tick: window.rimtownApp.world.tickCount, synced: localStorage.getItem('rimtown_synced_t1') }));
-  ok(count(S, 'GET save/t1') === 0 && st.tick === T0 + 4 && S.posts.some(p => p.id === 't1' && p.tick === T0 + 4) && st.synced === String(T0 + 4), '同一台多玩的那段還沒上雲端：用本機的，並回填雲端', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
-  await page.close();
-  // 4) 雲端被別台裝置寫過(進度數字還比本機小):以雲端為準
+  page = await open(ctx, S); st = await page.evaluate(() => ({ tick: window.rimtownApp.world.tickCount }));
+  ok(st.tick === T0 && count(S, 'GET save/t1') === 1, 'v10.3.0 沒存上雲端的進度不留在裝置上：重開回到雲端那份', { st, gets: count(S, 'GET save/t1') });
+  // 3b) 舊版留在裝置上的副本比雲端新(這台最後存的、雲端沒被別台動過):用它、補傳雲端,傳成功後清掉
+  const plant = (tick, synced) => page.evaluate(({ tick, synced }) => { const a = window.rimtownApp; const d = a.world.serialize(); d.tickCount = tick; localStorage.setItem('rimtown_town_t1', JSON.stringify(d)); localStorage.setItem('rimtown_lt_t1', String(tick)); localStorage.setItem('rimtown_synced_t1', String(synced)); }, { tick, synced });
+  await plant(T0 + 4, T0); await page.close();
+  page = await open(ctx, S); await page.waitForTimeout(1500); st = await page.evaluate(() => ({ tick: window.rimtownApp.world.tickCount })); dv = await dev0();
+  ok(count(S, 'GET save/t1') === 0 && st.tick === T0 + 4 && S.posts.some(p => p.id === 't1' && p.tick === T0 + 4), '舊版留下的副本比雲端新：用它，並補傳雲端', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
+  ok(!dv.ls && dv.lt == null && dv.sy == null && dv.idb === 0, '補傳成功後，舊副本從裝置上清掉', dv);
+  // 4) 舊版留下的副本還在,可是雲端被別台裝置寫過(進度數字還比副本小):以雲端為準,副本不會蓋回去,而且清掉
+  await plant(T0 + 4, T0 + 4); await page.close();
   { const d = JSON.parse(S.cloud); d.tickCount = T0 + 1; d.townName = '別台存的'; S.cloud = JSON.stringify(d); S.cloudTick = T0 + 1; }
-  page = await open(ctx, S); st = await page.evaluate(() => ({ tick: window.rimtownApp.world.tickCount, name: window.rimtownApp.world.townName, synced: localStorage.getItem('rimtown_synced_t1') }));
-  ok(count(S, 'GET save/t1') === 1 && st.tick === T0 + 1 && st.name === '別台存的' && st.synced === String(T0 + 1) && !S.posts.some(p => p.tick === T0 + 4), '雲端被別台裝置寫過：以雲端為準，本機那份不會蓋回去', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
+  page = await open(ctx, S); await page.waitForTimeout(600); st = await page.evaluate(() => ({ tick: window.rimtownApp.world.tickCount, name: window.rimtownApp.world.townName })); dv = await dev0();
+  ok(count(S, 'GET save/t1') === 1 && st.tick === T0 + 1 && st.name === '別台存的' && !S.posts.some(p => p.tick === T0 + 4), '雲端被別台裝置寫過：以雲端為準，舊副本不會蓋回去', { gets: count(S, 'GET save/t1'), st, posts: S.posts });
+  ok(!dv.ls && dv.lt == null && dv.idb === 0, '這時舊副本也從裝置上清掉', dv);
   // 5) 玩到一半被後來的登入換掉
   const paused0 = await page.evaluate(() => { window.rimtownApp._setPaused?.(false); return window.rimtownApp.world.paused; });
   S.replaced = true; S.posts.length = 0;
@@ -151,7 +160,7 @@ async function clientTest(browser, dev, lang) {
   await ctx.addInitScript((jwt) => { if (!sessionStorage.getItem('__relog2')) { sessionStorage.setItem('__relog2', '1'); localStorage.setItem('rimtown_jwt', jwt); } }, fakeJwt);
   page = await open(ctx, S, false); const shown2 = await page.waitForSelector('#rt-session-replaced', { timeout: 30000 }).then(() => true).catch(() => false); await page.waitForTimeout(600);
   const b7 = await page.evaluate(() => ({ ready: !!window.rimtownApp?._initReady, loading: !!document.getElementById('town-loading') && getComputedStyle(document.getElementById('town-loading')).opacity !== '0', jwt: localStorage.getItem('rimtown_jwt') }));
-  ok(shown2 && !b7.ready && !b7.loading && b7.jwt === null && count(S, 'GET save/t1') === 0 && page.__errs.length === 0, '一開機就已經被換掉：不載入小鎮，直接顯示說明（載入畫面收起）', { shown2, b7, errs: page.__errs.slice(0, 2) });
+  ok(shown2 && !b7.ready && !b7.loading && b7.jwt === null && page.__errs.length === 0 && !(await page.evaluate(() => !!document.getElementById('rt-cloud-down'))), '一開機就已經被換掉：不載入小鎮，直接顯示說明（載入畫面收起；v10.3.0 開頭先發的存檔請求會被伺服器拒絕，不算載入）', { shown2, b7, errs: page.__errs.slice(0, 2) });
   await ctx.close();
 }
 
