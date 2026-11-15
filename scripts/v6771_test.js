@@ -26,7 +26,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       });
       ok(r.howto === 0 && r.feats === 7 && r.topics === 20 && r.ai === 0, 'v9.1.1 首頁瘦身：七章共 20 個主題；「怎麼開始」跟第七章重複所以拿掉、AI 與金鑰併進常見問題', { howto: r.howto, feats: r.feats, topics: r.topics, ai: r.ai });
       ok(r.reg, '未登入時有註冊／登入按鈕', r.reg);
-      ok(r.lp.hero && r.lp.stats === 7 /* v9.29.0 多一格「75 個選擇點」 */ && r.lp.day === 0 && r.lp.tiers === 4 && r.lp.faq === 11 /* v9.1.1 AI 與金鑰兩則併進來;v9.29.0 加兩則完全智能體 */ && r.lp.final === 2, '首頁各區：主視覺、數字、成長路線、常見問題(v8.9.0 加漸進解鎖)、頁尾按鈕(v6.98.0 拿掉「小鎮的一天」)', r.lp);
+      ok(r.lp.hero && r.lp.stats === 7 /* v9.29.0 多一格「75 個選擇點」 */ && r.lp.day === 0 && r.lp.tiers === 4 && r.lp.faq === 13 /* v9.1.1 AI 與金鑰兩則併進來;v9.29.0 加兩則完全智能體;v9.30.1 首頁精簡,把「一天問幾件事」「哪裡看得到」兩段搬進來 */ && r.lp.final === 2, '首頁各區：主視覺、數字、成長路線、常見問題(v8.9.0 加漸進解鎖)、頁尾按鈕(v6.98.0 拿掉「小鎮的一天」)', r.lp);
       ok(r.lp.gallery.length === 0, 'v6.98.0 不再放截圖牆（畫面減量）', r.lp.gallery);
       const stale = lang === 'zh'
         ? /五座城鎮、近百位|玩家附近|你唯一能做的|看顧小鎮的觀察者/
