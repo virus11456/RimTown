@@ -30,7 +30,8 @@ const stageA = () => {
     if (!/"pick"/.test(String(prompt))) return null; const idx = T.prompts.push(String(prompt)); await gate;
     const blocks = String(prompt).split(/\n?=== \d+\. /).slice(1);
     return blocks.map((b, i) => { const m = b.match(/【可以選】\s*([^＝=\s]+)\s*[＝=]/) || b.match(/\[Options\]\s*([^＝=\s]+)\s*[＝=]/i); const code = m ? m[1].trim() : 'a';
-      if (idx === 1 && i === 0) return { n: 1, pick: 'other', do: '在廣場辦一場放風箏比賽', why: '大家最近都悶，想讓孩子們笑一笑', fx: [{ t: 'mood', d: 3 }] };
+      // 每一批的第一個人都答「其他」，直到真的有一筆主意記下來為止。只給第一批第一個人的話，那個人要是同一格又遇到別的事（後到的會蓋掉前一件，前一件的回答就不採用），整支測試就沒有主意可看
+      if (i === 0 && NOTES.stats(w).ideas === 0) return { n: 1, pick: 'other', do: '在廣場辦一場放風箏比賽', why: '大家最近都悶，想讓孩子們笑一笑', fx: [{ t: 'mood', d: 3 }] };
       return { n: i + 1, pick: code, why: '這件事我自己想清楚了，就這麼辦' }; });
   };
   w.fullAgentMode = true; app._fullAgentOn = () => true; out.aiOn = DECIDE.aiOn(w);
@@ -83,7 +84,7 @@ const stageC = (id) => {
   await page.waitForTimeout(1200);
   // 半夜大家多半在屋裡睡覺：挑一個畫面上看得到的，鏡頭跟過去
   const seen = await page.evaluate((ids) => { const app = window.rimtownApp; const id = ids.find(i => app.tileMap._agentMeshes[i]?.visible) || null; if (id) { app.selectedAgent = id; app.selectedAgentId = id; app.tileMap.followAgent(id); } return id; }, A.thinking.map(x => x.id));
-  await page.waitForTimeout(2500);
+  await page.waitForFunction(() => [...document.querySelectorAll('.t3d-thought.is-think')].some(e => e.style.display !== 'none'), null, { timeout: 9000 }).catch(() => {}); // 鏡頭跟過去、泡泡畫出來要幾格畫面；固定等 2.5 秒有時不夠
   const thinkDom = await page.evaluate(() => [...document.querySelectorAll('.t3d-thought.is-think')].filter(e => e.style.display !== 'none').map(e => e.textContent));
   ok(!!seen && thinkDom.length >= 1 && thinkDom[0].includes('💭'), '地圖上真的畫出「💭 在想什麼」', [seen, thinkDom.slice(0, 3)]);
   await page.screenshot({ path: path.join(SHOTS, 'desktop-thinking.png') });
