@@ -77,7 +77,7 @@ async function run(browser, lang, vp) {
   ok(r.notes.length === 8 && r.notes.every(n => n.t === T('解鎖了新分頁', 'New tab unlocked') && n.d && n.n), '每次解鎖都跳一則角落提示（標題、分頁名、說明）', r.notes.slice(0, 2));
   if (lang === 'en') ok(r.notes.every(n => !/[一-鿿]/.test(n.d + n.n)), '英文版的解鎖提示沒有中文', r.notes.filter(n => /[一-鿿]/.test(n.d + n.n)));
   ok(['econ-build', 'econ-tech', 'industry'].every(k => r.townTabs2.includes(k)) && r.resTabs2.includes('relmap'), '解鎖後分頁出現在分頁列', { t: r.townTabs2, r: r.resTabs2 });
-  ok(r.ppTabs2 === 3, '解鎖後提案頁有提案、鎮況、真相三個子分頁', r.ppTabs2);
+  ok(r.ppTabs2 === 3, '解鎖後提案頁有提案、鎮況、真相三個子分頁（心聲等要有內容才出現）', r.ppTabs2);
   ok(r.trackBefore == null && r.track != null && r.trackNote.length === 1, '打出第一張牌後解鎖反應追蹤，跳一次提示', { b: r.trackBefore, a: r.track, n: r.trackNote });
   ok(r.dup === 0, '同一天不會重複跳提示', r.dup);
   ok(r.techEarly === 1, '第 1 天就完成研究 → 科技分頁提早解鎖', r.techEarly);

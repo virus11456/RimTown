@@ -146,6 +146,24 @@ const DECIDE = (() => {
         return L.slice(-CAP.did).reverse().map(e => { const ago = d0 - e.d; const when = ago <= 0 ? t('今天') : fill('{n} 天前', { n: ago });
             return `${fill('{when}{what}', { when: { raw: when }, what: { raw: say(e.what) } })}${e.why ? `${t('（')}${say(e.why)}${t('）')}` : ''}${e.res ? `${t(' → ')}${say(e.res)}` : ''}`; });
     }
+    // v10.0.0 跟這件事有關的往事：題目裡提到誰，就把他跟那個人之間記得的事、上次跟他有關的決定和後果找出來；再加上「同樣的事上次怎麼選」。
+    // 以前只看最近幾筆記憶裡最重要的，不管跟眼前這件事有沒有關係，所以他常常像不認識對方。
+    const memText = (e) => { try { return e.content || (e.k ? Memory.render(e.k, e.p || {}) : ''); } catch (x) { return e.content || ''; } };
+    function involved(w, a, facts) { const f = String(facts || ''); return npcs(w).filter(o => o !== a && o.name && f.includes(o.name)).slice(0, 2); }
+    function pastLines(w, a, K, facts, cutN, perWho = 2) {
+        const out = []; const d0 = day(w); const cutS = (x) => (x.length > cutN ? x.slice(0, cutN) + '…' : x); const myLog = w.decide?.log?.[a.agentId] || [];
+        const ago = (d) => (d0 - d <= 0 ? t('今天') : fill('{n} 天前', { n: d0 - d }));
+        for (const o of involved(w, a, facts)) {
+            const v = a.relationships?.relationships?.[o.agentId]?.affinity || 0; const rel = t(v >= 60 ? '很要好' : v >= 25 ? '有交情' : v <= -40 ? '結過怨' : v <= -15 ? '不太對盤' : '交情普通');
+            const bits = (a.memory?.entries || []).map(e => [e, memText(e)]).filter(([, x]) => x && x.includes(o.name)).sort((x, y) => ((y[0].importance || 5) - (x[0].importance || 5)) || ((y[0].tick || 0) - (x[0].tick || 0))).slice(0, perWho).map(([, x]) => cutS(x));
+            const last = myLog.filter(e => (say(e.what) + say(e.res)).includes(o.name)).slice(-1)[0];
+            if (last) bits.push(fill('{when}你{what}', { when: { raw: ago(last.d) }, what: { raw: say(last.what) } }) + (last.res ? t(' → ') + say(last.res) : ''));
+            out.push(`${o.name}${t('（')}${rel}${t('）')}${bits.length ? t('：') + bits.join(t('；')) : ''}`);
+        }
+        const same = myLog.filter(e => e.kind === K.key).slice(-1)[0];
+        if (same) out.push(fill('同樣的事，{when}你選了：{what}', { when: { raw: ago(same.d) }, what: { raw: say(same.what) } }) + (same.res ? t(' → ') + say(same.res) : ''));
+        return out;
+    }
     // 帳本：pile 是各系統塞給 AI 的那一串（沒登記過領域的，例如最近的記憶，一律歸「近況」）
     function ledger(w, a, pile) {
         const L = { now: [], eco: [], pol: [], soc: [], self: [], world: [], did: [], plan: '' }; const seen = new Set();
@@ -220,12 +238,16 @@ const DECIDE = (() => {
     const optsOf = (w, a, K, ctx) => { try { return (K.options(w, a, ctx) || []).filter(Boolean); } catch (e) { console.warn('[Decide] options', K.key, e); return []; } };
     const whenOf = (w, a, K) => { try { return K.when(w, a) || null; } catch (e) { return null; } };
 
-    function record(w, X, a, K, op, why, res, src, d) {
-        const e = { d, kind: K.key, id: op.id, what: op.say || op.text, why: why || null, res: res || null, ai: src === 'ai' ? 1 : 0 }; if (op.free) e.free = 1;
+    // 觀察點：只把「誰被問到、誰決定了什麼」通知給外面的觀察工具(sim-watch.js)；沒有人聽的時候什麼都不做，也不影響任何結果
+    const OBS = []; const observe = (f) => { if (typeof f === 'function' && !OBS.includes(f)) OBS.push(f); };
+    const emit = (ev, o) => { for (const f of OBS) { try { f(ev, o); } catch (x) {} } };
+    function record(w, X, a, K, op, why, res, src, d, ctx, ex) {
+        const e = { d, kind: K.key, id: op.id, what: op.say || op.text, why: why || null, res: res || null, ai: src === 'ai' ? 1 : 0 }; if (op.free) e.free = 1; if (ex?.feel) e.feel = ex.feel; if (ex?.pub) e.pub = ex.pub;
         // mute:「先不動」這類選項,照個性推估時不寫進紀錄(天天都是「放在心裡，不說」會把真正的決定擠掉);AI 自己想的照樣記(他有說理由)
         if (!(op.mute && src !== 'ai')) { const L = X.log[a.agentId] || (X.log[a.agentId] = []); L.push(e); if (L.length > LOG_CAP) L.splice(0, L.length - LOG_CAP); }
         const key = String(op.id).split(':')[0]; X.pick[K.key + '.' + key] = (X.pick[K.key + '.' + key] || 0) + 1;
         if (src === 'ai') X.st.ai++; else X.st.rule++;
+        if (OBS.length) emit('decided', { w, a, K, op, why: why || null, res: res || null, src, d, ctx: ctx || null, feel: ex?.feel || '', pub: ex?.pub || '' });
         return e;
     }
     // 傾向版：算分、挑最高的（NOISE 是當天的心情起伏，不是「幾 % 機率會做」）
@@ -234,7 +256,7 @@ const DECIDE = (() => {
         const Ln = lean(w, a); let best = null, bs = -Infinity;
         for (const op of opts) { const s = score(Ln, op) + (Math.random() - 0.5) * noise; if (s > bs) { bs = s; best = op; } }
         let res = null; try { res = best.run(w, a, ctx) || null; } catch (e) { console.warn('[Decide] run', K.key, best.id, e); }
-        return record(w, X, a, K, best, best.why || null, res, 'rule', d);
+        return record(w, X, a, K, best, best.why || null, res, 'rule', d, ctx);
     }
 
     // ---------- AI 版 ----------
@@ -259,17 +281,19 @@ const DECIDE = (() => {
             // v9.23.2 選項用固定的代號（repay、extend…），不用 a、b、c：一次問好幾個人時每個人的選項不一樣，同一個字母對不同人是不同的事，
             // 真模型會搞混（實測：理由寫「帶點心意去道歉」，選的卻是別人清單裡的 c＝不道歉）
             const cs = codes(o.opts); const opts = o.opts.map((op, i) => `${cs[i]}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
-            return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${t('【遇到的事】')}${K.facts(w, o.a, o.ctx)}\n${t('【可以選】')}${opts.join(' ／ ')}`;
+            const facts = K.facts(w, o.a, o.ctx); let past = []; try { past = lv < 2 ? pastLines(w, o.a, K, facts, cap(lv ? 30 : 46, lv ? 90 : 130), lv ? 1 : 2) : []; } catch (e) {} // v10.0.0 字數不夠時先收短，再不夠才拿掉
+            return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${past.length ? `${t('【跟這件事有關的往事】')}${past.join(t('；'))}\n` : ''}${t('【遇到的事】')}${facts}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
-        const text = `${t('你是模擬小鎮的村民決策引擎。下面幾位村民各自遇到一件要拿主意的事。請替每個人依「他自己的」錢、立場、人際、個性和以前做過的決定，選出他真的會做的那一項。人不一定理性：小氣、衝動、愛面子、記仇、心軟都可以；不必討好任何人，也不必每個人選一樣。')}
+        const text = `${t('你是模擬小鎮的村民決策引擎。下面幾位村民各自遇到一件要拿主意的事。請替每個人依「他自己的」錢、立場、人際、個性和以前做過的決定，選出他真的會做的那一項。人不一定理性：小氣、衝動、愛面子、記仇、心軟都可以；不必討好任何人，也不必每個人選一樣。')}${t('現成的選項如果都不像這個人會做的，就選 other，寫他自己想出來的做法：異想天開、小心眼、賭氣、想討好誰都可以，只要像他。')}${t('人做決定常常不是算出來的。【跟這件事有關的往事】或他的處境如果讓他嚥不下這口氣、拉不下臉、放不下心，或是心軟，就照那個選，就算吃虧也一樣；這時 why 要說出是哪件事讓他這樣選。')}
 ${t('【鎮況】')}${String(ce._townBrief(w) || '').slice(0, cap(420, 1200))}
 
 ${people}
 
-${t('只輸出 JSON 陣列，每人一個物件：')}{"n":1,"pick":"${t('代號')}","why":"…","next":"…"}
+${t('只輸出 JSON 陣列，每人一個物件：')}{"n":1,"pick":"${t('代號')}","why":"…","feel":"…","next":"…"}
 ${t('這一題只有 {n} 位村民，陣列裡只能有 {n} 個物件，不要替沒列出來的人作答。').split('{n}').join(list.length)}
 ${t('n 是那個人的序號，pick 是「他自己那一列」選項的代號（＝前面的英文，照抄），why 是他自己口吻的一句理由（25 字內），要跟選的那一項對得上，講的是【遇到的事】裡那個人、那件事，別扯到不相干的人，next 是接下來的打算（沒有就省略，20 字內）。')}
+${t('feel 是他這次主要出於什麼，兩到四個字（例如：賭氣、面子、心軟、害怕、貪心、義氣、懶得管、精打細算）。如果他對別人的說法跟心裡想的不一樣，再加 "say":"他嘴上對別人怎麼說（20 字內）"；一樣就不要寫 say。')}
 ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和 "fx":[最多 3 個效果]。效果只能從這幾種挑，寫不出效果就只留 do：')}
 {"t":"give","to":"${t('人名')}","n":${t('銀幣')}} ${t('把錢給某人')}${sep}{"t":"town","n":${t('銀幣')}} ${t('捐給公庫')}${sep}{"t":"rel","to":"${t('人名')}","d":-10~10} ${t('對某人更好或更冷淡')}${sep}{"t":"mood","d":-5~5} ${t('自己的心情')}${sep}{"t":"goal","text":"${t('想存錢或努力去做的事')}"}`;
         return en ? I18N.localizeNames(text, true) : text; // 英文模式:帳本裡的人名一起換成英文(AI 回的人名用 byName 對回來)
@@ -283,7 +307,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         mood(w, a, e) { const d = Math.max(-5, Math.min(5, Math.round(+e.d || 0))); if (!d) return null; a.moodModifier = (a.moodModifier || 0) + d; return { k: d > 0 ? '心裡舒坦了些' : '心裡更悶了', p: {} }; },
         goal(w, a, e) { const x = clean(e.text, cap(40, 120)); if (!x) return null; S(w).plan[a.agentId] = { x: { raw: x }, d: day(w) }; return { k: '立下目標：{x}', p: { x: { raw: x } } }; },
     };
-    function freeAct(w, X, a, K, row, why, d) {
+    function freeAct(w, X, a, K, row, why, d, ex) {
         const doing = clean(row.do, cap(60, 180)); if (!doing) return null; const outs = [];
         for (const e of (Array.isArray(row.fx) ? row.fx.slice(0, 3) : [])) { let r = null; try { r = e && FX[e.t] ? FX[e.t](w, a, e) : null; } catch (x) {} if (r) outs.push(r); }
         const res = outs.length ? { raw: outs.map(say).join(t('、')) } : { k: '這件事現在還做不到，先放在心裡' };
@@ -291,7 +315,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         X.st.free++;
         if (why && why !== doing) log(w, 'social', '💭 {a}自己拿了主意：{x}——「{y}」', { a: a.name, x: { raw: doing }, y: { raw: why } }, a.name); else log(w, 'social', '💭 {a}自己拿了主意：{x}', { a: a.name, x: { raw: doing } }, a.name);
         mem(w, a, '我自己拿了主意：{x}。{y}', { x: { raw: doing }, y: { raw: why || '' } }, 6);
-        return record(w, X, a, K, { id: 'other', say: { raw: doing }, free: true }, why ? { raw: why } : null, res, 'ai', d);
+        return record(w, X, a, K, { id: 'other', say: { raw: doing }, free: true }, why ? { raw: why } : null, res, 'ai', d, null, ex);
     }
     /* v9.23.3 給 AI 看的選項代號：id 裡帶人名（例如 borrow:imm_曹峰_552）時改成「前綴:短碼」。
        英文模式整段題目的人名會換成英文，帶人名的代號跟著被改掉，AI 照抄回來就對不上（真模型實測 59 個決定有 4 個因此作廢）。
@@ -300,16 +324,20 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     function codes(opts) { const out = []; for (const op of opts) { let c = code1(op.id); while (out.includes(c)) c += 'x'; out.push(c); } return out; }
     function applyAi(w, X, a, K, ctx, opts, row, d) {
         const pk = String(row?.pick ?? '').trim().toLowerCase(); const why = clean(row?.why, cap(50, 160)); const next = clean(row?.next, cap(40, 120));
+        // v10.0.0 feel：這次是出於什麼；pub：嘴上對別人的說法（跟心裡想的不一樣才有）
+        const feel = clean(row?.feel, cap(8, 28)); let pub = clean(row?.say, cap(40, 120)); if (pub && pub === why) pub = ''; const ex = (feel || pub) ? { feel, pub } : null;
         let e = null;
-        if (pk === 'z' || pk === 'other') e = freeAct(w, X, a, K, row, why, d);
+        if (pk === 'z' || pk === 'other') e = freeAct(w, X, a, K, row, why, d, ex);
         else {
             const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); const cs = codes(opts).map(c => c.toLowerCase()); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
             const op = opts[cs.indexOf(pk)] || opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
             let res = null; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); }
-            e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d);
+            e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d, ctx, ex);
             if (!op.quiet) { log(w, 'social', '🧭 {a}想了想，決定{x}：「{y}」', { a: a.name, x: op.say || op.text, y: why ? { raw: why } : (op.why || '') }, a.name); if (why) mem(w, a, '我想過了，決定{x}：{y}', { x: op.say || op.text, y: { raw: why } }, 5); }
         }
         if (e && next) X.plan[a.agentId] = { x: { raw: next }, d };
+        // 他嘴上的說法，對方聽到的是這一句（心裡想的只有他自己和觀察者知道）
+        if (e && pub) { try { const o = involved(w, a, K.facts(w, a, ctx))[0]; if (o && inTown(w, o)) mem(w, o, '{a}對我說：「{s}」', { a: a.name, s: { raw: pub } }, 5, 'social'); } catch (x) {} }
         return e;
     }
     // 同一類的幾個人一次問；回來時處境可能變了，選項重新列一次；AI 沒回或答非所問 → 傾向版
@@ -320,17 +348,19 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         { const live = []; for (const o of list) {
             if (P0.get(o.a.agentId)?.tok !== o.tok) continue;
             const a = w.agents[o.a.agentId]; const ctx = (a && !a.isDead && inTown(w, a)) ? (K.scan ? whenOf(w, a, K) : o.ctx) : null; const opts = ctx ? optsOf(w, a, K, ctx) : [];
-            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
+            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
             o.a = a; o.ctx = ctx; o.opts = opts; live.push(o); }
           if (!live.length) { drain(w, X, d); return; } list = live; }
-        try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 120); } } catch (e) { j = null; }
+        try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 150); } } catch (e) { j = null; }
         if (w.decide !== X) return;
         list.forEach((o, i) => {
             if (P0.get(o.a.agentId)?.tok !== o.tok) return; // 等太久，已經先照個性決定了
             P0.delete(o.a.agentId); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
-            const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) return; // 等的這段時間事情已經過去了
-            const opts = optsOf(w, a, K, ctx); if (!opts.length) return;
-            const row = Array.isArray(j) ? (j.find(r => parseInt(r?.n, 10) === i + 1) || null) : null;
+            const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) { if (OBS.length) emit('dropped', { w, a, K }); return; } // 等的這段時間事情已經過去了
+            const opts = optsOf(w, a, K, ctx); if (!opts.length) { if (OBS.length) emit('dropped', { w, a, K }); return; }
+            // v10.0.0 只問一個人時，模型有時直接回一個物件、沒包成陣列（真模型實測 40 次裡有 10 個人的回答因此作廢）：照樣收；只有一個人、回來也只有一筆時不必對序號
+            const arr = Array.isArray(j) ? j : (j && typeof j === 'object' && j.pick != null ? [j] : null);
+            const row = arr ? (arr.find(r => parseInt(r?.n, 10) === i + 1) || (list.length === 1 && arr.length === 1 && arr[0] && typeof arr[0] === 'object' ? arr[0] : null)) : null;
             let e = null; try { if (row) e = applyAi(w, X, a, K, ctx, opts, row, d); } catch (x) { console.warn('[Decide] ai', x); }
             if (!e) { if (aiOn(w) || j) X.st.aiMiss++; resolveRule(w, X, { a, K, ctx, opts }, d); }
         });
@@ -342,7 +372,9 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
             const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
-            if (ai && X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < AI_KIND && (!cur || bump)) { X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); }
+            // v10.1.0 自己另有名額的類別（aiOwn：公告欄的回應、回信）：一天幾個人由它自己定，不佔全鎮每天 10 個人的名額。不然名額都被每天固定會遇到的事用完，回應的人永遠輪不到 AI 說話
+            const own = +o.K.aiOwn || 0;
+            if (ai && (own || X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX)) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || AI_KIND) && (!cur || bump)) { if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);
@@ -359,7 +391,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (offers.length) dispatch(w, X, offers, d);
         }
     }
-    function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); }
+    function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
 
     // ================= 4. 每天 =================
     function daily(w) {
@@ -404,7 +436,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { S, source, kind, KINDS, ledger, lines, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================

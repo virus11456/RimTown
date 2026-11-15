@@ -156,6 +156,11 @@ class Town3D extends PixelTileMap {
     // v6.29.0 跟拍村民:鏡頭每幀追著他;使用者拖曳就取消
     followAgent(agentId) { this._followAgent = agentId || null; this._lastInputAt = Date.now(); if (agentId) { this.followPlayer = false; this._focusTo = null; const p = this.agentPositions[agentId]; if (p && this.dist > 30) this._focusTo = { x: p.x / TILE, z: p.y / TILE, dist: 22 }; } }
     isFollowing(agentId) { return !!this._followAgent && this._followAgent === agentId; }
+    // v9.32.0 念頭泡泡：正在想（think）、說出口的話（say）、自己拿的主意（idea）。只是畫面，不碰模擬。
+    // 時間只算「真的顯示在畫面上」的那幾秒：人在屋裡、鏡頭沒照到、分頁切走時不扣，鏡頭轉過去話還在（最久留 5 分鐘）。
+    // hold：先收著，等他醒著時才放出來（村民多半在半夜拿主意，那時都在睡覺）；一次只放一個，不會同時冒一堆。
+    setThought(agentId, o) { if (!agentId || !o) return; (this._thoughts || (this._thoughts = {}))[agentId] = { kind: o.kind || 'say', text: String(o.text || ''), name: String(o.name || ''), left: o.ms || 9000, born: Date.now(), hold: !!o.hold, on: 0, seen: 0 }; }
+    clearThought(agentId) { if (this._thoughts) delete this._thoughts[agentId]; }
     focusLocation(locId) {
         const z = this.buildingZones[locId] || this.natureZones[locId];
         if (!z) return;
@@ -1579,6 +1584,18 @@ class Town3D extends PixelTileMap {
             const el = this._ov('bb:' + b.agentId, 't3d-bubble', `<b>${this._esc(t3(b.speaker || ''))}</b>${this._esc(t3(text))}`);
             const inP = m.userData.inP; this._place(el, inP ? m.position.x : pos.x / TILE, m.position.y + 0.3 + 2.2 * ((m.scale.y || 1.3) / 1.3), inP ? m.position.z : pos.y / TILE);
         }
+        // v9.32.0 念頭泡泡（正在對話的人不疊；只是在想的人，遠處不畫；同時最多 8 個）
+        const TH = this._thoughts;
+        if (TH) { let nTh = 0; for (const aid in TH) { const th = TH[aid]; if (th.left <= 0 || now - th.born > 300000) { delete TH[aid]; continue; }
+            // 這一格沒有他的資料就先不畫，但不要刪（有些重畫不帶村民資料）
+            if (!agents[aid] || shownBubble.has(aid)) { th.seen = 0; continue; } const pos = this.agentPositions[aid]; const m = this._agentMeshes[aid]; if (!pos || !m || !m.visible) { th.seen = 0; continue; }
+            if (!th.on) { if (th.hold && (agents[aid].activity === 'sleeping' || (this._thNext || 0) > now)) continue; th.on = 1; if (th.hold) this._thNext = now + 2500; }
+            if (th.kind === 'think' && m.userData.far && aid !== selectedAgent) { th.seen = 0; continue; } if (++nTh > 8) break;
+            const el = this._ov('th:' + aid, 't3d-thought is-' + th.kind, th.kind === 'think' ? `<i>💭</i>${this._esc(clipText(th.text, 20))}` : `<b>${th.kind === 'idea' ? '💡' : '🧭'} ${this._esc(th.name)}</b>${this._esc(clipText(th.text, 48))}`);
+            if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
+            const inP = m.userData.inP; const shown = this._place(el, inP ? m.position.x : pos.x / TILE, m.position.y + 0.3 + 2.2 * ((m.scale.y || 1.3) / 1.3), inP ? m.position.z : pos.y / TILE);
+            if (shown) { if (th.seen) th.left -= Math.min(now - th.seen, 300); th.seen = now; } else th.seen = 0; // 一格最多算 0.3 秒：畫面卡住或分頁切走的那段不算
+        } }
         // 浮動特效
         const fx = this._floatFx;
         if (fx && fx.length) {
@@ -1596,7 +1613,7 @@ class Town3D extends PixelTileMap {
             const mi = this._moveIndicator; const el = this._ov('mi', 't3d-move', '◎');
             this._place(el, mi.x / TILE, 0.4, mi.y / TILE, { noScale: true });
         }
-        for (const [key, el] of this._ovPool) if (!this._ovUsed.has(key)) { if (/^(fx|bb|cb|cs|fac|exp|ind|carav|fest|grave):?/.test(key)) { el.remove(); this._ovPool.delete(key); } else el.style.display = 'none'; }
+        for (const [key, el] of this._ovPool) if (!this._ovUsed.has(key)) { if (/^(fx|bb|th|cb|cs|fac|exp|ind|carav|fest|grave):?/.test(key)) { el.remove(); this._ovPool.delete(key); } else el.style.display = 'none'; }
     }
 
     // ---------- v6.24.0 粒子(雨／雪／煙／螢火蟲／節慶彩紙)----------

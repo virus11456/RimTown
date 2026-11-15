@@ -32,6 +32,10 @@ Object.assign(RimTownApp.prototype, {
             const story = (pros >= 10 ? this._renderStoryFeed() : '') + (pros >= 20 ? this._renderTownHeadlines() : '');
             if (story) html += this._ic({ id: 'res-story', icon: '📺', title: t('今天的故事'), sum: `<span class="ic-sum-t">${t('八點檔與頭條')}</span>`, defOpen: false, body: story });
         } catch (e) {}
+        if (typeof NOTES !== 'undefined' && this.world) { try { // v10.1.0 鎮民手記的入口從提案頁搬到這裡：手記是一個人一章，跟村民清單放在一起；附最近一則「自己拿的主意」
+            const nN = NOTES.count(this.world); const lt = NOTES.latest(this.world, 1)[0]; const escN = esc;
+            html += `<div class="notes-entry"><button type="button" class="pp-more notes-open" data-action="notes-open">📓 ${t('鎮民手記')}${t('：')}${t('看他們各自想了什麼')}${nN ? ` <small>${t('{n} 筆').replace('{n}', nN)}</small>` : ''}</button>${lt ? `<button type="button" class="notes-latest" data-action="notes-open" data-val="${escN(lt.who)}">💡 ${escN(lt.name)}${t('：')}${escN(lt.text)}</button>` : ''}</div>`;
+        } catch (e) {} }
         const A = (id) => this.state.agents[id];
         const isWork = (a) => /work|工作/.test(String(a.activity || '')) || a.activity_label === t('工作');
         const isSleep = (a) => /sleep|睡/.test(String(a.activity || '')) || a.activity_label === t('睡覺');

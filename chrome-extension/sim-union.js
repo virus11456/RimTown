@@ -24,7 +24,9 @@ const UNION = (() => {
     }
     // 在私人產業做工(不是老闆自己)的人
     function sectorOf(w, a) { const M = MK(); if (!M || !w.market) return null; const k = M.JOB2S[a?.job?.key]; if (!k) return null; const o = M.ownerOf(w, k); return o && o !== a.agentId ? k : null; }
-    const privateWorkers = (w, all) => all.filter(a => (a.age || 30) >= 16 && sectorOf(w, a));
+    // v10.0.0 自己名下有產業的人是老闆：就算他另外在別人那裡領薪水，也不能當工會會員或領袖（實跑看到領袖同時是被談判的老闆，等於自己跟自己談）
+    const ownsAny = (w, a) => { const M = MK(); if (!M?.SECTORS || !a || !w.market) return false; for (const k of Object.keys(M.SECTORS)) if (M.ownerOf(w, k) === a.agentId) return true; return false; };
+    const privateWorkers = (w, all) => all.filter(a => (a.age || 30) >= 16 && sectorOf(w, a) && !ownsAny(w, a));
     const isMember = (w, a) => !!(w.union?.on && a && w.union.members[a.agentId]);
     function grievance(w, a) {
         const M = MK(); const k = sectorOf(w, a); if (!k) return 0; let g = 0;
@@ -42,7 +44,7 @@ const UNION = (() => {
     // ---------- 組工會、入會、退會、會費 ----------
     // 現在組不組得起工會、這個人是不是適合帶頭的那幾個(回傳一起不滿的人數)
     function canOrganize(w, a) {
-        const U = S(w); if (U.on || tierLv(w) < 2 || !MK() || !w.market || !sectorOf(w, a) || grievance(w, a) < 0.3) return 0;
+        const U = S(w); if (U.on || tierLv(w) < 2 || !MK() || !w.market || !sectorOf(w, a) || ownsAny(w, a) || grievance(w, a) < 0.3) return 0;
         const ws = privateWorkers(w, npcs(w)); if (ws.length < 6) return 0; const angry = ws.filter(x => grievance(w, x) >= 0.3); if (angry.length < 4) return 0;
         const top = angry.slice().sort((x, y) => leadBase(w, y) - leadBase(w, x)).slice(0, 3); return top.includes(a) ? angry.length : 0;
     }
@@ -55,12 +57,12 @@ const UNION = (() => {
         U.history.push({ d, k: 'found', who: lead.name }); return true;
     }
     // 入會、退會
-    function join(w, a, d = day(w)) { const U = S(w); if (!U.on || !a || U.members[a.agentId] || !sectorOf(w, a)) return false; U.members[a.agentId] = d; mem(w, a, '我加入了{u}，大家團結才有籌碼。', { u: U.name }, 6); rel(a, w.agents[U.leader])?.modifyAffinity?.(4); return true; }
+    function join(w, a, d = day(w)) { const U = S(w); if (!U.on || !a || U.members[a.agentId] || !sectorOf(w, a) || ownsAny(w, a)) return false; U.members[a.agentId] = d; mem(w, a, '我加入了{u}，大家團結才有籌碼。', { u: U.name }, 6); rel(a, w.agents[U.leader])?.modifyAffinity?.(4); return true; }
     function leave(w, a, why) { const U = S(w); if (!a || !U.members[a.agentId] || U.leader === a.agentId) return false; delete U.members[a.agentId]; delete U.sour[a.agentId];
         mem(w, a, why === 'lost' ? '我退出工會了，罷工根本沒用。' : '日子過得去了，我退出了工會，會費省下來。', {}, why === 'lost' ? 5 : 4); return true; }
     function membership(w, all, d) { // 要不要加入、待遇好了要不要退會，由本人決定(選擇點 union／unionout)；這裡只管會員名冊與領袖
         const U = S(w); const lead = w.agents[U.leader];
-        const gone = []; for (const id of Object.keys(U.members)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門還是會員 */ if (!a || a.isDead || !sectorOf(w, a)) { delete U.members[id]; if (a && !a.isDead) gone.push(a); } }
+        const gone = []; for (const id of Object.keys(U.members)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門還是會員 */ if (!a || a.isDead || !sectorOf(w, a) || ownsAny(w, a)) { delete U.members[id]; if (a && !a.isDead) { gone.push(a); if (ownsAny(w, a)) mem(w, a, '我自己當了老闆，不再是工會的人了。', {}, 5); } } }
         // 領袖不在了(過世、離鎮、當了老闆):會員裡最有號召力的人接手
         if ((!lead && !w.isAway?.(U.leader)) || lead?.isDead || !U.members[U.leader]) { // v9.9.4 領袖出遠門不換人
             const pool = Object.keys(U.members).map(id => w.agents[id]).filter(Boolean);
@@ -93,7 +95,7 @@ const UNION = (() => {
     // 這一行現在談得起來嗎(會員過半、工資被壓);只回傳談判桌上的情況,不動任何東西
     function talkInfo(w, k, all = npcs(w)) {
         const U = S(w); const M = MK(); const L = w.agents[U.leader]; if (!U.on || !L || !M?.SECTORS?.[k]) return null;
-        const bossId = M.ownerOf(w, k); if (!bossId || U.strike[k]) return null;
+        const bossId = M.ownerOf(w, k); if (!bossId || bossId === U.leader || U.strike[k]) return null;
         const ws = M.workersOf(w, k, all).filter(a => a.agentId !== bossId); const mem_ = ws.filter(a => U.members[a.agentId]);
         if (mem_.length < 2 || mem_.length < ws.length / 2) return null;
         const rate = M.payRate(w, k); if (rate >= 1) return null;
