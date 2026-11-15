@@ -3,7 +3,7 @@ const path = require('path');
 const libReal = require(path.join(__dirname, '..', 'api', '_lib.js'));
 const store = {};
 const lib = Object.assign({}, libReal, {
-  authUser: () => ({ u: 'Admin', id: 1 }), isAdmin: () => true, isBanned: async () => false, rateLimit: () => true, clientIp: () => '1.1.1.1',
+  authUser: () => ({ u: 'Admin', id: 1 }), requireSession: async () => ({ u: 'Admin', id: 1 }), sessionState: async () => 'ok', newSid: () => 'sid_test', /* v10.2.0 */ isAdmin: () => true, isBanned: async () => false, rateLimit: () => true, clientIp: () => '1.1.1.1',
   readJson: async p => (p in store ? JSON.parse(JSON.stringify(store[p])) : null), writeJson: async (p, v) => { store[p] = v; }, deleteBlob: async p => { delete store[p]; },
   listPaths: async prefix => Object.keys(store).filter(k => k.startsWith(prefix)),
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, makeToken: u => 'tok_' + u.username,

@@ -2,7 +2,7 @@ const path = require('path');
 const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 const store = {};
 const lib = {
-  authUser: () => ({ u: 'Tester', id: 7 }), isBanned: async () => false, isAdmin: () => false,
+  authUser: () => ({ u: 'Tester', id: 7, sid: store['users/tester.json']?.sid }), requireSession: async () => ({ u: 'Tester', id: 7 }), sessionState: async () => 'ok', newSid: () => 'sid_test', /* v10.2.0 */ isBanned: async () => false, isAdmin: () => false,
   readJson: async p => (p in store ? store[p] : null), writeJson: async (p, v) => { store[p] = v; },
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, clientIp: () => '1.1.1.1', rateLimit: () => true,
   userPath: u => `users/${u.toLowerCase()}.json`, hashPassword: (p, s) => 'h_' + p + s, makeToken: u => 'tok_' + u.username,

@@ -141,7 +141,7 @@ async function clientTest(browser, dev, lang) {
   ok(k.jwt === null && k.logged === false && paused0 === false && k.paused === true, '這台登出：憑證清掉、模擬停下', { jwt: k.jwt, logged: k.logged, paused0, paused: k.paused });
   ok(S.posts.length === 0 && k.lt1 === k.lt0, '之後不再寫任何存檔（雲端不送，本機副本也不動）', { posts: S.posts, lt: [k.lt0, k.lt1] });
   ok(k.cover && k.topEl === 1 && k.role === 'alertdialog' && k.focus && k.btnH >= 44 && !k.hs, '說明蓋住整個畫面、焦點在按鈕上、按鈕夠大、沒有橫向捲動', k);
-  await Promise.all([page.waitForURL(u => !/town(\.html)?$/.test(new URL(u).pathname), { timeout: 15000 }), page.click('#rt-sr-home')]);
+  await Promise.all([page.waitForURL(u => !/town(\.html)?$/.test(new URL(u).pathname), { timeout: 90000, waitUntil: 'commit' }), page.click('#rt-sr-home')]); // 只等換頁,不等首頁整個載完(同時跑很多測試時首頁載得慢)
   ok(!/town/.test(new URL(page.url()).pathname) && page.__errs.length === 0, '按「回首頁」離開遊戲頁，沒有頁面錯誤', { url: page.url(), errs: page.__errs.slice(0, 2) }); await page.close();
   // 6) 存檔時才發現被換掉(伺服器回 401 session_replaced)
   S.replaced = false; await ctx.addInitScript((jwt) => { if (!localStorage.getItem('rimtown_jwt') && !sessionStorage.getItem('__relog')) { sessionStorage.setItem('__relog', '1'); localStorage.setItem('rimtown_jwt', jwt); } }, fakeJwt);

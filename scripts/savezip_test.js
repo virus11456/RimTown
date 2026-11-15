@@ -4,7 +4,7 @@ const zlib = require('zlib');
 const libReal = require(path.join(__dirname, '..', 'api', '_lib.js'));
 const store = {};
 const lib = Object.assign({}, libReal, {
-  authUser: () => ({ u: 'Tester', id: 1 }), isBanned: async () => false,
+  authUser: () => ({ u: 'Tester', id: 1 }), requireSession: async () => ({ u: 'Tester', id: 1 }), sessionState: async () => 'ok', newSid: () => 'sid_test', /* v10.2.0 */ isBanned: async () => false,
   readJson: async p => (p in store ? JSON.parse(JSON.stringify(store[p])) : null), writeJson: async (p, v) => { store[p] = v; },
   storageInfo: async () => ({ backend: 'postgres' }),
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); },
