@@ -4,7 +4,7 @@
 // 檢查:生成（有提案人、L 編號遞增、種類合理）→ 全鎮投票 → 批准即執行（蓋建築扣資源）→ 否決／擱置 → 三天沒處理依票數自動定案
 //   → 公庫不足的批准案等七天作罷 → 擱置十天收回 → 存檔往返保留 → 英文介面標題為英文
 //   → v6.30.0 投票理由、人際／對外六種提案與效果、十天後成效、季統計、提案戰績。
-const BASE = process.argv[2] || 'http://127.0.0.1:8126';
+const BASE = process.argv[2] || (process.env.BASE || 'http://127.0.0.1:8126').replace(/\/$/, '');
 let chromium; try { ({ chromium } = require('playwright')); } catch (e) { console.log('playwright 未安裝:npm i playwright@1 後再跑'); process.exit(0); }
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';

@@ -185,13 +185,14 @@
     // ---------- 想不想自己開店 ----------
     const BZ = () => (typeof BIZ !== 'undefined' ? BIZ : null);
     const startInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.startInfo(w, a) : null; };
+    const START_WHY = { full: '鎮上的店已經夠多了，沒開成', noloan: '銀行借不到錢，沒開成', wait: '去銀行談開店的貸款了，等銀行家回話', nocash: '本錢沒湊齊，沒開成', gone: '情況變了，這次沒開成' };
     DECIDE.kind('startup', {
         title: '想不想自己開店', cool: 10, pri: 1.2,
         when(w, a) { return startInfo(w, a) ? {} : null; },
         facts(w, a) {
             const I = startInfo(w, a); if (!I) return '';
             return fill('鎮上現在有 {k} 家店，還容得下新店。你想開的是{ty}，本錢 {n} 銀幣；你身上有 {c} 銀幣。{how}開了店每天有進帳，但生意不好也可能撐不下去。',
-                { k: BZ().S(w).shops.length, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? '本錢不夠，得跟銀行借。' : { raw: '' } });
+                { k: BZ().S(w).shops.length, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
         },
         options(w, a) {
             const I = startInfo(w, a); if (!I) return []; const B = BZ();
@@ -199,7 +200,8 @@
                 { id: 'wait', quiet: true, mute: true, text: '再想想，先做好現在的工作', why: '現在的日子過得去', base: 1.5, lean: { safe: 0.4 }, run: () => null },
                 { id: 'open', text: { k: '開一家{ty}', p: { ty: I.type } }, why: '替別人做事，不如自己當老闆',
                     base: 0.4 + (amb(w, a) === 'rich' ? 0.7 : 0) + (has(a, 'creative') ? 0.4 : 0) + (a.job?.key === 'trader' ? 0.5 : 0) + Math.min(0.5, cash(w, a) / 150) - (I.loan ? 0.3 : 0), lean: { gain: 0.6, safe: -0.4 },
-                    run: (w, a) => (B.start(w, a) ? { k: '店開張了' } : { k: '本錢沒湊齊，沒開成' }) },
+                    // v9.30.0 沒開成的原因照實寫(以前一律寫「本錢沒湊齊」):店位滿了、銀行借不到、還在等銀行家回話、情況變了
+                    run: (w, a) => { const R = B.startTry ? B.startTry(w, a) : { shop: B.start(w, a) }; return { k: R.shop ? '店開張了' : (START_WHY[R.why] || '本錢沒湊齊，沒開成') }; } },
             ];
         },
     });

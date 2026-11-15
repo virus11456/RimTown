@@ -45,13 +45,17 @@ const stage = () => {
   // 下一次遇到跟 b 有關的事：往事裡有上次的決定和後果、也有「同樣的事上次怎麼選」
   const past1 = DECIDE.pastLines(w, a, K, facts, 46); out.past1 = past1;
   // 3. 工會：名下有產業的人不能是工會的人
-  try { const M = MARKET; const U = UNION.S(w); const ks = Object.keys(M.SECTORS); const ws = UNION.privateWorkers(w, Object.values(w.agents).filter(x => !x.isPlayer && !x.isDead));
+  try { const M = MARKET; const U = UNION.S(w); const ks = Object.keys(M.SECTORS); const allU = Object.values(w.agents).filter(x => !x.isPlayer && !x.isDead); const put = [];
+    // 這座種子鎮前 12 天不一定有人買下產業（9.30.0 店種不再擲骰之後，這顆種子就沒有）。沒有私人老闆就沒有受雇的工人可以測，所以指定人最多的兩個產業各有一位老闆，測完還原
+    if (UNION.privateWorkers(w, allU).length < 2) { const byS = {}; for (const x of allU) { const k = M.JOB2S[x.job?.key]; if (k && (x.age || 30) >= 16) (byS[k] = byS[k] || []).push(x); }
+      for (const k of Object.keys(byS).filter(k => !M.ownerOf(w, k) && byS[k].length >= 2).sort((p, q) => byS[q].length - byS[p].length).slice(0, 2)) { put.push([k, M.S(w).owners[k]]); M.S(w).owners[k] = byS[k][0].agentId; } }
+    const ws = UNION.privateWorkers(w, allU);
     const L = ws[0], m2 = ws[1]; out.union = { ws: ws.length };
     if (L && m2) { U.on = true; U.name = '測試工會'; U.leader = L.agentId; U.members = { [L.agentId]: 1, [m2.agentId]: 1 }; U.founded = 1;
       const kL = UNION.sectorOf(w, L); const other = ks.find(k => k !== kL && M.ownerOf(w, k) && M.ownerOf(w, k) !== L.agentId); const old = M.S(w).owners[other]; M.S(w).owners[other] = L.agentId; // L 買下了另一個產業
       out.union.talkSelf = UNION.talkInfo(w, other) === null; out.union.cantJoin = UNION.join(w, L) === false && !UNION.privateWorkers(w, [L]).length; out.union.cantOrg = UNION.canOrganize(w, L) === 0;
       UNION.membership(w, Object.values(w.agents).filter(x => !x.isPlayer && !x.isDead), w._absDay()); out.union.after = { leader: U.leader, lWas: L.agentId, stillMember: !!U.members[L.agentId], on: U.on, newLeader: U.leader === m2.agentId };
-      M.S(w).owners[other] = old; U.on = false; U.leader = null; U.members = {}; } } catch (e) { out.unionErr = String(e.stack || e).slice(0, 300); }
+      M.S(w).owners[other] = old; U.on = false; U.leader = null; U.members = {}; } for (const [k, v] of put) M.S(w).owners[k] = v; out.union.put = put.length; } catch (e) { out.unionErr = String(e.stack || e).slice(0, 300); }
   // 4. 提案被否決：理由回到提案人身上
   try { const PS = w.proposals; const p = PS.items.find(x => x.status === 'open') || (() => { for (let i = 0; i < 96 * 6 && !PS.items.some(x => x.status === 'open'); i++) { w.paused = false; w.tick(); } return PS.items.find(x => x.status === 'open'); })();
     if (p) { const pa = w.agents[p.proposerId]; const k0 = pa ? pa.memory.entries.length : 0; p.votes = {}; p.why = {}; const vs = A.filter(x => x.agentId !== p.proposerId).slice(0, 5); vs.forEach((x, i) => { p.votes[x.agentId] = 'against'; p.why[x.agentId] = i === 0 ? 'llm:公庫都快空了，這錢花不得' : 'gut'; });
