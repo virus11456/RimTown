@@ -53,8 +53,8 @@ async function run(browser, lang, vp) {
       // ---------- 晚上真的走進賭場 ----------
       { THINGS.goTonight(w, id, lover, 19, 23); let gk = 0; while (!(w.clock.hour === 20 && w.clock.minute === 0) && gk++ < 200) tick(1); tick(2); out.night = { at: lover._thingAt, target: lover.targetLocation || lover.currentLocation }; }
       // ---------- 到門口抗議：帶頭的人找看法相近的人一起去；老闆回應；人多就提案禁止 ----------
-      { const crowd = all.filter(a => a !== boss && a !== lover).slice(3, 11); for (const a of crowd) { X.att[id][a.agentId] = -85; for (const b of crowd) if (a !== b) a.relationships.getOrCreate(b.agentId, b.name).affinity = 40; }
-        (X.intent || (X.intent = {}))[id + '|' + crowd[0].agentId] = 'protest'; Th.protest = null; Th.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
+      { const crowd = all.filter(a => a !== boss && a !== lover && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)).slice(3, 11); /* 只挑人在鎮上的：帶頭的人如果剛好出門探險，就沒有人號召，這一段會整段落空 */ for (const a of crowd) { X.att[id][a.agentId] = -85; for (const b of crowd) if (a !== b) a.relationships.getOrCreate(b.agentId, b.name).affinity = 40; }
+        (X.intent || (X.intent = {}))[id + '|' + crowd[0].agentId] = 'protest'; Th.protest = null; X.lastProtest = -99; /* 全鎮抗議的七天冷卻也要清：隨機小鎮前幾天如果剛好有人抗議過別的東西，帶頭的人就沒有「號召抗議」這個選項，這一段會整段落空 */ Th.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
         await daily(0.05);
         if (Th.call) { for (const a of crowd.slice(1)) THINGS.rallyBy(w, a, { tid: id, side: 'con' }); DECIDE.S(w).q = []; Th.call.d = w._absDay() - 1; await daily(0.05); } // v9.27.0 跟不跟由每個人自己決定、隔天才集合：這裡讓大家都答應，再跑隔天
         const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban');

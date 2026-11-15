@@ -1,7 +1,8 @@
 // RimTown - landing-page.js：官網首頁(v9.29.0 從 app-landing.js 拆出來重新設計)。只有 index.html 載入,遊戲頁不載。
 // 用 Object.assign 掛到 RimTownApp.prototype；必須在 app-landing.js 之後載入（index.html／sw.js 都要列）。
-// 版面:首屏 3D 小鎮(村民自己拿主意) → 這是什麼遊戲 → 一個決定怎麼來 → 自己決定哪些事 → AI 開著與沒開 → 一件事牽動整個鎮
-//      → 從一個人到整個世界(鏡頭隨捲動拉遠) → 七章細節 → 村民的大腦 → 常見問題 → 更新紀錄 → 路線圖
+// 版面(v9.30.1 精簡):首屏 3D 小鎮(村民自己拿主意) → 這是什麼遊戲 → 從一個人到整個世界(鏡頭隨捲動拉遠) → 一件事牽動整個鎮
+//      → 一個決定怎麼來 → 自己決定哪些事(十類分頁) → AI 開著與沒開 → 村民的大腦 → 常見問題 → 更新紀錄 → 路線圖
+//      七章細節不排在頁面上,收在側邊面板(#lp-sheet);七個尺度卡片上的主題標籤、連鎖的章節標籤點了才打開
 'use strict';
 // 線條圖示(24×24,跟著文字顏色)。首頁不用表情符號當圖示
 const LP_ICONS = {
@@ -38,6 +39,7 @@ const LP_ICONS = {
     down: 'M12 5v14M6 13l6 6 6-6',
     check: 'M5 12.5l4.5 4.5L19 7.5',
     chev: 'M6 9l6 6 6-6',
+    x: 'M6 6l12 12M18 6L6 18',
     monitor: 'M3 4h18v12H3zM8 20h8M12 16v4',
     phone: 'M7 2h10a1 1 0 0 1 1 1v18a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1zM11 18h2',
     cloud: 'M17.5 19a4.5 4.5 0 0 0 .5-9A7 7 0 0 0 4.3 12.2 3.5 3.5 0 0 0 5.5 19z',
@@ -259,43 +261,50 @@ Object.assign(RimTownApp.prototype, {
             { id: 'self', c: '#f28c4a', scale: X('一個人', 'One person'),
               h: X('先從一個人開始', 'It starts with one person'),
               lead: X('每位村民都是一個完整的人：有個性和價值觀，記得誰對他好，有自己的錢包，也有會生病的身體。餓了要吃飯，病了要看醫生，沒錢就得想辦法。', 'Every villager is a whole person: a personality and values, a memory of who was kind to them, a wallet of their own and a body that can fall ill. Hungry, they need food; sick, they need a doctor; broke, they need a plan.'),
+              short: X('有個性、有記憶、有自己的錢包，也有會生病的身體。', 'A personality, a memory, a wallet of their own, and a body that can fall ill.'),
               topics: ['people', 'health', 'myth'],
               bridge: X('一個人的處境和情緒，會變成他對別人的態度。', 'A person\'s situation and mood become how they treat others.') },
             { id: 'ties', c: '#e8b04b', scale: X('人與人', 'Between people'),
               h: X('人跟人之間，比規則複雜', 'People are messier than rules'),
               lead: X('面子、人情、八卦、冷戰、信仰：村民之間有一整套看不見的規矩。誰欠誰人情、誰跟誰鬧翻，都會影響他明天怎麼做事、怎麼投票。', 'Face, favors, gossip, cold wars, faith: villagers live by a whole set of unwritten rules. Who owes whom and who fell out with whom shapes how they work and vote tomorrow.'),
+              short: X('面子、人情、八卦、冷戰：誰欠誰、誰跟誰鬧翻，都會影響明天。', 'Face, favors, gossip, cold wars: who owes whom shapes what happens tomorrow.'),
               topics: ['ways', 'culture'],
               bridge: X('交情和信任，決定了誰跟誰合夥、誰替誰做事。', 'Friendship and trust decide who goes into business with whom, and who works for whom.') },
             { id: 'living', c: '#f2c14e', scale: X('討生活', 'Making a living'),
               h: X('每一枚銀幣都有來處和去處', 'Every coin comes from somewhere and goes somewhere'),
               lead: X('鎮上的錢不會憑空出現，也不會憑空消失：工資、稅、分紅、利息、賭債，全是村民之間真的轉手。有人當老闆，有人當夥計，有人組工會，有人輸光家產。', 'Money in town never appears or vanishes out of thin air: wages, taxes, dividends, interest and gambling debts all really change hands between villagers. Some become owners, some workers, some organize unions, some lose everything.'),
+              short: X('工資、稅、分紅、賭債，全是村民之間真的轉手。', 'Wages, taxes, dividends, gambling debts: all of it really changes hands.'),
               topics: ['money', 'shares', 'union', 'casino'],
               bridge: X('有錢的人想要話語權，沒錢的人想要改變。', 'The rich want a say; the poor want change.') },
             { id: 'power', c: '#7fb3f5', scale: X('誰說了算', 'Who decides'),
               h: X('規則是村民自己訂的', 'The villagers make the rules'),
               lead: X('要蓋什麼、稅收多少、禁不禁賭，都由村民提案、投票，再由首長拍板；報社監督，財團收買，議會可以推翻否決。你看得到檯面上的投票，也看得到檯面下的交易。', 'What to build, how much tax to collect, whether to ban gambling: villagers propose and vote, and the leader decides. The press keeps watch, money buys influence, and the council can overturn a veto. You see the votes on the table and the deals under it.'),
+              short: X('蓋什麼、稅多少、禁不禁賭，村民自己提案、投票，首長拍板。', 'What to build, how much tax, whether to ban gambling: they propose, vote, and the leader decides.'),
               topics: ['politics', 'power'],
               bridge: X('訂下的政策，決定了小鎮往哪裡長。', 'The policies they choose decide which way the town grows.') },
             { id: 'era', c: '#6fcf97', scale: X('小鎮長大', 'The town grows'),
               h: X('從二十幾個人的村莊，到有國王的王都', 'From a village of twenty to a capital with a king'),
               lead: X('研究推著時代往前走，人口和繁榮讓村莊升級成城鎮、城市、王都。到了第四時代，全鎮要投票選一條科技路線：電子機械、基因生物或蒸汽煉金，每條路都有自己的奇蹟和代價。', 'Research pushes the eras forward, and population and prosperity turn a village into a town, a city, a capital. In the fourth era the whole town votes on a path (electro-mechanical, bio-genetic or steam-alchemy), each with its own wonders and costs.'),
+              short: X('研究推著時代走，村莊長成城鎮、城市、王都。', 'Research moves the eras on, and a village grows into a town, a city, a capital.'),
               topics: ['growth', 'path', 'aether'], tiers: true,
               bridge: X('走得越遠，牽連的就不只一個鎮。', 'The further they go, the more it reaches beyond one town.') },
             { id: 'world', c: '#5fc4b8', scale: X('世界與災難', 'The world, and its ends'),
               h: X('外面還有別的鎮，也有末日', 'There are other towns out there, and doomsdays too'),
               lead: X('鄰鎮有自己的物產、外交和消息；商隊、旅人、聯姻把大家連在一起。走到第六時代，可能遇上核戰、外星入侵、冰河期這種世界級災厄，村民怎麼面對，是這個世界最大的考驗。', 'Neighboring towns have their own goods, diplomacy and news; caravans, travelers and marriages tie everyone together. In the sixth era a world-scale calamity may come (nuclear war, an alien invasion, an ice age), and how the villagers face it is this world\'s greatest test.'),
+              short: X('鄰鎮有物產、外交和消息；走得夠遠，會遇上世界級的災難。', 'Neighbors trade, ally and gossip; go far enough and a world-scale calamity arrives.'),
               topics: ['world', 'doom', 'aftermath'],
               bridge: X('而這一切，都在你眼前發生。', 'And all of it happens right in front of you.') },
             { id: 'you', c: '#c39bd3', scale: X('你', 'You'),
               h: X('你是觀察者，偶爾當神', 'You are the observer and, now and then, a god'),
               lead: X('你不控制任何人。你可以拉近看屋裡的人在做什麼，讀每天的日報，翻真相頁看誰在說謊；神力存夠了，就打一張事件卡、託一個夢、設計一場災難，然後看小鎮怎麼回應。', 'You control no one. Zoom in to see what people are doing indoors, read the daily paper, check the truth page to see who is lying; when you have enough divine power, play an event card, send a dream or design a disaster, then watch how the town responds.'),
+              short: X('你不控制任何人。看、讀日報、翻真相頁，偶爾打一張牌。', 'You control no one. Watch, read the paper, check the truth page, and play a card now and then.'),
               topics: ['watch', 'god', 'lab'],
               bridge: X('沒有劇本，也沒有結局。', 'No script, and no ending.') },
         ];
         const pillars = [
-            ['bulb', X('他們自己做決定', 'They decide for themselves'), X('每位村民都有個性、記憶、錢包和身體。要不要提案、投給誰、去不去賭場、跟誰結婚，都是他自己依經歷想出來的，而且說得出理由。', 'Every villager has a personality, memories, a wallet and a body. Whether to propose, whom to vote for, whether to gamble, whom to marry: each decides from their own experience, and can tell you why.')],
-            ['link', X('每件事都牽動別的事', 'Everything is connected'), X('經濟、政治、信仰、八卦、科技、災難，全是同一群人的生活，彼此分不開。一個人輸光了錢，會影響他的婚姻、工作、投票，還有整個鎮的輿論。', 'Money, politics, faith, gossip, technology and disaster are all part of the same people\'s lives. When one man gambles away his savings, it touches his marriage, his job, his vote and the mood of the whole town.')],
-            ['eye', X('你只能看，偶爾當神', 'You watch, and sometimes play god'), X('你不是主角，也不能控制任何人。你看著小鎮長出自己的歷史，偶爾用神力推一把，再看它怎麼回應。', 'You are not the hero and you control no one. You watch the town grow its own history, nudge it now and then with divine power, and see how it responds.')],
+            ['bulb', X('他們自己做決定', 'They decide for themselves'), X('提不提案、投給誰、去不去賭場、跟誰結婚，都是本人依自己的經歷決定，而且說得出理由。', 'Whether to propose, whom to vote for, whether to gamble, whom to marry: each decides from their own experience, and can tell you why.')],
+            ['link', X('每件事都牽動別的事', 'Everything is connected'), X('一個人輸光了錢，會影響他的婚姻、工作、投票，還有整個鎮的輿論。', 'When one man gambles away his savings, it touches his marriage, his job, his vote and the mood of the whole town.')],
+            ['eye', X('你只能看，偶爾當神', 'You watch, and sometimes play god'), X('你不控制任何人。偶爾用神力推一把，再看小鎮怎麼回應。', 'You control no one. Nudge it now and then with divine power, and see how the town responds.')],
         ];
         // 一件事怎麼牽動整個鎮：每一步標上它屬於哪一章（點了跳過去）
         const chain = [
@@ -319,7 +328,9 @@ Object.assign(RimTownApp.prototype, {
         ];
         const faq = [
             [X('「完全智能體」是什麼意思？', 'What does "full agent" mean?'), X('村民遇到事情時，遊戲只列出當下做得到的選項，由本人依自己的處境選一個，並說出理由。目前有 75 種事是這樣決定的。提案、投票、首長裁決、聊天和每天的行程，也由 AI 依每個人的記憶和個性處理。', 'When something comes up, the game only lists what is possible at that moment, and the villager picks one from their own situation and gives a reason. 75 kinds of situation are decided this way today. Proposals, votes, the leader\'s rulings, conversations and daily plans are also handled by AI from each person\'s memories and personality.')],
-            [X('AI 額度用完了，村民會停下來嗎？', 'Do villagers stop when the AI quota runs out?'), X('不會。額度用完、AI 沒回話，或那天輪不到 AI 的人，照自己的個性、交情和處境決定，一樣留下理由。村民卡上每一筆決定都標明是 AI 想的，還是依個性推估的。', 'No. When the quota is used up, the AI does not answer, or it is not someone\'s turn for AI that day, they decide from their own personality, relationships and situation, and still leave a reason. Every decision on the villager card says whether the AI made it or it was estimated from personality.')],
+            [X('AI 額度用完了，村民會停下來嗎？', 'Do villagers stop when the AI quota runs out?'), X('不會。額度用完、AI 沒回話，或那天輪不到 AI 的人，照自己的個性、交情和處境決定，一樣留下理由。村民卡上每一筆決定都標明是 AI 想的，還是依個性推估的。決策核心沒有開關：設定裡的「完整智能體模式」只決定要不要動用 AI；關掉以後，75 種事仍然由本人依個性和處境決定。', 'No. When the quota is used up, the AI does not answer, or it is not someone\'s turn for AI that day, they decide from their own personality, relationships and situation, and still leave a reason. Every decision on the villager card says whether the AI made it or it was estimated from personality. The decision core has no off switch: "Full agent mode" in Settings only decides whether the AI is used; with it off, all 75 kinds of situation are still decided by each villager.')],
+            [X('AI 一天會問幾件事？', 'How many things does the AI get asked a day?'), X('決策核心每天最多把 10 件事交給 AI，一次問 5 件。其中 2 個名額留給別人找上門的事（有人來借錢、來道歉、先開口），同一類的事一天最多問 2 件，免得名額全被同一種事用掉。超過名額、額度用完、AI 沒回話或答非所問，都改照個性、交情和處境決定。', 'The decision core hands the AI at most 10 matters a day, 5 at a time. Two of those slots are kept for things that come to you (someone asking for a loan, apologizing, or speaking first), and at most 2 a day are of the same kind, so one kind of situation cannot use up the whole allowance. Going over the allowance, running out of quota, or the AI not answering or answering off the point all fall back to personality, relationships and situation.')],
+            [X('在遊戲裡哪裡看得到他們的決定？', 'Where can I see their decisions in the game?'), X('村民卡的「最近的決定」列出遇到什麼事、選了什麼、為什麼、結果怎樣，還有他接下來的打算，並標明是 AI 自己想的還是依個性推估的。動態裡「某某想了想，決定……」是 AI 選的；「某某自己拿了主意……」是他做了選單以外的事。', '"Recent decisions" on the villager card lists what came up, what they chose, why, how it went and what they plan next, and says whether the AI decided or it was estimated from personality. In the feed, "So-and-so thought it over and decided to..." is the AI\'s choice; "So-and-so made up their own mind..." means they did something that was not on the list.')],
             ...aiNotes.map(n => [n[1], n[2]]), // v9.1.1 AI 與金鑰併進常見問題（首頁太長）
             [X('要下載或安裝嗎？', 'Do I need to install anything?'), X('不用。打開網頁就能玩，電腦、平板、手機都可以。', 'No. It runs in the browser on computers, tablets and phones.')],
             [X('我可以控制村民嗎？', 'Can I control the villagers?'), X('不行，這是觀察型遊戲。你能做的是打事件卡、託夢、化身旅人聊天，其他全由村民自己決定。', 'No, this is an observation game. You can play event cards, send dreams or chat as a traveler; the rest is up to them.')],
@@ -363,11 +374,11 @@ Object.assign(RimTownApp.prototype, {
         // ---------- 一個決定是怎麼來的 ----------
         // 五個步驟(說明沿用 v9.19.1),右邊用一筆真實的紀錄對照:9.28 版接真模型實測時,裁縫唐琳跟梁貝兒借錢
         const dSteps = [
-            ['book', X('先看自己的處境', 'Look at their own situation'), X('此刻的心情和身體、身上的錢和債、對鎮上大事的立場、家人朋友和處不來的人、最近發生的事，還有自己以前做過的決定。', 'How they feel right now, their money and debts, where they stand on town issues, family, friends and people they can\'t stand, what happened lately, and the decisions they made before.')],
-            ['bell', X('遇到要拿主意的事', 'Something comes up'), X('手上有閒錢、借的錢到期了、對不起某人、跟人冷戰、工資被壓、工會來談加薪、快選舉了。遊戲只列出「現在做得到的選項」，不替他選。', 'Spare money, a debt coming due, owing someone an apology, a silent feud, squeezed wages, the union asking for a raise, an election coming up. The game only lists what is possible right now. It does not choose for them.')],
-            ['bulb', X('自己選，說出理由', 'Choose, and say why'), X('AI 依他自己的處境挑一個，用他的口吻說為什麼。也可以選「其他」，做一件選單上沒有的事。', 'The AI picks one from that villager\'s own situation and gives the reason in their voice. It can also pick "something else" and do a thing that is not on the list.')],
-            ['scale', X('真的發生', 'It really happens'), X('錢真的從一個人到另一個人手上，交情真的變好或變壞。每一筆錢都有來源和去處，不會憑空多出來。', 'Money really moves from one person to another, and relationships really warm or cool. Every coin has a source and a destination; none appears from nowhere.')],
-            ['idcard', X('記住結果', 'Remember how it went'), X('決定、理由、結果都記下來；下次再遇到事，他看得到自己上次怎麼選、後來怎樣，還會留下「接下來的打算」。', 'The decision, the reason and the outcome are all kept. Next time something comes up they can see what they chose before and how it went, and they leave themselves a plan for what comes next.')],
+            ['book', X('先看自己的處境', 'Look at their own situation'), X('心情、錢和債、家人朋友、最近發生的事，還有自己以前的決定。', 'Mood, money and debts, family and friends, recent events, and their own past decisions.')],
+            ['bell', X('遇到要拿主意的事', 'Something comes up'), X('遊戲只列出現在做得到的選項，不替他選。', 'The game only lists what is possible right now. It does not choose for them.')],
+            ['bulb', X('自己選，說出理由', 'Choose, and say why'), X('AI 依他的處境挑一個，用他的口吻說為什麼；也可以做選單上沒有的事。', 'The AI picks one from their situation and says why in their voice; it can also do something off the list.')],
+            ['scale', X('真的發生', 'It really happens'), X('錢真的轉手，交情真的變好或變壞。', 'Money really changes hands; relationships really warm or cool.')],
+            ['idcard', X('記住結果', 'Remember how it went'), X('決定、理由、結果都記下來，下次遇到事看得到。', 'The decision, reason and outcome are kept, and they can see them next time.')],
         ];
         const q = (s) => (L === 'en' ? `"${s}"` : `「${s}」`);
         const rec = [
@@ -377,12 +388,7 @@ Object.assign(RimTownApp.prototype, {
             [X('真的發生', 'It happens'), `<p>${X('這變成梁貝兒要拿主意的事：「有人來借錢」。她選了借。', 'This becomes something for Liang Bei\'er to decide: "Asked for a loan". She chose to lend.')}</p><blockquote>${q(X('唐琳都開口了，身上只剩 1 銀幣，總不能見死不救。', 'Tang Lin asked me herself, and she has 1 silver left. I can\'t just watch.'))}<cite>${X('梁貝兒', 'Liang Bei\'er')}</cite></blockquote><p class="lp-rec-move"><span>${X('梁貝兒', 'Liang Bei\'er')}</span><i aria-hidden="true">${ic('arrow')}</i><b>${X('15 銀幣', '15 silver')}</b><i aria-hidden="true">${ic('arrow')}</i><span>${X('唐琳', 'Tang Lin')}</span></p>`],
             [X('記住', 'Remembered'), `<p>${X('兩人的村民卡各多一筆「最近的決定」。唐琳欠梁貝兒 15 銀幣，一週後到期。到時候要全還、先還一部分，還是拜託寬限，又是她自己要拿主意的事。', 'Each of them gets a new entry under "Recent decisions" on their villager card. Tang Lin now owes Liang Bei\'er 15 silver, due in a week. Whether to repay in full, pay part or ask for more time will be hers to decide again.')}</p>`],
         ];
-        const dPicks = [
-            [X('愛冒險的獵人', 'An adventurous hunter'), X('去外地玩幾天', 'Takes a few days\' trip out of town'), X('「辛苦這麼久，想出去走走看看。」', '"After all this hard work, I want to get out and see things."')],
-            [X('顧家的農夫', 'A family-minded farmer'), X('送孩子去外地讀書', 'Sends a child to school out of town'), X('「再苦也要讓孩子讀書。」', '"However hard it gets, the child must get schooling."')],
-            [X('克己的守衛', 'A frugal guard'), X('存進銀行', 'Puts it in the bank'), X('「錢放銀行比較安心，還能生利息。」', '"It\'s safer in the bank, and it earns interest."')],
-        ];
-        const decide = `<section class="landing-section lp-sec lp-decide" id="landing-decide">${head(X('完全智能體', 'Full agents'), X('一個決定是怎麼來的', 'How one decision comes about'), X('村民遇到事情時，先看自己的處境，再自己選，說得出理由，也記得後來怎樣。下面右邊是 9.28 版接上 AI 實測時留下的一筆紀錄，引號裡是村民自己說的話。', 'When something comes up, a villager looks at their own situation, chooses for themselves, can say why, and remembers how it turned out. The record on the right comes from a test run of v9.28 with the AI connected; the quotes are the villagers\' own words (translated).'))}
+        const decide = `<section class="landing-section lp-sec lp-decide" id="landing-decide">${head(X('完全智能體', 'Full agents'), X('一個決定是怎麼來的', 'How one decision comes about'), X('這筆紀錄是 9.28 版接上 AI 實測時留下的，引號裡是村民自己說的話。', 'This record comes from a test run of v9.28 with the AI connected; the quotes are the villagers\' own words (translated).'))}
                 <div class="lp-flow lp-rv" id="lp-flow" data-step="0">
                     <ol class="lp-steps lp-steps-5">${dSteps.map((x, i) => `<li class="lp-step${i ? '' : ' on'}" data-step="${i}"><button type="button" class="lp-step-btn" aria-pressed="${i ? 'false' : 'true'}"><span class="lp-step-num" aria-hidden="true">${i + 1}</span><span class="lp-step-ic">${ic(x[0])}</span><h3>${x[1]}</h3></button><p>${x[2]}</p></li>`).join('')}</ol>
                     <div class="lp-rec" aria-label="${X('一筆實測紀錄', 'One record from a test run')}">
@@ -394,9 +400,6 @@ Object.assign(RimTownApp.prototype, {
                     <div><b>${X('以前：遊戲替他們擲骰', 'Before: the game rolled dice for them')}</b><p>${X('「身上超過 100 銀幣的人，每天有 2% 的機率去旅遊。」', '"Anyone with more than 100 silver has a 2% chance each day of taking a trip."')}</p></div>
                     <div class="now"><b>${X('現在：本人依處境決定', 'Now: they decide from their own situation')}</b><p>${X('「我手上有 600 銀幣，孩子還小，上次入股又被拒絕。這次先存起來。」', '"I have 600 silver, my child is still small, and my last offer to buy shares was turned down. This time I\'ll save it."')}</p></div>
                 </div>
-                <h3 class="lp-sub-h">${X('同樣一筆閒錢，三個人三種選擇', 'The same spare money, three people, three choices')}</h3>
-                <ul class="lp-picks lp-rv">${dPicks.map(x => `<li><span class="who">${x[0]}</span><h4>${x[1]}</h4><p>${x[2]}</p></li>`).join('')}</ul>
-                <p class="lp-note">${X('這三個是示意。實際上每個人的錢、家人、交情和記憶都不一樣，換一局結果就不同。', 'These three are illustrations. In play, everyone\'s money, family, friendships and memories differ, so each game turns out differently.')}</p>
             </section>`;
 
         // ---------- 他們自己決定哪些事:75 個選擇點、十類 ----------
@@ -414,43 +417,34 @@ Object.assign(RimTownApp.prototype, {
             ['heart', X('感情與衝突', 'Love and conflict'), X('要不要告白、答不答應、求婚、對別人動了心怎麼辦、感情淡了走不走、碰上死對頭要不要吵起來、要不要去鄰鎮作客。', 'Whether to confess, accept, propose, what to do about falling for someone else, whether to leave when the spark fades, whether to pick a fight with a sworn enemy, whether to visit a neighbouring town.'), 'sim-decide-love.js'],
         ];
         const kindTotal = kindGroups.reduce((n, g) => n + (KT[g[3]] || []).length, 0);
-        const kinds = `<section class="landing-section lp-sec lp-kinds-sec" id="landing-kinds">${head(X('選擇點', 'Choice points'), X('他們自己決定的 {n} 種事', '{n} kinds of things they decide for themselves').replace('{n}', kindTotal), X('下面每一小格都是遊戲裡真的會遇到的處境。遇到了，就由那個人自己選。', 'Each small tag below is a situation villagers really run into in the game. When it comes up, that person chooses.'))}
-                <ul class="lp-kinds">${kindGroups.map(g => { const ts = KT[g[3]] || []; return `<li class="lp-kind lp-rv"><div class="lp-kind-head"><span class="lp-kind-ic">${ic(g[0])}</span><h3>${g[1]}</h3><span class="lp-kind-n">${X('{n} 種', '{n}').replace('{n}', ts.length)}</span></div><p>${g[2]}</p><ul class="lp-kind-tags">${ts.map(x => `<li>${esc(L === 'en' ? x[1] : x[0])}</li>`).join('')}</ul></li>`; }).join('')}</ul>
+        const kinds = `<section class="landing-section lp-sec lp-kinds-sec" id="landing-kinds">${head(X('選擇點', 'Choice points'), X('他們自己決定的 {n} 種事', '{n} kinds of things they decide for themselves').replace('{n}', kindTotal), X('點一類，看村民真的會遇到哪些處境。', 'Pick a group to see the situations villagers really run into.'))}
+                <div class="lp-kindbox lp-rv">
+                    <div class="lp-kindtabs" role="tablist" aria-label="${X('十類選擇', 'Ten groups of choices')}">${kindGroups.map((g, i) => `<button type="button" role="tab" class="lp-kindtab${i === 1 ? ' on' : ''}" id="lp-kt-${i}" aria-selected="${i === 1 ? 'true' : 'false'}" aria-controls="lp-kp-${i}" tabindex="${i === 1 ? 0 : -1}">${ic(g[0])}<span>${g[1]}</span><b>${(KT[g[3]] || []).length}</b></button>`).join('')}</div>
+                    <ul class="lp-kinds">${kindGroups.map((g, i) => { const ts = KT[g[3]] || []; return `<li class="lp-kind${i === 1 ? ' on' : ''}" role="tabpanel" id="lp-kp-${i}" aria-labelledby="lp-kt-${i}"><p>${g[2]}</p><ul class="lp-kind-tags">${ts.map(x => `<li>${esc(L === 'en' ? x[1] : x[0])}</li>`).join('')}</ul></li>`; }).join('')}</ul>
+                </div>
             </section>`;
 
         // ---------- AI 接得上與接不上的時候 ----------
-        const aiSec = `<section class="landing-section lp-sec lp-ai" id="landing-ai">${head(X('老實說', 'To be plain about it'), X('AI 接得上，和接不上的時候', 'When the AI is available, and when it is not'), X('AI 由伺服器負擔，每個帳號每天有使用上限，所以不是每件事都問 AI。兩種情況都列在這裡。', 'The server pays for the AI and each account has a daily limit, so the AI is not asked about everything. Both cases are set out here.'))}
+        const aiSec = `<section class="landing-section lp-sec lp-ai" id="landing-ai">${head(X('老實說', 'To be plain about it'), X('AI 接得上，和接不上的時候', 'When the AI is available, and when it is not'), X('AI 由伺服器負擔，每個帳號每天有上限，所以不是每件事都問 AI。', 'The server pays for the AI and each account has a daily limit, so the AI is not asked about everything.'))}
                 <div class="lp-two lp-rv">
                     <div class="lp-two-col on"><h3>${X('AI 接得上', 'AI available')}</h3>
-                        <ul><li>${X('決策核心每天最多把 10 件事交給 AI，一次問 5 件。', 'The decision core hands the AI at most 10 matters a day, 5 at a time.')}</li>
-                        <li>${X('其中 2 個名額留給「別人找上門」的事：有人來借錢、來道歉、先開口。', 'Two of those slots are kept for things that come to you: someone asking for a loan, apologizing, or speaking first.')}</li>
-                        <li>${X('同一類的事一天最多問 2 件，免得名額全被同一種事用掉。', 'At most 2 a day of the same kind, so one kind of situation cannot use up the whole allowance.')}</li>
+                        <ul><li>${X('每天最多 10 件事交給 AI，同一類最多 2 件。', 'At most 10 matters a day go to the AI, and at most 2 of the same kind.')}</li>
                         <li>${X('AI 讀的是那個人自己的處境，用他的口吻說理由。', 'The AI reads that one villager\'s own situation and gives the reason in their voice.')}</li></ul></div>
                     <div class="lp-two-col"><h3>${X('AI 接不上，或輪不到', 'AI unavailable, or not their turn')}</h3>
-                        <ul><li>${X('超過名額、今天的額度用完、AI 沒回話或答非所問，都算這一種。', 'This covers going over the allowance, the daily quota being used up, and the AI not answering or answering off the point.')}</li>
-                        <li>${X('這時照那個人的個性、交情和處境決定，一樣留下理由。', 'The villager then decides from their personality, relationships and situation, and still leaves a reason.')}</li>
-                        <li>${X('沒有人會卡著等 AI。', 'Nobody waits around for the AI.')}</li>
-                        <li>${X('村民卡上每一筆都標明是哪一種。', 'Every entry on the villager card says which of the two it was.')}</li></ul></div>
+                        <ul><li>${X('照那個人的個性、交情和處境決定，一樣留下理由。', 'The villager decides from their personality, relationships and situation, and still leaves a reason.')}</li>
+                        <li>${X('沒有人會卡著等 AI；村民卡上每一筆都標明是哪一種。', 'Nobody waits around for the AI, and every entry on the villager card says which of the two it was.')}</li></ul></div>
                 </div>
-                <p class="lp-rule lp-rv">${ic('key')}<span>${X('決策核心沒有開關。設定裡的「完整智能體模式」只決定要不要動用 AI；關掉以後，75 種事仍然由本人依個性和處境決定。金鑰只放在伺服器，網頁原始碼和存檔裡都沒有。', 'The decision core has no off switch. "Full agent mode" in Settings only decides whether the AI is used; with it off, all 75 kinds of situation are still decided by each villager from personality and circumstances. Keys live only on the server, never in the page source or saves.')}</span></p>
-                <h3 class="lp-sub-h">${X('9.28 版的實測數字', 'Numbers from a test run of v9.28')}</h3>
                 <ul class="lp-proof lp-rv">
-                    <li><b>478</b><span>${X('次 AI 呼叫，全部有回應（中文 228、英文 250）', 'AI calls, all answered (228 in Chinese, 250 in English)')}</span></li>
-                    <li><b>101</b><span>${X('題決策核心的題目，全部選了合法的選項', 'decision-core questions, every one answered with a valid option')}</span></li>
+                    <li><b>478</b><span>${X('次 AI 呼叫，全部有回應', 'AI calls, all answered')}</span></li>
+                    <li><b>101</b><span>${X('題決策，全部選了合法的選項', 'decisions, every one a valid option')}</span></li>
                     <li><b>0</b><span>${X('次需要改照個性補上', 'fell back to personality')}</span></li>
                 </ul>
-                <p class="lp-note">${X('測法：同一座城鎮先跑 45 天，再接上 AI 跑 5 個遊戲天，中文、英文各一輪。這是一次測試的結果，實際遊玩時 AI 偶爾會沒回話，那時就照上面右欄處理。', 'Method: one town ran for 45 days, then 5 game days with the AI connected, once in Chinese and once in English. This is the result of one test; in normal play the AI sometimes fails to answer, and the right-hand column above then applies.')}</p>
-                <h3 class="lp-sub-h">${X('在遊戲裡哪裡看得到', 'Where to see it in the game')}</h3>
-                <dl class="lp-points lp-points-3 lp-rv" style="--c:var(--lp-accent)">
-                    <div><dt>${ic('idcard')}${X('村民卡的「最近的決定」', '"Recent decisions" on the villager card')}</dt><dd>${X('遇到什麼事、選了什麼、為什麼、結果怎樣，還有他接下來的打算。每一筆會標出是 AI 自己想的，還是依個性推估的。', 'What came up, what they chose, why, how it went, and what they plan next. Each entry says whether the AI decided or it was estimated from personality.')}</dd></div>
-                    <div><dt>${ic('list')}${X('動態裡的決定', 'Decisions in the feed')}</dt><dd>${X('「某某想了想，決定……」是 AI 選的；「某某自己拿了主意……」是他做了選單以外的事。', '"So-and-so thought it over and decided to..." is the AI\'s choice; "So-and-so made up their own mind..." means they did something that was not on the list.')}</dd></div>
-                    <div><dt>${ic('sliders')}${X('設定裡的「完整智能體模式」', '"Full agent mode" in Settings')}</dt><dd>${X('開著時由 AI 決定，每天最多 10 件；其他的，或 AI 沒回話的時候，依他的個性和處境推估，不是固定機率。', 'When on, the AI decides up to 10 matters a day. The rest, and anything the AI doesn\'t answer, is estimated from personality and situation rather than fixed odds.')}</dd></div>
-                </dl>
+                <p class="lp-note">${X('9.28 版的一次實測：同一座城鎮先跑 45 天，再接上 AI 跑 5 個遊戲天，中文、英文各一輪。實際遊玩時 AI 偶爾會沒回話，那時就照「AI 接不上」那一欄處理。', 'One test run of v9.28: a town ran for 45 days, then 5 game days with the AI connected, once in Chinese and once in English. In normal play the AI sometimes fails to answer, and the "AI unavailable" column then applies.')}</p>
             </section>`;
 
         // ---------- 一件事怎麼牽動整個鎮 ----------
-        const chainSec = `<section class="landing-section lp-sec lp-chain-sec" id="landing-chain">${head(X('連鎖', 'Ripples'), X('一件事怎麼牽動整個鎮', 'How one thing ripples through a town'), X('以下沒有寫在劇本裡。每一步都是村民依自己的個性和處境決定的，換一局就不一樣。', 'None of this is scripted. Every step is decided by villagers according to their own character and circumstances, and it plays out differently every game.'))}
-                <ol class="lp-chain">${chain.map(([cid, txt], i) => `<li class="lp-rv" style="--c:${CH[cid].c};--i:${i}"><a class="lp-chain-tag" href="#lp-ch-${cid}" data-lp-jump="lp-ch-${cid}">${num(CH[cid].n)} ${CH[cid].scale}</a><span>${txt}</span></li>`).join('')}</ol>
+        const chainSec = `<section class="landing-section lp-sec lp-chain-sec" id="landing-chain">${head(X('連鎖', 'Ripples'), X('一件事怎麼牽動整個鎮', 'How one thing ripples through a town'), X('沒有劇本。每一步都是村民自己決定的，換一局就不一樣。', 'None of this is scripted. Every step is a villager\'s own decision, and it plays out differently every game.'))}
+                <ol class="lp-chain">${chain.map(([cid, txt], i) => `<li class="lp-rv" style="--c:${CH[cid].c};--i:${i}"><a class="lp-chain-tag" href="#lp-ch-${cid}" data-lp-sheet="${cid}">${num(CH[cid].n)} ${CH[cid].scale}</a><span>${txt}</span></li>`).join('')}</ol>
             </section>`;
 
         // ---------- 從一個人到整個世界:鏡頭隨捲動拉遠 ----------
@@ -460,7 +454,7 @@ Object.assign(RimTownApp.prototype, {
                     <div class="lp-scale-top landing-inner"><span class="lp-kicker">${X('七個尺度', 'Seven scales')}</span><h2 id="lp-scale-h">${X('從一個人到整個世界', 'From one person to a whole world')}</h2></div>
                     <ol class="lp-scale-dots" aria-label="${X('七個尺度', 'Seven scales')}">${chapters.map((c, i) => `<li><button type="button" data-lp-scale="${i}" class="${i ? '' : 'on'}" style="--c:${c.c}"><b>${num(i + 1)}</b><span>${c.scale}</span></button></li>`).join('')}</ol>
                 </div>
-                <ol class="lp-scale-steps">${chapters.map((c, i) => `<li class="lp-scale-step" data-i="${i}" style="--c:${c.c}"><div class="lp-scale-card"><span class="lp-scale-num">${num(i + 1)} · ${c.scale}</span><h3>${c.h}</h3><p>${c.lead}</p><a href="#lp-ch-${c.id}" data-lp-jump="lp-ch-${c.id}">${X('看這一章的細節', 'See this chapter in detail')}${ic('down')}</a></div></li>`).join('')}</ol>
+                <ol class="lp-scale-steps">${chapters.map((c, i) => `<li class="lp-scale-step" data-i="${i}" style="--c:${c.c}"><div class="lp-scale-card"><span class="lp-scale-num">${num(i + 1)} · ${c.scale}</span><h3>${c.h}</h3><p>${c.short}</p><div class="lp-scale-chips">${c.topics.map(id => B[id]).filter(Boolean).map(b => `<button type="button" class="lp-scale-chip" data-lp-sheet="${c.id}" data-lp-topic="${b.id}">${ic(LP_BAND_ICON[b.id])}${b.k}</button>`).join('')}</div><a class="lp-scale-more" href="#lp-ch-${c.id}" data-lp-sheet="${c.id}">${X('看這一章的細節', 'See this chapter in detail')}${ic('arrow')}</a></div></li>`).join('')}</ol>
             </section>`;
 
         // ---------- 七章細節 ----------
@@ -486,12 +480,12 @@ Object.assign(RimTownApp.prototype, {
                 <div class="lp-ch-body">
                     <div class="lp-topics">${ts.map(topic).join('')}</div>
                     ${c.tiers ? tiersHtml() : ''}
-                    <p class="lp-ch-bridge${next ? '' : ' is-end'}">${next ? `<a href="#lp-ch-${next.id}" data-lp-jump="lp-ch-${next.id}"><span class="lp-ch-bridge-txt">${c.bridge}</span><span class="lp-ch-bridge-go">${X('下一章', 'Next')} ${num(i + 2)} · ${next.scale}${ic('down')}</span></a>` : `<span class="lp-ch-bridge-txt">${c.bridge}</span>`}</p>
+                    <p class="lp-ch-bridge${next ? '' : ' is-end'}">${next ? `<a href="#lp-ch-${next.id}" data-lp-sheet="${next.id}"><span class="lp-ch-bridge-txt">${c.bridge}</span><span class="lp-ch-bridge-go">${X('下一章', 'Next')} ${num(i + 2)} · ${next.scale}${ic('down')}</span></a>` : `<span class="lp-ch-bridge-txt">${c.bridge}</span>`}</p>
                 </div>
             </div>
         </section>`;
         };
-        const chnav = `<nav class="lp-chnav" aria-label="${X('章節', 'Chapters')}"><div class="lp-chnav-in"><span class="lp-chnav-k">${X('每一章的細節', 'Each chapter in detail')}</span><ol>${chapters.map((c, i) => `<li style="--c:${c.c}"><a href="#lp-ch-${c.id}" data-lp-jump="lp-ch-${c.id}"><b>${num(i + 1)}</b>${c.scale}</a></li>`).join('')}</ol></div></nav>`;
+        const chnav = `<nav class="lp-chnav" aria-label="${X('章節', 'Chapters')}"><div class="lp-chnav-in"><span class="lp-chnav-k">${X('每一章的細節', 'Each chapter in detail')}</span><ol>${chapters.map((c, i) => `<li style="--c:${c.c}"><a href="#lp-ch-${c.id}" data-lp-sheet="${c.id}"><b>${num(i + 1)}</b>${c.scale}</a></li>`).join('')}</ol></div></nav>`;
         const badges = [['monitor', X('免安裝', 'No install')], ['phone', X('手機也能玩', 'Works on phones')], ['cloud', X('雲端存檔', 'Cloud saves')], ['globe', X('中文／English', '中文／English')]];
         const links = [['landing-decide', X('智能體', 'Agents')], ['landing-scale', X('小鎮', 'The town')], ['landing-faq', X('常見問題', 'FAQ')], ['landing-log', X('更新', 'Updates')]];
         const D0 = (typeof LANDING3D !== 'undefined' && LANDING3D.DECISIONS) ? LANDING3D.DECISIONS[0] : null;
@@ -511,7 +505,7 @@ Object.assign(RimTownApp.prototype, {
                     <div class="lp-hero-copy">
                         <span class="lp-kicker">${X('瀏覽器 3D・AI 小鎮沙盒', 'Browser 3D · AI town sandbox')}</span>
                         <h1 class="lp-title">${X('這座小鎮裡，<br>每個人都自己拿主意', 'In this town, everyone <br>makes up their own mind')}</h1>
-                        <p class="lp-tagline">${X('邊境鎮是一座 AI 村民自己過日子的 3D 小鎮。借不借錢、原不原諒、要不要出來選，都由本人依自己的處境決定，而且說得出理由。你在天上看，偶爾推一把。', 'RimTown is a 3D town where AI villagers live their own lives. Whether to lend money, forgive someone or run for office is each villager\'s own call, made from their own situation, with a reason they can give. You watch from above and nudge things now and then.')}</p>
+                        <p class="lp-tagline">${X('AI 村民自己過日子的 3D 小鎮。借不借錢、原不原諒、要不要出來選，都由本人決定，而且說得出理由。你在天上看，偶爾推一把。', 'A 3D town where AI villagers live their own lives. Whether to lend, forgive or run for office is each villager\'s own call, with a reason they can give. You watch from above and nudge now and then.')}</p>
                         <div class="landing-cta">${cta}</div>
                         <ul class="lp-badges">${badges.map(b => `<li>${ic(b[0])}${b[1]}</li>`).join('')}</ul>
                         <div class="landing-version">v${esc(ver)}${loggedIn ? ` · ${esc(this.auth.username)}` : ''}</div>
@@ -522,15 +516,13 @@ Object.assign(RimTownApp.prototype, {
             <div class="landing-inner">
                 <ul class="lp-stats lp-rv" aria-label="${X('遊戲規模', 'Game scale')}">${stats.map(s => `<li><b>${s[0]}</b><span>${s[1]}</span></li>`).join('')}</ul>
                 ${core}
+            </div>
+            ${scaleSec}
+            <div class="landing-inner">
+                ${chainSec}
                 ${decide}
                 ${kinds}
                 ${aiSec}
-                ${chainSec}
-            </div>
-            ${scaleSec}
-            <div class="lp-chwrap">${chnav}
-            <div id="landing-features" class="lp-chapters">${chapters.map(chapter).join('')}</div></div>
-            <div class="landing-inner">
                 ${this._renderBrainSection()}
                 ${sec('landing-faq', X('常見問題', 'FAQ'), X('你可能想問', 'You might be wondering'), `<div class="lp-faq">${faq.map(f => `<details><summary>${f[0]}${ic('chev')}</summary><p>${f[1]}</p></details>`).join('')}</div>`)}
                 <section class="landing-section lp-sec" id="landing-updates">${head(X('一直在更新', 'Always updating'), X('更新紀錄', 'Changelog'))}
@@ -540,7 +532,7 @@ Object.assign(RimTownApp.prototype, {
                 <section class="landing-section lp-sec" id="landing-roadmap">${head(X('接下來', 'Next'), X('路線圖', 'Roadmap'))}
                     <div class="lp-rm">
                         <div class="lp-rm-col lp-rm-done"><div class="lp-rm-h"><span class="lp-rm-dot" aria-hidden="true"></span>${X('已上線', 'Shipped')}<small>${X('最近三版', 'latest three')}</small></div>
-                            ${roadmap.done.map(([v, h, d]) => `<div class="lp-rm-item"><span class="lp-rm-ver">${v}</span><div><b>${h}</b><p>${d}</p></div></div>`).join('')}
+                            ${roadmap.done.map(([v, h]) => `<div class="lp-rm-item"><span class="lp-rm-ver">${v}</span><div><b>${h}</b></div></div>`).join('')}
                             <a class="lp-rm-more" href="#landing-log" data-lp-log>${X('更早的版本看上面的更新紀錄', 'Earlier versions are in the changelog above')}</a></div>
                         <div class="lp-rm-col lp-rm-next"><div class="lp-rm-h"><span class="lp-rm-dot" aria-hidden="true"></span>${X('下一步', 'Up next')}<small>${X('正在設計', 'in design')}</small></div>
                             ${roadmap.next.map(([h, d]) => `<div class="lp-rm-item"><div><b>${h}</b><p>${d}</p></div></div>`).join('')}</div>
@@ -551,6 +543,13 @@ Object.assign(RimTownApp.prototype, {
                 <section class="lp-final"><h2>${X('去看看你的小鎮今天發生了什麼', 'Go see what happened in your town today')}</h2><p>${X('註冊需要邀請碼。存檔自動同步雲端，換裝置登入就能接著玩。', 'Sign-up needs an invite code. Saves sync to the cloud, so you can continue on any device.')}</p><div class="landing-cta">${loggedIn ? `<button class="landing-btn primary" data-lp-go="continue">${t('繼續遊戲')}${ic('arrow')}</button>` : `<button class="landing-btn primary" data-lp-go="register">${t('註冊')}${ic('arrow')}</button><button class="landing-btn secondary" data-lp-go="login">${t('登入')}</button>`}</div></section>
                 <footer class="landing-footer">${X('邊境鎮 RimTown', 'RimTown')} · v${esc(ver)}</footer>
             </div>
+            <div class="lp-sheet" id="lp-sheet" hidden>
+                <div class="lp-sheet-bg" data-lp-sheet-close></div>
+                <div class="lp-sheet-panel" role="dialog" aria-modal="true" aria-label="${X('每一章的細節', 'Each chapter in detail')}" tabindex="-1">
+                    <div class="lp-sheet-bar">${chnav}<button type="button" class="lp-sheet-x" data-lp-sheet-close aria-label="${X('關閉', 'Close')}">${ic('x')}</button></div>
+                    <div id="landing-features" class="lp-chapters">${chapters.map(chapter).join('')}</div>
+                </div>
+            </div>
         </div>`;
 
         const still = !!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
@@ -559,6 +558,46 @@ Object.assign(RimTownApp.prototype, {
         try { if (typeof LANDING3D !== 'undefined') LANDING3D.mount(el.querySelector('#lp-stage')); } catch (e) {}
         // 目錄跳段:在 #landing 這個捲動容器裡平滑捲過去
         el.querySelectorAll('[data-lp-jump]').forEach(a => a.addEventListener('click', (ev) => { const tg = a.dataset.lpJump === 'lp-top' ? el.querySelector('.lp') : el.querySelector('#' + a.dataset.lpJump); if (!tg) return; ev.preventDefault(); if (tg.tagName === 'DETAILS') tg.open = true; tg.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'start' }); }));
+        // 每一章的細節收在側邊面板(手機是從下面滑上來的面板)。v9.30.1 以前七章直接排在頁面上,整頁太長
+        el.classList.remove('lp-lock'); el.style.paddingRight = ''; this._lpSheet = null;
+        try {
+            const sh = el.querySelector('#lp-sheet'), panel = sh?.querySelector('.lp-sheet-panel');
+            if (sh && panel) {
+                const chs = [...sh.querySelectorAll('.lp-chapter')], tabs = [...sh.querySelectorAll('.lp-chnav a')]; let opener = null;
+                const show = (cid, tid) => {
+                    if (!chs.some(c => c.id === 'lp-ch-' + cid)) cid = chapters[0].id;
+                    chs.forEach(c => c.classList.toggle('on', c.id === 'lp-ch-' + cid));
+                    tabs.forEach(a => { const on = a.dataset.lpSheet === cid; a.classList.toggle('on', on); if (on) { a.setAttribute('aria-current', 'true'); try { a.scrollIntoView({ block: 'nearest', inline: 'center' }); } catch (e) {} } else a.removeAttribute('aria-current'); });
+                    panel.scrollTop = 0;
+                    const tp = tid ? sh.querySelector('#lp-' + tid) : null;
+                    if (tp && tp.tagName === 'DETAILS') { tp.open = true; requestAnimationFrame(() => { try { tp.scrollIntoView({ block: 'start' }); } catch (e) {} }); }
+                };
+                const open = (cid, tid, from) => {
+                    if (sh.hidden) { opener = from || document.activeElement; const sw = el.offsetWidth - el.clientWidth; sh.hidden = false; el.classList.add('lp-lock'); el.style.paddingRight = sw > 0 ? sw + 'px' : ''; }
+                    show(cid, tid); try { panel.focus({ preventScroll: true }); } catch (e) {}
+                };
+                const close = () => { if (sh.hidden) return; sh.hidden = true; el.classList.remove('lp-lock'); el.style.paddingRight = ''; try { opener?.focus?.({ preventScroll: true }); } catch (e) {} opener = null; };
+                this._lpSheet = { open, close };
+                el.querySelectorAll('[data-lp-sheet]').forEach(a => a.addEventListener('click', (ev) => { ev.preventDefault(); open(a.dataset.lpSheet, a.dataset.lpTopic, a); }));
+                sh.querySelectorAll('[data-lp-sheet-close]').forEach(x => x.addEventListener('click', close));
+                sh.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Escape') { ev.stopPropagation(); close(); return; }
+                    if (ev.key !== 'Tab') return; // 焦點留在面板裡
+                    const fs = [...panel.querySelectorAll('a[href], button, summary, [tabindex]:not([tabindex="-1"])')].filter(x => x.offsetParent !== null); if (!fs.length) return;
+                    const a0 = fs[0], a1 = fs[fs.length - 1], cur = document.activeElement;
+                    if (ev.shiftKey && (cur === a0 || cur === panel)) { ev.preventDefault(); a1.focus(); } else if (!ev.shiftKey && cur === a1) { ev.preventDefault(); a0.focus(); }
+                });
+                // 舊連結(#lp-ch-living、#lp-casino)直接打開那一章
+                const hs = (location.hash || '').slice(1);
+                if (/^lp-ch-/.test(hs)) open(hs.slice(6)); else if (/^lp-/.test(hs) && B[hs.slice(3)]) { const c = chapters.find(x => x.topics.includes(hs.slice(3))); if (c) open(c.id, hs.slice(3)); }
+            }
+        } catch (e) {}
+        // 75 種事:十類分頁,左右鍵換類
+        try {
+            const kt = [...el.querySelectorAll('.lp-kindtab')], kp = [...el.querySelectorAll('#landing-kinds .lp-kind')];
+            const pick = (i, focus) => { kt.forEach((b, k) => { const on = k === i; b.classList.toggle('on', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.tabIndex = on ? 0 : -1; }); kp.forEach((x, k) => x.classList.toggle('on', k === i)); if (focus) kt[i]?.focus(); };
+            kt.forEach((b, i) => { b.addEventListener('click', () => pick(i)); b.addEventListener('keydown', (ev) => { const d = (ev.key === 'ArrowRight' || ev.key === 'ArrowDown') ? 1 : (ev.key === 'ArrowLeft' || ev.key === 'ArrowUp') ? -1 : 0; if (!d) return; ev.preventDefault(); pick((i + d + kt.length) % kt.length, true); }); });
+        } catch (e) {}
         this._wireBrainDemo(el);
         // 一個決定是怎麼來的:五個步驟自動往下走,點任何一步就停在那一步
         try {
@@ -598,7 +637,7 @@ Object.assign(RimTownApp.prototype, {
                 if (still) { sc.classList.add('is-static'); p = 4; }
                 const measure = () => { if (still) return; const vh = el.clientHeight || window.innerHeight, er = el.getBoundingClientRect(); let best = 0, bd = 1e9; const mid = er.top + vh * 0.5; const cs = steps.map(s => { const r = s.getBoundingClientRect(); return r.top + r.height / 2; }); for (let k = 0; k < cs.length; k++) { const d = Math.abs(cs[k] - mid); if (d < bd) { bd = d; best = k; } } const k2 = cs[best] > mid ? best - 1 : best + 1; p = (k2 < 0 || k2 >= cs.length) ? best : best + (k2 - best) * Math.min(1, Math.abs(cs[best] - mid) / Math.max(1, Math.abs(cs[k2] - cs[best]))); mark(Math.round(p)); };
                 onScroll.push(measure);
-                dots.forEach((d, k) => d.addEventListener('click', () => { if (still) { el.querySelector('#lp-ch-' + chapters[k].id)?.scrollIntoView({ block: 'start' }); return; } steps[k]?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }));
+                dots.forEach((d, k) => d.addEventListener('click', () => { steps[k]?.scrollIntoView({ behavior: still ? 'auto' : 'smooth', block: 'center' }); }));
                 mark(still ? -1 : 0); measure();
                 if (typeof LANDING3D !== 'undefined' && LANDING3D.mountScale) LANDING3D.mountScale(stage, { root: el, progress: () => p });
             }
@@ -618,7 +657,7 @@ Object.assign(RimTownApp.prototype, {
             el.addEventListener('scroll', this._lpOnScroll, { passive: true }); window.addEventListener('resize', this._lpOnScroll);
             run(); setTimeout(run, 400);
         } catch (e) {}
-        try { this._lpChObs?.disconnect(); const ls = [...el.querySelectorAll('.lp-chnav a')]; if (ls.length && 'IntersectionObserver' in window) { this._lpChObs = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; ls.forEach(a => { const on = a.dataset.lpJump === e.target.id; a.classList.toggle('on', on); if (on) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current'); }); }), { root: el, rootMargin: '-40% 0px -55% 0px' }); el.querySelectorAll('.lp-chapter').forEach(s => this._lpChObs.observe(s)); } } catch (e) {} // v9.1.1
+        try { this._lpChObs?.disconnect(); this._lpChObs = null; } catch (e) {} // v9.30.1 章節收進面板,導覽列亮哪一章由面板自己標
         if (typeof RIMTOWN_CHANGELOG === 'undefined' && !this._changelogLoading) {
             const box = el.querySelector('#landing-log');
             if (box && 'IntersectionObserver' in window) { try { this._lpLogObs?.disconnect(); this._lpLogObs = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) { this._lpLogObs.disconnect(); loadLog(); } }, { root: el, rootMargin: '900px 0px' }); this._lpLogObs.observe(box); } catch (e) { loadLog(); } } else loadLog();
