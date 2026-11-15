@@ -91,7 +91,7 @@ const fake = (page) => page.route('**/api/**', r => r.fulfill({ status: 200, con
     const lp = await lctx.newPage(); const lerrs = []; lp.on('pageerror', e => lerrs.push(e.message));
     await lp.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: false } : {}) }));
     await lp.addInitScript((lang) => { localStorage.setItem('rimtown-lang', lang); }, lang);
-    await lp.goto(BASE, { waitUntil: 'load' }); await lp.waitForSelector('.lp-topic', { timeout: 30000 });
+    await lp.goto(BASE, { waitUntil: 'load' }); await lp.waitForSelector('.lp-topic', { state: 'attached', timeout: 30000 }); /* v9.30.1 主題收進面板,平常是藏著的 */
     const L = await lp.evaluate(() => { const txt = document.querySelector('.lp')?.innerText || ''; return { bands: [...document.querySelectorAll('.lp-topic')].map(e => e.id), toc: document.querySelectorAll('.lp-chnav a').length, stats: txt.includes('57') && /\b6\b/.test(txt), guest: !!document.getElementById('auth-guest-btn'), hscroll: document.documentElement.scrollWidth > innerWidth + 1, cjk: (txt.replace(/中文/g, '').match(/[一-鿿]{2,}/g) || []).slice(0, 5), myth: document.querySelector('#lp-myth')?.textContent.length || 0 }; });
     ok(L.bands.includes('lp-health') && L.bands.includes('lp-myth') && L.toc === 7 && L.myth > 200, '首頁有「身體與醫療」「神話基因」兩個主題（v9.1.1 收進第一章「一個人」），章節導覽 7 章', L);
     ok(L.stats && !L.guest && !L.hscroll, '首頁數字更新（57 項科技、6 個時代）、沒有訪客按鈕、不會橫向捲動', L);
