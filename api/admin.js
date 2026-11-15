@@ -11,8 +11,8 @@ function userSingles(uname) {
 }
 
 module.exports = async (req, res) => {
-    const payload = L.authUser(req);
-    if (!payload) return L.err(res, 401, 'unauthorized', '請先登入');
+    const payload = await L.requireSession(req, res); // v10.2.0
+    if (!payload) return;
     if (!L.isAdmin(payload)) return L.err(res, 403, 'forbidden', '沒有管理員權限');
     if (!L.rateLimit('admin_' + payload.u.toLowerCase(), 60, 60)) return L.err(res, 429, 'rate_limited', '操作太頻繁');
 

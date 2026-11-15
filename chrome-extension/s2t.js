@@ -17,5 +17,8 @@
         for (const ch of s) out += MAP.get(ch) || ch;
         return out;
     }
-    root.RIMTOWN_S2T = { looksSimplified, convert, size: MAP.size };
+    // v10.2.0 一整段文字(例如整份存檔的 JSON)裡有沒有任何一個偵測字:一次掃完,沒有就不必逐字串檢查
+    const DETECT_RE = new RegExp('[' + [...DETECT].join('') + ']');
+    function hasSimplified(text) { return typeof text === 'string' && DETECT_RE.test(text); }
+    root.RIMTOWN_S2T = { looksSimplified, convert, hasSimplified, size: MAP.size };
 })(typeof globalThis !== 'undefined' ? globalThis : this);

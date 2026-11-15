@@ -12,5 +12,8 @@ module.exports = async (req, res) => {
         return L.err(res, 401, 'login_failed', '帳號或密碼錯誤');
     }
     if (await L.isBanned(username)) return L.err(res, 403, 'banned', '此帳號已被管理員停用'); // v5.63.0
+    // v10.2.0 一個帳號同一時間只留一台裝置:這次登入換一個新的 sid,先前發出去的憑證從此作廢
+    user.sid = L.newSid(); user.sidAt = new Date().toISOString();
+    try { await L.writeJson(L.userPath(username), user); } catch (e) { return L.err(res, 503, 'storage_error', '登入暫時無法使用，請稍後再試'); }
     return res.status(200).json({ success: true, nonce: L.makeToken(user), user: { id: user.id, username: user.username } });
 };

@@ -19,6 +19,33 @@
     /* 獨立版關鍵樣式:深色底 + 滿版鎖定,避免 Safari 上下留白/彈跳(style.css 載入前就生效) */
     html, body { background: #1a1a2e; margin: 0; padding: 0; height: 100%; overscroll-behavior: none; }
     </style>
+    <!-- v10.2.0 開機要用的資料(帳號設定、存檔清單、存檔)在這裡就先發出請求,跟底下一百多支程式同時下載;
+         以前要等程式全部載完才一個接一個去抓。app.js 的 RimTownAuth._fetch 會接手這些請求,不會重發。
+         本機副本已經是最新的(而且雲端沒被別台動過)就不抓存檔本體:判斷方式跟 app-towns.js 的 _bootPick 相同 -->
+    <script>
+    (function () {
+        try {
+            if (location.protocol.indexOf('http') !== 0) return;
+            var jwt = localStorage.getItem('rimtown_jwt'); if (!jwt) return;
+            var H = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + jwt };
+            var get = function (ep) { return fetch('/api/' + ep, { method: 'GET', headers: H, credentials: 'same-origin' }).then(function (r) { return r.json().then(function (d) { return { ok: r.ok, status: r.status, data: d }; }); }); };
+            var B = window.__rtBoot = { at: Date.now(), token: jwt, req: {} };
+            B.req.settings = get('settings'); B.req.saves = get('saves');
+            B.req.settings.catch(function () {});
+            B.req.saves.then(function (r) {
+                try {
+                    var list = (r && r.ok && r.data && r.data.saves) || []; if (!list.length) return;
+                    var last = localStorage.getItem('rimtown_last_town'), m = null;
+                    for (var i = 0; i < list.length; i++) if (list[i].town_id === last) { m = list[i]; break; }
+                    m = m || list[0];
+                    var id = m.town_id, lt = localStorage.getItem('rimtown_lt_' + id), sy = localStorage.getItem('rimtown_synced_' + id), ct = Number(m.tick_count);
+                    var localOk = lt != null && lt !== '' && m.tick_count != null && isFinite(ct) && isFinite(Number(lt)) && Number(lt) >= ct && (sy == null || sy === '' || Number(sy) === ct);
+                    if (!localOk && /^[a-zA-Z0-9_-]+$/.test(id)) { B.req['save/' + id] = get('save/' + id); B.req['save/' + id].catch(function () {}); }
+                } catch (e) {}
+            }).catch(function () {});
+        } catch (e) {}
+    })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Nunito:wght@400;600;700;800&display=swap">

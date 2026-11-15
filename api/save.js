@@ -16,8 +16,8 @@ function tickOf(saveData, stored) {
 
 module.exports = async (req, res) => {
     if (req.method !== 'POST') return L.err(res, 405, 'method_not_allowed', 'POST only');
-    const payload = L.authUser(req);
-    if (!payload) return L.err(res, 401, 'unauthorized', '請先登入');
+    const payload = await L.requireSession(req, res); // v10.2.0 被後來的登入換掉的裝置不能再寫存檔
+    if (!payload) return;
     if (await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
     const b = req.body || {};
     const townId = L.sanitizeTownId(b.town_id);

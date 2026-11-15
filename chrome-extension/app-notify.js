@@ -53,6 +53,40 @@ Object.assign(RimTownApp.prototype, {
         catch (e) { this._gameAlert(t('操作失敗：') + (e.message || ''), '❌'); }
     },
 
+    // ---------- v10.2.0 一個帳號同一時間只留一台裝置 ----------
+    // 伺服器說這台的登入已被後來的登入換掉(auth._kicked 已清掉憑證):停下模擬與自動存檔,蓋一層說明,只能回首頁。
+    // 這台不再寫任何存檔(雲端不收,本機也不寫),之後的進度以另一台為準。
+    _onSessionReplaced() {
+        if (this._sessionReplacedShown) return; this._sessionReplacedShown = true;
+        try { this.world && (this.world.paused = true); this._setPaused?.(true); } catch (e) {}
+        try { clearInterval(this._autoSaveInterval); clearInterval(this._sessionWatch); clearInterval(this.simInterval); this.simInterval = null; } catch (e) {}
+        try { window.__rtHideLoading?.(); } catch (e) {}
+        const tr = (s) => { try { return (typeof t === 'function') ? t(s) : s; } catch (e) { return s; } };
+        const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const el = document.createElement('div');
+        el.id = 'rt-session-replaced'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'rt-sr-title'); el.setAttribute('aria-describedby', 'rt-sr-desc');
+        el.style.cssText = 'position:fixed;inset:0;z-index:300000;background:rgba(15,15,28,.94);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif';
+        el.innerHTML = `<div style="max-width:380px;width:100%;background:#24243a;border:1px solid #3a3a55;border-radius:16px;padding:24px 20px;color:#e8e8f0;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)">
+            <div style="font-size:40px;line-height:1" aria-hidden="true">📱</div>
+            <h2 id="rt-sr-title" style="font-size:18px;margin:12px 0 8px;line-height:1.4">${esc(tr('這個帳號已在另一台裝置登入'))}</h2>
+            <p id="rt-sr-desc" style="font-size:14px;line-height:1.7;margin:0 0 18px;color:#c4c4d6">${esc(tr('同一個帳號同一時間只能在一台裝置上玩，這台已經登出。之後的進度以另一台為準。'))}</p>
+            <button type="button" id="rt-sr-home" style="min-height:48px;width:100%;border:0;border-radius:12px;background:#f28c4a;color:#1a1a2e;font:inherit;font-size:16px;font-weight:700;cursor:pointer">${esc(tr('回首頁'))}</button>
+        </div>`;
+        document.body.appendChild(el);
+        const btn = el.querySelector('#rt-sr-home');
+        btn.addEventListener('click', () => { try { location.replace('./'); } catch (e) { location.href = './'; } });
+        el.addEventListener('keydown', (e) => { if (e.key === 'Tab') { e.preventDefault(); btn.focus(); } });
+        try { btn.focus(); } catch (e) {}
+    },
+    // 遊戲開著的時候定時問伺服器「這台還算登入嗎」:每 2 分鐘一次,切回這個分頁時也問(至少隔 30 秒);分頁在背景時不問
+    _startSessionWatch() {
+        if (this._sessionWatch || !this.auth?._serverless) return;
+        let last = Date.now();
+        const ask = () => { if (!this.auth.loggedIn || this.auth._replaced || document.visibilityState !== 'visible') return; last = Date.now(); this.auth.checkLogin().catch(() => {}); };
+        this._sessionWatch = setInterval(ask, 120000);
+        document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && Date.now() - last > 30000) ask(); });
+    },
+
     // v5.67.4 存檔清理提示(loadSave 清掉 AI 助理漏出的錯誤回覆後,提示一次並存回)
     _notifyScrubbedLeaks() {
         const n = (this.world && this.world._scrubbedLeaks) || 0;

@@ -2,7 +2,7 @@
 const path = require('path');
 const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 require.cache[libPath] = { id: libPath, filename: libPath, loaded: true, exports: {
-  authUser: () => ({ u: 'Tester', id: 1 }), isBanned: async () => false, isAdmin: () => false, readJson: async () => null, writeJson: async () => {},
+  authUser: () => ({ u: 'Tester', id: 1 }), requireSession: async () => ({ u: 'Tester', id: 1 }), sessionState: async () => 'ok', newSid: () => 'sid_test', /* v10.2.0 */ isBanned: async () => false, isAdmin: () => false, readJson: async () => null, writeJson: async () => {},
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, clientIp: () => '1.1.1.1', rateLimit: () => true } };
 // v7.7.1 沒有訪客模式了:小鎮 AI 只給登入的帳號,這支測試用登入身分呼叫
 process.env.LLM_BASE_URL = 'https://relay.example'; process.env.LLM_API_KEY = 'k'; process.env.GROQ_API_KEY = 'gsk';

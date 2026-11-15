@@ -36,6 +36,7 @@ module.exports = async (req, res) => {
         passHash: L.hashPassword(String(password), salt),
         createdAt: new Date().toISOString(),
         invite: invite ? invite.code : '',
+        sid: L.newSid(), sidAt: new Date().toISOString(), // v10.2.0
     };
     await L.writeJson(L.userPath(username), user);
     if (invite) {

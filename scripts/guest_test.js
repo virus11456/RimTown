@@ -3,7 +3,7 @@ const path = require('path');
 const libPath = path.join(__dirname, '..', 'api', '_lib.js');
 let user = null; const store = {};
 require.cache[libPath] = { id: libPath, filename: libPath, loaded: true, exports: {
-  authUser: () => user, isBanned: async () => false, isAdmin: () => false, readJson: async p => store[p] || null, writeJson: async (p, v) => { store[p] = v; },
+  authUser: () => user, requireSession: async () => user, sessionState: async () => 'ok', newSid: () => 'sid_test', /* v10.2.0 */ isBanned: async () => false, isAdmin: () => false, readJson: async p => store[p] || null, writeJson: async (p, v) => { store[p] = v; },
   err: (res, code, c, m) => { res.status(code); res.json({ code: c, message: m }); }, clientIp: () => '1.2.3.4', rateLimit: () => true } };
 process.env.LLM_BASE_URL = 'https://api.anthropic.com'; process.env.LLM_API_KEY = 'sk-ant-SECRET-relay'; process.env.GROQ_API_KEY = 'gsk_SECRET_groq'; process.env.OPENAI_API_KEY = 'sk-SECRET-openai';
 delete process.env.AI_GUEST_DAILY;

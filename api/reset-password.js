@@ -29,6 +29,7 @@ module.exports = async (req, res) => {
     user.salt = crypto.randomBytes(16).toString('hex');
     user.passHash = L.hashPassword(String(new_password), user.salt);
     user.lastPasswordReset = new Date().toISOString();
+    user.sid = L.newSid(); user.sidAt = user.lastPasswordReset; // v10.2.0 改了密碼,先前登入的裝置全部登出
     await L.writeJson(L.userPath(username), user);
     await L.writeJson(attemptPath, { fails: 0, since: now, lastReset: now }).catch(() => {});
     return res.status(200).json({ success: true });
