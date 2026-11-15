@@ -43,9 +43,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       ok(r.sw <= r.cw && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
       // 目錄點下去會捲到那一段
       const before = await page.evaluate(() => document.getElementById('landing').scrollTop);
-      await page.click('.lp-chnav a[href="#lp-ch-living"]'); await page.waitForFunction(() => Math.abs(document.getElementById('lp-ch-living').getBoundingClientRect().top) < 80, null, { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(200); // 等平滑捲動停下來
-      const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const t = document.getElementById('lp-ch-living').getBoundingClientRect().top; return { top: Math.round(t), st: L.scrollTop, on: document.querySelector('.lp-chnav a.on')?.getAttribute('href') }; });
-      ok(jump.st > before && Math.abs(jump.top) < 80 && jump.on === '#lp-ch-living', '章節導覽點「討生活」會捲到那一章，導覽列也亮在那一章', jump);
+      // v9.30.1 七章細節收進面板:從「七個尺度」那一段點開,面板裡的章節導覽可以換章;關掉後回到原本的位置
+      await page.evaluate(() => document.querySelector('.lp-scale-more[data-lp-sheet="self"]').click()); await page.waitForFunction(() => !document.getElementById('lp-sheet').hidden, null, { timeout: 6000 }).catch(() => {}); await page.waitForTimeout(350);
+      await page.click('.lp-chnav a[href="#lp-ch-living"]'); await page.waitForTimeout(250);
+      const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const vis = [...document.querySelectorAll('#landing-features .lp-chapter')].filter(c => c.getBoundingClientRect().height > 0).map(c => c.id); return { vis, st: L.scrollTop, open: !document.getElementById('lp-sheet').hidden, on: document.querySelector('.lp-chnav a.on')?.getAttribute('href') }; });
+      ok(jump.open && jump.st === before && jump.vis.join() === 'lp-ch-living' && jump.on === '#lp-ch-living', '面板裡的章節導覽點「討生活」會換到那一章（只顯示那一章），導覽列也亮在那一章，底下的頁面沒有被捲走', jump);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+      const shut = await page.evaluate(() => { const L = document.getElementById('landing'); const h = document.getElementById('lp-sheet').hidden; L.scrollTop = document.getElementById('landing-decide').offsetTop; return { hidden: h, lock: L.classList.contains('lp-lock') }; }); await page.waitForTimeout(400);
+      ok(shut.hidden && !shut.lock, '按 Esc 關掉面板，頁面恢復可以捲動', shut);
       // 捲出畫面後 3D 停止(不再重畫)
       const stopped = await page.evaluate(async () => { const c = document.querySelector('.lp-stage-canvas'); if (!c) return null; const gl = c.getContext('webgl2') || c.getContext('webgl'); let n = 0; const orig = gl.drawArrays.bind(gl); gl.drawArrays = (...a) => { n++; return orig(...a); }; await new Promise(r => setTimeout(r, 800)); return n; });
       ok(stopped === 0, '主視覺捲出畫面就停止繪製', stopped);

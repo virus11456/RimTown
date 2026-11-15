@@ -41,9 +41,9 @@ const stage = () => {
   const P2 = SCHEME.create(w, a1, { tone: 'fun', title: '在廣場辦一場擲石頭比賽', why: '日子太悶了，想聽大家笑', helpers: [h1, h2], place: 'town_square', cost: 3, ai: true });
   out.p2a = { id: P2?.id, stage: P2?.stage, ask: P2?.ask.map(q => q.s), secret: P2?.secret }; drain(); out.p2b = P2.ask.map(q => q.s);
   // 3. 算計：幫手跟被算計的人更要好，跑去告密
-  setAff(a2, foe, -60); setAff(snitch, foe, 95); setAff(snitch, a2, -5); const fa0 = aff(foe, a2);
+  setAff(a2, foe, -60); setAff(snitch, foe, 95); setAff(snitch, a2, -5); const fa0 = aff(foe, a2), fs0 = aff(foe, snitch);
   const P3 = SCHEME.create(w, a2, { tone: 'spite', title: '在他的貨裡動手腳', why: '這口氣我嚥不下去', target: foe, helpers: [snitch], ai: true }); drain();
-  out.p3a = { secret: P3.secret, ask: P3.ask.map(q => q.s), warned: P3.warned, foeKnows: foe.memory.entries.slice(-3).some(e => /告訴我|came to tell me/.test(e.content || Memory.render(e.k, e.p || {}))) };
+  out.p3a = { thanks: aff(foe, snitch) > fs0, /* 告密當下就量：這筆淡淡的好感（+6）過幾天可能被「淡忘」清掉，等事情敗露那天才量會量不到 */ secret: P3.secret, ask: P3.ask.map(q => q.s), warned: P3.warned, foeKnows: foe.memory.entries.slice(-3).some(e => /告訴我|came to tell me/.test(e.content || Memory.render(e.k, e.p || {}))) };
   // 4. 追求：對方不想去
   setAff(crush, a3, -60); const P4 = SCHEME.create(w, a3, { tone: 'court', title: '約他去河邊走走', why: '想跟他多說幾句話', target: crush, ai: true }); drain(); out.p4a = P4.ask.map(q => [q.s, !!q.guest]);
   // 5. 找不到人：想找的人都不理他
@@ -69,7 +69,7 @@ const stage2 = () => {
   const { w, P2, P3, a1, a2, foe, snitch, fa0, toHour, midnight, tickN, aff, notices } = window.__S; const app = window.rimtownApp; const out = {};
   toHour(17, 0); out.p2 = { stage: P2.stage, ok: P2.out?.ok, came: P2.came.length, text: SCHEME.view(w, 40).find(v => v.id === P2.id)?.out?.text, mem: a1.memory.entries.slice(-4).some(e => /辦成了|沒成|worked|failed/.test(e.content || Memory.render(e.k, e.p || {}))), cleared: !a1._thingGo || a1._thingGo.id === P2.id };
   toHour(21, 0); const v3 = SCHEME.view(w, 40).find(v => v.id === P3.id);
-  out.p3 = { stage: P3.stage, ok: P3.out?.ok, text: v3?.out?.text, foeDown: aff(foe, a2) < fa0, foeLikesSnitch: aff(foe, snitch) > 0, ask: v3?.ask.map(q => q.label) };
+  out.p3 = { stage: P3.stage, ok: P3.out?.ok, text: v3?.out?.text, foeDown: aff(foe, a2) < fa0, ask: v3?.ask.map(q => q.label) };
   out.notices = notices.filter(n => /P\d{3}/.test(n.title || '')).length;
   // 存讀檔
   const save = JSON.parse(JSON.stringify(w.serialize())); out.saveN = save.schemes?.list?.length || 0; const n = SCHEME.S(w).list.length; w.reset(); out.afterReset = (w.schemes?.list || []).length; w.loadSave(save); out.afterLoad = SCHEME.S(w).list.length === n;
@@ -85,7 +85,7 @@ const stage2 = () => {
   ok(R.rule.stages.some(s => s === 'done'), '其中有走完全程的', R.rule.stages);
   ok(R.p2a.stage === 'recruit' && R.p2a.ask.every(s => s === 'asked') && /^P\d{3}$/.test(R.p2a.id), '發起一件事：有 P 編號，先去找人', R.p2a);
   ok(R.p2b.every(s => s === 'yes'), '兩個好朋友都答應', R.p2b);
-  ok(R.p3a.secret && R.p3a.ask[0] === 'told' && R.p3a.warned && R.p3a.foeKnows, '算計人：被找的幫手跟對方更要好，推掉並去告密，對方記下了', R.p3a);
+  ok(R.p3a.secret && R.p3a.ask[0] === 'told' && R.p3a.warned && R.p3a.foeKnows && R.p3a.thanks, '算計人：被找的幫手跟對方更要好，推掉並去告密，對方記下了、對告密的人多了好感', R.p3a);
   ok(R.p4a[0][0] === 'no' && R.p4a[0][1] === true, '追求：對方不想去，婉拒', R.p4a);
   ok(R.p5a[0] === 'no' || R.p5a[0] === 'fake', '想找的人不理他', R.p5a);
   ok(R.p6 && R.p6.tone === 'show' && R.p6.target && R.p6.ai, '他在別的事上自己拿的主意變成一件企劃：看得出是出風頭、衝著誰', R.p6);
@@ -98,7 +98,7 @@ const stage2 = () => {
   await page.waitForTimeout(2500); await page.screenshot({ path: path.join(SHOTS, 'desktop-event.png') });
   const B = await page.evaluate(stage2);
   ok(B.p2.stage === 'done' && typeof B.p2.ok === 'boolean' && !!B.p2.text && B.p2.came >= 1 && B.p2.mem, '辦完：有成敗、記下誰到場，發起人記得這件事', B.p2);
-  ok(B.p3.stage === 'done' && B.p3.ok === false && /防備|ready for it/.test(B.p3.text) && B.p3.foeDown && B.p3.foeLikesSnitch, '走漏風聲的算計：敗露，對方更討厭他、感謝告密的人', B.p3);
+  ok(B.p3.stage === 'done' && B.p3.ok === false && /防備|ready for it/.test(B.p3.text) && B.p3.foeDown, '走漏風聲的算計：敗露，對方更討厭他', B.p3);
   ok(B.notices > R.noticesNew, '開始與結果也有通知', [R.noticesNew, B.notices]);
   ok(B.saveN >= 6 && B.afterReset === 0 && B.afterLoad, '存檔帶著企劃；開新鎮會清掉；讀檔讀得回來', [B.saveN, B.afterReset, B.afterLoad]);
   ok(B.note.length >= 1 && /P\d{3}/.test(B.note[0]), '手記裡有他發起的企劃', B.note);
