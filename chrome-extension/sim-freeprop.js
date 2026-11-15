@@ -127,6 +127,8 @@ if (typeof ProposalSystem !== 'undefined') {
         try { j = await w.conversationEngine.inventProposal(w, a, hints); } catch (e) { console.warn('[Proposals] invent', e); }
         if (this.open().length >= ProposalSystem.MAX_OPEN) return;
         if (!j || j.skip) { if (j?.skip) { w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; } return fallback(); }
+        // v10.4.0 他想提的是「廢除／恢復某條規定」：開成正式的廢除案或恢復案（立場照各人處境算，通過後真的改規定）
+        try { const rp = (typeof REPEAL !== 'undefined') ? REPEAL.fromAI(w, a, j) : null; if (rp) { rp.llm = true; if (j.pitch) rp.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, rp)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] repeal', e); }
         const fx0 = FREEPROP.sanitize(w, j.effects); if (!fx0.length) return fallback();
         const { fx, cost } = FREEPROP.balance(fx0, FREEPROP.sanitizeCost(j.cost));
         const title = String(j.title || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, ''); if (title.length < 2) return fallback();
@@ -177,7 +179,7 @@ if (typeof ConversationEngine !== 'undefined') {
 ${t('你想向全鎮提一個你自己想出來的提案。可以很實際，也可以天馬行空、有個人色彩，但要符合你的個性、記憶和鎮上現況。')}${t('可以從這幾個方向想（挑跟你有關的，也可以都不用）：')}${angles}${t('。')}${personal ? t('鎮上眼前的急事已經有人在處理了。這一次請提一件跟那些急事無關、屬於你自己的事：你的工作、你在乎的人、你的心願，或你一直想讓鎮上變得不一樣的地方。') : t('從你現在真正的需要和心情出發：餓了、冷了、缺東西、開心、難過或嫉妒，都會影響你想提什麼。')}
 ${t('【鎮況】')}${this._townBrief(world)}
 ${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${iss.txt && !personal ? `${t('【鎮上的急事（大家正受影響，拖越久越不滿；要處理哪一件就在 addresses 填它的編號）】')}\n${iss.txt}\n` : ''}${hintTxt && !personal ? `${t('【鎮上眼前的狀況與大家在談的事（越前面越急；可以照著提、改成你的版本，也可以都不管、提你自己的點子）】')}\n${hintTxt}\n` : ''}${t('【鎮上的人】')}${names}
-${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
+${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${(typeof REPEAL !== 'undefined') ? REPEAL.promptBlock(world) : ''}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
 {"type":"resource","res":"food|wood|stone|metal|cloth|herbs|silver|tools|medicine","amount":-150~150}
 {"type":"daily","res":"…","amount":-8~8,"days":3~20}
 {"type":"mood","who":"all|job:farmer|trait:creative|name:${t('名字')}","amount":-8~8}
