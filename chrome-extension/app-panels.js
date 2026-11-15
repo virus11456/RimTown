@@ -1085,6 +1085,13 @@ Object.assign(RimTownApp.prototype, {
             } catch (e) {}
         }
         if (W('lore') || W('stats')) {
+            // v10.4.0 現行規定：表決通過、現在還在實施的規定，實施了幾天、什麼時候可以提案廢除；最近表決廢除了哪些
+            try { if (typeof REPEAL !== 'undefined') { const rv = REPEAL.view(this.world); if (rv.live.length || rv.done.length) {
+                B.lore += `<div class="pp-lore pp-laws"><h4 class="pp-h">⚖️ ${t('現行規定')}</h4>`;
+                for (const x of rv.live) B.lore += `<div class="pp-lore-row" data-pgd="1">${esc(x.icon)} ${esc(x.name)} <small>${t('實施第 {n} 天').replace('{n}', x.days)} · ${x.open ? t('正在表決要不要廢除') : x.wait > 0 ? t('再 {n} 天後可以提案廢除').replace('{n}', x.wait) : t('可以提案廢除')}</small></div>`;
+                for (const x of rv.done.slice(0, 4)) B.lore += `<div class="pp-lore-row pp-law-gone" data-pgd="1">🗳️ ${esc(x.name)} <small>${x.ago > 0 ? t('{n} 天前表決廢除').replace('{n}', x.ago) : t('今天表決廢除')}</small></div>`;
+                B.lore += `<p class="pp-law-note">${t('表決通過的規定實施滿 60 天後，鎮上的人可以提案廢除，全鎮再投一次票。')}</p></div>`;
+            } } } catch (e) { console.warn('[Repeal] view', e); }
             // v6.47.0 村民提案留下的傳統與地標
             if ((d.traditions || []).length || (d.landmarks || []).length) {
                 B.lore += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;

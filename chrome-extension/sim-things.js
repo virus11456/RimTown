@@ -371,7 +371,10 @@ const THINGS = (() => {
     function syncMap(w, tm) {
         if (!w?.things || !tm?.grid) return false; let changed = false;
         for (const T of Object.values(w.things.list || {})) {
-            if (!T.place || !T.build) continue; const label = nm(T) + (T.gone ? t('（歇業）') : '');
+            if (!T.place || !T.build) continue;
+            // v10.4.0 同一塊地上後來又開了新的（禁賭廢除後有人重開賭場）：舊的那筆不再管招牌，不然新舊兩筆每次都互相改招牌、整張地圖跟著重畫
+            if (T.gone && Object.values(w.things.list).some(o => o !== T && !o.gone && o.place === T.place && o.build)) continue;
+            const label = nm(T) + (T.gone ? t('（歇業）') : '');
             if (!tm.buildingZones[T.place]) {
                 // 地圖密的話換小一點的樣式（存下用了哪個，重開時同一棟同一處）
                 const TB = typeof TILE_BUILDING_TEMPLATES !== 'undefined' ? TILE_BUILDING_TEMPLATES : {}; let site = T.site, use = T.build.used;
