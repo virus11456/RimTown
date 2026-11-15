@@ -34,7 +34,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 本機:八月的舊邊境鎮副本(不同 id、進度較少)、一座只在本機的自建鎮
       const old = JSON.parse(JSON.stringify(blob)); old.townName = '邊境鎮'; old.clock = Object.assign({}, old.clock, { season: '夏季', year: 2, day: 9 });
       const solo = JSON.parse(JSON.stringify(blob)); solo.townName = '小石村';
-      await app._writeOtherTown('town_oldfront', old); await app._writeOtherTown('town_solo', solo);
+      // v10.3.0 存檔只放雲端:程式不再往裝置上寫存檔,這兩份是「舊版留下的副本」,直接放進 IndexedDB
+      for (const [id, b] of [['town_oldfront', old], ['town_solo', solo]]) { await RTStore.set(id, JSON.stringify(b)); app._idbTowns.add(id); }
       const L = app._getTownList().filter(x => !['town_oldfront', 'town_solo', 'town_front', 'town_mine', 'town_harb9', 'town_harb1', 'town_forest'].includes(x.id));
       L.push({ id: 'town_oldfront', name: '邊境鎮', theme: 'frontier', origin: 'user', season: '夏季', year: 2, day: 9, population: 20, savedAt: '2026-08-18T07:25:29Z', world: 'w0' });
       L.push({ id: 'town_solo', name: '小石村', theme: 'frontier', origin: 'user', season: '春季', year: 1, day: 3, population: 12, savedAt: '2026-11-05T07:25:29Z', world: 'w0' });
@@ -58,6 +59,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 自己的邊境主題鎮存檔仍是 user
       w.townTheme = 'frontier'; w.townName = '邊境鎮'; app.currentTownId = 'town_front'; app._saveCurrentTown();
       const originUser = app._getTownList().find(x => x.id === 'town_front')?.origin;
+      // 清理舊副本:雲端沒有的(小石村)補傳成功後才清掉;跟雲端另一座同名的舊副本不傳也不清
+      await app._purgeDeviceSaves(app._cloudSaves);
       return { secs, origin, originUser, stillLocal: { old: app._hasLocalTown('town_oldfront'), solo: app._hasLocalTown('town_solo') } };
     });
     const keys = Object.keys(r.secs); const mineK = keys.find(k => /我的城鎮|My towns/.test(k)); const nbK = keys.find(k => /鄰鎮|Neighbo/.test(k));
@@ -67,7 +70,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(nb.length === 3 && has(nb, /礦山鎮|Mine Ridge/) && has(nb, /林間村|Greenwood/) && nb.filter(x => /海風鎮|Seabreeze/.test(x)).length === 1, '被誤標的礦山鎮、海風鎮回到鄰鎮區,海風鎮只列一座', { nb });
     ok(fold.length === 2 && has(fold, /海風鎮|Seabreeze/) && has(fold, /邊境鎮|Frontier/) && fold.some(x => /舊的本機備份|Old local backup/.test(x)), '多出來的海風鎮與八月的舊本機副本收進「重複與舊的本機備份」', { fold });
     ok(posted.some(p => p.id === 'town_solo') && !posted.some(p => p.id === 'town_oldfront'), '只在本機的小石村自動補傳雲端;舊的同名副本不傳', posted);
-    ok(r.stillLocal.old && r.stillLocal.solo, '不會自動刪除本機存檔', r.stillLocal);
+    ok(r.stillLocal.old && !r.stillLocal.solo, 'v10.3.0 跟雲端同名的舊副本不會自動刪；雲端沒有的補傳成功後才從裝置清掉', r.stillLocal);
     ok(r.origin === 'neighbor' && r.originUser === 'user', '存檔時更正來源:礦山鎮→鄰鎮,自己的邊境鎮仍是自建', { origin: r.origin, originUser: r.originUser });
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();

@@ -11,31 +11,35 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     console.log(lang);
     const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, serviceWorkers: 'block' }); const page = await ctx.newPage(); const errs = [];
     page.on('pageerror', e => errs.push(e.message));
-    let cloudDown = true;
+    let cloudDown = true; const posted = {}; // v10.3.0 存檔只放雲端:假雲端記下傳上去的鎮
     await page.route('**/api/**', r => { const req = r.request(); const u = req.url(); const j = (o, s = 200) => r.fulfill({ status: s, contentType: 'application/json', body: JSON.stringify(o) });
       if (u.includes('/api/me')) return j({ logged_in: true, user: { id: 1, username: 'tester' } });
-      if (u.includes('/api/save') && req.method() === 'POST') return cloudDown ? j({ error: 'down' }, 500) : j({ success: true });
+      if (u.includes('/api/save') && req.method() === 'POST') { if (cloudDown) return j({ error: 'down' }, 500); try { const b = JSON.parse(req.postData() || '{}'); posted[b.town_id] = { town_id: b.town_id, town_name: b.town_name, tick_count: b.tick_count }; } catch (e) {} return j({ success: true }); }
+      if (/\/api\/saves(\?|$)/.test(u) && req.method() === 'GET') return j({ saves: Object.values(posted) });
       return j({ saves: [], reply: '' }); });
     await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); localStorage.setItem('rimtown_3d_q_by', 'user'); sessionStorage.setItem('rimtown_enter_now', '1');
       for (const k of ['rimtown_harbor_unlocked', 'rimtown_mountain_unlocked', 'rimtown_forest_unlocked', 'rimtown_market_unlocked']) localStorage.setItem(k, '1'); }, { jwt, lang });
     await page.goto(BASE, { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?.world, null, { timeout: 60000 }); await page.waitForTimeout(2500);
-    // 1) 存檔空間不足時重試
-    const r1 = await page.evaluate(async () => {
+    // 1) 存檔存不上去時重試(v10.3.0 存檔只放雲端:存不上去＝雲端連不上;以前是本機空間不足)
+    const r1a = await page.evaluate(async () => {
       const app = window.rimtownApp; app._gameAlert = () => {}; app._coachTravelTo = () => {};
-      const c = app._discoverGenTown('merchant'); const seed = c.seed;
-      const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('rimtown_town_') && String(v).length > 20000) throw new DOMException('full', 'QuotaExceededError'); return orig.call(this, k, v); };
-      const wo = app._writeOtherTown; app._writeOtherTown = async () => false; // v6.76.1 起別鎮存 IndexedDB:模擬兩邊都滿
+      const c = app._discoverGenTown('merchant'); const seed = c.seed; window.__seed = seed; window.__cname = c.name; window.__ckey = c.key;
       for (let i = 0; i < 3; i++) await app._visitGenTown(seed);
-      const failed = app._getTownList().filter(tw => tw.name === c.name).length;
-      Storage.prototype.setItem = orig; app._writeOtherTown = wo;
-      // 舊版留下的兩筆空殼也要清掉
-      const L = app._getTownList(); L.push({ id: 'ghost1', name: c.name, theme: c.key, origin: 'generated' }, { id: 'ghost2', name: c.name, theme: c.key, origin: 'generated' }); app._saveTownList(L);
-      await app._visitGenTown(seed);
-      const okList = app._getTownList().filter(tw => tw.name === c.name);
-      return { failed, after: okList.length, hasSave: okList.every(tw => app._hasLocalTown(tw.id)), townId: TownGen.cards().find(x => x.seed === seed).townId };
+      return { failed: app._getTownList().filter(tw => tw.name === c.name).length };
     });
-    ok(r1.failed === 0, '空間不足時重試三次,城鎮列表沒有多出空殼', r1);
-    ok(r1.after === 1 && r1.hasSave && r1.townId, '有空間後只留一座、而且有存檔(舊空殼一起清掉)', r1);
+    cloudDown = false; // 雲端恢復
+    const r1b = await page.evaluate(async () => {
+      const app = window.rimtownApp; const seed = window.__seed, name = window.__cname;
+      // 舊版留下的兩筆空殼也要清掉
+      const L = app._getTownList(); L.push({ id: 'ghost1', name, theme: window.__ckey, origin: 'generated' }, { id: 'ghost2', name, theme: window.__ckey, origin: 'generated' }); app._saveTownList(L);
+      await app._visitGenTown(seed);
+      const okList = app._getTownList().filter(tw => tw.name === name);
+      return { after: okList.length, ids: okList.map(tw => tw.id), townId: TownGen.cards().find(x => x.seed === seed).townId, device: Object.keys(localStorage).filter(k => /^rimtown_town_/.test(k) && k !== 'rimtown_town_list' && !k.endsWith('_archives')).length + ((await RTStore.keys()) || []).length };
+    });
+    const r1 = { failed: r1a.failed, after: r1b.after, hasSave: r1b.ids.length > 0 && r1b.ids.every(id => !!posted[id]), townId: r1b.townId, device: r1b.device };
+    ok(r1.failed === 0, '雲端存不上去時重試三次,城鎮列表沒有多出空殼', r1);
+    ok(r1.after === 1 && r1.hasSave && r1.townId, '雲端恢復後只留一座、而且雲端有存檔(舊空殼一起清掉)', r1);
+    ok(r1.device === 0, 'v10.3.0 新生成的鎮只存雲端,裝置上不留副本', r1);
     // 2) 合併別台裝置的紀錄
     const r2 = await page.evaluate(() => {
       const app = window.rimtownApp; for (let i = 0; i < 6; i++) app._discoverGenTown('merchant');

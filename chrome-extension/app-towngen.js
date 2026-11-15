@@ -118,7 +118,7 @@ Object.assign(RimTownApp.prototype, {
             const meta = { season: blob.clock?.season || '春季', year: 1, day: 1, population: Object.keys(blob.agents || {}).length, theme: c.key, origin: 'generated', world: rimtownWorldId() };
             let stored = false; try { stored = await this._writeOtherTown(tid, blob); } catch (e) {} // v6.76.1 放 IndexedDB
             if (this.auth?.loggedIn) { try { await this.auth.cloudSave(tid, c.name, blob, meta); stored = true; this._cloudSaves = null; try { this._cloudSaves = await this.auth.listSaves(); } catch (e) {} } catch (e) {} }
-            if (!stored) throw new Error(t('存檔空間不足'));
+            if (!stored) throw new Error(t('雲端存檔失敗')); // v10.3.0 存檔只放雲端
             // v6.48.1 存檔真的存到了才寫進城鎮列表(以前先寫列表,空間不足時每重試一次就多一座沒有存檔的同名鎮)
             const list = this._getTownList();
             if (!list.some(tw => tw.id === tid)) { list.push({ id: tid, name: c.name, savedAt: new Date().toISOString(), ...meta }); try { this._saveTownList(list); } catch (e) {} }

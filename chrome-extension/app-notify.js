@@ -56,6 +56,29 @@ Object.assign(RimTownApp.prototype, {
     // ---------- v10.2.0 一個帳號同一時間只留一台裝置 ----------
     // 伺服器說這台的登入已被後來的登入換掉(auth._kicked 已清掉憑證):停下模擬與自動存檔,蓋一層說明,只能回首頁。
     // 這台不再寫任何存檔(雲端不收,本機也不寫),之後的進度以另一台為準。
+    // v10.3.0 存檔只放雲端:開機時雲端讀不到(斷線、伺服器出錯)就停在這個畫面,不開新鎮、不動任何存檔
+    _onCloudLoadFailed() {
+        if (this._cloudLoadFailedShown) return; this._cloudLoadFailedShown = true;
+        try { this.world && (this.world.paused = true); } catch (e) {}
+        try { clearInterval(this._autoSaveInterval); clearInterval(this.simInterval); this.simInterval = null; } catch (e) {}
+        try { window.__rtHideLoading?.(); } catch (e) {}
+        const tr = (s) => { try { return (typeof t === 'function') ? t(s) : s; } catch (e) { return s; } };
+        const esc = (s) => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+        const el = document.createElement('div');
+        el.id = 'rt-cloud-down'; el.setAttribute('role', 'alertdialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'rt-cd-title'); el.setAttribute('aria-describedby', 'rt-cd-desc');
+        el.style.cssText = 'position:fixed;inset:0;z-index:300000;background:rgba(15,15,28,.94);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;font-family:system-ui,-apple-system,"Noto Sans TC",sans-serif';
+        el.innerHTML = `<div style="max-width:380px;width:100%;background:#24243a;border:1px solid #3a3a55;border-radius:16px;padding:24px 20px;color:#e8e8f0;text-align:center;box-shadow:0 12px 40px rgba(0,0,0,.5)">
+            <div style="font-size:40px;line-height:1" aria-hidden="true">☁️</div>
+            <h2 id="rt-cd-title" style="font-size:18px;margin:12px 0 8px;line-height:1.4">${esc(tr('讀不到雲端存檔'))}</h2>
+            <p id="rt-cd-desc" style="font-size:14px;line-height:1.7;margin:0 0 18px;color:#c4c4d6">${esc(tr('存檔放在雲端，現在連不上。你的進度沒有被動到，請確認網路後再試一次。'))}</p>
+            <button type="button" id="rt-cd-retry" style="min-height:48px;width:100%;border:0;border-radius:12px;background:#f28c4a;color:#1a1a2e;font:inherit;font-size:16px;font-weight:700;cursor:pointer">${esc(tr('再試一次'))}</button>
+            <button type="button" id="rt-cd-home" style="min-height:44px;width:100%;margin-top:10px;border:1px solid #4a4a66;border-radius:12px;background:transparent;color:#e8e8f0;font:inherit;font-size:15px;cursor:pointer">${esc(tr('回首頁'))}</button>
+        </div>`;
+        document.body.appendChild(el);
+        el.querySelector('#rt-cd-retry')?.addEventListener('click', () => { try { location.reload(); } catch (e) {} });
+        el.querySelector('#rt-cd-home')?.addEventListener('click', () => { try { location.replace('./'); } catch (e) {} });
+        try { el.querySelector('#rt-cd-retry')?.focus(); } catch (e) {}
+    },
     _onSessionReplaced() {
         if (this._sessionReplacedShown) return; this._sessionReplacedShown = true;
         try { this.world && (this.world.paused = true); this._setPaused?.(true); } catch (e) {}

@@ -39,17 +39,16 @@ const fake = (page) => page.route('**/api/**', r => r.fulfill({ status: 200, con
       MARKET.S(w).owners.trade = O.agentId; MONEY.tradeRoles(w);
       const mgrId = MONEY.S(w).mgr; const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(w.serialize()))); const A2 = w2.agents[mgrId], O2 = w2.agents[O.agentId];
       out.save = { a: A2?.job?.title, o: O2?.job?.title, mult: A2?._wageMult, mgr: !!mgrId && w2.money?.mgr === mgrId };
-      // 4) 本機空間不足:整份放 IndexedDB(不瘦身),localStorage 那份移掉,讀得回來
-      for (const a of npcs().slice(0, 3)) while ((a.memory?.memories || a.memory || []).length < 130 && a.memory?.add) a.memory.add(w.tickCount, '08:00', 'daily', 'x' + Math.random(), 3, []);
-      const key = 'rimtown_town_' + app.currentTownId; app._saveCurrentTown(); const inLs = !!localStorage.getItem(key);
+      // 4) v10.3.0 存檔只放雲端:存檔不再寫到裝置上(以前這裡測「localStorage 放不下改放 IndexedDB」),空間滿不滿都不相干
+      const key = 'rimtown_town_' + app.currentTownId; let threw = false;
       const orig = Storage.prototype.setItem; Storage.prototype.setItem = function (k, v) { if (String(k).startsWith('rimtown_town_') && !String(k).endsWith('_list') && String(v).length > 2000) { const e = new Error('full'); e.name = 'QuotaExceededError'; throw e; } return orig.apply(this, arguments); };
-      const memBefore = Math.max(...Object.values(JSON.parse(JSON.stringify(w.serialize())).agents).map(a => (a.memory || []).length));
-      app._saveCurrentTown(); await new Promise(r => setTimeout(r, 900)); Storage.prototype.setItem = orig;
-      const idb = await RTStore.get(app.currentTownId); const back = await app._readLocalTown(app.currentTownId);
-      out.idb = { inLs, idb: !!idb, lsGone: !localStorage.getItem(key), memKept: idb ? Math.max(...Object.values(JSON.parse(idb).agents).map(a => (a.memory || []).length)) === memBefore : false, back: back?.tickCount === w.tickCount };
-      // 5) 關頁沖存檔:只序列化一次;存檔太大不送 keepalive(瀏覽器上限 64KB)
-      let ser = 0; const _s = w.serialize; w.serialize = function () { ser++; return _s.apply(this, arguments); }; let posted = 0; const _f = window.fetch; window.fetch = (...a) => { posted++; return Promise.resolve(new Response('{}')); };
-      app._lastExitFlushTick = -1; app._flushSaveOnExit(); w.serialize = _s; window.fetch = _f; out.flush = { ser, posted };
+      try { app._saveCurrentTown(); } catch (e) { threw = true; } await new Promise(r => setTimeout(r, 300)); Storage.prototype.setItem = orig;
+      out.idb = { threw, inLs: !!localStorage.getItem(key), idb: !!(await RTStore.get(app.currentTownId)), listed: app._getTownList().some(x => x.id === app.currentTownId) };
+      // 5) 關頁／切到背景:存檔超過 64KB 送不了 keepalive,改用一般請求存上雲端;只序列化一次
+      let ser = 0; const _s = w.serialize; w.serialize = function () { ser++; return _s.apply(this, arguments); }; const posts = []; const _f = window.fetch; window.fetch = (u, o) => { if (String(u).includes('/save') && o?.method === 'POST') posts.push({ keepalive: !!o.keepalive }); return Promise.resolve(new Response('{"success":true}', { headers: { 'Content-Type': 'application/json' } })); };
+      app._lastExitFlushTick = -1; app._lastCloudTick = -1; app._lastCloudSaveAt = 0; app._lastSaveLen = 0; app._flushSaveOnExit(); try { await app._saveBusy; } catch (e) {} await new Promise(r => setTimeout(r, 200));
+      const first = { ser, posts: posts.slice() }; app._flushSaveOnExit(); await new Promise(r => setTimeout(r, 200)); // 沒有新進度:不重傳
+      w.serialize = _s; window.fetch = _f; out.flush = { ser: first.ser, posted: first.posts.length, keepalive: first.posts.some(p => p.keepalive), again: posts.length - first.posts.length };
       // 6) 訪客模式拿掉了
       out.guest = { btn: !!document.getElementById('auth-guest-btn'), banner: !!document.getElementById('guest-banner'), mode: 'guestMode' in app, fn: typeof app._enterGuestMode, account: document.getElementById('btn-account')?.textContent || '' };
       // 7) 刪除城鎮:雲端與本機副本一起刪
@@ -71,8 +70,8 @@ const fake = (page) => page.route('**/api/**', r => r.fulfill({ status: 200, con
     ok(r.pub.mgrs === 1 && r.pub.owners === 0 && Math.abs(r.pub.net - 1.3) < 0.02, '公營商行沒有東家：一位掌櫃，公庫發薪一樣多三成', r.pub);
     ok(r.save.o === r.roles.expect[0] && r.save.a === r.roles.expect[1] && r.save.mult === 1.3 && r.save.mgr, '存讀檔後稱呼與掌櫃都還在', r.save);
     if (lang === 'en') ok(r.roles.expect.join() === 'Owner,Manager,Clerk', '英文：Owner／Manager／Clerk', r.roles.expect);
-    ok(r.idb.inLs && r.idb.idb && r.idb.lsGone && r.idb.memKept && r.idb.back, '本機空間不足：整份放進 IndexedDB（不刪記憶），讀得回來', r.idb);
-    ok(r.flush.ser === 1 && r.flush.posted === 0, '關頁沖存檔只序列化一次；存檔超過 64KB 不送 keepalive', r.flush);
+    ok(!r.idb.threw && !r.idb.inLs && !r.idb.idb && r.idb.listed, 'v10.3.0 存檔不寫到裝置上（localStorage、IndexedDB 都沒有），只更新城鎮列表上的摘要', r.idb);
+    ok(r.flush.ser === 1 && r.flush.posted === 1 && !r.flush.keepalive && r.flush.again === 0, 'v10.3.0 切到背景／關頁：大存檔用一般請求存上雲端（只序列化一次、不用 keepalive），沒有新進度不重傳', r.flush);
     ok(!r.guest.btn && !r.guest.banner && !r.guest.mode && r.guest.fn === 'undefined', '訪客模式拿掉了（沒有訪客按鈕、橫幅與 guestMode）', r.guest);
     ok(r.del.cloudDel === 1 && !r.del.ls && !r.del.list, '刪除城鎮：雲端與本機副本一起刪（不會被同步傳回去）', r.del);
     if (r.big) ok(r.big.pop >= 95 && r.big.lsOk && r.big.chars < 3500000 && r.big.gzChars < 4500000 && r.big.perKB < 50, '100 人的鎮：存檔放得進本機，壓縮後在雲端上傳上限內', r.big);

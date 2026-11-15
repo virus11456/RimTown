@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '10.2.1';
+const RIMTOWN_APP_VERSION = '10.3.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -199,6 +199,7 @@ class RimTownAuth {
         let res = null, data = null;
         const pre = (method === 'GET' && !body) ? RimTownAuth._takeBoot(endpoint, this._nonce) : null;
         if (pre) { try { const r = await pre; if (r && typeof r.status === 'number') { res = { ok: !!r.ok, status: r.status }; data = r.data; } } catch (e) { res = null; } }
+        if (res && !res.ok && res.status >= 500) res = null; // v10.3.0 先發的那個請求碰上伺服器暫時出錯:正式再要一次,不直接當成失敗
         if (!res) { const r = await fetch(this._restUrl + endpoint, opts); data = await r.json(); res = r; }
         // v10.2.0 這個帳號後來又在別的裝置登入:這台登出
         if (res.status === 401 && data && data.code === 'session_replaced') this._kicked();
@@ -316,8 +317,8 @@ class RimTownAuth {
         // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
         if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }
         const r = await this._fetch('save', 'POST', body);
-        // v10.2.0 記下「這台裝置最後一次成功寫上雲端的進度」:下次開機雲端還停在這裡,就知道沒有別台動過,不必再把整份存檔下載回來
-        if (r && !r.stale && Number.isFinite(body.tick_count)) { try { localStorage.setItem('rimtown_synced_' + townId, String(body.tick_count)); } catch (e) {} }
+        // v10.3.0 存檔只放雲端:手上的雲端存檔清單跟著更新(哪些鎮存在、進度到哪,都看這份清單,不再看裝置上有沒有副本)
+        if (r && !r.stale) { try { window.rimtownApp?._noteCloudSave?.(body); } catch (e) {} }
         return r;
     }
 
@@ -469,9 +470,11 @@ class RimTownApp {
         // Try to load saved game
         let loaded = false;
         if (this.auth.loggedIn) {
-            // 雲端與本機同一鎮比新舊;雲端拿不到再試本機副本
+            // v10.3.0 存檔只放雲端:載入一律讀雲端。裝置上只可能有舊版留下的副本(第一次開新版時用得到,見 _bootPick)
+            let cloudDown = false; // 雲端讀不到(連不上、出錯),跟「雲端真的沒有存檔」(新帳號)是兩回事
             try {
                 const saves = await this.auth.listSaves();
+                this._cloudSaves = saves;
                 if (saves.length > 0) {
                     // v5.62.1 優先回到上次玩的鎮,而不是雲端清單第一筆
                     const lastTown = localStorage.getItem('rimtown_last_town');
@@ -483,7 +486,7 @@ class RimTownApp {
                     // 以前每次開機都把整份雲端存檔下載、解壓、解析一遍,鎮越大越久,多半只是拿來確認「跟本機一樣」
                     const pick = this._bootPick(cloudMatch, localData);
                     let cloudData = null;
-                    if (pick !== 'local') cloudData = await this.auth.cloudLoad(cloudMatch.town_id);
+                    if (pick !== 'local') { try { cloudData = await this.auth.cloudLoad(cloudMatch.town_id); } catch (e) { if (!localData) throw e; console.error('[RimTown] Cloud load on init failed, using the leftover device copy:', e); } }
                     const saveData = pick === 'local' ? localData : (pick === 'cloud' && cloudData) ? cloudData : this._newerSave(cloudData, localData);
                     if (saveData && this.world.loadSave(saveData)) {
                         this.currentTownId = cloudMatch.town_id;
@@ -491,15 +494,16 @@ class RimTownApp {
                         loaded = true;
                         const localAhead = saveData === localData && (cloudData ? true : Number(localData.tickCount) > Number(cloudMatch.tick_count));
                         console.log('[RimTown] Loaded on init:', cloudMatch.town_name, saveData === localData ? (localAhead ? '(本機較新)' : '(本機,與雲端相同)') : '(雲端)');
-                        // 本機較新就回填雲端
+                        // 舊版留在裝置上的副本比雲端新:補傳雲端(存成功後 saveGame 會把副本清掉)。其餘情況雲端已經有這份進度,副本直接清掉
                         if (localAhead) { this.saveGame().catch(() => {}); }
-                        else if (saveData === cloudData) this._noteSynced(cloudMatch.town_id, cloudData.tickCount);
-                    }
+                        else { this._lastCloudTick = this.world.tickCount; if (localData) this._dropLocalSave(cloudMatch.town_id); }
+                    } else cloudDown = true; // 清單上有存檔卻讀不出來
                     // v5.64.1 存檔保護原則:程式絕不自動刪除任何雲端存檔(v5.62.1 的雲端去重已移除;
                     // 同名重複條目改由列表顯示處理,要刪只能由玩家/管理員手動)
                 }
             } catch (e) {
                 console.error('[RimTown] Cloud load on init failed:', e);
+                cloudDown = true;
             }
             if (this.auth._replaced) return; // v10.2.0
             if (!loaded) {
@@ -511,6 +515,9 @@ class RimTownApp {
                     if (await this._loadTownById(tid)) { loaded = true; break; }
                 }
             }
+            // v10.3.0 雲端讀不到、裝置上也沒有舊副本:停在這裡請玩家重試。以前會直接開一座第 1 天的新鎮,看起來像存檔不見了
+            if (!loaded && cloudDown) { this._onCloudLoadFailed(); return; }
+            if (loaded) { const sv = this._cloudSaves; setTimeout(() => { try { this._purgeDeviceSaves(sv); } catch (e) {} }, 8000); } // 舊版留在裝置上的其他鎮副本:背景清理(比雲端新的先補傳)
             if (!loaded) {
                 this.world.reset();
                 // v5.68.0 首頁註冊流程:新帳號重載後在這裡建立「<帳號>的邊境鎮」並同步雲端
@@ -2647,35 +2654,53 @@ class RimTownApp {
     }
 
     // --- Save / Load ---
+    // v10.3.0 存檔只放雲端。回傳 true＝雲端存好了(或雲端已有較新的進度),false＝沒存上去(呼叫的人不該再做會丟進度的事,例如切鎮)。
+    // 同一時間只跑一個:切到背景的存檔跟定時存檔撞在一起時,後到的等前一個做完,進度沒變就不再傳一次
     async saveGame() {
+        if (this._saveBusy) {
+            let last = false; try { last = await this._saveBusy; } catch (e) {}
+            if (last && !this.auth?.forceNextSave && this.world && this.world.tickCount === this._lastCloudTick) return true;
+        }
+        const p = this._saveGameNow(); this._saveBusy = p;
+        try { return await p; } finally { if (this._saveBusy === p) this._saveBusy = null; }
+    }
+    async _saveGameNow() {
         try {
             // Track save count for achievement
             const sc = parseInt(localStorage.getItem('rimtown_save_count') || '0') + 1;
             localStorage.setItem('rimtown_save_count', sc.toString());
+            if (!this.auth?.loggedIn) return true;
             const saveData = this.world.serialize();
-            const saveStr = JSON.stringify(saveData); // v6.76.1 只序列化一次,本機與雲端共用(以前每次存檔整座鎮序列化兩遍)
-            if (this.auth?.loggedIn) {
-                // v5.63.0 登入也同時寫本機:雲端寫入失敗時進度不再蒸發(重新整理後任務/進度回捲的根因)
-                try { if (this.currentTownId) this._saveCurrentTown(undefined, saveData, saveStr); } catch (e) {}
-                try {
-                    const clock = saveData.clock || {};
-                    const r = await this.auth.cloudSave(this.currentTownId, this._getCurrentTownName(), saveStr, {
-                        season: clock.season, year: clock.year, day: clock.day,
-                        population: Object.keys(saveData.agents || {}).length,
-                    });
-                    this._lastCloudSaveAt = Date.now(); this._lastCloudTick = this.world.tickCount; // v5.63.2
-                    if (r && r.stale) {
-                        // v5.64.1 雲端已有較新進度,這份較舊的沒有蓋過去(保護玩家進度)
-                        this.world.logMessage('system', t('雲端已有較新的進度，本次未覆寫。'));
-                    } else {
-                        this.world.logMessage('system', t('遊戲已儲存至雲端。'));
-                    }
-                } catch (e) {
-                    console.error('[RimTown] Cloud save error:', e);
-                    this.world.logMessage('system', t('雲端儲存失敗。'));
+            const saveStr = JSON.stringify(saveData); // v6.76.1 只序列化一次
+            this._lastSaveLen = saveStr.length;
+            const tid = this.currentTownId, tick = this.world.tickCount;
+            try { if (tid) this._saveCurrentTown(undefined, saveData, saveStr); } catch (e) {} // 只更新城鎮列表上的摘要
+            try {
+                const clock = saveData.clock || {};
+                const r = await this.auth.cloudSave(tid, this._getCurrentTownName(), saveStr, {
+                    season: clock.season, year: clock.year, day: clock.day,
+                    population: Object.keys(saveData.agents || {}).length,
+                });
+                this._lastCloudSaveAt = Date.now(); this._lastCloudTick = tick; // v5.63.2
+                const wasDown = this._cloudSaveFailed; this._cloudSaveFailed = false;
+                if (r && r.stale) {
+                    // v5.64.1 雲端已有較新進度,這份較舊的沒有蓋過去(保護玩家進度)
+                    this.world.logMessage('system', t('雲端已有較新的進度，本次未覆寫。'));
+                } else {
+                    this.world.logMessage('system', t('遊戲已儲存至雲端。'));
+                    // 舊版留在這台裝置上的副本:這份進度已經在雲端了,清掉
+                    try { if (tid && this._hasLocalTown?.(tid)) this._dropLocalSave(tid); } catch (e) {}
                 }
+                if (wasDown) { try { this._showCornerNotice({ icon: '☁️', title: t('雲端存檔恢復了'), name: '', desc: t('進度已經存上雲端。') }); } catch (e) {} }
+                return true;
+            } catch (e) {
+                console.error('[RimTown] Cloud save error:', e);
+                this.world.logMessage('system', t('雲端儲存失敗。'));
+                // 存檔只放雲端:存不上去要讓玩家知道(一次),之後每分鐘自動重試,存上了再說一聲
+                if (!this._cloudSaveFailed && !this.auth?._replaced) { this._cloudSaveFailed = true; try { this._showCornerNotice({ icon: '⚠️', title: t('雲端存檔失敗'), name: '', desc: t('會每分鐘自動重試。存上之前先不要關掉這一頁，不然這幾分鐘的進度會不見。') }); } catch (e2) {} }
+                this._cloudSaveFailed = true;
+                return false;
             }
-            return true;
         } catch(e) {
             console.error('Save failed:', e);
             this.world.logMessage('system', t('儲存失敗。'));
@@ -2685,17 +2710,16 @@ class RimTownApp {
 
     setupAutoSave() {
         // Auto-save every 60 seconds (saveGame already handles cloud sync when logged in)
-        // v5.63.2 雲端額度止血:本機每 60 秒存,雲端改為「有進度變化且距上次雲端存檔 ≥5 分鐘」
-        // 才寫(關頁/手動存檔/切鎮仍立即寫雲端)——Vercel Blob 每月 2K 次寫入額度,原本每分鐘 2 次寫入撐不住
+        // v5.63.2 雲端額度止血:雲端是「有進度變化且距上次成功存檔 ≥5 分鐘」才寫(手動存檔/切鎮/切到背景仍立即寫)
+        // v10.3.0 存檔只放雲端:中間那幾次「只存本機」拿掉了(以前每分鐘把整座鎮轉成文字寫一次裝置)。存檔失敗時 _lastCloudSaveAt 不會更新,所以下一分鐘就會重試
         const idle = (fn) => (typeof requestIdleCallback === 'function' ? requestIdleCallback(fn, { timeout: 5000 }) : setTimeout(fn, 0)); // v6.76.1
         idle(() => { try { RTZip.ok && typeof Worker !== 'undefined' && RTZip._worker(); } catch (e) {} }); // 先把壓縮用的背景執行緒熱起來,第一次上雲端就不會卡
         this._autoSaveInterval = setInterval(() => {
             if (this.world.paused) return;
             if (this.auth?.loggedIn) {
                 const due0 = Date.now() - (this._lastCloudSaveAt || 0) >= 300000 && this.world.tickCount !== this._lastCloudTick;
-                if (!due0) { idle(() => { try { if (this.currentTownId) this._saveCurrentTown(); } catch (e) {} }); return; } // 只存本機:等閒下來再存
-                // 要上雲端:saveGame 會順便存本機(只序列化一次),一樣等閒下來
-                idle(() => this.saveGame());
+                if (!due0) return;
+                idle(() => this.saveGame()); // 等閒下來再存
             }
         }, 60000);
         // Also save when tab is closing
@@ -2707,19 +2731,23 @@ class RimTownApp {
         document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushOnExit(); });
     }
 
+    // v10.3.0 存檔只放雲端:切到背景、關頁時把還沒上傳的進度送上雲端。
+    //   小存檔(60KB 以內):用瀏覽器保證送達的關頁請求(keepalive)。
+    //   大存檔:瀏覽器的關頁請求上限 64KB,送不了;改用一般的存檔請求,切到背景時通常送得完,直接關掉分頁時瀏覽器可能中斷它
+    //   (這是只放雲端的代價:最多倒退到上一次成功存檔,正常是 5 分鐘內)
     _flushSaveOnExit() {
         {
             try {
-                if (!this.world) return;
+                if (!this.world || !this.auth?.loggedIn || !this.currentTownId || this.auth._replaced) return;
                 if (this._lastExitFlushTick === this.world.tickCount) return; // 同一 tick 已沖過
+                if (this.world.tickCount === this._lastCloudTick) return;     // 沒有新進度
+                if (Date.now() - (this._lastCloudSaveAt || 0) < 30000) return; // 半分鐘內才存過:來回切分頁不必每次都傳整份存檔
                 this._lastExitFlushTick = this.world.tickCount;
+                if (!(this._lastSaveLen > 0 && this._lastSaveLen <= 60000)) { this.saveGame().catch(() => {}); return; }
                 const saveData = this.world.serialize();
                 const json = JSON.stringify(saveData);
-                if (this.auth.loggedIn && this.auth._restUrl) {
-                    // v5.63.0 關頁時也留一份本機(雲端 keepalive 請求不保證成功);v7.7.1 直接用剛序列化好的,不再序列化第二次
-                    try { if (this.currentTownId) this._saveCurrentTown(undefined, saveData, json); } catch (e) {}
-                    // v7.7.1 瀏覽器的 keepalive 請求最多 64KB,存檔幾乎都比這大,送了也會被擋;太大就不送(本機那份就是關頁時的保險)
-                    if (json.length > 60000) return;
+                if (this.auth._restUrl) {
+                    if (json.length > 60000) { this._lastSaveLen = json.length; this.saveGame().catch(() => {}); return; }
                     const clock = saveData.clock || {};
                     const payload = JSON.stringify({
                         town_id: this.currentTownId,

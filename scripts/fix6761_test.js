@@ -28,16 +28,21 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const [id, n, h] of [['town_a', '海風鎮', '海風鎮豐收'], ['town_b', '礦山鎮', '礦坑塌方'], ['town_c', '林間村', '林間村辦祭典']]) { L.push({ id, name: n, season: '夏季', year: 1, day: 3, theme: '', origin: 'neighbor' }); localStorage.setItem('rimtown_town_' + id, mk(n, h)); }
       app._saveTownList(L);
       await app._initLocalStore();
-      out.migrated = JSON.stringify(lsTowns()) === JSON.stringify([cur]) && ['town_a', 'town_b', 'town_c'].every(id => app._idbTowns.has(id));
+      // v10.3.0 存檔只放雲端:開機不再把副本搬去 IndexedDB,也不再往裝置上寫;舊版留下的副本還讀得到,等補傳雲端後清掉
+      out.migrated = ['town_a', 'town_b', 'town_c'].every(id => lsTowns().includes(id)) && !lsTowns().includes(cur) && app._idbTowns.size === 0;
       out.readIdb = (await app._readLocalTown('town_b'))?.townName === '礦山鎮' && app._hasLocalTown('town_b');
-      const meta = app._getTownList().find(x => x.id === 'town_a'); out.summary = meta?.blobName === '海風鎮' && /豐收/.test(meta?.news?.items?.[0] || '');
       // 跨鎮專欄用摘要
       const news = app._collectCrossTownNews([{ id: 'town_a', name: '海風鎮' }, { id: 'town_c', name: '林間村' }]); out.crossNews = news.length === 2 && news.some(n => /祭典/.test(n.items[0]));
       // 切到海風鎮(從 IndexedDB 讀):原本的鎮搬去 IndexedDB,localStorage 只剩海風鎮
       await app.switchTown('town_a'); await new Promise(r => setTimeout(r, 300));
       out.switched = app.currentTownId === 'town_a' && w.townName === '海風鎮';
-      out.prevStashed = app._idbTowns.has(cur) && !lsTowns().includes(cur);
-      app._saveCurrentTown(); out.onlyCurrent = JSON.stringify(lsTowns()) === JSON.stringify(['town_a']);
+      out.prevStashed = !app._hasLocalTown(cur) && !lsTowns().includes(cur); // 離開的那座已經存上雲端,裝置上不留
+      app._saveCurrentTown(); out.onlyCurrent = !lsTowns().includes('town_a') && !app._hasLocalTown('town_a'); // 目的地用的是舊副本:補傳雲端後就清掉,之後存檔也不再寫回裝置
+      // 其他鎮的舊副本:雲端已經有的直接清、雲端沒有的補傳後清;清之前把鎮名與頭條記到城鎮列表上
+      const tb = (await app._readLocalTown('town_b'))?.tickCount ?? 0;
+      await app._purgeDeviceSaves([{ town_id: 'town_b', town_name: '礦山鎮', tick_count: tb }]);
+      const meta = app._getTownList().find(x => x.id === 'town_b'); out.summary = meta?.blobName === '礦山鎮' && /塌方/.test(meta?.news?.items?.[0] || '');
+      out.purged = lsTowns().length === 0 && app._idbTowns.size === 0;
       // 存檔只序列化一次;有城鎮 id 時不再另存 rimtown_save
       let n = 0; const _s = w.serialize; w.serialize = function () { n++; return _s.call(this); };
       await app.saveGame(); w.serialize = _s; out.serializeOnce = n === 1;
@@ -58,10 +63,11 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       await app._deleteLocalTown('town_b'); out.deleted = !app._idbTowns.has('town_b') && !(await app._readLocalTown('town_b')) && (await RTStore.get('town_b')) === undefined;
       return out;
     });
-    ok(r.migrated, '舊版留在 localStorage 的別鎮副本搬去 IndexedDB，只留目前這座', r);
-    ok(r.readIdb && r.summary, '從 IndexedDB 讀得回來；城鎮列表記下鎮名與頭條摘要', r);
+    ok(r.migrated, 'v10.3.0 舊版留在裝置上的別鎮副本還讀得到；開機不再搬動、目前這座也不再寫到裝置上', r);
+    ok(r.readIdb && r.summary, '舊副本讀得回來；清掉之前把鎮名與頭條摘要記到城鎮列表上', r);
     ok(r.crossNews, '跨鎮專欄用摘要，不必讀整份存檔', r);
-    ok(r.switched && r.prevStashed && r.onlyCurrent, '切鎮從 IndexedDB 讀；離開的鎮搬去 IndexedDB，localStorage 只留目前這座', r);
+    ok(r.switched && r.prevStashed && r.onlyCurrent, 'v10.3.0 切鎮：雲端沒有的鎮用舊副本並補傳雲端；離開的鎮、目的地的副本都不留在裝置上', r);
+    ok(r.purged, 'v10.3.0 其他鎮的舊副本清理完，裝置上沒有任何存檔副本', r);
     ok(r.serializeOnce && r.noDupSlot, '每次存檔只序列化一次；不再重複存一份 rimtown_save', r);
     ok(r.gossipMem && r.gossipSaved && r.gossipLoaded, '八卦清單有上限（存檔最多 300 則，舊存檔讀進來就裁）', r);
     ok(r.genBatched, '遠方城鎮每天只讀寫登記簿一次', r);
