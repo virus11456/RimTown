@@ -76,6 +76,7 @@ Object.assign(RimTownApp.prototype, {
     _ghRefresh() { if (this._ghOpen && document.activeElement?.id !== 'gh-wish-in') { this._ghRender(); } this._ghFab(); }, // v9.15.0 正在打字時不重畫
     _ghRender() {
         const tray = document.getElementById('gh-tray'); const d = this._ghData(); if (!tray || !d) return;
+        if (this._pressDefer?.(tray, 'gh', () => this._ghRender())) return; // v9.29.3 正按著手牌裡的按鈕：放開後再畫
         const esc = (x) => this._escapeHtml(String(x ?? ''));
         const cats = (typeof EVENT_CARD_CATS !== 'undefined') ? EVENT_CARD_CATS : {};
         const f = this._ghFilter || 'all'; try { this._uiCheck?.(); } catch (e) {} // v8.8.0 打出第一張牌後「反應追蹤」馬上出現
