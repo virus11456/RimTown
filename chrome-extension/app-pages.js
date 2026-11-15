@@ -176,7 +176,7 @@ Object.assign(RimTownApp.prototype, {
         return this._ic({ id: 'ind-biz', cls: 'market-section', icon: '🏭', title: t('產業與老闆'), defOpen: true, sum: `<b>${rows.length}</b> ${t('家')}`,
             kpis: rows.length ? [{ v: rows.length, u: t('家'), l: t('產業') }, { v: priv, u: t('家'), l: t('有老闆') }, { v: N(rev), l: t('七天營收') }] : null,
             body: rows.length ? `<div class="pg-firms">${rows.map(firm).join('')}</div>` : `<div class="ic-note">${t('還沒有人經營產業。')}</div>`, detail: d,
-            info: t('公營的產業由公庫發薪水；有老闆的由老闆發薪水，賺的錢歸老闆和股東。「工資水準」是照標準工資的幾成在發。') });
+            info: t('產業是大家每天都要買的民生行業（三餐、衣服、柴火、建材），一行一家，老闆會換，行業一直都在。') + t('公營的產業由公庫發薪水；有老闆的由老闆發薪水，賺的錢歸老闆和股東。「工資水準」是照標準工資的幾成在發。') });
     },
     // 鎮上的店(村民自己開的):前幾家直接看,其他收進詳細
     _indShops() {
@@ -187,7 +187,8 @@ Object.assign(RimTownApp.prototype, {
         return this._ic({ id: 'ind-shops', cls: 'pp-biz', icon: '🏪', title: t('鎮上的店'), defOpen: false, sum: `<b>${V.shops.length}</b> ${t('家')}`,
             kpis: [{ v: V.shops.length, u: t('家'), l: t('營業中') }, { v: lose, u: t('家'), l: t('虧錢中'), tone: lose ? 'y' : '' }, { v: V.closed.length, u: t('家'), l: t('最近倒閉'), tone: V.closed.length ? 'r' : '' }],
             body: (V.shops.length ? `<div class="pg-firms">${V.shops.slice(0, SHOW).map(row).join('')}</div>` : `<div class="ic-note">${t('現在沒有店在營業。')}</div>`) + (rest.length ? `<div class="ic-note pg-more-n">${t('還有 {n} 家，點「展開詳細」看').replace('{n}', rest.length)}</div>` : ''),
-            detail: (rest.length ? `<div class="pg-firms">${rest.map(row).join('')}</div>` : '') + (V.closed.length ? this._icSub(t('倒閉的店'), this._icPills(V.closed.map(c => esc(c.name)))) : '') });
+            detail: (rest.length ? `<div class="pg-firms">${rest.map(row).join('')}</div>` : '') + (V.closed.length ? this._icSub(t('倒閉的店'), this._icPills(V.closed.map(c => esc(c.name)))) : ''),
+            info: t('店是村民自己開的小生意，賣大家有閒錢才會買的東西（聽書喝茶、首飾、字畫、藥材），沒有夥計，生意不好就會倒。跟產業不一樣：產業賣的是每天都要買的東西。') });
     },
     // 工廠:每座一格(狀態、配方、工人、生產進度、倉庫)、訂單;可以蓋的收進詳細
     _indFactory() {

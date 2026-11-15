@@ -157,7 +157,7 @@ async function run(browser, lang) {
       const c0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = opt(B, 'startup', 'open').run(w, B); });
       out.shop.done = { n: Bz.shops.length, owner: Bz.shops[0]?.owner === B.agentId, paid: Math.round(c0 - Bal[B.agentId]), cons, res: !!res, again: K.startup.when(w, B) };
       const cap = Math.max(2, Math.floor(Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).length / 6)); traits(C, ['hardworking', 'creative']); Bal[C.agentId] = 100; const before = !!K.startup.when(w, C);
-      while (Bz.shops.length < cap) Bz.shops.push({ owner: 'x' + Bz.shops.length, name: ['測', 'T'], type: 'stall' }); out.shop.full = { before, after: K.startup.when(w, C) };
+      while (Bz.shops.length < cap) Bz.shops.push({ owner: 'x' + Bz.shops.length, name: ['測', 'T'], type: 'curio' /* v9.30.0 雜貨攤拿掉了,改用古玩鋪 */ }); out.shop.full = { before, after: K.startup.when(w, C) };
       Bz.shops = []; }
 
     // ---------- 8) 別鎮開高薪來挖角 ----------
