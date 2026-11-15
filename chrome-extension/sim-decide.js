@@ -261,8 +261,13 @@ const DECIDE = (() => {
 
     // ---------- AI 版 ----------
     function aiOn(w) { const ce = w.conversationEngine; return !!(w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && ce._agentBrief); }
-    const PEND = new WeakMap(); // 每個世界各自一份「正在等 AI 回話的人」：id → { d 哪一天問的, K, ctx, tok }
+    // 每個世界各自一份「正在等 AI 回話的事」：「人|哪一類的事」→ { id 誰, d 哪一天問的, K, ctx, tok }
+    // v10.2.1 以前一個人只有一格（鍵是人）：他自己的事送去問 AI 之後，同一格又有人找上門，後到的把前一件蓋掉。
+    // 前一件的回答回來時對不上號，既不採用、也沒有改照個性決定，那件事就沒有下文，AI 名額也白用。現在一件事一格，兩件各自等、各自有結果
+    const PEND = new WeakMap();
     const pend = (X) => { let s = PEND.get(X); if (!s) { s = new Map(); PEND.set(X, s); } return s; };
+    const pk = (id, K) => id + '|' + K.key;
+    const pendOf = (P, id) => { const out = []; for (const q of P.values()) if (q.id === id) out.push(q); return out; };
     let _tok = 0;
     const _proms = [];
     const clean = (s, n) => String(s == null ? '' : s).replace(/[\r\n]+/g, ' ').replace(/[<>]/g, '').trim().replace(/^[「『"“]+|[」』"”]+$/g, '').slice(0, n);
@@ -346,16 +351,16 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         // v9.28.2 送出前再確認一次：排在後面的幾批，輪到它時前面的人已經做完決定，處境可能變了（例如死對頭已經先吵過）。
         // 過時的不問(省一次 AI)，整批都過時就不連線；選項也照現在的處境重新列
         { const live = []; for (const o of list) {
-            if (P0.get(o.a.agentId)?.tok !== o.tok) continue;
+            if (P0.get(pk(o.a.agentId, K))?.tok !== o.tok) continue;
             const a = w.agents[o.a.agentId]; const ctx = (a && !a.isDead && inTown(w, a)) ? (K.scan ? whenOf(w, a, K) : o.ctx) : null; const opts = ctx ? optsOf(w, a, K, ctx) : [];
-            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(o.a.agentId); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
+            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(pk(o.a.agentId, K)); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
             o.a = a; o.ctx = ctx; o.opts = opts; live.push(o); }
           if (!live.length) { drain(w, X, d); return; } list = live; }
         try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 150); } } catch (e) { j = null; }
         if (w.decide !== X) return;
         list.forEach((o, i) => {
-            if (P0.get(o.a.agentId)?.tok !== o.tok) return; // 等太久，已經先照個性決定了
-            P0.delete(o.a.agentId); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
+            if (P0.get(pk(o.a.agentId, K))?.tok !== o.tok) return; // 等太久，已經先照個性決定了
+            P0.delete(pk(o.a.agentId, K)); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
             const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) { if (OBS.length) emit('dropped', { w, a, K }); return; } // 等的這段時間事情已經過去了
             const opts = optsOf(w, a, K, ctx); if (!opts.length) { if (OBS.length) emit('dropped', { w, a, K }); return; }
             // v10.0.0 只問一個人時，模型有時直接回一個物件、沒包成陣列（真模型實測 40 次裡有 10 個人的回答因此作廢）：照樣收；只有一個人、回來也只有一筆時不必對序號
@@ -370,16 +375,17 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     function dispatch(w, X, offers, d) {
         const ai = aiOn(w); const P0 = pend(X); const groups = {};
         for (const o of offers) {
-            // 別人找上門的事(來借錢、來道歉、先開口)比他自己正在想的事急：他若正在等 AI 想一件「自己的事」，那件先擱下(之後還會再遇到)，改問這一件
-            const cur = P0.get(o.a.agentId); const bump = !!cur && !o.K.scan && cur.K.scan;
+            // 別人找上門的事(來借錢、來道歉、先開口)不能等：他若正在等 AI 想一件「自己的事」，這一件也照樣送去問，兩件各自等回答（v10.2.1；以前是把自己那件擱下，結果那件沒有下文）。
+            // 已經有別人找上門的事在等、或同一類的事已經在等：這一件照個性決定
+            const mine = pendOf(P0, o.a.agentId); const cur = mine.length ? mine[0] : null; const bump = !!cur && !o.K.scan && mine.every(q => q.K.scan) && !P0.has(pk(o.a.agentId, o.K));
             // v10.1.0 自己另有名額的類別（aiOwn：公告欄的回應、回信）：一天幾個人由它自己定，不佔全鎮每天 10 個人的名額。不然名額都被每天固定會遇到的事用完，回應的人永遠輪不到 AI 說話
             const own = +o.K.aiOwn || 0;
-            if (ai && (own || X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX)) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || AI_KIND) && (!cur || bump)) { if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(o.a.agentId, { d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
+            if (ai && (own || X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX)) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || AI_KIND) && (!cur || bump)) { if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(pk(o.a.agentId, o.K), { id: o.a.agentId, d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);
         if (!batches.length) return;
-        const pr = (async () => { for (const [K, list] of batches) await askBatch(w, X, K, list, d); })().catch(() => {}).finally(() => { if (w.decide === X) for (const [, list] of batches) for (const o of list) if (P0.get(o.a.agentId)?.tok === o.tok) P0.delete(o.a.agentId); });
+        const pr = (async () => { for (const [K, list] of batches) await askBatch(w, X, K, list, d); })().catch(() => {}).finally(() => { if (w.decide === X) for (const [K, list] of batches) for (const o of list) if (P0.get(pk(o.a.agentId, K))?.tok === o.tok) P0.delete(pk(o.a.agentId, K)); });
         _proms.push(pr); if (_proms.length > 20) _proms.splice(0, _proms.length - 20);
     }
     // 別的決定引發的選擇點（例如有人來借錢）：排在 X.q，這裡處理
@@ -398,7 +404,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0; X._kAsked = {};
         const all = npcs(w);
         // 昨天問 AI 的還沒回話（太慢、沒額度、遊戲開很快）：不讓人卡著，先照個性決定；晚到的回話就不算了
-        { const P1 = pend(X); for (const [id, q] of [...P1]) { if (q.d >= d) continue; P1.delete(id); const a = w.agents[id]; if (!a || !inTown(w, a)) continue; const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) continue; X.st.aiMiss++; resolveRule(w, X, { a, K: q.K, ctx }, d); } }
+        { const P1 = pend(X); for (const [key, q] of [...P1]) { if (q.d >= d) continue; P1.delete(key); const id = q.id; const a = w.agents[id]; if (!a || !inTown(w, a)) continue; const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) continue; X.st.aiMiss++; resolveRule(w, X, { a, K: q.K, ctx }, d); } }
         // 每週記一次身家，帳本才說得出「這一週多了還是少了」
         for (const a of all) { const n = X.nw[a.agentId]; if (!n) X.nw[a.agentId] = { d, v: worth(w, a), prev: null }; else if (d - n.d >= 7) X.nw[a.agentId] = { d, v: worth(w, a), prev: n.v }; }
         // 不在了的人清掉（出遠門的留著）
@@ -407,7 +413,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         // 掃一遍：每人一天最多拿一件事的主意（急的先）
         const kinds = Object.values(KINDS).filter(K => K.scan).sort((x, y) => y.pri - x.pri); const offers = []; const P0 = pend(X);
         for (const a of here(w)) {
-            if (P0.has(a.agentId) || (w.civic?.jail?.[a.agentId] > d)) continue;
+            if (pendOf(P0, a.agentId).length || (w.civic?.jail?.[a.agentId] > d)) continue;
             for (const K of kinds) {
                 const ck = a.agentId + '|' + K.key; if (X.cool[ck] > d) continue;
                 const ctx = whenOf(w, a, K); if (!ctx) continue; const opts = optsOf(w, a, K, ctx); if (opts.length < 2) continue;
