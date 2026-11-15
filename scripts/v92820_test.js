@@ -12,7 +12,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
 const open = async (browser, lang) => {
   const ctx = await browser.newContext({ viewport: { width: 1280, height: 860 }, serviceWorkers: 'block' });
   const page = await ctx.newPage(); const errs = []; page.on('pageerror', e => errs.push(e.message));
-  await page.route('**/api/**', r => r.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(r.request().url().includes('/api/me') ? { logged_in: true, user: { id: 1, username: 'tester' } } : { saves: [], reply: '' }) }));
+  // v10.3.0 存檔只放雲端：假的雲端要記得存過什麼，重新整理後才讀得回來（以前靠這台裝置上的副本）
+  const cloud = {};
+  await page.route('**/api/**', (r) => { const req = r.request(); const p = new URL(req.url()).pathname.replace(/^\/api\//, ''); const J = (o, st = 200) => r.fulfill({ status: st, contentType: 'application/json', body: JSON.stringify(o) });
+    if (p === 'me') return J({ logged_in: true, user: { id: 1, username: 'tester' } });
+    if (p === 'saves') return J({ saves: Object.values(cloud).map(({ save_data, ...m }) => m) });
+    if (p === 'save' && req.method() === 'POST') { const b = JSON.parse(req.postData() || '{}'); cloud[b.town_id] = { town_id: b.town_id, town_name: b.town_name, tick_count: b.tick_count, season: b.season, year: b.year, day: b.day, population: b.population, town_theme: b.town_theme, origin: b.origin, world_id: b.world_id, updated_at: '2026-01-01 00:00:00', save_data: b.save_data }; return J({ success: true }); }
+    if (p.startsWith('save/')) { const x = cloud[p.slice(5)]; return req.method() === 'GET' ? (x ? J({ save_data: x.save_data, tick_count: x.tick_count }) : J({ error: 'not_found' }, 404)) : J({ success: true }); }
+    return J({ saves: [], reply: '' }); });
   await page.addInitScript(({ jwt, lang }) => { localStorage.setItem('rimtown-lang', lang); localStorage.setItem('rimtown_jwt', jwt); localStorage.setItem('rimtown_tutorial_done', '1'); localStorage.setItem('rimtown_invite_ok', '1'); localStorage.setItem('rimtown_gh_intro', '1'); localStorage.setItem('rimtown_ui_all', '1'); localStorage.setItem('rimtown_3d_quality', 'low'); }, { jwt, lang });
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(1200);
   return { ctx, page, errs };
