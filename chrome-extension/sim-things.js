@@ -484,12 +484,14 @@ const THINGS = (() => {
     // ---------- 每天 ----------
     // 自動發現鎮上新出現的東西：新建築、新開的店、新研究出來的科技（第一次跑時現有的都當成本來就有）
     const BLD_TAGS = (k) => { k = String(k || ''); if (/brew|tavern|inn|bar/.test(k)) return { fun: 1, vice: 0.4, noise: 0.5 }; if (/school|library|academy|institute|lab/.test(k)) return { novelty: 1, jobs: 0.5, prestige: 0.4 }; if (/clinic|hospital|garden|bath/.test(k)) return { health: 1, jobs: 0.4 }; if (/market|shop|bank|trade/.test(k)) return { money: 1, jobs: 0.6, noise: 0.4 }; if (/wall|tower|guard|fort|training/.test(k)) return { prestige: 0.6, tradition: 0.5, money: -0.4 }; if (/chapel|temple|shrine|church/.test(k)) return { tradition: 1, faith: -0.6 }; if (/factory|mill|mine|forge|plant|boiler|work/.test(k)) return { jobs: 1, noise: 1, novelty: 0.6, health: -0.4 }; return { jobs: 0.5, novelty: 0.5, prestige: 0.5 }; };
-    const SHOP_TAGS = { bakery: { fun: 0.6, jobs: 0.4 }, smithy: { jobs: 0.6, noise: 0.6 }, tailor: { prestige: 0.6, jobs: 0.4 }, apothecary: { health: 1 }, inn: { fun: 1, vice: 0.5, noise: 0.5 }, stall: { money: 0.6, jobs: 0.4 }, studio: { fun: 0.6, prestige: 0.6 } };
+    // v9.30.0 跟著 sim-biz.js 的新店種(說書茶館、首飾鋪、繡坊、古玩鋪取代麵包店、鐵匠鋪、裁縫店、雜貨攤)
+    const SHOP_TAGS = { apothecary: { health: 1 }, inn: { fun: 1, vice: 0.5, noise: 0.5 }, studio: { fun: 0.6, prestige: 0.6 }, teahouse: { fun: 0.8, noise: 0.3 }, jeweler: { prestige: 0.8, money: 0.3 }, embroidery: { prestige: 0.6, tradition: 0.4 }, curio: { novelty: 0.5, prestige: 0.4, money: 0.3 } };
     function discover(w, X, d) {
         const seen = X.seen || (X.seen = { b: {}, s: {}, t: {}, base: false }); const first = !seen.base; seen.base = true;
         for (const [i, b] of (w.buildings?.completed || []).entries()) { const key = (b.id || b.buildingKey || 'b') + ':' + i; if (seen.b[key]) continue; seen.b[key] = 1; if (first) continue;
             register(w, { kind: 'building', key, name: b.name, icon: '🏗️', facts: b.description || '鎮上新蓋好的建築。', tags: BLD_TAGS(b.buildingKey || b.id), ttl: 45 }); }
-        for (const sh of (w.biz?.shops || [])) { if (sh.closed || seen.s[sh.id]) continue; seen.s[sh.id] = 1; if (first) continue; const nmz = Array.isArray(sh.name) ? sh.name : [sh.name, sh.name];
+        for (const sh of (w.biz?.shops || [])) { { const T0 = X.list?.['shop:' + sh.id]; if (T0 && !T0.gone && Array.isArray(sh.name) && Array.isArray(T0.name) && (T0.name[0] !== sh.name[0] || T0.name[1] !== sh.name[1])) T0.name = [sh.name[0], sh.name[1]]; } // v9.30.0 店換了招牌(舊店種換新、AI 取的店名晚到),登記的名字跟著換
+            if (sh.closed || seen.s[sh.id]) continue; seen.s[sh.id] = 1; if (first) continue; const nmz = Array.isArray(sh.name) ? sh.name : [sh.name, sh.name];
             register(w, { kind: 'shop', key: sh.id, name: nmz, icon: '🏪', facts: '鎮上新開的店。', owner: sh.owner, tags: SHOP_TAGS[sh.type] || { money: 0.5, jobs: 0.5 }, ttl: 45 }); }
         // v9.9.0 新科技的支持與反對由觀念傳播(IdeaSystem 保守派／革新派)負責,這裡不再重複登記一份
         const R = {}; const TI = typeof TECH_IDEAS !== 'undefined' ? TECH_IDEAS : {};
