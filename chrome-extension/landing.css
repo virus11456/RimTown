@@ -467,3 +467,59 @@
 .lp-ai .landing-card { background: var(--lp-card) !important; border: 1px solid var(--lp-line) !important; border-left: 3px solid var(--lp-accent) !important; border-radius: 16px !important; padding: 20px !important; }
 .lp .landing-brain { margin-top: 72px; }
 .lp .landing-log, .lp .landing-roadmap-col { background: var(--lp-card); border-color: var(--lp-line); border-radius: 14px; }
+
+/* ============================================================
+   v9.30.1 首頁精簡:七章細節收進側邊面板、75 種事改成分頁、各段減字
+   ============================================================ */
+.lp { --lp-gap: clamp(64px, 8vw, 108px); }
+/* 七個尺度的卡片:一句話＋主題標籤(點了打開那一章的面板) */
+.lp-scale-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.lp-scale-chip { display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 13px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--c) 55%, transparent); background: color-mix(in srgb, var(--c) 12%, transparent); color: var(--lp-ink); font: inherit; font-size: 0.88rem; font-weight: 700; cursor: pointer; transition: background-color 0.16s ease, border-color 0.16s ease; }
+.lp-scale-chip .lp-ic { width: 1.05em; height: 1.05em; color: var(--c); vertical-align: 0; }
+.lp-scale-chip:hover { background: color-mix(in srgb, var(--c) 24%, transparent); border-color: var(--c); }
+.lp-scale-card .lp-scale-more { margin-top: 6px; }
+/* 75 種事:十類分頁 */
+.lp-kindtabs { display: flex; flex-wrap: wrap; gap: 8px; }
+.lp-kindtab { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; border-radius: 12px; border: 1px solid var(--lp-line); background: var(--lp-card); color: var(--lp-ink2); font: inherit; font-size: 0.94rem; font-weight: 700; cursor: pointer; transition: color 0.16s ease, border-color 0.16s ease, background-color 0.16s ease; }
+.lp-kindtab .lp-ic { color: var(--lp-accent); }
+.lp-kindtab b { font-weight: 700; font-size: 0.8rem; color: var(--lp-ink3); font-variant-numeric: tabular-nums; }
+.lp-kindtab:hover { border-color: var(--lp-line2); color: var(--lp-ink); }
+.lp-kindtab.on { border-color: var(--lp-accent); background: rgba(242, 166, 90, 0.14); color: var(--lp-ink); }
+.lp-kindtab.on b { color: var(--lp-accent); }
+.lp-kinds { grid-template-columns: minmax(0, 1fr); gap: 0; margin-top: 12px !important; }
+.lp-kind { display: none; }
+.lp-kind.on { display: block; animation: lp-sheet-fade 0.25s ease; }
+.lp-kind > p { margin-top: 0; }
+.lp-kind-tags { gap: 8px; margin-top: 16px !important; }
+.lp-kind-tags li { font-size: 0.92rem; padding: 6px 13px; border-radius: 10px; color: var(--lp-ink); }
+.lp-ai .lp-proof { margin-top: 20px; }
+/* 側邊面板:每一章的細節 */
+.lp-lock { overflow: hidden !important; }
+.lp-sheet { position: fixed; inset: 0; z-index: 80; }
+.lp-sheet[hidden] { display: none; }
+.lp-sheet-bg { position: absolute; inset: 0; background: rgba(10, 8, 20, 0.64); -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px); animation: lp-sheet-fade 0.2s ease; }
+.lp-sheet-panel { position: absolute; top: 0; right: 0; bottom: 0; width: min(780px, 94vw); overflow-y: auto; overscroll-behavior: contain; background: var(--lp-bg); border-left: 1px solid var(--lp-line2); box-shadow: -30px 0 80px rgba(0, 0, 0, 0.5); animation: lp-sheet-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.lp-sheet-panel:focus { outline: none; }
+@keyframes lp-sheet-in { from { transform: translateX(36px); opacity: 0; } }
+@keyframes lp-sheet-up { from { transform: translateY(36px); opacity: 0; } }
+@keyframes lp-sheet-fade { from { opacity: 0; } }
+.lp-sheet-bar { position: sticky; top: 0; z-index: 5; display: flex; align-items: center; gap: 4px; padding: 6px 10px 6px 0; background: rgba(19, 17, 31, 0.94); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-bottom: 1px solid var(--lp-line); }
+.lp-sheet .lp-chnav { position: static; flex: 1 1 auto; min-width: 0; background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; }
+.lp-sheet .lp-chnav-in { max-width: none; padding: 0 14px; }
+.lp-sheet .lp-chnav-k { display: none; }
+.lp-sheet-x { flex: none; width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--lp-line2); background: var(--lp-card2); color: var(--lp-ink); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; transition: background-color 0.16s ease; }
+.lp-sheet-x:hover { background: rgba(244, 236, 223, 0.14); }
+.lp-sheet .lp-chapter { display: none; border-bottom: 0; padding: 28px 0 56px; }
+.lp-sheet .lp-chapter.on { display: block; }
+.lp-sheet .lp-ch-in { max-width: none; padding: 0 clamp(18px, 3vw, 34px); grid-template-columns: minmax(0, 1fr); gap: 22px; }
+.lp-sheet .lp-ch-head { position: static; }
+.lp-sheet .lp-topic { scroll-margin-top: 72px; }
+.lp-sheet .lp-tiers { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 700px) {
+    .lp-sheet-panel { top: 6svh; left: 0; width: 100%; border-left: 0; border-top: 1px solid var(--lp-line2); border-radius: 20px 20px 0 0; box-shadow: 0 -30px 80px rgba(0, 0, 0, 0.5); animation-name: lp-sheet-up; }
+    .lp-sheet-bar { border-radius: 20px 20px 0 0; }
+    .lp-kindtab { padding: 0 12px; font-size: 0.9rem; gap: 6px; }
+    .lp-kind { padding: 18px 18px; }
+    .lp-scale-chip { font-size: 0.84rem; padding: 0 11px; }
+}
+@media (prefers-reduced-motion: reduce) { .lp-sheet-panel, .lp-sheet-bg, .lp-kind.on { animation: none; } }

@@ -18,30 +18,29 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       await page.waitForSelector('#landing-decide', { timeout: 60000 }); await page.waitForTimeout(600);
       const r = await page.evaluate(() => {
         const S = document.getElementById('landing-decide'); const n = (sel) => S.querySelectorAll(sel).length; const sr = S.getBoundingClientRect();
-        const kids = [...document.querySelectorAll('#landing-core, #landing-decide, .lp-chnav')].map(x => x.id || 'chnav');
+        const kids = [...document.querySelectorAll('#landing-core, #landing-scale, #landing-decide')].map(x => x.id);
         const over = [...S.querySelectorAll('*')].filter(e => { const b = e.getBoundingClientRect(); return b.width > 0 && (b.right > sr.right + 1 || b.left < sr.left - 1 || e.scrollWidth > e.clientWidth + 1); }).map(e => e.className || e.tagName).slice(0, 5);
         const small = [...S.querySelectorAll('p, dd, dt, h3, h4, span, b')].filter(e => e.textContent.trim() && parseFloat(getComputedStyle(e).fontSize) < 12).map(e => e.className || e.tagName).slice(0, 5);
         const txt = S.textContent;
-        return { order: kids, ba: n('.lp-ba > div'), now: n('.lp-ba .now'), steps: n('.lp-steps-5 .lp-step'), picks: n('.lp-picks li'), points: document.querySelectorAll('#landing-ai .lp-points > div').length, prog: document.querySelectorAll('#landing-kinds .lp-kind').length, done: [...document.querySelectorAll('#landing-kinds .lp-kind h3')].map(x => x.textContent.trim()), ai: document.querySelector('#landing-ai')?.textContent || '', /* v9.29.0「在哪裡看」搬到 AI 那一段;「做到哪了」換成十類 75 個選擇點 */
+        return { order: kids, ba: n('.lp-ba > div'), now: n('.lp-ba .now'), steps: n('.lp-steps-5 .lp-step'), picks: n('.lp-picks li'), points: document.querySelectorAll('#landing-ai .lp-points > div').length, prog: document.querySelectorAll('#landing-kinds .lp-kind').length, done: [...document.querySelectorAll('#landing-kinds .lp-kindtab span')].map(x => x.textContent.trim()) /* 9.30.1 十類改成分頁 */, ai: (document.querySelector('#landing-ai')?.textContent || '') + (document.querySelector('#landing-faq')?.textContent || ''), faq: document.querySelector('#landing-faq')?.textContent || '', /* v9.29.0「在哪裡看」搬到 AI 那一段;「做到哪了」換成十類 75 個選擇點 */
           h2: S.querySelector('h2').textContent.trim(), over, small, txt, cjk: (txt.match(/[一-鿿]{2,}/g) || []),
           sw: document.documentElement.scrollWidth, cw: document.documentElement.clientWidth, lw: document.getElementById('landing').scrollWidth, lcw: document.getElementById('landing').clientWidth };
       });
-      ok(r.order.join('>') === 'landing-core>landing-decide>chnav', '排在「核心玩法」後面、章節導覽前面', r.order);
+      ok(r.order.join('>') === 'landing-core>landing-scale>landing-decide', '排在「核心玩法」和「從一個人到整個世界」後面（9.30.1 把七個尺度移到前面，七章細節收進面板）', r.order);
       ok(r.h2 === (lang === 'zh' ? '一個決定是怎麼來的' : 'How one decision comes about'), '標題', r.h2);
       ok(r.ba === 2 && r.now === 1, '以前／現在對照兩格', { ba: r.ba, now: r.now });
       ok(r.steps === 5, '五個步驟', r.steps);
-      ok(r.picks === 3, '同一筆閒錢三種選擇', r.picks);
-      ok(r.points === 3, '在遊戲裡哪裡看得到：三處', r.points);
+      ok(r.picks === 0, '9.30.1 拿掉「同一筆閒錢三種選擇」那一段', r.picks);
+      ok(lang === 'zh' ? /在遊戲裡哪裡看得到他們的決定/.test(r.faq) && /最近的決定/.test(r.faq) && /自己拿了主意/.test(r.faq) : /Where can I see their decisions/.test(r.faq) && /Recent decisions/.test(r.faq) && /made up their own mind/.test(r.faq), '在遊戲裡哪裡看得到（9.30.1 起寫在常見問題）', r.points);
       ok(r.prog === 10 && r.done.length === 10 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships') && r.done[2] === (lang === 'zh' ? '政治' : 'Politics') && r.done[3] === (lang === 'zh' ? '自己的事' : 'Personal matters') && r.done[4] === (lang === 'zh' ? '生計與去留' : 'Livelihood'), '自己決定的事：十類，前五類是「錢的事」「人際」「政治」「自己的事」「生計與去留」', { prog: r.prog, done: r.done });
-      ok(lang === 'zh' ? /示意/.test(r.txt) : /illustrations/.test(r.txt), '三種選擇有標明是示意', null);
-      ok(lang === 'zh' ? /每天最多把 10 件事交給 AI/.test(r.ai) : /at most 10 matters a day/.test(r.ai), '寫出 AI 每天最多決定 10 件（跟 sim-decide.js 的 AI_MAX 一致）', null);
+      ok(lang === 'zh' ? /每天最多把 10 件事交給 AI/.test(r.ai) && /每天最多 10 件事交給 AI/.test(r.ai) : /at most 10 matters a day/.test(r.ai) && /At most 10 matters a day/.test(r.ai), '寫出 AI 每天最多決定 10 件（跟 sim-decide.js 的 AI_MAX 一致）', null);
       ok(!/憑空變多|守恆/.test(r.txt), '不說錢「守恆」（旅遊、外地讀書的錢會流到鎮外）', null);
       if (lang === 'en') ok(r.cjk.length === 0, '英文版沒有殘留中文', r.cjk.slice(0, 5));
       ok(r.over.length === 0, '沒有超出區塊或被截掉的內容', r.over);
       ok(r.small.length === 0, '字不小於 12px', r.small);
       ok(r.sw <= r.cw + 1 && r.lw <= r.lcw + 1, '沒有橫向捲動', { sw: r.sw, cw: r.cw, lw: r.lw, lcw: r.lcw });
       // v9.20.0 城鎮四級:升級條件一項一顆標籤,標籤裡不換行、不超出卡片(以前手機上「第一時代」被切成兩行)
-      const tr = await page.evaluate(() => { const T = document.querySelector('.lp-ch-tiers'); if (!T) return null; const cards = [...T.querySelectorAll('.lp-tiers li')];
+      const tr = await page.evaluate(() => { document.querySelector('.lp-scale-more[data-lp-sheet="era"]').click(); /* 9.30.1 城鎮四級在「小鎮長大」那一章的面板裡,打開才量得到 */ const T = document.querySelector('.lp-ch-tiers'); if (!T) return null; const cards = [...T.querySelectorAll('.lp-tiers li')];
         return { cards: cards.length, chips: T.querySelectorAll('.lp-tier-req').length, wrap: [...T.querySelectorAll('.lp-tier-req')].filter(c => c.getBoundingClientRect().height > parseFloat(getComputedStyle(c).fontSize) * 2.4).map(c => c.textContent),
           over: cards.filter(li => { const r = li.getBoundingClientRect(); return [...li.querySelectorAll('.lp-tier-req')].some(c => c.getBoundingClientRect().right > r.right + 0.5 || c.getBoundingClientRect().left < r.left - 0.5); }).length, plus: /[＋+]/.test(T.querySelector('.lp-tiers').textContent) }; });
       ok(tr && tr.cards === 4 && tr.chips === 11 && !tr.plus, '城鎮四級：四張卡、升級條件拆成 11 顆標籤', tr);
