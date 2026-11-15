@@ -111,34 +111,66 @@ const REPEAL = (() => {
             vote: (w, a) => FAITH.taxVote(w, { kind: 'faith_tax' }, a), lead: () => 0,
             why: '信徒說，奉獻給神的錢不該被抽稅。', after: '廢除以後，宗教捐獻不再抽稅。',
             set: (w) => FAITH.setTax(w, true), back: '有人覺得教團收了那麼多捐獻，該繳一份給公庫。' },
+        tech_nonuke: { icon: '🌿', name: '廢核', cat: 'nature', ok: () => typeof TECH !== 'undefined' && !!TECH.abandon,
+            on: (w) => !!w.tech?.noNuke, since: (w) => w.tech?.noNuke, off: (w) => { w.tech.noNuke = 0; },
+            vote: (w, a) => TECH.voteRule(w, { kind: 'tech_abandon' }, a), lead: (w, a) => (a.job?.key === 'researcher' ? 2 : 0) + (has(a, 'ambitious') ? 1 : 0),
+            why: '有人說沒有核電以後，工廠和研究都慢了下來。', after: '廢除以後，鎮上可以再提案蓋核電廠。',
+            set: (w) => { w.tech.noNuke = 0; return TECH.abandon(w); }, back: '有人還是不放心鎮上再有核電廠。' },
+        minwage: { icon: '💰', name: '最低工資', cat: 'welfare', ok: () => typeof WALLET !== 'undefined',
+            on: (w) => (w.wallet?.minWage || 0) > 0, since: (w) => w.wallet?.minWageDay ?? null, off: (w) => { w.wallet.minWage = 0; w.wallet.minWageDay = null; },
+            vote: (w, a) => viaKind(w, a, 'minwage'), lead: (w, a) => { try { return (typeof MARKET !== 'undefined' && MARKET.ownedBy(w, a.agentId).length ? 3 : 0) + (has(a, 'greedy') ? 1 : 0); } catch (e) { return 0; } },
+            why: '東家們說，工資有了下限以後，請不起那麼多人。', after: '廢除以後，工資照市價走，沒有下限。',
+            set: (w) => { w.wallet.minWage = Math.round(WALLET.FLOOR * (typeof INFL !== 'undefined' ? INFL.p(w) : 1) * 100) / 100; w.wallet.minWageDay = day(w); return t('最低工資恢復了'); }, back: '做工的人說，沒了下限，做滿一天也吃不飽。' },
     };
 
+    function viaKind(w, a, kind) {
+        const P = w.proposals; if (!P?._ruleVote) return null;
+        const fake = { id: '_x', kind, votes: {}, why: {}, proposerId: '', proposerName: '', category: 'welfare', cost: {}, tp: {}, dp: {}, effects: {} };
+        P._ruleVote(w, fake, a); const v = fake.votes[a.agentId]; return v ? { v, why: fake.why[a.agentId] || 'gut' } : null;
+    }
     function S(w) {
         if (!w.repeal || typeof w.repeal !== 'object') w.repeal = { last: {}, seen: {}, done: [], lastAny: -99 };
         const R = w.repeal; R.last = R.last || {}; R.lastBack = R.lastBack || {}; R.seen = R.seen || {}; R.done = R.done || []; R.shelf = R.shelf || {}; if (!Number.isFinite(R.lastAny)) R.lastAny = -99; return R;
     }
-    // ---- 村民提案立下的規矩與傳統：每一條都算一條規定（代碼 trad:<提案編號>）----
-    const tkey = (x) => 'trad:' + (x.id || ('t' + Array.from(String(x.text || '')).reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 99991, 7)));
-    const trads = (w) => (Array.isArray(w.proposals?.traditions) ? w.proposals.traditions : []);
+    // ---- 不在表裡、隨提案產生的規定（代碼＝種類:編號）----
+    //   trad:  村民提案立下的規矩與傳統        mark: 村民提案立的地標（廢除＝拆掉）      decree: 還在生效的政令（提前取消；本來就會到期，所以沒有「恢復」）
+    const hsh = (x) => 't' + Array.from(String(x || '')).reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 99991, 7);
+    const KEEP = { trad: { list: (w) => w.proposals?.traditions, name: (x) => x.text, icon: () => '📜', max: 6, why: '有人覺得這條規矩已經不合時宜。', after: '廢除以後，大家不必再照這條規矩做。', back: '有人懷念這條老規矩。', ok: '老規矩恢復了' },
+        mark: { list: (w) => w.proposals?.landmarks, name: (x) => (typeof x.name === 'string' ? x.name : ''), icon: (x) => x.icon || '🗿', max: 6, why: '有人覺得這個地標已經沒有意義，還佔地方。', after: '廢除以後，這個地標會拆掉。', back: '有人懷念那個地標。', ok: '地標重新立起來了' } };
+    const kkey = (k, x) => k + ':' + (x.id || hsh(KEEP[k].name(x)));
+    const tkey = (x) => kkey('trad', x);
+    const kept = (w, k) => { const L = KEEP[k].list(w); return Array.isArray(L) ? L : []; };
+    const trads = (w) => kept(w, 'trad');
+    const decrees = (w) => { const d = day(w); return (Array.isArray(w.council?.activeDecrees) ? w.council.activeDecrees : []).filter(x => x && x.id && x.title && (x.expiresDay ?? d) >= d); };
     // 這條規矩留不留：提的人自己、跟他要好的人想留；跟他處不來的想拿掉；其他人看個性，多數人懶得改（維持現狀佔一點便宜）
     function tradVote(w, a, x) {
-        const by = Object.values(w.agents || {}).find(o => o.name === x.by); const mine = by && by.agentId === a.agentId;
+        const by = x.by ? Object.values(w.agents || {}).find(o => o.name === x.by) : null; const mine = by && by.agentId === a.agentId;
         const r = by && !mine ? (a.relationships?.relationships?.[by.agentId]?.affinity || 0) : 0;
         const s = (mine ? 4 : 0) + r / 30 + (has(a, 'stoic') || has(a, 'perfectionist') ? 0.6 : 0) - (has(a, 'creative') || has(a, 'lazy') ? 0.6 : 0) + 0.3 + (Math.random() - 0.5) * 2;
         return { v: s > 0 ? 'for' : 'against', why: s > 0 ? (mine || r >= 30 ? 'trad_friend' : 'trad_keep') : (r <= -30 ? 'trad_foe' : 'trad_drop') };
     }
-    function trad(w, id) {
-        const R = S(w); const x = trads(w).find(o => tkey(o) === id) || null; const src = x || R.shelf[id]; if (!src) return null;
-        return { icon: '📜', name: src.text, free: true, cat: 'culture', ok: () => true, on: () => !!trads(w).find(o => tkey(o) === id), since: () => (trads(w).find(o => tkey(o) === id) || {}).day ?? null,
-            off: (w) => { const L = w.proposals.traditions; const i = L.findIndex(o => tkey(o) === id); if (i >= 0) { R.shelf[id] = L[i]; L.splice(i, 1); } const ks = Object.keys(R.shelf); if (ks.length > 8) delete R.shelf[ks[0]]; },
-            set: (w) => { const o = R.shelf[id]; if (!o) return ''; const L = w.proposals.traditions || (w.proposals.traditions = []); L.push(Object.assign({}, o, { day: day(w) })); if (L.length > 6) L.splice(0, L.length - 6); delete R.shelf[id]; return t('老規矩恢復了'); },
-            vote: (w, a) => tradVote(w, a, src), lead: () => 0,
-            why: '有人覺得這條規矩已經不合時宜。', after: '廢除以後，大家不必再照這條規矩做。', back: '有人懷念這條老規矩。' };
+    function dyn(w, id) {
+        const R = S(w); const k = String(id || '').split(':')[0];
+        if (KEEP[k]) {
+            const K = KEEP[k]; const find = () => kept(w, k).find(o => kkey(k, o) === id) || null; const src = find() || R.shelf[id]; if (!src) return null;
+            return { icon: K.icon(src), name: K.name(src), free: true, cat: 'culture', ok: () => true, on: () => !!find(), since: () => (find() || {}).day ?? null,
+                off: (w) => { const L = K.list(w); const i = L.findIndex(o => kkey(k, o) === id); if (i >= 0) { R.shelf[id] = L[i]; L.splice(i, 1); } const ks = Object.keys(R.shelf); if (ks.length > 10) delete R.shelf[ks[0]]; },
+                set: (w) => { const o = R.shelf[id]; if (!o) return ''; const P = w.proposals; const L = K.list(w) || (k === 'trad' ? (P.traditions = []) : (P.landmarks = [])); L.push(Object.assign({}, o, { day: day(w) })); if (L.length > K.max) L.splice(0, L.length - K.max); delete R.shelf[id]; return t(K.ok); },
+                vote: (w, a) => tradVote(w, a, src), lead: () => 0, why: K.why, after: K.after, back: K.back };
+        }
+        if (k === 'decree') {
+            const key = id.slice(7); const find = () => decrees(w).find(o => String(o.id) === key) || null; const src = find(); if (!src) return null;
+            return { icon: '📜', name: src.title, free: true, short: true, cat: 'economy', ok: () => true, on: () => !!find(), since: () => null,
+                off: (w) => { const C = w.council; C.activeDecrees = (C.activeDecrees || []).filter(o => String(o.id) !== key); try { C._aggregateDecrees?.(w); } catch (e) {} },
+                vote: (w, a) => { const s = 0.4 + (has(a, 'optimist') ? 0.4 : 0) - (has(a, 'pessimist') ? 0.4 : 0) + (Math.random() - 0.5) * 2; return { v: s > 0 ? 'for' : 'against', why: s > 0 ? 'trad_keep' : 'decree_drop' }; }, lead: () => 0,
+                why: '有人覺得這道政令弊大於利。', after: '廢除以後，這道政令的效果馬上停止。' };
+        }
+        return null;
     }
-    const law = (w, id) => LAWS[id] || (String(id || '').startsWith('trad:') ? trad(w, id) : null);
+    const law = (w, id) => LAWS[id] || dyn(w, id);
     const nameOf = (L) => L.name;
     const lawOk = (w, id) => { const L = law(w, id); try { return !!L && L.ok() && !!L.on(w); } catch (e) { return false; } };
-    const liveIds = (w) => [...Object.keys(LAWS), ...trads(w).map(tkey)].filter(id => lawOk(w, id));
+    const liveIds = (w) => [...Object.keys(LAWS), ...kept(w, 'trad').map(x => kkey('trad', x)), ...kept(w, 'mark').map(x => kkey('mark', x)), ...decrees(w).map(x => 'decree:' + x.id)].filter(id => lawOk(w, id));
     // 被表決廢除、現在還沒恢復的規定（每條只看最近一次）
     function goneList(w) { const R = S(w); const seen = new Set(); const out = []; for (const x of R.done.slice().reverse()) { if (seen.has(x.id)) continue; seen.add(x.id); const L = law(w, x.id); let ok = false; try { ok = !!L && L.ok() && !L.on(w) && typeof L.set === 'function'; } catch (e) {} if (ok && !x.back) out.push(x); } return out; }
     // 這條規定哪一天開始的。舊存檔沒記日期的，從第一次看到它那天算起
@@ -184,6 +216,7 @@ const REPEAL = (() => {
         if (R.lastDay === d) return; R.lastDay = d;
         const live = liveIds(w); for (const id of Object.keys(R.seen)) if (!live.includes(id)) delete R.seen[id]; // 規定不在了，下次再立要重新算日子
         for (const id of live) since(w, id);
+        try { for (const x of punished(w)) { if (!x.ex || !pardonOk(w, x)) continue; const A = adults(w).filter(a => a.agentId !== x.a.agentId); const pro = A.filter(a => pardonVote(w, { refKey: x.a.agentId }, a).v === 'for'); if (A.length && pro.length / A.length >= 0.3 && Math.random() < 0.25) { const who = pro.sort((p, q) => (q.relationships?.relationships?.[x.a.agentId]?.affinity || 0) - (p.relationships?.relationships?.[x.a.agentId]?.affinity || 0))[0]; if (pardonPropose(w, who, x.a)) break; } } } catch (e) { console.warn('[Repeal] pardon', e); }
         const gone = goneList(w); if (!live.length && !gone.length) return;
         if (busy(w) || d - R.lastAny < GAP) return;
         const jobs = [...live.map(id => ({ id, kind: 'law_repeal', wait: waitRepeal(w, id) })), ...gone.map(x => ({ id: x.id, kind: 'law_restore', wait: waitBack(w, x) }))].filter(j => j.wait <= 0 && !law(w, j.id)?.own).sort(() => Math.random() - 0.5);
@@ -216,10 +249,12 @@ const REPEAL = (() => {
     const quiet = (w, kind) => { if (!LAWS[kind]) return false; const x = (w.repeal?.done || []).filter(r => r.id === kind).pop(); return !!x && !x.back && day(w) - x.d < QUIET; };
     // 給介面：現在實施中的規定、被廢除還沒恢復的規定，各自還要幾天才能提
     function view(w) {
-        const d = day(w);
-        const live = liveIds(w).map(id => { const L = law(w, id); return { id, icon: L.icon, name: t(nameOf(L)), free: !!L.free, days: Math.max(0, d - since(w, id)), wait: waitRepeal(w, id), open: openFor(w, id, 'law_repeal') }; });
-        const done = goneList(w).map(x => { const L = law(w, x.id); return { id: x.id, icon: L?.icon || '🗳️', name: t(L ? nameOf(L) : (x.name || x.id)), free: !!L?.free, ago: d - x.d, days: x.n, wait: waitBack(w, x), open: openFor(w, x.id, 'law_restore') }; });
-        return { live, done };
+        const d = day(w); const R = S(w); const ai = !!w.fullAgentMode; // 開了完整智能體：村民隨時可以提，只看 10 天內有沒有提過
+        const aiWait = (id) => anyOpen(w, id) ? 0 : Math.max(0, AIGAP - (d - Math.max(R.last[id] ?? -999, R.lastBack[id] ?? -999)));
+        const live = liveIds(w).map(id => { const L = law(w, id); return { id, icon: L.icon, name: t(nameOf(L)), free: !!L.free, short: !!L.short, days: Math.max(0, d - since(w, id)), wait: ai ? aiWait(id) : waitRepeal(w, id), open: openFor(w, id, 'law_repeal') }; }).filter(x => ai || !x.short); // 政令 20 天就到期，規則版等不到 60 天，不列
+        const done = goneList(w).map(x => { const L = law(w, x.id); return { id: x.id, icon: L?.icon || '🗳️', name: t(L ? nameOf(L) : (x.name || x.id)), free: !!L?.free, ago: d - x.d, days: x.n, wait: ai ? aiWait(x.id) : waitBack(w, x), open: openFor(w, x.id, 'law_restore') }; });
+        let recall = null; try { const I = recallInfo(w, null); if (I.L) recall = { name: I.L.name, title: titleOf(w), ok: I.ok, why: I.ok ? '' : I.why, signers: I.signers, need: I.need }; } catch (e) {}
+        return { live, done, recall, ai };
     }
     // ---- 完整智能體：最大的權限 ----
     // 規則版的 60／90 天是「沒有人在想」時的節奏；智能體自己會想，所以不受那些天數限制：任何一條現行規定都可以提廢除、
@@ -227,26 +262,48 @@ const REPEAL = (() => {
     const AIGAP = 10;
     const anyOpen = (w, id) => (w.proposals?.items || []).some(p => KINDS.includes(p.kind) && p.refKey === id && ['open', 'shelved', 'approved'].includes(p.status));
     const aiOk = (w, id) => { const R = S(w); return !anyOpen(w, id) && day(w) - Math.max(R.last[id] ?? -999, R.lastBack[id] ?? -999) >= AIGAP; };
-    // 罷免首長：也是一個提案。全鎮投票決定（贊成多於反對就提前改選），首長自己不能裁決這一案
+    // 罷免首長：也是一個提案，可是門檻高，不能想罷免就罷免（一個任期才 60 天）
+    //   什麼時候能提：上任滿 20 天、離下次選舉還有 15 天以上、這個任期還沒人提過罷免
+    //   成案：全鎮至少四分之一的人願意連署（真的對他不滿的人；至少 3 人）
+    //   通過：贊成票要有六成，而且贊成的人數超過全鎮四成（不能靠大家沒來投票混過去）。全鎮投票決定，不送議會，首長自己不能裁決
+    //   沒過：這個任期不能再提；提的人跟首長的關係變差
+    const RC = { settle: 20, tail: 15, sign: 0.25, yes: 0.6, turnout: 0.4, minSign: 3 };
     const holder = (w) => { try { return w.election?._officeHolder?.(w) || null; } catch (e) { return null; } };
     const titleOf = (w) => { try { return (typeof TIERS !== 'undefined') ? TIERS.leaderTitle(w) : t('鎮長'); } catch (e) { return t('鎮長'); } };
-    function recallOk(w, a) {
-        const E = w.election; const L = holder(w); if (!L || !E || E.active || (a && L.agentId === a.agentId)) return null; const R = S(w);
-        if (day(w) - (R.recallDay ?? -999) < 30 || (w.proposals?.items || []).some(p => p.kind === 'recall' && ['open', 'shelved', 'approved'].includes(p.status))) return null;
-        return L;
+    const nextElection = (w) => { const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 每年秋季第 1 天
+    const dislike = (w, a, L) => (a.relationships?.relationships?.[L.agentId]?.affinity || 0) / 25 - (w.power?.scandal?.[L.agentId] || 0) * 0.6 + 0.3; // <0＝不滿
+    const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < 0);
+    function recallInfo(w, a) {
+        const E = w.election; const L = holder(w); const R = S(w); const d = day(w); if (!L || !E) return { ok: false, why: 'none' };
+        const term = E.lastElectionDay || 0; const sg = signers(w, L); const need = Math.max(RC.minSign, Math.ceil((adults(w).length - 1) * RC.sign));
+        const base = { L, term, signers: sg.length, need, inOffice: d - term, toVote: nextElection(w) - d };
+        const no = (why) => Object.assign(base, { ok: false, why });
+        if (E.active) return no('electing'); if (a && L.agentId === a.agentId) return no('self');
+        if ((w.proposals?.items || []).some(p => p.kind === 'recall' && ['open', 'shelved', 'approved'].includes(p.status))) return no('open');
+        if (R.recallTerm === term || d - (R.recallDay ?? -999) < 30) return no('once');
+        if (d - term < RC.settle) return no('settle'); if (nextElection(w) - d < RC.tail) return no('tail');
+        if (sg.length < need) return no('sign');
+        return Object.assign(base, { ok: true });
     }
+    const recallOk = (w, a) => { const I = recallInfo(w, a); return I.ok ? I.L : null; };
     function recallPropose(w, a) {
-        const L = recallOk(w, a); if (!L || typeof TECH === 'undefined') return null;
-        const p = TECH.propose(w, 'recall', L.agentId, a, '罷免{m}', '{who}說{m}不適合再當{o}，提議罷免、提前改選。這一案由全鎮投票決定，{m}自己不能裁決。', { m: L.name, o: titleOf(w) }, 'freedom', { m: L.name });
-        if (p) S(w).recallDay = day(w);
+        const I = recallInfo(w, a); if (!I.ok || typeof TECH === 'undefined') return null; const L = I.L;
+        const p = TECH.propose(w, 'recall', L.agentId, a, '罷免{m}', '{who}說{m}不適合再當{o}，提議罷免、提前改選。已經有 {n} 個人連署。這一案由全鎮投票決定：要六成贊成、而且贊成的人超過全鎮四成才算通過；{m}自己不能裁決。', { m: L.name, o: titleOf(w), n: I.signers }, 'freedom', { m: L.name });
+        if (p) { const R = S(w); R.recallDay = day(w); R.recallTerm = I.term; try { L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{who}帶頭連署要罷免我。', { who: a.name }, 8, [a.name]); } catch (e) {} }
         return p;
     }
     // 沒有 AI 投票時的立場：跟首長的交情、他身上的醜聞
     function recallVote(w, p, a) {
         const id = p.refKey; if (a.agentId === id) return { v: 'against', why: 'recall_self' };
-        const r = a.relationships?.relationships?.[id]?.affinity || 0; const sc = w.power?.scandal?.[id] || 0;
-        const s = r / 25 - sc * 0.6 + 0.3 + (Math.random() - 0.5) * 1.5;
+        const L = w.agents[id]; const sc = w.power?.scandal?.[id] || 0; const s = (L ? dislike(w, a, L) : 0.3) + (Math.random() - 0.5) * 1.5;
         return { v: s < 0 ? 'for' : 'against', why: s < 0 ? (sc >= 2 ? 'recall_scandal' : 'recall_bad') : 'recall_fine' };
+    }
+    // 開票：六成贊成＋贊成的人超過全鎮四成
+    function recallTally(w, P, p) { const f = P._count(p, 'for'), ag = P._count(p, 'against'); const n = adults(w).length; return { f, ag, n, pass: f + ag > 0 && f >= (f + ag) * RC.yes && f >= n * RC.turnout }; }
+    function recallFail(w, p) {
+        const L = w.agents?.[p.refKey], a = w.agents?.[p.proposerId]; p.result = '贊成沒過門檻（要六成贊成，而且超過全鎮四成）';
+        try { if (L && a) { a.relationships?.getOrCreate?.(L.agentId, L.name)?.modifyAffinity?.(-15); L.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(-20); L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{who}想罷免我，沒有成功。這筆我記住了。', { who: a.name }, 8, [a.name]); a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '罷免{m}沒過，這個任期不能再提了。', { m: L.name }, 7, [L.name]); } } catch (e) {}
+        try { w.logMessageT?.('event', '📢 罷免{m}沒有通過，這個任期不能再提。', { m: L?.name || '' }, L?.name || ''); } catch (e) {}
     }
     function recallEnact(w, p) {
         const E = w.election; const L = w.agents?.[p.refKey]; const d = day(w); if (!L || L.isDead || L.job?.key !== 'mayor' || !E || E.active) return '';
@@ -258,43 +315,103 @@ const REPEAL = (() => {
         news(w, `📢 ${t('全鎮表決罷免了')}${t(L.name)}`, 9);
         return t('罷免通過，提前改選');
     }
+    // ---- 赦免：判決也是表決出來的，可以再表決翻案 ----
+    // 還沒執行完的才撤得回來：限期離開的驅逐令（判決或神裔驅逐）、剩下的勞役、還沒繳清的罰款。已經繳的錢、已經變賣的家當、已經離開的人回不來
+    const fam = (w, a) => { try { return (typeof MONEY !== 'undefined' && MONEY.familyOf) ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
+    function punished(w) {
+        const out = []; const d = day(w);
+        for (const a of Object.values(w.agents || {})) { if (!a || a.isPlayer || a.isDead) continue; const ex = w.exile?.pending?.[a.agentId] || null; let lab = false, owe = 0;
+            try { if (typeof MONEY !== 'undefined') { lab = !!MONEY.inLabor(w, a); owe = MONEY.owedOf(w, a) || 0; } } catch (e) {}
+            if (ex || lab || owe > 0.01) out.push({ a, ex, lab, owe, what: ex ? t('被逐出小鎮，還有 {n} 天就得走').replace('{n}', Math.max(0, (ex.until ?? d) - d)) : lab ? t('正在服公共勞役') : t('還欠公庫 {n} 銀幣罰款').replace('{n}', Math.ceil(owe)) }); }
+        return out;
+    }
+    const pardonOpen = (w, id) => (w.proposals?.items || []).some(p => p.kind === 'pardon' && p.refKey === id && ['open', 'shelved', 'approved'].includes(p.status));
+    const pardonOk = (w, x) => !pardonOpen(w, x.a.agentId) && day(w) - (S(w).pardon?.[x.a.agentId] ?? -999) >= 20;
+    function pardonPropose(w, who, target) {
+        const x = punished(w).find(o => o.a.agentId === target?.agentId); if (!x || !pardonOk(w, x) || typeof TECH === 'undefined') return null;
+        const p = TECH.propose(w, 'pardon', x.a.agentId, who, '赦免{m}', '{who}說{m}受的處置太重了（{what}），提議赦免：撤銷還沒執行完的驅逐、勞役和罰款欠款。已經繳的、已經變賣的不退。', { m: x.a.name, what: x.what }, 'freedom', { m: x.a.name });
+        if (p) { const R = S(w); R.pardon = R.pardon || {}; R.pardon[x.a.agentId] = day(w); }
+        return p;
+    }
+    function pardonVote(w, p, a) {
+        const id = p.refKey; const c = w.agents[id]; if (!c) return { v: 'against', why: 'gut' }; if (a.agentId === id) return { v: 'for', why: 'pardon_self' };
+        const kin = fam(w, c).some(o => o.agentId === a.agentId); const r = a.relationships?.relationships?.[id]?.affinity || 0;
+        const s = (kin ? 3 : 0) + r / 25 + (has(a, 'kind') ? 0.8 : 0) - (a.job?.key === 'guard' ? 0.8 : 0) - 0.4 + (Math.random() - 0.5) * 1.6;
+        return { v: s > 0 ? 'for' : 'against', why: s > 0 ? (kin ? 'pardon_kin' : r >= 30 ? 'pardon_friend' : 'pardon_pity') : 'pardon_no' };
+    }
+    function pardonEnact(w, p) {
+        const c = w.agents?.[p.refKey]; if (!c || c.isDead) return ''; const id = c.agentId; const did = [];
+        try { if (w.exile?.pending?.[id]) { delete w.exile.pending[id]; did.push(t('撤銷驅逐')); } } catch (e) {}
+        try { const D = (typeof DARK !== 'undefined') ? DARK.S(w) : w.dark; if (D?.labor?.some(x => x.id === id)) { D.labor = D.labor.filter(x => x.id !== id); did.push(t('免除勞役')); } } catch (e) {}
+        try { if (w.money?.fines?.[id]) { delete w.money.fines[id]; did.push(t('欠的罰款一筆勾銷')); } } catch (e) {}
+        if (!did.length) return '';
+        c.moodModifier = (c.moodModifier || 0) + 12; try { c.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '全鎮投票赦免了我。', {}, 9, []); } catch (e) {}
+        log(w, '🕊️ 小鎮表決赦免了{m}：{x}。', { m: c.name, x: did.join(t('、')) });
+        news(w, `🕊️ ${t('小鎮表決赦免了')}${t(c.name)}`, 7);
+        return t('赦免了{m}').replace('{m}', t(c.name));
+    }
+    // ---- 稅率、關稅：本來只有規則會提（公庫見底、大家活不下去）；智能體覺得該調就能提 ----
+    function ratePropose(w, a, e) {
+        const P = w.proposals; if (!P?._createWith) return null; const d = day(w); const R = S(w); const busyK = (k) => (P.items || []).some(p => p.kind === k && ['open', 'shelved', 'approved'].includes(p.status));
+        const pct = Math.round(Number(e.rate)); if (!Number.isFinite(pct)) return null;
+        if (e.type === 'tax') {
+            if (!w.wallet || typeof CIVIC === 'undefined' || busyK('tax') || d - (R.taxDay ?? -999) < AIGAP) return null; const tax = w.wallet.tax || 0; const nt = Math.max(0.02, Math.min(0.3, pct / 100)); if (Math.abs(nt - tax) < 0.005) return null; const dir = nt > tax ? 'up' : 'down';
+            const p = P._createWith(w, d, { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir, tk: dir === 'up' ? '加稅到 {n}%' : '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: '{who}提議把稅從 {a}% 調到 {n}%。', dp: { who: a.name, a: Math.round(tax * 100), n: Math.round(nt * 100) }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) }, a);
+            if (p) R.taxDay = d; return p;
+        }
+        if (typeof TRADE === 'undefined' || !TRADE.setTariff || busyK('tariff') || d - (R.tariffDay ?? -999) < AIGAP) return null; let old = 0; try { old = TRADE.S(w).tariff || 0; } catch (err) { return null; }
+        const nr = Math.max(0, Math.min(0.5, pct / 100)); if (Math.abs(nr - old) < 0.005) return null;
+        const p = P._createWith(w, d, { kind: 'tariff', key: 'tariff:' + d, jobs: [], make: () => ({ kind: 'tariff', key: 'tariff:' + d, newRate: nr, tk: '進口關稅調成 {n}%', tp: { n: Math.round(nr * 100) }, dk: '{who}提議把進口關稅從 {a}% 調成 {n}%。', dp: { who: a.name, a: Math.round(old * 100), n: Math.round(nr * 100) }, cost: {}, category: 'economy' }) }, a);
+        if (p) R.tariffDay = d; return p;
+    }
+    const viewAll = (w) => { const f = w.fullAgentMode; w.fullAgentMode = true; try { return view(w); } finally { w.fullAgentMode = f; } };
+    const nm = (x) => (typeof I18N !== 'undefined' && I18N.localizeNames && typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? I18N.localizeNames(x, true) : x;
     function promptBlock(w, who) {
         try {
-            const v = view(w); const a = v.live.filter(x => aiOk(w, x.id)).slice(0, 10), b = v.done.filter(x => aiOk(w, x.id)).slice(0, 6); const L = recallOk(w, who);
+            const v = viewAll(w); const a = v.live.filter(x => aiOk(w, x.id)).slice(0, 12), b = v.done.filter(x => aiOk(w, x.id)).slice(0, 6); const I = recallInfo(w, who); const R = S(w); const d = day(w);
             const row = (x, k) => `${x.id}${t('＝')}${x.name}${t('（')}${t(k).replace('{n}', k === '已實施 {n} 天' ? x.days : x.ago)}${t('）')}`;
-            return (a.length ? `${t('【鎮上現行的規定（都是表決通過的；你真心覺得哪一條不該留，可以提案廢除，全鎮再投一次票）】')}${a.map(x => row(x, '已實施 {n} 天')).join(t('、'))}\n` : '')
+            let out = (a.length ? `${t('【鎮上現行的規定（都是表決通過的；你真心覺得哪一條不該留，可以提案廢除，全鎮再投一次票）】')}${a.map(x => row(x, '已實施 {n} 天')).join(t('、'))}\n` : '')
                 + (b.length ? `${t('【被表決廢除的規定（你真心覺得哪一條該回來，可以提案恢復，全鎮再投一次票）】')}${b.map(x => row(x, '已廢除 {n} 天')).join(t('、'))}\n` : '')
-                + (a.length || b.length ? `${t('要廢除或恢復規定時，effects 只放這一個：')}{"type":"repeal","law":"${t('規定代碼')}"} ${t('或')} {"type":"restore","law":"${t('規定代碼')}"}\n` : '')
-                + (L ? `${t('【現任{o}】').replace('{o}', titleOf(w))}${(typeof I18N !== 'undefined' && I18N.localizeNames && typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? I18N.localizeNames(L.name, true) : L.name}${t('。你真心覺得他不適任，可以提案罷免（全鎮投票，贊成多於反對就提前改選；他自己不能裁決這一案），effects 只放這一個：')}{"type":"recall"}\n` : '');
+                + (a.length || b.length ? `${t('要廢除或恢復規定時，effects 只放這一個：')}{"type":"repeal","law":"${t('規定代碼')}"} ${t('或')} {"type":"restore","law":"${t('規定代碼')}"}\n` : '');
+            const pun = punished(w).filter(x => pardonOk(w, x)).slice(0, 5);
+            if (pun.length) out += `${t('【正在受處置的人（你真心覺得罰得太重，可以提案赦免，撤銷還沒執行完的部分）】')}${pun.map(x => `${nm(x.a.name)}${t('（')}${x.what}${t('）')}`).join(t('、'))}${t('：')}{"type":"pardon","name":"${t('名字')}"}\n`;
+            const rates = [];
+            try { if (w.wallet && typeof CIVIC !== 'undefined' && d - (R.taxDay ?? -999) >= AIGAP) rates.push(`${t('稅率現在 {n}%（可以提案調成 2～30）').replace('{n}', Math.round((w.wallet.tax || 0) * 100))} {"type":"tax","rate":${t('數字')}}`); } catch (e) {}
+            try { if (typeof TRADE !== 'undefined' && TRADE.setTariff && w.wallet && d - (R.tariffDay ?? -999) >= AIGAP) rates.push(`${t('進口關稅現在 {n}%（可以提案調成 0～50）').replace('{n}', Math.round((TRADE.S(w).tariff || 0) * 100))} {"type":"tariff","rate":${t('數字')}}`); } catch (e) {}
+            if (rates.length) out += `${t('【稅與關稅（你真心覺得該調，可以提案）】')}${rates.join(t('；'))}\n`;
+            if (I.ok) out += `${t('【現任{o}】').replace('{o}', titleOf(w))}${nm(I.L.name)}${t('。罷免是大事：現在有 {n} 個人對他不滿、夠連署成案；全鎮投票要六成贊成、而且贊成的人超過全鎮四成才算通過；沒過的話這個任期不能再提，他也會記住是誰提的。你真心覺得他不適任才提，effects 只放這一個：').replace('{n}', I.signers)}{"type":"recall"}\n`;
+            return out;
         } catch (e) { return ''; }
     }
     function fromAI(w, a, j) {
         try {
             const fx = (Array.isArray(j?.effects) ? j.effects : []).filter(x => x && typeof x === 'object').map(x => Object.assign({}, x, { type: String(x.type || '').toLowerCase() }));
             if (fx.some(x => x.type === 'recall')) return recallPropose(w, a);
+            const pd = fx.find(x => x.type === 'pardon'); if (pd) { const n = String(pd.name || '').trim(); const L = (x) => (typeof I18N !== 'undefined' && I18N.delocalizeNames) ? I18N.delocalizeNames(x) : x; const tg = Object.values(w.agents || {}).find(o => !o.isDead && (o.name === n || o.name === L(n) || nm(o.name) === n)); return tg ? pardonPropose(w, a, tg) : null; }
+            const rt = fx.find(x => x.type === 'tax' || x.type === 'tariff'); if (rt) return ratePropose(w, a, rt);
             const e = fx.find(x => ['repeal', 'restore'].includes(x.type)); if (!e) return null;
-            const id = String(e.law || '').trim(); const kind = e.type === 'restore' ? 'law_restore' : 'law_repeal'; const v = view(w);
+            const id = String(e.law || '').trim(); const kind = e.type === 'restore' ? 'law_restore' : 'law_repeal'; const v = viewAll(w);
             const ok = (kind === 'law_repeal' ? v.live : v.done).some(x => x.id === id) && aiOk(w, id); if (!ok) return null;
             return propose(w, id, a, kind);
         } catch (err) { console.warn('[Repeal] fromAI', err); return null; }
     }
-    return { S, LAWS, MIN, RETRY, GAP, QUIET, AIGAP, daily, vote, enact, propose, support, since, quiet, view, law, promptBlock, fromAI, goneList, recallOk, recallPropose, recallVote, recallEnact };
+    return { S, LAWS, MIN, RETRY, GAP, QUIET, AIGAP, daily, vote, enact, propose, support, since, quiet, view, law, promptBlock, fromAI, goneList, RC, recallInfo, recallOk, recallPropose, recallVote, recallEnact, recallTally, recallFail, punished, pardonPropose, pardonVote, pardonEnact, ratePropose };
 })();
 
 // ---------- 接上其他系統 ----------
-if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { law_repeal: { icon: '🗳️', label: '廢除規定' }, law_restore: { icon: '🗳️', label: '恢復規定' }, recall: { icon: '📢', label: '罷免首長' } });
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { trad_keep: '習慣了這條規矩', trad_drop: '覺得這條規矩不合時宜', trad_friend: '跟立這條規矩的人交情好', trad_foe: '跟立這條規矩的人處不來', recall_self: '這是在罷免我自己', recall_scandal: '他身上的醜聞太多', recall_bad: '對他不滿', recall_fine: '覺得他做得還可以' });
+if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { law_repeal: { icon: '🗳️', label: '廢除規定' }, law_restore: { icon: '🗳️', label: '恢復規定' }, recall: { icon: '📢', label: '罷免首長' }, pardon: { icon: '🕊️', label: '赦免' } });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { trad_keep: '習慣了這條規矩', trad_drop: '覺得這條規矩不合時宜', trad_friend: '跟立這條規矩的人交情好', trad_foe: '跟立這條規矩的人處不來', recall_self: '這是在罷免我自己', recall_scandal: '他身上的醜聞太多', recall_bad: '對他不滿', recall_fine: '覺得他做得還可以', decree_drop: '覺得這道政令弊大於利', pardon_self: '這是在替我自己求情', pardon_kin: '是自己家裡的人', pardon_friend: '跟他交情好', pardon_pity: '覺得罰得太重', pardon_no: '覺得他罪有應得' });
 if (typeof VOTE_WHY !== 'undefined') { if (!VOTE_WHY.faith) VOTE_WHY.faith = '信仰不允許'; if (!VOTE_WHY.safety) VOTE_WHY.safety = '怕出事'; } // 基因編輯禁令／驅逐案的兩個理由代號以前沒有文字，一律顯示「憑直覺」
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); if (w.observerMode) { try { REPEAL.daily(w); } catch (e) { console.warn('[Repeal] daily', e); } } return r; };
     const _rv = PS._ruleVote;
-    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'recall') { const r = REPEAL.recallVote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; }
+    PS._ruleVote = function (w, p, a, ...rest) { if (p.kind === 'recall' || p.kind === 'pardon') { const r = p.kind === 'recall' ? REPEAL.recallVote(w, p, a) : REPEAL.pardonVote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; }
         if (p.kind === 'law_repeal' || p.kind === 'law_restore') { const r = REPEAL.vote(w, p, a); p.votes[a.agentId] = r.v; (p.why || (p.why = {}))[a.agentId] = r.why; return; } return _rv.call(this, w, p, a, ...rest); };
     // 罷免案由全鎮投票決定：不送議會、首長（他自己）也不能裁決
     const _mr = PS._mayorRule;
-    PS._mayorRule = function (w, p, d, final, ...rest) { if (p.kind === 'recall') { if (p.status !== 'open' && p.status !== 'shelved') return; const f = this._count(p, 'for'), ag = this._count(p, 'against'); p.mayorName = ''; p.mayorWhy = ''; this._decide(w, p, f > ag ? 'approve' : 'reject', 'vote'); return; } return _mr.call(this, w, p, d, final, ...rest); };
+    PS._mayorRule = function (w, p, d, final, ...rest) { if (p.kind === 'recall') { if (p.status !== 'open' && p.status !== 'shelved') return; const T = REPEAL.recallTally(w, this, p); p.mayorName = ''; p.mayorWhy = ''; p.tally = { f: T.f, a: T.ag, n: T.n }; this._decide(w, p, T.pass ? 'approve' : 'reject', 'vote'); if (!T.pass) REPEAL.recallFail(w, p); return; } return _mr.call(this, w, p, d, final, ...rest); };
     const _cw = PS._createWith;
     PS._createWith = function (w, d, cand, who, ...rest) { try { if (cand && REPEAL.quiet(w, cand.kind)) return null; } catch (e) {} return _cw.call(this, w, d, cand, who, ...rest); };
 }
