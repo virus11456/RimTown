@@ -139,7 +139,8 @@ const REPEAL = (() => {
         mark: { list: (w) => w.proposals?.landmarks, name: (x) => (typeof x.name === 'string' ? x.name : ''), icon: (x) => x.icon || '🗿', max: 6, why: '有人覺得這個地標已經沒有意義，還佔地方。', after: '廢除以後，這個地標會拆掉。', back: '有人懷念那個地標。', ok: '地標重新立起來了' } };
     const kkey = (k, x) => k + ':' + (x.id || hsh(KEEP[k].name(x)));
     const tkey = (x) => kkey('trad', x);
-    const kept = (w, k) => { const L = KEEP[k].list(w); return Array.isArray(L) ? L : []; };
+    const voted = (x) => !!x && !x.fad && /^L\d+/.test(String(x.id || '')); // 編號是提案編號（L001…）才是表決出來的；流行變成的習俗、神蹟、公庫收藏的工藝品、紀念雕像不算
+    const kept = (w, k) => { const L = KEEP[k].list(w); return Array.isArray(L) ? L.filter(voted) : []; };
     const trads = (w) => kept(w, 'trad');
     const decrees = (w) => { const d = day(w); return (Array.isArray(w.council?.activeDecrees) ? w.council.activeDecrees : []).filter(x => x && x.id && x.title && (x.expiresDay ?? d) >= d); };
     // 這條規矩留不留：提的人自己、跟他要好的人想留；跟他處不來的想拿掉；其他人看個性，多數人懶得改（維持現狀佔一點便宜）
@@ -154,7 +155,7 @@ const REPEAL = (() => {
         if (KEEP[k]) {
             const K = KEEP[k]; const find = () => kept(w, k).find(o => kkey(k, o) === id) || null; const src = find() || R.shelf[id]; if (!src) return null;
             return { icon: K.icon(src), name: K.name(src), free: true, cat: 'culture', ok: () => true, on: () => !!find(), since: () => (find() || {}).day ?? null,
-                off: (w) => { const L = K.list(w); const i = L.findIndex(o => kkey(k, o) === id); if (i >= 0) { R.shelf[id] = L[i]; L.splice(i, 1); } const ks = Object.keys(R.shelf); if (ks.length > 10) delete R.shelf[ks[0]]; },
+                off: (w) => { const L = K.list(w); const i = L.findIndex(o => voted(o) && kkey(k, o) === id); if (i >= 0) { R.shelf[id] = L[i]; L.splice(i, 1); } const ks = Object.keys(R.shelf); if (ks.length > 10) delete R.shelf[ks[0]]; },
                 set: (w) => { const o = R.shelf[id]; if (!o) return ''; const P = w.proposals; const L = K.list(w) || (k === 'trad' ? (P.traditions = []) : (P.landmarks = [])); L.push(Object.assign({}, o, { day: day(w) })); if (L.length > K.max) L.splice(0, L.length - K.max); delete R.shelf[id]; return t(K.ok); },
                 vote: (w, a) => tradVote(w, a, src), lead: () => 0, why: K.why, after: K.after, back: K.back };
         }
@@ -272,7 +273,7 @@ const REPEAL = (() => {
     const titleOf = (w) => { try { return (typeof TIERS !== 'undefined') ? TIERS.leaderTitle(w) : t('鎮長'); } catch (e) { return t('鎮長'); } };
     const nextElection = (w) => { const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 每年秋季第 1 天
     const dislike = (w, a, L) => (a.relationships?.relationships?.[L.agentId]?.affinity || 0) / 25 - (w.power?.scandal?.[L.agentId] || 0) * 0.6 + 0.3; // <0＝不滿
-    const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < 0);
+    const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < -0.5); // 連署要真的不滿（沒醜聞時好感低於 -20）；真模型實測發現只要有一樁醜聞，沒意見的人也全算進來
     function recallInfo(w, a) {
         const E = w.election; const L = holder(w); const R = S(w); const d = day(w); if (!L || !E) return { ok: false, why: 'none' };
         const term = E.lastElectionDay || 0; const sg = signers(w, L); const need = Math.max(RC.minSign, Math.ceil((adults(w).length - 1) * RC.sign));
@@ -366,23 +367,41 @@ const REPEAL = (() => {
     }
     const viewAll = (w) => { const f = w.fullAgentMode; w.fullAgentMode = true; try { return view(w); } finally { w.fullAgentMode = f; } };
     const nm = (x) => (typeof I18N !== 'undefined' && I18N.localizeNames && typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en') ? I18N.localizeNames(x, true) : x;
-    function promptBlock(w, who) {
+    // 給智能體看的分兩段：ctx＝鎮上現在的狀況（放在鎮況後面）；fx＝可以用的效果（要放進「提案的效果只能用下面幾種」那張清單裡，不然模型會照字面不用）
+    function promptParts(w, who) {
         try {
-            const v = viewAll(w); const a = v.live.filter(x => aiOk(w, x.id)).slice(0, 12), b = v.done.filter(x => aiOk(w, x.id)).slice(0, 6); const I = recallInfo(w, who); const R = S(w); const d = day(w);
+            const v = viewAll(w); const R = S(w); const d = day(w); const cap = (L, pre, n) => { let c = 0; return L.filter(x => !x.id.startsWith(pre) || c++ < n); };
+            const a = cap(cap(cap(v.live.filter(x => aiOk(w, x.id)), 'trad:', 3), 'mark:', 3), 'decree:', 3), b = v.done.filter(x => aiOk(w, x.id)).slice(0, 6); const I = recallInfo(w, who);
             const row = (x, k) => `${x.id}${t('＝')}${x.name}${t('（')}${t(k).replace('{n}', k === '已實施 {n} 天' ? x.days : x.ago)}${t('）')}`;
-            let out = (a.length ? `${t('【鎮上現行的規定（都是表決通過的；你真心覺得哪一條不該留，可以提案廢除，全鎮再投一次票）】')}${a.map(x => row(x, '已實施 {n} 天')).join(t('、'))}\n` : '')
-                + (b.length ? `${t('【被表決廢除的規定（你真心覺得哪一條該回來，可以提案恢復，全鎮再投一次票）】')}${b.map(x => row(x, '已廢除 {n} 天')).join(t('、'))}\n` : '')
-                + (a.length || b.length ? `${t('要廢除或恢復規定時，effects 只放這一個：')}{"type":"repeal","law":"${t('規定代碼')}"} ${t('或')} {"type":"restore","law":"${t('規定代碼')}"}\n` : '');
-            const pun = punished(w).filter(x => pardonOk(w, x)).slice(0, 5);
-            if (pun.length) out += `${t('【正在受處置的人（你真心覺得罰得太重，可以提案赦免，撤銷還沒執行完的部分）】')}${pun.map(x => `${nm(x.a.name)}${t('（')}${x.what}${t('）')}`).join(t('、'))}${t('：')}{"type":"pardon","name":"${t('名字')}"}\n`;
-            const rates = [];
-            try { if (w.wallet && typeof CIVIC !== 'undefined' && d - (R.taxDay ?? -999) >= AIGAP) rates.push(`${t('稅率現在 {n}%（可以提案調成 2～30）').replace('{n}', Math.round((w.wallet.tax || 0) * 100))} {"type":"tax","rate":${t('數字')}}`); } catch (e) {}
-            try { if (typeof TRADE !== 'undefined' && TRADE.setTariff && w.wallet && d - (R.tariffDay ?? -999) >= AIGAP) rates.push(`${t('進口關稅現在 {n}%（可以提案調成 0～50）').replace('{n}', Math.round((TRADE.S(w).tariff || 0) * 100))} {"type":"tariff","rate":${t('數字')}}`); } catch (e) {}
-            if (rates.length) out += `${t('【稅與關稅（你真心覺得該調，可以提案）】')}${rates.join(t('；'))}\n`;
-            if (I.ok) out += `${t('【現任{o}】').replace('{o}', titleOf(w))}${nm(I.L.name)}${t('。罷免是大事：現在有 {n} 個人對他不滿、夠連署成案；全鎮投票要六成贊成、而且贊成的人超過全鎮四成才算通過；沒過的話這個任期不能再提，他也會記住是誰提的。你真心覺得他不適任才提，effects 只放這一個：').replace('{n}', I.signers)}{"type":"recall"}\n`;
-            return out;
-        } catch (e) { return ''; }
+            const pun = punished(w).filter(x => pardonOk(w, x)).slice(0, 5); let tax = null, tariff = null;
+            try { if (w.wallet && typeof CIVIC !== 'undefined' && d - (R.taxDay ?? -999) >= AIGAP && !(w.proposals?.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) tax = Math.round((w.wallet.tax || 0) * 100); } catch (e) {}
+            try { if (typeof TRADE !== 'undefined' && TRADE.setTariff && w.wallet && d - (R.tariffDay ?? -999) >= AIGAP && !(w.proposals?.items || []).some(p => p.kind === 'tariff' && ['open', 'shelved', 'approved'].includes(p.status))) tariff = Math.round((TRADE.S(w).tariff || 0) * 100); } catch (e) {}
+            let ctx = '', fx = '';
+            // 跟這個人切身有關的（照他自己的處境與交情算；連問三次立場都一樣才算「一直這麼想」）。真模型實測：只列清單時沒有人會去用，連自己看不起病的人都另外發明一個基金
+            const sure = (fn) => { for (let i = 0; i < 3; i++) { try { if (!fn()) return false; } catch (e) { return false; } } return true; }; const mine = [];
+            if (who) {
+                for (const x of pun) { const kin = fam(w, x.a).some(o => o.agentId === who.agentId); const r = who.relationships?.relationships?.[x.a.agentId]?.affinity || 0; if (x.a.agentId === who.agentId) mine.push(t('你自己正在受處置（{what}）').replace('{what}', x.what)); else if (kin || r >= 50) mine.push(t('{m}是你親近的人，他{what}').replace('{m}', nm(x.a.name)).replace('{what}', x.what)); }
+                for (const x of b) if (sure(() => vote(w, { refKey: x.id, kind: 'law_restore' }, who).v === 'for')) mine.push(t('「{law}」被廢除以後，你覺得日子變差了').replace('{law}', x.name));
+                for (const x of a) if (!x.id.startsWith('decree:') && sure(() => vote(w, { refKey: x.id, kind: 'law_repeal' }, who).v === 'for')) mine.push(t('你一直覺得「{law}」不該留').replace('{law}', x.name));
+                if (I.ok && dislike(w, who, I.L) < -1) mine.push(t('你對{m}很不滿').replace('{m}', nm(I.L.name)));
+            }
+            if (a.length) ctx += `${t('【鎮上現行的規定（都是表決通過的）】')}${a.map(x => row(x, '已實施 {n} 天')).join(t('、'))}\n`;
+            if (b.length) ctx += `${t('【被表決廢除的規定】')}${b.map(x => row(x, '已廢除 {n} 天')).join(t('、'))}\n`;
+            if (pun.length) ctx += `${t('【正在受處置的人】')}${pun.map(x => `${nm(x.a.name)}${t('（')}${x.what}${t('）')}`).join(t('、'))}\n`;
+            if (tax != null || tariff != null) ctx += `${t('【稅與關稅】')}${[tax != null ? t('稅率現在 {n}%').replace('{n}', tax) : '', tariff != null ? t('進口關稅現在 {n}%').replace('{n}', tariff) : ''].filter(Boolean).join(t('、'))}\n`;
+            if (I.ok) ctx += `${t('【現任{o}】').replace('{o}', titleOf(w))}${nm(I.L.name)}${t('（現在有 {n} 個人對他不滿，夠連署罷免）').replace('{n}', I.signers)}\n`;
+            if (mine.length) ctx += `${t('【跟你切身有關的】')}${mine.slice(0, 3).join(t('；'))}\n`;
+            if (a.length) fx += `{"type":"repeal","law":"${t('規定代碼')}"}${t('（廢除一條現行規定）')} `;
+            if (b.length) fx += `{"type":"restore","law":"${t('規定代碼')}"}${t('（恢復一條被廢除的規定）')} `;
+            if (pun.length) fx += `{"type":"pardon","name":"${t('名字')}"}${t('（赦免正在受處置的人，撤銷還沒執行完的部分）')} `;
+            if (tax != null) fx += `{"type":"tax","rate":2~30}${t('（把稅率調成這個百分比）')} `;
+            if (tariff != null) fx += `{"type":"tariff","rate":0~50}${t('（把進口關稅調成這個百分比）')} `;
+            if (I.ok) fx += `{"type":"recall"}${t('（罷免現任{o}。這是大事：全鎮投票要六成贊成、而且贊成的人超過全鎮四成才通過；沒過的話這個任期不能再提，他也會記住是誰提的）').replace('{o}', titleOf(w))}`;
+            if (fx) fx = `${t('鎮上已經表決過的事，也可以再表決改掉。你真心覺得該改才提；用了下面任何一種，effects 就只放它一個：')}\n${fx.trim()}\n`;
+            return { ctx, fx };
+        } catch (e) { return { ctx: '', fx: '' }; }
     }
+    const promptBlock = (w, who) => { const p = promptParts(w, who); return p.ctx + p.fx; };
     function fromAI(w, a, j) {
         try {
             const fx = (Array.isArray(j?.effects) ? j.effects : []).filter(x => x && typeof x === 'object').map(x => Object.assign({}, x, { type: String(x.type || '').toLowerCase() }));
@@ -395,7 +414,7 @@ const REPEAL = (() => {
             return propose(w, id, a, kind);
         } catch (err) { console.warn('[Repeal] fromAI', err); return null; }
     }
-    return { S, LAWS, MIN, RETRY, GAP, QUIET, AIGAP, daily, vote, enact, propose, support, since, quiet, view, law, promptBlock, fromAI, goneList, RC, recallInfo, recallOk, recallPropose, recallVote, recallEnact, recallTally, recallFail, punished, pardonPropose, pardonVote, pardonEnact, ratePropose };
+    return { S, LAWS, MIN, RETRY, GAP, QUIET, AIGAP, daily, vote, enact, propose, support, since, quiet, view, law, promptBlock, promptParts, fromAI, goneList, RC, recallInfo, recallOk, recallPropose, recallVote, recallEnact, recallTally, recallFail, punished, pardonPropose, pardonVote, pardonEnact, ratePropose };
 })();
 
 // ---------- 接上其他系統 ----------

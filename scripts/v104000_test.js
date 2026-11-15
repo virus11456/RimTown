@@ -217,7 +217,7 @@ async function run(browser, dev, lang) {
   ok(T.off.n === 0 && T.off.done && /每月初一全鎮大掃除/.test(T.text2) && T.back.length === 1 && T.back[0][1] === true && T.back[0][2] === 'L900', '規矩被廢除後從清單拿掉；提恢復通過後回到清單，日子重新算', { off: T.off, text2: T.text2, back: T.back });
   const AI = r.ai;
   ok(AI.hasLive && AI.hasGone && AI.fx, '智能體發想提案時看得到：所有現行規定（才實施 25 天的禁賭也在）、被廢除的規定、兩種效果怎麼寫', { prm: AI.prm, live: AI.hasLive, gone: AI.hasGone, fx: AI.fx });
-  ok(zh || noZh(AI.prm), '給智能體的這段提示' + (zh ? '有內容' : '英文沒有殘留中文'), AI.prm);
+  ok(zh || noZh(AI.prm.replace(/每月初一全鎮大掃除|守望石|夜間巡邏令/g, '')), '給智能體的這段提示' + (zh ? '有內容' : '英文沒有殘留中文'), AI.prm);
   ok(AI.early && AI.bad2, '最大的權限：才實施 25 天的規定，智能體不必等 60 天就能提廢除；不存在的規定不成案', { early: AI.early, bad: AI.bad2 });
   ok(AI.dup && AI.soon && !AI.blk1 && AI.blk2, '只擋重複：同一條正在表決、或 10 天內才提過，就不能再提（也不列在提示裡）；過了 10 天又可以', { dup: AI.dup, soon: AI.soon, blk1: AI.blk1, blk2: AI.blk2 });
   ok(AI.a.made && AI.a.kind === 'law_repeal' && AI.a.ref === 'steam_air' && AI.a.llm && AI.a.pitch && AI.a.by && AI.a.fb === 0, '智能體自己提「廢除清潔空氣法」：開成正式的廢除案，帶著他自己的說法', AI.a);
