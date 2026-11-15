@@ -26,12 +26,18 @@ module.exports = async (req, res) => {
             passHash: L.hashPassword(pw, salt),
             createdAt: new Date().toISOString(),
             repairedAt: new Date().toISOString(),
+            sid: L.newSid(), sidAt: new Date().toISOString(), // v10.2.0
         };
         await L.writeJson(L.userPath(payload.u), user);
         return res.status(200).json({ success: true, nonce: L.makeToken(user), user: { id: user.id, username: user.username } });
     }
 
     let recordMissing = false;
-    try { recordMissing = !(await L.readJson(L.userPath(payload.u))); } catch (e) { recordMissing = false; } // 讀取失敗不誤判
+    try {
+        const rec = await L.readJson(L.userPath(payload.u));
+        recordMissing = !rec;
+        // v10.2.0 這個帳號後來又在別的裝置登入過:這張憑證作廢(replaced 讓前端分得出不是被停用)
+        if (rec && typeof rec.sid === 'string' && rec.sid && rec.sid !== payload.sid) return res.status(200).json({ logged_in: false, replaced: true });
+    } catch (e) { recordMissing = false; } // 讀取失敗不誤判
     return res.status(200).json({ logged_in: true, user: { id: payload.id, username: payload.u }, is_admin: L.isAdmin(payload), record_missing: recordMissing });
 };

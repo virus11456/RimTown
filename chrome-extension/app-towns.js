@@ -19,8 +19,9 @@ Object.assign(RimTownApp.prototype, {
     // ---------- v6.76.1 本機存檔分兩層:目前這座鎮在 localStorage(關頁也寫得進去),其他鎮在 IndexedDB(空間大) ----------
     _hasLocalTown(id) { if (!id) return false; try { if (('rimtown_town_' + id) in localStorage) return true; } catch (e) {} return !!this._idbTowns?.has(id); },
     async _readLocalTown(id) {
-        try { const j = localStorage.getItem('rimtown_town_' + id); if (j) return JSON.parse(j); } catch (e) {}
-        if (this._idbTowns?.has(id) && typeof RTStore !== 'undefined') { try { const s = await RTStore.get(id); if (s) return JSON.parse(s); } catch (e) {} }
+        const parse = (s) => (typeof World !== 'undefined' && World.parseSave) ? World.parseSave(s) : JSON.parse(s); // v10.2.0 順便快篩,讀檔時少一輪逐字串檢查
+        try { const j = localStorage.getItem('rimtown_town_' + id); if (j) return parse(j); } catch (e) {}
+        if (this._idbTowns?.has(id) && typeof RTStore !== 'undefined') { try { const s = await RTStore.get(id); if (s) return parse(s); } catch (e) {} }
         return null;
     },
     // 存檔摘要(鎮名、最新頭條)記在城鎮列表上,列鄰鎮與跨鎮專欄時不必再把整份存檔讀出來
@@ -43,7 +44,7 @@ Object.assign(RimTownApp.prototype, {
         try { if (id !== this.currentTownId) localStorage.removeItem('rimtown_town_' + id); } catch (e) {}
         return true;
     },
-    async _deleteLocalTown(id) { try { localStorage.removeItem('rimtown_town_' + id); localStorage.removeItem('rimtown_town_' + id + '_archives'); } catch (e) {} try { if (typeof RTStore !== 'undefined') await RTStore.del(id); } catch (e) {} this._idbTowns?.delete(id); },
+    async _deleteLocalTown(id) { try { localStorage.removeItem('rimtown_town_' + id); localStorage.removeItem('rimtown_town_' + id + '_archives'); localStorage.removeItem('rimtown_lt_' + id); localStorage.removeItem('rimtown_synced_' + id); } catch (e) {} try { if (typeof RTStore !== 'undefined') await RTStore.del(id); } catch (e) {} this._idbTowns?.delete(id); },
     // 開機:讀 IndexedDB 索引,並把上次以外的鎮從 localStorage 搬過去(一次性搬家,之後 localStorage 只留目前這座)
     async _initLocalStore() {
         if (typeof RTStore === 'undefined') { this._idbTowns = new Set(); return; }
@@ -112,6 +113,19 @@ Object.assign(RimTownApp.prototype, {
         return absDay(localData) > absDay(cloudData) ? localData : cloudData;
     },
 
+    // v10.2.0 開機時要用哪一份存檔:meta 是雲端存檔清單上這座鎮的那一筆(有 tick_count),local 是本機副本。
+    //   'local'   本機這份不比雲端舊,而且雲端沒被別台裝置動過 → 直接用本機,不下載雲端
+    //   'cloud'   雲端被別台裝置寫過(雲端進度跟這台最後一次寫上去的不一樣)→ 以雲端為準,就算本機數字比較大
+    //   'compare' 資料不夠判斷(舊存檔沒有進度數字、這台還沒記過同步點、本機沒有副本)→ 照舊下載回來兩邊比
+    _bootPick(meta, local) {
+        const id = meta?.town_id; const ct = Number(meta?.tick_count), lt = Number(local?.tickCount);
+        if (!local || meta?.tick_count == null || !Number.isFinite(ct) || !Number.isFinite(lt)) return 'compare';
+        let sy = null; try { sy = localStorage.getItem('rimtown_synced_' + id); } catch (e) {}
+        if (sy != null && sy !== '' && Number(sy) !== ct) return 'cloud';
+        return lt >= ct ? 'local' : 'compare';
+    },
+    _noteSynced(id, tick) { if (id && tick != null && Number.isFinite(Number(tick))) { try { localStorage.setItem('rimtown_synced_' + id, String(Number(tick))); } catch (e) {} } },
+
     async _loadTownById(townId) {
         try {
             const data = await this._readLocalTown(townId); // v6.76.1 也會去 IndexedDB 找
@@ -127,6 +141,8 @@ Object.assign(RimTownApp.prototype, {
     _saveCurrentTown(name, preData, preStr) {
         if (!this.currentTownId) this.currentTownId = 'town_' + Date.now();
         const saveData = preData || this.world.serialize(); // v6.76.1 存檔流程已序列化過就直接用
+        // v10.2.0 本機副本的進度另外記一個小數字:遊戲頁一開頭(程式還沒載完)就能判斷要不要先去抓雲端存檔
+        try { if (Number.isFinite(Number(saveData.tickCount))) localStorage.setItem('rimtown_lt_' + this.currentTownId, String(Number(saveData.tickCount))); } catch (e) {}
         const clock = saveData.clock || {};
         const list = this._getTownList();
         const existing = list.find(t => t.id === this.currentTownId);
@@ -160,6 +176,7 @@ Object.assign(RimTownApp.prototype, {
         const dropIdbCopy = () => { if (this._idbTowns?.has(tid) && typeof RTStore !== 'undefined') { RTStore.del(tid); this._idbTowns.delete(tid); } };
         // v7.7.1 localStorage 放不下時:整份(不瘦身)放進 IndexedDB(空間大很多);IndexedDB 也不行才瘦身,再不行就只存雲端
         const cloudOnly = () => {
+            try { localStorage.removeItem('rimtown_lt_' + tid); } catch (e) {} // v10.2.0 本機沒有副本了
             if (this._localQuotaNoticeShown) return; this._localQuotaNoticeShown = true;
             console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
             try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
@@ -379,6 +396,7 @@ Object.assign(RimTownApp.prototype, {
             let loaded = false;
             if (pickData) { try { loaded = !!this.world.loadSave(pickData); } catch (e) { console.error('[RimTown] switch load error:', e); } }
             if (loaded) setTimeout(() => this._notifyScrubbedLeaks(), 1500); // v5.67.4
+            if (loaded && pickData === cloudData) this._noteSynced(townId, cloudData?.tickCount); // v10.2.0
             if (loaded) {
                 localStorage.setItem('rimtown_last_town', townId);
                 if (this.llmClient) this.world.conversationEngine = this._makeConversationEngine();

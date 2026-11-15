@@ -3,8 +3,8 @@ const L = require('./_lib');
 
 module.exports = async (req, res) => {
     if (req.method === 'POST') {
-        const payload = L.authUser(req);
-        if (!payload) return L.err(res, 401, 'unauthorized', '請先登入');
+        const payload = await L.requireSession(req, res); // v10.2.0
+        if (!payload) return;
         const b = req.body || {};
         const entry = {
             username: payload.u,

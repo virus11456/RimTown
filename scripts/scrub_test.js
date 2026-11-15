@@ -7,7 +7,8 @@ function extractStatic(name) {
   for (let k = j; k < src.length; k++) { if (src[k] === '{') depth++; else if (src[k] === '}') { depth--; if (!depth) return src.slice(i + 4, k + 1); } }
 }
 require(path.join(__dirname, '..', 'chrome-extension', 's2t.js'));
-const World = eval('(class World {\n' + extractStatic('looksLikeAssistantLeak') + '\n' + extractStatic('scrubAssistantLeaks') + '\n})');
+// v10.2.0 兩條規則搬成 World 的靜態取值(_LEAK_RE1／_LEAK_RE2),讀檔快篩共用同一份;這裡連同快篩一起取出來
+const World = eval('(class World {\n' + extractStatic('get _LEAK_RE1') + '\n' + extractStatic('get _LEAK_RE2') + '\n' + extractStatic('looksLikeAssistantLeak') + '\n' + extractStatic('saveTextIsClean') + '\n' + extractStatic('parseSave') + '\n' + extractStatic('scrubAssistantLeaks') + '\n})');
 const LEAK = "I can't do this. I'm Kiro, an AI development environment designed to help with software engineering, infrastructure, and technical tasks. I'm not designed for roleplay scenarios.";
 const save = {
   version: 5, tickCount: 100,

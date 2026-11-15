@@ -2153,14 +2153,38 @@ class World {
     // v5.67.4 全存檔清理:AI 中繼曾把「I'm Kiro, an AI development environment…」這類拒絕/自報身分的句子
     // 當成村民台詞回來,已經寫進聊天紀錄、村民對話、記憶、行程、名場面、新聞。載入時深度掃描整份存檔,
     // 命中的字串/條目移除,回傳清掉的筆數。伺服器端(/api/chat)自 v5.67.2 起已擋新產生的,這裡清舊的。
+    static get _LEAK_RE1() { return World.__LEAK_RE1 || (World.__LEAK_RE1 = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演/i); }
+    static get _LEAK_RE2() { return World.__LEAK_RE2 || (World.__LEAK_RE2 = /Claude Code|Anthropic|命令列工具|CLI 工具|(系統|系统)(指示|提示)|角色扮演模式|(隱瞞|隐瞒)[^。]{0,8}(身分|身份)|我是\s*(Claude|ChatGPT|GPT|Kiro|Gemini|Copilot|AI|人工智慧|人工智能|語言模型|语言模型|助理|助手|一個 ?AI|一个 ?AI)|核心設計原則|撰寫創意(文本|內容)|如果你對我的能力|(協助|幫助)其他(開發|專業|工作|寫作)/i); }
     static looksLikeAssistantLeak(text) {
         const s = String(text || '').trim();
         if (!s || s.length < 8) return false;
-        const re = /\b(I'?m|I am) (Kiro|Claude|ChatGPT|an AI|a language model|an assistant)\b|AI (development environment|assistant|language model)|not designed for (roleplay|role-play|fictional)|can'?t (take on|engage in|roleplay|role-play) |fictional character personas?|I can'?t do this|I'?m (here|designed) to help with (coding|software|technical)|我是(一個)?(AI|人工智慧|語言模型|程式開發)|無法(進行|扮演)角色|不能扮演/i;
-        if (/Claude Code|Anthropic|命令列工具|CLI 工具|(系統|系统)(指示|提示)|角色扮演模式|(隱瞞|隐瞒)[^。]{0,8}(身分|身份)|我是\s*(Claude|ChatGPT|GPT|Kiro|Gemini|Copilot|AI|人工智慧|人工智能|語言模型|语言模型|助理|助手|一個 ?AI|一个 ?AI)|核心設計原則|撰寫創意(文本|內容)|如果你對我的能力|(協助|幫助)其他(開發|專業|工作|寫作)/i.test(s)) return true; // v6.40.1 中文自報身分(付費中繼實測漏網)
+        const re = World._LEAK_RE1;
+        if (World._LEAK_RE2.test(s)) return true; // v6.40.1 中文自報身分(付費中繼實測漏網)
         if (!re.test(s)) return false;
         const ascii = (s.match(/[A-Za-z]/g) || []).length;
         return ascii / s.length > 0.5 || /Kiro|AI (development|assistant)|roleplay|role-play/i.test(s) || /我是(一個)?(AI|人工智慧|語言模型)/.test(s);
+    }
+    // v10.2.0 整份存檔的文字先快篩一次:兩條規則在整段文字裡都找不到、也沒有任何簡體偵測字,就不可能有任何一筆要清,
+    // 讀檔時整個略過逐字串檢查(118 人的鎮約 4MB,逐字串檢查在手機上要半秒以上,快篩只要它的幾十分之一)。
+    // 快篩用的規則比逐字串的寬(空白也認 JSON 的跳脫寫法、中間可隔的字數放寬),只會多檢查,不會漏
+    static saveTextIsClean(text) {
+        if (typeof text !== 'string') return false;
+        try {
+            if (!World._LEAK_PRE) {
+                const widen = (re) => new RegExp(re.source.replace(/\\s\*/g, '(?:\\s|\\\\[nrtfbu0-9a-fA-F]{1,5})*').replace(/\{0,8\}/g, '{0,48}'), 'i');
+                World._LEAK_PRE = [widen(World._LEAK_RE1), widen(World._LEAK_RE2)];
+            }
+            if (World._LEAK_PRE[0].test(text) || World._LEAK_PRE[1].test(text)) return false;
+            const S2T = (typeof RIMTOWN_S2T !== 'undefined') ? RIMTOWN_S2T : null;
+            if (S2T) { if (typeof S2T.hasSimplified !== 'function' || S2T.hasSimplified(text)) return false; }
+            return true;
+        } catch (e) { return false; }
+    }
+    // 把存檔文字解析成物件;快篩過關就記一個不會被存進檔案的記號,loadSave 看到就不再逐字串檢查
+    static parseSave(text) {
+        const data = JSON.parse(text);
+        if (data && typeof data === 'object' && World.saveTextIsClean(text)) { try { Object.defineProperty(data, '__rtClean', { value: true, enumerable: false, configurable: true }); } catch (e) {} }
+        return data;
     }
     static scrubAssistantLeaks(root) {
         let removed = 0;
@@ -2200,7 +2224,7 @@ class World {
         try {
             try {
                 World._s2tCount = 0;
-                const n = World.scrubAssistantLeaks(data);
+                const n = data.__rtClean ? 0 : World.scrubAssistantLeaks(data); // v10.2.0 快篩過關的存檔不必逐字串檢查
                 if (n) { this._scrubbedLeaks = n; console.warn('[RimTown] 已清除', n, '則 AI 助理漏出的錯誤回覆'); }
                 if (World._s2tCount) { this._s2tFixed = World._s2tCount; console.warn('[RimTown] 已把', World._s2tCount, '段簡體字轉成繁體'); }
             } catch (e) {}

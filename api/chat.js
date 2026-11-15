@@ -322,6 +322,8 @@ module.exports = async (req, res) => {
     const payload = L.authUser(req);
     if (!payload) return L.err(res, 401, 'login_required', '請先登入才能使用小鎮 AI'); // v6.42.1;v7.7.1 一律要登入
     if (await L.isBanned(payload.u)) return L.err(res, 403, 'banned', '此帳號已被停用'); // v5.63.0
+    // v10.2.0 被後來的登入換掉的裝置不能再用 AI(這個端點很頻繁:同一個執行個體 60 秒內確認過就不再查資料庫)
+    if ((await L.sessionState(payload, 60000)) === 'replaced') return L.err(res, 401, 'session_replaced', '這個帳號已在另一台裝置登入');
     const limit = USER_DAILY;
     const who = 'u_' + payload.u.toLowerCase();
     const day = new Date().toISOString().slice(0, 10);

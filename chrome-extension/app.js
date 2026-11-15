@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '10.1.1';
+const RIMTOWN_APP_VERSION = '10.2.0';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -195,10 +195,36 @@ class RimTownAuth {
             credentials: 'same-origin',
         };
         if (body) opts.body = JSON.stringify(body);
-        const res = await fetch(this._restUrl + endpoint, opts);
-        const data = await res.json();
+        // v10.2.0 遊戲頁一開頭(程式還在下載時)就先發出去的請求,這裡直接接手,不再發第二次
+        let res = null, data = null;
+        const pre = (method === 'GET' && !body) ? RimTownAuth._takeBoot(endpoint, this._nonce) : null;
+        if (pre) { try { const r = await pre; if (r && typeof r.status === 'number') { res = { ok: !!r.ok, status: r.status }; data = r.data; } } catch (e) { res = null; } }
+        if (!res) { const r = await fetch(this._restUrl + endpoint, opts); data = await r.json(); res = r; }
+        // v10.2.0 這個帳號後來又在別的裝置登入:這台登出
+        if (res.status === 401 && data && data.code === 'session_replaced') this._kicked();
         if (!res.ok) throw new Error(data.message || data.code || 'API error');
         return data;
+    }
+
+    // 取走遊戲頁開頭先發的那個請求(每個只能取一次;換了帳號或放太久就不用)
+    static _takeBoot(endpoint, token) {
+        try {
+            const B = window.__rtBoot;
+            if (!B || !B.req || B.token !== token || Date.now() - B.at > 120000) return null;
+            const p = B.req[endpoint]; if (!p) return null;
+            delete B.req[endpoint];
+            return p;
+        } catch (e) { return null; }
+    }
+
+    // v10.2.0 一個帳號同一時間只留一台裝置:伺服器說這張憑證已被後來的登入換掉 → 這台登出,交給遊戲顯示說明
+    _kicked() {
+        if (this._replaced) return;
+        this._replaced = true;
+        this.loggedIn = false;
+        this._nonce = '';
+        this._persistToken();
+        try { this.onReplaced && this.onReplaced(); } catch (e) {}
     }
 
     // Serverless 模式:token 持久化
@@ -248,6 +274,7 @@ class RimTownAuth {
 
     async checkLogin() {
         const data = await this._fetch('me');
+        if (data.replaced) { this._kicked(); return data; } // v10.2.0
         this.loggedIn = data.logged_in;
         this.username = data.user?.username || '';
         this.userId = data.user?.id || 0;
@@ -288,13 +315,16 @@ class RimTownAuth {
         };
         // v5.64.1 玩家明確要用較舊的存檔(匯入)時強制覆寫;其餘情況伺服器會擋掉「舊蓋新」
         if (this.forceNextSave) { body.force = true; this.forceNextSave = false; }
-        return this._fetch('save', 'POST', body);
+        const r = await this._fetch('save', 'POST', body);
+        // v10.2.0 記下「這台裝置最後一次成功寫上雲端的進度」:下次開機雲端還停在這裡,就知道沒有別台動過,不必再把整份存檔下載回來
+        if (r && !r.stale && Number.isFinite(body.tick_count)) { try { localStorage.setItem('rimtown_synced_' + townId, String(body.tick_count)); } catch (e) {} }
+        return r;
     }
 
     async cloudLoad(townId) {
         const data = await this._fetch('save/' + townId);
         const sd = await RTZip.unpack(data.save_data); // v6.55.0 壓縮過的存檔先解開
-        return typeof sd === 'string' ? JSON.parse(sd) : sd;
+        return typeof sd === 'string' ? ((typeof World !== 'undefined' && World.parseSave) ? World.parseSave(sd) : JSON.parse(sd)) : sd; // v10.2.0 順便快篩
     }
 
     async cloudDelete(townId) {
@@ -403,6 +433,7 @@ class RimTownApp {
         this.currentTownId = null;
         // v2.0 — Auth + Achievements
         this.auth = new RimTownAuth();
+        this.auth.onReplaced = () => this._onSessionReplaced(); // v10.2.0
         this._unlockedAchievements = new Set();
         this._achievementQueue = []; // Toast queue
         this._chatCount = 0;
@@ -429,6 +460,7 @@ class RimTownApp {
         }
         // v5.33.0 已登入就先拉帳號雲端的 AI 設定,再據以建立 LLM client
         if (this.auth.loggedIn) { try { await this._pullCloudSettings(); } catch (e) {} }
+        if (this.auth._replaced) return; // v10.2.0 這台已被後來的登入換掉:說明已經顯示,不再往下載入
         try { this._wireUnlockSync?.(); } catch (e) {} // v9.2.0 解鎖跟著帳號
         await this.loadSettings();
         // v5.62.1 一次性遷移:清掉城鎮列表裡同名的「第1天孤兒」重複條目
@@ -444,18 +476,24 @@ class RimTownApp {
                     // v5.62.1 優先回到上次玩的鎮,而不是雲端清單第一筆
                     const lastTown = localStorage.getItem('rimtown_last_town');
                     const cloudMatch = saves.find(s => s.town_id === lastTown) || saves[0];
-                    const cloudData = await this.auth.cloudLoad(cloudMatch.town_id);
                     // v5.63.0 雲端與本機同一鎮比新舊(tickCount),雲端寫入曾失敗時不再載到舊進度
                     let localData = null;
                     try { localData = await this._readLocalTown(cloudMatch.town_id); } catch (e) {}
-                    const saveData = this._newerSave(cloudData, localData);
+                    // v10.2.0 先看存檔清單上的進度就知道要用哪一份:本機這份已經是最新的(而且雲端沒被別台動過)就不下載雲端那份。
+                    // 以前每次開機都把整份雲端存檔下載、解壓、解析一遍,鎮越大越久,多半只是拿來確認「跟本機一樣」
+                    const pick = this._bootPick(cloudMatch, localData);
+                    let cloudData = null;
+                    if (pick !== 'local') cloudData = await this.auth.cloudLoad(cloudMatch.town_id);
+                    const saveData = pick === 'local' ? localData : (pick === 'cloud' && cloudData) ? cloudData : this._newerSave(cloudData, localData);
                     if (saveData && this.world.loadSave(saveData)) {
                         this.currentTownId = cloudMatch.town_id;
                         this._cloudSaves = saves;
                         loaded = true;
-                        console.log('[RimTown] Loaded on init:', cloudMatch.town_name, saveData === localData && cloudData ? '(本機較新)' : '(雲端)');
+                        const localAhead = saveData === localData && (cloudData ? true : Number(localData.tickCount) > Number(cloudMatch.tick_count));
+                        console.log('[RimTown] Loaded on init:', cloudMatch.town_name, saveData === localData ? (localAhead ? '(本機較新)' : '(本機,與雲端相同)') : '(雲端)');
                         // 本機較新就回填雲端
-                        if (saveData === localData && cloudData) { this.saveGame().catch(() => {}); }
+                        if (localAhead) { this.saveGame().catch(() => {}); }
+                        else if (saveData === cloudData) this._noteSynced(cloudMatch.town_id, cloudData.tickCount);
                     }
                     // v5.64.1 存檔保護原則:程式絕不自動刪除任何雲端存檔(v5.62.1 的雲端去重已移除;
                     // 同名重複條目改由列表顯示處理,要刪只能由玩家/管理員手動)
@@ -463,6 +501,7 @@ class RimTownApp {
             } catch (e) {
                 console.error('[RimTown] Cloud load on init failed:', e);
             }
+            if (this.auth._replaced) return; // v10.2.0
             if (!loaded) {
                 // v5.62.1 雲端拿不到時先試本地存檔(v5.59.1 起切鎮有雙寫本地檔),
                 // 不再直接開新世界+領新 id——那正是列表裡 Day1 孤兒條目的製造機
@@ -528,6 +567,7 @@ class RimTownApp {
         // v5.63.0 向伺服器確認帳號狀態:取管理員旗標;被管理員刪除/封鎖的帳號立即登出
         if (this.auth._serverless && this.auth.loggedIn) {
             this.auth.checkLogin().then(d => {
+                if (d?.replaced) return; // v10.2.0 說明由 _onSessionReplaced 顯示
                 if (d?.banned || !d?.logged_in) {
                     this._gameAlert?.(t('你的帳號已被管理員停用，已登出。'), '🚫');
                     this._updateAccountButton?.();
@@ -548,6 +588,7 @@ class RimTownApp {
         const afterEnter = () => { if (loaded) this._processOfflineProgress(); this._checkDailyReward(); };
         if (this._landingActive) this._afterLanding = afterEnter; else afterEnter();
         this._startLastSeenTracker();
+        this._startSessionWatch(); // v10.2.0
         this._initReady = true;
         this._landingUpdateContinue();
         try { window.__rtHideLoading?.(); } catch (e) {} // v6.82.2 載入畫面收起

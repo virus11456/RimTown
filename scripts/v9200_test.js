@@ -14,7 +14,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
 async function apiTest() {
   console.log('api/settings.js');
   const store = {}; const lib = path.resolve(__dirname, '../api/_lib.js');
-  require.cache[lib] = { id: lib, filename: lib, loaded: true, exports: { authUser: () => ({ u: 'Tester' }), err: (res, c, k) => res.status(c).json({ error: k }), rateLimit: () => true, readJson: async (p) => store[p] ? JSON.parse(JSON.stringify(store[p])) : null, writeJson: async (p, d) => { store[p] = JSON.parse(JSON.stringify(d)); } } };
+  require.cache[lib] = { id: lib, filename: lib, loaded: true, exports: { authUser: () => ({ u: 'Tester' }), requireSession: async () => ({ u: 'Tester' }), err: (res, c, k) => res.status(c).json({ error: k }), rateLimit: () => true, readJson: async (p) => store[p] ? JSON.parse(JSON.stringify(store[p])) : null, writeJson: async (p, d) => { store[p] = JSON.parse(JSON.stringify(d)); } } };
   const h = require('../api/settings.js');
   const call = async (method, body) => { let out; const res = { status: (c) => ({ json: (j) => { out = { c, j }; } }) }; await h({ method, body, headers: {} }, res); return out; };
   await call('POST', { unlocks: { worldcal: ['nukewar', 'zombie'], godbook: ['comet'] } });

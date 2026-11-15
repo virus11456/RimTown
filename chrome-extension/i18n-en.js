@@ -3114,6 +3114,9 @@
         '帳號與存檔已刪除': 'Account and saves deleted',
         '操作失敗：': 'Action failed: ',
         '你的帳號已被管理員停用，已登出。': 'Your account has been disabled by an admin. You have been logged out.',
+        '這個帳號已在另一台裝置登入': 'This account was signed in on another device',
+        '回首頁': 'Back to home',
+        '同一個帳號同一時間只能在一台裝置上玩，這台已經登出。之後的進度以另一台為準。': 'An account can be played on one device at a time, so this device has been signed out. Progress continues from the other device.',
         // v5.71.0 介面補齊英文(成就/面板/首頁大腦/經濟/任務)
         '第一次與居民聊天': 'Chat with a resident for the first time',
         '與居民聊天10次': 'Chat with residents 10 times',

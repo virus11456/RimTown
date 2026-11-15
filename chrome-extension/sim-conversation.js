@@ -2619,6 +2619,8 @@ class LLMClient {
                     body: JSON.stringify({ prompt: sendPrompt, max_tokens: maxTokens, temperature, lane, lang }),
                 });
                 if (res.status === 429) { try { const e = await res.clone().json(); if (e?.error === 'quota_exceeded' || e?.code === 'quota_exceeded') this._quota = { remaining: 0, limit: this._quota?.limit || 1, day: new Date().toISOString().slice(0, 10) }; } catch (e) {} return '__RATE_LIMITED__'; }
+                // v10.2.0 這個帳號後來又在別的裝置登入:這台登出(說明由遊戲顯示)
+                if (res.status === 401) { try { const e = await res.clone().json(); if (e?.code === 'session_replaced') window.rimtownApp?.auth?._kicked?.(); } catch (e) {} }
                 if (!res.ok) return '__ERROR__';
                 const data = await res.json();
                 // v6.74.1 記下今天還剩多少 AI 額度(伺服器每次回覆都附上);剩不到三成時背景功能改用規則,額度留給玩家的操作

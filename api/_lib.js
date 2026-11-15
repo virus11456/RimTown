@@ -95,7 +95,10 @@ function b64url(buf) { return Buffer.from(buf).toString('base64url'); }
 function makeToken(user) {
     const header = b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
     const now = Math.floor(Date.now() / 1000);
-    const payload = b64url(JSON.stringify({ u: user.username, id: user.id, iat: now, exp: now + TOKEN_TTL }));
+    // v10.2.0 sid:這張憑證屬於哪一次登入。帳號紀錄上記著最新一次登入的 sid,對不上就是被後來的登入換掉了
+    const body = { u: user.username, id: user.id, iat: now, exp: now + TOKEN_TTL };
+    if (user.sid) body.sid = user.sid;
+    const payload = b64url(JSON.stringify(body));
     const sig = crypto.createHmac('sha256', JWT_SECRET).update(`${header}.${payload}`).digest('base64url');
     return `${header}.${payload}.${sig}`;
 }
@@ -119,6 +122,35 @@ function authUser(req) {
     const h = req.headers['authorization'] || '';
     const token = h.startsWith('Bearer ') ? h.slice(7) : (req.headers['x-wp-nonce'] || '');
     return verifyToken(token);
+}
+
+// ---------- v10.2.0 一個帳號同一時間只留一台裝置 ----------
+// 每次登入(註冊、重建帳號、重設密碼也算)換一個新的 sid 寫在帳號紀錄上,並放進憑證。
+// 之後每個需要登入的請求都拿憑證上的 sid 跟帳號紀錄比:不一樣＝這個帳號後來又在別處登入過,這張憑證作廢。
+// 帳號紀錄上還沒有 sid(這個功能上線後還沒重新登入過)一律放行;紀錄讀不到(資料庫故障)也放行,不因為故障把人踢掉。
+function newSid() { return crypto.randomBytes(9).toString('base64url'); }
+const _sidCache = new Map();
+// maxAgeMs > 0:同一個執行個體在這段時間內確認過「還是這張」就不再查資料庫(給呼叫很頻繁的 /api/chat 用)。
+// 快取只拿來確認「沒被換掉」;對不上時一定重新查一次再下結論,剛登入的新憑證不會被舊快取誤判。
+async function sessionState(payload, maxAgeMs = 0) {
+    if (!payload || !payload.u) return 'ok';
+    const k = String(payload.u).toLowerCase();
+    const c = maxAgeMs > 0 ? _sidCache.get(k) : null;
+    if (c && Date.now() - c.at < maxAgeMs && (!c.sid || c.sid === payload.sid)) return 'ok';
+    let cur = '';
+    try { const user = await readJson(userPath(k)); cur = (user && typeof user.sid === 'string') ? user.sid : ''; } catch (e) { return 'ok'; }
+    _sidCache.set(k, { sid: cur, at: Date.now() });
+    if (_sidCache.size > 5000) _sidCache.clear();
+    if (!cur) return 'ok';
+    return payload.sid === cur ? 'ok' : 'replaced';
+}
+const REPLACED_MSG = '這個帳號已在另一台裝置登入';
+// 需要登入的端點共用:沒登入回 401 unauthorized;被後來的登入換掉回 401 session_replaced。回 null 表示已經回應過了
+async function requireSession(req, res, maxAgeMs = 0) {
+    const payload = authUser(req);
+    if (!payload) { err(res, 401, 'unauthorized', '請先登入'); return null; }
+    if ((await sessionState(payload, maxAgeMs)) === 'replaced') { err(res, 401, 'session_replaced', REPLACED_MSG); return null; }
+    return payload;
 }
 
 // ---------- 工具 ----------
@@ -180,6 +212,7 @@ module.exports = {
     readJson, writeJson, deleteBlob, listPaths, storageInfo,
     normalizeInvite, invitePath,
     hashPassword, verifyPassword, makeToken, verifyToken, authUser,
+    newSid, sessionState, requireSession,
     sanitizeUsername, sanitizeTownId, userPath, emailPath, banPath,
     isAdmin, isBanned,
     err, rateLimit, clientIp,
