@@ -170,7 +170,10 @@ Object.assign(RimTownApp.prototype, {
         // 這座鎮整份放 IndexedDB(不瘦身)→ IndexedDB 也不行才瘦身 → 再不行就只存雲端(見 giveUp)
         const key = 'rimtown_town_' + this.currentTownId;
         let firstStr = preStr || null;
-        const tryWrite = (data) => { try { const s = firstStr || JSON.stringify(data); firstStr = null; localStorage.setItem(key, s); return true; } catch (_) { firstStr = null; return false; } };
+        // v10.2.2 整份存檔的文字留著(fullStr):放不進 localStorage 改放 IndexedDB 時直接用,不必把幾 MB 的存檔再轉一次文字
+        let fullStr = null;
+        const tryWrite = (data) => { try { const s = firstStr || JSON.stringify(data); firstStr = null; if (data === saveData && !slimmed) fullStr = s; localStorage.setItem(key, s); return true; } catch (_) { firstStr = null; return false; } };
+        let slimmed = false;
         // v6.76.3 目前的鎮以 localStorage 為準:寫成功了才刪 IndexedDB 裡的舊副本(以前先刪,寫失敗時就一份都不剩)
         const tid = this.currentTownId;
         const dropIdbCopy = () => { if (this._idbTowns?.has(tid) && typeof RTStore !== 'undefined') { RTStore.del(tid); this._idbTowns.delete(tid); } };
@@ -181,17 +184,22 @@ Object.assign(RimTownApp.prototype, {
             console.warn('[RimTown] 本機備份空間不足,改為只存雲端');
             try { this._showCornerNotice({ icon: '☁️', title: t('本機備份空間不足'), name: '', desc: t('存檔已改為只存雲端，進度安全。') }); } catch (e) {}
         };
-        const slimOrCloud = () => { this._slimSaveForLocal(saveData); if (tryWrite(saveData)) { console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); dropIdbCopy(); } else cloudOnly(); };
+        const slimOrCloud = () => { slimmed = true; fullStr = null; this._lsTooBig = null; this._slimSaveForLocal(saveData); if (tryWrite(saveData)) { console.warn('[RimTown] 存檔空間不足,已自動瘦身後儲存本機備份'); dropIdbCopy(); } else cloudOnly(); };
         const giveUp = () => {
             if (typeof RTStore === 'undefined') return slimOrCloud();
-            let str = null; try { str = JSON.stringify(saveData); } catch (e) { return slimOrCloud(); }
+            let str = fullStr || firstStr; fullStr = null; firstStr = null; if (!str) { try { str = JSON.stringify(saveData); } catch (e) { return slimOrCloud(); } }
             RTStore.set(tid, str).then(r => {
                 if (r === undefined) return slimOrCloud();
                 (this._idbTowns || (this._idbTowns = new Set())).add(tid);
                 try { localStorage.removeItem(key); } catch (e) {} // 舊的那份比較舊,讀檔時別先讀到它
-                if (!this._idbSaveNoticeShown) { this._idbSaveNoticeShown = true; try { this._showCornerNotice({ icon: '💾', title: t('本機空間不足'), name: '', desc: t('存檔改放瀏覽器資料庫，進度沒有遺失。') }); } catch (e) {} }
+                // v10.2.2 這裡以前會跳「本機空間不足」的通知。大鎮的存檔本來就放不進 localStorage(上限約 5MB),每次開頁都跳一次,
+                // 可是存檔完整、雲端也照存、玩家什麼都不用做,只會讓人以為出事了。改成安靜地換地方放。
+                // 記下這次的大小:之後的存檔差不多大就直接放這裡,不再先試一次注定失敗的 localStorage
+                this._lsTooBig = { tid, len: str.length };
             }).catch(slimOrCloud);
         };
+        // v10.2.2 這座鎮上一次就放不進 localStorage、而且這次沒有變小:直接放 IndexedDB
+        if (firstStr && this._lsTooBig && this._lsTooBig.tid === tid && firstStr.length >= this._lsTooBig.len * 0.95 && this._idbTowns?.has(tid) && typeof RTStore !== 'undefined') { giveUp(); try { localStorage.setItem('rimtown_last_town', tid); } catch (e) {} return; }
         let ok = tryWrite(saveData);
         if (!ok) {
             const removeKeys = (pred) => { let n = 0; for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && pred(k)) { localStorage.removeItem(k); n++; } } return n; };
