@@ -1004,9 +1004,14 @@ class ElectionSystem {
 
     _processVotes(world) {
         const voters = this._residents(world).filter(a => !this.votes[a.agentId] && !this._llmPending?.[a.agentId]); // v6.42.0 正在問 AI 的人先不用規則投
+        // v11.4.0 以前每個選民每天六成機率去投。現在：心裡已經有人選的、熱心公眾事務的人第一天就投；
+        // 還在猶豫的人拖到最後一天；懶得管又沒有特別屬意誰、或心情壞到谷底的人不去投
+        const last = (this.votingDaysLeft || 0) <= 0; const T = (a, k) => (a.personality?.traits || []).includes(k);
         for (const voter of voters) {
-            if (Math.random() > 0.6) continue;
-            const chosen = this._calculateVote(voter, world);
+            const chosen = this._calculateVote(voter, world); const gap = this._lastGap || 0;
+            const keen = gap >= 8 || T(voter, 'hardworking') || T(voter, 'charismatic') || this.candidates.some(c => c.agentId === voter.agentId);
+            const apathetic = (T(voter, 'lazy') && gap < 4) || ((voter.mood ?? 50) < 20 && gap < 8);
+            if (!(keen || (last && !apathetic))) continue;
             if (chosen) { this.votes[voter.agentId] = chosen.agentId; chosen.votes++; }
         }
     }
@@ -1048,6 +1053,7 @@ class ElectionSystem {
             return { candidate: c, score };
         });
         scores.sort((a, b) => b.score - a.score);
+        this._lastGap = scores.length >= 2 ? scores[0].score - scores[1].score : 99; // v11.4.0 心裡最屬意的人贏第二名多少：差得多的人早早去投
         return scores[0]?.candidate || null;
     }
 
