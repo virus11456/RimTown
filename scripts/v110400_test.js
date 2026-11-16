@@ -24,7 +24,7 @@ async function run(browser, dev, lang) {
     const w = app.world; w.fullAgentMode = false; const PS = w.proposals; const out = {}; const R0 = Math.random;
     const npcs = () => PS._npcs(w); const day = () => PS._abs(w);
     for (let k = 0; k < 900 && !DECIDE.on(w); k++) { w.paused = false; w.tick(); } w.paused = true; out.on = DECIDE.on(w); // 決策核心要等錢包建好（第一天結算後）才算開著
-    out.kinds = ['propose', 'vote', 'ruling'].map(k => DECIDE.KINDS[k] ? t(DECIDE.KINDS[k].title) : null);
+    out.kinds = ['raise', 'vote', 'ruling'].map(k => DECIDE.KINDS[k] ? t(DECIDE.KINDS[k].title) : null); out.marry = { title: DECIDE.KINDS.propose ? DECIDE.KINDS.propose.title : null, when: typeof DECIDE.KINDS.propose?.when };
     // 挑一個人數夠多的行業當「在意的人」
     const byJob = {}; for (const a of npcs()) if (a.job?.key && a.job.key !== 'mayor') (byJob[a.job.key] = byJob[a.job.key] || []).push(a);
     const J = Object.keys(byJob).sort((x, y) => byJob[y].length - byJob[x].length)[0]; const A = byJob[J][0]; const B = npcs().find(a => a.job?.key !== J && a.job?.key !== 'mayor');
@@ -48,7 +48,7 @@ async function run(browser, dev, lang) {
       fresh(); for (const a of npcs()) plain(a); PS._candidates = () => [cNone, cJob].filter(c => PS._cool(day(), c.key)); w.fullAgentMode = true; eng.fullAgentOk = () => true; eng.chooseProposal = async (ww, a, sums) => { seen = { job: a.job?.key, n: sums.length, first: sums[0]?.title }; return { choice: 1, pitch: 'because it is my trade' }; }; ProposalSystem.FREE_SHARE = 0;
       PS._generate(w, day()); await new Promise(r => setTimeout(r, 60)); const pa = PS.open()[0]; out.ai = { seen, key: pa?.key, job: w.agents[pa?.proposerId]?.job?.key, raiseAi: pa?.raiseAi };
       w.fullAgentMode = false; eng.fullAgentOk = e0.ok; eng.chooseProposal = e0.ch; ProposalSystem.FREE_SHARE = fs0;
-      PS._advance(w, day()); const L = (DECIDE.S(w).log[pa?.proposerId] || []).filter(e => e.kind === 'propose').pop(); out.aiLog = L ? { ai: L.ai, what: Memory.render(L.what.k, L.what.p), why: L.why ? (L.why.raw || '') : '' } : null;
+      PS._advance(w, day()); const L = (DECIDE.S(w).log[pa?.proposerId] || []).filter(e => e.kind === 'raise').pop(); out.aiLog = L ? { ai: L.ai, what: Memory.render(L.what.k, L.what.p), why: L.why ? (L.why.raw || '') : '' } : null;
       PS._candidates = c0; }
     // 4) 誰去投
     { fresh(); for (const a of npcs()) plain(a); const P = { id: 'T1', kind: 'festival', key: 't:v', status: 'open', category: 'culture', jobBias: [J], proposerId: '__none', createdDay: day() - 1, votes: {}, why: {}, tk: '辦一場市集', tp: {} };
@@ -70,16 +70,17 @@ async function run(browser, dev, lang) {
         const L = (DECIDE.S(w).log[m.agentId] || []).filter(e => e.kind === 'ruling').pop(); out.ruleLog = L ? { id: L.id, ai: L.ai, what: Memory.render(L.what.k, L.what.p), why: L.why ? Memory.render(L.why.k, L.why.p || {}) : '' } : null; } }
     // 6) 照個性提的案也記進提案人的紀錄
     { restore(); fresh(); const before = PS.items.length; for (let i = 0; i < 6 && PS.items.length === before; i++) { PS._lastDay = -1; PS.daily(w); for (let k = 0; k < 400 && PS._abs(w) === PS._lastDay; k++) { w.paused = false; w.tick(); } w.paused = true; }
-      const p = PS.items[PS.items.length - 1]; PS._advance(w, day() + 0); const L = p ? (DECIDE.S(w).log[p.proposerId] || []).filter(e => e.kind === 'propose').pop() : null; out.ruleLog2 = p ? { made: true, logged: !!L, what: L ? Memory.render(L.what.k, L.what.p) : '', dl: p._dl } : { made: false }; }
+      const p = PS.items[PS.items.length - 1]; PS._advance(w, day() + 0); const L = p ? (DECIDE.S(w).log[p.proposerId] || []).filter(e => e.kind === 'raise').pop() : null; out.ruleLog2 = p ? { made: true, logged: !!L, what: L ? Memory.render(L.what.k, L.what.p) : '', dl: p._dl } : { made: false }; }
     // 7) 放著跑 20 天
     { const st0 = Object.assign({}, PS.stats); let turn = [], rul = {}; const seenP = new Set(); const errs0 = [];
       for (let i = 0; i < 20; i++) { const d0 = w._absDay(); try { for (let k = 0; k < 400 && w._absDay() === d0; k++) { w.paused = false; w.tick(); } } catch (e) { errs0.push(e.message); } w.paused = true;
         for (const p of PS.items) { if (seenP.has(p.id) || p.status === 'open') continue; seenP.add(p.id); if (p.mayorWhy) { const k = String(p.mayorWhy).startsWith('llm:') ? 'llm' : p.mayorWhy; rul[k] = (rul[k] || 0) + 1; } if (PROPOSAL_BASE_KINDS.has(p.kind) && p.createdDay >= day() - 20) turn.push(Object.keys(p.votes || {}).length / Math.max(1, npcs().length)); } await new Promise(r => setTimeout(r, 0)); }
-      const pk = DECIDE.stats(w).pick || {}; out.run = { made: PS.stats.made - st0.made, turnout: turn.length ? Math.round(turn.reduce((s, x) => s + x, 0) / turn.length * 100) / 100 : null, n: turn.length, rul, raise: pk['propose.raise'] || 0, ruling: Object.keys(pk).filter(k => k.startsWith('ruling.')).reduce((s, k) => s + pk[k], 0), errs: errs0.slice(0, 3) }; }
+      const pk = DECIDE.stats(w).pick || {}; out.run = { made: PS.stats.made - st0.made, turnout: turn.length ? Math.round(turn.reduce((s, x) => s + x, 0) / turn.length * 100) / 100 : null, n: turn.length, rul, raise: pk['raise.raise'] || 0, ruling: Object.keys(pk).filter(k => k.startsWith('ruling.')).reduce((s, k) => s + pk[k], 0), errs: errs0.slice(0, 3) }; }
     out.texts = [t('要不要站出來提案'), t('這一案投贊成還是反對'), t('提案送到首長桌上'), t('沒什麼人表態，鎮長自己也不看好'), t('沒什麼人表態，鎮長想再等等大家的意見'), t('這跟我這行有關'), t('鎮上這件事不能再拖'), t('總得有人開口'), t('在鎮上提了「{x}」'), t('「{x}」：我核准了')];
     return out; });
   const tag = `[${dev} ${lang}]`;
   ok(r.kinds.every(Boolean), `${tag} 登記了提案、投票、裁決三種事`, r.kinds);
+  ok(r.marry.title === '要不要求婚' && r.marry.when === 'function', `${tag} 提案用自己的代號，原本「求婚」那一種沒被蓋掉`, r.marry);
   ok(r.care.mine[0] >= 2 && r.care.mine[1] === 'job' && r.care.other[0] === 0 && r.care.self[0] >= 3 && r.care.self[1] === 'self' && r.care.notSelf[0] < 3, `${tag} 誰在意：自己這行的事 2 分、自己的事 3 分、不相干的人 0 分`, r.care);
   ok(r.quiet === 0, `${tag} 沒人在意的小事，沒有人提`, r.quiet);
   ok(r.speak.made === 30 && r.speak.hit === 30 && r.speak.whys.job === 30, `${tag} 連做 30 次：提案的都是做那一行的人，提的都是他那行的事`, r.speak);

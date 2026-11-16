@@ -177,7 +177,7 @@ class ProposalSystem {
     _advance(w, day) {
         for (const p of this.items) {
             // v11.4.0 誰提了什麼，記進提案人「做過的決定」（各系統提的都算；AI 想的會晚一點才建好，所以隔天在這裡統一記）
-            if (!p._dl && p.proposerId && (p.status === 'open' || p.status === 'shelved' || p.status === 'approved')) { p._dl = 1; const pa = w.agents[p.proposerId]; if (pa && day - p.createdDay <= 2) this._dlog(w, pa, 'propose', 'raise', { k: '在鎮上提了「{x}」', p: { x: this._titleOf(p) } }, p.pitch ? { raw: p.pitch } : (p.raiseWhy && PROPOSE_WHY[p.raiseWhy] ? { k: PROPOSE_WHY[p.raiseWhy] } : null), (p.llm || p.free || p.raiseAi) ? 'ai' : 'rule'); }
+            if (!p._dl && p.proposerId && (p.status === 'open' || p.status === 'shelved' || p.status === 'approved')) { p._dl = 1; const pa = w.agents[p.proposerId]; if (pa && day - p.createdDay <= 2) this._dlog(w, pa, 'raise', 'raise', { k: '在鎮上提了「{x}」', p: { x: this._titleOf(p) } }, p.pitch ? { raw: p.pitch } : (p.raiseWhy && PROPOSE_WHY[p.raiseWhy] ? { k: PROPOSE_WHY[p.raiseWhy] } : null), (p.llm || p.free || p.raiseAi) ? 'ai' : 'rule'); }
             if (p._ruling && p._rulingDay === day) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
             if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; p._rulingTicket = (p._rulingTicket || 0) + 1; } // v6.43.7 換號:遲到的舊回覆作廢 // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
             if (p.status === 'open') {
