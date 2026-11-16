@@ -16629,6 +16629,9 @@
         '跟這種人打起來不值得。': 'Fighting someone like that isn\'t worth it.',
         '挨了打，沒有還手': 'Took the blows and didn\'t hit back',
         '跟他講不通，只有拳頭他才懂。': 'Words don\'t reach them. Fists are all they understand.',
+        '跟朋友約好了': 'Meeting a friend as planned',
+        '想約{b}出去走走，他說改天。': 'I asked {b} to go out for a while. They said another day.',
+        '{a}約我出去，我今天不太想動，跟他說改天。': '{a} asked me out. I didn\'t feel like going anywhere today and said another day.',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

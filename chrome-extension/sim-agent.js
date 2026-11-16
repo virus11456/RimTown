@@ -956,6 +956,7 @@ class Agent {
             if (hangout.tick <= 0) {
                 this.targetLocation = hangout.location;
                 this.activity = hangout.activity || 'socializing';
+                this._hangHold = { loc: hangout.location, act: this.activity, n: 8 }; // v11.3.0 赴約後待上兩個鐘頭（sim-day.js 會照這個安排，不被空閒的挑選蓋掉）
                 this._pendingHangout = null;
             } else {
                 hangout.tick--;
@@ -978,15 +979,17 @@ class Agent {
             if (rel.affinity < -30) w = Math.max(1, w - 5);
             return Math.max(1, w);
         });
-        const target = weightedChoice(others, weights);
+        const dayOn = typeof DAY !== 'undefined' && DAY.on(world); // v11.3.0 找誰聊、要不要約人、說不說閒話：照交情與個性，不擲骰
+        const target = (dayOn && DAY.pickTalk(world, this, others)) || weightedChoice(others, weights);
         this._lastInteractionTick = world.tickCount;
 
         // Gossip
-        if (Math.random() < 0.3) world.gossipNetwork.spreadGossip(this, target, world);
+        if (dayOn ? DAY.gossips(world, this, target) : Math.random() < 0.3) world.gossipNetwork.spreadGossip(this, target, world);
 
         // Hangout invitation: good friends may invite each other to go somewhere together
         const rel = this.relationships.getOrCreate(target.agentId, target.name);
-        if (rel.affinity >= 30 && Math.random() < 0.12 && !this._pendingHangout && !target._pendingHangout) {
+        if (dayOn) { try { DAY.invite(world, this, target); } catch (e) {} }
+        else if (rel.affinity >= 30 && Math.random() < 0.12 && !this._pendingHangout && !target._pendingHangout) {
             const hangoutSpots = ['tavern','park','town_square','chapel','forest','library'];
             const spot = pickRandom(hangoutSpots);
             const hangoutActivity = rel.romanticInterest > 40 ? 'recreation' : 'socializing';
