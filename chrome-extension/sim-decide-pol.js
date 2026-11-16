@@ -139,6 +139,12 @@
     const pending = (w, kinds) => { try { return (w.proposals?.items || []).some(p => ['open', 'shelved'].includes(p.status) && kinds(p)); } catch (e) { return false; } };
 
     // ---------- 手上寬裕：要不要捐給政治人物 ----------
+    /* v11.4.0 公眾的事也是本人的決定：提案、投票、首長裁決。
+       這三件事原本各自擲骰（抽一個點子、抽一個人、六成機率去投、首長擲硬幣），現在照誰在意來決定（寫在 sim-proposals.js）。
+       這裡登記成三種事，讓每一次都記進那個人「做過的決定」。它們由提案系統在該發生的時候處理，所以沒有每天掃一遍的選項清單。 */
+    DECIDE.kind('propose', { title: '要不要站出來提案', scan: false, cool: 0, facts: () => '', options: () => [] });
+    DECIDE.kind('vote', { title: '這一案投贊成還是反對', scan: false, cool: 0, facts: () => '', options: () => [] });
+    DECIDE.kind('ruling', { title: '提案送到首長桌上', scan: false, cool: 0, facts: () => '', options: () => [] });
     DECIDE.kind('donate', {
         title: '手上寬裕，政治人物用得上', cool: 7, pri: 1,
         when(w, a) {

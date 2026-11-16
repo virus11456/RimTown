@@ -32,7 +32,7 @@ const PROPOSAL_KINDS = {
 // v6.37.0 鎮長裁決理由(鍵 → 顯示文字;顯示時才 t())
 const MAYOR_WHY = {
     majority: '多數贊成', minority: '多數反對', cost: '公庫付不起', own_yes: '票數接近，鎮長自己也贊成', own_no: '票數接近，鎮長覺得不妥',
-    wait: '票數接近，鎮長想再看看', quiet: '沒什麼人表態，鎮長拍板先做', nomayor: '鎮上沒有鎮長，照票數定案', revisit: '擱置幾天後鎮長重新拍板',
+    wait: '票數接近，鎮長想再看看', quiet: '沒什麼人表態，鎮長拍板先做', quiet_no: '沒什麼人表態，鎮長自己也不看好', quiet_wait: '沒什麼人表態，鎮長想再等等大家的意見', nomayor: '鎮上沒有鎮長，照票數定案', revisit: '擱置幾天後鎮長重新拍板',
 };
 // v6.30.0 投票理由(鍵 → 顯示文字;顯示時才 t())
 const VOTE_WHY = {
@@ -59,6 +59,11 @@ Object.assign(PROPOSAL_JOB_BUILDINGS, {
     priest: ['well_upgrade', 'garden', 'statue_plaza', 'theater', 'bathhouse'],
 });
 const PROPOSAL_JOB_FACTORIES = { cook: ['bakery', 'tea_house'], tailor: ['textile_mill'], trader: ['brewery', 'sugar_refinery', 'tea_house'], doctor: ['herbal_workshop'], carpenter: ['furniture_workshop', 'sawmill'], farmer: ['bakery', 'sugar_refinery'], miner: ['brickworks'], blacksmith: ['steelworks'] };
+// v11.4.0 日常提案的種類：這些事跟自己無關的人不一定會去投；其他系統提的大事（修法、稅、罷免…）大家都會表態
+const PROPOSAL_BASE_KINDS = new Set(['build', 'research', 'industry', 'factory', 'trade', 'upgrade', 'industry_up', 'market', 'festival', 'feast', 'honor', 'expedition', 'envoy', 'relief', 'mediate', 'mentor', 'recruit', 'policy', 'trial', 'tier_up', 'minwage', 'stipend']);
+const PROPOSAL_KIND_CAT = { build: 'economy', industry: 'economy', factory: 'economy', trade: 'economy', upgrade: 'economy', industry_up: 'economy', market: 'economy', minwage: 'welfare', stipend: 'welfare', relief: 'welfare', mediate: 'welfare', mentor: 'welfare', feast: 'welfare', funeral: 'welfare', recruit: 'welfare', research: 'culture', festival: 'culture', honor: 'culture', trial: 'defense', expedition: 'freedom', envoy: 'freedom' };
+// 為什麼是他開口（鍵 → 顯示文字；顯示時才 t()）
+const PROPOSE_WHY = { self: '這是我自己的事', job: '這跟我這行有關', mind: '這件事我一直放在心上', value: '我看重這個', friend: '這是我朋友的事', urgent: '鎮上這件事不能再拖', voice: '總得有人開口' };
 const PROPOSAL_POLICY_VALUES = { economy: ['財富', '冒險'], welfare: ['家庭', '社群', '和平'], defense: ['權力', '冒險'], culture: ['知識', '藝術'], nature: ['自然', '和平'], freedom: ['自由', '冒險'] };
 
 class ProposalSystem {
@@ -73,6 +78,7 @@ class ProposalSystem {
     }
     static MAX_OPEN = 4;
     static FREE_SHARE = 1; // v6.47.0 完整智能體模式下,村民自己發想提案的比例(v6.50.0 起全部自己想;系統看到的鎮況當參考提示給 AI)
+    static SPEAK_MIN = 2.2; // v11.4.0 要有人夠在意（或事情夠急）才會有人站出來提
     static DECIDE_DAYS = 2; // v6.37.0 投票兩天後鎮長裁決(七成的人投完票、過了一天也會提早裁決)
     static SHELF_DAYS = 10;
     static WAIT_DAYS = 7;
@@ -170,6 +176,8 @@ class ProposalSystem {
     }
     _advance(w, day) {
         for (const p of this.items) {
+            // v11.4.0 誰提了什麼，記進提案人「做過的決定」（各系統提的都算；AI 想的會晚一點才建好，所以隔天在這裡統一記）
+            if (!p._dl && p.proposerId && (p.status === 'open' || p.status === 'shelved' || p.status === 'approved')) { p._dl = 1; const pa = w.agents[p.proposerId]; if (pa && day - p.createdDay <= 2) this._dlog(w, pa, 'propose', 'raise', { k: '在鎮上提了「{x}」', p: { x: this._titleOf(p) } }, p.pitch ? { raw: p.pitch } : (p.raiseWhy && PROPOSE_WHY[p.raiseWhy] ? { k: PROPOSE_WHY[p.raiseWhy] } : null), (p.llm || p.free || p.raiseAi) ? 'ai' : 'rule'); }
             if (p._ruling && p._rulingDay === day) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
             if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; p._rulingTicket = (p._rulingTicket || 0) + 1; } // v6.43.7 換號:遲到的舊回覆作廢 // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
             if (p.status === 'open') {
@@ -199,7 +207,7 @@ class ProposalSystem {
             const batch = [];
             for (const a of this._npcs(w)) {
                 if (a.agentId === p.proposerId || p.votes[a.agentId]) continue;
-                if (Math.random() > 0.6) continue;
+                if (!this._votesNow(w, p, a)) continue; // v11.4.0 以前每人每天六成機率去投；現在是在意這件事的人、或本來就熱心公眾事務的人去投
                 if (llmOn && batch.length < 6 && !(p._llmAsked && p._llmAsked[a.agentId])) { batch.push(a); continue; }
                 this._ruleVote(w, p, a);
             }
@@ -215,11 +223,62 @@ class ProposalSystem {
         for (const a of voters) {
             if (p.votes[a.agentId]) continue;
             const r = res && res[a.agentId];
-            if (r) { p.votes[a.agentId] = r.vote; (p.why || (p.why = {}))[a.agentId] = 'llm:' + (r.why || ''); p.llm = true; }
+            if (r) { p.votes[a.agentId] = r.vote; (p.why || (p.why = {}))[a.agentId] = 'llm:' + (r.why || ''); p.llm = true; this._dlog(w, a, 'vote', r.vote === 'for' ? 'for' : 'against', { k: r.vote === 'for' ? '對「{x}」投了贊成' : '對「{x}」投了反對', p: { x: this._titleOf(p) } }, r.why ? { raw: r.why } : null, 'ai'); }
             else this._ruleVote(w, p, a);
         }
         try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {}
     }
+    // ---------- v11.4.0 誰在意、誰開口、誰去投 ----------
+    _voiceOf(a) { return (this._hasTrait(a, 'charismatic') ? 1.2 : 0) + (this._hasTrait(a, 'hardworking') ? 0.6 : 0) + (this._hasTrait(a, 'optimist') ? 0.4 : 0) + (a.job?.key === 'mayor' ? 1 : 0) - (this._hasTrait(a, 'shy') ? 0.6 : 0) - (this._hasTrait(a, 'lazy') ? 0.5 : 0); }
+    // 這個點子跟這個人對不對得上：他這行的事、他一直掛心的事、他自己或朋友的事、他看重的事。回傳 [分數, 最主要的原因]
+    _careOf(w, a, c) {
+        let s = 0, why = '', top = 0; const add = (k, d) => { s += d; if (d > top) { top = d; why = k; } };
+        if (c.jobs && c.jobs.length && c.jobs.includes(a.job?.key)) add('job', 2);
+        if (c.pred) { try { if (c.pred(a)) add('mind', 2); } catch (e) {} }
+        let v = 0; for (const x of (PROPOSAL_POLICY_VALUES[c.category || PROPOSAL_KIND_CAT[c.kind]] || [])) if (this._hasValue(a, x)) v++; if (v) add('value', Math.min(2, v));
+        const key = String(c.key || '');
+        if (key.includes(a.agentId)) add('self', 3);
+        else { const who = key.split(':').slice(1).join(':'); if (who && w.agents[who] && (a.relationships?.relationships?.[who]?.affinity || 0) >= 30) add('friend', 1.5); }
+        return [s, why];
+    }
+    _rankFor(w, a, cands) { return cands.map(c => { const [care, why] = this._careOf(w, a, c); return { c, care, why, s: c.weight * 0.5 + care * 1.5 }; }).sort((x, y) => y.s - x.s); }
+    // 今天誰開口：每個人看自己最在意的那件事有多想說，加上本來愛不愛出聲；最想說的那個人站出來
+    _speaker(w, day, cands, skip) {
+        let best = null;
+        for (const a of this._npcs(w)) {
+            if ((day - (this.proposerCooldown[a.agentId] || -99)) < 5 || (skip && skip === a.agentId)) continue;
+            let top = null; for (const c of cands) { const [care, why] = this._careOf(w, a, c); const sc = c.weight * 0.5 + care * 1.5; if (!top || sc > top.s) top = { c, care, why, s: sc }; }
+            if (!top) continue;
+            const urge = top.s + this._voiceOf(a) + (Math.random() - 0.5) * 1.8; // 當天的心情起伏
+            if (!best || urge > best.urge) best = { a, urge, top };
+        }
+        if (best && !best.top.why) best.top.why = best.top.c.weight >= 4 ? 'urgent' : 'voice';
+        return best;
+    }
+    // 這一案跟他有多大關係（決定他會不會去投）
+    _stakeOf(w, p, a) {
+        if (!PROPOSAL_BASE_KINDS.has(p.kind)) return 2;
+        let s = 0;
+        for (const v of (PROPOSAL_POLICY_VALUES[p.category] || [])) if (this._hasValue(a, v)) s += 1;
+        if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) s += 2;
+        const rel = a.relationships?.relationships?.[p.proposerId]; if (rel && Math.abs(rel.affinity || 0) >= 25) s += 1.5;
+        if (p.refKey === a.agentId || (Array.isArray(p.pair) && p.pair.includes(a.agentId))) s += 3;
+        if (p.kind === 'minwage' || p.kind === 'stipend' || p.kind === 'relief') { const b = typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 50; if (b < 12 || b >= 150) s += 2; if (w.union?.members?.[a.agentId]) s += 2; }
+        if (p.kind === 'trial' || p.kind === 'tier_up') s += 1.5;
+        if ((this._cost(p).silver || 0) > 0 && this._hasValue(a, '財富')) s += 1;
+        if (this._glutOf(w, p) > 0) s += 1.5;
+        return s;
+    }
+    _votesNow(w, p, a) {
+        if (this._stakeOf(w, p, a) >= 1.5) return true;
+        if (a.job?.key === 'mayor' || this._hasTrait(a, 'hardworking') || this._hasTrait(a, 'charismatic') || this._hasValue(a, '社群') || this._hasValue(a, '權力') || this._hasValue(a, '傳統')) return true; // 熱心公眾事務的人，跟自己無關也會去
+        return false;
+    }
+    // 把提案、投票、裁決記進這個人「做過的決定」（決策核心的紀錄；沒開就不記）
+    _dlog(w, a, kind, id, say, why, src) {
+        try { if (!a || typeof DECIDE === 'undefined' || !DECIDE.on(w)) return; const K = DECIDE.KINDS[kind]; if (!K) return; DECIDE.record(w, DECIDE.S(w), a, K, { id, say }, why || null, null, src || 'rule', this._abs(w), null); } catch (e) { console.warn('[Proposals] dlog', e); }
+    }
+    _titleOf(p) { return p.tk ? { k: p.tk, p: p.tp || {} } : { raw: p.title || p.id }; }
     // v11.3.0 這一案要賣的東西堆了多少：超過容量幾倍（沒超過是 0）。投票的人和首長看得到倉庫滿出來
     _glutOf(w, p) {
         if (!p || p.kind !== 'market' || p.side !== 'sell' || !p.refKey) return 0;
@@ -251,7 +310,7 @@ class ProposalSystem {
         if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
         const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) { const d = (rel.affinity || 0) / 100 * 4; add(d >= 0 ? 'relgood' : 'relbad', d); }
         const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
-        s += (Math.random() - 0.5) * 4;
+        s += (Math.random() - 0.5) * 1.8; // v11.4.0 當天的心情起伏（以前是 ±2，理由不強的人等於擲硬幣；現在跟其他照個性的決定一樣大小）
         p.votes[a.agentId] = s >= 0 ? 'for' : 'against';
         const side = s >= 0 ? 1 : -1; let best = null; for (const [k, d] of R) if (Math.sign(d) === side && Math.abs(d) >= 0.5 && (!best || Math.abs(d) > Math.abs(best[1]))) best = [k, d];
         (p.why || (p.why = {}))[a.agentId] = best ? best[0] : 'gut';
@@ -262,45 +321,50 @@ class ProposalSystem {
         const open = this.open();
         if (open.length >= ProposalSystem.MAX_OPEN) return;
         const cands = this._candidates(w, day);
-        const pickWeighted = (arr) => { const total = arr.reduce((s, c) => s + c.weight, 0); let r = Math.random() * total; for (const c of arr) { r -= c.weight; if (r <= 0) return c; } return arr[0]; };
-        // v6.39.0 完整智能體:今天輪到發言的人自己決定要不要提、提什麼(一天一次 LLM);失敗退回規則
+        // v6.39.0 完整智能體:今天開口的人自己決定要不要提、提什麼(一天一次 LLM);失敗退回照個性
         const eng = w.conversationEngine;
         const canInvent = typeof FREEPROP !== 'undefined' && !!eng?.inventProposal && !!this._inventLLM;
-        // v6.50.0 系統沒偵測到什麼狀況時,村民還是可以自己想點子
+        // v6.50.0 系統沒偵測到什麼狀況時,村民還是可以自己想點子（v11.4.0 以前是每天擲硬幣；現在隔一天、由最愛出主意的人來想）
         if (!cands.length) {
-            if (w.fullAgentMode && canInvent && eng.fullAgentOk?.(w) && Math.random() < 0.5) { const a = this._proposer(w, day, [], null); if (a) this._inventLLM(w, day, a, () => {}, []); }
+            if (w.fullAgentMode && canInvent && eng.fullAgentOk?.(w) && (day - (this._lastFreeDay ?? -9)) >= 2) { const a = this._proposer(w, day, [], (x) => this._hasValue(x, '知識') || this._hasValue(x, '藝術') || this._hasValue(x, '冒險') || this._hasValue(x, '自由')); if (a) { this._lastFreeDay = day; this._inventLLM(w, day, a, () => {}, []); } }
             return;
         }
+        /* v11.4.0 提什麼、誰來提，不再抽籤。以前：先照份量從幾十個點子裡抽一個，再照行業抽一個人。
+           提案人不一定在意那件事，急事（公庫見底、糧倉滿出來）份量再高也可能一個月沒被抽到。
+           現在：每個人看自己最在意的那件事（他這行的事、他掛心的事、他自己或朋友的事、他看重的事，加上事情急不急），
+           最想說的那個人站出來提他最在意的那一件。 */
+        const sp = this._speaker(w, day, cands); if (!sp) return;
         if (w.fullAgentMode && eng?.chooseProposal && eng.fullAgentOk?.(w)) {
-            const pick = pickWeighted(cands);
-            const a = this._proposer(w, day, pick.jobs || [], pick.pred); if (!a) return;
-            const fits = (c) => !c.jobs || !c.jobs.length || c.jobs.includes(a.job?.key) || c === pick;
-            const alts = [pick, ...cands.filter(c => c !== pick && fits(c)).sort((x, y) => y.weight - x.weight)].slice(0, 5);
+            const a = sp.a; const rank = this._rankFor(w, a, cands); const pick = rank[0].c;
+            const alts = rank.slice(0, 5).map(x => x.c);
             const summaries = alts.map(c => { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp), cost: base.cost || {} }; });
             // v6.47.0 讓村民自己發想(天馬行空也行,效果落在白名單裡);發想失敗(AI 沒回、效果全不合格)才回到從點子裡挑
-            // v6.50.0 系統偵測到的鎮況(救濟、調解、審判、新建築、研究……)依急迫度排前面,當參考提示交給 AI,要不要採用由它決定
-            if (canInvent && Math.random() < ProposalSystem.FREE_SHARE) {
-                const hints = cands.slice().sort((x, y) => y.weight - x.weight).slice(0, 6).map(c => { try { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp) }; } catch (e) { return null; } }).filter(Boolean);
+            // v6.50.0 系統偵測到的鎮況當參考提示交給 AI,要不要採用由它決定（v11.4.0 提示改成「這個人自己最在意的」幾件，不是全鎮份量最高的幾件）
+            if (canInvent && ProposalSystem.FREE_SHARE > 0 && (ProposalSystem.FREE_SHARE >= 1 || this._hasValue(a, '知識') || this._hasValue(a, '藝術') || this._hasValue(a, '冒險'))) {
+                const hints = rank.slice(0, 6).map(x => { try { const base = x.c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp) }; } catch (e) { return null; } }).filter(Boolean);
                 this._inventLLM(w, day, a, () => this._generateLLM(w, day, a, alts, summaries, pick), hints); return;
             }
             this._generateLLM(w, day, a, alts, summaries, pick);
             return;
         }
-        const n = Math.random() < 0.72 ? 1 : (Math.random() < 0.35 ? 2 : 0);
-        for (let i = 0; i < n && this.open().length < ProposalSystem.MAX_OPEN; i++) {
-            const cs = this._candidates(w, day); if (!cs.length) return;
-            this._create(w, day, pickWeighted(cs));
+        // 照個性：要有人夠在意（或事情夠急）才會有人提；另外有急事、也有別人在意時，同一天可以再多一案
+        if (sp.top.s < ProposalSystem.SPEAK_MIN) return;
+        const p1 = this._createWith(w, day, sp.top.c, sp.a); if (p1) p1.raiseWhy = sp.top.why;
+        if (this.open().length < ProposalSystem.MAX_OPEN) {
+            const urgent = this._candidates(w, day).filter(c => c.weight >= 4);
+            const s2 = urgent.length ? this._speaker(w, day, urgent, sp.a.agentId) : null;
+            if (s2 && s2.top.care >= 2) { const p2 = this._createWith(w, day, s2.top.c, s2.a); if (p2) p2.raiseWhy = s2.top.why; }
         }
     }
     async _generateLLM(w, day, a, alts, summaries, pick) {
         let r = null;
         try { r = await w.conversationEngine.chooseProposal(w, a, summaries); } catch (e) { console.warn('[Proposals] llm choose', e); }
         if (this.open().length >= ProposalSystem.MAX_OPEN) return;
-        if (!r) { this._create(w, day, pick); return; }
+        if (!r) { this._createWith(w, day, pick, a); return; }
         if (r.choice <= 0 || r.choice > alts.length) { this._lastPass = { day, who: a.name }; w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; }
         const cand = alts[r.choice - 1];
         const p = this._createWith(w, day, cand, a);
-        if (p) { if (r.pitch) p.pitch = r.pitch; p.llm = true; try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
+        if (p) { if (r.pitch) p.pitch = r.pitch; p.llm = true; p.raiseAi = 1; try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {} }
     }
     _proposer(w, day, jobs, pred) {
         const npcs = this._npcs(w).filter(a => (day - (this.proposerCooldown[a.agentId] || -99)) >= 5);
@@ -311,9 +375,9 @@ class ProposalSystem {
         if (!pool.length) return null;
         // 有話語權的人更常提:魅力、勤勞、樂觀、鎮長
         const wgt = (a) => 1 + (this._hasTrait(a, 'charismatic') ? 1.2 : 0) + (this._hasTrait(a, 'hardworking') ? 0.6 : 0) + (this._hasTrait(a, 'optimist') ? 0.4 : 0) + (a.job?.key === 'mayor' ? 1 : 0) - (this._hasTrait(a, 'shy') ? 0.6 : 0) - (this._hasTrait(a, 'lazy') ? 0.5 : 0);
-        const tot = pool.reduce((s, a) => s + Math.max(0.2, wgt(a)), 0); let r = Math.random() * tot;
-        for (const a of pool) { r -= Math.max(0.2, wgt(a)); if (r <= 0) return a; }
-        return pool[pool.length - 1];
+        // v11.4.0 以前照份量抽籤；現在挑最想開口的那個（留一點當天的心情起伏，同樣條件的人不會永遠是同一個）
+        let best = null, bs = -Infinity; for (const a of pool) { const sc = wgt(a) + (Math.random() - 0.5) * 1.8; if (sc > bs) { bs = sc; best = a; } }
+        return best;
     }
     _cool(day, key, days = 12) { return (day - (this.cooldown[key] || -999)) >= days && !this.pending().some(p => p.key === key); }
     _candidates(w, day) {
@@ -585,19 +649,21 @@ class ProposalSystem {
         let action, why;
         if (!m) { action = f >= a ? 'approve' : 'reject'; why = 'nomayor'; }
         else if (cost > 40 && cost > silver * 1.5) { action = 'reject'; why = 'cost'; }
-        else if (total === 0) { action = (final || Math.random() < 0.5) ? 'approve' : 'shelve'; why = action === 'approve' ? 'quiet' : 'wait'; }
+        else if (total === 0) { const lean = this._mayorLean(m, p, w); // v11.4.0 以前擲硬幣（核准或擱置）；現在看首長自己怎麼想
+            if (lean > 0) { action = 'approve'; why = 'quiet'; } else if (lean < 0) { action = 'reject'; why = 'quiet_no'; } else if (final) { action = 'approve'; why = 'quiet'; } else { action = 'shelve'; why = 'quiet_wait'; } }
         else if (f > a * 1.5) { action = 'approve'; why = 'majority'; }
         else if (a > f * 1.5) { action = 'reject'; why = 'minority'; }
         else {
             const lean = this._mayorLean(m, p, w);
             if (lean > 0) { action = 'approve'; why = 'own_yes'; }
             else if (lean < 0) { action = 'reject'; why = 'own_no'; }
-            else if (!final && p.status === 'open' && Math.random() < 0.4) { action = 'shelve'; why = 'wait'; }
+            else if (!final && p.status === 'open' && Math.abs(f - a) <= Math.max(1, Math.round(total * 0.1))) { action = 'shelve'; why = 'wait'; } // v11.4.0 以前四成機率擱置；現在是票數真的差不多才再看看
             else { action = f >= a ? 'approve' : 'reject'; why = final ? 'revisit' : (f >= a ? 'majority' : 'minority'); }
         }
         if (action === 'shelve' && p.status === 'shelved') { action = f >= a ? 'approve' : 'reject'; why = 'revisit'; }
         p.mayorName = m ? m.name : ''; p.mayorWhy = why; p.mayorActing = this._isActing(w, m);
         this.stats.auto++;
+        this._logRuling(w, m, p, action, 'rule');
         this._decide(w, p, action, 'mayor');
     }
     async _mayorRuleLLM(w, p, day, final, m, ticket) {
@@ -615,7 +681,14 @@ class ProposalSystem {
         if (action === 'shelve' && (final || p.status === 'shelved')) action = this._count(p, 'for') >= this._count(p, 'against') ? 'approve' : 'reject';
         p.mayorName = m.name; p.mayorWhy = 'llm:' + (r.why || ''); p.llm = true; p.mayorActing = this._isActing(w, m);
         this.stats.auto++;
+        this._logRuling(w, m, p, action, 'ai');
         this._decide(w, p, action, 'mayor');
+    }
+    // v11.4.0 首長怎麼裁決，記進他「做過的決定」
+    _logRuling(w, m, p, action, src) {
+        if (!m) return; const k = action === 'approve' ? '「{x}」：我核准了' : action === 'reject' ? '「{x}」：我否決了' : '「{x}」：我先擱著';
+        const why = String(p.mayorWhy || '').startsWith('llm:') ? (p.mayorWhy.slice(4) ? { raw: p.mayorWhy.slice(4) } : null) : (MAYOR_WHY[p.mayorWhy] ? { k: MAYOR_WHY[p.mayorWhy] } : null);
+        this._dlog(w, m, 'ruling', action, { k, p: { x: this._titleOf(p) } }, why, src);
     }
     mayorWhyText(p) { if (!p.mayorWhy) return ''; if (String(p.mayorWhy).startsWith('llm:')) return String(p.mayorWhy).slice(4); return t(MAYOR_WHY[p.mayorWhy] || p.mayorWhy); }
 
