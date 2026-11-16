@@ -52,6 +52,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const shut = await page.evaluate(() => { const L = document.getElementById('landing'); const h = document.getElementById('lp-sheet').hidden; L.scrollTop = document.getElementById('landing-decide').offsetTop; return { hidden: h, lock: L.classList.contains('lp-lock') }; }); await page.waitForTimeout(400);
       ok(shut.hidden && !shut.lock, '按 Esc 關掉面板，頁面恢復可以捲動', shut);
       // 捲出畫面後 3D 停止(不再重畫)
+      await page.waitForFunction(() => document.querySelector('.lp-stage-canvas')?.closest('.lp-stage')?.classList.contains('lp-stage-idle'), null, { timeout: 8000 }).catch(() => {});
       const stopped = await page.evaluate(async () => { const c = document.querySelector('.lp-stage-canvas'); if (!c) return null; const gl = c.getContext('webgl2') || c.getContext('webgl'); let n = 0; const orig = gl.drawArrays.bind(gl); gl.drawArrays = (...a) => { n++; return orig(...a); }; await new Promise(r => setTimeout(r, 800)); return n; });
       ok(stopped === 0, '主視覺捲出畫面就停止繪製', stopped);
       ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

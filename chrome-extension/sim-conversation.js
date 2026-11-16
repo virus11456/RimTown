@@ -278,7 +278,7 @@ ${t('【作息】')}${npc.getLifestyleText(world)}
 ${t('【目前近況】')}${prevCurrently}
 ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
 ${topMem ? `${t('【昨天印象最深的事】')}\n${topMem}` : ''}
-${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}`;
+${thought ? `${t('【心裡的體悟】')}- ${thought}` : ''}${(() => { try { const s = typeof DAY !== 'undefined' ? DAY.planAsk(world, npc) : ''; return s ? '\n' + s : ''; } catch (e) { return ''; } })()}`;
         }).join('\n\n');
         const prompt = `${t('你在為模擬小鎮「{town}」的居民規劃真實的一天。像寫小說一樣,讓行程反映每個人的性格、人際與心事。').replace('{town}', t(world.townName || '邊境鎮'))}${(typeof TownGen !== 'undefined' && TownGen.cultureLine(world)) || ''}
 ${ctx.length ? `${t('【今日環境】')}${ctx.join(t('；'))}` : ''}
@@ -383,6 +383,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
         if (typeof data.currently === 'string' && data.currently.trim()) {
             npc.currently = data.currently.trim().slice(0, 80);
         }
+        try { if (data.work && typeof DAY !== 'undefined') DAY.fromPlan(world, npc, data.work); } catch (e) {} // v11.2.0 排行程時順便決定今天去不去上工
     }
 
     // v5.29.0 每日反思(移植 generative_agents reflect),v5.35.0 豐富化:
