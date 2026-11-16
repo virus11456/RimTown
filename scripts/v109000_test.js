@@ -63,7 +63,7 @@ async function run(browser, dev, lang) {
     out.pay = { wallets: [A, B, Cc].every((a, i) => near(bal(a), wg[i] * 0.9)), fund: near(R.fund, 100 - sum), tax: near(w.stockpile.get('silver') - tr0, sum * 0.1, 0.03), total: near(MONEY.total(w), tot0), owe: [A, B, Cc].every(a => (C.owe[a.agentId] || 0) === 0), wages: near(R.wages || 0, sum) };
     R.fund = r2(wg[0] + wg[1] * 0.4); for (const a of [A, B, Cc]) bal(a, 0); const tot1 = MONEY.total(w); CLERGY.pay(w, C, F);
     out.short = { a: near(bal(A), wg[0] * 0.9), b: near(bal(B), wg[1] * 0.4 * 0.9, 0.03), c: bal(Cc) === 0, owe: [C.owe[A.agentId] || 0, C.owe[B.agentId], C.owe[Cc.agentId]], fund: near(R.fund, 0), total: near(MONEY.total(w), tot1), flag: CLERGY.short(w, R) };
-    CLERGY.pay(w, C, F); out.short.flag2 = CLERGY.short(w, R); out.short.mem = (Cc.memory?.memories || []).some(m => /奉獻箱是空的|offering box/.test(m.content || m.text || ''));
+    CLERGY.pay(w, C, F); out.short.flag2 = CLERGY.short(w, R); out.short.mem = (Cc.memory?.entries || []).some(m => /奉獻箱是空的|offering box/.test(m.content || ''));
 
     // 4) 每週檢討
     const d = w._absDay(); const logN = () => (w.messageLog || []).filter(m => /⛪/.test(m.content || '')).length; const l0 = logN();

@@ -120,25 +120,32 @@ const WALLET = (() => {
         // v7.0.0 浮動物價:三餐、衣服、柴火照物價指數付錢(多付的錢一樣付給產業主或公庫,總數不變)
         const px = (k) => (typeof PRICES !== 'undefined' && w.prices ? PRICES.idx(w, k) : 1) * (typeof INFL !== 'undefined' ? INFL.p(w) : 1); // v8.9.0 再乘上通膨的物價水準
         const MEAL = Math.round(MEAL0 * px('food') * 100) / 100, CLOTHES = Math.round(CLOTHES0 * px('cloth') * 100) / 100, FIREWOOD = Math.round(FIREWOOD0 * px('fuel') * 100) / 100;
+        const DQ = typeof DEAL !== 'undefined' && typeof MARKET !== 'undefined' && DEAL.on(w);
         for (const a of all) {
             // 三餐:四成給廚師,其餘歸公庫(食材是公家的)
             // v6.89.0 三餐的錢付給食堂與農莊的老闆;自己沒錢先找家人接濟,沒人幫就真的沒得吃
             if (typeof MARKET !== 'undefined') {
-                const payer = MARKET.feed(w, a, MEAL);
-                if (payer) { W.stats.spent += MEAL; MARKET.sale(w, 'meal', MEAL); MARKET.markFed(w, a, true); }
+                const qm = DQ ? DEAL.price(w, a, 'meal', MEAL) : null; const mp = qm ? qm.p : MEAL; // v11.0.0 老闆漲了價，客人就多付（sim-deal.js）
+                const payer = qm?.skip ? null : MARKET.feed(w, a, mp);
+                if (payer) { W.stats.spent += mp; if (qm) DEAL.sale(w, a, 'meal', MEAL, qm); else MARKET.sale(w, 'meal', MEAL); MARKET.markFed(w, a, true); }
+                else if (qm?.skip) { MARKET.markFed(w, a, false); a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 25)); if (Math.random() < 0.3) mem(w, a, '我不想再讓{s}賺我的錢，今天寧可少吃一頓。', { s: DEAL.sname(qm.k) }, 5); } // 抵制又沒有別家可去：自己挨餓
                 else { hungryToday++; MARKET.markFed(w, a, false); a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 35)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天沒東西吃。', {}, 6); }
             }
             else if (take(w, a, MEAL)) { W.stats.spent += MEAL; tip(cooks, MEAL * 0.1, t('餐費'), a); toTown(w, MEAL * 0.9, t('餐費')); }
             else { a.needs && (a.needs.hunger = Math.max(0, (a.needs.hunger ?? 50) - 25)); a.addThought?.('broke_hungry', w); if (Math.random() < 0.3) mem(w, a, '身上沒錢，今天只吃了一點點。', {}, 5); }
             // 衣服:每人錯開,每十天一次
             if ((d + (a.agentId.length * 7)) % 10 === 0) {
-                if (payBy(a, CLOTHES)) { W.stats.spent += CLOTHES; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
+                const qc = DQ ? DEAL.price(w, a, 'clothes', CLOTHES) : null; const cp = qc ? qc.p : CLOTHES;
+                if (qc?.skip) { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 6)); }
+                else if (payBy(a, cp)) { W.stats.spent += cp; if (qc) DEAL.sale(w, a, 'clothes', CLOTHES, qc); else if (typeof MARKET !== 'undefined') MARKET.sale(w, 'clothes', CLOTHES); else { tip(tailors, CLOTHES * 0.25, t('衣服'), a); toTown(w, CLOTHES * 0.75, t('衣服')); } }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 10)); a.addThought?.('shabby', w); }
             }
             // 手頭寬裕的人會花錢:上酒館、買點好東西(錢回到鎮上流通,不會越存越多);v6.90.0 越有錢花得越多(大約跟財富的平方根成正比)
             const bal = get(w, a); if (bal > 70 && (d + a.agentId.length * 3) % HABIT[habitOf(w, a)] === 0) { /* 照他自己的花錢習慣，幾天花一次 */ const n = Math.min(bal * 0.08, 3 + Math.sqrt(bal) * (0.4 + Math.random() * 0.5)); if (take(w, a, n)) { if (typeof MARKET !== 'undefined') MARKET.sale(w, 'luxury', n); else toTown(w, n, t('村民消費')); W.stats.spent += n; } }
             if (winter) {
-                if (payBy(a, FIREWOOD)) { W.stats.spent += FIREWOOD; if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
+                const qf = DQ ? DEAL.price(w, a, 'firewood', FIREWOOD) : null; const fp = qf ? qf.p : FIREWOOD;
+                if (qf?.skip) { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 15)); }
+                else if (payBy(a, fp)) { W.stats.spent += fp; if (qf) DEAL.sale(w, a, 'firewood', FIREWOOD, qf); else if (typeof MARKET !== 'undefined') MARKET.sale(w, 'firewood', FIREWOOD); else toTown(w, FIREWOOD, t('柴火')); }
                 else { a.needs && (a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - 20)); a.addThought?.('broke_cold', w); if (Math.random() < 0.3) mem(w, a, '買不起柴，晚上冷得睡不著。', {}, 5); }
             }
         }

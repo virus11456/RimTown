@@ -41,6 +41,7 @@ const DECIDE = (() => {
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
     const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
+    const AI_GROUP = { deal: 20 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
@@ -353,7 +354,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         { const live = []; for (const o of list) {
             if (P0.get(pk(o.a.agentId, K))?.tok !== o.tok) continue;
             const a = w.agents[o.a.agentId]; const ctx = (a && !a.isDead && inTown(w, a)) ? (K.scan ? whenOf(w, a, K) : o.ctx) : null; const opts = ctx ? optsOf(w, a, K, ctx) : [];
-            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(pk(o.a.agentId, K)); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d && X._asked > 0) { X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
+            if (!ctx || opts.length < (K.scan ? 2 : 1)) { P0.delete(pk(o.a.agentId, K)); if (OBS.length) emit('dropped', { w, a: o.a, K }); if (X.lastDay === d) { if (K.aiGroup && X._gAsked?.[K.aiGroup] > 0) X._gAsked[K.aiGroup]--; else if (!K.aiOwn && X._asked > 0) X._asked--; if (X._kAsked?.[K.key] > 0) X._kAsked[K.key]--; } continue; }
             o.a = a; o.ctx = ctx; o.opts = opts; live.push(o); }
           if (!live.length) { drain(w, X, d); return; } list = live; }
         try { if (aiOn(w)) { ce._countNpcLlmUse?.(w); j = await ce._askJson(prompt(w, K, list), 140 + list.length * 150); } } catch (e) { j = null; }
@@ -380,7 +381,8 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             const mine = pendOf(P0, o.a.agentId); const cur = mine.length ? mine[0] : null; const bump = !!cur && !o.K.scan && mine.every(q => q.K.scan) && !P0.has(pk(o.a.agentId, o.K));
             // v10.1.0 自己另有名額的類別（aiOwn：公告欄的回應、回信）：一天幾個人由它自己定，不佔全鎮每天 10 個人的名額。不然名額都被每天固定會遇到的事用完，回應的人永遠輪不到 AI 說話
             const own = +o.K.aiOwn || 0;
-            if (ai && (own || X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX)) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || AI_KIND) && (!cur || bump)) { if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(pk(o.a.agentId, o.K), { id: o.a.agentId, d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
+            const grp = (!own && o.K.aiGroup && AI_GROUP[o.K.aiGroup]) ? o.K.aiGroup : null; const G = X._gAsked || (X._gAsked = {}); // v11.0.0 一組選擇點共用一份自己的每日額度（市場與第四權一天 20 件），不擠掉原本的 10 件
+            if (ai && (own || (grp ? (G[grp] || 0) < AI_GROUP[grp] : X._asked < (o.K.scan ? AI_MAX - AI_RESERVE : AI_MAX))) && ((X._kAsked || (X._kAsked = {}))[o.K.key] || 0) < (own || (grp ? (o.K.aiKind || 6) : AI_KIND)) && (!cur || bump)) { if (grp) G[grp] = (G[grp] || 0) + 1; else if (!own) X._asked++; X._kAsked[o.K.key] = (X._kAsked[o.K.key] || 0) + 1; o.tok = ++_tok; P0.set(pk(o.a.agentId, o.K), { id: o.a.agentId, d, K: o.K, ctx: o.ctx, tok: o.tok }); (groups[o.K.key] || (groups[o.K.key] = [])).push(o); if (OBS.length) emit('thinking', { w, a: o.a, K: o.K, ctx: o.ctx || null }); }
             else if (!cur || !o.K.scan) resolveRule(w, X, o, d); // 沒名額、或他正在等的也是別人找上門的事：這一件照個性決定，不能沒下文
         }
         const batches = []; for (const k of Object.keys(groups)) for (let i = 0; i < groups[k].length; i += BATCH) batches.push([KINDS[k], groups[k].slice(i, i + BATCH)]);
@@ -401,7 +403,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // ================= 4. 每天 =================
     function daily(w) {
-        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0; X._kAsked = {};
+        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0; X._kAsked = {}; X._gAsked = {};
         const all = npcs(w);
         // 昨天問 AI 的還沒回話（太慢、沒額度、遊戲開很快）：不讓人卡著，先照個性決定；晚到的回話就不算了
         { const P1 = pend(X); for (const [key, q] of [...P1]) { if (q.d >= d) continue; P1.delete(key); const id = q.id; const a = w.agents[id]; if (!a || !inTown(w, a)) continue; const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) continue; X.st.aiMiss++; resolveRule(w, X, { a, K: q.K, ctx }, d); } }
@@ -442,7 +444,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
@@ -580,7 +582,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.decide = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, _kAsked, ...rest } = this.decide; d.decide = rest; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, _kAsked, _gAsked, ...rest } = this.decide; d.decide = rest; } return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.decide = (data?.decide && typeof data.decide === 'object') ? data.decide : null; } catch (e) {} return r; };
 }
