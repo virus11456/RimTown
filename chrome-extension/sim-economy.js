@@ -227,15 +227,17 @@ const BUILDING_TEMPLATES = {
     armory:{name:t('軍械庫'),description:t('守衛有像樣的裝備'),costs:{wood:20,metal:15,tools:4,silver:40},work:16,effects:{defense_bonus:3}},
     map_room:{name:t('地圖室'),description:t('把走過的山野畫下來，更常發現新地方'),costs:{wood:20,cloth:5,silver:50},work:14,effects:{discover_bonus:0.04,culture_bonus:3}},
     // ---- v6.40.0 科技樹新建築(時代三,要用木板／磚／鋼) ----
+    // v11.1.0 硬木與大理石以前只在翻修房子、擴建鎮公所時當木材石材的替代品，一般蓋建築用不到，做了只能堆著。
+    // 這五棟門面建築直接要它們：議事廳與劇場用硬木，銀行、天文台、雕像廣場用大理石（原本的木材石材各少一點）。鎮上沒有的話，公庫照舊向外地訂。
     clock_tower:{name:t('鐘樓'),description:t('全鎮聽同一口鐘'),costs:{stone:50,plank:10,steel:4,silver:120},work:32,effects:{mood_bonus:3,culture_bonus:10,beauty_bonus:6}},
     aqueduct:{name:t('水道'),description:t('山泉引進鎮裡'),costs:{stone:70,brick:12,silver:100},work:34,effects:{drought_resistance:0.8,food_capacity:150,mood_bonus:1}},
     press:{name:t('印刷坊'),description:t('日報有了印刷機'),costs:{wood:30,plank:10,steel:3,silver:120},work:26,effects:{culture_bonus:15,research_bonus:0.2}},
-    bank:{name:t('銀行'),description:t('公庫每天生一點利息'),costs:{stone:50,brick:10,silver:200},work:30,effects:{trade_bonus:0.15,interest:0.01}},
+    bank:{name:t('銀行'),description:t('公庫每天生一點利息'),costs:{stone:40,brick:10,marble:4,silver:200},work:30,effects:{trade_bonus:0.15,interest:0.01}},
     hospital:{name:t('醫院'),description:t('病房、手術與照護'),costs:{wood:40,brick:12,cloth:15,silver:150},work:34,effects:{healing_bonus:2,mood_bonus:2}},
-    council_hall:{name:t('議事廳'),description:t('提案與投票有了正式場所'),costs:{stone:40,plank:12,silver:120},work:28,effects:{culture_bonus:10,mood_bonus:1}},
-    observatory:{name:t('天文台'),description:t('夜裡看星，白天算節氣'),costs:{stone:50,steel:4,silver:160},work:34,effects:{research_bonus:0.3,beauty_bonus:5,culture_bonus:5}},
-    theater:{name:t('劇場'),description:t('村民自己演自己的故事'),costs:{wood:50,plank:12,cloth:10,silver:140},work:30,effects:{culture_bonus:20,mood_bonus:3,recreation_bonus:10}},
-    statue_plaza:{name:t('雕像廣場'),description:t('給鎮上的英雄立像'),costs:{stone:40,brick:8,silver:90},work:20,effects:{beauty_bonus:15,culture_bonus:5}},
+    council_hall:{name:t('議事廳'),description:t('提案與投票有了正式場所'),costs:{stone:40,plank:12,hardwood:5,silver:120},work:28,effects:{culture_bonus:10,mood_bonus:1}},
+    observatory:{name:t('天文台'),description:t('夜裡看星，白天算節氣'),costs:{stone:40,steel:4,marble:4,silver:160},work:34,effects:{research_bonus:0.3,beauty_bonus:5,culture_bonus:5}},
+    theater:{name:t('劇場'),description:t('村民自己演自己的故事'),costs:{wood:40,plank:12,hardwood:6,cloth:10,silver:140},work:30,effects:{culture_bonus:20,mood_bonus:3,recreation_bonus:10}},
+    statue_plaza:{name:t('雕像廣場'),description:t('給鎮上的英雄立像'),costs:{stone:30,brick:8,marble:5,silver:90},work:20,effects:{beauty_bonus:15,culture_bonus:5}},
     sewers:{name:t('下水道'),description:t('髒水不再流在街上'),costs:{stone:60,brick:15,tools:4,silver:120},work:36,effects:{mood_bonus:2,healing_bonus:1.2}},
     barracks:{name:t('兵營'),description:t('常備守軍'),costs:{stone:50,steel:5,wood:30,silver:150},work:36,effects:{defense_bonus:6,raid_chance:-0.08}},
     caravanserai:{name:t('商隊驛站'),description:t('商隊有地方落腳，來得更勤'),costs:{wood:40,brick:10,silver:140},work:28,effects:{merchant_frequency:1.5,trade_bonus:0.1}},

@@ -64,8 +64,8 @@ const BIZ = (() => {
     const loanAsks = (w, n) => { const ce = w.conversationEngine; return Math.ceil(n) >= 40 && !!(w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && w.agents[w.bank?.banker]); };
     const replyOf = (w, a) => { try { return (typeof BANK !== 'undefined' && w.bank && BANK.lendReply) ? BANK.lendReply(w.bank, a) : null; } catch (e) { return null; } };
     // out.why:沒開成(或還沒開成)的原因 → 'noloan' 銀行借不到、'wait' 等銀行家回話、'nocash' 本錢沒湊齊、'full' 等回話期間店位滿了
-    async function open(w, B, a, d, out) {
-        out = out || {}; const k = typeFor(a); const T = TYPES[k]; const cost = 60; let partner = null;
+    async function open(w, B, a, d, out, kind) {
+        out = out || {}; const k = (kind && TYPES[kind]) ? kind : typeFor(a); const T = TYPES[k]; const cost = 60; let partner = null;
         if (cash(w, a) < cost) { partner = npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0];
             // v8.8.0 找不到合夥人,就拿存款大家放在銀行的錢:跟銀行借開店的本錢,之後慢慢用店裡的進帳還
             if (!partner) { const r0 = replyOf(w, a); let got = bizLoan(w, a, cost - cash(w, a) + 5, '開店');
@@ -144,19 +144,31 @@ const BIZ = (() => {
         const amb = w.mind?.amb || {};
         return (a.age || 30) >= 20 && !shopOf(w, a) && a.job?.key !== 'mayor' && (amb[a.agentId]?.key === 'rich' || has(a, 'hardworking') || has(a, 'creative') || a.job?.key === 'trader') && cash(w, a) >= ((w.bank?.open && typeof BANK !== 'undefined' && BANK.lendable(w.bank) >= 80) ? 15 : 30); // v8.8.0 銀行借得到錢,手頭少一點也敢創業
     }
-    // 給決策核心：他現在開得成店嗎 → { type(店的種類), cost, partner(本錢不夠時找得到的合夥人), loan(要跟銀行借) }
+    // v11.1.0 開哪一種店由本人挑。以前每個人只有一種：有創意的一律畫坊、商人一律古玩鋪，開店時也不知道鎮上已經有幾家，
+    // 九個鎮看下來畫坊加古玩鋪佔六到九成(一個 117 人的城市 19 家裡 18 家)。現在把鎮上各種店有幾家寫給他，他能開的種類都列出來讓他選。
+    // 他能開的：自己拿手的那一種(typeFor)、本行對應的店、有創意的人可以開畫坊、不需要手藝的三種(小酒館、說書茶館、古玩鋪)。最多四種，拿手的排第一。
+    const countOf = (w) => { const c = {}; for (const k of Object.keys(TYPES)) c[k] = 0; for (const sh of S(w).shops) { const k = TYPES[sh.type] ? sh.type : (LEGACY[sh.type]?.[0] || 'curio'); c[k] = (c[k] || 0) + 1; } return c; };
+    function kindsFor(w, a) {
+        const nat = typeFor(a), c = countOf(w), set = [nat];
+        for (const [k, T] of Object.entries(TYPES)) if (T.job && a.job?.key === T.job && !set.includes(k)) set.push(k);
+        if (has(a, 'creative') && !set.includes('studio')) set.push('studio');
+        for (const k of POOL.slice().sort((x, y) => c[x] - c[y])) if (!set.includes(k)) set.push(k); // 鎮上少的排前面
+        return set.slice(0, 4).map(k => ({ key: k, zh: TYPES[k].zh, n: c[k] || 0, own: k === nat }));
+    }
+    // 給決策核心：他現在開得成店嗎 → { type(店的種類), cost, partner(本錢不夠時找得到的合夥人), loan(要跟銀行借), kinds(能開的種類與鎮上各有幾家), counts }
     function startInfo(w, a) {
         if (!W() || !w.wallet || !a) return null; const B = S(w); if (!room(w, B) || !canOpen(w, a)) return null;
         const k = typeFor(a); const short = cash(w, a) < 60; const partner = short ? npcs(w).filter(o => o !== a && cash(w, o) >= 60 && aff(o, a) >= 40 && !shopOf(w, o)).sort((x, y) => aff(y, a) - aff(x, a))[0] || null : null;
         const need = 60 - cash(w, a) + 5; const loan = short && !partner;
         if (loan && !loanOk(w, a, need)) return null; // v9.30.0 得跟銀行借、銀行卻借不到:不出這個選擇(以前照出,選了也開不成)
-        return { type: TYPES[k].zh, key: k, cost: 60, partner, loan, loanAsk: loan && loanAsks(w, need) };
+        return { type: TYPES[k].zh, key: k, cost: 60, partner, loan, loanAsk: loan && loanAsks(w, need), kinds: kindsFor(w, a), counts: countOf(w) };
     }
     // v9.30.0 去開店,回傳 { shop } 或 { why }:'full' 鎮上店位滿了、'noloan' 銀行借不到、'wait' 等銀行家回話(他點頭店才開)、'nocash' 本錢沒湊齊、'gone' 情況變了(已經有店、手頭的錢花掉了)
-    function startTry(w, a) {
+    function startTry(w, a, kind) {
         const B = S(w); if (!W() || !w.wallet || !a) return { why: 'gone' }; if (!room(w, B)) return { why: 'full' }; if (!canOpen(w, a)) return { why: 'gone' };
         if (!startInfo(w, a)) return { why: 'noloan' };
-        const n0 = B.shops.length, out = {}; const pr = open(w, B, a, day(w), out); try { pr?.catch?.(() => {}); } catch (e) {}
+        if (kind && !kindsFor(w, a).some(x => x.key === kind)) kind = null; // 不是他開得了的種類就照他拿手的開
+        const n0 = B.shops.length, out = {}; const pr = open(w, B, a, day(w), out, kind); try { pr?.catch?.(() => {}); } catch (e) {}
         return B.shops.length > n0 ? { shop: B.shops[B.shops.length - 1] } : { why: out.why || 'nocash' };
     }
     function start(w, a) { return startTry(w, a).shop || null; }
@@ -173,7 +185,7 @@ const BIZ = (() => {
     const whoName = (w, id) => { const a = w.agents[id]; if (a && !a.isDead && a.name) return t(a.name); const tr = (w.events?._travellingAgents || []).find(x => x?.agentData?.agentId === id)?.agentData?.name; if (tr) return t(tr) + t('（出遠門）'); const nm = a?.name || w.departedNames?.[id] || w._nameCache?.[id]; return nm ? t(nm) + t('（已不在鎮上）') : t('已不在鎮上的人'); };
     function view(w) { const B = S(w); return { shops: B.shops.map(s => ({ icon: typeOf(s).icon, name: en() ? s.name[1] : s.name[0], type: t(typeOf(s).zh), owner: whoName(w, s.owner), partner: s.partner ? whoName(w, s.partner) : null, profit: Math.round(s.profit), price: s.price })), closed: B.closed.slice(-3).map(c => ({ name: en() ? c.name[1] : c.name[0], profit: c.profit })) }; }
     function chip(w, a) { const s = shopOf(w, a); if (!s) return ''; return `${typeOf(s).icon} ${s.owner === a.agentId ? t('老闆') : t('合夥人')}${t('：')}${en() ? s.name[1] : s.name[0]}`; }
-    return { TYPES, LEGACY, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan, loanOk, typeFor, typeOf, migrate, startInfo, start, startTry, split, splitInfo, splitBy };
+    return { TYPES, LEGACY, S, open, trade, weekly, close, daily, haggle, vet, view, chip, shopOf, bizLoan, loanOk, typeFor, typeOf, kindsFor, countOf, migrate, startInfo, start, startTry, split, splitInfo, splitBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

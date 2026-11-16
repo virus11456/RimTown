@@ -98,7 +98,7 @@ class IndustryManager {
         if (!this.firstChoice) this.firstChoice = key;
         this.industries[key] = { key, level: 1, workers: [], dailyOutput: {} };
         this.needsIndustryChoice = false;
-        this._pendingUnlock = false;
+        this._pendingUnlock = this.canUnlockNew(); // v11.0.1 還有空的名額就繼續等人提(以前一律關掉,一次多開兩個名額時第二個就永遠沒人提)
         this._updateSynergies();
         const def = INDUSTRIES[key];
         if (world) {
@@ -206,6 +206,8 @@ class IndustryManager {
                 }
             }
         }
+        // v11.0.1 名額還有空卻沒在等人提(舊存檔、拆掉產業之後、一次開兩個名額):補回去。到了最高一級不會再升級,以前這種鎮會永遠少一個產業(少了農業就一塊田都沒有)
+        if (!this.needsIndustryChoice && !this._pendingUnlock && Object.keys(this.industries).length > 0 && this.canUnlockNew()) this._pendingUnlock = true;
     }
 
     _updateSynergies() {
