@@ -72,13 +72,13 @@ const sheet = (page) => page.evaluate(() => { const L = document.getElementById(
     ok(s7.open && s7.vis.join() === want && !s8.open && !s8.lock, '「牽動整個鎮」每一步的標籤也開同一個面板；點面板旁邊的暗處關掉', { opened: s7.vis, want, closed: !s8.open });
     // 75 種事
     const k0 = await page.evaluate(() => { const q = (s) => [...document.querySelectorAll(s)]; const tabs = q('.lp-kindtab'); return { tabs: tabs.length, sel: tabs.filter(b => b.getAttribute('aria-selected') === 'true').length, focusable: tabs.filter(b => b.tabIndex === 0).length, vis: q('#landing-kinds .lp-kind').filter(e => e.offsetHeight > 0).map(e => e.id), tags: q('.lp-kind-tags li').length, role: document.querySelector('.lp-kindtabs').getAttribute('role'), labelled: q('#landing-kinds .lp-kind').every(e => e.getAttribute('role') === 'tabpanel' && document.getElementById(e.getAttribute('aria-labelledby'))) }; });
-    ok(k0.tabs === 10 && k0.sel === 1 && k0.focusable === 1 && k0.vis.length === 1 && k0.tags === 75 && k0.role === 'tablist' && k0.labelled, '75 種事：十個分頁、一次只顯示一類，75 個標籤都在', k0);
+    ok(k0.tabs === 13 && k0.sel === 1 && k0.focusable === 1 && k0.vis.length === 1 && k0.tags === 106 && k0.role === 'tablist' && k0.labelled, '106 種事：十三個分頁（v11.0.0 加店家、報社與官員、民怨與人命）、一次只顯示一類，106 個標籤都在', k0);
     await page.evaluate(() => document.getElementById('landing-kinds').scrollIntoView({ block: 'center' })); await page.waitForTimeout(400);
     await page.click('#lp-kt-4'); await page.waitForTimeout(150);
     const k1 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), sel: document.querySelector('.lp-kindtab[aria-selected="true"]')?.id, n: document.querySelectorAll('#lp-kp-4 .lp-kind-tags li').length }));
     await page.keyboard.press('ArrowRight'); await page.waitForTimeout(120); const k2 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), foc: document.activeElement.id }));
     await page.focus('#lp-kt-0'); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(120); const k3 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), foc: document.activeElement.id }));
-    ok(k1.vis === 'lp-kp-4' && k1.sel === 'lp-kt-4' && k1.n > 0 && k2.vis === 'lp-kp-5' && k2.foc === 'lp-kt-5' && k3.vis === 'lp-kp-9' && k3.foc === 'lp-kt-9', '點分頁換類；左右鍵換到隔壁一類，第一類往左會繞到最後一類', { k1, k2, k3 });
+    ok(k1.vis === 'lp-kp-4' && k1.sel === 'lp-kt-4' && k1.n > 0 && k2.vis === 'lp-kp-5' && k2.foc === 'lp-kt-5' && k3.vis === 'lp-kp-12' && k3.foc === 'lp-kt-12', '點分頁換類；左右鍵換到隔壁一類，第一類往左會繞到最後一類', { k1, k2, k3 });
     ok(errs.length === 0, '電腦版沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close(); }
   // ── 舊連結 ──

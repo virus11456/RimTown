@@ -31,7 +31,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       G.offers = [{ key: 'painting', from: '市集城', lv: 2, price: 100, day: w._absDay() }]; fix(0.01, () => { G.lastDay = null; GOODS.daily(w); });
       out.owned = (G.owned[rich.agentId] || []).length === 1; out.chip = GOODS.chip(w, rich); w.wallet.bal[rich.agentId] = 0; out.prestige = CLASS.compute(w, rich) >= 3;
       // 公庫買地標
-      for (const a of npcs()) w.wallet.bal[a.agentId] = 0; w.stockpile.add('silver', 2000, w.tickCount, 'test');
+      for (const a of npcs()) w.wallet.bal[a.agentId] = 0; w.stockpile.add('silver', 2000 + (typeof TREASURY !== 'undefined' ? TREASURY.reserve(w) : 0), w.tickCount, 'test'); /* v10.7.0 公庫超過安全存量的錢才拿來買珍品 */
       const lm0 = (w.proposals.landmarks || []).length; const m0 = npcs()[1].moodModifier || 0;
       G.offers = [{ key: 'statue', from: '市集城', lv: 2, price: 140, day: w._absDay() }]; fix(0.01, () => { G.lastDay = null; GOODS.daily(w); });
       out.landmark = (w.proposals.landmarks || []).length === lm0 + 1 && (npcs()[1].moodModifier || 0) > m0 && G.town.length >= 1;

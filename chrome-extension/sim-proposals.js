@@ -379,15 +379,17 @@ class ProposalSystem {
         const low = npcs.filter(a => bal(a) < 6).sort((x, y) => bal(x) - bal(y))[0] || npcs.filter(a => (a.mood || 0) < 15).sort((x, y) => (x.mood || 0) - (y.mood || 0))[0];
         // v6.87.0 公庫生活補助:公庫錢多、窮人也多時,從公庫發錢給身上沒錢的人(錢不再卡在公庫)
         const poorList = npcs.filter(a => bal(a) < 8);
-        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && silver >= 200 + npcs.length * 6 && this._cool(day, 'stipend', 10)) {
-            const per = Math.max(5, Math.min(20, Math.floor((silver * 0.35) / poorList.length))); const total = per * poorList.length;
+        const TRS = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null; const canGive = TRS ? TRS.budget(w) * 0.35 : silver * 0.35; // v10.7.0 公庫先留安全存量，超過的部分才拿來發補助
+        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && (TRS ? canGive >= 5 * poorList.length : silver >= 200 + npcs.length * 6) && this._cool(day, 'stipend', 10)) {
+            const per = Math.max(5, Math.min(20, Math.floor(canGive / poorList.length))); const total = per * poorList.length;
             out.push({ kind: 'stipend', key: 'stipend', weight: 1.8, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
         }
         // v6.87.0 最低工資是政治選擇,不是天生就有:做滿一天扣完稅還不夠過活的人一多,底層勞工會提,要投票通過才生效(錢從公庫出,有錢人多半反對)
         if (typeof WALLET !== 'undefined' && w.wallet && !(w.wallet.minWage > 0) && this._cool(day, 'minwage', 30)) {
             const Wt = w.wallet.tax || 0; const working = npcs.filter(a => WALLET.WAGE[a.job?.key]); const PL = typeof INFL !== 'undefined' ? INFL.p(w) : 1, WI = WALLET.wageIdx ? WALLET.wageIdx() : 1; const under = working.filter(a => WALLET.WAGE[a.job.key] * WI * (1 - Wt) < WALLET.FLOOR * PL); // v8.9.0 夠不夠過活要看物價
             if (working.length >= 6 && under.length >= Math.max(3, Math.ceil(working.length * 0.25))) {
-                out.push({ kind: 'minwage', key: 'minwage', weight: w.union?.on ? 3 : 1.2, jobs: ['farmer', 'miner', 'priest', 'tailor', 'guard'], pred: (a) => bal(a) < 15 || this._hasValue(a, '社群') || !!w.union?.members?.[a.agentId], /* v6.93.0 有工會時會員常提 */ make: () => ({ kind: 'minwage', key: 'minwage', tk: '訂定最低工資', tp: {}, dk: '做滿一天、扣完稅還不夠吃穿的有 {n} 人。提議扣稅後每天至少領 {f} 銀幣，差額由公庫補，一年約多花 {y} 銀幣。', dp: { n: under.length, f: WALLET.FLOOR, y: Math.round(under.reduce((t2, a) => t2 + (WALLET.FLOOR - WALLET.WAGE[a.job.key] * (1 - Wt)), 0) * 60) }, cost: {}, effects: {}, category: 'welfare' }) });
+                const underN = under.length, yearCost = Math.round(under.reduce((t2, a) => t2 + (WALLET.FLOOR - WALLET.WAGE[a.job.key] * (1 - Wt)), 0) * 60); // v10.8.0 人數與金額當場算好：以前等到真的成案才算，這中間有人丟了工作就會讀到空的職業而出錯
+                out.push({ kind: 'minwage', key: 'minwage', weight: w.union?.on ? 3 : 1.2, jobs: ['farmer', 'miner', 'priest', 'tailor', 'guard'], pred: (a) => bal(a) < 15 || this._hasValue(a, '社群') || !!w.union?.members?.[a.agentId], /* v6.93.0 有工會時會員常提 */ make: () => ({ kind: 'minwage', key: 'minwage', tk: '訂定最低工資', tp: {}, dk: '做滿一天、扣完稅還不夠吃穿的有 {n} 人。提議扣稅後每天至少領 {f} 銀幣，差額由公庫補，一年約多花 {y} 銀幣。', dp: { n: underN, f: WALLET.FLOOR, y: yearCost }, cost: {}, effects: {}, category: 'welfare' }) });
             }
         }
         if (low && silver >= 60 && this._cool(day, 'relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
@@ -760,6 +762,10 @@ class ProposalSystem {
                 case 'law_repeal': case 'law_restore': { result = (typeof REPEAL !== 'undefined') ? REPEAL.enact(w, p) : ''; ok = !!result; break; } // v10.4.0 投票通過的規定可以再投票廢除
                 case 'recall': { result = (typeof REPEAL !== 'undefined') ? REPEAL.recallEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 罷免首長（全鎮投票決定）
                 case 'pardon': { result = (typeof REPEAL !== 'undefined') ? REPEAL.pardonEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 赦免（判決翻案）
+                case 'deal_cap': case 'deal_check': case 'deal_cartel': case 'deal_trial': { result = (typeof DEALLAW !== 'undefined' && DEALLAW) ? DEALLAW.enact(w, p) : ''; ok = !!result; break; } // v11.0.0 管店家的三條規定與審判（sim-deallaw.js）
+                case 'office_appoint': { result = (typeof OFFICE !== 'undefined' && OFFICE) ? OFFICE.enact(w, p) : ''; ok = !!result; break; } // v11.0.0 任命管店家的官員（sim-office.js）
+                case 'fisc_exit': case 'fisc_wealth': case 'fisc_bond': { result = (typeof FISCAL !== 'undefined') ? FISCAL.enact(w, p) : ''; ok = !!result; break; } // v10.8.0 離境稅、財產稅、公債
+                case 'demolish': { result = (typeof DEMOLISH !== 'undefined') ? DEMOLISH.enact(w, p) : ''; ok = !!result; break; } // v10.6.0 蓋出來的建築、工廠、產業可以表決拆掉
                 case 'thing_ban': { result = (typeof THINGS !== 'undefined') ? THINGS.enact(w, p) : ''; ok = !!result; break; } // v9.0.0 禁止鎮上的新東西（村民自己提）
                 case 'infl_raise': { result = (typeof INFL !== 'undefined') ? INFL.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 工資跟上物價
                 case 'ae_use': case 'ae_grant': { result = (typeof LONGEV !== 'undefined') ? LONGEV.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 長生:以太存還是用、賢者之石給誰

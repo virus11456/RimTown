@@ -52,7 +52,7 @@ const stage = () => {
     const ws = UNION.privateWorkers(w, allU);
     const L = ws[0], m2 = ws[1]; out.union = { ws: ws.length };
     if (L && m2) { U.on = true; U.name = '測試工會'; U.leader = L.agentId; U.members = { [L.agentId]: 1, [m2.agentId]: 1 }; U.founded = 1;
-      const kL = UNION.sectorOf(w, L); const other = ks.find(k => k !== kL && M.ownerOf(w, k) && M.ownerOf(w, k) !== L.agentId); const old = M.S(w).owners[other]; M.S(w).owners[other] = L.agentId; // L 買下了另一個產業
+      const kL = UNION.sectorOf(w, L); const other = ks.find(k => k !== kL && M.ownerOf(w, k) && M.ownerOf(w, k) !== L.agentId) || ks.find(k => k !== kL && M.ownerOf(w, k) !== L.agentId) /* 鎮上只有一個產業有老闆時，拿一個還沒人買的產業來測 */; const old = M.S(w).owners[other]; M.S(w).owners[other] = L.agentId; // L 買下了另一個產業
       out.union.talkSelf = UNION.talkInfo(w, other) === null; out.union.cantJoin = UNION.join(w, L) === false && !UNION.privateWorkers(w, [L]).length; out.union.cantOrg = UNION.canOrganize(w, L) === 0;
       UNION.membership(w, Object.values(w.agents).filter(x => !x.isPlayer && !x.isDead), w._absDay()); out.union.after = { leader: U.leader, lWas: L.agentId, stillMember: !!U.members[L.agentId], on: U.on, newLeader: U.leader === m2.agentId };
       M.S(w).owners[other] = old; U.on = false; U.leader = null; U.members = {}; } for (const [k, v] of put) M.S(w).owners[k] = v; out.union.put = put.length; } catch (e) { out.unionErr = String(e.stack || e).slice(0, 300); }

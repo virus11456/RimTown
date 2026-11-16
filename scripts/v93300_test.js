@@ -105,7 +105,7 @@ const stage2 = () => {
   ok(await page.locator('[data-bd-only="plans"]').count() === 1 && await page.locator('.sk-card').count() === B.cards, '「往來」分頁裡有企劃的篩選鈕（v10.1.0 起企劃併進往來），一件一張卡', [await page.locator('.sk-card').count(), B.cards]);
   const tabs = await page.evaluate(() => { const bar = document.querySelector('.proposals-panel .pp-tabs'); const rw = (b) => { const r = document.createRange(); r.selectNodeContents(b); return r.getBoundingClientRect().width; };
     return { cut: [...bar.querySelectorAll('.pp-tab')].filter(b => rw(b) > b.clientWidth + 1 || b.getBoundingClientRect().right > bar.getBoundingClientRect().right + 1).map(b => b.textContent.trim() + ':' + Math.round(rw(b)) + '/' + b.clientWidth), n: bar.querySelectorAll('.pp-tab').length }; });
-  ok(tabs.n === 5 && tabs.cut.length === 0, '桌機：五個子分頁都放得下，字沒有被切掉', tabs);
+  ok((tabs.n === 5 || tabs.n === 6) && tabs.cut.length === 0, '桌機：子分頁都放得下，字沒有被切掉（鎮上有店時多一個「市場」，v11.0.0）', tabs);
   const txt = await page.locator('.proposals-panel').innerText();
   ok(/擲石頭比賽/.test(txt) && /只有你看得到/.test(txt) && /走漏風聲了/.test(txt) && /到場/.test(txt), '卡片上看得到：事情、暗著來的標記、走漏風聲、誰到場', txt.slice(0, 200));
   await page.screenshot({ path: path.join(SHOTS, 'desktop-plans.png') });

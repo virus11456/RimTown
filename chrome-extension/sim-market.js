@@ -83,6 +83,13 @@ const MARKET = (() => {
         const tax = Math.round(n * TAX * 100) / 100; toTown(w, tax, t('營業稅')); // v8.8.0 算到「分」,稅＋老闆實拿剛好等於客人付的錢 const Wl = W(w); if (Wl) Wl.stats.bizTax = Math.round(((Wl.stats.bizTax || 0) + tax) * 10) / 10;
         addId(w, id, n - tax);
     }
+    // v11.0.0 整筆付給同一家（客人自己挑了哪一家時用）：riv＝對手店。照那家自己的折扣算，稅與入帳跟 sell 一樣
+    function sellFirm(w, k, n, why, riv) {
+        n = Math.round(n * 100) / 100; if (!(n > 0)) return; const M = S(w); const R = rivalOf(w, k);
+        if (riv && R) return sellTo(w, k, n, why, R.owner, R.price ?? 1, R);
+        const id = ownerOf(w, k); if (!id) { M.rev[k] = (M.rev[k] || 0) + n; toTown(w, n, why || t('公營收入')); return; }
+        return sellTo(w, k, n, why, id, R ? (M.price?.[k] ?? 1) : 1, null);
+    }
     // 一筆消費(三餐、衣服、柴火、消費)
     function sale(w, kind, n) {
         const parts = SPLIT[kind] || [['trade', 1]]; const all = npcs(w);
@@ -319,7 +326,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, leaveHungry, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
+    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sellFirm, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, leaveHungry, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
