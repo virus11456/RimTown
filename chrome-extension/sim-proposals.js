@@ -336,12 +336,15 @@ class ProposalSystem {
         const sp = this._speaker(w, day, cands); if (!sp) return;
         if (w.fullAgentMode && eng?.chooseProposal && eng.fullAgentOk?.(w)) {
             const a = sp.a; const rank = this._rankFor(w, a, cands); const pick = rank[0].c;
-            const alts = rank.slice(0, 5).map(x => x.c);
+            // 給他看的：他自己最在意的幾件，再加上鎮上最急的兩件（他不一定在意，但應該知道）
+            const urgent = cands.slice().sort((x, y) => y.weight - x.weight).slice(0, 2);
+            const mix = (n) => { const out = rank.slice(0, n - 2).map(x => x.c); for (const c of urgent) if (!out.includes(c)) out.push(c); for (const x of rank) { if (out.length >= n) break; if (!out.includes(x.c)) out.push(x.c); } return out.slice(0, n); };
+            const alts = mix(5);
             const summaries = alts.map(c => { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp), cost: base.cost || {} }; });
             // v6.47.0 讓村民自己發想(天馬行空也行,效果落在白名單裡);發想失敗(AI 沒回、效果全不合格)才回到從點子裡挑
-            // v6.50.0 系統偵測到的鎮況當參考提示交給 AI,要不要採用由它決定（v11.4.0 提示改成「這個人自己最在意的」幾件，不是全鎮份量最高的幾件）
+            // v6.50.0 系統偵測到的鎮況當參考提示交給 AI,要不要採用由它決定（v11.4.0 提示改成「這個人自己最在意的」幾件加上鎮上最急的兩件，不再只是全鎮份量最高的幾件）
             if (canInvent && ProposalSystem.FREE_SHARE > 0 && (ProposalSystem.FREE_SHARE >= 1 || this._hasValue(a, '知識') || this._hasValue(a, '藝術') || this._hasValue(a, '冒險'))) {
-                const hints = rank.slice(0, 6).map(x => { try { const base = x.c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp) }; } catch (e) { return null; } }).filter(Boolean);
+                const hints = mix(6).map(c => { try { const base = c.make(a); return { title: this._fill(base.tk, base.tp), desc: this._fill(base.dk, base.dp) }; } catch (e) { return null; } }).filter(Boolean);
                 this._inventLLM(w, day, a, () => this._generateLLM(w, day, a, alts, summaries, pick), hints); return;
             }
             this._generateLLM(w, day, a, alts, summaries, pick);
