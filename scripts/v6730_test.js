@@ -30,7 +30,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 名人與傳說
       const hero = w.election.currentMayor(w) || all[1]; LEGACY.register(w, L); out.role = !w.election.currentMayor(w) || !!L.roles[hero.name]; /* 還沒有首長的鎮就不檢查 */
       if (!L.roles[hero.name]) L.roles[hero.name] = { role: '前首長', fam: LEGACY.surname(hero) };
-      w.stockpile.add('silver', 500, w.tickCount, 't'); w.lifecycle.graveyard = w.lifecycle.graveyard || []; L.lastGrave = w.lifecycle.graveyard.length; w.lifecycle.graveyard.push({ name: hero.name, age: 70 });
+      w.stockpile.add('silver', 500 + (typeof TREASURY !== 'undefined' ? TREASURY.reserve(w) : 0), w.tickCount, 't'); /* v10.7.0 公庫要超過安全存量才算寬裕 */ w.lifecycle.graveyard = w.lifecycle.graveyard || []; L.lastGrave = w.lifecycle.graveyard.length; w.lifecycle.graveyard.push({ name: hero.name, age: 70 });
       D++; L.lastDay = null; await LEGACY.daily(w); out.legend = L.legends.some(l => l.name === hero.name) && logHas(/傳說|legend/) && (w.proposals.landmarks || []).some(x => x.icon === '🗽');
       // 家族:讓兩家各三人
       const fA = all.slice(2, 5), fB = all.slice(5, 8); const sa = LEGACY.surname(fA[0]); let sb = LEGACY.surname(fB[0]); if (sb === sa) sb = sa === '林' ? '王' : '林';
