@@ -16634,6 +16634,8 @@
         '跟朋友約好了': 'Meeting a friend as planned',
         '想約{b}出去走走，他說改天。': 'I asked {b} to go out for a while. They said another day.',
         '{a}約我出去，我今天不太想動，跟他說改天。': '{a} asked me out. I didn\'t feel like going anywhere today and said another day.',
+        '今天跟東家請了假，去赴{b}的約。': 'I took the day off from the boss to keep my plan with {b}.',
+        '請了一天假去赴{b}的約，這一天沒有工資': 'Took the day off to meet {b}, with no pay for it',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

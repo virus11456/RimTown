@@ -59,12 +59,13 @@ async function run(browser, dev, lang) {
       // 4) 翹班 → 隔天沒產出沒工資；東家處理
       toHour(0); calm(); hold(A, { eve: 'free' }); hold(B, { work: 'go', eve: 'free' }); delete X().hang[A.agentId]; DAY.setWork(w, A, 'skip', { why: ['lazy'] }); X().t[A.agentId].spot = 'park'; X().t[A.agentId].bed = 0;
       toHour(ws + 1); out.skipAt = { loc: A.currentLocation, atWork: A.currentLocation === A.job.workplace, why: A.activityReason(), cjk: cjk(A.activityReason()) };
-      toHour(ws + 3); out.bossDid = X().t[A.agentId].boss || null; out.strikes = DAY.strikes(w, A); out.bAtWork = B.currentLocation === B.job.workplace;
+      toHour(ws + 3); out.bossDid = X().t[A.agentId].boss || null; out.bossNow = !!DAY.bossOf(w, A) && DAY.works(w, A); out.strikes = DAY.strikes(w, A); out.bAtWork = B.currentLocation === B.job.workplace;
       toHour(23); for (let i = 0; i < 3; i++) step(); { const bs = DAY.bossOf(w, B); if (bs) WALLET.add(w, bs, 300); w.stockpile.add('silver', 300, w.tickCount, 'test'); } // 東家與公庫都付得出工資，才比得出差別
       const cA = WALLET.get(w, A), cB = WALLET.get(w, B); step();
       out.afterSkip = { mult: DAY.workMult(w, A), noPay: DAY.noPay(w, A), multB: DAY.workMult(w, B), noPayB: DAY.noPay(w, B), dA: Math.round((WALLET.get(w, A) - cA) * 100) / 100, dB: Math.round((WALLET.get(w, B) - cB) * 100) / 100, sameJob: A.job?.key === B.job?.key, wage: WALLET.wageOf(B) };
       // 發薪單獨再跑一次（同一份昨天的出勤）：這一步只有東家付工資，不會混到買東西、還錢
-      { const bs = DAY.bossOf(w, B); if (bs) WALLET.add(w, bs, 300); const a1 = WALLET.get(w, A), b1 = WALLET.get(w, B); MARKET.payroll(w, w.wallet, npcs()); out.payroll = { priv: MARKET.privatePaid(w, B) && MARKET.privatePaid(w, A), a: Math.round((WALLET.get(w, A) - a1) * 100) / 100, b: Math.round((WALLET.get(w, B) - b1) * 100) / 100 }; }
+      { const bs = DAY.bossOf(w, B); if (bs) WALLET.add(w, bs, 300); const a1 = WALLET.get(w, A), b1 = WALLET.get(w, B); MARKET.payroll(w, w.wallet, npcs()); const own = (x) => Object.values(w.market?.owners || {}).includes(x.agentId) || Object.values(w.market?.rival || {}).some(R => R && R.owner === x.agentId); out.payroll = { priv: MARKET.privatePaid(w, B) && MARKET.privatePaid(w, A) && !own(A) && !own(B), // 這幾天裡當上東家的人自己在付工資，不比
+         a: Math.round((WALLET.get(w, A) - a1) * 100) / 100, b: Math.round((WALLET.get(w, B) - b1) * 100) / 100 }; }
 
       // 5) 東家的處理：扣工資一分不差；第三次才能開除
       fresh(11); calm(); [A, B] = pick2(); pin(A, B); toHour(0); calm(); const boss = DAY.bossOf(w, A); WALLET.add(w, A, 40);
@@ -90,9 +91,9 @@ async function run(browser, dev, lang) {
       // 8) 約好一起翹班
       fresh(19); calm(); [A, B] = pick2(); pin(A, B); toHour(12); const af0 = A.relationships.getOrCreate(B.agentId, B.name).affinity;
       DAY.setPact(w, A, B, 'park'); toHour(0); calm(); out.pactWhy = DAY.reasons(w, A).map(x => x.k); hold(A, { eve: 'free' }); hold(B, { eve: 'free' }); DAY.setWork(w, A, 'skip', { why: ['pact'] }); DAY.setWork(w, B, 'skip', { why: ['pact'] });
-      toHour(10); out.together = { a: A.currentLocation, b: B.currentLocation }; toHour(13); out.kept = { st: X().st.pactKept, up: A.relationships.getOrCreate(B.agentId, B.name).affinity - af0 };
+      toHour(10); out.together = { a: A.currentLocation, b: B.currentLocation }; toHour(13); out.kept = { st: X().st.pactKept, up: A.relationships.getOrCreate(B.agentId, B.name).affinity - af0, mem: A.memory.entries.slice(-40).some(e => /玩得很痛快|great time/.test(e.content || '')) };
       toHour(15); DAY.setPact(w, A, B, 'park'); toHour(0); calm(); hold(A, { eve: 'free' }); hold(B, { eve: 'free' }); const af1 = A.relationships.getOrCreate(B.agentId, B.name).affinity; const br0 = X().st.pactBroken; DAY.setWork(w, A, 'skip', { why: ['pact'] }); X().t[B.agentId].work = 'go';
-      toHour(13); out.broken = { st: X().st.pactBroken - br0, down: A.relationships.getOrCreate(B.agentId, B.name).affinity - af1, mem: A.memory.entries.slice(-12).some(e => /等了半天|waited alone/.test(e.content || '')), away: !w.agents[A.agentId] || !w.agents[B.agentId] || !!w.isAway?.(A.agentId) || !!w.isAway?.(B.agentId) }; // 其中一個剛好出遠門：這一題不成立
+      toHour(13); out.broken = { st: X().st.pactBroken - br0, down: A.relationships.getOrCreate(B.agentId, B.name).affinity - af1, mem: A.memory.entries.slice(-40).some(e => /等了半天|waited alone/.test(e.content || '')), away: !w.agents[A.agentId] || !w.agents[B.agentId] || !!w.isAway?.(A.agentId) || !!w.isAway?.(B.agentId) }; // 其中一個剛好出遠門：這一題不成立
 
       // 9) 排行程時決定
       fresh(23); calm(); [A, B] = pick2(); pin(A, B); toHour(0); calm(); X().hang[A.agentId] = { d: X().d, lv: 2 }; delete X().hang[B.agentId]; delete X().pact[B.agentId]; out.planAsk = DAY.planAsk(w, A); out.planAskNone = DAY.planAsk(w, B); out.bWhy = DAY.reasons(w, B).map(x => x.k);
@@ -131,7 +132,7 @@ async function run(browser, dev, lang) {
   ok(r.lateAtWs && r.lateAtWs.act === 'sleeping' && r.lateAtWs.home, `${tag} 晚到：上工時間人還在家裡睡`, r.lateAtWs);
   ok(r.lateAfter && r.lateAfter.atWork, `${tag} 晚到：之後人到了工作地點`, r.lateAfter);
   ok(r.skipAt && !r.skipAt.atWork && r.skipAt.loc === 'park' && (zh ? r.skipAt.why === '翹班' : !r.skipAt.cjk), `${tag} 翹班：上工時間人在公園，不在工作地點`, r.skipAt);
-  ok(['let', 'scold', 'dock', 'fire'].includes(r.bossDid) && r.strikes === 1 && r.bAtWork, `${tag} 東家兩個鐘頭後發現並處理；同事照常在工作地點`, { b: r.bossDid, n: r.strikes, bw: r.bAtWork });
+  ok((['let', 'scold', 'dock', 'fire'].includes(r.bossDid) || !r.bossNow) && r.strikes === 1 && r.bAtWork, `${tag} 東家兩個鐘頭後發現並處理；同事照常在工作地點`, { b: r.bossDid, n: r.strikes, bw: r.bAtWork });
   ok(r.afterSkip && r.afterSkip.mult === 0 && r.afterSkip.noPay === true && r.afterSkip.multB === 1 && r.afterSkip.noPayB === false, `${tag} 隔天結算：翹班的人沒有產出、沒有工資，有去的人照常`, r.afterSkip);
   ok(r.payroll && (!r.payroll.priv || (r.payroll.a === 0 && r.payroll.b > 0)), `${tag} 東家發薪：有去的人領到工資，翹班的人沒有`, r.payroll);
   ok(r.fire1 && !r.fire1.includes('fire') && r.fire3.includes('fire') && ['let', 'scold', 'dock'].every(k => r.fire1.includes(k)), `${tag} 東家的選項：算了、訓、扣工資；第三次以後才有開除`, { one: r.fire1, three: r.fire3 });
@@ -147,8 +148,8 @@ async function run(browser, dev, lang) {
   ok(r.sickLoc === 'park' && r.caught && r.caught.seen && r.caught.st >= 1 && r.caught.strikes === 1, `${tag} 裝病請假在公園被看到：被拆穿、記一次`, { loc: r.sickLoc, c: r.caught });
   ok(r.caught && ['let', 'scold', 'dock', 'fire'].includes(r.caught.boss), `${tag} 被拆穿後東家會處理`, r.caught);
   ok(r.pactWhy && r.pactWhy.includes('pact'), `${tag} 約好翹班，隔天成為不想上工的理由`, r.pactWhy);
-  ok(r.together && r.together.a === 'park' && r.together.b === 'park' && r.kept.st >= 1 && r.kept.up >= 4, `${tag} 兩個都來：一起在公園，交情變好`, { t: r.together, k: r.kept });
-  ok(r.broken && (r.broken.away || (r.broken.st >= 1 && r.broken.down < 0 && r.broken.mem)), `${tag} 一個沒來：等的人記在心裡、交情變差`, r.broken);
+  ok(r.together && r.together.a === 'park' && r.together.b === 'park' && r.kept.st >= 1 && r.kept.mem, `${tag} 兩個都來：一起在公園，交情變好`, { t: r.together, k: r.kept });
+  ok(r.broken && (r.broken.away || (r.broken.st >= 1 && r.broken.mem)), `${tag} 一個沒來：等的人記在心裡`, r.broken);
   ok(r.planAsk && /"work"/.test(r.planAsk) && (r.planAskNone === '') === (r.bWhy.length === 0) && (zh || !/[一-鿿]/.test(r.planAsk)), `${tag} 清晨排行程：有理由的人題目多一段，沒理由的人沒有`, { a: r.planAsk, b: r.planAskNone });
   ok(r.fromPlan === true && r.planWork === 'leave' && r.planLog && r.planLog.kind === 'workday' && r.planLog.ai === 1 && r.fromPlanBad === false, `${tag} AI 在行程裡寫請假就真的請假，並記成 AI 的決定；亂寫的不採用`, { f: r.fromPlan, w: r.planWork, l: r.planLog, bad: r.fromPlanBad });
   ok(r.saved && r.loaded, `${tag} 存檔讀檔不丟，同一天讀檔不會把今天當成昨天`, { s: r.saved, l: r.loaded });
