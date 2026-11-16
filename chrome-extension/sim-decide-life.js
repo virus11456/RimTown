@@ -130,18 +130,19 @@
     // ---------- 要不要奉獻 ----------
     const FT = () => (typeof FAITH !== 'undefined' ? FAITH : null);
     const titheInfo = (w, a) => { const F = FT(); if (!F || !w.faith || !DECIDE.on(w)) return null; const I = F.giftInfo(w, a); return I && I.piety >= 45 ? I : null; };
+    try { DECIDE.source('eco', (w, a) => (typeof CLERGY !== 'undefined' ? CLERGY.describe(w, a) : '')); } catch (e) {} // v10.9.0 神職知道自己的薪水是教團發的
     DECIDE.kind('tithe', {
         title: '要不要奉獻', cool: 7, pri: 0.5,
         when(w, a) { return titheInfo(w, a) ? {} : null; },
         facts(w, a) {
             const I = titheInfo(w, a); if (!I) return '';
-            return fill('你信{r}（虔誠 {p}／100）。你身上有 {c} 銀幣。教團的基金現在有 {f} 銀幣，用在場所維護、節日辦桌和救濟窮人。{big}', { r: I.R.name[0], p: Math.round(I.piety), c: Math.floor(I.cash), f: Math.round(I.R.fund || 0), big: I.big ? '捐得多，神職和同信仰的人會對你另眼相看。' : { raw: '' } });
+            return fill('你信{r}（虔誠 {p}／100）。你身上有 {c} 銀幣。教團的基金現在有 {f} 銀幣，用在神職的薪水、場所維護、節日辦桌和救濟窮人。{cl}{big}', { cl: { raw: (typeof CLERGY !== 'undefined' ? CLERGY.titheLine(w, I.R) : '') }, r: I.R.name[0], p: Math.round(I.piety), c: Math.floor(I.cash), f: Math.round(I.R.fund || 0), big: I.big ? '捐得多，神職和同信仰的人會對你另眼相看。' : { raw: '' } });
         },
         options(w, a) {
             const I = titheInfo(w, a); if (!I) return []; const F = FT(); const rn = I.R.name[0];
             const out = [
                 { id: 'skip', quiet: true, mute: true, text: '這陣子先不奉獻', why: '心意到了就好', base: 1.3 + (has(a, 'greedy') ? 0.5 : 0) + (has(a, 'thrifty') ? 0.2 : 0), lean: { safe: 0.2 }, run: () => null },
-                { id: 'small', quiet: true, text: { k: '奉獻 {n} 銀幣', p: { n: I.small } }, say: { k: '奉獻 {n} 銀幣給{r}', p: { n: I.small, r: rn } }, why: '該盡的心意', base: 0.1 + I.piety / 40 + (has(a, 'kind') ? 0.3 : 0), lean: { bond: 0.2 },
+                { id: 'small', quiet: true, text: { k: '奉獻 {n} 銀幣', p: { n: I.small } }, say: { k: '奉獻 {n} 銀幣給{r}', p: { n: I.small, r: rn } }, why: '該盡的心意', base: 0.1 + I.piety / 40 + (has(a, 'kind') ? 0.3 : 0) + (typeof CLERGY !== 'undefined' && CLERGY.short(w, I.R) ? 0.4 : 0), lean: { bond: 0.2 },
                     run: (w, a) => { const n = F.donate(w, a, false); return n ? { k: '奉獻了 {n} 銀幣', p: { n } } : null; } },
             ];
             if (I.big) out.push({ id: 'big', text: { k: '捐 {n} 銀幣，讓大家都看見', p: { n: I.big } }, say: { k: '捐 {n} 銀幣給{r}', p: { n: I.big, r: rn } }, why: '錢財是身外之物，捐了大家也敬重',

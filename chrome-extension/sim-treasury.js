@@ -24,7 +24,7 @@ const TREASURY = (() => {
     function staff(w) {
         if (typeof WALLET === 'undefined' || !w?.wallet) return [];
         let jail = null; try { jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; } catch (e) {}
-        return npcs(w).filter(a => WALLET.WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid?.(w, a)) && !(jail && jail.has(a.agentId)));
+        return npcs(w).filter(a => WALLET.WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid?.(w, a)) && !(typeof CLERGY !== 'undefined' && CLERGY.paidBy(w, a)) && !(jail && jail.has(a.agentId))); // v10.9.0 神職由教團發薪，不算公庫的人
     }
     function payroll(w) { if (typeof WALLET === 'undefined' || !w?.wallet) return 0; const W = w.wallet; const PR = (typeof FISCAL !== 'undefined') ? FISCAL.pubRate(w) : 1; return r2(staff(w).reduce((s, a) => s + Math.max(W.minWage || 0, WALLET.wageOf(a) * PR * (1 - (W.tax || 0))), 0)); }
     const upkeep = (w) => (w?.buildings?.completed || []).reduce((s, b) => s + (BIG.includes(b.buildingKey) ? 4 : 2) * (b.level || 1), 0);

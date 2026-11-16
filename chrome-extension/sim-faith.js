@@ -115,7 +115,7 @@ const FAITH = (() => {
         const season = ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock?.season);
         if (season === R.festSeason && w.clock?.day === R.festDay && R._feastDay !== d) { R._feastDay = d; const n = take(Math.min((R.fund || 0) * 0.4, bs.length * 1.5)); if (n) { if (typeof MARKET !== 'undefined' && w.market && MARKET.sale) MARKET.sale(w, 'meal', n); else w.stockpile?.add?.('silver', n, w.tickCount, t('節日辦桌')); R.feasts = Math.round(((R.feasts || 0) + n) * 100) / 100; } }
         // 基金太多:超過(100 ＋ 每位信徒 8)的部分,每天拿一成出來,一半修建場所(付給木作坊與礦場)、一半救濟鎮上最窮的人
-        const cap = 100 + bs.length * 8; if ((R.fund || 0) > cap) { const n = take(((R.fund || 0) - cap) * 0.1); if (n) { const r2 = (x) => Math.round(x * 100) / 100; const wood = r2(n * 0.3), stone = r2(n * 0.2), rest = r2(n - wood - stone); // 三份都算到分、最後一份拿剩下的(以前各自四捨五入,每次多出或少掉一兩分)
+        const cap = 100 + bs.length * 8 + (typeof CLERGY !== 'undefined' ? CLERGY.reserve(w, R) : 0); /* v10.9.0 先留 30 天的神職薪水 */ if ((R.fund || 0) > cap) { const n = take(((R.fund || 0) - cap) * 0.1); if (n) { const r2 = (x) => Math.round(x * 100) / 100; const wood = r2(n * 0.3), stone = r2(n * 0.2), rest = r2(n - wood - stone); // 三份都算到分、最後一份拿剩下的(以前各自四捨五入,每次多出或少掉一兩分)
             payLocal(w, 'timber', wood, t('修建宗教場所')); payLocal(w, 'mine', stone, t('修建宗教場所'));
             const poor = npcs(w).filter(a => money(w, a) < 15).sort((x, y) => money(w, x) - money(w, y)).slice(0, 3);
             if (poor.length) { const each = Math.floor(rest / poor.length * 100) / 100; poor.forEach((p, i) => WALLET.add(w, p, i === 0 ? r2(rest - each * (poor.length - 1)) : each)); } else payLocal(w, 'timber', rest, t('修建宗教場所')); R.built = Math.round(((R.built || 0) + n) * 100) / 100; } }
@@ -228,7 +228,7 @@ const FAITH = (() => {
     function preachInfo(w, a) {
         const F = S(w); const R = relOf(w, a); const f = F.of[a?.agentId]; if (!a || !R || !f || f.piety < 70) return null;
         const friends = preachFriends(w, F, a, R).sort((x, y) => (a.relationships.relationships[y.agentId]?.affinity || 0) - (a.relationships.relationships[x.agentId]?.affinity || 0)).slice(0, 2);
-        return friends.length ? { R, zeal: zealOf(R), friends } : null;
+        return friends.length ? { R, zeal: zealOf(R) * (typeof CLERGY !== 'undefined' ? CLERGY.reach(w, R) : 1), friends } : null; // v10.9.0 有領薪水的神職越多，信徒越常去勸人
     }
     function preachBy(w, a, oid) {
         const I = preachInfo(w, a); const o = I ? I.friends.find(x => x.agentId === oid) : null; if (!o) return null;
@@ -238,7 +238,7 @@ const FAITH = (() => {
     }
     function convertInfo(w, o, c) {
         const F = S(w); const a = w.agents[c?.by]; const R = F.rels.find(x => x.id === c?.rel); const of = F.of[o?.agentId]; if (!o || !a || a.isDead || !R || !of || of.rel === R.id) return null;
-        return { a, R, oldR: relOf(w, o), piety: Math.round(of.piety || 0), p: Math.max(0.02, 0.5 - resistOf(F, o) * 0.6) };
+        return { a, R, oldR: relOf(w, o), piety: Math.round(of.piety || 0), p: Math.min(0.95, Math.max(0.02, 0.5 - resistOf(F, o) * 0.6) * (typeof CLERGY !== 'undefined' ? CLERGY.reach(w, R) : 1)) }; // v10.9.0 神職多的教團比較說得動人
     }
     function convertBy(w, o, c, yes) { const I = convertInfo(w, o, c); if (!I) return null; if (yes) convertDo(w, S(w), I.a, o, I.R); else refuseDo(w, I.a, o, I.R); return I; }
     // 你打出的事件卡,在信徒眼裡是神意

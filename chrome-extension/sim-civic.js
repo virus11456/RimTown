@@ -73,7 +73,7 @@ const CIVIC = (() => {
         const TR = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null;
         const civic = a.job?.key === 'mayor' || has(a, 'hardworking') || has(a, 'stoic');
         if (TR) { // v10.7.0 領公庫薪水的人知道公庫空了自己就領不到：公庫吃緊時他們贊成加稅、反對減稅
-            const pub = typeof MARKET !== 'undefined' && MARKET.PUBLIC.includes(a.job?.key) && !MARKET.privatePaid?.(w, a); const tight = TR.low(w) || (w.wallet?.shortDay ?? -99) >= day(w) - 7;
+            const pub = typeof MARKET !== 'undefined' && MARKET.PUBLIC.includes(a.job?.key) && !MARKET.privatePaid?.(w, a) && !(typeof CLERGY !== 'undefined' && CLERGY.paidBy(w, a)); const tight = TR.low(w) || (w.wallet?.shortDay ?? -99) >= day(w) - 7;
             if (p.dir === 'down') { if (tight && (pub || civic)) return 'against'; return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against'; }
             if (tight && (pub || (civic && c >= 20))) return 'for';
             return Math.random() < (tight ? (c < 20 ? 0.15 : c > 300 ? 0.2 : 0.45) : 0.15) ? 'for' : 'against';

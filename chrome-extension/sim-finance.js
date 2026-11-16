@@ -81,6 +81,7 @@ const LABOR = (() => {
         const cy = typeof CYCLE !== 'undefined' ? CYCLE.c(w) : 0; const rich = (w.stockpile?.get?.('silver') || 0) > n * 60 ? 1.2 : 1;
         const PUBLICJ = ['guard', 'doctor', 'researcher', 'priest'];
         for (const [k, r] of Object.entries(RATIO)) out[k] = Math.max(1, Math.ceil(n * r * (k === 'farmer' && foodHot ? 1.2 : 1) * (PUBLICJ.includes(k) ? rich : 1 + 0.1 * cy) * (typeof TECH !== 'undefined' ? TECH.jobMult(w, k) : 1))); // v7.8.0 機器搶工作:生產線／機器人／AI 讓職缺變少
+        if (typeof CLERGY !== 'undefined' && CLERGY.on(w)) out.priest = CLERGY.count(w, all || npcs(w)); // v10.9.0 神職有幾位由教團養得起幾位決定，就業市場不開缺也不裁
         return out;
     }
     function filled(all) { const c = {}; for (const a of all) { const k = a.job?.key; if (k && RATIO[k] !== undefined) c[k] = (c[k] || 0) + 1; } return c; }

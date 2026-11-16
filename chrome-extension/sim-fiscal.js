@@ -32,7 +32,7 @@ const FISCAL = (() => {
     const wealthFree = () => Math.round(WEALTH_FREE * idx());
     const TR = (w) => (typeof TREASURY !== 'undefined' && w.observerMode && w.wallet) ? TREASURY : null;
     const tight = (w) => { const T = TR(w); return !!T && (T.low(w) || (w.wallet?.shortDay ?? -99) >= day(w) - 7); };
-    const isPub = (w, a) => { try { return typeof MARKET !== 'undefined' && MARKET.PUBLIC.includes(a.job?.key) && !MARKET.privatePaid?.(w, a); } catch (e) { return false; } };
+    const isPub = (w, a) => { try { return typeof MARKET !== 'undefined' && MARKET.PUBLIC.includes(a.job?.key) && !MARKET.privatePaid?.(w, a) && !(typeof CLERGY !== 'undefined' && CLERGY.paidBy(w, a)); } catch (e) { return false; } };
     const isBoss = (w, a) => { try { return typeof MARKET !== 'undefined' && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
     const busy = (w) => (w.proposals?.items || []).some(p => KINDS.includes(p.kind) && ['open', 'shelved', 'approved'].includes(p.status));
     const toTown = (w, n, why) => { if (n > 0) w.stockpile?.add?.('silver', n, w.tickCount, tr(why), 'tax'); };

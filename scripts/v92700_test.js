@@ -85,7 +85,7 @@ async function run(browser, lang) {
       Fa.lastDay = null; fix(0.01, () => FAITH.daily(w)); out.preach.untouched = !Fa.of[B.agentId].rel && X.q.length === 0; Fa.of[A.agentId] = { rel: R.id, piety: 80 }; Fa.of[B.agentId] = { rel: null, piety: 0 };
       const res = go(A, 'preach', 'go:' + B.agentId); const q = X.q.slice(); const cx = q[0]?.ctx; X.q = [];
       out.preach.run = { res: !!res, queued: q.length === 1 && q[0].kind === 'convert' && q[0].a === B.agentId, notYet: !Fa.of[B.agentId].rel };
-      if (cx) { keep('convert', 'convert', B, cx); out.conv = { ids: ids(B, 'convert', cx), p: FAITH.convertInfo(w, B, cx)?.p };
+      if (cx) { keep('convert', 'convert', B, cx); out.conv = { ids: ids(B, 'convert', cx), p: FAITH.convertInfo(w, B, cx)?.p, reach: (typeof CLERGY !== 'undefined' ? CLERGY.reach(w, Fa.rels.find(x => x.id === cx.rel)) : 1) }; /* v10.9.0 沒有神職的教團傳教慢一半，比的時候扣掉這個倍率 */
         const yes0 = sc(B, 'convert', 'yes', cx); Fa.of[B.agentId] = { rel: 'RX', piety: 80 }; const yesDevout = sc(B, 'convert', 'yes', cx); keep('convertOld', 'convert', B, cx); Fa.of[B.agentId] = { rel: null, piety: 0 }; out.conv.sc = { yes0, yesDevout, no: sc(B, 'convert', 'no', cx) };
         go(B, 'convert', 'no', cx); const kept = !Fa.of[B.agentId].rel; const r2 = go(B, 'convert', 'yes', cx);
         out.conv.run = { kept, res: !!r2, rel: Fa.of[B.agentId].rel === R.id, piety: Fa.of[B.agentId].piety, after: ids(B, 'convert', cx) }; }
@@ -218,7 +218,7 @@ async function run(browser, lang) {
   ok(r.preach.ctx && r.preach.ids.join() === `no,go:${r.preach.ids[1]?.split(':')[1]}` && !r.preach.mild && !r.preach.same && r.preach.zeal > 0, L + '傳教：只問很虔誠、又有信別的（或不信）的好朋友的人', r.preach);
   ok(r.preach.sc.goShy < r.preach.sc.go0, L + '傳教：害羞的人比較不會去勸', r.preach.sc);
   ok(r.preach.untouched && r.preach.run.res && r.preach.run.queued && r.preach.run.notYet && r.preach.flow === 1, L + '傳教：每天的流程不再擲骰；本人決定去勸，被勸的人當下被問、還沒改信', r.preach);
-  ok(r.conv && r.conv.ids.join() === 'no,yes' && r.conv.p > 0.4 && r.conv.sc.yes0 > r.conv.sc.yesDevout + 0.5, L + '改信：不信教的人比較容易被勸動，本來就很虔誠的人很難', r.conv);
+  ok(r.conv && r.conv.ids.join() === 'no,yes' && r.conv.p / (r.conv.reach || 1) > 0.4 && r.conv.sc.yes0 > r.conv.sc.yesDevout + 0.5, L + '改信：不信教的人比較容易被勸動，本來就很虔誠的人很難', r.conv);
   ok(r.conv && r.conv.run.kept && r.conv.run.res && r.conv.run.rel && r.conv.run.piety === 45 && !r.conv.run.after?.length, L + '改信：說不改就不改；決定改信就真的改（虔誠度從 45 開始），不會再問', r.conv?.run);
   // 新東西
   ok(!r.thing.like && !r.thing.owner && !r.thing.none && r.thing.chat >= 1, L + '新東西：喜歡的人、老闆、沒看法的人不問；去用、推薦、抱怨這些日常閒聊照舊由每天的流程處理', r.thing);
