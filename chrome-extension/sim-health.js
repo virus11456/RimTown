@@ -93,6 +93,7 @@ const HEALTH = (() => {
     }
     // 仇人打架:互相討厭到極點,脾氣差的更容易動手;輸的那個受傷
     function fights(w, all, H) {
+        if (typeof DAY !== 'undefined' && DAY.on(w)) return; // v11.2.0 動不動手由本人決定（sim-day.js），這裡不擲骰
         if (Math.random() > 0.35) return;
         for (const a of all) {
             const R = a.relationships?.relationships || {}; if ((a.age || 30) < 14) continue;

@@ -35,7 +35,7 @@ const DAY = (() => {
     const on = (w) => !!(w && typeof DECIDE !== 'undefined' && DECIDE.on(w));
     const SPOT = { park: '公園', town_square: '廣場', tavern: '酒館', library: '圖書館', forest: '森林', graveyard: '墓園', home: '家裡' };
     const CUP = 1.5; // 一杯酒的價錢（照物價調整）
-    const ST0 = { asked: 0, go: 0, late: 0, leave: 0, sick: 0, skip: 0, overslept: 0, drink: 0, more: 0, close: 0, hang1: 0, hang2: 0, meal: 0, pact: 0, pactKept: 0, pactBroken: 0, caught: 0, scold: 0, dock: 0, fire: 0, let: 0 };
+    const ST0 = { asked: 0, go: 0, late: 0, leave: 0, sick: 0, skip: 0, overslept: 0, drink: 0, more: 0, close: 0, hang1: 0, hang2: 0, meal: 0, pact: 0, pactKept: 0, pactBroken: 0, caught: 0, scold: 0, dock: 0, fire: 0, let: 0, brawl: 0, hosp: 0 };
 
     function S(w) {
         if (!w.dayx || typeof w.dayx !== 'object') w.dayx = {};
@@ -63,7 +63,7 @@ const DAY = (() => {
     }
     const works = (w, a) => { // 今天本來該上工的人
         if (!a?.job || !Array.isArray(a.job.workHours)) return false; const d = day(w);
-        if (w.civic?.jail?.[a.agentId] > d) return false;
+        if (w.civic?.jail?.[a.agentId] > d || a.status === 'hospitalized') return false;
         try { if (typeof MARKET !== 'undefined' && w.market && MARKET.onStrike(w, a)) return false; } catch (e) {}
         return ill(w, a) < 2;
     };
@@ -158,6 +158,32 @@ const DAY = (() => {
         return { k: '把{x}開除了', p: { x: x.name } };
     }
 
+    // ================= 打架 =================
+    // 以前有兩套各擲各的（sim-health.js 的 fights、npc-events.js 的 _checkFights），「住院」也只是個標籤。
+    // 現在：動不動手是本人選的（碰上死對頭、喝多了死對頭就在旁邊）；被打的人自己決定還手或退開；誰輸、傷多重仍然是運氣。
+    // 重傷的人真的躺在診所，那幾天不能上工（出院照原本的規則：有藥、有醫生比較快）。
+    const tipsy = (w, a) => ((S(w).t[a.agentId]?.cups || 0) >= 4 ? 1 : 0);
+    function hospitalize(w, a) { if (a.status === 'hospitalized') return; a.status = 'hospitalized'; a._hospitalDays = 0; S(w).st.hosp++; try { w.processing?.removeWorker?.(a.agentId); } catch (e) {} }
+    function hurt(w, a, s, part) { try { if (typeof HEALTH !== 'undefined' && w.health) HEALTH.addAil(w, a, { p: part, k: 'injury', s, dmg: 8 + s * 10 }, '打架'); } catch (e) {} if (s >= 2) hospitalize(w, a); }
+    function strike(w, a, o, ctx) { if (!inTown(w, o) || o.activity === 'sleeping') return null; DECIDE.enqueue(w, o, 'struck', { by: a.agentId, drunk: ctx?.drunk ? 1 : 0 }); mem(w, a, '我忍不住對{b}動了手。', { b: o.name }, 7, [o.name]); return { k: '對{b}動了手', p: { b: o.name } }; }
+    function brawl(w, a, o, back) {
+        const X = S(w); X.st.brawl++; const part = rnd(['h', 'f', 'e']); const PN = (typeof HEALTH !== 'undefined' && HEALTH.PN) || {}; const pn = PN[part] || '手';
+        const lvl = (x) => (x.skills?.get?.('近戰')?.level || 0) + Math.random() * 6 - tipsy(w, x) * 1.5;
+        let loser = o, winner = a, sev = Math.random() < (back ? 0.3 : 0.15) ? 2 : 1;
+        if (back) { if (lvl(a) < lvl(o)) { loser = a; winner = o; } if (Math.random() < 0.4) hurt(w, winner, 1, 'h'); }
+        hurt(w, loser, sev, part); bump(a, o, -10); bump(o, a, back ? -10 : -15); a.moodModifier = (a.moodModifier || 0) - 6; o.moodModifier = (o.moodModifier || 0) - 10;
+        const here = adults(w).filter(x => x !== a && x !== o && x.currentLocation === o.currentLocation && x.activity !== 'sleeping').slice(0, 12);
+        for (const x of here) { bump(x, a, has(x, 'kind') ? -8 : -4); mem(w, x, '親眼看到{a}對{b}動手。', { a: a.name, b: o.name }, 5, [a.name, o.name]); }
+        try { if (typeof WAYS !== 'undefined') WAYS.loseFace(w, a, here.length ? 2 : 1); } catch (e) {}
+        const hosp = sev >= 2;
+        mem(w, loser, hosp ? '跟{x}打了一架，{p}傷得不輕，被抬進診所。' : '跟{x}打了一架，{p}被打傷了。', { x: winner.name, p: pn }, 8, [winner.name]);
+        mem(w, winner, back || winner === a ? '跟{x}打了一架，把他打傷了。' : '{x}對我動手，我沒還手。', { x: loser.name }, 7, [loser.name]);
+        log(w, hosp ? '👊 {a}對{b}動手，兩人打成一團，{l}的{p}傷得不輕，被抬進診所。' : back ? '👊 {a}對{b}動手，{b}還了手，{l}的{p}受了傷。' : '👊 {a}對{b}動手，{b}沒有還手，{p}受了傷。', { a: a.name, b: o.name, l: loser.name, p: pn }, a.name);
+        try { w.gossipNetwork?.activeGossip?.push({ about: a.name, content: fill('{a}對{b}動了手', { a: a.name, b: o.name }), source: t('目擊者'), spreadCount: 0, tickCreated: w.tickCount, isTrue: true }); } catch (e) {}
+        try { w.dailyNews?.collectEvent?.('incident', fill(hosp ? '{a}把{b}打進了診所' : '{a}和{b}打了一架', { a: winner.name, b: loser.name }), hosp ? 9 : 7, [a.name, o.name]); } catch (e) {}
+        return { loser, winner, sev };
+    }
+
     // ================= 每天、每小時 =================
     // 換日：今天的安排變成「昨天」（產出與工資照它算），算出誰今天宿醉
     function roll(w) {
@@ -178,6 +204,9 @@ const DAY = (() => {
         const h = w.clock.hour; const all = adults(w); let asked = 0;
         for (const a of all) {
             const id = a.agentId; const r = X.t[id] || (X.t[id] = {});
+            if (a.status === 'hospitalized' && !r.work) r.work = 'hosp';
+            // 喝多了，死對頭就在同一間酒館
+            if (h === 22 && r.eve === 'drink' && (r.cups || 0) >= 4 && !r.dr && a.currentLocation === 'tavern') { const foe = all.filter(o => o !== a && o.currentLocation === 'tavern' && o.activity !== 'sleeping' && aff(a, o) <= -40).sort((x, y) => aff(a, x) - aff(a, y))[0]; if (foe) { r.dr = 1; q(w, a, 'drunkrow', { d, o: foe.agentId }); asked++; } }
             if (works(w, a)) {
                 const [ws, we] = a.job.workHours;
                 // 上工前一小時：有理由才問去不去
@@ -229,6 +258,7 @@ const DAY = (() => {
     // 人真的去哪裡：照今天的安排蓋過鐘點規則（餓壞、累垮時不管）
     function steer(w, a) {
         a._dayLoc = null; a._dayWhy = null; if (!on(w) || a.isPlayer || a.isDead || !a.needs) return;
+        if (a.status === 'hospitalized' && a.needs.hunger >= 15) { a.activity = 'sleeping'; a._dayLoc = w.townMap?.locations?.clinic ? 'clinic' : a.homeLocation; a._dayWhy = '受了傷，躺在診所'; return; }
         if (a.needs.hunger < 15 || a.needs.rest < 10) return; const X = S(w), id = a.agentId, h = w.clock.hour;
         const set = (act, loc, why) => { a.activity = act; a._dayLoc = loc === 'home' ? a.homeLocation : loc; a._dayWhy = why; };
         const y = X.y[id]; if (h < 6 && y && (y.until || 0) > h + 24) return set('socializing', 'tavern', '在酒館喝到半夜');
@@ -256,7 +286,7 @@ const DAY = (() => {
     // 昨天的出勤 → 今天結算的產出與工資
     function workMult(w, a) {
         if (!on(w)) return 1; const X = S(w); const y = X.y[a.agentId]; if (!y) return 1;
-        if (y.work === 'skip' || y.work === 'sick' || y.work === 'leave') return 0;
+        if (y.work === 'skip' || y.work === 'sick' || y.work === 'leave' || y.work === 'hosp') return 0;
         let m = y.work === 'late' ? 0.75 : 1; if (y.hang >= 2) m *= 0.7; else if (y.hang === 1) m *= 0.85; if (y.over) m *= 1.15; return m;
     }
     const noPay = (w, a) => { if (!on(w)) return false; const y = S(w).y[a.agentId]; return !!y && (y.work === 'skip' || y.work === 'sick' || y.work === 'leave'); };
@@ -286,7 +316,7 @@ const DAY = (() => {
         const X = S(w); const names = (f) => Object.entries(X.t).filter(([, r]) => f(r)).map(([id]) => w.agents[id]?.name).filter(Boolean);
         return { off: names(r => ['skip', 'sick', 'leave'].includes(r.work)), late: names(r => r.work === 'late'), drink: names(r => r.eve === 'drink'), hang: Object.keys(X.hang).filter(id => X.hang[id].d === X.d).map(id => w.agents[id]?.name).filter(Boolean), st: { ...X.st } };
     }
-    return { S, on, roll, tick, steer, workMult, noPay, reasons, bossOf, works, hangOf, strikes, setWork, setEve, setLast, setPact, punish, round, planAsk, fromPlan, line, view, SPOT, CUP, eveOf, bedOf };
+    return { S, on, roll, tick, steer, workMult, noPay, reasons, bossOf, works, hangOf, strikes, setWork, setEve, setLast, setPact, punish, round, strike, brawl, hospitalize, planAsk, fromPlan, line, view, SPOT, CUP, eveOf, bedOf };
 })();
 
 // ================= 選擇點 =================
@@ -403,6 +433,37 @@ const DAY = (() => {
             return out;
         },
     }));
+
+    // ---------- 喝多了，死對頭就在旁邊 ----------
+    DECIDE.kind('drunkrow', Object.assign({}, G, {
+        title: '喝多了，死對頭就在旁邊', aiKind: 2,
+        facts(w, a, ctx) { const o = w.agents[ctx.o]; const r = DAY.S(w).t[a.agentId] || {}; return fill('你在酒館已經喝了 {n} 杯，{o}就坐在不遠的地方（你對他 {f}）。動手的話兩個人都可能受傷，在場的人都看得到。', { n: r.cups || 0, o: o ? o.name : '', f: Math.round(aff(a, o)) }); },
+        options(w, a, ctx) {
+            const o = w.agents[ctx?.o]; if (!today(w, ctx) || !o || o.isDead || o.currentLocation !== a.currentLocation) return []; const r = DAY.S(w).t[a.agentId] || {};
+            return [{ id: 'ignore', text: '當作沒看到，喝自己的', say: '沒理他', why: '', mute: true, base: 1.6 + (has(a, 'stoic') ? 0.3 : 0), lean: { safe: 0.4 }, run: () => null },
+                { id: 'taunt', text: { k: '過去嗆{o}幾句', p: { o: o.name } }, say: { k: '借著酒意嗆了{o}', p: { o: o.name } }, why: '喝了酒，話就藏不住了。', base: 0.9 + (has(a, 'abrasive') ? 0.3 : 0) - (has(a, 'shy') ? 0.3 : 0), lean: { face: 0.3, safe: -0.2 }, run: (w2, a2) => { try { w2.publicFeud(a2, o); } catch (e) {} return { k: '跟{o}吵了起來', p: { o: o.name } }; } },
+                { id: 'hit', text: { k: '對{o}動手', p: { o: o.name } }, say: { k: '對{o}動了手', p: { o: o.name } }, why: '看到他那張臉就一肚子火。', base: 0.2 + (has(a, 'abrasive') ? 0.5 : 0) + (has(a, 'jealous') ? 0.2 : 0) - (has(a, 'kind') ? 0.5 : 0) - (has(a, 'stoic') ? 0.4 : 0) + ((r.cups || 0) >= 6 ? 0.4 : 0) + (aff(a, o) <= -55 ? 0.3 : 0), lean: { face: 0.4, safe: -0.6, bond: -0.3 }, run: (w2, a2) => DAY.strike(w2, a2, o, { drunk: 1 }) }];
+        },
+    }));
+    // ---------- 有人對你動手 ----------
+    DECIDE.kind('struck', Object.assign({}, G, {
+        title: '有人對你動手', aiKind: 2,
+        facts(w, a, ctx) { const b = w.agents[ctx.by]; const n = Object.values(w.agents).filter(x => x !== a && x !== b && !x.isPlayer && !x.isDead && x.currentLocation === a.currentLocation && x.activity !== 'sleeping').length; return fill('{b}{dr}對你動手了。旁邊有 {n} 個人看著。還手的話誰輸誰贏很難說，兩個人都可能受傷。', { b: b ? b.name : '', dr: ctx.drunk ? '喝多了，' : '', n }); },
+        options(w, a, ctx) {
+            const b = w.agents[ctx?.by]; if (!b || b.isDead) return []; const sk = a.skills?.get?.('近戰')?.level || 0;
+            return [{ id: 'back', text: '還手', say: { k: '還手跟{b}打了起來', p: { b: b.name } }, why: '不能讓人這樣欺負。', base: 1.0 + (has(a, 'abrasive') ? 0.4 : 0) + Math.min(0.5, sk * 0.05) - (has(a, 'shy') ? 0.4 : 0) - ((a.age ?? 30) >= 60 ? 0.5 : 0), lean: { face: 0.5, safe: -0.4 }, run: (w2, a2) => { const x = DAY.brawl(w2, b, a2, true); return { k: x.loser === a2 ? '還了手，但是打輸了' : '還了手，把{b}打退了', p: { b: b.name } }; } },
+                { id: 'cover', text: '護著自己退開，不還手', say: { k: '沒有還手，從{b}面前退開', p: { b: b.name } }, why: '跟這種人打起來不值得。', base: 1.0 + (has(a, 'kind') ? 0.3 : 0) + (has(a, 'shy') ? 0.3 : 0) + (has(a, 'stoic') ? 0.2 : 0), lean: { safe: 0.6 }, run: (w2, a2) => { DAY.brawl(w2, b, a2, false); return { k: '挨了打，沒有還手' }; } }];
+        },
+    }));
+    // ---------- 碰上死對頭：多一個「動手」（以前打架是每天擲骰） ----------
+    { const K = DECIDE.KINDS.feud; if (K && typeof K.options === 'function') { const _o = K.options;
+        K.options = function (w, a, ctx) {
+            const out = _o.call(this, w, a, ctx) || []; if (!DAY.on(w) || !out.length) return out; const calm = out[0]; const r = DAY.S(w).t[a.agentId] || {};
+            for (const op of out.slice()) { const m = /^go:(.+)$/.exec(String(op.id)); const b = m && w.agents[m[1]]; if (!b || aff(a, b) > -55) continue;
+                out.push({ id: 'hit:' + b.agentId, quiet: true, text: { k: '對{o}動手', p: { o: b.name } }, say: { k: '對{o}動了手', p: { o: b.name } }, why: '跟他講不通，只有拳頭他才懂。',
+                    base: (calm.base || 0) - 1.3 + (has(a, 'abrasive') ? 0.5 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.2 : 0) - (has(a, 'stoic') ? 0.4 : 0) - (has(a, 'kind') ? 0.5 : 0) + ((r.cups || 0) >= 4 ? 0.6 : 0) + (aff(a, b) <= -80 ? 0.3 : 0), lean: { face: 0.4, safe: -0.7, bond: -0.3 },
+                    run: (w2, a2) => { if (!w2.feudCands(a2).some(y => y.b === b)) return { k: '沒有碰上' }; return DAY.strike(w2, a2, b, {}); } }); }
+            return out; }; } }
 
     DECIDE.source('now', (w, a) => DAY.line(w, a));
 })();
