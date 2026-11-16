@@ -151,10 +151,10 @@ async function run(browser, lang) {
     // ---------- 7) 想不想自己開店 ----------
     clean(); { const Bz = BIZ.S(w); traits(B, ['hardworking', 'creative']); Bal[B.agentId] = 100;
       out.shop = { ctx: !!K.startup.when(w, B), ids: ids(B, 'startup'), mayor: K.startup.when(w, holder) }; keep('startup', B);
-      const open = sc(B, 'startup', 'open'), wait = sc(B, 'startup', 'wait'); MIND.S(w).amb[B.agentId] = { key: 'rich', since: d0() }; const rich = sc(B, 'startup', 'open'); delete MIND.S(w).amb[B.agentId];
+      const open = sc(B, 'startup', 'open_' + BIZ.typeFor(B)), wait = sc(B, 'startup', 'wait'); MIND.S(w).amb[B.agentId] = { key: 'rich', since: d0() }; const rich = sc(B, 'startup', 'open_' + BIZ.typeFor(B)); delete MIND.S(w).amb[B.agentId];
       traits(B, []); const plain = K.startup.when(w, B); traits(B, ['hardworking', 'creative']); out.shop.sc = { open, wait, rich, plain };
       Bz.lastDay = -1; fix(0.01, () => BIZ.daily(w)); out.shop.noDice = Bz.shops.length === 0;
-      const c0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = opt(B, 'startup', 'open').run(w, B); });
+      const c0 = Bal[B.agentId]; let res = null; const cons = conserved(() => { res = opt(B, 'startup', 'open_' + BIZ.typeFor(B)).run(w, B); });
       out.shop.done = { n: Bz.shops.length, owner: Bz.shops[0]?.owner === B.agentId, paid: Math.round(c0 - Bal[B.agentId]), cons, res: !!res, again: K.startup.when(w, B) };
       const cap = Math.max(2, Math.floor(Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).length / 6)); traits(C, ['hardworking', 'creative']); Bal[C.agentId] = 100; const before = !!K.startup.when(w, C);
       while (Bz.shops.length < cap) Bz.shops.push({ owner: 'x' + Bz.shops.length, name: ['測', 'T'], type: 'curio' /* v9.30.0 雜貨攤拿掉了,改用古玩鋪 */ }); out.shop.full = { before, after: K.startup.when(w, C) };
@@ -250,7 +250,7 @@ async function run(browser, lang) {
   ok(gt(r.scheme.sc.hot, r.scheme.sc.mild) && gt(r.scheme.sc.deep, r.scheme.sc.hot) && gt(r.scheme.sc.hot, r.scheme.sc.frame) && r.scheme.sc.kind === null && r.scheme.sc.shallow === null, '心眼越壞、怨越深越想動手；善良的人、怨不深的人沒有這件事', r.scheme.sc);
   ok(r.scheme.done.res && r.scheme.done.plan && r.scheme.done.log && r.scheme.done.cool === null && r.scheme.acted, '決定動手：開始籌劃，一兩天後照舊動手；二十天內不會再想下一次', { ...r.scheme.done, acted: r.scheme.acted });
   // 開店
-  ok(r.shop.ctx && r.shop.ids?.join() === 'wait,open' && r.shop.mayor === null && r.shop.sc.plain === null && r.shop.noDice, '想不想開店：有本錢、有那個心的人才會遇到；每日流程不再擲骰', r.shop);
+  ok(r.shop.ctx && r.shop.ids?.[0] === 'wait' && r.shop.ids.length >= 2 && r.shop.ids.slice(1).every(x => x.startsWith('open_')) /* v11.1.0 開哪一種店自己挑，代號帶店種 */ && r.shop.mayor === null && r.shop.sc.plain === null && r.shop.noDice, '想不想開店：有本錢、有那個心的人才會遇到；每日流程不再擲骰', r.shop);
   ok(gt(r.shop.sc.rich, r.shop.sc.open) && gt(r.shop.sc.wait, r.shop.sc.open), '一心想致富的人比較想開；一般人多半再想想', r.shop.sc);
   ok(r.shop.done.n === 1 && r.shop.done.owner && r.shop.done.paid === 60 && r.shop.done.cons && r.shop.done.res && r.shop.done.again === null, '決定開店：本錢付出去、店真的開了（銀幣守恆）；已經有店的人不會再遇到', r.shop.done);
   ok(r.shop.full.before && r.shop.full.after === null, '鎮上的店滿了就沒有這件事', r.shop.full);

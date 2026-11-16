@@ -212,7 +212,7 @@ const SEASON_WEATHER = {
 
 // v5.85.0 災難名稱表(任務鏈 scheduleDisaster 用)與資源中文名(損失訊息用)
 const DISASTER_LABELS = { drought_severe: () => t('嚴重乾旱'), blizzard_severe: () => t('極端暴風雪'), flood: () => t('洪水'), tunnel_collapse: () => t('坑道塌方'), wildfire: () => t('山火'), caravan_raid: () => t('商隊劫案') };
-const RESOURCE_NAMES_ZH = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', silver: '銀幣', tools: '工具' };
+const RESOURCE_NAMES_ZH = { food: '食物', wood: '木材', stone: '石材', metal: '金屬', cloth: '布料', herbs: '草藥', silver: '銀幣', meals: '餐食', tools: '工具', clothing: '衣物', medicine: '藥品', furniture: '家具', research_points: '研究', salt: '鹽', paper: '紙', plank: '木板', hardwood: '硬木', brick: '磚塊', marble: '大理石', steel: '鋼鐵', gold: '黃金', wheat: '小麥', rice: '稻米', corn: '玉米', potato: '馬鈴薯', cotton: '棉花', flowers: '花卉', mushroom: '蘑菇', sugarcane: '甘蔗', tea: '茶葉', grapes: '葡萄', golden_wheat: '金色小麥', dragon_fruit: '火龍果', bread: '麵包', pastry: '糕點', beer: '啤酒', wine: '葡萄酒', perfume: '香水', fine_tea: '精品茶', herbal_tea: '草本茶', sugar: '砂糖', jam: '果醬', luxury_furniture: '高級家具' }; // v11.0.1 以前只有八種，其他資源在日誌裡會露出英文代號（例如「把 54 份furniture運到外地賣了」）。全部 43 種都列在這裡，各處共用
 
 class WeatherSystem {
     constructor() {

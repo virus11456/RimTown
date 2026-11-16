@@ -83,7 +83,7 @@ async function run(browser, lang, vp) {
       { clear(); const a = prep(next(), 200, 'farmer'); BIZ.startTry(w, a); out.why.gone = BIZ.startTry(w, a).why; } // 已經有店了
     }
     // 題目出了以後情況變了(店位被別人佔滿)：結果寫的是真正的原因
-    try { clear(); const K = DECIDE.KINDS; const a = prep(next(), 200, 'farmer'); const c = K.startup.when(w, a); const o = c ? K.startup.options(w, a, c).find(x => x.id === 'open') : null;
+    try { clear(); const K = DECIDE.KINDS; const a = prep(next(), 200, 'farmer'); const c = K.startup.when(w, a); const o = c ? K.startup.options(w, a, c).find(x => x.id === 'open_' + BIZ.typeFor(a)) : null;
       const cap = Math.max(2, Math.floor(npcs().length / 6)); while (BZ.shops.length < cap) BZ.shops.push({ id: 'F' + BZ.shops.length, owner: 'x' + BZ.shops.length, name: ['測', 'T'], type: 'curio' });
       const res = o ? o.run(w, a) : null; out.resText = { asked: !!o, k: res?.k || null, shown: res?.k ? t(res.k) : null }; } catch (e) { out.resText = { err: String(e) }; }
     // 完整智能體模式：大筆貸款等銀行家(AI)回話

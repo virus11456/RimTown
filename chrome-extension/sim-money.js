@@ -69,7 +69,7 @@ const MONEY = (() => {
             // 加價賺的是商行的營收:有老闆的付給老闆(老闆再發薪水給商人),公營的進公庫(公庫發商人薪水)
             if (typeof MARKET !== 'undefined' && w.market) MARKET.sell(w, 'trade', profit, t('商人出口')); else if (Wl) { if (Wl.bizIncome) Wl.bizIncome(w, a, profit); else Wl.add(w, a, profit); } else sp.add('silver', profit, w.tickCount, t('商人出口'));
             flow(w, 'export', sale); const M = S(w); M.st.exportQty += qtyAll; M.st.exportSale = r2(M.st.exportSale + sale);
-            if (Math.random() < 0.15) { const [r, q] = sold[0]; log(w, '🐪 {a}把 {n} 份{g}運到外地賣了 {s} 銀幣。', { a: a.name, n: q, g: (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[r]) || r, s: Math.round(sale) }, a.name); mem(w, a, '把鎮上多出來的貨運到外地賣，替商行多賺了 {n} 銀幣。', { n: Math.round(profit) }, 4); }
+            if (Math.random() < 0.15) { const [r, q] = sold[0]; log(w, '🐪 {a}把 {n} 份{g}運到外地賣了 {s} 銀幣。', { a: a.name, n: q, g: (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[r]) ? { k: RESOURCE_NAMES_ZH[r] } : r, s: Math.round(sale) }, a.name); mem(w, a, '把鎮上多出來的貨運到外地賣，替商行多賺了 {n} 銀幣。', { n: Math.round(profit) }, 4); }
         }
     }
     // ---------- 外地同名:出生地・本名 ----------
