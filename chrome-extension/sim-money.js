@@ -48,7 +48,7 @@ const MONEY = (() => {
     function floorsKept(w) { const F = floors(w); if (typeof FLOW !== 'undefined' && FLOW.keepLine) for (const r of Object.keys(F)) if (r !== 'food') F[r] = FLOW.keepLine(w, r, F[r]); return F; }
     const GROUP = { food: 'food', meals: 'food', clothing: 'cloth' };
     const scarce = (w, r) => { try { return typeof PRICES !== 'undefined' && w.prices && GROUP[r] && PRICES.idx(w, GROUP[r]) > 1.0; } catch (e) { return false; } };
-    function surplusList(w) { const sp = w.stockpile, F = floorsKept(w); const out = []; for (const [r, f] of Object.entries(F)) { const have = sp?.get?.(r) || 0, p = PRICE(r), extra = Math.floor(have - f - (sp.reserved?.[r] || 0)); if (p > 0 && extra >= 1 && !scarce(w, r)) out.push({ r, extra, p, v: extra * p }); } return out.sort((a, b) => b.v - a.v); }
+    function surplusList(w) { const sp = w.stockpile, F = floorsKept(w); const out = []; for (const [r, f] of Object.entries(F)) { const have = sp?.get?.(r) || 0, p = PRICE(r), extra = Math.floor(have - f - (sp.reserved?.[r] || 0) - (sp.hold?.[r] || 0)); /* v11.5.0 首長為升格保留的料也不拿去賣 */ if (p > 0 && extra >= 1 && !scarce(w, r)) out.push({ r, extra, p, v: extra * p }); } return out.sort((a, b) => b.v - a.v); }
     // 把價值大約 n 銀幣的多餘貨賣給外地,錢進公庫;沒有多的貨就賣不到
     function sellSurplus(w, n, why) {
         const sp = w.stockpile; if (!sp || !(n > 0)) return 0; let left = n, got = 0;

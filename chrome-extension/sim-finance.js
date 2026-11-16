@@ -214,31 +214,41 @@ const TRADE = (() => {
     const owner = (w) => { try { return typeof MARKET !== 'undefined' && w.market ? MARKET.ownerOf(w, 'trade') : null; } catch (e) { return null; } };
     const rec = (w, kind, r, qty, value) => { const X = S(w); X[kind] = Math.round((X[kind] + value) * 100) / 100; X.hist.push([day(w), kind === 'imp' ? 1 : 0, r, qty, Math.round(value)]); if (X.hist.length > 60) X.hist.splice(0, X.hist.length - 60); };
     // 私人商行老闆做進出口(一天一次;每樣最多 25 份;老闆的現金與公庫都要付得起)
-    function privateTrade(w) {
+    // v11.5.0 做不做由東家決定（選擇點 tradeRun）。opts.dry：只算會做哪幾筆，不動任何東西；opts.budget：公庫這一趟最多拿多少錢收進口貨（照首長的採購計畫；以前固定「公庫留 60」）
+    function privateTrade(w, opts) {
         const m = w.trade?.merchant; const id = owner(w); const Wl = W(w); if (!m || !m.offers?.length || !id || !Wl) return false;
-        const boss = w.agents[id]; if (!boss) return false; const sp = w.stockpile; const rate = tariff(w); const deals = [];
+        const boss = w.agents[id]; if (!boss) return false; const sp = w.stockpile; const rate = tariff(w); const deals = []; const dry = !!(opts && opts.dry);
+        let cash = Wl.get(w, boss), room = (opts && opts.budget != null) ? Math.max(0, opts.budget) : Math.max(0, (sp.get('silver') || 0) - 60);
+        const stock = (r) => (sp.free ? sp.free(r) : (sp.get(r) || 0)); // 保留給升格或提案的料不拿去出口
         for (const o of m.offers) {
             if (!o || o.amount < 1) continue; const loc = localPrice(w, o.resource);
             if (!o.isBuying) { // 商人在賣 → 進口
                 const landed = o.price * (1 + rate); if (loc < landed * 1.12) continue;
-                const g = GROUP[o.resource]; const scarce = g ? PRICES.idx(w, g) >= 1.05 : (sp.get(o.resource) || 0) < 15; if (!scarce) continue;
-                const cash = Wl.get(w, boss), tr = sp.get('silver') || 0;
-                const qty = Math.floor(Math.min(o.amount, 25, cash / landed, Math.max(0, tr - 60) / loc)); if (qty < 2) continue;
+                const g = GROUP[o.resource]; const scarce = g ? PRICES.idx(w, g) >= 1.05 : stock(o.resource) < 15; if (!scarce) continue;
+                const qty = Math.floor(Math.min(o.amount, 25, cash / landed, room / loc)); if (qty < 2) continue;
                 const pay = Math.round(o.price * qty * 100) / 100, duty = Math.round(o.price * qty * rate * 100) / 100, sale = Math.round(loc * qty * 100) / 100;
-                if (!Wl.take(w, boss, pay + duty)) continue; // 付商人(流出鎮外)＋關稅
-                if (duty > 0) { sp.add('silver', duty, w.tickCount, t('進口關稅')); S(w).duty = Math.round((S(w).duty + duty) * 100) / 100; }
-                sp.add(o.resource, qty, w.tickCount, t('商行進口')); sp.consume('silver', sale, w.tickCount, t('向商行買進口貨')); Wl.add(w, boss, sale); // 鎮上倉庫照本地價買下
-                o.amount -= qty; rec(w, 'imp', o.resource, qty, pay); S(w).profit += sale - pay - duty; deals.push(['imp', o.resource, qty, Math.round(sale - pay - duty)]);
+                if (!dry) {
+                    if (!Wl.take(w, boss, pay + duty)) continue; // 付商人(流出鎮外)＋關稅
+                    if (duty > 0) { sp.add('silver', duty, w.tickCount, t('進口關稅')); S(w).duty = Math.round((S(w).duty + duty) * 100) / 100; }
+                    sp.add(o.resource, qty, w.tickCount, t('商行進口')); sp.consume('silver', sale, w.tickCount, t('向商行買進口貨')); Wl.add(w, boss, sale); // 鎮上倉庫照本地價買下
+                    o.amount -= qty; rec(w, 'imp', o.resource, qty, pay); S(w).profit += sale - pay - duty;
+                }
+                cash += sale - pay - duty; room -= sale; deals.push(['imp', o.resource, qty, Math.round(sale - pay - duty), sale]);
             } else { // 商人在收 → 出口
-                if (o.price < loc * 1.12) continue; const have = sp.get(o.resource) || 0;
+                if (o.price < loc * 1.12) continue; const have = stock(o.resource);
                 const g = GROUP[o.resource]; const plenty = g ? PRICES.idx(w, g) <= 0.95 : have > 40; if (!plenty) continue;
-                const cash = Wl.get(w, boss); const qty = Math.floor(Math.min(o.amount, 25, (have - (g === 'food' ? npcs(w).length * 6 : 15)) * 0.5, cash / loc)); if (qty < 2) continue;
+                const qty = Math.floor(Math.min(o.amount, 25, (have - (g === 'food' ? npcs(w).length * 6 : 15)) * 0.5, cash / loc)); if (qty < 2) continue;
                 const buy = Math.round(loc * qty * 100) / 100, earn = Math.round(o.price * qty * 100) / 100;
-                if (!Wl.take(w, boss, buy)) continue; if (!sp.consume(o.resource, qty, w.tickCount, t('商行出口'))) { Wl.add(w, boss, buy); continue; }
-                sp.add('silver', buy, w.tickCount, t('賣貨給商行')); Wl.add(w, boss, earn); // 外地商人付的錢流進鎮上
-                o.amount -= qty; rec(w, 'exp', o.resource, qty, earn); S(w).profit += earn - buy; deals.push(['exp', o.resource, qty, Math.round(earn - buy)]);
+                if (!dry) {
+                    if (!Wl.take(w, boss, buy)) continue; if (!sp.consume(o.resource, qty, w.tickCount, t('商行出口'))) { Wl.add(w, boss, buy); continue; }
+                    sp.add('silver', buy, w.tickCount, t('賣貨給商行')); Wl.add(w, boss, earn); // 外地商人付的錢流進鎮上
+                    o.amount -= qty; rec(w, 'exp', o.resource, qty, earn); S(w).profit += earn - buy;
+                }
+                cash += earn - buy; deals.push(['exp', o.resource, qty, Math.round(earn - buy), 0]);
             }
         }
+        if (opts) opts.deals = deals;
+        if (dry) return deals;
         if (deals.length) {
             const imp = deals.filter(d => d[0] === 'imp'), exp = deals.filter(d => d[0] === 'exp'); const parts = [];
             if (imp.length) parts.push(t('進口') + ' ' + imp.map(d => `${rn(d[1])}×${d[2]}`).join(t('、'))); if (exp.length) parts.push(t('出口') + ' ' + exp.map(d => `${rn(d[1])}×${d[2]}`).join(t('、')));
@@ -283,8 +293,9 @@ const TRADE = (() => {
 if (typeof VillagerAutonomy !== 'undefined' && VillagerAutonomy.prototype._merchant) {
     const _m = VillagerAutonomy.prototype._merchant;
     VillagerAutonomy.prototype._merchant = function (w, ...rest) {
-        try { if (w.observerMode && w.wallet && w.trade?.merchant) { TRADE.adjustOffers(w); if (TRADE.privateTrade(w)) return; } } catch (e) { console.warn('[Trade] private', e); }
-        const before = (w.trade?.merchant?.offers || []).map(o => o.amount); const r = _m.call(this, w, ...rest); try { if (w.observerMode) TRADE.recordPublic(w, before); } catch (e) {} return r;
+        const plan = !!(w.observerMode && typeof PROCURE !== 'undefined'); // v11.5.0 這趟買賣由出面的人決定（tradeRun）：私人商行不再自動進出口，進出口統計也由那邊逐筆記
+        try { if (w.observerMode && w.wallet && w.trade?.merchant) { TRADE.adjustOffers(w); if (!plan && TRADE.privateTrade(w)) return; } } catch (e) { console.warn('[Trade] private', e); }
+        const before = (w.trade?.merchant?.offers || []).map(o => o.amount); const r = _m.call(this, w, ...rest); try { if (w.observerMode && !plan) TRADE.recordPublic(w, before); } catch (e) {} return r;
     };
 }
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tariff = { icon: '🚢', label: '關稅' };

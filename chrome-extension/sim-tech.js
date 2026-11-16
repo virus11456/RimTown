@@ -95,13 +95,16 @@ const TECH = (function () {
     }
     function recost(w) { const R = w?.research; if (!R) return; for (const p of Object.values(R.projects)) if (p.status !== 'complete') p.cost = costOf(w, p.key); }
     // 學者自己挑:最早的時代、自己路線優先(以前完全隨機,工坊時代都開始了還有拓荒的沒研究)
+    // v11.5.0 首長請學者先顧升格要的科技（選擇點 mayorWeek）：升格看的是那個時代研究完幾項（哪一條路線的都算，專屬的不算），所以那個時代的科技在學者心裡多一個很強的理由，
+    // 排到自己路線後面幾個時代、精進改良的前面（以前別條路線的第四時代會排在自己路線第五、六時代之後）。還是學者自己挑，更早的時代照樣先做，不是硬換
+    const asked = (w, p) => { try { const a = (typeof PROCURE !== 'undefined') ? PROCURE.techAsk(w) : null; return !!a && p.key !== REFINE && !exclusive(p.key) && (p.era || 1) === a.era; } catch (e) { return false; } };
     function autoPick(R, w) {
         const av = R.getAvailable(); if (!av.length) return null; const P = pathOf(w);
-        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 50 : 0) + Math.random() * 3; // 選了路線:先把自己路線研究完,別條路線的基礎科技排後面(v8.8.0 25→50:以前別條路線的第二三時代會排在自己路線第六時代前面,賢者之石、以太引擎一直輪不到)
+        const score = (p) => (p.key === REFINE ? 99 : (p.era || 1) * 10) + (pathsOf(p.key).length && P && !onPath(p.key, P) ? 50 : 0) - (asked(w, p) ? 70 : 0) + Math.random() * 3; // 選了路線:先把自己路線研究完,別條路線的基礎科技排後面(v8.8.0 25→50:以前別條路線的第二三時代會排在自己路線第六時代前面,賢者之石、以太引擎一直輪不到)
         return av.slice().sort((a, b) => score(a) - score(b))[0];
     }
     // 提案權重:別條路線的少提、早期的多提
-    function pickWeight(w, p) { const P = pathOf(w); if (p.key === REFINE) return 0.4; if (pathsOf(p.key).length && P && !onPath(p.key, P)) return 0.3; return 1; }
+    function pickWeight(w, p) { const P = pathOf(w); if (p.key === REFINE) return 0.4; if (asked(w, p)) return 2.5; if (pathsOf(p.key).length && P && !onPath(p.key, P)) return 0.3; return 1; } // v11.5.0 首長交代過的，學者與相關行業也比較會提
     // 核安法:電子機械的高階研究慢一成;生物安全法:基因生物的高階研究慢一成
     function speedOf(w, p) { const T = w?.tech; if (!T || !p || (p.era || 1) < 5) return 1; let m = 1; if (T.law && onPath(p.key, 'electro')) m *= 0.9; if (T.bio?.law && onPath(p.key, 'bio')) m *= 0.9; return m; }
 
@@ -425,7 +428,7 @@ const TECH = (function () {
         if (T.law) s += t('，有核安法'); if (T.noNuke) s += t('，已經廢核');
         return s;
     }
-    return { W: null, PREFER, APPEAL, WHY_FOR, WHY_NO, JOBX, AUTO, BIG_TXT, LEAN, LEAN_BY_BASE, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
+    return { W: null, PREFER, APPEAL, WHY_FOR, WHY_NO, JOBX, AUTO, BIG_TXT, LEAN, LEAN_BY_BASE, leanOf, preferPath, PATHS, PATH_KEYS, GATES, BIG_FX, exclusive, appeal, appeals, tally, winnerOf, bestOpt, sickish, famHurt, devoutA, mythGroup, propose, busy, log, news, mem, pick, pickN, aff, moodAll, names, addAil, adults, npcs, built, done, owner, wal, day, REFINE, S, pathOf, pathsOf, onPath, mainRatio, stageRatio, GATE, gateOk, costOf, recost, autoPick, pickWeight, asked, speedOf, jobMult, automatable, prefer, choose, voteRule, setLaw, unsetLaw, abandon, EVENTS, fire, meltdown, bigChance, incidents, daily, onComplete, REF_FX, eraName, riskWord, view, brief, townBrief, nukeOn };
 })();
 
 // ---------- 科技樹:機械時代歸到電子機械路線,加上電力、太空時代 ----------

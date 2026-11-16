@@ -6,6 +6,7 @@
 // - 紙:木匠用木頭造紙;報社出報、學者做研究、銀行記帳都要用紙,缺紙報紙會停刊、研究變慢
 // - 鹽:只有靠海的鎮能曬;醃漬讓存糧腐壞減半、菜比較好吃;內陸要靠商隊買
 // - 原料不再每天自動補到 40:只有本地產得出的原料保底 40,其他只保底 20,不夠就得靠貿易
+//   （v11.5.0 這個數是「平常備多少」的量，由首長定的採購計畫拿去用：照平常備、只備最要緊的、為升格多備、或這週不買，見 sim-procure.js）
 // - 房子翻修與城鎮升格要用木材、石材(以前只花銀幣／只看人口繁榮)
 const ECON = (() => {
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
@@ -48,7 +49,7 @@ const ECON = (() => {
         if (kind === 'paper') return WOOD[b] ?? 1;
         return 1;
     }
-    // 本地產得出的原料(保底 40),其他只保底 12
+    // 本地產得出的原料(平常備 40),其他平常備 20
     const NATURE_RAW = { forest: ['wood'], cave: ['stone', 'metal'], hill: ['stone'], meadow: ['herbs', 'cloth'] };
     const BASE_RAW = { frontier: ['wood', 'herbs'], harbor: ['cloth'], mountain: ['stone', 'metal'], forest: ['wood', 'herbs'], market: ['cloth'] };
     function localRaws(w) {
@@ -156,8 +157,8 @@ const ECON = (() => {
         const carp = all.filter(a => a.job?.key === 'carpenter');
         if (carp.length && (sp.get('paper') || 0) < 40) { // 紙存到 40 就先不造,木頭留給取暖與建設(多的可以外銷)
             const make = Math.round(carp.length * 2.5 * tf * mult(w, 'paper') * 10) / 10;
-            const wood = Math.min(make * 0.7, Math.max(0, (sp.get('wood') || 0) - (E.paperShort ? 5 : 20))); // v6.79.0 缺紙時木頭只留 5(以前海港木材不夠，紙一直是 0)
-            if (wood > 0.5) { sp.consume('wood', Math.round(wood * 10) / 10, w.tickCount, t('造紙')); const out = Math.round(wood / 0.7 * 10) / 10; sp.add('paper', out, w.tickCount, t('木匠造紙')); E.made.paper = (E.made.paper || 0) + out; }
+            const wood = Math.min(make * 0.7, Math.max(0, (sp.free ? sp.free('wood') : (sp.get('wood') || 0)) - (E.paperShort ? 5 : 20))); // v6.79.0 缺紙時木頭只留 5(以前海港木材不夠，紙一直是 0)；v11.5.0 只算拿得到的木材，保留給升格或提案的不拿來造紙
+            if (wood > 0.5 && sp.consume('wood', Math.round(wood * 10) / 10, w.tickCount, t('造紙'))) { const out = Math.round(wood / 0.7 * 10) / 10; sp.add('paper', out, w.tickCount, t('木匠造紙')); E.made.paper = (E.made.paper || 0) + out; }
         }
         const papers = (w.press?.papers?.length || 0) + 1;
         const scholars = all.filter(a => a.job?.key === 'researcher').length;

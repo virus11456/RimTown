@@ -236,22 +236,32 @@ class World {
         const give = (mine.exports || []).find(rs => (other.imports || []).includes(rs)) || (mine.exports || [])[0];
         const recv = (other.exports || []).find(rs => (mine.imports || []).includes(rs)) || (other.exports || [])[0];
         if (!give || !recv) return;
-        const giveAmt = Math.min(40, Math.floor((this.stockpile.get(give) || 0) * 0.12));
+        const free = (rs) => (this.stockpile.free ? this.stockpile.free(rs) : (this.stockpile.get(rs) || 0)); // v11.5.0 保留給升格或提案的料不拿去換
+        const giveAmt = Math.min(40, Math.floor(free(give) * 0.12));
         if (giveAmt < 5) return; // 本鎮也沒餘貨,商隊空手而回,過兩天再試
-        const hub = ((myKey === 'market' || pick.key === 'market') ? Math.ceil(giveAmt * 0.2) : 0) + (route ? Math.ceil(giveAmt * 0.2) : 0); // v5.84.0 海路加成
+        const offer = { town: pick.tw.name, key: pick.key, give, recv, giveAmt, mk: (myKey === 'market' || pick.key === 'market') ? 1 : 0, rt: route ? 1 : 0, d: day };
+        // v11.5.0 換不換、換多少，由出面談的人決定（選擇點 tradeRun，sim-procure.js）。以前商隊一到就自動換掉
+        try { if (this.observerMode && typeof PROCURE !== 'undefined' && PROCURE.caravanAsk(this, offer)) { this.lastCaravanDay = day; return; } } catch (e) { console.warn('[Procure] caravan', e); }
+        this._caravanSwap(offer, giveAmt);
+    }
+    // 真的換貨（算術）：giveAmt 是談定要給的量
+    _caravanSwap(o, giveAmt) {
+        const { give, recv } = o; const free = this.stockpile.free ? this.stockpile.free(give) : (this.stockpile.get(give) || 0);
+        giveAmt = Math.min(Math.floor(giveAmt), Math.floor(free)); if (!(giveAmt >= 1)) return null;
+        const hub = (o.mk ? Math.ceil(giveAmt * 0.2) : 0) + (o.rt ? Math.ceil(giveAmt * 0.2) : 0); // v5.84.0 海路加成
         const recvAmt = giveAmt + hub;
-        this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
-        this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), pick.tw.name);
-        try { if (typeof ECON !== 'undefined') ECON.noteTrade(this, give, giveAmt, recv, recvAmt, pick.key); } catch (e) {} // v6.77.0 帶來的食物算成魚／肉／穀物
-        this.lastCaravanDay = day;
+        this.stockpile.add(give, -giveAmt, this.tickCount, t('跨鎮商隊'), o.town);
+        this.stockpile.add(recv, recvAmt, this.tickCount, t('跨鎮商隊'), o.town);
+        try { if (typeof ECON !== 'undefined') ECON.noteTrade(this, give, giveAmt, recv, recvAmt, o.key); } catch (e) {} // v6.77.0 帶來的食物算成魚／肉／穀物
+        this.lastCaravanDay = o.d != null ? o.d : this._absDay();
         this.caravanCount = (this.caravanCount || 0) + 1; // v5.84.0 任務條件
         const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
         const RES_ZH = { food: '食物', meals: '餐食', wood: '木材', stone: '石材', metal: '金屬', tools: '工具', herbs: '草藥', cloth: '布料', medicine: '藥品', silver: '銀幣', salt: '鹽', paper: '紙' }; // v6.22.0 模板參數用原文,顯示時再翻
-        const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: pick.tw.name, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
-        const msg = Memory.render(msgT.k, msgT.p);
+        const msgT = tpl(hub ? '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}（市集城經手，多兩成）' : '{town}的商隊來了：用 {ga} {g} 換到 {ra} {r}', { town: o.town, ga: giveAmt, g: RES_ZH[give] || give, ra: recvAmt, r: RES_ZH[recv] || recv });
         this.logMessageT('trade', '🐪 {msg}', { msg: msgT });
-        if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(pick.tw.name)}${t('的商隊帶來了')}${label(recv)}`);
-        this.onCaravan?.({ fromName: pick.tw.name, fromTheme: pick.key, give, giveAmt, recv, recvAmt, hub });
+        if (this.events?.conversationTopics) this.events.conversationTopics.push(`${t(o.town)}${t('的商隊帶來了')}${label(recv)}`);
+        this.onCaravan?.({ fromName: o.town, fromTheme: o.key, give, giveAmt, recv, recvAmt, hub });
+        return { giveAmt, recvAmt };
     }
 
     // ============================================================

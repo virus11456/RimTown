@@ -1,6 +1,8 @@
 // RimTown - sim-autonomy.js：v6.37.0 村民全自主。上帝視角沙盒裡玩家不操作經濟，這裡把原本留給玩家按的事交給村民自己每天做：
 // 農夫翻土／播種／澆水／施肥／收成、商人跟來訪的行商談買賣、工坊把成品入庫或拿去賣、鎮上缺什麼就有人去商店補。
-// 規則版（完整智能體模式 v6.39 之後可改由 LLM 決定）。掛在 world.autonomy，每日由 World 的換日流程呼叫 daily(world)。
+// 掛在 world.autonomy，每日由 World 的換日流程呼叫 daily(world)。
+// v11.5.0 這裡以前有兩套自動補貨（商店缺貨補貨、跟行商買低於下限的貨），加上 sim-economy.js 每天進口原料，一共三套，各有各的下限與保留金額。
+//         現在合成首長定的一份採購計畫（sim-procure.js）；跟行商、商隊怎麼買賣，由出面談的那個人決定（選擇點 tradeRun）。這裡只留算術。
 'use strict';
 
 class VillagerAutonomy {
@@ -67,7 +69,7 @@ class VillagerAutonomy {
                 const top = pool.slice(0, 3);
                 const crop = Math.random() < 0.6 ? top[0] : this._pick(top);
                 if (!crop) continue;
-                if (silver - crop.sellPrice * 2 < 20) continue; // 種子錢要留一點給鎮上
+                if (silver - crop.sellPrice * 2 < (typeof PROCURE !== 'undefined' ? PROCURE.SEED_KEEP : 20)) { try { if (typeof PROCURE !== 'undefined') PROCURE.noteSeed(w); } catch (e) {} continue; } // 種子錢要留一點給鎮上（v11.5.0 沒錢買種子會記下來，首長看得到田為什麼空著）
                 const r = farm.plantCrop(plot.id, crop.key, w);
                 if (r?.ok) { done.planted.push(crop); budget--; }
                 continue;
@@ -120,14 +122,20 @@ class VillagerAutonomy {
     }
 
     // ---------- 行商：商人去談 ----------
+    // 多出來才賣的那條線、低於多少才想買（算術；v11.5.0 兩邊都只看拿得到的量，保留給升格或提案的料不算）
+    _keepOf(w, r) {
+        const pop = Math.max(1, this._npcs(w).length);
+        const reserve0 = r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
+        return (r !== 'food' && typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, reserve0) : reserve0; // v11.3.0 以前不管多大都只留 20～40（城市想備衣物 102、餐食 354，行商一來就賣到剩 20）；城鎮以上至少留到目標量的 1.2 倍，村莊照舊
+    }
+    _lowOf(w, r) { const b = (typeof FLOW !== 'undefined') ? FLOW.buyLow(w, r) : null; if (b != null) return b; return Math.max(r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5, (typeof FLOW !== 'undefined' ? FLOW.inputNeed(w, r) : 0)); } // v6.79.0 作物只買用得到的;工坊要用的料買夠三批
     _merchant(w) {
         const tr = w.trade; const m = tr?.merchant; if (!m || !m.offers?.length) return;
+        // v11.5.0 觀察者模式：這趟賣什麼、買什麼、要不要做，由出面談的人決定（商人；私人商行是東家；都沒有就是首長），這裡不再自己成交
+        if (w.observerMode && typeof PROCURE !== 'undefined') { PROCURE.merchantDay(w); return; }
         const who = this._pick(this._byJob(w, 'trader', false)) || this._pick(this._byJob(w, 'mayor', false)) || this._pick(this._npcs(w));
         if (!who) return;
-        const pop = Math.max(1, this._npcs(w).length);
-        const reserve0 = (r) => r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
-        const reserve = (r) => (r !== 'food' && typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, reserve0(r)) : reserve0(r); // v11.3.0 以前不管多大都只留 20～40（城市想備衣物 102、餐食 354，行商一來就賣到剩 20）；城鎮以上至少留到目標量的 1.2 倍，村莊照舊
-        const low = (r) => { const b = (typeof FLOW !== 'undefined') ? FLOW.buyLow(w, r) : null; if (b != null) return b; return Math.max(r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5, (typeof FLOW !== 'undefined' ? FLOW.inputNeed(w, r) : 0)); }; // v6.79.0 作物只買用得到的;工坊要用的料買夠三批
+        const reserve = (r) => this._keepOf(w, r), low = (r) => this._lowOf(w, r);
         const deals = [];
         // 先賣（進帳），再買;v6.40.1 一天跟行商賣貨最多進帳 100 銀幣
         let earned = 0;
@@ -148,13 +156,18 @@ class VillagerAutonomy {
             if (qty >= 2) { const r = tr.executeTrade(i, qty, w); if (r?.ok) deals.push({ type: 'buy', r: o.resource, qty, silver: Math.round(qty * o.price) }); }
         }
         if (!deals.length) { if (Math.random() < 0.3) this._note(w, who, '🧭 {who}去看了商人{m}的貨，覺得價錢不划算，沒成交。', { who: who.name, m: m.name }, 2); return; }
+        this._dealNote(w, who, m, deals);
+    }
+    // 成交了：寫進日誌、談的人的記憶、日報與最近成交
+    _dealNote(w, who, m, deals) {
+        const tr = w.trade; if (!deals || !deals.length) return;
         const rn = (r) => (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[r]) ? t(RESOURCE_NAMES_ZH[r]) : (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[r]) ? SHOP_ITEMS[r].name() : t(r);
         const sold = deals.filter(d => d.type === 'sell'), bought = deals.filter(d => d.type === 'buy');
         const parts = [];
         if (sold.length) parts.push(t('賣出') + ' ' + sold.map(d => `${rn(d.r)}×${d.qty}`).join(t('、')) + t('（進帳 ') + sold.reduce((s, d) => s + d.silver, 0) + t(' 銀幣）'));
         if (bought.length) parts.push(t('買進') + ' ' + bought.map(d => `${rn(d.r)}×${d.qty}`).join(t('、')) + t('（花了 ') + bought.reduce((s, d) => s + d.silver, 0) + t(' 銀幣）'));
-        this._note(w, who, '🧭 {who}跟商人{m}談成了生意：{deal}', { who: who.name, m: m.name, deal: parts.join(t('；')) }, 6, 'economy', 6);
-        tr.tradeHistory = tr.tradeHistory || []; tr.tradeHistory.push({ day: this._abs(w), who: who.name, merchant: m.name, deals }); if (tr.tradeHistory.length > 40) tr.tradeHistory = tr.tradeHistory.slice(-40);
+        this._note(w, who, '🧭 {who}跟商人{m}談成了生意：{deal}', { who: who?.name || '', m: m.name, deal: parts.join(t('；')) }, 6, 'economy', 6);
+        tr.tradeHistory = tr.tradeHistory || []; tr.tradeHistory.push({ day: this._abs(w), who: who?.name || '', merchant: m.name, deals }); if (tr.tradeHistory.length > 40) tr.tradeHistory = tr.tradeHistory.slice(-40);
     }
 
     // ---------- 商店：缺什麼有人去補、多的拿去賣 ----------
@@ -164,7 +177,8 @@ class VillagerAutonomy {
         const npcs = this._npcs(w); const pop = Math.max(1, npcs.length);
         const silver = () => w.stockpile.get('silver');
         const buys = [];
-        const need = [
+        // v11.5.0 觀察者模式：缺貨補貨併進首長的採購計畫（sim-procure.js），這裡不再自己去補、也不再掛名某位廚師或醫生「去補了」
+        const need = (w.observerMode && typeof PROCURE !== 'undefined') ? [] : [
             { r: 'medicine', min: 3, want: 6, when: () => npcs.some(a => a.isSick || (a.health ?? 100) < 50), who: 'doctor' },
             { r: 'food', min: 60, want: Math.round(pop * 4), when: () => true, who: 'cook' },
             { r: 'tools', min: 2, want: 5, when: () => true, who: 'blacksmith' },

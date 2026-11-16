@@ -30,15 +30,21 @@ class Stockpile {
         if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
         if (amount > 0 && (source === 'player' || source === 'farm' || this._world?.observerMode) && this._world?.trials?.onPlayerGain) { try { this._world.trials.onPlayerGain(r, amount); } catch (e) {} } // v6.2.0 季度考驗只算玩家親手帶進的
     }
+    // v11.5.0 留給別的用途的料：已批准提案保留的（已經向外地訂、還在路上的不用再留）＋首長為升格保留的（hold，sim-procure.js）。
+    // 以前「保留」只擋別的工程，木匠做家具、冬天取暖、賣貨照樣會把它用掉；現在平常的用途拿不到這一部分。銀幣不算在內
+    // 糧食、餐食、藥不鎖：人要先吃飯、先看病，宴席之類的提案保留的糧食照舊只擋別的工程（canAfford），不擋大家吃
+    locked(r) { if (r === 'silver' || r === 'food' || r === 'meals' || r === 'medicine') return 0; const R = this.reserved, H = this.hold; if (!R && !H) return 0; return Math.max(0, ((R && R[r]) || 0) - ((this.transit && this.transit[r]) || 0)) + ((H && H[r]) || 0); }
+    free(r) { return Math.max(0, (this.resources[r]||0) - this.locked(r)); }
     consume(r, amount, tick=0, reason='', source='') {
         if ((this.resources[r]||0) < amount) return false;
+        if (amount > 0 && (this.reserved || this.hold) && (this.resources[r]||0) - this.locked(r) < amount) return false; // 剩下的是保留的料
         this.resources[r] -= amount;
         this.history.push({tick,resource:r,amount:-amount,reason,source});
         if (this.history.length > 600) this.history = this.history.slice(-600); // v5.99.0 B12(讀取端只用最近 50 筆)
         return true;
     }
-    has(r, amount) { return (this.resources[r]||0) >= amount; }
-    canAfford(costs) { const R=this.reserved||{}; return Object.entries(costs).every(([r,a]) => this.has(r,a+(R[r]||0))); } // v7.2.1 已批准提案保留的材料,其他工程不能動
+    has(r, amount) { const have = this.resources[r]||0; if (have < amount) return false; return !(amount > 0 && (this.reserved || this.hold) && have - this.locked(r) < amount); }
+    canAfford(costs) { const R=this.reserved||{}, H=this.hold||{}; return Object.entries(costs).every(([r,a]) => (this.resources[r]||0) >= a+(R[r]||0)+(r==='silver'?0:(H[r]||0))); } // v7.2.1 已批准提案保留的材料,其他工程不能動（v11.5.0 首長為升格保留的也一樣）
     pay(costs, tick=0, reason='', source='') {
         if (!this.canAfford(costs)) return false;
         Object.entries(costs).forEach(([r,a]) => this.consume(r,a,tick,reason,source));
@@ -80,17 +86,10 @@ function processDailyProduction(world) {
       // 公共開支(守衛薪俸、道路修繕、學堂膳食):公庫超過 300 的部分每天花掉 8%,錢多花得多,不會無限堆(30 天實測約停在 1000～1500)
       const extra = (typeof TREASURY !== 'undefined' && world.observerMode) ? 0 : Math.floor(Math.max(0, sp.get('silver') - 300) * 0.08); // v10.7.0 這一條取消：公庫先留安全存量，超過的才拿去蓋公共建設、發補助（sim-treasury.js）
       if (extra > 0) sp.consume('silver', extra, world.tickCount, t('公共開支'), 'upkeep'); }
-    // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
-    // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40
-    // v6.77.0 只有本地產得出的原料保底 40,其他保底 12(不夠就靠商隊)
-    // v6.89.0 原料不夠時是向外地買進來的,公庫要付錢(含運費約 1.5 倍);公庫沒錢就買不到。以前是免費憑空補滿
-    const IMPORT_PRICE = { wood: 3, stone: 4.5, metal: 7.5, cloth: 6, herbs: 7.5 };
-    RAW_MATERIALS.forEach(r => {
-        let gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r);
-        if (!(gap > 0)) return;
-        if (world.observerMode) { const unit = IMPORT_PRICE[r] || 5; const afford = Math.floor(Math.max(0, sp.get('silver') - 50) / unit); gap = Math.min(gap, afford); if (gap <= 0) return; if (sp.consume('silver', Math.round(gap * unit * 10) / 10, world.tickCount, t('原料進口'), 'import')) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'import_raw', -Math.round(gap * unit * 10) / 10); } catch (e) {} } sp.add(r, gap, world.tickCount, t('原料進口')); }
-        else sp.add(r, gap, world.tickCount, t('原料自動補給'));
-    });
+    // v11.5.0 原料怎麼補，由首長定的採購計畫決定（sim-procure.js）。每天照計畫補貨還是算術；備哪幾樣、備多少、買不買，是首長每週拿的主意。
+    // 以前這裡每天把五種原料向外地買到固定的下限、公庫只留 50；商店補貨、跟行商買貨另外各有一套下限與保留金額（60、80），三套互相不知道對方買了什麼，也沒有人決定過
+    if (world.observerMode && typeof PROCURE !== 'undefined') { try { PROCURE.daily(world); } catch (e) { console.warn('[Procure] daily', e); } }
+    else if (!world.observerMode) RAW_MATERIALS.forEach(r => { const gap = (typeof ECON !== 'undefined' ? ECON.rawFloor(world, r) : 40) - sp.get(r); if (gap > 0) sp.add(r, gap, world.tickCount, t('原料自動補給')); }); // 不是觀察者模式（舊的玩法）：照舊免費補到下限
     if (!world.workPolicy) world.workPolicy = {};
     // Check which NPC jobs are covered by the industry system to avoid double production
     const industryJobs = {};
@@ -643,7 +642,7 @@ class ResearchManager {
         if(!this.current) { const rp0=world.stockpile.get('research_points'); if(!this.getAvailable().length && rp0>200) world.stockpile.consume('research_points',rp0-200,world.tickCount,'research'); // v6.91.0 全部研究完:研究點不再無限堆
              if(this.getAvailable().length) this._carry=Math.min(3000,(this._carry||0)+this._scholarPts(world)); // v7.8.0 空檔做的研究先存著
              this._idle=(this._idle||0)+1; if(this._idle>=2){ // v6.43.2 空 2 天(以前 3 天,研究常常整段停擺)
-             const av=this.getAvailable(); if(av.length){ const pick=(typeof TECH!=='undefined'&&TECH.autoPick)?TECH.autoPick(this,world):av[Math.floor(Math.random()*av.length)]; if(pick){ this.startResearch(pick.key); world.logMessageT?.('research', '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } } return; }
+             const av=this.getAvailable(); if(av.length){ const pick=(typeof TECH!=='undefined'&&TECH.autoPick)?TECH.autoPick(this,world):av[Math.floor(Math.random()*av.length)]; if(pick){ this.startResearch(pick.key); const byAsk=(typeof TECH!=='undefined'&&TECH.asked)?TECH.asked(world,pick):false; world.logMessageT?.('research', byAsk ? '🔬 首長請學者先顧升格要的科技，學者們選了「{p}」開始研究。' : '🔬 沒人提議要研究什麼，學者們自己選了「{p}」開始研究。', { p: pick.name }); } } } return; }
         const p=this.projects[this.current]; if(!p||p.status!=='researching') return;
         let pts=this._scholarPts(world)*((typeof TECH!=='undefined'&&TECH.speedOf)?TECH.speedOf(world,p):1); // v7.8.0 核安法:路線上的高階研究慢一成
         const rp=world.stockpile.get('research_points'), bonus=Math.min(rp,40+(world.buildings?.getEffect?.('research_cap',0)||0)); // v7.4.0 研究院每天多用 40 // v6.91.0 10→40 // v6.43.2 研究員做出的研究點每天最多用 10(以前 5,用不完一直堆)

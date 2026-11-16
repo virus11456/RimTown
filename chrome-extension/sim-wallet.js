@@ -100,12 +100,19 @@ const WALLET = (() => {
         const gross = workers.reduce((s, a) => s + wageOf(a) * PR, 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);
         let ratio = have >= net ? 1 : Math.max(0, have / net); W.unpaid = ratio < 1 ? workers.length : 0;
-        const shareOf = (a) => Math.round(netOf(W, a) * ratio * 100) / 100; // v8.8.0 公庫付出去的剛好等於大家領到的(以前公庫照「角」扣、錢包照「分」加)
-        if (ratio > 0 && !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) { ratio = Math.max(0, (have - 0.05 * workers.length) / net); if (!(ratio > 0) || !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) ratio = 0; W.unpaid = workers.length; }
-        W.stats.wages += net * ratio; W.stats.taxes += Math.max(0, gross - net) * ratio;
+        // v11.5.0 錢不夠發的時候先發誰，是首長定的（選擇點 mayorWeek）。沒定過就照舊：大家照同一個比例少領。first＝先領的那幾位；他們領完（或領到領得出的比例），其他人分剩下的
+        let first = null, rA = ratio, rB = ratio;
+        if (ratio < 1 && typeof PROCURE !== 'undefined') { try { first = PROCURE.payFirst(w, workers, (a) => netOf(W, a)); } catch (e) { first = null; } }
+        if (first && first.size && first.size < workers.length) { const nA = workers.reduce((s, a) => s + (first.has(a.agentId) ? netOf(W, a) : 0), 0), nB = net - nA, slack = 0.005 * workers.length; /* 每個人四捨五入到分，留一點零頭才不會比公庫有的多 */ if (have - slack >= nA) { rA = 1; rB = nB > 0 ? Math.max(0, (have - nA - slack) / nB) : 0; } else { rA = nA > 0 ? Math.max(0, (have - slack) / nA) : 0; rB = 0; } } else first = null;
+        const ratioOf = (a) => (first ? (first.has(a.agentId) ? rA : rB) : ratio);
+        const shareOf = (a) => Math.round(netOf(W, a) * ratioOf(a) * 100) / 100; // v8.8.0 公庫付出去的剛好等於大家領到的(以前公庫照「角」扣、錢包照「分」加)
+        if (ratio > 0 && !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) { const cut = Math.max(0, (have - 0.05 * workers.length) / Math.max(0.01, have)); ratio = Math.max(0, (have - 0.05 * workers.length) / net); rA *= cut; rB *= cut; if (!(ratio > 0) || !fromTown(w, Math.round(workers.reduce((s, a) => s + shareOf(a), 0) * 100) / 100, t('發薪水'))) { ratio = 0; rA = 0; rB = 0; } W.unpaid = workers.length; }
+        const paid = workers.reduce((s, a) => s + shareOf(a), 0), part = net > 0 ? Math.min(1, paid / net) : 1;
+        W.stats.wages += first ? paid : net * ratio; W.stats.taxes += Math.max(0, gross - net) * (first ? part : ratio);
+        if (first) W.unpaid = workers.filter(a => ratioOf(a) < 1).length;
         for (const a of workers) {
-            add(w, a, shareOf(a));
-            if (ratio < 1) { a.addThought?.('wage_unpaid', w); if (Math.random() < 0.4) mem(w, a, ratio > 0 ? '公庫只發得出 {p}% 的薪水，這樣怎麼過日子。' : '公庫沒錢，這個月的薪水領不到了。', { p: Math.round(ratio * 100) }, 5); }
+            add(w, a, shareOf(a)); const ra = ratioOf(a);
+            if (ra < 1) { a.addThought?.('wage_unpaid', w); if (Math.random() < 0.4) mem(w, a, ra > 0 ? '公庫只發得出 {p}% 的薪水，這樣怎麼過日子。' : '公庫沒錢，這個月的薪水領不到了。', { p: Math.round(ra * 100) }, 5); }
         }
         if (ratio < 1) W.shortDay = typeof w._absDay === 'function' ? w._absDay() : 0; // v9.6.0 稅率提案看得到「最近發不出薪水」
         if (ratio < 1 && Math.random() < 0.5) log(w, 'economy', '💸 公庫只剩 {n} 銀幣，薪水只發得出 {p}%。', { n: Math.round(have), p: Math.round(ratio * 100) });
@@ -278,7 +285,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, costValue, daily, issues, decideFund, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
+    return { S, get, add, take, pay, payday, costValue, daily, issues, decideFund, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失

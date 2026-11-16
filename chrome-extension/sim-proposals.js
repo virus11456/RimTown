@@ -101,8 +101,10 @@ class ProposalSystem {
     // v7.2.1 已批准的提案先保留材料:較早批准的優先,後面的要扣掉前面保留的才算夠
     _approvedQueue() { return this.items.filter(x => x.status === 'approved').sort((a, b) => (a.approvedDay || 0) - (b.approvedDay || 0) || (a.n || 0) - (b.n || 0)); }
     _reservedBefore(p) { const R = {}; for (const x of this._approvedQueue()) { if (x === p) break; for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; } return R; }
-    _reserveAll(w) { const R = {}; for (const x of this._approvedQueue()) for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; if (w.stockpile) w.stockpile.reserved = R; return R; }
-    _shortfall(w, p) { const R = this._reservedBefore(p), out = {}; for (const [r, n] of Object.entries(this._cost(p))) { const lack = n + (R[r] || 0) - (w.stockpile?.get?.(r) || 0); if (lack > 0) out[r] = Math.ceil(lack); } return out; }
+    // v11.5.0 順便記下已經向外地訂、還在路上的貨（transit）：那一部分的保留不用從現有的庫存扣（貨到了自然補上），其餘保留的料工匠、取暖都拿不到（Stockpile.locked）
+    _reserveAll(w) { const R = {}, T = {}; for (const x of this._approvedQueue()) { for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; for (const [r, n] of Object.entries(x.order?.items || {})) T[r] = (T[r] || 0) + n; } if (w.stockpile) { w.stockpile.reserved = R; w.stockpile.transit = T; } return R; }
+    // v11.5.0 首長為升格保留的料，別的提案不能算成自己的（升格案自己可以）
+    _shortfall(w, p) { const R = this._reservedBefore(p), H = (p.kind === 'tier_up' ? null : w.stockpile?.hold) || {}, out = {}; for (const [r, n] of Object.entries(this._cost(p))) { const lack = n + (R[r] || 0) + (r === 'silver' ? 0 : (H[r] || 0)) - (w.stockpile?.get?.(r) || 0); if (lack > 0) out[r] = Math.ceil(lack); } return out; }
     _affordable(w, p) { return !Object.keys(this._shortfall(w, p)).length; }
     // v7.2.1 拿得到的材料:庫存夠、或外地買得到(有行情);研究點這類買不到
     _obtainable(w, cost) { return Object.entries(cost || {}).every(([r, n]) => r === 'silver' || (w.stockpile?.get?.(r) || 0) >= n || (typeof BASE_PRICES !== 'undefined' && BASE_PRICES[r] != null)); }

@@ -275,9 +275,15 @@ Object.assign(RimTownApp.prototype, {
                 const rawTile = (k) => { const amount = res[k] || 0; const isRaw = RAWS.includes(k); const tone = !isRaw ? "" : amount < 10 ? 'r' : amount < 40 ? 'y' : ''; return `<div class="resource-item ${isRaw && amount < 10 ? "res-low" : amount > 100 ? 'res-high' : ''}${tone ? ' ic-t-' + tone : ''}"><span class="res-icon">${icons[k] || '📦'}</span><span class="res-label">${labels[k] || k}</span><span class="res-amount">${Math.round(amount)}</span></div>`; };
                 const CROPS = (typeof FLOW !== 'undefined' && FLOW.CROP_FOOD) ? Object.keys(FLOW.CROP_FOOD) : ['wheat', 'rice', 'corn', 'potato', 'mushroom', 'grapes', 'sugarcane', 'golden_wheat', 'dragon_fruit'];
                 const others = detailKeys.filter(k => !RAWS.includes(k));
+                // v11.5.0 這週的採購是誰定的、定成什麼；保留中的料（首長為升格保留的、已批准提案保留的）平常不能動用
+                let planNote = '';
+                try { if (typeof PROCURE !== 'undefined' && PROCURE.on(this.world)) { const pe = (x) => this._escapeHtml(String(x ?? '')); const PV = PROCURE.view(this.world);
+                    planNote = `<div class="ic-note pg-plan" style="margin-top:6px">📋 ${t('公庫這週的採購')}${t('：')}${pe(PROCURE.planText(this.world))}${!PV.dflt && PV.by ? `${t('（')}${pe(t(PV.by))}${t('定的')}${t('）')}` : ''}</div>`;
+                    if (PV.hold) planNote += `<div class="ic-note pg-hold">🔒 ${t('首長為升格保留，平常不能動用')}${t('：')}${pe(PROCURE.matText(PV.hold))}</div>`;
+                    if (Object.keys(PV.reserved).length) planNote += `<div class="ic-note pg-hold">🔒 ${t('已批准的提案保留，平常不能動用')}${t('：')}${pe(PROCURE.matText(PV.reserved))}</div>`; } } catch (e) {}
                 html += this._ic({ id: 'gd-raw', icon: '📦', title: t('原料倉庫'), defOpen: true, chip: { t: short.length ? t('短缺') : tight.length ? t('吃緊') : t('充足'), tone: short.length ? 'r' : tight.length ? 'y' : 'g' },
                     alert: short.length ? { t: lightText, tone: 'r' } : tight.length ? { t: lightText, tone: 'y' } : null,
-                    body: `<div class="resource-grid">${RAWS.map(rawTile).join('')}</div>${short.length || tight.length ? '' : `<div class="ic-note" style="margin-top:6px">🟢 ${lightText}</div>`}`,
+                    body: `<div class="resource-grid">${RAWS.map(rawTile).join('')}</div>${short.length || tight.length ? '' : `<div class="ic-note" style="margin-top:6px">🟢 ${lightText}</div>`}${planNote}`,
                     detail: others.length ? `<div class="ic-sub-h">${t('其他庫存')}</div><div class="resource-grid">${others.map(rawTile).join('')}</div>${others.some(k => CROPS.includes(k)) ? `<div class="ic-note" style="margin-top:6px">🌾 ${t('田裡收成的作物會直接存進糧倉（算在食物裡），這裡只留工坊要用的一點，數字小是正常的。')}</div>` : ''}` : '' });
                 // v9.18.0 交易:商人卡(專長、還剩幾天)、每筆報價一格(買／賣用顏色分)、誰去談、最近成交
                 const trade = this.state.trade || {};

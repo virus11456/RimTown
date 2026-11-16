@@ -41,7 +41,7 @@ const DECIDE = (() => {
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
     const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
-    const AI_GROUP = { deal: 20 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件
+    const AI_GROUP = { deal: 20, civic: 6 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
