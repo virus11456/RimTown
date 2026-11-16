@@ -159,7 +159,7 @@ const DEALASK = (() => {
         title: '常買的東西變貴了', scan: false, pri: 0.8, aiGroup: G,
         when() { return null; },
         facts(w, a, c) { const st = DEAL.F(w, c.key); const o = DEAL.owner(w, c.key); const alt = DEAL.other(w, c.key); const as = alt ? DEAL.F(w, alt) : null;
-            return fill('{s}的{g}比原本貴了 {p}%，是東家{o}自己漲的。{alt}你身上有 {c} 銀幣。', { s: sn(c.key), g: gname(c.key), p: pct(st.up), o: o?.name || '', c: Math.floor(cash(w, a)),
+            return fill('{s}的{g}比原本貴了 {p}%，是東家{o}自己漲的。{alt}{ill}你身上有 {c} 銀幣。', { ill: (() => { try { return LW()?.illegal(w, c.key).hike ? '鎮上規定不得比原價貴超過 12%，這已經超過了。' : { raw: '' }; } catch (e) { return { raw: '' }; } })(), s: sn(c.key), g: gname(c.key), p: pct(st.up), o: o?.name || '', c: Math.floor(cash(w, a)),
                 alt: alt ? { k: '對面{o}的店{x}。', p: { o: DEAL.owner(w, alt)?.name || '', x: as.up ? { k: '也比原價貴 {p}%', p: { p: pct(as.up) } } : '照原價賣' } } : '鎮上賣這個的只有這一家。' }); },
         options(w, a, c) {
             const st = DEAL.F(w, c.key); const o = DEAL.owner(w, c.key); const f = DEAL.factOf(w, c.fid); if (!o || !f || f.end != null || st.up <= 0) return []; const alt = DEAL.other(w, c.key); const cheaper = alt && DEAL.F(w, alt).up < st.up; const poor = cash(w, a) < 30;
@@ -173,6 +173,8 @@ const DEALASK = (() => {
                 run: (w2, a2) => (boycott(w2, a2, c.key) ? { k: '開始號召大家別去買' } : { k: '已經有人在號召了' }) });
             if (hasPaper(w)) out.push({ id: 'tip', quiet: true, text: '向報社投訴', say: { k: '向報社投訴{s}亂漲價', p: { s: sn(c.key) } }, why: '讓大家都知道',
                 base: REF + tilt(clampN(0.05 * (st.up >= 0.3 ? 2 : 1), 0.004, 0.5)), lean: { face: 0.2 }, run: (w2, a2) => (tip(w2, a2, f, false) ? { k: '向報社說了' } : null) });
+            let ill = false; try { ill = !!LW()?.illegal(w, c.key).hike; } catch (e) {} // v11.0.0 有價格上限以後，超過的可以去告發
+            if (ill) out.push({ id: 'report', quiet: true, text: '去告發：價錢超過鎮上的上限', say: { k: '去告發{s}的價錢超過上限', p: { s: sn(c.key) } }, why: '規定都訂了，不能當沒這回事', base: REF + tilt(clampN(0.18 * (poor ? 1.5 : 1) * (has(a, 'shy') ? 0.5 : 1) * (aff(a, o) >= 40 ? 0.3 : 1), 0.02, 0.8)), lean: { face: 0.2, safe: -0.1 }, run: (w2, a2) => (report(w2, a2, f) ? { k: '去告發了' } : { k: '已經告發過了' }) });
             return out;
         },
     });

@@ -1030,6 +1030,7 @@ class ElectionSystem {
             try { if (typeof PRESS !== 'undefined' && world.press) score += PRESS.bias(world, voter, c.agentId); } catch (e) {} // v6.63.0 讀到的報導
             try { if (typeof UNION !== 'undefined' && world.union) score += UNION.bias(world, voter, c.agentId); } catch (e) {} // v6.93.0 工會會員投領袖、不投老闆
             try { if (typeof POWER !== 'undefined' && world.power) score += POWER.bias(world, voter, c.agentId); } catch (e) {} // v6.95.0 選戰經費、醜聞
+            try { if (typeof CAMPS !== 'undefined' && CAMPS && world.deal) score += CAMPS.bias(world, voter, c.agentId); } catch (e) {} // v11.0.0 候選人管不管商人
             try { if (typeof MIND !== 'undefined' && world.mind) score += MIND.affinity(world, voter, candidate) * 3; } catch (e) {} // v6.68.0 立場相近
             try { if (typeof MYTHSOC !== 'undefined' && world.mythsoc) score += MYTHSOC.bias(world, voter, c.agentId); } catch (e) {} // v7.6.0 對神裔的看法
             score += (Math.random() - 0.3) * 10;

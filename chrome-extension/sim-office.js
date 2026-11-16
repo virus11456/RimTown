@@ -47,6 +47,8 @@ const OFFICE = (() => {
     const dutyOf = (w, kind) => (kind === 'cut' ? (holder(w, 'health') || holder(w, 'market')) : kind === 'tax' ? holder(w, 'tax') : holder(w, 'market'));
     const stipend = (w) => r2((full(w) ? FT_PAY : PT_PAY) * (typeof WALLET !== 'undefined' && WALLET.wageIdx ? WALLET.wageIdx() : 1));
     const payDaily = (w) => (on(w) ? r2(officials(w).length * stipend(w)) : 0);
+    const sameCamp = (w, a, b) => { try { const s = typeof CAMPS !== 'undefined' && CAMPS ? CAMPS.side(w, a) : null; return s && s === CAMPS.side(w, b) ? 0.4 : 0; } catch (e) { return 0; } }; // 自己這一邊的人比較會被提名
+    const UN = () => (typeof UNREST !== 'undefined' && UNREST ? UNREST : null);
     const repOf = (w, fid, by) => DEALASK.S(w).reports.find(x => x.fid === fid && x.by === by) || null;
     const rec = (w, k, p) => { const O = S(w); O.recs.push({ d: day(w), k, p: p || {} }); if (O.recs.length > 30) O.recs.shift(); };
     function vacate(w, post, why) { const O = S(w); const a = holder(w, post); delete O.posts[post]; if (a) { mem(w, a, '我不再當{p}了。', { p: pname(post) }, 6); rec(w, '{a}卸下{p}（{why}）', { a: a.name, p: pname(post), why }); } }
@@ -95,7 +97,7 @@ const OFFICE = (() => {
             if (mayor(w) !== a || S(w).posts[c.post] || !wanted(w).includes(c.post)) return []; const cs = candidates(w, a, c.post); if (!cs.length) return [];
             const out = [{ id: 'none', quiet: true, mute: true, text: '先不提名，這個位子空著', say: '沒有提名', why: '公庫的錢省著用', base: REF - 0.3, lean: { safe: 0.1 }, run: () => null }];
             for (const x of cs) out.push({ id: 'pick:' + x.a.agentId, text: { k: '提名{a}', p: { a: x.a.name } }, say: { k: '提名{a}當{p}', p: { a: x.a.name, p: pname(c.post) } }, why: x.tag === 'able' ? '這個位子要找信得過的人' : x.tag === 'friend' ? '自己人比較好說話' : '他幫過我，該還這個情',
-                base: REF + (x.tag === 'able' ? 0.5 + (honesty(a) >= 4 ? 0.5 : 0) : x.tag === 'friend' ? tilt(clampN(0.3 + aff(a, x.a) / 200, 0.05, 0.8)) : tilt(clampN(0.25 * Math.min(3, inf(w, a, x.a) / 30) * (has(a, 'greedy') ? 1.6 : 1) * (honesty(a) >= 4 ? 0.3 : 1), 0.02, 0.85))), lean: x.tag === 'able' ? { face: 0.2 } : { bond: 0.3, face: -0.2 },
+                base: REF + sameCamp(w, a, x.a) + (x.tag === 'able' ? 0.5 + (honesty(a) >= 4 ? 0.5 : 0) : x.tag === 'friend' ? tilt(clampN(0.3 + aff(a, x.a) / 200, 0.05, 0.8)) : tilt(clampN(0.25 * Math.min(3, inf(w, a, x.a) / 30) * (has(a, 'greedy') ? 1.6 : 1) * (honesty(a) >= 4 ? 0.3 : 1), 0.02, 0.85))), lean: x.tag === 'able' ? { face: 0.2 } : { bond: 0.3, face: -0.2 },
                 run: (w2, a2) => (nominate(w2, a2, c.post, x.a) ? { k: '送交表決' } : { k: '沒有提成' }) });
             return out;
         },
@@ -171,7 +173,7 @@ const OFFICE = (() => {
         const D = DEALASK.S(w), d = day(w); let n = 0;
         for (const x of D.reports) { if (n >= 3) break; if (only ? x !== only : !(x.key === key && x.st === 'checked' && d - x.d <= 60)) continue; const r = live(w, x.by); if (!r || r === by) continue; x.st = 'snubbed'; n++; DEAL.learn(w, f, r, 'guess');
             mem(w, r, how === 'no' ? '我去告發{s}的事，{o}說沒有證據，不查。' : '我去告發{s}的事，{o}去查過了，卻一點下文都沒有。', { s: key ? DEAL.sname(key) : { raw: '' }, o: by.name }, 7); rel(r, by)?.modifyAffinity?.(-8);
-            DECIDE.enqueue(w, r, 'reportSnub', { about: by.agentId, cover: f.id, key: key || null, how }); }
+            DECIDE.enqueue(w, r, 'reportSnub', { about: by.agentId, cover: f.id, key: key || null, how }); UN()?.anger(w, r, by, 2, 'snub'); }
         return n;
     }
     // 報上登出官員不辦事（或收錢）：他是首長提名的，留不留由首長決定
@@ -238,7 +240,7 @@ const OFFICE = (() => {
             if (hasPaper(w)) out.push({ id: 'paper', quiet: true, text: { k: '去跟報社說{o}不辦事', p: { o: o.name } }, say: { k: '把{o}不辦事的經過告訴了報社', p: { o: o.name } }, why: '官不管，就讓大家來評理', base: REF + tilt(clampN(0.3 * hurt * (hon >= 4 ? 1.5 : 1) * (has(a, 'shy') ? 0.4 : 1) * (aff(a, o) >= 40 ? 0.3 : 1), 0.02, 0.95)), lean: { face: 0.3, safe: -0.3 },
                 run: (w2, a2) => { const T = TIPS.S(w2); if (T.box.some(x => x.cover === f.id && x.st !== 'dropped')) return { k: '報社已經知道了' }; TIPS.add(w2, { src: 'tip', by: a2.agentId, about: o.agentId, type: 'shield', cover: f.id }); S(w2).st.toPaper = (S(w2).st.toPaper || 0) + 1; return { k: '跟報社說了' }; } });
             out.push({ id: 'talk', quiet: true, text: { k: '逢人就講{o}不辦事', p: { o: o.name } }, say: { k: '到處說{o}收了告發卻不辦', p: { o: o.name } }, why: '這口氣我吞不下去', base: REF + tilt(clampN(0.25 * hurt * (has(a, 'gossip') ? 2 : 1) * (has(a, 'shy') ? 0.3 : 1), 0.02, 0.9)), lean: { bond: 0.2, face: 0.1, safe: -0.1 },
-                run: (w2, a2) => { let n = 0; const fr = npcs(w2).filter(x => x !== a2 && x !== o && aff(a2, x) >= 20).sort((x, y) => aff(a2, y) - aff(a2, x)).slice(0, 4); for (const x of fr) { if (!DEAL.learn(w2, f, x, 'heard')) continue; n++; rel(x, o)?.modifyAffinity?.(-4); mem(w2, x, '{a}說他去告發，{o}卻不辦。', { a: a2.name, o: o.name }, 5); } S(w2).st.grumble = (S(w2).st.grumble || 0) + n; return { k: '講給 {n} 個人聽', p: { n } }; } });
+                run: (w2, a2) => { let n = 0; const fr = npcs(w2).filter(x => x !== a2 && x !== o && aff(a2, x) >= 20).sort((x, y) => aff(a2, y) - aff(a2, x)).slice(0, 4); for (const x of fr) { if (!DEAL.learn(w2, f, x, 'heard')) continue; n++; rel(x, o)?.modifyAffinity?.(-4); mem(w2, x, '{a}說他去告發，{o}卻不辦。', { a: a2.name, o: o.name }, 5); UN()?.anger(w2, x, o, 1, 'heard'); } S(w2).st.grumble = (S(w2).st.grumble || 0) + n; return { k: '講給 {n} 個人聽', p: { n } }; } });
             return out;
         },
     });
@@ -254,11 +256,11 @@ const OFFICE = (() => {
                 { id: 'fire', text: { k: '撤掉{o}', p: { o: o.name } }, say: { k: '撤掉了{p}{o}', p: { p: pname(c.post), o: o.name } }, why: '留著他，倒楣的是我', base: REF + tilt(clampN((c.paid ? 0.6 : 0.35) * (hon >= 4 ? 1.4 : 1) / tie, 0.03, 0.97)), lean: { face: 0.4, bond: -0.3 },
                     run: (w2, a2) => { vacate(w2, c.post, '上報後被撤換'); S(w2).st.fired = (S(w2).st.fired || 0) + 1; rel(o, a2)?.modifyAffinity?.(-15); log(w2, '🪪 {m}撤掉了{p}{o}。', { m: a2.name, p: pname(c.post), o: o.name }, o.name); for (const x of npcs(w2)) if (x !== a2 && x !== o && Math.random() < 0.3) rel(x, a2)?.modifyAffinity?.(2); return { k: '撤掉了' }; } },
                 { id: 'keep', text: { k: '說報上寫的不是事實，留任{o}', p: { o: o.name } }, say: { k: '說報上亂寫，留任{o}', p: { o: o.name } }, why: '他是我的人，不能說換就換', base: REF + tilt(clampN((c.paid ? 0.15 : 0.3) * tie * (hon >= 4 ? 0.4 : 1), 0.02, 0.95)), lean: { bond: 0.4, face: -0.3 },
-                    run: (w2, a2) => { S(w2).st.kept = (S(w2).st.kept || 0) + 1; rel(o, a2)?.modifyAffinity?.(8); let n = 0; for (const x of npcs(w2)) { if (x === a2 || x === o || w2.press?.reads?.[x.agentId] !== c.pid) continue; if (Math.random() < 0.5) { rel(x, a2)?.modifyAffinity?.(c.paid ? -6 : -3); n++; } } rec(w2, '{m}留任上了報的{o}', { m: a2.name, o: o.name }); log(w2, '🪪 {m}說報上寫的不是事實，{o}留任{p}。', { m: a2.name, o: o.name, p: pname(c.post) }, o.name); return { k: '留任，{n} 個讀者不以為然', p: { n } }; } },
+                    run: (w2, a2) => { S(w2).st.kept = (S(w2).st.kept || 0) + 1; rel(o, a2)?.modifyAffinity?.(8); let n = 0; for (const x of npcs(w2)) { if (x === a2 || x === o || w2.press?.reads?.[x.agentId] !== c.pid) continue; if (Math.random() < 0.5) { rel(x, a2)?.modifyAffinity?.(c.paid ? -6 : -3); n++; UN()?.anger(w2, x, a2, 1, 'keep'); } } rec(w2, '{m}留任上了報的{o}', { m: a2.name, o: o.name }); log(w2, '🪪 {m}說報上寫的不是事實，{o}留任{p}。', { m: a2.name, o: o.name, p: pname(c.post) }, o.name); return { k: '留任，{n} 個讀者不以為然', p: { n } }; } },
             ];
         },
     });
-    function view(w) { if (!w.office) return null; const O = S(w), d = day(w); return { wanted: wanted(w).map(k => ({ post: k, name: t(pname(k)), icon: POSTS[k].icon, duty: t(POSTS[k].duty), holder: holder(w, k)?.name || null, holderId: holder(w, k)?.agentId || null, days: O.posts[k] ? d - O.posts[k].since : 0, n: O.posts[k]?.n || 0, found: O.posts[k]?.found || 0, owe: O.posts[k]?.owe || 0, by: w.agents[O.posts[k]?.by]?.name || null })), pay: stipend(w), full: full(w), recs: O.recs.slice(-10).reverse().map(x => ({ ago: d - x.d, text: fill(x.k, x.p) })), st: Object.assign({}, O.st) }; }
+    function view(w) { if (!w.office) return null; const O = S(w), d = day(w); let hire = true; try { hire = typeof FISCAL === 'undefined' || FISCAL.canHire(w); } catch (e) {} return { hire, wanted: wanted(w).map(k => ({ post: k, name: t(pname(k)), icon: POSTS[k].icon, duty: t(POSTS[k].duty), holder: holder(w, k)?.name || null, holderId: holder(w, k)?.agentId || null, days: O.posts[k] ? d - O.posts[k].since : 0, n: O.posts[k]?.n || 0, found: O.posts[k]?.found || 0, owe: O.posts[k]?.owe || 0, by: w.agents[O.posts[k]?.by]?.name || null })), pay: stipend(w), full: full(w), recs: O.recs.slice(-10).reverse().map(x => ({ ago: d - x.d, text: fill(x.k, x.p) })), st: Object.assign({}, O.st) }; }
     return { S, on, POSTS, wanted, full, holder, postOf, officials, dutyOf, stipend, payDaily, seat, vacate, daily, candidates, nominate, vote, sway, enact, targets, inspect, punish, snub, exposed, view, pname };
 })();
 if (typeof globalThis !== 'undefined') globalThis.OFFICE = OFFICE;
