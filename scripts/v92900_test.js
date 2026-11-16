@@ -93,7 +93,7 @@ const open = async (browser, o = {}) => {
     ok(clean.em.length === 0 && clean.dash === 0, '頁面上的字沒有表情符號、沒有破折號（更新紀錄除外）', clean);
     // 換語言
     await page.evaluate(() => { document.getElementById('landing').scrollTop = 0; document.querySelector('.landing-lang [data-lang="en"]').click(); });
-    await page.waitForFunction(() => /makes up their own mind/.test(document.querySelector('.lp-title')?.textContent || ''), null, { timeout: 10000 });
+    await page.waitForFunction(() => /makes up their own mind/.test(document.querySelector('.lp-title')?.textContent || ''), null, { timeout: 30000 }); // 換語言要載入並解析 1.6MB 的字典，機器忙時量到 6 到 8 秒
     await page.waitForSelector('#lp-stage.lp-stage-live .lp-stage-canvas', { timeout: 30000 });
     const en = await page.evaluate(() => { const c = document.querySelector('.lp').cloneNode(true); c.querySelector('#landing-updates')?.remove(); c.querySelector('.landing-lang')?.remove(); c.querySelectorAll('.lp-badges, #landing-brain').forEach(x => x.remove()); const zh = (c.textContent.match(/[一-鿿]{2,}/g) || []).filter(x => x !== '中文') /* 常見問題裡提到右上角的「中文／English」切換 */; return { zh: zh.slice(0, 6), tags: document.querySelectorAll('.lp-kind-tags li').length, canv: document.querySelectorAll('.lp-stage-canvas').length }; });
     ok(en.zh.length === 0 && en.tags === 117 && en.canv === 1, '切到英文：整頁換成英文，3D 重新掛上（只有一個畫布）', en);
