@@ -259,7 +259,7 @@ Object.assign(RimTownApp.prototype, {
 
         // Load from cloud if logged in
         if (this.auth.loggedIn) {
-            // v10.3.1 換一台瀏覽器(本機沒有成就紀錄)登入時,不再把拿過的成就整批重傳:
+            // v10.4.2 換一台瀏覽器(本機沒有成就紀錄)登入時,不再把拿過的成就整批重傳:
             // (1) 伺服器回的是「代號 → 資料」的物件,以前當成陣列讀,出錯又沒報,雲端清單其實從來沒併進來;兩種格式都讀
             // (2) 清單回來之前拿到的成就先排著不上傳(判定照常跑,不等清單),清單回來後只補傳清單裡沒有的。
             //     清單讀不到或等超過 15 秒:不知道雲端有哪些,排著的全部照傳(伺服器重複的不會多記)
@@ -288,7 +288,7 @@ Object.assign(RimTownApp.prototype, {
 
         // Save to cloud
         if (this.auth.loggedIn) {
-            if (this._achUploadQueue) this._achUploadQueue.push([key, this.currentTownId]); // v10.3.1 雲端清單還沒回來:先排著,回來後只傳清單裡沒有的
+            if (this._achUploadQueue) this._achUploadQueue.push([key, this.currentTownId]); // v10.4.2 雲端清單還沒回來:先排著,回來後只傳清單裡沒有的
             else this.auth.unlockAchievement(key, this.currentTownId).catch(() => {});
         }
 

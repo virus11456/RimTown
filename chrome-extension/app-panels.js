@@ -1085,6 +1085,15 @@ Object.assign(RimTownApp.prototype, {
             } catch (e) {}
         }
         if (W('lore') || W('stats')) {
+            // v10.4.0 現行規定：表決通過、現在還在實施的規定，實施了幾天、什麼時候可以提案廢除；最近表決廢除了哪些
+            try { if (typeof REPEAL !== 'undefined') { const rv = REPEAL.view(this.world); if (rv.live.length || rv.done.length || rv.recall) {
+                B.lore += `<div class="pp-lore pp-laws"><h4 class="pp-h">⚖️ ${t('現行規定')}</h4>`;
+                for (const x of rv.live) B.lore += `<div class="pp-lore-row" data-pgd="1">${esc(x.icon)} ${x.free ? t('「') + esc(x.name) + t('」') : esc(x.name)} <small>${t('實施第 {n} 天').replace('{n}', x.days)} · ${x.open ? t('正在表決要不要廢除') : x.wait > 0 ? t('再 {n} 天後可以提案廢除').replace('{n}', x.wait) : t('可以提案廢除')}</small></div>`;
+                for (const x of rv.done.slice(0, 6)) B.lore += `<div class="pp-lore-row pp-law-gone" data-pgd="1">🗳️ ${x.free ? t('「') + esc(x.name) + t('」') : esc(x.name)} <small>${x.ago > 0 ? t('{n} 天前表決廢除').replace('{n}', x.ago) : t('今天表決廢除')} · ${x.open ? t('正在表決要不要恢復') : x.wait > 0 ? t('再 {n} 天後可以提案恢復').replace('{n}', x.wait) : t('可以提案恢復')}</small></div>`;
+                if (rv.recall) { const RW = { settle: '上任還不滿 30 天', tail: '離下次選舉不到 30 天', once: '這個任期已經提過', sign: '連署人數不夠', electing: '正在選舉', open: '正在表決', self: '', none: '' }; const c = rv.recall;
+                    B.lore += `<div class="pp-lore-row pp-law-recall" data-pgd="1">📢 ${t('罷免{o}').replace('{o}', esc(c.title))} ${esc(t(c.name))} <small>${t('連署 {a}／{b} 人').replace('{a}', c.signers).replace('{b}', c.need)} · ${c.ok ? t('可以提案罷免') : t(RW[c.why] || '現在不能提')}</small></div>`; }
+                B.lore += `<p class="pp-law-note">${rv.ai ? t('規定是上一次表決的結果：村民隨時可以提案廢除或恢復，全鎮再投一次票。罷免要四分之一的人連署，六成贊成、且贊成的人超過全鎮四成才通過，一個任期只能提一次。') : t('規定是上一次表決的結果：實施滿 60 天可以提案廢除，廢除滿 60 天可以提案恢復，都是全鎮再投一次票。')}</p></div>`;
+            } } } catch (e) { console.warn('[Repeal] view', e); }
             // v6.47.0 村民提案留下的傳統與地標
             if ((d.traditions || []).length || (d.landmarks || []).length) {
                 B.lore += `<div class="pp-lore"><h4 class="pp-h">🏮 ${t('本鎮的規矩與地標')}</h4>`;
@@ -1117,7 +1126,7 @@ Object.assign(RimTownApp.prototype, {
                 const seen = this._stampSeen || (this._stampSeen = new Set()); const fresh = !seen.has(p.id + stampKind); stampShown.push(p.id + stampKind);
                 const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
                 const word = (en ? { ok: 'APPROVED', no: 'REJECTED', off: 'WITHDRAWN' } : { ok: '核准', no: '否決', off: '收回' })[stampKind];
-                const by = (p.decidedBy === 'override' || p.decidedBy === 'council') ? t((typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會') : p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : ''); // v6.82.0 議會否決／推翻首長否決時章上寫議會
+                const by = (p.decidedBy === 'override' || p.decidedBy === 'council') ? t((typeof TIERS !== 'undefined' && this.world) ? TIERS.LV[TIERS.level(this.world)].council : '議會') : p.mayorName ? `${p.mayorActing ? t('代理鎮長') : t('鎮長')} ${t(p.mayorName)}` : (p.decidedBy === 'auto' ? t('依票數定案') : p.decidedBy === 'vote' ? t('全鎮投票') : ''); // v6.82.0 議會否決／推翻首長否決時章上寫議會
                 stamp = `<div class="pp-stamp pp-stamp-${stampKind}${fresh ? ' pp-stamp-new' : ''}${en ? ' pp-stamp-en' : ''}" aria-label="${esc(word)}"><b>${esc(word)}</b>${by ? `<small>${esc(by)}</small>` : ''}</div>`;
             }
             let html = `<div class="pp-card pp-${p.status}${stampKind ? ' pp-stamped' : ''}" data-pid="${p.id}">${stamp}
@@ -1327,11 +1336,11 @@ Object.assign(RimTownApp.prototype, {
             const pol = (typeof ELECTION_POLICIES_LABELS !== 'undefined' && ELECTION_POLICIES_LABELS[last.winner.policy]) || last.winner.policy;
             // v9.18.0 上次選舉改成小卡：誰當選放大，政見／得票／下次選舉改成膠囊
             const vp = last.totalVotes ? Math.round(last.winner.votes / last.totalVotes * 100) : 0;
-            html += `<div class="el-last pg-el"><div class="pg-el-h">🏛️ ${last.byElection ? t('上次補選') : t('上次選舉')}</div><div class="pg-el-w"><b>${nm(last.winner.name)}</b><span class="ic-chip ic-g">${t('當選')}</span></div>${this._icPills([esc(pol), `🗳️ ${last.winner.votes}/${last.totalVotes} ${t('票')}${vp ? `${t('（')}${vp}%${t('）')}` : ''}`, `📅 ${t('下次選舉在秋季第 1 天。').replace(/[。.]\s*$/, '')}`])}</div>`;
+            html += `<div class="el-last pg-el"><div class="pg-el-h">🏛️ ${last.byElection ? t('上次補選') : t('上次選舉')}</div><div class="pg-el-w"><b>${nm(last.winner.name)}</b><span class="ic-chip ic-g">${t('當選')}</span></div>${this._icPills([esc(pol), `🗳️ ${last.winner.votes}/${last.totalVotes} ${t('票')}${vp ? `${t('（')}${vp}%${t('）')}` : ''}`, `📅 ${t('下次選舉在第 {y} 年秋季第 1 天').replace('{y}', (typeof ELECT !== 'undefined') ? ELECT.nextMayorYear(W) : W.clock.year)}`])}</div>`;
         } else {
-            html += `<div class="el-last">🏛️ ${t('鎮長每年秋季第 1 天改選；鎮長永久離開小鎮會馬上補選。')}</div>`;
+            html += `<div class="el-last">🏛️ ${t('鎮長一任兩年，單數年秋季第 1 天改選（下次在第 {y} 年）；鎮長永久離開小鎮會馬上補選。').replace('{y}', (typeof ELECT !== 'undefined') ? ELECT.nextMayorYear(W) : W.clock.year)}</div>`;
         }
-        if (W.council?._formed && typeof TIERS !== 'undefined' && !W.assembly?.elec) html += `<div class="el-last">🏛️ ${t('{council}每年春季第 3 天改選；有人出缺由上次落選者依票數遞補。').replace('{council}', esc(t(TIERS.LV[TIERS.level(W)].council)))}</div>`; // v6.82.0
+        if (W.council?._formed && typeof TIERS !== 'undefined' && !W.assembly?.elec) html += `<div class="el-last">🏛️ ${t('{council}一任兩年，雙數年春季第 3 天改選（下次在第 {y} 年）；有人出缺由上次落選者依票數遞補。').replace('{council}', esc(t(TIERS.LV[TIERS.level(W)].council))).replace('{y}', (typeof ELECT !== 'undefined') ? ELECT.nextCouncilYear(W, W.assembly?.lastYear === W.clock.year) : W.clock.year)}</div>`; // v6.82.0
         return html;
     },
 

@@ -127,6 +127,8 @@ if (typeof ProposalSystem !== 'undefined') {
         try { j = await w.conversationEngine.inventProposal(w, a, hints); } catch (e) { console.warn('[Proposals] invent', e); }
         if (this.open().length >= ProposalSystem.MAX_OPEN) return;
         if (!j || j.skip) { if (j?.skip) { w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; } return fallback(); }
+        // v10.4.0 他想提的是「廢除／恢復某條規定」：開成正式的廢除案或恢復案（立場照各人處境算，通過後真的改規定）
+        try { const rp = (typeof REPEAL !== 'undefined') ? REPEAL.fromAI(w, a, j) : null; if (rp) { rp.llm = true; if (j.pitch) rp.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, rp)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] repeal', e); }
         const fx0 = FREEPROP.sanitize(w, j.effects); if (!fx0.length) return fallback();
         const { fx, cost } = FREEPROP.balance(fx0, FREEPROP.sanitizeCost(j.cost));
         const title = String(j.title || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, ''); if (title.length < 2) return fallback();
@@ -166,18 +168,19 @@ if (typeof ConversationEngine !== 'undefined') {
         const iss = (typeof TOWN_ISSUES !== 'undefined') ? TOWN_ISSUES.promptBlock(world.proposals) : { txt: '', keys: [] }; // v6.50.0 鎮上急事(拖越久大家越不滿)
         // v9.28.2 以前題目裡寫死三個例子(替貓立雕像…)，真模型會照抄：五天裡三個提案都是貓雕像，被否決了還再提。
         // 改成每次隨機給三個「發想方向」(不是現成的點子)，並附上最近提過的案子，叫它不要重複
-        const ANGLES = ['跟你的工作有關、你做這行才看得到的問題', '你的人生心願，或你一直想做卻沒做的事', '你最親的人，或跟你處不來的人', '你最近親身遇到的一件事', '你的信仰，或鎮上的節日、習俗', '鎮上某個你喜歡或討厭的地方、店家', '一條你覺得大家都該遵守的新規矩', '小孩、老人或生病的人', '跟對手鎮、鄰鎮的往來', '讓日子有趣一點的事（比賽、聚會、表演）', '鎮上的動物、田地、樹林或河', '你覺得不公平的一件事', '紀念鎮上發生過的一件事或一個人', '你自己想學、想試的新手藝'];
+        const ANGLES = ['跟你的工作有關、你做這行才看得到的問題', '你的人生心願，或你一直想做卻沒做的事', '你最親的人，或跟你處不來的人', '你最近親身遇到的一件事', '你的信仰，或鎮上的節日、習俗', '鎮上某個你喜歡或討厭的地方、店家', '一條你覺得大家都該遵守的新規矩', '小孩、老人或生病的人', '跟對手鎮、鄰鎮的往來', '讓日子有趣一點的事（比賽、聚會、表演）', '鎮上的動物、田地、樹林或河', '你覺得不公平的一件事', '紀念鎮上發生過的一件事或一個人', '你自己想學、想試的新手藝', '鎮上一條你覺得不合理、該改掉的規定，或一個你覺得罰得太重的處置'];
         const angles = ANGLES.map(x => [Math.random(), x]).sort((x, y) => x[0] - y[0]).slice(0, 3).map(x => t(x[1])).join(t('、'));
         // 最近三個提案裡已經有人在處理急事(或手氣剛好)：這次請他提跟急事無關、屬於自己的點子，不然缺柴的那幾天每個人提的都是買柴
         const dayNow = world._absDay ? world._absDay() : 0;
         const personal = (world.proposals?.items || []).slice(-3).some(p => (p.addresses || []).length && dayNow - (p.createdDay ?? dayNow) <= 6) || Math.random() < 0.35;
         const PST = { open: '表決中', approved: '通過', done: '已完成', rejected: '否決', shelved: '擱置', failed: '沒辦成', expired: '過期' };
         const recent = (world.proposals?.items || []).slice(-8).map(p => { let ti = ''; try { ti = world.proposals._fill(p.tk, p.tp); } catch (e) {} return ti ? `${cut(ti, 24)}${t('（')}${t(PST[p.status] || '表決中')}${t('）')}` : ''; }).filter(Boolean).join(t('；'));
+        const RP = (typeof REPEAL !== 'undefined') ? REPEAL.promptParts(world, a) : { ctx: '', fx: '' }; // v10.4.0 現行規定、被廢除的規定、受處置的人、稅率、首長；以及用來改掉它們的效果
         const prompt = `${t('你正在扮演「')}${b.name}${t('」（')}${b.age}${t('歲，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${t('）。')}
 ${t('你想向全鎮提一個你自己想出來的提案。可以很實際，也可以天馬行空、有個人色彩，但要符合你的個性、記憶和鎮上現況。')}${t('可以從這幾個方向想（挑跟你有關的，也可以都不用）：')}${angles}${t('。')}${personal ? t('鎮上眼前的急事已經有人在處理了。這一次請提一件跟那些急事無關、屬於你自己的事：你的工作、你在乎的人、你的心願，或你一直想讓鎮上變得不一樣的地方。') : t('從你現在真正的需要和心情出發：餓了、冷了、缺東西、開心、難過或嫉妒，都會影響你想提什麼。')}
 ${t('【鎮況】')}${this._townBrief(world)}
 ${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${iss.txt && !personal ? `${t('【鎮上的急事（大家正受影響，拖越久越不滿；要處理哪一件就在 addresses 填它的編號）】')}\n${iss.txt}\n` : ''}${hintTxt && !personal ? `${t('【鎮上眼前的狀況與大家在談的事（越前面越急；可以照著提、改成你的版本，也可以都不管、提你自己的點子）】')}\n${hintTxt}\n` : ''}${t('【鎮上的人】')}${names}
-${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
+${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${RP.ctx}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
 {"type":"resource","res":"food|wood|stone|metal|cloth|herbs|silver|tools|medicine","amount":-150~150}
 {"type":"daily","res":"…","amount":-8~8,"days":3~20}
 {"type":"mood","who":"all|job:farmer|trait:creative|name:${t('名字')}","amount":-8~8}
@@ -185,7 +188,7 @@ ${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的
 {"type":"modifier","key":"research_bonus|farm_bonus|merchant_chance|festival_chance|immigration_chance|defense_bonus|sell_bonus|gathering_bonus","value":-0.3~0.3,"days":5~30}
 {"type":"build","key":"${t('建築代碼')}"} {"type":"research","key":"${t('研究代碼')}"} {"type":"job","name":"${t('名字')}","job":"farmer|doctor|…"}
 {"type":"tradition","text":"${t('一句新規矩或傳統')}"} {"type":"landmark","name":"${t('地標名')}","icon":"${t('一個表情符號')}"}
-${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}${iss.txt && !personal ? t('（要處理急事時加上 "addresses":[編號]）') : ''}`;
+${RP.fx}${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}${iss.txt && !personal ? t('（要處理急事時加上 "addresses":[編號]）') : ''}`;
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 420);
         if (!j || typeof j !== 'object' || Array.isArray(j)) return null;

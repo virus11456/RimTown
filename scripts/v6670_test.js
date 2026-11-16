@@ -27,7 +27,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 抓到
       seq([0.01, 0.01], () => CIVIC.crime(w, C, D)); out.caught = C.jail[thief.agentId] > D && WALLET.get(w, vic) === 200 && logHas(/衛兵抓到|guards caught/);
       // 出獄
-      D = C.jail[thief.agentId]; CIVIC.crime(w, C, D); out.released = !C.jail[thief.agentId] && logHas(/出獄|released/);
+      D = C.jail[thief.agentId]; seq([0.99], () => CIVIC.crime(w, C, D)); /* 出獄這天不讓他再偷：不固定的話有 2.75% 機率當天又偷又被抓，這一項和下一項就誤判 */ out.released = !C.jail[thief.agentId] && logHas(/出獄|released/);
       // 沒抓到 → 祕密
       all[2].job.key = 'farmer'; all[3].job.key = 'farmer'; w.wallet.bal[thief.agentId] = 0; D++;
       const ns = (w.dark?.secrets || []).length; seq([0.01, 0.99], () => CIVIC.crime(w, C, D)); out.secret = (w.dark?.secrets || []).length > ns && WALLET.get(w, vic) < 200;

@@ -1,10 +1,10 @@
-// v6.82.0 議會實權:大事要議會表決、首長否決可被三分之二推翻、議員每年春天改選、出缺由落選者遞補、議事紀錄
+// v6.82.0 議會實權:大事要議會表決、首長否決可被三分之二推翻、議員春天改選（v10.4.0 起一任兩年、雙數年選）、出缺由落選者遞補、議事紀錄
 // - 村民投票是民意;「大事」(花 100 銀幣以上,或建設／產業／工廠／升級／稅率／政令／升格)投票後先送議會表決,議會過了才給首長
 //   村莊等級只有升格與稅率要送長老會
 // - 秘密用 kickback 類(預設被看穿機率),往前記 10 天讓揭穿窗口只剩 5 天:大約一半會被揭穿
 // - 議員投票看自己的意見、民意、私下交換條件(sim-politics),也可能收了提案人的錢(🕵️ 秘密,會被揭穿)
 // - 首長否決議會通過的案子,議會贊成達三分之二就推翻否決
-// - 每年春季第 3 天開始改選:現任與自己想選的人登記參選、拉票(不老實又有錢的會買票),第 6 天開票,票數前幾名當選
+// - 雙數年春季第 3 天開始改選(v10.4.0 以前是每年):現任與自己想選的人登記參選、拉票(不老實又有錢的會買票),第 6 天開票,票數前幾名當選
 //   任內有人離開或辭職,由上次落選者票數最高的人遞補;沒有落選者才照舊由大家推舉(sim-tiers)
 // - 議事紀錄:每位議員支持過哪些案子、十天後成效好壞、收錢被揭穿幾次,影響改選
 const ASSEMBLY = (() => {
@@ -288,8 +288,8 @@ const ASSEMBLY = (() => {
             else tally(w, E);
             return;
         }
-        if (cl.season === '春季' && cl.day >= ELEC_DAY && cl.day <= ELEC_DAY + 3 && A.lastYear !== cl.year && !w.election?.active && npcs(w).length >= 6) {
-            if (d - A.formedDay < 20) { A.lastYear = cl.year; return; } // 議會剛成立,明年再選
+        if (cl.season === '春季' && cl.day >= ELEC_DAY && cl.day <= ELEC_DAY + 3 && A.lastYear !== cl.year && (typeof ELECT === 'undefined' || ELECT.councilYear(cl.year)) /* v10.4.0 一任兩年：雙數年才改選（單數年選首長） */ && !w.election?.active && npcs(w).length >= 6) {
+            if (d - A.formedDay < 20) { A.lastYear = cl.year; return; } // 議會剛成立,下一次再選
             start(w);
         }
     }
@@ -314,7 +314,7 @@ const ASSEMBLY = (() => {
     function view(w) {
         const A = S(w); const E = A.elec; const Lw = L(w);
         const cl = w.clock; let next = null;
-        if (!E && w.council?._formed) next = (A.lastYear === cl?.year || (cl?.season !== '春季')) ? '明年春季' : '今年春季';
+        if (!E && w.council?._formed && cl) { if (typeof ELECT === 'undefined') next = (A.lastYear === cl.year || cl.season !== '春季') ? '明年春季' : '今年春季'; else { const ny = ELECT.nextCouncilYear(w, A.lastYear === cl.year); next = ny === cl.year ? '今年春季' : ny === cl.year + 1 ? '明年春季' : '後年春季'; } }
         return { council: Lw.council, member: Lw.member, elec: E ? { phase: E.phase, left: E.left, seats: E.seats, cands: E.cands.map(c => ({ id: c.id, name: c.name, inc: c.inc, pitch: c.pitch })) } : null, last: A.last, next, runners: A.runners.map(id => w.agents[id]?.name).filter(Boolean) };
     }
     function recordText(w, a) {
