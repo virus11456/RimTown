@@ -17,7 +17,7 @@ const FLAGS = ['soc', 'pol', 'life', 'work', 'share', 'fun', 'dark', 'crowd', 'l
   const html = fs.readFileSync(path.join(DIR, 'town.html'), 'utf8'); const sw = fs.readFileSync(path.join(DIR, 'sw.js'), 'utf8');
   const inHtml = [...html.matchAll(/<script src="(sim-decide[^"]*\.js)"/g)].map(m => m[1]).sort();
   const inSw = [...sw.matchAll(/'\.\/(sim-decide[^']*\.js)'/g)].map(m => m[1]).sort();
-  ok(onDisk.length === 10 && onDisk.join() === inHtml.join() && onDisk.join() === inSw.join(), '十個決策檔：資料夾裡有的，網頁都有載入、離線快取也都有列', { onDisk, inHtml, inSw });
+  ok(onDisk.length === 11 && onDisk.join() === inHtml.join() && onDisk.join() === inSw.join(), '十一個決策檔（v11.0.0 多了店家與交易）：資料夾裡有的，網頁都有載入、離線快取也都有列', { onDisk, inHtml, inSw });
   ok(html.indexOf('sim-decide.js') < html.indexOf('sim-decide-soc.js'), '決策核心本體排在各批選擇點之前載入', null);
   const src = {}; for (const f of fs.readdirSync(DIR).filter(f => f.endsWith('.js') && !/three|i18n/.test(f))) src[f] = fs.readFileSync(path.join(DIR, f), 'utf8');
   const gates = []; for (const [f, s] of Object.entries(src)) { const m = s.match(/\b(byShare|byChoice|byWork|byFun|byCrowd|byLife|byDark|_byLove)\b/g); if (m) gates.push(f + ':' + [...new Set(m)].join('/')); }

@@ -68,7 +68,7 @@ function processDailyProduction(world) {
       const up = (world.buildings?.completed || []).reduce((s, b) => s + (BIG.includes(b.buildingKey) ? 4 : 2) * (b.level || 1), 0);
       if (up > 0) sp.consume('silver', Math.min(up, Math.floor(sp.get('silver'))), world.tickCount, t('建築維護'), 'upkeep');
       // 公共開支(守衛薪俸、道路修繕、學堂膳食):公庫超過 300 的部分每天花掉 8%,錢多花得多,不會無限堆(30 天實測約停在 1000～1500)
-      const extra = Math.floor(Math.max(0, sp.get('silver') - 300) * 0.08);
+      const extra = (typeof TREASURY !== 'undefined' && world.observerMode) ? 0 : Math.floor(Math.max(0, sp.get('silver') - 300) * 0.08); // v10.7.0 這一條取消：公庫先留安全存量，超過的才拿去蓋公共建設、發補助（sim-treasury.js）
       if (extra > 0) sp.consume('silver', extra, world.tickCount, t('公共開支'), 'upkeep'); }
     // v5.51.0 原料層自動供給,v5.53.0 改為「補滿到安全線」:
     // 固定 +12 補不上木材這種高需求原料(建築+家具線+冬季取暖),紅燈會卡死;直接補到 40

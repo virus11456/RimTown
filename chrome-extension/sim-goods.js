@@ -85,7 +85,7 @@ const GOODS = (() => {
             // 有錢人先(撐場面);公庫有餘裕才買(地標、聖物、工業品)
             const rich = npcs(w).filter(a => cash(w, a) >= o.price * 1.5 && !g.sacred).sort((x, y) => cash(w, y) - cash(w, x))[0];
             if (rich && Math.random() < 0.35) sold = GOODS.buy(w, G, o, rich); // 走公開的 buy,殺價等模組才接得到
-            if (!sold && (w.stockpile?.get?.('silver') || 0) >= o.price * 2 && Math.random() < 0.5) sold = GOODS.buy(w, G, o, 'town');
+            if (!sold && ((typeof TREASURY !== 'undefined' && w.observerMode && w.wallet) ? TREASURY.budget(w) >= o.price : (w.stockpile?.get?.('silver') || 0) >= o.price * 2) && Math.random() < 0.5) sold = GOODS.buy(w, G, o, 'town'); // v10.7.0 公庫有可以動用的錢才買珍品（以前只要公庫有兩倍價錢就買，小村莊一買就發不出薪水）
             if (sold) G.offers = G.offers.filter(x => x !== o);
         }
     }

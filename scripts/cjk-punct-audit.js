@@ -13,7 +13,7 @@ for (const f of files) {
   const lines = s.split('\n'); const hits = [];
   lines.forEach((line, i) => {
     // 移除 t('...')、tpl('...'、T('...' 與 '...' 直接跟在 (、, 後面的鍵（視為 i18n 鍵）
-    let l = line.replace(/\b(t|tpl|logMessageT|logMessage|addT|add|collectEvent|_fill|render|describeT|createGossip|createRelGossip|contentT|titleT|textT)\(\s*(?:'[^']*'\s*,\s*)*'(?:[^'\\]|\\.)*'/g, m => ' '.repeat(m.length));
+    let l = line.replace(/\b(t|tr|tpl|logMessageT|logMessage|addT|add|collectEvent|_fill|render|describeT|createGossip|createRelGossip|contentT|titleT|textT)\(\s*(?:'[^']*'\s*,\s*)*'(?:[^'\\]|\\.)*'/g, m => ' '.repeat(m.length));
     l = l.replace(/\bt\(\s*`[^`]*`\s*\)/g, m => ' '.repeat(m.length)).replace(/new RegExp\([^)]*\)/g, m => ' '.repeat(m.length)).replace(/\/(?:[^\/\\\n]|\\.)+\/[gimsuy]*/g, m => /[「」：、（）—！？，。…]/.test(m) ? ' '.repeat(m.length) : m);
     // 剩下的字串字面值
     const re = /`(?:[^`\\]|\\.)*`/g; let m;

@@ -250,7 +250,7 @@ const REPEAL = (() => {
     const quiet = (w, kind) => { if (!LAWS[kind]) return false; const x = (w.repeal?.done || []).filter(r => r.id === kind).pop(); return !!x && !x.back && day(w) - x.d < QUIET; };
     // 給介面：現在實施中的規定、被廢除還沒恢復的規定，各自還要幾天才能提
     function view(w) {
-        const d = day(w); const R = S(w); const ai = !!w.fullAgentMode; // 開了完整智能體：村民隨時可以提，只看 10 天內有沒有提過
+        const d = day(w); const R = S(w); const ai = !!w.fullAgentMode; // 開了完整智能體：村民隨時可以提，只看 5 天內有沒有提過
         const aiWait = (id) => anyOpen(w, id) ? 0 : Math.max(0, AIGAP - (d - Math.max(R.last[id] ?? -999, R.lastBack[id] ?? -999)));
         const live = liveIds(w).map(id => { const L = law(w, id); return { id, icon: L.icon, name: t(nameOf(L)), free: !!L.free, short: !!L.short, days: Math.max(0, d - since(w, id)), wait: ai ? aiWait(id) : waitRepeal(w, id), open: openFor(w, id, 'law_repeal') }; }).filter(x => ai || !x.short); // 政令 20 天就到期，規則版等不到 60 天，不列
         const done = goneList(w).map(x => { const L = law(w, x.id); return { id: x.id, icon: L?.icon || '🗳️', name: t(L ? nameOf(L) : (x.name || x.id)), free: !!L?.free, ago: d - x.d, days: x.n, wait: ai ? aiWait(x.id) : waitBack(w, x), open: openFor(w, x.id, 'law_restore') }; });
@@ -260,15 +260,15 @@ const REPEAL = (() => {
     // ---- 完整智能體：最大的權限 ----
     // 規則版的 60／90 天是「沒有人在想」時的節奏；智能體自己會想，所以不受那些天數限制：任何一條現行規定都可以提廢除、
     // 任何一條被廢除的規定都可以提恢復，可以同時有好幾件在表決。只擋兩件事（不然每天都是同一案）：同一條規定正在表決、同一條規定 10 天內才剛提過。
-    const AIGAP = 10;
+    const AIGAP = 5; // v10.5.0 放寬：同一條規定、稅率、關稅，智能體 5 天內不重提（以前 10 天）
     const anyOpen = (w, id) => (w.proposals?.items || []).some(p => KINDS.includes(p.kind) && p.refKey === id && ['open', 'shelved', 'approved'].includes(p.status));
     const aiOk = (w, id) => { const R = S(w); return !anyOpen(w, id) && day(w) - Math.max(R.last[id] ?? -999, R.lastBack[id] ?? -999) >= AIGAP; };
     // 罷免首長：也是一個提案，可是門檻高，不能想罷免就罷免。平常以正常選舉為主（一任兩年＝120 天）
-    //   什麼時候能提：上任滿 30 天、離下次選舉還有 30 天以上、這個任期還沒人提過罷免
+    //   什麼時候能提：上任滿 30 天、離下次選舉還有 30 天以上、上一次罷免案過了 45 天（v10.5.0 以前是一個任期只能提一次）
     //   成案：全鎮至少四分之一的人願意連署（真的對他不滿的人；至少 3 人）
     //   通過：贊成票要有六成，而且贊成的人數超過全鎮四成（不能靠大家沒來投票混過去）。全鎮投票決定，不送議會，首長自己不能裁決
-    //   沒過：這個任期不能再提；提的人跟首長的關係變差
-    const RC = { settle: 30, tail: 30, sign: 0.25, yes: 0.6, turnout: 0.4, minSign: 3 };
+    //   沒過：45 天內不能再提；提的人跟首長的關係變差
+    const RC = { settle: 30, tail: 30, sign: 0.25, yes: 0.6, turnout: 0.4, minSign: 3, again: 45 };
     const holder = (w) => { try { return w.election?._officeHolder?.(w) || null; } catch (e) { return null; } };
     const titleOf = (w) => { try { return (typeof TIERS !== 'undefined') ? TIERS.leaderTitle(w) : t('鎮長'); } catch (e) { return t('鎮長'); } };
     const nextElection = (w) => { if (typeof ELECT !== 'undefined') return ELECT.nextMayorDay(w); const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 單數年秋季第 1 天
@@ -283,7 +283,7 @@ const REPEAL = (() => {
         const no = (why) => Object.assign(base, { ok: false, why });
         if (E.active) return no('electing'); if (a && L.agentId === a.agentId) return no('self');
         if ((w.proposals?.items || []).some(p => p.kind === 'recall' && ['open', 'shelved', 'approved'].includes(p.status))) return no('open');
-        if (R.recallTerm === term || d - (R.recallDay ?? -999) < 30) return no('once');
+        if (d - (R.recallDay ?? -999) < RC.again) return no('once'); // v10.5.0 放寬：沒過的 45 天後可以再提（一任 120 天裡最多兩次）；連署、六成贊成、四成門檻都不變
         if (d - term < RC.settle) return no('settle'); if (nextElection(w) - d < RC.tail) return no('tail');
         if (sg.length < need) return no('sign');
         return Object.assign(base, { ok: true });
@@ -305,8 +305,8 @@ const REPEAL = (() => {
     function recallTally(w, P, p) { const f = P._count(p, 'for'), ag = P._count(p, 'against'); const n = adults(w).length; return { f, ag, n, pass: f + ag > 0 && f >= (f + ag) * RC.yes && f >= n * RC.turnout }; }
     function recallFail(w, p) {
         const L = w.agents?.[p.refKey], a = w.agents?.[p.proposerId]; p.result = '贊成沒過門檻（要六成贊成，而且超過全鎮四成）';
-        try { if (L && a) { a.relationships?.getOrCreate?.(L.agentId, L.name)?.modifyAffinity?.(-15); L.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(-20); L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{who}想罷免我，沒有成功。這筆我記住了。', { who: a.name }, 8, [a.name]); a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '罷免{m}沒過，這個任期不能再提了。', { m: L.name }, 7, [L.name]); } } catch (e) {}
-        try { w.logMessageT?.('event', '📢 罷免{m}沒有通過，這個任期不能再提。', { m: L?.name || '' }, L?.name || ''); } catch (e) {}
+        try { if (L && a) { a.relationships?.getOrCreate?.(L.agentId, L.name)?.modifyAffinity?.(-15); L.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(-20); L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '{who}想罷免我，沒有成功。這筆我記住了。', { who: a.name }, 8, [a.name]); a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '罷免{m}沒過，45 天內不能再提了。', { m: L.name }, 7, [L.name]); } } catch (e) {}
+        try { w.logMessageT?.('event', '📢 罷免{m}沒有通過，45 天內不能再提。', { m: L?.name || '' }, L?.name || ''); } catch (e) {}
     }
     function recallEnact(w, p) {
         const E = w.election; const L = w.agents?.[p.refKey]; const d = day(w); if (!L || L.isDead || L.job?.key !== 'mayor' || !E || E.active) return '';
@@ -398,7 +398,7 @@ const REPEAL = (() => {
             if (pun.length) fx += `{"type":"pardon","name":"${t('名字')}"}${t('（赦免正在受處置的人，撤銷還沒執行完的部分）')} `;
             if (tax != null) fx += `{"type":"tax","rate":2~30}${t('（把稅率調成這個百分比）')} `;
             if (tariff != null) fx += `{"type":"tariff","rate":0~50}${t('（把進口關稅調成這個百分比）')} `;
-            if (I.ok) fx += `{"type":"recall"}${t('（罷免現任{o}。這是大事：全鎮投票要六成贊成、而且贊成的人超過全鎮四成才通過；沒過的話這個任期不能再提，他也會記住是誰提的）').replace('{o}', titleOf(w))}`;
+            if (I.ok) fx += `{"type":"recall"}${t('（罷免現任{o}。這是大事：全鎮投票要六成贊成、而且贊成的人超過全鎮四成才通過；沒過的話 45 天內不能再提，他也會記住是誰提的）').replace('{o}', titleOf(w))}`;
             if (fx) fx = `${t('鎮上已經表決過的事，也可以再表決改掉。你真心覺得該改才提；用了下面任何一種，effects 就只放它一個：')}\n${fx.trim()}\n`;
             return { ctx, fx };
         } catch (e) { return { ctx: '', fx: '' }; }

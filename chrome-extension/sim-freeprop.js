@@ -109,7 +109,7 @@ const FREEPROP = (() => {
     }
     // 給 AI 的鎮況補充:現有的傳統與地標
     function briefExtra(w) {
-        const P = w.proposals; if (!P) return '';
+        const P = w.proposals; if (!P || briefExtra.off) return '';
         const tr = (P.traditions || []).map(x => `${t('「')}${t(x.text)}${t('」')}`).join(t('、'));
         const lm = (P.landmarks || []).map(x => `${x.icon}${x.name}`).join(t('、'));
         return (tr ? `${t('；')}${t('本鎮的規矩與傳統')}${t('：')}${tr}` : '') + (lm ? `${t('；')}${t('地標')}${t('：')}${lm}` : '');
@@ -122,17 +122,26 @@ if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.free = { icon: '💭',
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     // AI 自己發想;失敗就回到原本「從幾個點子裡挑」的流程
-    ProposalSystem.prototype._inventLLM = async function (w, day, a, fallback, hints) {
+    ProposalSystem.prototype._inventLLM = async function (w, day, a, fallback, hints, avoid) {
         let j = null;
-        try { j = await w.conversationEngine.inventProposal(w, a, hints); } catch (e) { console.warn('[Proposals] invent', e); }
+        try { j = await w.conversationEngine.inventProposal(w, a, hints, avoid); } catch (e) { console.warn('[Proposals] invent', e); }
         if (this.open().length >= ProposalSystem.MAX_OPEN) return;
         if (!j || j.skip) { if (j?.skip) { w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; } return fallback(); }
         // v10.4.0 他想提的是「廢除／恢復某條規定」：開成正式的廢除案或恢復案（立場照各人處境算，通過後真的改規定）
         try { const rp = (typeof REPEAL !== 'undefined') ? REPEAL.fromAI(w, a, j) : null; if (rp) { rp.llm = true; if (j.pitch) rp.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, rp)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] repeal', e); }
+        // v10.8.0 他想提的是替公庫開一項新財源（離境稅、財產稅、公債）
+        try { const dl = (typeof DEALLAW !== 'undefined' && DEALLAW) ? DEALLAW.fromAI(w, a, j) : null; if (dl) { dl.llm = true; if (j.pitch) dl.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, dl)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] deal', e); } // v11.0.0 管店家的規定
+        try { const fs = (typeof FISCAL !== 'undefined') ? FISCAL.fromAI(w, a, j) : null; if (fs) { fs.llm = true; if (j.pitch) fs.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, fs)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] fiscal', e); }
+        // v10.6.0 他想提的是「拆掉某一棟」：開成正式的拆除案（通過後真的拆）
+        try { const dm = (typeof DEMOLISH !== 'undefined') ? DEMOLISH.fromAI(w, a, j) : null; if (dm) { dm.llm = true; if (j.pitch) dm.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, dm)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] demolish', e); }
         const fx0 = FREEPROP.sanitize(w, j.effects); if (!fx0.length) return fallback();
         const { fx, cost } = FREEPROP.balance(fx0, FREEPROP.sanitizeCost(j.cost));
         const title = String(j.title || '').trim().replace(/^[「『"“]+|[」』"”]+$/g, ''); if (title.length < 2) return fallback();
         const cat = FREEPROP.CATS.includes(j.category) ? j.category : 'welfare';
+        // v10.5.0 已經有的不再提：跟鎮上現有的規矩／地標、正在表決或最近提過的案子幾乎一樣 → 不成案。
+        // 第一次撞到：告訴他撞到哪一個，請他換一件事（只多問一次）；第二次還是撞到就算了，也不退回系統的現成點子
+        try { const dup = (typeof AWARE !== 'undefined') ? AWARE.dupOf(w, title, fx) : null;
+            if (dup) { if (!avoid) return this._inventLLM(w, day, a, () => {}, hints, AWARE.avoidLine(title, dup)); AWARE.logSkip(w, a, title, dup); return; } } catch (e) { console.warn('[Proposals] aware', e); }
         const addresses = (Array.isArray(j.addresses) ? j.addresses : []).map(n => (j._issueKeys || [])[Math.round(Number(n)) - 1]).filter(Boolean).slice(0, 3); // v6.50.0 要處理哪幾件急事
         const cand = { kind: 'free', key: 'free:' + title.slice(0, 12), jobs: [a.job?.key], make: () => ({ addresses, kind: 'free', key: 'free:' + title.slice(0, 12), tk: (typeof clipText === 'function' ? clipText(title, 30) : title.slice(0, 30)), tp: {}, dk: String(j.pitch || '').trim().slice(0, 160), dp: {}, cost, fx, category: cat, jobBias: [a.job?.key] }) };
         const p = this._createWith(w, day, cand, a);
@@ -154,7 +163,7 @@ if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype;
     const _tb = CE._townBrief;
     CE._townBrief = function (world) { return _tb.call(this, world) + FREEPROP.briefExtra(world); };
-    ConversationEngine.prototype.inventProposal = async function (world, a, hints) {
+    ConversationEngine.prototype.inventProposal = async function (world, a, hints, avoid) {
         if (!this.fullAgentOk(world) || !a) return null;
         const b = this._agentBrief(world, a);
         const names = Object.values(world.agents).filter(x => !x.isPlayer && !x.isDead && x !== a).slice(0, 14).map(x => (LLM_LANG.get() === 'en' && typeof I18N !== 'undefined') ? I18N.localizeNames(x.name, true) : x.name).join(t('、'));
@@ -175,12 +184,17 @@ if (typeof ConversationEngine !== 'undefined') {
         const personal = (world.proposals?.items || []).slice(-3).some(p => (p.addresses || []).length && dayNow - (p.createdDay ?? dayNow) <= 6) || Math.random() < 0.35;
         const PST = { open: '表決中', approved: '通過', done: '已完成', rejected: '否決', shelved: '擱置', failed: '沒辦成', expired: '過期' };
         const recent = (world.proposals?.items || []).slice(-8).map(p => { let ti = ''; try { ti = world.proposals._fill(p.tk, p.tp); } catch (e) {} return ti ? `${cut(ti, 24)}${t('（')}${t(PST[p.status] || '表決中')}${t('）')}` : ''; }).filter(Boolean).join(t('；'));
+        const HAVE = (typeof AWARE !== 'undefined') ? AWARE.block(world) : ''; // v10.5.0 鎮上已經有的（建築、產業、店家、規矩、地標、正在表決的案子）
+        let brief = ''; FREEPROP.briefExtra.off = !!HAVE; try { brief = this._townBrief(world); } finally { FREEPROP.briefExtra.off = false; } // 規矩與地標改在【鎮上已經有的】講，鎮況不重複列
         const RP = (typeof REPEAL !== 'undefined') ? REPEAL.promptParts(world, a) : { ctx: '', fx: '' }; // v10.4.0 現行規定、被廢除的規定、受處置的人、稅率、首長；以及用來改掉它們的效果
+        const DM = (typeof DEMOLISH !== 'undefined') ? DEMOLISH.promptParts(world) : { ctx: '', fx: '' }; // v10.6.0 可以拆掉的建築、工廠、產業
+        const DL = (typeof DEALLAW !== 'undefined' && DEALLAW) ? DEALLAW.promptParts(world) : { ctx: '', fx: '' }; // v11.0.0 還沒有的管店家規定
+        const FS = (typeof FISCAL !== 'undefined') ? FISCAL.promptParts(world) : { ctx: '', fx: '' }; // v10.8.0 還沒有的公庫財源
         const prompt = `${t('你正在扮演「')}${b.name}${t('」（')}${b.age}${t('歲，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${t('）。')}
 ${t('你想向全鎮提一個你自己想出來的提案。可以很實際，也可以天馬行空、有個人色彩，但要符合你的個性、記憶和鎮上現況。')}${t('可以從這幾個方向想（挑跟你有關的，也可以都不用）：')}${angles}${t('。')}${personal ? t('鎮上眼前的急事已經有人在處理了。這一次請提一件跟那些急事無關、屬於你自己的事：你的工作、你在乎的人、你的心願，或你一直想讓鎮上變得不一樣的地方。') : t('從你現在真正的需要和心情出發：餓了、冷了、缺東西、開心、難過或嫉妒，都會影響你想提什麼。')}
-${t('【鎮況】')}${this._townBrief(world)}
-${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${iss.txt && !personal ? `${t('【鎮上的急事（大家正受影響，拖越久越不滿；要處理哪一件就在 addresses 填它的編號）】')}\n${iss.txt}\n` : ''}${hintTxt && !personal ? `${t('【鎮上眼前的狀況與大家在談的事（越前面越急；可以照著提、改成你的版本，也可以都不管、提你自己的點子）】')}\n${hintTxt}\n` : ''}${t('【鎮上的人】')}${names}
-${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${RP.ctx}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
+${t('【鎮況】')}${brief}
+${HAVE}${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${iss.txt && !personal ? `${t('【鎮上的急事（大家正受影響，拖越久越不滿；要處理哪一件就在 addresses 填它的編號）】')}\n${iss.txt}\n` : ''}${hintTxt && !personal ? `${t('【鎮上眼前的狀況與大家在談的事（越前面越急；可以照著提、改成你的版本，也可以都不管、提你自己的點子）】')}\n${hintTxt}\n` : ''}${t('【鎮上的人】')}${names}
+${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的；被否決的更不要原樣重提）】')}${recent}\n` : ''}${RP.ctx}${DM.ctx}${FS.ctx}${DL.ctx}${builds ? `${t('【能蓋的建築】')}${builds}\n` : ''}${res ? `${t('【能研究的】')}${res}\n` : ''}${t('提案的效果只能用下面幾種（effects 陣列，最多 4 個；好處要有代價，太划算會被打折）：')}${t('每個效果都要跟你提的這件事直接有關，不要為了湊數加上不相干的人際或心情效果。')}
 {"type":"resource","res":"food|wood|stone|metal|cloth|herbs|silver|tools|medicine","amount":-150~150}
 {"type":"daily","res":"…","amount":-8~8,"days":3~20}
 {"type":"mood","who":"all|job:farmer|trait:creative|name:${t('名字')}","amount":-8~8}
@@ -188,7 +202,7 @@ ${recent ? `${t('【最近提過的案子（不要再提一樣或幾乎一樣的
 {"type":"modifier","key":"research_bonus|farm_bonus|merchant_chance|festival_chance|immigration_chance|defense_bonus|sell_bonus|gathering_bonus","value":-0.3~0.3,"days":5~30}
 {"type":"build","key":"${t('建築代碼')}"} {"type":"research","key":"${t('研究代碼')}"} {"type":"job","name":"${t('名字')}","job":"farmer|doctor|…"}
 {"type":"tradition","text":"${t('一句新規矩或傳統')}"} {"type":"landmark","name":"${t('地標名')}","icon":"${t('一個表情符號')}"}
-${RP.fx}${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}${iss.txt && !personal ? t('（要處理急事時加上 "addresses":[編號]）') : ''}`;
+${RP.fx}${DM.fx}${FS.fx}${DL.fx}${t('只輸出 JSON：{"title":"提案名（15 字內）","pitch":"你向全鎮說明的一兩句話（第一人稱，60 字內）","category":"economy|welfare|defense|culture|nature|freedom","cost":{"silver":數字,…},"effects":[…]}；今天不想提就輸出 {"skip":true}')}${iss.txt && !personal ? t('（要處理急事時加上 "addresses":[編號]）') : ''}${avoid ? `\n${avoid}` : ''}`;
         this._countNpcLlmUse(world);
         const j = await this._askJson(prompt, 420);
         if (!j || typeof j !== 'object' || Array.isArray(j)) return null;

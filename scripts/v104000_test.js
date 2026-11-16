@@ -222,7 +222,7 @@ async function run(browser, dev, lang) {
   ok(r.backRetry.ban === false && r.backRetry.n === 0 && r.backRetry.wait > 0, '恢復沒通過：照樣沒有禁令，90 天內不再提', r.backRetry);
   ok(r.restored.made && r.restored.ban === true && r.restored.banDay && r.restored.live && r.restored.live.days === 0 && r.restored.live.wait === 60 && !r.restored.done.includes('casino_ban') && !r.restored.quiet, '90 天後再提、這次通過：禁賭回來了，日子從今天重新算（60 天後又可以提廢除）', r.restored);
   const L = r.laws; const ids = Object.keys(L); const bad = ids.filter(id => !(L[id].on0 && L[id].days === 70 && L[id].made && L[id].off && L[id].madeB && L[id].onAgain && L[id].days2 === 0 && L[id].why && L[id].v !== L[id].vb));
-  ok(ids.length === 17 && bad.length === 0 && r.lawIds.length === 18, '其他十七條規定：提得出廢除案、通過後真的解除；再提恢復、通過後真的回來（連禁賭共 18 條）', { bad: bad.map(id => [id, L[id]]), n: r.lawIds.length });
+  ok(ids.length === 17 && bad.length === 0 && r.lawIds.length >= 18, '其他十七條規定：提得出廢除案、通過後真的解除；再提恢復、通過後真的回來（連禁賭共 18 條；之後新增的規定在各自的測試裡驗）', { bad: bad.map(id => [id, L[id]]), n: r.lawIds.length });
   ok(zh ? ids.every(id => /廢除「/.test(L[id].text) && /恢復「/.test(L[id].textB)) : ids.every(id => noZh(L[id].text + L[id].textB)), '每一條的廢除案與恢復案文字' + (zh ? '都寫得出來' : '英文都沒有殘留中文'), zh ? ids.map(id => [L[id].text, L[id].textB].map(x => String(x).slice(0, 30))) : ids.filter(id => !noZh(L[id].text + L[id].textB)).map(id => (L[id].text + ' | ' + L[id].textB).slice(0, 200)));
   const T = r.trad;
   ok(T.view && T.view.free && T.view.days === 100 && T.view.wait === 0 && /每月初一全鎮大掃除/.test(T.text) && T.votes && T.votes.own === 'against' && T.votes.ownWhy && T.votes.otherWhy, '村民立下的規矩也算一條規定：可以提廢除；立規矩的人自己反對，各有理由', { view: T.view, text: T.text, votes: T.votes });

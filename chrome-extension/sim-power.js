@@ -34,7 +34,10 @@ const POWER = (() => {
     const owed = (w, pol) => { const m = S(w).inf[pol?.agentId] || {}; return Object.values(m).reduce((s, v) => s + v, 0); };
     // 金主對這個人的影響:收的錢越多,越偏向金主的利益(上限)
     function sway(w, pol, p) {
-        if (!pol || !w.power) return 0; const n = owed(w, pol); if (n < 20) return 0;
+        if (!pol || !w.power) return 0;
+        try { if (typeof DEALLAW !== 'undefined' && DEALLAW) { const v = DEALLAW.sway(w, pol, p); if (v != null) return v; } } catch (e) {} // v11.0.0 審到管店家的案子：看的是這位東家給過多少
+        try { if (typeof OFFICE !== 'undefined' && OFFICE) { const v = OFFICE.sway(w, pol, p); if (v != null) return v; } } catch (e) {}
+        const n = owed(w, pol); if (n < 20) return 0;
         const k = Math.min(3, n / 30);
         if (HURTS(p)) return -k; if (HELPS(p)) return k * 0.6; return 0;
     }
@@ -207,7 +210,7 @@ const POWER = (() => {
         for (const [k, until] of Object.entries(P.pressure)) if (until < d) delete P.pressure[k];
         if (!w.election?.active) P.camp = {};
         // 捐不捐由金主自己決定(選擇點 donate)
-        if (d % 7 === 1) { watchdog(w, d); buyPapers(w, d); }
+        if (d % 7 === 1) { if (!(typeof TIPS !== 'undefined' && TIPS && TIPS.on(w))) watchdog(w, d); /* v11.0.0 記者自己選題時，不再由系統每週擲骰挑題目（sim-tips.js） */ buyPapers(w, d); }
         recall(w, d);
         if (P.log.length > 30) P.log = P.log.slice(-30);
         // 金主人情:每週淡一點(太久以前的錢慢慢不算數)

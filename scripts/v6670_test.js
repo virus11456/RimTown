@@ -35,7 +35,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const a of all) w.wallet.bal[a.agentId] = 0; C.poorDays = 9; D++; fix(0.99, () => CIVIC.crime(w, C, D)); out.slum = C.slum && logHas(/貧民區|slum/);
       // 稅率提案
       for (const a of all) w.wallet.bal[a.agentId] = 30; const silver = w.stockpile.get('silver'); w.stockpile.consume('silver', silver, w.tickCount, 't'); w.stockpile.add('silver', 20, w.tickCount, 't'); C.lastTax = -99;
-      const tax0 = w.wallet.tax; const P = w.proposals; P.items = (P.items || []).filter(p => p.kind !== 'tax'); const p = CIVIC.taxProposal(w, C, D);
+      const tax0 = w.wallet.tax; const P = w.proposals; P.items = (P.items || []).filter(p => p.kind !== 'tax'); if (typeof TREASURY !== 'undefined') { const L = TREASURY.S(w).led = {}; for (let i = 0; i < 7; i++) L[w._absDay() - i] = { '+goods': 10, '-pay': 40 }; } /* v10.7.0 加稅要看公庫是不是真的一直在掉：補上最近七天入不敷出的帳 */ const p = CIVIC.taxProposal(w, C, D);
       out.taxProp = !!p && p.kind === 'tax' && p.dir === 'up';
       if (p) { const rich = all[5]; w.wallet.bal[rich.agentId] = 500; out.voteRichDown = CIVIC.taxVote(w, { dir: 'down' }, rich) === 'for'; p.status = 'approved'; w.stockpile.add('silver', 10, w.tickCount, 't'); P._execute(w, p, D); out.taxApplied = w.wallet.tax > tax0; }
       // 房租

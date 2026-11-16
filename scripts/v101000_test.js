@@ -148,7 +148,7 @@ const ui = ({ only }) => {
   ok(re.ok && re.n && re.r && re.view === 5, '讀檔後公告欄與流言都還在', re);
   // 介面：桌機
   const d = await page.evaluate(ui, { only: 'all' }); await page.screenshot({ path: path.join(SHOTS, 'desk_zh_all.png') });
-  ok(d.tabs.join() === 'props,mail,voices,town,truth' && d.tabFit, '提案頁維持五個子分頁（提案、往來、心聲、鎮況、真相），企劃併進往來', d.tabs);
+  ok(d.tabs.filter(k => k !== 'market').join() === 'props,mail,voices,town,truth' && d.tabFit, '提案頁原本的五個子分頁都在（提案、往來、心聲、鎮況、真相），企劃併進往來；鎮上有私人開的店時 11.0.0 會多一個「市場」', d.tabs);
   ok(d.chips.join() === 'all,plans,notes,letters,rumors' && d.cards >= 8 && d.plan >= 1 && d.note >= 4 && d.letter >= 2 && d.rumor >= 2, '往來：一頁看到企劃、公告、信、流言四種卡片', d);
   ok(d.hasWhy && d.hasPub && d.hops >= 3 && d.whoBtn >= 6 && d.over === 0, '卡片上有心裡的盤算、嘴上說的話、流言一手一手的紀錄，人名可以點', d);
   for (const k of ['plans', 'notes', 'letters', 'rumors']) { const x = await page.evaluate(ui, { only: k }); const only = { plans: x.plan === x.cards, notes: x.note === x.cards, letters: x.letter === x.cards, rumors: x.rumor === x.cards }[k]; ok(x.cards >= 1 && only, `篩選鈕「${k}」只留那一種`, { cards: x.cards, plan: x.plan, note: x.note, letter: x.letter, rumor: x.rumor }); }
@@ -168,7 +168,7 @@ const ui = ({ only }) => {
   // 手機 390px，中英
   for (const lang of ['zh', 'en']) {
     const m = await open(browser, lang, { width: 390, height: 844 }); await m.page.evaluate(stage); const u = await m.page.evaluate(ui, { only: 'all' }); await m.page.screenshot({ path: path.join(SHOTS, `m_${lang}_all.png`) });
-    ok(u.tabs.length === 5 && u.tabFit && !u.pageOver && u.over === 0 && u.wide <= 390, `手機 ${lang}：五個子分頁放得下，卡片不超出畫面`, u);
+    ok(u.tabs.length >= 5 && u.tabs.length <= 6 && u.tabFit && !u.pageOver && u.over === 0 && u.wide <= 390, `手機 ${lang}：子分頁（五個，有店家時六個）放得下，卡片不超出畫面`, u);
     ok(u.tabH >= 40 && u.chipH >= 40, `手機 ${lang}：分頁與篩選鈕夠大好按`, { tabH: u.tabH, chipH: u.chipH });
     if (lang === 'en') ok(u.labelsCjk.length === 0, '英文模式：標籤、狀態、說明沒有漏翻', u.labelsCjk);
     const r = await m.page.evaluate(ui, { only: 'rumors' }); await m.page.screenshot({ path: path.join(SHOTS, `m_${lang}_rumors.png`) }); ok(r.rumor >= 2 && r.over === 0, `手機 ${lang}：流言卡片放得下`, { rumor: r.rumor, over: r.over });
