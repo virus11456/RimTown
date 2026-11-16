@@ -82,6 +82,7 @@ class NPCEventSystem {
     }
 
     _checkFights(world) {
+        if (typeof DAY !== 'undefined' && DAY.on(world)) return; // v11.2.0 動不動手由本人決定（sim-day.js），這裡不擲骰
         const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.status !== 'hospitalized' && a.status !== 'missing');
 
         for (const agent of npcs) {

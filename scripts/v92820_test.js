@@ -94,8 +94,8 @@ const open = async (browser, lang) => {
       const calm = () => { X.cool = {}; X.q = []; w._feudCooldown = {}; for (const a of all()) { Bal[a.agentId] = 60; a.mood = 60; a.moodModifier = 0; for (const r of Object.values(a.relationships.relationships)) { r.affinity = Math.max(-20, Math.min(20, r.affinity || 0)); r.romanticInterest = 0; } } };
       const only = (keep) => { const d = w._absDay(); for (const a of all()) for (const k of Object.keys(K)) if (!(keep[a.agentId] || []).includes(k)) X.cool[a.agentId + '|' + k] = d + 9; };
       const today = () => { X.lastDay = -1; DECIDE.daily(w); };
-      const save = { ok: ce.fullAgentOk, ask: ce._askJson }; let prompts = []; let reply = () => null;
-      ce.fullAgentOk = () => true; ce._askJson = async (p, mt) => { prompts.push(p); return reply(p); };
+      const save = { ok: ce.fullAgentOk, ask: ce._askJson }; let prompts = []; let reply = () => null; let anyAsk = false;
+      ce.fullAgentOk = () => true; ce._askJson = async (p, mt) => { if (!anyAsk && !/"pick"/.test(String(p))) return null; /* 只數選擇點的題目：別的功能（例如教團的禱詞）剛好在這時送出的不算 */ prompts.push(p); return reply(p); };
       const cjk = (s) => /[一-鿿]/.test(String(s || ''));
       const loc = (p) => { try { return (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? I18N.localizeNames(p, true) : p; } catch (e) { return p; } }; // 真的送出去之前名字會換成英文拼法，這裡照做
 
@@ -127,7 +127,7 @@ const open = async (browser, lang) => {
 
       // 4) 村民自己想提案的題目
       calm(); const PS = w.proposals; PS.items.push({ id: 'L900', n: 900, status: 'rejected', proposerId: B.agentId, proposerName: B.name, createdDay: w._absDay() - 2, votes: {}, why: {}, kind: 'free', key: 'free:T900', tk: '測試案甲', tp: {}, dk: 'x', dp: {}, cost: {}, fx: [] }, { id: 'L901', n: 901, status: 'approved', proposerId: C.agentId, proposerName: C.name, createdDay: w._absDay() - 1, votes: {}, why: {}, kind: 'free', key: 'free:T901', tk: '測試案乙', tp: {}, dk: 'y', dp: {}, cost: {}, fx: [] });
-      const ps = []; reply = () => ({ skip: true }); for (let i = 0; i < 6; i++) { prompts = []; await ce.inventProposal(w, A, [{ title: 'H', desc: 'h' }]); ps.push(prompts[0] || ''); }
+      const ps = []; anyAsk = true; reply = () => ({ skip: true }); for (let i = 0; i < 6; i++) { prompts = []; await ce.inventProposal(w, A, [{ title: 'H', desc: 'h' }]); ps.push(prompts[0] || ''); }
       const p0 = loc(ps[0]); const dirLine = (p) => (p.match(/(?:可以從這幾個方向想[^：]*：|Some directions to think from[^:]*: )([^\n]*)/) || [])[1] || '';
       out.prop = { n: ps.filter(Boolean).length, cat: ps.some(p => /貓立雕像|statue for the cat/.test(p)), dir: !!dirLine(p0), dirs: new Set(ps.map(dirLine)).size, recent: /測試案甲/.test(p0) && /測試案乙/.test(p0), rejected: /測試案甲\s*[（(]\s*(否決|rejected)\s*[）)]/i.test(p0), seg: (p0.match(/[^\n]{0,30}測試案甲[^\n]{0,40}/) || [''])[0], tie: /跟你提的這件事直接有關|follow directly from what you are proposing/.test(p0), cjk: cjk(p0.replace(/測試案[甲乙]/g, '')), bits: (p0.replace(/測試案[甲乙]/g, '').match(/[^\n]{0,24}[一-鿿][^\n]{0,24}/g) || []).slice(0, 5) };
       PS.items = PS.items.filter(p => p.id !== 'L900' && p.id !== 'L901');

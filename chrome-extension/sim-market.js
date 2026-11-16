@@ -113,8 +113,8 @@ const MARKET = (() => {
             if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
             const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人沒工資
             const R = rivalOf(w, k); // v9.7.0 對手店的工人由對手老闆發薪
-            if (R) { const rws = workersOf(w, k, all).filter(a => R.emp?.[a.agentId] && a.agentId !== R.owner && !(jail && jail.has(a.agentId))); if (rws.length) payFirm(w, Wl, k, R.owner, rws, R.pay ?? 1, R); }
-            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(R && R.emp?.[a.agentId]) && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId))); if (!ws.length) continue; // v6.93.0 罷工中的會員、被開除的人沒工資
+            if (R) { const rws = workersOf(w, k, all).filter(a => R.emp?.[a.agentId] && a.agentId !== R.owner && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a))); if (rws.length) payFirm(w, Wl, k, R.owner, rws, R.pay ?? 1, R); }
+            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(R && R.emp?.[a.agentId]) && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a))); if (!ws.length) continue; // v11.2.0 沒去上工的那天沒有工資 // v6.93.0 罷工中的會員、被開除的人沒工資
             payFirm(w, Wl, k, id, ws, payRate(w, k), null);
         }
     }

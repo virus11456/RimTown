@@ -94,7 +94,8 @@ const WALLET = (() => {
     function payday(w, W, all) {
         // v6.89.0 公庫只發公職與公營產業的薪水;有老闆的私人產業由老闆自己發(MARKET.payroll)
         const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人那幾天沒有工資
-        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a)) && !(typeof CLERGY !== 'undefined' && CLERGY.paidBy(w, a)) && !(jail && jail.has(a.agentId))); // v10.9.0 神職的薪水由教團發（sim-clergy.js）
+        const workers = all.filter(a => WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid(w, a)) && !(typeof CLERGY !== 'undefined' && CLERGY.paidBy(w, a)) && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a))); // v11.2.0 沒去上工的那天沒有工資
+        // v10.9.0 神職的薪水由教團發（sim-clergy.js）
         const PR = (typeof FISCAL !== 'undefined') ? FISCAL.pubRate(w) : 1; const netOf = (W2, a) => Math.max(W2.minWage || 0, wageOf(a) * PR * (1 - W2.tax)); // v10.8.0 公職薪水照民間行情的倍率領（sim-fiscal.js）
         const gross = workers.reduce((s, a) => s + wageOf(a) * PR, 0); if (!gross) return;
         const net = workers.reduce((s, a) => s + netOf(W, a), 0); const have = treasury(w);

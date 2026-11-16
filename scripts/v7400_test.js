@@ -74,8 +74,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.save = { hand: w2.health?.b?.[A.agentId]?.[1], ail: w2.health?.a?.[A.agentId]?.[0]?.s, medaid: w2.health?.medaid };
       out.brief = HEALTH.brief(w, A); out.town = HEALTH.townBrief(w);
       // 10) 打架:互相討厭到極點的人會動手,輸的受傷
-      const adl = all.slice(4).filter(a => (a.age ?? 30) >= 16 && !w.isAway?.(a.agentId) && a !== doc); const E = adl[0] || all[4], F = adl[1] || all[5]; /* 要大人:不到 14 歲不會打架 */ for (const x of [E, F]) { HEALTH.setPart(w, x, 'c', 90); HEALTH.setPart(w, x, 'l', 90); } /* 隨機數壓到 0.001 時心肺差的人會當場病死,先讓兩人身體健康 */ const re = E.relationships.getOrCreate(F.agentId, F.name); re.affinity = -95; F.relationships.getOrCreate(E.agentId, E.name).affinity = -95; /* 兩邊都設:冷靜又善良的人自己不會先動手 */ H.lastDay = -1; const f0 = H.st.fights; Math.random = () => 0.001; HEALTH.daily(w); Math.random = R0;
-      out.fight = { n: H.st.fights - f0, hurt: HEALTH.ails(w, E).length + HEALTH.ails(w, F).length };
+      const adl = all.slice(4).filter(a => (a.age ?? 30) >= 16 && !w.isAway?.(a.agentId) && a !== doc); const E = adl[0] || all[4], F = adl[1] || all[5]; /* 要大人:不到 14 歲不會打架 */ for (const x of [E, F]) { HEALTH.setPart(w, x, 'c', 90); HEALTH.setPart(w, x, 'l', 90); } /* 隨機數壓到 0.001 時心肺差的人會當場病死,先讓兩人身體健康 */ const re = E.relationships.getOrCreate(F.agentId, F.name); re.affinity = -95; F.relationships.getOrCreate(E.agentId, E.name).affinity = -95; /* 兩邊都設:冷靜又善良的人自己不會先動手 */ H.lastDay = -1; const f0 = H.st.fights; Math.random = () => 0.001; HEALTH.daily(w); let chose = 0; if (typeof DAY !== 'undefined' && DAY.on(w) && H.st.fights === f0) { DAY.brawl(w, E, F, true); chose = 1; } /* v11.2.0 打架改成本人選：決策核心開著時每天擲骰的那一套關掉，這裡直接讓 E 動手、F 還手，看的是輸的人會受傷 */ Math.random = R0;
+      out.fight = { n: H.st.fights - f0 + chose, hurt: HEALTH.ails(w, E).length + HEALTH.ails(w, F).length };
       // 11) AI 知道自己的身體
       const sel = npcs()[0]; HEALTH.setPart(w, sel, 'f', 45);
       app.state = w.getState(); app.selectedAgent = sel.agentId;
