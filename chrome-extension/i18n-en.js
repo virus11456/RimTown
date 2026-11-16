@@ -10365,6 +10365,8 @@
 
         // ── v5.53.0 經濟試玩回饋修正 ──
         '超過糧倉容量，每日腐壞5%': 'over granary cap — 5% spoils daily',
+        '超過糧倉容量，多出來的每天壞掉 {p}%': 'Over granary capacity: {p}% of the excess spoils each day',
+        '超過糧倉容量，冷藏得好，暫時不會壞': 'Over granary capacity, but cold storage keeps it from spoiling for now',
         '預估日產': 'est. daily',
         '午夜結算': 'settles at midnight',
         '餐食放到過期': 'meals expired',

@@ -55,6 +55,14 @@ async function run(browser, dev, lang) {
         setT(a, 'abrasive'); setT(b, 'shy'); rel(a, b).affinity = -40; rel(b, a).affinity = -40; a.mood = b.mood = 20; DAY.S(w).hang[a.agentId] = { d: DAY.S(w).d, lv: 2 }; let m = 0; for (let i = 0; i < 60; i++) { DAY.S(w).t = {}; if (DAY.sours(w, a, b)) m++; } out.sourBad = m; DAY.S(w).t = {}; const s1 = DAY.sours(w, a, b), s2 = DAY.sours(w, a, b); out.sourOnce = { s1, s2 }; }
       // 6) 心動
       fresh(15); { const [a, b, c] = npcs(); setT(a, 'romantic'); setT(b); setT(c); clearRel(a); clearRel(b); clearRel(c); rel(a, b).affinity = 30; rel(b, a).affinity = 30; out.spark = { first: DAY.sparks(w, a, b), again: DAY.sparks(w, a, b) }; setT(a); rel(b, c).affinity = 10; rel(c, b).affinity = 10; out.sparkNo = DAY.sparks(w, b, c); rel(b, c).affinity = 50; rel(c, b).affinity = 50; out.sparkClose = DAY.sparks(w, b, c); }
+      // 8) 糧倉：跟著城鎮等級長大、畫面與結算用同一個數字、爆倉越多越有人提議賣、種田的放慢
+      fresh(21); { const T0 = TIERS.S(w); const lv0 = T0.lv || 0; const sb = w.buildings.getEffect('storage_bonus', 0) || 0, fc = w.buildings.getEffect('food_capacity', 0) || 0;
+        T0.lv = 0; const c0 = foodCapOf(w); T0.lv = 2; const c2 = foodCapOf(w); const raw2 = foodCapOf(w, true); out.cap = { c0, c2, exp0: Math.round((400 + fc) * (1 + sb)), exp2: Math.round((2400 + fc) * (1 + sb)), raw2, expRaw: 2400 + fc };
+        out.spoil = { r: foodSpoilRate(w), exp: 0.05 * Math.max(0, 1 + (w.buildings.getEffect('food_decay', 0) || 0)) * (typeof ECON !== 'undefined' ? ECON.saltDecay(w) : 1) };
+        const day = w._absDay(); const wt = (n) => { w.stockpile.resources.food = n; w.proposals.cooldown = {}; const c = (w.proposals._candidates(w, day + 50 + Math.round(n / 100)) || []).find(x => x.key === 'market:sell:food'); return c ? Math.round(c.weight * 100) / 100 : null; };
+        out.sellW = { under: wt(Math.round(c2 * 0.8)), little: wt(Math.round(c2 * 1.2)), huge: wt(c2 * 12) };
+        w.stockpile.resources.food = Math.round(FLOW.want(w, 'food') * 2); const d2 = FLOW.demandMult(w, 'food'); w.stockpile.resources.food = Math.round(FLOW.want(w, 'food') * 3.5); const d3 = FLOW.demandMult(w, 'food'); out.slow = { d2, d3 };
+        out.spoilText = [t('超過糧倉容量，多出來的每天壞掉 {p}%'), t('超過糧倉容量，冷藏得好，暫時不會壞')]; T0.lv = lv0; }
       // 7) 關掉時照舊；放著跑
       fresh(17); w.observerMode = false; { const a = npcs()[0]; a.activity = 'wandering'; a._dayLoc = 'x'; DAY.steer(w, a); out.off = a._dayLoc; } w.observerMode = true;
       for (let i = 0; i < 10 * 96; i++) { w.paused = false; w.tick(); if (i % 480 === 479) await new Promise(r2 => setTimeout(r2, 5)); } out.run = DAY.view(w).st; out.en = [t('跟朋友約好了'), t('想約{b}出去走走，他說改天。')];
@@ -79,6 +87,11 @@ async function run(browser, dev, lang) {
   ok(r.off === null || r.off === 'x' ? r.off === null : false, `${tag} 沒開觀察者模式時不介入`, r.off);
   ok(r.run && r.run.free > 100 && (r.run.invite + r.run.inviteNo) > 0 && r.run.chat > 0, `${tag} 跑 10 天：空閒的選擇、約人、聊天都在發生`, r.run);
   ok(zh || !r.en.some(x => /[一-鿿]/.test(x)), `${tag} 新句子有英文`, r.en);
+  ok(r.cap && r.cap.c0 === r.cap.exp0 && r.cap.c2 === r.cap.exp2 && r.cap.raw2 === r.cap.expRaw && r.cap.c2 > r.cap.c0 + 1999, `${tag} 糧倉容量：城市比村莊多 2000（再乘上儲存加成）`, r.cap);
+  ok(r.spoil && Math.abs(r.spoil.r - r.spoil.exp) < 1e-9, `${tag} 腐壞比例跟結算用的是同一個數字`, r.spoil);
+  ok(r.sellW && r.sellW.under === null && r.sellW.little > 1.4 && r.sellW.little < 2 && r.sellW.huge === 5, `${tag} 沒爆倉不會有人提賣糧；多一點點時權重略高；爆十幾倍時權重拉到最高`, r.sellW);
+  ok(r.slow && r.slow.d2 === 0.35 && r.slow.d3 === 0.1, `${tag} 存糧是目標的兩倍時照做三成五，三倍以上降到一成`, r.slow);
+  ok(zh || !r.spoilText.some(x => /[\u4e00-\u9fff]/.test(x)), `${tag} 腐壞提示有英文`, r.spoilText);
   if (r.run) console.log('   ', JSON.stringify(r.run));
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();

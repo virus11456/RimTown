@@ -1,4 +1,14 @@
 // RimTown - sim-economy.js：從 simulation.js 拆出的 倉庫、每日生產、建築、貿易、科技、工單、新聞（v6.1.0 B14）。
+// v11.3.0 糧倉容量與腐壞比例只在這裡算一次（以前六個地方各算各的，畫面上的數字沒算倉庫與後勤學的加成，也固定寫 5%）
+// 容量＝（基本 400＋穀倉與倉庫＋城鎮等級）×（1＋儲存加成）。城鎮等級：城鎮 +800、城市 +2000、王都 +3500（以前 118 人的城市也只有蓋滿的 2500）
+const FOOD_CAP_TIER = [0, 800, 2000, 3500];
+function foodCapOf(world, raw) {
+    let lv = 0; try { lv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(world).lv || 0) : 0; } catch (e) { lv = 0; }
+    const base = 400 + (world?.buildings?.getEffect?.('food_capacity', 0) || 0) + (FOOD_CAP_TIER[lv] || 0);
+    return raw ? base : Math.round(base * (1 + (world?.buildings?.getEffect?.('storage_bonus', 0) || 0)));
+}
+// 超過容量的那一部分每天壞掉幾成（冷藏穀庫、倉庫、發酵工程讓它變少；有鹽醃漬再減半）
+function foodSpoilRate(world) { let salt = 1; try { salt = typeof ECON !== 'undefined' ? ECON.saltDecay(world) : 1; } catch (e) {} return 0.05 * Math.max(0, 1 + (world?.buildings?.getEffect?.('food_decay', 0) || 0)) * salt; }
 // 純粹搬移頂層宣告，共用全域詞法範圍；載入順序：sim-agent → sim-conversation → sim-town → sim-economy → sim-society → simulation(World) → sim-systems（index.html／sw.js 都要列）。
 // --- Economy: Stockpile ---
 const DEFAULT_STOCKPILE = { food:200, wood:100, stone:80, metal:30, cloth:40, herbs:20, silver:150, meals:50, tools:10, clothing:15, medicine:5, furniture:5, research_points:0, salt:0, paper:6, // v6.77.0 鹽(靠海才曬得出)、紙(木匠造)
@@ -190,8 +200,8 @@ function processDailyProduction(world) {
         }
     }
     // v5.52.0 食物稀缺曲線:超過糧倉容量的存糧會腐壞(穀倉擴容、冷藏穀庫減緩腐壞),避免食物爆量失去取捨
-    const foodCap = (400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0)) * (1 + (world.buildings?.getEffect?.('storage_bonus', 0) || 0)); // v6.89.0 倉庫／物流讓存糧放得更多
-    const decayMod = Math.max(0, 1 + (world.buildings?.getEffect?.('food_decay', 0) || 0)) * (typeof ECON !== 'undefined' ? ECON.saltDecay(world) : 1); // v6.77.0 有鹽醃漬,腐壞減半
+    const foodCap = foodCapOf(world); // v6.89.0 倉庫／物流讓存糧放得更多；v11.3.0 鎮越大糧倉越大
+    const decayMod = foodSpoilRate(world) / 0.05; // v6.77.0 有鹽醃漬,腐壞減半
     const excessFood = sp.get('food') - foodCap;
     if (excessFood > 0) {
         const spoiled = Math.floor(excessFood * 0.05 * decayMod);

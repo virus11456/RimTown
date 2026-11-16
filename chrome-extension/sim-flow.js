@@ -20,7 +20,7 @@ const FLOW = (() => {
         const all = npcs(w), pop = Math.max(1, all.length), workers = all.filter(a => a.job?.key).length;
         switch (r) {
             case 'meals': return pop * 3;
-            case 'food': return (400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
+            case 'food': return (typeof foodCapOf === 'function' ? foodCapOf(w, true) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
             case 'tools': return Math.max(12, workers * 0.5);
             case 'clothing': return pop * 0.8 + 8;
             case 'furniture': return pop * 0.4 + 8;
@@ -54,6 +54,7 @@ const FLOW = (() => {
     function demandMult(w, r) {
         const T = want(w, r); const lo = r === 'food' ? 0.35 : 0.15; if (T <= 0) return lo; // 糧食最少留三成五(季節與災害的緩衝)
         const s = get(w, r);
+        if (r === 'food' && s >= T * 3) return 0.1; // v11.3.0 存糧已經是目標的三倍：種田打魚的再放慢（以前爆倉也照做三成五，一百多人的城市堆到三萬多）
         if (s <= T * 0.6) return 1;
         if (s >= T) return lo;
         return lo + (1 - lo) * (T - s) / (T * 0.4);
@@ -257,7 +258,7 @@ if (typeof ConversationEngine !== 'undefined' && !ConversationEngine.prototype._
     CE._townBrief = function (world) {
         const s = _tb.call(this, world);
         try {
-            const food = Math.round(world.stockpile?.get?.('food') || 0), cap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const food = Math.round(world.stockpile?.get?.('food') || 0), cap = typeof foodCapOf === 'function' ? foodCapOf(world) : 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
             const pop = Math.max(1, Object.values(world.agents || {}).filter(a => !a.isPlayer && !a.isDead).length);
             const st = food >= cap ? t('糧倉滿了') : food >= pop * 15 ? t('存糧充足') : food >= pop * 4 ? t('存糧還夠') : t('存糧快見底');
             return `${s}${t('；')}${t('糧倉')} ${food}/${cap}${t('（')}${st}${t('）')}${t('；')}${t('作物收成會直接存進糧倉，小麥等作物存量少是正常的')}`;

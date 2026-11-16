@@ -485,12 +485,14 @@ class ProposalSystem {
                 const qty = 30, price = SI[r].buyPrice * qty;
                 out.push({ kind: 'market', key: 'market:buy:' + r, weight: 1.3, jobs: ['trader', 'mayor', 'carpenter', 'blacksmith'], make: (a) => ({ kind: 'market', key: 'market:buy:' + r, refKey: r, qty, side: 'buy', tk: '進一批{item}備料', tp: { item: SI[r].name() }, dk: '{item}快見底了，{who}提議從公庫撥 {n} 銀幣去商店進 {qty} 份。', dp: { item: SI[r].name(), who: a.name, n: price, qty }, cost: { silver: price }, category: 'economy', jobBias: ['trader'] }) });
             }
-            const foodCap = 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const foodCap = typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0);
             for (const r of Object.keys(SI)) {
                 const have = sp?.get?.(r) || 0; const over = r === 'food' ? have > foodCap : have > 250;
-                if (!over || !this._cool(day, 'market:sell:' + r, 8)) continue;
+                // v11.3.0 堆得越多越該有人提：以前權重固定 1.4，開了智能體的鎮只看得到權重最高的幾個點子，爆倉十幾倍也沒人提議賣
+                const glut = r === 'food' ? Math.max(0, have / Math.max(1, foodCap) - 1) : Math.max(0, have / 250 - 1);
+                if (!over || !this._cool(day, 'market:sell:' + r, glut >= 2 ? 4 : 8)) continue;
                 const qty = r === 'food' ? Math.max(20, Math.floor(have - foodCap * 0.85)) : 80, gain = SI[r].sellPrice * qty;
-                out.push({ kind: 'market', key: 'market:sell:' + r, weight: 1.4, jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
+                out.push({ kind: 'market', key: 'market:sell:' + r, weight: Math.min(5, 1.4 + glut * 0.6), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
             }
         }
         // 升級既有建築

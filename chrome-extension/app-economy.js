@@ -180,8 +180,9 @@ Object.assign(RimTownApp.prototype, {
             // ① 關鍵資源:食物+銀幣,唯二要玩家盯的存量
             // v5.53.0 食物顯示 /糧倉容量(400+穀倉擴容),玩家才知道離腐壞多遠
             const foodAmt = Math.round(res.food || 0), silverAmt = Math.round(res.silver || 0);
-            const foodCap = 400 + (this.world?.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const foodCap = typeof foodCapOf === 'function' && this.world ? foodCapOf(this.world) : 400 + (this.world?.buildings?.getEffect?.('food_capacity', 0) || 0);
             const overCap = foodAmt > foodCap;
+            const spoilT = (() => { const p = typeof foodSpoilRate === 'function' && this.world ? Math.round(foodSpoilRate(this.world) * 1000) / 10 : 5; return p > 0 ? t('超過糧倉容量，多出來的每天壞掉 {p}%').replace('{p}', p) : t('超過糧倉容量，冷藏得好，暫時不會壞'); })();
             const foodClr = foodAmt < 50 ? 'var(--negative)' : foodAmt < 200 || overCap ? '#e8b030' : 'var(--positive)';
             const silverClr = silverAmt < 50 ? 'var(--negative)' : silverAmt < 300 ? '#e8b030' : 'var(--positive)';
             if (S === 'overview') {
@@ -190,7 +191,7 @@ Object.assign(RimTownApp.prototype, {
                         <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
                             <div style="font-size:1.3rem">🌾</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('食物')}</div>
                             <div style="font-size:1.15rem;font-weight:bold;color:${foodClr}">${foodAmt}<span style="font-size:0.68rem;font-weight:normal;color:var(--text-muted)">/${foodCap}</span></div>
-                            ${overCap ? `<div style="font-size:0.62rem;color:#e8b030">⚠ ${t('超過糧倉容量，每日腐壞5%')}</div>` : ''}</div>
+                            ${overCap ? `<div style="font-size:0.62rem;color:#e8b030">⚠ ${spoilT}</div>` : ''}</div>
                         <div style="flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:10px;text-align:center">
                             <div style="font-size:1.3rem">💰</div><div style="font-size:0.72rem;color:var(--text-secondary)">${t('銀幣')}</div>
                             <div style="font-size:1.15rem;font-weight:bold;color:${silverClr}">${silverAmt}</div></div>

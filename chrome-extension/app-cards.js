@@ -92,10 +92,11 @@ Object.assign(RimTownApp.prototype, {
     },
     _icKeyRes() {
         const res = this.state?.stockpile?.resources || {}; const food = Math.round(res.food || 0), silver = Math.round(res.silver || 0);
-        const cap = 400 + (this.world?.buildings?.getEffect?.('food_capacity', 0) || 0); const over = food > cap;
+        const cap = typeof foodCapOf === 'function' && this.world ? foodCapOf(this.world) : 400 + (this.world?.buildings?.getEffect?.('food_capacity', 0) || 0); const over = food > cap;
+        const spoilT = (() => { const p = typeof foodSpoilRate === 'function' && this.world ? Math.round(foodSpoilRate(this.world) * 1000) / 10 : 5; return p > 0 ? t('超過糧倉容量，多出來的每天壞掉 {p}%').replace('{p}', p) : t('超過糧倉容量，冷藏得好，暫時不會壞'); })();
         const pop = Math.max(1, Object.keys(this.state.agents || {}).length - 1);
         const fTone = food < pop * 2 ? 'r' : food < 200 || over ? 'y' : 'g', sTone = silver < 50 ? 'r' : silver < 300 ? 'y' : 'g';
-        const alert = food < pop * 2 ? { t: t('存糧快見底了'), tone: 'r' } : over ? { t: t('超過糧倉容量，每日腐壞5%'), tone: 'y' } : silver < 50 ? { t: t('公庫快沒錢了'), tone: 'r' } : null;
+        const alert = food < pop * 2 ? { t: t('存糧快見底了'), tone: 'r' } : over ? { t: spoilT, tone: 'y' } : silver < 50 ? { t: t('公庫快沒錢了'), tone: 'r' } : null;
         return this._ic({ id: 'keyres', icon: '💎', title: t('關鍵資源'), chip: alert ? { t: alert.tone === 'r' ? t('吃緊') : t('留意'), tone: alert.tone } : { t: t('充足'), tone: 'g' },
             sum: `🌾 ${this._icNum(food)} · 💰 ${this._icNum(silver)}`, defOpen: !!alert, alert,
             kpis: [{ v: this._icNum(food), u: `/${cap}`, l: '🌾 ' + t('食物'), tone: fTone }, { v: this._icNum(silver), l: '💰 ' + t('公庫銀幣'), tone: sTone }, { v: (food / pop).toFixed(1), l: t('每人存糧') }] });
