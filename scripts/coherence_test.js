@@ -47,6 +47,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 研究完什麼都不會變的科技：沒有效果、不解鎖建築或工廠（哪裡用到留給外面掃程式碼判斷）
       { const unl = new Set(Object.values(RESEARCH_UNLOCKED_BY).flat()); for (const f of Object.values(F)) if (f.requires) unl.add(f.requires); for (const b of Object.values(B)) for (const q of [].concat(b.requires || [], b.research || [])) unl.add(q);
         out.techPlain = Object.entries(T).filter(([k, d]) => !Object.keys(d.effects || {}).length && !(d.unlocks || []).length && !unl.has(k)).map(([k, d]) => ({ k, name: d.name, era: d.era, next: Object.values(T).filter(x => (x.prerequisites || []).includes(k)).length })); }
+      // 蓋東西才會用到的材料（建築、工坊、產業升級的成本）。這些在第 3、4、6 段逐棟蓋的時候一定會被扣；放著跑 12 天不一定剛好有人蓋
+      out.buildMat = [...new Set([...Object.values(B).flatMap(d => Object.keys(d.costs || {})), ...Object.values(F).flatMap(d => Object.keys(d.cost || {})), ...Object.values(INDUSTRIES).flatMap(d => (d.levels || []).flatMap(L => Object.keys(L.cost || {})))])];
       out.reg = { n: { tech: Object.keys(T).length, bld: Object.keys(B).length, fac: Object.keys(F).length, crops: Object.keys(CROPS).length, jobs: Object.keys(JOB_DEFINITIONS).length, res: STOCK.length, ind: Object.keys(INDUSTRIES).length, biz: Object.keys(BIZ.TYPES).length }, bad,
         fxKeys: [...new Set([...Object.values(T).flatMap(d => Object.keys(d.effects || {})), ...Object.values(B).flatMap(d => Object.keys(d.effects || {}))])] }; }
 
@@ -212,7 +214,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(noSrc.length === 0, `${n.res} 種資源都至少有一個來源`, noSrc);
   ok(noSink.length === 0, `${n.res} 種資源都至少有一個去處`, noSink);
   { const idle = Object.keys(r.names).filter(k => !(r.flows[k]?.out > 0));
-    ok(idle.every(k => ['hardwood', 'marble'].includes(k)), '城市跑 12 天，每種物資都真的有人用掉（備用建材硬木、大理石除外）', idle);
+    const everyday = idle.filter(k => !['hardwood', 'marble'].includes(k) && !r.buildMat.includes(k));
+    ok(everyday.length === 0, `城市跑 12 天，日常會用的物資都真的有人用掉（蓋東西才用的 ${r.buildMat.length} 種材料在逐棟蓋的那幾段驗）`, { everyday, idle });
     ok(r.subUse.ok && r.subUse.hardwood > 0 && r.subUse.marble > 0, '硬木與大理石在翻修、擴建付木材石材時會先被用掉', r.subUse); }
   const dict = fs.readFileSync(path.join(DIR, 'i18n-en.js'), 'utf8'); const noEn = Object.entries(r.names).filter(([, zh]) => zh && !dict.includes(`'${zh}':`)).map(([k, zh]) => k + ':' + zh);
   ok(r.noName.length === 0 && noEn.length === 0, '每種資源在各處都有名字（中文、英文）', { noName: r.noName, noEn });
