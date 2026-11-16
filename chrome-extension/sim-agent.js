@@ -602,6 +602,7 @@ class Agent {
     }
     // v5.16.0 意圖面板:為什麼在做現在這件事(從 needs+作息推導,人話一句)
     activityReason() {
+        if (this._dayWhy) return t(this._dayWhy); // v11.2.0 今天自己的安排
         const n = this.needs;
         switch (this.activity) {
             case 'sleeping': return n.rest < 30 ? t('累壞了,需要補眠') : t('照著作息就寢');
@@ -655,6 +656,7 @@ class Agent {
     update(world) {
         const prevActivity = this.activity;
         this._decideActivity(world.clock.hour);
+        if (typeof DAY !== 'undefined') { try { DAY.steer(world, this); } catch (e) {} } // v11.2.0 今天自己的安排蓋過鐘點規則（翹班、晚到、去酒館、陪家人）
         this.needs.tickDecay(this.activity==='sleeping', this.activity==='eating', this.activity==='socializing', this.activity==='recreation', world.clock.hour);
         if (this.activity === 'sleeping' && world.health && typeof HEALTH !== 'undefined') this.needs.rest = Math.max(0, this.needs.rest - 8 * (1 - HEALTH.sleepMult(world, this))); // v7.4.0 肺不好睡不好
         // Decay moodModifier toward 0
@@ -682,6 +684,7 @@ class Agent {
             // Set stay duration based on activity
             this._locationStayRemaining = this._getStayDuration();
         }
+        if (this._dayLoc && this.currentLocation !== this._dayLoc) this.currentLocation = this._dayLoc; // v11.2.0 自己安排要去的地方
         if (this.activity === 'socializing') this._trySocialInteraction(world);
         if (this.activity === 'stargazing') this._doStargazing(world);
         if (this.activity === 'night_mischief') this._doNightMischief(world);

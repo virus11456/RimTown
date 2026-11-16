@@ -124,6 +124,7 @@ function processDailyProduction(world) {
         if (agent.job.key === 'blacksmith') eff *= 1 + (world.buildings?.getEffect?.('smithing_bonus',0) || 0) + (world.buildings?.getEffect?.('tool_quality',0) || 0) * 0.5; // v6.89.0 風箱鍛爐、冶金
         if (world.market?.hungry && (world.market.hungry[agent.agentId] || 0) >= 3) eff *= 0.6; // v6.89.0 餓了好幾天,做事沒力氣
         eff *= 1 + (agent.mood - 50)/500;
+        if (typeof DAY !== 'undefined') { const dm0 = DAY.workMult(world, agent); if (!(dm0 > 0)) return; eff *= dm0; } // v11.2.0 昨天沒去上工就沒有產出；晚到、宿醉做得少
         if (typeof HEALTH !== 'undefined' && world.health) eff *= HEALTH.workMult(world, agent); // v7.4.0 手腳眼不好、病倒了做得少
         eff *= 0.9 + Math.random()*0.2;
         if (typeof ECON !== 'undefined') { eff *= ECON.toolFactor(world); if (agent.job.key === 'farmer') eff *= ECON.foodMult(world, agent); } // v6.77.0 工具影響每個職業;農夫依種田／捕魚／打獵與地形換算

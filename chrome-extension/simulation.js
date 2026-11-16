@@ -92,6 +92,7 @@ class World {
         const prevDayIds = { year: this.clock.year, season: this.clock.season, day: this.clock.day };
         const timeEvents = this.clock.tick();
         if (timeEvents.includes('new_day')) {
+            try { if (typeof DAY !== 'undefined') DAY.roll(this); } catch (e) { console.warn('[Day] roll', e); } // v11.2.0 昨天的出勤留給今天結算產出與工資
             // v5.43.0 小鎮編年史:趁足跡/行程還沒被新的一天覆蓋,先打包昨天交給 UI 存進資料庫
             if (this.onDayArchive) { try { this.onDayArchive(this._buildDayArchive(prevDayIds)); } catch (e) { console.warn('[RimTown] chronicle error:', e); } }
             // v5.34.0 逾時代選:互動選擇放超過一個遊戲日沒人理,小鎮自行決定,避免卡住事件線
@@ -187,6 +188,7 @@ class World {
             // v5.45.0 昨日回響:你昨天的舉動在小鎮發酵了什麼
             try { if (!this.observerMode) this._generateDailyEcho(prevDayIds); } catch (e) { console.warn('[RimTown] daily echo error:', e); }
         }
+        try { if (typeof DAY !== 'undefined') DAY.tick(this); } catch (e) { console.warn('[Day] tick', e); } // v11.2.0 每個整點：誰該拿主意（去不去上工、今晚怎麼過、要不要再喝）
         Object.values(this.agents).forEach(agent => {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
             agent.update(this);
