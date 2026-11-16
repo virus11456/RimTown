@@ -39,7 +39,7 @@ const VOTE_WHY = {
     value: '價值觀相合', wealth: '看重財富', work: '勤勞肯做', lazy: '懶得折騰', fun: '愛熱鬧', glutton: '貪吃', ascetic: '不愛鋪張', stoic: '不愛熱鬧', charm: '愛出風頭',
     adventure: '愛冒險', family: '顧家', shy: '怕生', care: '重視社群', kind: '心軟', greedy: '捨不得花錢', trial: '考驗當前', moodup: '政令會讓大家開心', mooddown: '政令會讓大家不開心', spend: '政令要花錢',
     pessimist: '悲觀', optimist: '樂觀', job: '跟自己這行有關', relgood: '跟提案人交情好', relbad: '跟提案人處不來', cost: '公庫不夠', gut: '憑直覺', needy: '自己也手頭緊', rich: '覺得不該拿公庫養人', union: '工會的立場', boss: '當老闆的不想多付工資',
-    feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了', growth: '想讓鎮上更興旺', oldways: '喜歡現在的樣子',
+    glut: '堆著也是放到壞', feud: '想讓兩人和好', grudge: '跟當事人有過節', proud: '為同鄉驕傲', newcomer: '歡迎新面孔', crowded: '覺得鎮上夠擠了', growth: '想讓鎮上更興旺', oldways: '喜歡現在的樣子',
 };
 // 職業 → 偏好的建築／工廠
 const PROPOSAL_JOB_BUILDINGS = {
@@ -220,6 +220,12 @@ class ProposalSystem {
         }
         try { w.onProposalEvent?.('vote', this.toItem(w, p)); } catch (e) {}
     }
+    // v11.3.0 這一案要賣的東西堆了多少：超過容量幾倍（沒超過是 0）。投票的人和首長看得到倉庫滿出來
+    _glutOf(w, p) {
+        if (!p || p.kind !== 'market' || p.side !== 'sell' || !p.refKey) return 0;
+        const have = w.stockpile?.get?.(p.refKey) || 0; const cap = p.refKey === 'food' ? (typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) : 250;
+        return Math.max(0, have / Math.max(1, cap) - 1);
+    }
     _ruleVote(w, p, a) {
         let s = 0; const R = []; const add = (k, d) => { s += d; if (d) R.push([k, d]); }; // v6.30.0 記下每一分的理由
         const vals = PROPOSAL_POLICY_VALUES[p.category] || [];
@@ -238,6 +244,7 @@ class ProposalSystem {
             if (p.kind === 'minwage' && w.union?.on) { if (w.union.members?.[a.agentId]) add('union', 3); else if (typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length) add('boss', -2.5); } // v6.93.0 工會會員一定挺、老闆反對
         }
         if (p.kind === 'trial') add('trial', 2);
+        { const g = this._glutOf(w, p); if (g > 0) add('glut', Math.min(3, 1 + g)); }
         if (p.kind === 'tier_up') { add('growth', 1.5); if (this._hasValue(a, '財富') || this._hasValue(a, '權力')) add('growth', 1); if (this._hasTrait(a, 'charismatic') || this._hasTrait(a, 'hardworking')) add('growth', 1); if (this._hasTrait(a, 'shy') || this._hasTrait(a, 'ascetic')) add('crowded', -2); if (this._hasTrait(a, 'stoic') || this._hasValue(a, '自然') || this._hasValue(a, '和平')) add('oldways', -1.5); } // v6.81.0
         if (p.kind === 'policy' && p.effects) { if ((p.effects.mood_all || 0) < 0) add('mooddown', -2); if ((p.effects.mood_all || 0) > 0) add('moodup', 2); if ((p.effects.silver || 0) < 0) add('spend', -1); }
         if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
@@ -398,7 +405,8 @@ class ProposalSystem {
         if (low && silver >= 60 && this._cool(day, 'relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
         // 考驗對策
         const tr = w.trials?.current;
-        if (tr && tr.status === 'active' && this._cool(day, 'trial:' + tr.type, 8)) {
+        const granaryFull = (() => { try { return typeof foodCapOf === 'function' && (w.stockpile?.get?.('food') || 0) >= foodCapOf(w); } catch (e) { return false; } })(); // v11.3.0 糧倉滿出來時不會有人提「全鎮加班下田」
+        if (tr && tr.status === 'active' && !(tr.type === 'famine' && granaryFull) && this._cool(day, 'trial:' + tr.type, 8)) {
             const M = {
                 famine:   { jobs: ['farmer', 'cook'], tk: '全鎮加班下田', dk: '糧荒當前，{who}提議接下來半個月大家都多下田：農產 +30%。', cost: {}, effects: { farm_bonus: 0.3 } },
                 plague:   { jobs: ['doctor', 'priest'], tk: '組一支採藥隊', dk: '瘟疫蔓延，{who}提議花 30 銀幣組採藥隊進山：帶回 12 份草藥。', cost: { silver: 30 }, gain: { herbs: 12 } },
@@ -492,7 +500,7 @@ class ProposalSystem {
                 const glut = r === 'food' ? Math.max(0, have / Math.max(1, foodCap) - 1) : Math.max(0, have / 250 - 1);
                 if (!over || !this._cool(day, 'market:sell:' + r, glut >= 2 ? 4 : 8)) continue;
                 const qty = r === 'food' ? Math.max(20, Math.floor(have - foodCap * 0.85)) : 80, gain = SI[r].sellPrice * qty;
-                out.push({ kind: 'market', key: 'market:sell:' + r, weight: Math.min(5, 1.4 + glut * 0.6), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
+                out.push({ kind: 'market', key: 'market:sell:' + r, weight: Math.min(5, 1.4 + glut * (r === 'food' ? 1.5 : 0.6)), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
             }
         }
         // 升級既有建築
@@ -556,7 +564,7 @@ class ProposalSystem {
     // ---------- v6.37.0 鎮長裁決 ----------
     _mayor(w) { const E = w.election; if (E?._realMayor) { try { return E._realMayor(w) || E.currentMayor?.(w) || null; } catch (e) {} } return this._npcs(w).find(a => a.job?.key === 'mayor') || E?.currentMayor?.(w) || null; } // v9.4.0 坐牢、探險中的首長不拍板,由代理裁決 // v6.42.0 鎮長不在時由代理鎮長裁決
     _isActing(w, m) { return !!(m && m.job?.key !== 'mayor' && w.election?.acting?.agentId === m.agentId); }
-    _mayorLean(m, p) {
+    _mayorLean(m, p, w) {
         if (!m) return 0;
         let s = 0;
         for (const v of (PROPOSAL_POLICY_VALUES[p.category] || [])) if (this._hasValue(m, v)) s += 1;
@@ -565,6 +573,7 @@ class ProposalSystem {
         if (this._hasTrait(m, 'greedy') && (this._cost(p).silver || 0) > 30) s -= 1;
         if (this._hasTrait(m, 'pessimist')) s -= 0.5; if (this._hasTrait(m, 'optimist')) s += 0.5;
         if (p.kind === 'trial' || p.kind === 'relief') s += 1;
+        if (w && this._glutOf(w, p) >= 1) s += 1;
         return s > 0.6 ? 1 : s < -0.6 ? -1 : 0;
     }
     _mayorRule(w, p, day, final) {
@@ -580,7 +589,7 @@ class ProposalSystem {
         else if (f > a * 1.5) { action = 'approve'; why = 'majority'; }
         else if (a > f * 1.5) { action = 'reject'; why = 'minority'; }
         else {
-            const lean = this._mayorLean(m, p);
+            const lean = this._mayorLean(m, p, w);
             if (lean > 0) { action = 'approve'; why = 'own_yes'; }
             else if (lean < 0) { action = 'reject'; why = 'own_no'; }
             else if (!final && p.status === 'open' && Math.random() < 0.4) { action = 'shelve'; why = 'wait'; }

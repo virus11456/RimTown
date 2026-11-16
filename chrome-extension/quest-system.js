@@ -1297,7 +1297,9 @@ class SeasonTrials {
     goalText(type, target) { const g = this.goalTextT(type, target); return Memory.render(g.k, g.p); }
     _pick(w) {
         const theme = w.townTheme || 'frontier';
-        const pool = Object.entries(TRIAL_TYPES).filter(([k]) => k !== this.lastType).map(([k, d]) => [k, d.weights[theme] || 1]);
+        // v11.3.0 糧倉滿出來的鎮不會鬧糧荒（以前只看地形，存糧三萬多的城市照樣抽到糧荒，還冒出「全鎮加班下田」）
+        let full = false; try { full = typeof foodCapOf === 'function' && (w.stockpile?.get?.('food') || 0) >= foodCapOf(w); } catch (e) {}
+        const pool = Object.entries(TRIAL_TYPES).filter(([k]) => k !== this.lastType && !(full && k === 'famine')).map(([k, d]) => [k, d.weights[theme] || 1]);
         let total = pool.reduce((a, [, wgt]) => a + wgt, 0), r = Math.random() * total;
         for (const [k, wgt] of pool) { r -= wgt; if (r <= 0) return k; }
         return pool[0][0];

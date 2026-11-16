@@ -62,6 +62,14 @@ async function run(browser, dev, lang) {
         const day = w._absDay(); const wt = (n) => { w.stockpile.resources.food = n; w.proposals.cooldown = {}; const c = (w.proposals._candidates(w, day + 50 + Math.round(n / 100)) || []).find(x => x.key === 'market:sell:food'); return c ? Math.round(c.weight * 100) / 100 : null; };
         out.sellW = { under: wt(Math.round(c2 * 0.8)), little: wt(Math.round(c2 * 1.2)), huge: wt(c2 * 12) };
         w.stockpile.resources.food = Math.round(FLOW.want(w, 'food') * 2); const d2 = FLOW.demandMult(w, 'food'); w.stockpile.resources.food = Math.round(FLOW.want(w, 'food') * 3.5); const d3 = FLOW.demandMult(w, 'food'); out.slow = { d2, d3 };
+        // 賣餘糧這一案：投票的人看得到倉庫滿出來；滿出來的鎮不會抽到糧荒，也不會有人提加班下田
+        { const cap = foodCapOf(w); const voter = Object.values(w.agents).find(a => !a.isPlayer && !a.isDead && !a.away); const P = { kind: 'market', side: 'sell', refKey: 'food', category: 'economy', votes: {}, proposerId: '__none' };
+          w.stockpile.resources.food = Math.round(cap * 0.8); const g0 = w.proposals._glutOf(w, P); w.stockpile.resources.food = Math.round(cap * 4); const g1 = w.proposals._glutOf(w, P);
+          let yes = 0; const R0 = Math.random; Math.random = () => 0.5; try { for (const a of Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).slice(0, 30)) { P.votes = {}; P.why = {}; w.proposals._ruleVote(w, P, a); if (P.votes[a.agentId] === 'for') yes++; } } finally { Math.random = R0; }
+          const picks = {}; const lt0 = w.trials.lastType; w.trials.lastType = null; for (let i = 0; i < 200; i++) { const k = w.trials._pick(w); picks[k] = (picks[k] || 0) + 1; }
+          const tc0 = w.trials.current; w.trials.current = { type: 'famine', status: 'active' }; w.proposals.cooldown = {}; const fullCand = (w.proposals._candidates(w, day + 400) || []).some(x => x.key === 'trial:famine');
+          w.stockpile.resources.food = Math.round(cap * 0.3); w.proposals.cooldown = {}; const lowCand = (w.proposals._candidates(w, day + 401) || []).some(x => x.key === 'trial:famine'); let lowPick = 0; for (let i = 0; i < 200; i++) if (w.trials._pick(w) === 'famine') lowPick++;
+          w.trials.current = tc0; w.trials.lastType = lt0; out.glut = { g0, g1, yes, n: Math.min(30, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).length), famineFull: picks.famine || 0, fullCand, lowCand, lowPick, whyText: t('堆著也是放到壞') }; }
         out.spoilText = [t('超過糧倉容量，多出來的每天壞掉 {p}%'), t('超過糧倉容量，冷藏得好，暫時不會壞')]; T0.lv = lv0; }
       // 7) 關掉時照舊；放著跑
       fresh(17); w.observerMode = false; { const a = npcs()[0]; a.activity = 'wandering'; a._dayLoc = 'x'; DAY.steer(w, a); out.off = a._dayLoc; } w.observerMode = true;
@@ -92,6 +100,11 @@ async function run(browser, dev, lang) {
   ok(r.sellW && r.sellW.under === null && r.sellW.little > 1.4 && r.sellW.little < 2 && r.sellW.huge === 5, `${tag} 沒爆倉不會有人提賣糧；多一點點時權重略高；爆十幾倍時權重拉到最高`, r.sellW);
   ok(r.slow && r.slow.d2 === 0.35 && r.slow.d3 === 0.1, `${tag} 存糧是目標的兩倍時照做三成五，三倍以上降到一成`, r.slow);
   ok(zh || !r.spoilText.some(x => /[\u4e00-\u9fff]/.test(x)), `${tag} 腐壞提示有英文`, r.spoilText);
+  ok(r.glut && r.glut.g0 === 0 && Math.abs(r.glut.g1 - 3) < 0.01, `${tag} 賣餘糧：沒超過容量算 0，四倍容量算超出 3 倍`, r.glut);
+  ok(r.glut && r.glut.yes >= r.glut.n * 0.8, `${tag} 倉庫滿到四倍時，照個性投票的人八成以上贊成賣掉`, r.glut);
+  ok(r.glut && r.glut.famineFull === 0 && r.glut.lowPick > 0, `${tag} 糧倉滿出來的鎮抽不到糧荒；存糧少的鎮抽得到`, r.glut);
+  ok(r.glut && r.glut.fullCand === false && r.glut.lowCand === true, `${tag} 糧荒考驗當前但糧倉滿出來時沒人提加班下田；存糧少時有`, r.glut);
+  ok(zh || !/[\u4e00-\u9fff]/.test(r.glut.whyText), `${tag} 投票理由有英文`, r.glut.whyText);
   if (r.run) console.log('   ', JSON.stringify(r.run));
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
