@@ -207,7 +207,7 @@ const POWER = (() => {
         for (const [k, until] of Object.entries(P.pressure)) if (until < d) delete P.pressure[k];
         if (!w.election?.active) P.camp = {};
         // 捐不捐由金主自己決定(選擇點 donate)
-        if (d % 7 === 1) { watchdog(w, d); buyPapers(w, d); }
+        if (d % 7 === 1) { if (!(typeof TIPS !== 'undefined' && TIPS && TIPS.on(w))) watchdog(w, d); /* v11.0.0 記者自己選題時，不再由系統每週擲骰挑題目（sim-tips.js） */ buyPapers(w, d); }
         recall(w, d);
         if (P.log.length > 30) P.log = P.log.slice(-30);
         // 金主人情:每週淡一點(太久以前的錢慢慢不算數)

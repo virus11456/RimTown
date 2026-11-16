@@ -27,6 +27,8 @@ const DEALASK = (() => {
     const rel = (a, b) => { try { return a.relationships.getOrCreate(b.agentId, b.name); } catch (e) { return null; } };
     const pct = (x) => Math.round(x * 100);
     const friends = (w, a, min = 30) => Object.values(a.relationships?.relationships || {}).filter(r => r.affinity >= min).map(r => w.agents[r.targetId]).filter(o => o && !o.isDead && !o.isPlayer).sort((x, y) => aff(a, y) - aff(a, x));
+    // 鎮上有沒有會登新聞的報社（公告欄與官報不算）：沒有的話，就沒有「向報社說」這條路
+    const hasPaper = (w) => (w.press?.papers || []).some(P => !P.banned && P.st !== 'board' && P.st !== 'crown');
     const sn = (key) => DEAL.sname(key);
     const gname = (key) => DEAL.GNAME[DEAL.GOOD[DEAL.kOf(key)]];
     // 一件事用一句話講
@@ -164,7 +166,7 @@ const DEALASK = (() => {
             out.push({ id: 'boycott', text: { k: '號召大家別再去{s}買', p: { s: sn(c.key) } }, say: { k: '號召大家別去{s}買東西', p: { s: sn(c.key) } }, why: '沒人買，他就知道不能亂漲',
                 base: REF + tilt(clampN(0.04 * (has(a, 'abrasive') || has(a, 'charismatic') ? 1.8 : 1) * (st.up >= 0.3 ? 2.5 : 1) * (poor ? 1.5 : 1) * (has(a, 'shy') ? 0.3 : 1), 0.004, 0.6)), lean: { face: 0.3, safe: -0.3 },
                 run: (w2, a2) => (boycott(w2, a2, c.key) ? { k: '開始號召大家別去買' } : { k: '已經有人在號召了' }) });
-            if (typeof PRESS !== 'undefined' && (w.press?.papers || []).length) out.push({ id: 'tip', quiet: true, text: '向報社投訴', say: { k: '向報社投訴{s}亂漲價', p: { s: sn(c.key) } }, why: '讓大家都知道',
+            if (hasPaper(w)) out.push({ id: 'tip', quiet: true, text: '向報社投訴', say: { k: '向報社投訴{s}亂漲價', p: { s: sn(c.key) } }, why: '讓大家都知道',
                 base: REF + tilt(clampN(0.05 * (st.up >= 0.3 ? 2 : 1), 0.004, 0.5)), lean: { face: 0.2 }, run: (w2, a2) => (tip(w2, a2, f, false) ? { k: '向報社說了' } : null) });
             return out;
         },
@@ -199,7 +201,7 @@ const DEALASK = (() => {
             if (alt) out.push({ id: 'switch', quiet: true, text: { k: '以後改去{o}的店', p: { o: DEAL.owner(w, alt).name } }, say: { k: '不再去{s}買東西', p: { s: sn(f.key) } }, why: '那家的東西我不敢再碰', base: REF + tilt(0.6), lean: { safe: 0.3 }, run: (w2, a2) => (switchTo(w2, a2, f.key) ? { k: '換了一家買' } : null) });
             out.push({ id: 'tell', quiet: true, text: '跟親近的人說，要他們小心', say: { k: '要親近的人小心{s}的東西', p: { s: sn(f.key) } }, why: '不能讓他們也出事', base: REF + tilt(clampN(0.45 * dead, 0.05, 0.9)), lean: { bond: 0.4 }, run: (w2, a2) => { const n = tell(w2, a2, f, 3); return n ? { k: '跟 {n} 個人說了', p: { n } } : { k: '身邊的人都知道了' }; } });
             if (!isAngry(w, a, f)) out.push({ id: 'confront', text: { k: '去找{o}理論，要他給個交代', p: { o: o.name } }, say: { k: '去找{o}理論', p: { o: o.name } }, why: '錢和身體都賠了，不能就這樣算了', base: REF + tilt(clampN(0.2 * dead * shy * (has(a, 'abrasive') ? 1.6 : 1), 0.02, 0.8)), lean: { face: 0.3, safe: -0.3 }, run: (w2, a2) => (face(w2, a2, f, 'confront') ? { k: '找上門去了' } : null) });
-            if (typeof PRESS !== 'undefined' && (w.press?.papers || []).length) out.push({ id: 'tip', quiet: true, text: '向報社爆料', say: { k: '向報社說了{s}的事', p: { s: sn(f.key) } }, why: '登出來大家才會小心', base: REF + tilt(clampN(0.1 * mad * dead, 0.02, 0.8)), lean: { face: 0.2 }, run: (w2, a2) => (tip(w2, a2, f, false) ? { k: '向報社說了' } : null) });
+            if (hasPaper(w)) out.push({ id: 'tip', quiet: true, text: '向報社爆料', say: { k: '向報社說了{s}的事', p: { s: sn(f.key) } }, why: '登出來大家才會小心', base: REF + tilt(clampN(0.1 * mad * dead, 0.02, 0.8)), lean: { face: 0.2 }, run: (w2, a2) => (tip(w2, a2, f, false) ? { k: '向報社說了' } : null) });
             out.push({ id: 'report', quiet: true, text: '去告發，要上面的人來查', say: { k: '去告發{s}', p: { s: sn(f.key) } }, why: '該有人來管', base: REF + tilt(clampN(0.08 * mad * dead, 0.02, 0.8)), lean: { face: 0.2, safe: -0.1 }, run: (w2, a2) => (report(w2, a2, f) ? { k: '去告發了' } : null) });
             return out;
         },
@@ -216,7 +218,7 @@ const DEALASK = (() => {
             const f = DEAL.factOf(w, c.fid); const o = w.agents[f?.by]; if (!f || !o || o.isDead || f.end != null) return []; const hon = honesty(a), paid = S(w).hush[a.agentId + '|' + f.id] ? 0.3 : 1, dead = f.dead ? 3 : f.harm ? 1.5 : 1, loyal = aff(a, o) >= 40 ? 0.4 : aff(a, o) <= -20 ? 2 : 1, H = hon >= 4 ? 2.5 : hon <= 1.5 ? 0.4 : 1;
             const out = [{ id: 'quiet', quiet: true, mute: true, text: '裝作不知道', say: '什麼都沒說', why: '我只是領薪水做事的', base: REF + 0.3, lean: { safe: 0.4 }, run: () => null },
                 { id: 'tell', quiet: true, text: '私下跟朋友講', say: { k: '私下說了{s}的事', p: { s: sn(f.key) } }, why: '悶在心裡難受', base: REF + tilt(clampN(0.1 * (has(a, 'gossip') ? 2 : 1) * dead * paid, 0.01, 0.8)), lean: { bond: 0.2, safe: -0.2 }, run: (w2, a2) => { const n = tell(w2, a2, f); return n ? { k: '跟 {n} 個朋友說了', p: { n } } : { k: '朋友都知道了' }; } }];
-            if (typeof PRESS !== 'undefined' && (w.press?.papers || []).length) out.push({ id: 'tip', quiet: true, mute: true, text: '匿名向報社爆料', say: '匿名寫了一封信', why: '不能讓更多人出事', base: REF + tilt(clampN(0.05 * H * dead * loyal * paid, 0.005, 0.8)), lean: { face: 0.2, safe: -0.3 }, run: (w2, a2) => (tip(w2, a2, f, true) ? { k: '匿名爆料了' } : null) });
+            if (hasPaper(w)) out.push({ id: 'tip', quiet: true, mute: true, text: '匿名向報社爆料', say: '匿名寫了一封信', why: '不能讓更多人出事', base: REF + tilt(clampN(0.05 * H * dead * loyal * paid, 0.005, 0.8)), lean: { face: 0.2, safe: -0.3 }, run: (w2, a2) => (tip(w2, a2, f, true) ? { k: '匿名爆料了' } : null) });
             out.push({ id: 'report', quiet: true, text: '去告發東家', say: { k: '去告發了{o}', p: { o: o.name } }, why: '這是害人的事', base: REF + tilt(clampN(0.025 * H * dead * loyal * paid, 0.004, 0.7)), lean: { face: 0.3, safe: -0.4 }, run: (w2, a2) => (report(w2, a2, f) ? { k: '去告發了' } : null) });
             if (c.ex) return out;
             if (paid === 1) out.push({ id: 'hush', quiet: true, mute: true, text: { k: '跟{o}要封口費', p: { o: o.name } }, say: '跟東家談了一筆錢', why: '他賺黑心錢，分我一點也不為過', base: REF + tilt(clampN(0.04 * (has(a, 'greedy') ? 2.5 : 1) * (hon <= 1.5 ? 2 : hon >= 4 ? 0.2 : 1), 0.004, 0.6)), lean: { gain: 0.5, bond: -0.3 }, run: (w2, a2) => (face(w2, a2, f, 'hush') ? { k: '開口要錢了' } : null) });
