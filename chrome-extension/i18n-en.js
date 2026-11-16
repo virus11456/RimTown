@@ -16629,6 +16629,8 @@
         '跟這種人打起來不值得。': 'Fighting someone like that isn\'t worth it.',
         '挨了打，沒有還手': 'Took the blows and didn\'t hit back',
         '跟他講不通，只有拳頭他才懂。': 'Words don\'t reach them. Fists are all they understand.',
+        '今天跟東家請了假，去赴{b}的約。': 'I took the day off from the boss to keep my plan with {b}.',
+        '請了一天假去赴{b}的約，這一天沒有工資': 'Took the day off to meet {b}, with no pay for it',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

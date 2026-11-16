@@ -100,6 +100,7 @@ const DAY = (() => {
         if (how === 'late') { mem(w, a, hg ? '頭太痛了，多躺了兩個鐘頭才去上工。' : '實在爬不起來，晚了兩個鐘頭才去上工。', {}, 3); return { k: '晚了兩個鐘頭才到' }; }
         r.bed = hg >= 2 ? 3 : (hg || (a.needs?.rest ?? 100) < 30) ? 1 : 0;
         if (how === 'leave') {
+            if (pb && inTown(w, pb)) { r.spot = pc.spot; r.with = pb.agentId; mem(w, a, '今天跟東家請了假，去赴{b}的約。', { b: pb.name }, 4, [pb.name]); return { k: '請了一天假去赴{b}的約，這一天沒有工資', p: { b: pb.name } }; }
             r.spot = whyHas(ctx, 'grief') ? 'graveyard' : (hg || whyHas(ctx, 'ill') || whyHas(ctx, 'tired')) ? 'home' : whyHas(ctx, 'fest') ? 'town_square' : rnd(['park', 'town_square', 'home']);
             mem(w, a, '今天跟東家說了一聲，請了一天假，沒有工資。', {}, 4); return { k: '請了一天假，這一天沒有工資' };
         }
@@ -246,7 +247,7 @@ const DAY = (() => {
             const seen = new Set();
             for (const [id, pc] of Object.entries(X.pact)) {
                 if (pc.d !== d || seen.has(id)) continue; seen.add(id); seen.add(pc.with); const a = w.agents[id], b = w.agents[pc.with]; if (!a || !b) continue;
-                const ca = ['skip', 'sick'].includes(X.t[id]?.work), cb = ['skip', 'sick'].includes(X.t[pc.with]?.work); const sp = SPOT[pc.spot] || '廣場';
+                const ca = ['skip', 'sick', 'leave'].includes(X.t[id]?.work), cb = ['skip', 'sick', 'leave'].includes(X.t[pc.with]?.work); /* 請假去赴約也算來了 */ const sp = SPOT[pc.spot] || '廣場';
                 if (ca && cb) { X.st.pactKept++; bump(a, b, 4); bump(b, a, 4); a.moodModifier = (a.moodModifier || 0) + 6; b.moodModifier = (b.moodModifier || 0) + 6; mem(w, a, '跟{b}翹了班去{s}，玩得很痛快。', { b: b.name, s: sp }, 6, [b.name]); mem(w, b, '跟{b}翹了班去{s}，玩得很痛快。', { b: a.name, s: sp }, 6, [a.name]); log(w, '🎣 {a}和{b}今天都沒去上工，一起跑去{s}了。', { a: a.name, b: b.name, s: sp }, a.name); }
                 else if (ca !== cb) { X.st.pactBroken++; const [came, no] = ca ? [a, b] : [b, a]; bump(came, no, -5); came.moodModifier = (came.moodModifier || 0) - 3; mem(w, came, '約好一起溜出去，{b}卻沒來，我一個人在{s}等了半天。', { b: no.name, s: sp }, 6, [no.name]); mem(w, no, '答應了{b}要溜出去，最後還是去上工了。', { b: came.name }, 4, [came.name]); }
                 delete X.pact[id]; delete X.pact[pc.with];
@@ -346,11 +347,11 @@ const DAY = (() => {
             const y = (k) => (ctx?.why || []).includes(k) ? 1 : 0; const hg = y('hang2') ? 2 : y('hang1') ? 1 : 0; const warned = DAY.S(w).warn[a.agentId] != null ? 1 : 0; const pr = poor(w, a) ? 1 : 0;
             const run = (how) => (w2, a2) => (today(w2, ctx) ? DAY.setWork(w2, a2, how, ctx) : null);
             const out = [{ id: 'go', text: '照常去上工', say: '照常去上工', why: '該做的事還是要做。', mute: !y('pact') && !hg,
-                base: 1.9 + (has(a, 'hardworking') ? 0.6 : 0) + (has(a, 'perfectionist') ? 0.3 : 0) + pr * 0.6 + warned * 0.8 - (hg === 2 ? 0.9 : hg ? 0.3 : 0) - y('tired') * 0.4 - y('low') * 0.4 - y('ill') * 0.3 - y('pact') * 1.0 - y('fest') * 0.3 - y('sour') * 0.5 - y('grief') * 0.5 - y('lazy') * 0.5, lean: { safe: 0.5, gain: 0.4 }, run: run('go') }];
+                base: 1.9 + (has(a, 'hardworking') ? 0.6 : 0) + (has(a, 'perfectionist') ? 0.3 : 0) + pr * 0.6 + warned * 0.8 - (hg === 2 ? 0.9 : hg ? 0.3 : 0) - y('tired') * 0.4 - y('low') * 0.4 - y('ill') * 0.3 - y('pact') * 1.4 - y('fest') * 0.3 - y('sour') * 0.5 - y('grief') * 0.5 - y('lazy') * 0.5, lean: { safe: 0.5, gain: 0.4 }, run: run('go') }];
             if (hg || y('tired')) out.push({ id: 'late', text: '多睡兩個鐘頭，晚點再去', say: '晚點再去上工', why: '這樣子去了也做不了事，多躺一下。', base: 1.3 + (hg === 2 ? 0.5 : 0) - warned * 0.4, lean: { joy: 0.3, safe: 0.3 }, run: run('late') });
             out.push({ id: 'leave', text: '跟東家說一聲，請一天假（沒有工資）', say: '請了一天假', why: '今天真的不行，老實跟東家說。', base: 0.4 + y('ill') * 0.9 + y('grief') * 1.0 + (hg === 2 ? 0.5 : 0) + y('low') * 0.4 + y('fest') * 0.3 - pr * 0.4, lean: { safe: 0.3, joy: 0.3, face: 0.2 }, run: run('leave') });
-            if (!y('ill')) out.push({ id: 'sick', text: '跟東家說自己病了（其實沒有）', say: '裝病請假', why: '說實話不好聽，就說身體不舒服吧。', base: 0.3 + (hg ? 0.5 : 0) + y('pact') * 0.7 + y('fest') * 0.4 + y('lazy') * 0.4 - (has(a, 'kind') ? 0.2 : 0) - warned * 0.3, lean: { joy: 0.5, face: -0.3 }, run: run('sick') });
-            out.push({ id: 'skip', text: '不說一聲，今天就不去了', say: '沒去上工，也沒說一聲', why: '今天就是不想去，管他的。', base: 0.2 + y('pact') * 1.2 + y('sour') * 0.6 + y('lazy') * 0.5 + y('low') * 0.3 + (hg === 2 ? 0.3 : 0) + y('fest') * 0.3 + (hasV(a, '自由') ? 0.3 : 0) - warned * 1.0 - pr * 0.3, lean: { joy: 0.6, safe: -0.5, gain: -0.3 }, run: run('skip') });
+            if (!y('ill')) out.push({ id: 'sick', text: '跟東家說自己病了（其實沒有）', say: '裝病請假', why: '說實話不好聽，就說身體不舒服吧。', base: 0.3 + (hg ? 0.5 : 0) + y('pact') * 1.0 + y('fest') * 0.4 + y('lazy') * 0.4 - (has(a, 'kind') ? 0.2 : 0) - warned * 0.3, lean: { joy: 0.5, face: -0.3 }, run: run('sick') });
+            out.push({ id: 'skip', text: '不說一聲，今天就不去了', say: '沒去上工，也沒說一聲', why: '今天就是不想去，管他的。', base: 0.2 + y('pact') * 1.7 + y('sour') * 0.6 + y('lazy') * 0.5 + y('low') * 0.3 + (hg === 2 ? 0.3 : 0) + y('fest') * 0.3 + (hasV(a, '自由') ? 0.3 : 0) - warned * 1.0 - pr * 0.3, lean: { joy: 0.6, safe: -0.5, gain: -0.3 }, run: run('skip') });
             return out;
         },
     }));
