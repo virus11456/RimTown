@@ -25,6 +25,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     });
     const r = await page.evaluate(async () => {
       const inp = document.getElementById('chat-input'); window.__kb = 336; inp.focus(); window.visualViewport.dispatchEvent(new Event('resize')); await new Promise(r => setTimeout(r, 700));
+      { let last = -1, same = 0; for (let i = 0; i < 20 && same < 2; i++) { await new Promise(r => setTimeout(r, 150)); const tp = Math.round(document.getElementById('rimtown-sidebar').getBoundingClientRect().top); same = tp === last ? same + 1 : 0; last = tp; } } // 機器忙的時候 0.7 秒還沒排好版：等聊天框的位置停下來再量
       const sb = document.getElementById('rimtown-sidebar').getBoundingClientRect(); const ir = inp.getBoundingClientRect(); const kbTop = innerHeight - 336;
       const out = { kb: document.body.classList.contains('rt-kb-open'), sbTop: Math.round(sb.top), sbBottom: Math.round(sb.bottom), kbTop, inBottom: Math.round(ir.bottom), scrollY: scrollY };
       inp.blur(); window.__kb = 0; window.visualViewport.dispatchEvent(new Event('resize')); await new Promise(r => setTimeout(r, 500));

@@ -25,6 +25,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const s = await page.evaluate(() => { const app = window.rimtownApp, w = app.world; app._setPaused?.(true); const step = () => { w.paused = false; w.tick(); w.paused = true; };
       const bad = []; for (let d = 0; d < 3; d++) { let g = 0; while (!(w.clock.hour === 21 && w.clock.minute === 0) && g++ < 200) step();
         for (let i = 0; i < 32; i++) { step(); const h = w.clock.hour; for (const a of Object.values(w.agents)) { if (a.isDead || a.isPlayer || a.personality.traits.includes('night_owl')) continue; if ((a.needs?.rest ?? 0) >= 80) continue; // 睡飽還醒著的人本來就可能夜遊
+          { const D = (typeof DAY !== 'undefined' && DAY.S) ? DAY.S(w) : null; const r = D?.t?.[a.agentId], y = D?.y?.[a.agentId]; if (r?.eve === 'drink' || (y && (y.until || 0) > 24)) continue; } // v11.2.0 起今晚自己選了去酒館喝酒的人會待到喝完（那是他的決定，不是作息出錯）
           if (a.currentLocation !== a.homeLocation && !a._exploring && !a.isTraveling && !a.traveling) bad.push(`${w.clock.hour}:${w.clock.minute} ${a.name} ${a.activity}@${a.currentLocation}`); } } }
       return bad; });
     ok(s.length <= 3, '睡前一小時到天亮,一般村民待在家', s.slice(0, 6));
