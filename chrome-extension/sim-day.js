@@ -35,7 +35,7 @@ const DAY = (() => {
     const on = (w) => !!(w && typeof DECIDE !== 'undefined' && DECIDE.on(w));
     const SPOT = { park: '公園', town_square: '廣場', tavern: '酒館', library: '圖書館', forest: '森林', graveyard: '墓園', home: '家裡' };
     const CUP = 1.5; // 一杯酒的價錢（照物價調整）
-    const ST0 = { asked: 0, go: 0, late: 0, leave: 0, sick: 0, skip: 0, overslept: 0, drink: 0, more: 0, close: 0, hang1: 0, hang2: 0, meal: 0, pact: 0, pactKept: 0, pactBroken: 0, caught: 0, scold: 0, dock: 0, fire: 0, let: 0, brawl: 0, hosp: 0, free: 0, planLed: 0, invite: 0, inviteNo: 0 };
+    const ST0 = { asked: 0, go: 0, late: 0, leave: 0, sick: 0, skip: 0, overslept: 0, drink: 0, more: 0, close: 0, hang1: 0, hang2: 0, meal: 0, pact: 0, pactKept: 0, pactBroken: 0, caught: 0, scold: 0, dock: 0, fire: 0, let: 0, brawl: 0, hosp: 0, free: 0, planLed: 0, invite: 0, inviteNo: 0, chat: 0, sour: 0, spark: 0 };
 
     function S(w) {
         if (!w.dayx || typeof w.dayx !== 'object') w.dayx = {};
@@ -307,7 +307,7 @@ const DAY = (() => {
         for (const id in R) { const v = R[id].affinity || 0; if (v < 30 && v > -30) continue; const o = w.agents[id]; if (!o || o.isDead || o.activity === 'sleeping') continue; const L = o.currentLocation; if (v >= 30) friends[L] = (friends[L] || 0) + 1; else foes[L] = (foes[L] || 0) + 1; }
         let piety = 0; try { piety = typeof FAITH !== 'undefined' && w.faith ? (FAITH.pietyOf(w, a) || 0) : 0; } catch (e) {}
         let habit = null; try { habit = typeof WAYS !== 'undefined' ? WAYS.routineOf(w, a)?.s : null; } catch (e) {}
-        let planLoc = null; try { if (a.dailyPlan?.llm) { const cur = a.getCurrentPlanStep(w); const txt = cur ? `${cur.goal} ${cur.step}` : ''; if (txt) { for (const k of Object.keys(PLANWORD)) { const nm = w.townMap?.locations?.[k]?.name; if (PLANWORD[k].test(txt) || (nm && txt.includes(nm))) { planLoc = k; break; } } } } } catch (e) {}
+        let planLoc = null; try { if (a.dailyPlan?.llm) { const cur = a.getCurrentPlanStep(w); const txt = cur ? `${cur.goal} ${cur.step}` : ''; if (txt) { for (const k of Object.keys(PLANWORD)) { const nm = w.townMap?.locations?.[k]?.name; if (hasLoc(w, k) && (PLANWORD[k].test(txt) || (nm && txt.includes(nm)))) { planLoc = k; break; } } } } } catch (e) {}
         return { friends, foes, piety, habit, planLoc, tired: (a.needs?.rest ?? 60) < 35, bad: (w.weather?.moodModifier || 0) <= -5, hang: hangOf(w, a) };
     }
     function freeScore(w, a, act, loc, c) {
@@ -322,7 +322,7 @@ const DAY = (() => {
         else if (loc === 'chapel') s += c.piety >= 60 ? 0.8 : c.piety >= 30 ? 0 : -0.6;
         else if (loc === 'home') s += (hasV(a, '家庭') ? 0.4 : 0) + (c.tired ? 0.5 : 0) + (c.bad ? 0.5 : 0);
         else s += c.bad ? -0.6 : (hasV(a, '自然') && loc !== 'town_square' ? 0.4 : 0);
-        if (c.habit === loc) s += 0.5; if (c.planLoc === loc) s += 1.2;
+        if (c.habit === loc) s += 0.5; if (c.planLoc === loc) s += 2;
         return s + Math.min(0.9, (c.friends[L] || 0) * 0.3) - Math.min(1.2, (c.foes[L] || 0) * 0.6);
     }
     function freePick(w, a, night) {
@@ -353,6 +353,22 @@ const DAY = (() => {
         try { const nm = typeof locName === 'function' ? locName(w, spot) : (SPOT[spot] || spot); const d = typeof tpl === 'function' ? tpl('{me}約了{target}一起去{spot}', { me: a.name, target: o.name, spot: nm }) : null;
             if (d) { w.logMessageT('social', '{d}', { d }, a.name, o.name); a.memory.addT(w.tickCount, w.clock.timeStr, 'social', d.k, d.p, 5, [o.name]); o.memory.addT(w.tickCount, w.clock.timeStr, 'social', d.k, d.p, 5, [a.name]); } } catch (e) {}
         return true;
+    }
+    // 聊著聊著不歡而散：看兩個人合不合、當下的狀態（以前每次聊天固定 12%）
+    const CLASHES = [['abrasive', 'shy'], ['abrasive', 'kind'], ['pessimist', 'optimist'], ['lazy', 'hardworking'], ['lazy', 'perfectionist'], ['jealous', 'charismatic'], ['neurotic', 'neurotic']];
+    function sours(w, a, b) {
+        const X = S(w); X.st.chat++; const r = rec(w, a); const key = 's' + b.agentId; if (r[key]) return false; let tn = 0;
+        if (has(a, 'abrasive') || has(b, 'abrasive')) tn += 0.25; if (CLASHES.some(([x, y]) => (has(a, x) && has(b, y)) || (has(a, y) && has(b, x)))) tn += 0.2;
+        for (const x of [a, b]) { if ((x.mood ?? 50) < 35) tn += 0.15; if (hangOf(w, x)) tn += 0.15; if ((x.needs?.hunger ?? 60) < 30) tn += 0.1; if ((x.needs?.rest ?? 60) < 25) tn += 0.1; if (has(x, 'kind')) tn -= 0.15; }
+        const v = Math.min(aff(a, b), aff(b, a)); if (v < 0) tn += 0.2; else if (v >= 50) tn -= 0.2;
+        if (tn + (Math.random() - 0.5) * 0.2 < 0.55) return false; r[key] = 1; X.st.sour++; return true; // 同一對一天最多鬧僵一次
+    }
+    // 聊出一點心動：看兩個人的性子合不合、交情夠不夠（以前每次聊天擲骰 10%～30%）。回傳心動多少，0 就是沒有
+    function sparks(w, a, b) {
+        const X = S(w); const key = 'sp' + [a.agentId, b.agentId].sort().join('|'); const rom = has(a, 'romantic') || has(b, 'romantic');
+        const chem = (has(a, 'shy') && has(b, 'charismatic')) || (has(b, 'shy') && has(a, 'charismatic')) || (has(a, 'creative') && has(b, 'creative'));
+        if (!rom && !chem && Math.min(aff(a, b), aff(b, a)) < 35) return 0; const gap = rom ? 2 : chem ? 3 : 6; if (X.inv[key] != null && X.d - X.inv[key] < gap) return 0;
+        X.inv[key] = X.d; X.st.spark++; return rom ? 2 : 1;
     }
     // 說閒話：愛說話的人逢人就說，其他人只跟要好的說（以前每次三成機率）
     const gossips = (w, a, o) => has(a, 'gossip') || (aff(a, o) >= 40 && !has(a, 'stoic'));
@@ -390,7 +406,7 @@ const DAY = (() => {
         const X = S(w); const names = (f) => Object.entries(X.t).filter(([, r]) => f(r)).map(([id]) => w.agents[id]?.name).filter(Boolean);
         return { off: names(r => ['skip', 'sick', 'leave'].includes(r.work)), late: names(r => r.work === 'late'), drink: names(r => r.eve === 'drink'), hang: Object.keys(X.hang).filter(id => X.hang[id].d === X.d).map(id => w.agents[id]?.name).filter(Boolean), st: { ...X.st } };
     }
-    return { S, on, roll, tick, steer, workMult, noPay, reasons, bossOf, works, hangOf, strikes, setWork, setEve, setLast, setPact, punish, round, strike, brawl, hospitalize, freePick, freeScore, freeCtx, pickTalk, invite, gossips, planAsk, fromPlan, line, view, SPOT, CUP, eveOf, bedOf };
+    return { S, on, roll, tick, steer, workMult, noPay, reasons, bossOf, works, hangOf, strikes, setWork, setEve, setLast, setPact, punish, round, strike, brawl, hospitalize, freePick, freeScore, freeCtx, pickTalk, invite, gossips, sours, sparks, planAsk, fromPlan, line, view, SPOT, CUP, eveOf, bedOf };
 })();
 
 // ================= 選擇點 =================

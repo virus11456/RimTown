@@ -1776,7 +1776,8 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
             ];
             pickRandom(normalTopics)();
 
-            if (Math.random() < 0.12) {
+            const dayOn0 = typeof DAY !== 'undefined' && DAY.on(world); // v11.3.0 會不會聊僵：看兩個人合不合與當下的狀態，不擲骰
+            if (dayOn0 ? DAY.sours(world, agentA, agentB) : Math.random() < 0.12) {
                 this._addConflictEscalation(lines, agentA, agentB, world, tA, tB);
                 affA = Math.min(affA, randInt(-4, -1));
                 affB = Math.min(affB, randInt(-4, -1));
@@ -1791,7 +1792,8 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                                  (tB.includes('shy') && tA.includes('charismatic')) ||
                                  (tA.includes('creative') && tB.includes('creative'));
             const sparkChance = hasRomanticTrait ? 0.3 : hasChemistry ? 0.2 : 0.1;
-            if (Math.random() < sparkChance) {
+            if (typeof DAY !== 'undefined' && DAY.on(world)) { const sp = DAY.sparks(world, agentA, agentB); romA += sp; romB += sp; } // v11.3.0 心動看合不合與交情，不擲骰
+            else if (Math.random() < sparkChance) {
                 const spark = randInt(1, hasRomanticTrait ? 3 : hasChemistry ? 2 : 2);
                 romA += spark; romB += Math.max(0, spark - randInt(0,1));
             }
