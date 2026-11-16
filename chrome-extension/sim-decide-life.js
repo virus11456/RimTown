@@ -7,7 +7,7 @@
 //   家裡的房子舊了(renovate)        先不翻修／自己出錢翻修／跟銀行借錢翻修
 //   要不要奉獻(tithe)               先不奉獻／隨手奉獻／大筆捐獻
 //   跟某人結怨很深(scheme)          忍著／栽贓／破壞他的工作／私下拉票／搶功
-//   想不想自己開店(startup)         再想想／開店
+//   想不想自己開店(startup)         再想想／開哪一種店(v11.1.0 自己挑)
 //   別鎮開高薪來挖角(poach)         留下／搬過去                          ← 對手鎮來挖角時才會遇到
 // 結算全部在原本的系統裡（sim-invest.js、sim-shares.js、sim-housing.js、sim-bank.js、sim-faith.js、sim-dark.js、sim-biz.js、sim-rival.js），這裡不動任何數字。
 // AI 開著由 AI 依帳本選（也可以選「其他」）；AI 不在時算每個選項的傾向分數（個性、處境、交情），不是固定機率。
@@ -191,18 +191,27 @@
         title: '想不想自己開店', cool: 10, pri: 1.2,
         when(w, a) { return startInfo(w, a) ? {} : null; },
         facts(w, a) {
-            const I = startInfo(w, a); if (!I) return '';
-            return fill('鎮上現在有 {k} 家店，還容得下新店。你想開的是{ty}，本錢 {n} 銀幣；你身上有 {c} 銀幣。{how}開了店每天有進帳，但生意不好也可能撐不下去。',
-                { k: BZ().S(w).shops.length, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
+            const I = startInfo(w, a); if (!I) return ''; const B = BZ(), C = I.counts || {};
+            // v11.1.0 鎮上各種店有幾家寫給他：哪種已經很多、哪種還沒人開，自己挑
+            const have = Object.keys(B.TYPES).filter(k => C[k] > 0).sort((x, y) => C[y] - C[x]), none = Object.keys(B.TYPES).filter(k => !C[k]);
+            const list = (have.length ? { k: '（{l}）', p: { l: { raw: have.map(k => t(B.TYPES[k].zh) + ' ' + C[k]).join(t('、')) } } } : { raw: '' });
+            const lack = none.length ? { k: '還沒有人開的：{l}。', p: { l: { raw: none.map(k => t(B.TYPES[k].zh)).join(t('、')) } } } : { raw: '' };
+            return fill('鎮上現在有 {k} 家店{list}，還容得下新店。{lack}你最拿手的是{ty}，也可以開別種；本錢都是 {n} 銀幣，你身上有 {c} 銀幣。{how}同一種店開得越多，客人分得越散。開了店每天有進帳，但生意不好也可能撐不下去。',
+                { k: B.S(w).shops.length, list, lack, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
         },
         options(w, a) {
             const I = startInfo(w, a); if (!I) return []; const B = BZ();
+            const base0 = 0.4 + (amb(w, a) === 'rich' ? 0.7 : 0) + (has(a, 'creative') ? 0.4 : 0) + (a.job?.key === 'trader' ? 0.5 : 0) + Math.min(0.5, cash(w, a) / 150) - (I.loan ? 0.3 : 0);
+            // v9.30.0 沒開成的原因照實寫(以前一律寫「本錢沒湊齊」):店位滿了、銀行借不到、還在等銀行家回話、情況變了
+            const run = (key) => (w, a) => { const R = B.startTry ? B.startTry(w, a, key) : { shop: B.start(w, a) }; return { k: R.shop ? '店開張了' : (START_WHY[R.why] || '本錢沒湊齊，沒開成') }; };
+            const kinds = (I.kinds && I.kinds.length) ? I.kinds : [{ key: I.key, zh: I.type, n: 0, own: true }];
             return [
                 { id: 'wait', quiet: true, mute: true, text: '再想想，先做好現在的工作', why: '現在的日子過得去', base: 1.5, lean: { safe: 0.4 }, run: () => null },
-                { id: 'open', text: { k: '開一家{ty}', p: { ty: I.type } }, why: '替別人做事，不如自己當老闆',
-                    base: 0.4 + (amb(w, a) === 'rich' ? 0.7 : 0) + (has(a, 'creative') ? 0.4 : 0) + (a.job?.key === 'trader' ? 0.5 : 0) + Math.min(0.5, cash(w, a) / 150) - (I.loan ? 0.3 : 0), lean: { gain: 0.6, safe: -0.4 },
-                    // v9.30.0 沒開成的原因照實寫(以前一律寫「本錢沒湊齊」):店位滿了、銀行借不到、還在等銀行家回話、情況變了
-                    run: (w, a) => { const R = B.startTry ? B.startTry(w, a) : { shop: B.start(w, a) }; return { k: R.shop ? '店開張了' : (START_WHY[R.why] || '本錢沒湊齊，沒開成') }; } },
+                // 拿手的那一種照舊；別種少一點把握。鎮上已經有同一種的，每多一家少一點；還沒人開的多一點
+                // 代號一律帶店種(open_studio、open_inn…)。真模型實測時拿手的那一種叫 open、別種叫 open_inn，有人選了 open 理由卻寫要開小酒館：代號分不清楚
+                ...kinds.map(x => ({ id: 'open_' + x.key, text: { k: '開一家{ty}', p: { ty: x.zh } },
+                    why: x.own ? (x.n >= 3 ? '這是我最拿手的，別人開得再多我也不怕' : '替別人做事，不如自己當老闆') : (x.n === 0 ? '鎮上還沒有這種店，我來開第一家' : '這種店鎮上還不多，有得做'),
+                    base: base0 + (x.own ? 0 : -0.35) + (x.n === 0 ? 0.2 : -Math.min(0.7, 0.12 * x.n)), lean: { gain: 0.6, safe: -0.4 }, run: run(x.key) })),
             ];
         },
     });
