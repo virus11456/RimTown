@@ -311,6 +311,10 @@ class ProposalSystem {
     _cool(day, key, days = 12) { return (day - (this.cooldown[key] || -999)) >= days && !this.pending().some(p => p.key === key); }
     _candidates(w, day) {
         const out = [];
+        // v11.2.1 這個函式裡問了二十幾種「這件事最近提過沒、是不是還掛著」（結怨的每一對都要問一次），每問一次就把所有提案重篩一遍。
+        // 函式裡只列候選，不會新增提案、不會改狀態或冷卻：掛著的提案先整理成一張表，之後查表。答案跟 this._cool 一樣
+        const _pend = SCAN.off() ? null : new Set(this.pending().map(p => p.key));
+        const cool = (key, days = 12) => _pend ? ((day - (this.cooldown[key] || -999)) >= days && !_pend.has(key)) : this._cool(day, key, days);
         const sp = w.stockpile; const silver = sp?.get?.('silver') || 0, food = sp?.get?.('food') || 0;
         const npcs = this._npcs(w); const avgMood = npcs.length ? npcs.reduce((s, a) => s + (a.mood || 0), 0) / npcs.length : 0;
         const BT = (typeof BUILDING_TEMPLATES !== 'undefined') ? BUILDING_TEMPLATES : {};
@@ -318,7 +322,7 @@ class ProposalSystem {
         const builtNames = new Set([...(w.buildings?.completed || []), ...(w.buildings?.projects || [])].map(p => p.name));
         // 建設
         for (const [key, tm] of Object.entries(BT)) {
-            if (built.has(key) || builtNames.has(tm.name) || !this._cool(day, 'build:' + key)) continue;
+            if (built.has(key) || builtNames.has(tm.name) || !cool('build:' + key)) continue;
             if (w.research?.isUnlocked && !w.research.isUnlocked(key)) continue; // v6.40.0 還沒研究到的建築不會被提
             if (!this._obtainable(w, tm.costs)) continue; // v7.2.1 材料拿不到就不提
             if (typeof HEALTH !== 'undefined' && HEALTH.canBuild && !HEALTH.canBuild(w, key)) continue; // v7.4.0 研究院要城市以上
@@ -335,7 +339,7 @@ class ProposalSystem {
         // 工廠
         const FT = (typeof FACTORIES !== 'undefined') ? FACTORIES : {};
         if (w.processing) for (const [key, def] of Object.entries(FT)) {
-            if (w.processing.builtFactories?.[key] || !this._cool(day, 'factory:' + key, 15)) continue;
+            if (w.processing.builtFactories?.[key] || !cool('factory:' + key, 15)) continue;
             if (w.research?.isFactoryUnlocked && !w.research.isFactoryUnlocked(key)) continue; // v6.40.0
             const jobs = Object.entries(PROPOSAL_JOB_FACTORIES).filter(([, ks]) => ks.includes(key)).map(([j]) => j);
             const afford = Object.entries(def.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.6);
@@ -346,7 +350,7 @@ class ProposalSystem {
         const CP = (typeof COUNCIL_PROPOSALS !== 'undefined') ? COUNCIL_PROPOSALS : [];
         const active = new Set((w.council?.activeDecrees || []).map(d => d.id));
         for (const cp of CP) {
-            if (active.has(cp.id) || !this._cool(day, 'policy:' + cp.id, 20)) continue;
+            if (active.has(cp.id) || !cool('policy:' + cp.id, 20)) continue;
             if ((w.questSystem?.reputation || 0) + 20 < (cp.minRep || 0)) continue;
             const cost = {}; if ((cp.effects.silver || 0) < 0) cost.silver = -cp.effects.silver; if ((cp.effects.wood || 0) < 0) cost.wood = -cp.effects.wood; if ((cp.effects.stone || 0) < 0) cost.stone = -cp.effects.stone;
             const jobs = cp.category === 'defense' ? ['guard', 'mayor'] : cp.category === 'economy' ? ['trader', 'mayor', 'blacksmith'] : cp.category === 'culture' ? ['researcher', 'priest'] : cp.category === 'nature' ? ['farmer', 'priest'] : ['doctor', 'priest', 'mayor'];
@@ -354,7 +358,7 @@ class ProposalSystem {
         }
         // 節慶贊助
         const fs = w.festivals?.sponsorStatus?.(w);
-        if (fs?.open && !fs.sponsored && this._cool(day, 'festival', 3)) out.push({ kind: 'festival', key: 'festival', weight: silver >= fs.cost ? 2.5 : 0.6, jobs: ['priest', 'cook', 'trader', 'mayor'], make: (a) => ({ kind: 'festival', key: 'festival', tk: '出錢把{fest}辦得更熱鬧', tp: { fest: fs.name }, dk: '從公庫撥 {n} 銀幣贊助{fest}：籌備更快、全鎮心情與聲望都會漲。', dp: { n: fs.cost, fest: fs.name }, cost: { silver: fs.cost }, category: 'culture', jobBias: ['priest', 'cook'] }) });
+        if (fs?.open && !fs.sponsored && cool('festival', 3)) out.push({ kind: 'festival', key: 'festival', weight: silver >= fs.cost ? 2.5 : 0.6, jobs: ['priest', 'cook', 'trader', 'mayor'], make: (a) => ({ kind: 'festival', key: 'festival', tk: '出錢把{fest}辦得更熱鬧', tp: { fest: fs.name }, dk: '從公庫撥 {n} 銀幣贊助{fest}：籌備更快、全鎮心情與聲望都會漲。', dp: { n: fs.cost, fest: fs.name }, cost: { silver: fs.cost }, category: 'culture', jobBias: ['priest', 'cook'] }) });
         // 產業(遊戲在等人選產業時,由村民提)
         const IND = (typeof INDUSTRIES !== 'undefined') ? INDUSTRIES : {};
         // v6.40.1 已經有一件產業案在等(投票中／擱置／已批准)就不再提第二件,避免兩案搶同一個名額、後者執行時才失敗
@@ -363,19 +367,19 @@ class ProposalSystem {
             // v11.0.1 名額空著越久越虧：鎮越大、做這行的人越多，越會有人出來提（以前固定 1.6，城市裡常常空著一個名額好幾季）
             const tl0 = (typeof TIERS !== 'undefined' && TIERS.S) ? (TIERS.S(w).lv || 0) : 0, all0 = this._npcs(w);
             for (const [key, def] of Object.entries(IND)) {
-                if (w.industry.industries?.[key] || !this._cool(day, 'industry:' + key, 6)) continue;
+                if (w.industry.industries?.[key] || !cool('industry:' + key, 6)) continue;
                 const n0 = all0.filter(a => a.job?.key === def.npcJob).length;
                 out.push({ kind: 'industry', key: 'industry:' + key, weight: Math.min(4, 1.6 + (n0 >= 4 ? 1.2 : 0) + tl0 * 0.6), jobs: [def.npcJob].filter(Boolean), make: (a) => ({ kind: 'industry', key: 'industry:' + key, refKey: key, tk: '把{name}做成鎮上的主業', tp: { name: def.name }, dk: '{who}說自己這行做得來，想帶幾個人一起把它做大。', dp: { who: a.name }, cost: {}, category: 'economy', jobBias: [def.npcJob] }) });
             }
         }
         // 探險
         if (w.exploration) for (const [zid, z] of Object.entries(w.exploration.discoveredZones || {})) {
-            if (!z?.discovered || !w.exploration.canSendExpedition?.(zid) || !this._cool(day, 'exp:' + zid, 10)) continue;
+            if (!z?.discovered || !w.exploration.canSendExpedition?.(zid) || !cool('exp:' + zid, 10)) continue;
             const zone = (typeof EXPLORATION_ZONES !== 'undefined') ? EXPLORATION_ZONES.find(x => x.id === zid) : null; if (!zone) continue;
             out.push({ kind: 'expedition', key: 'exp:' + zid, weight: 0.9, jobs: ['guard', 'researcher', 'miner'], pred: (a) => this._hasValue(a, '冒險'), make: (a) => ({ kind: 'expedition', key: 'exp:' + zid, refKey: zid, tk: '組隊去{zone}探險', tp: { zone: zone.name }, dk: '{who}想帶兩三個人去{zone}走一趟，約 {d} 天來回，可能帶回物資或發現。', dp: { who: a.name, zone: zone.name, d: zone.distance || 2 }, cost: {}, category: 'freedom', jobBias: ['guard', 'researcher'] }) });
         }
         // 宴席
-        if (food >= 120 && avgMood < 58 && this._cool(day, 'feast', 10)) out.push({ kind: 'feast', key: 'feast', weight: 1.4, jobs: ['cook', 'tavern', 'trader'], make: (a) => ({ kind: 'feast', key: 'feast', tk: '辦一桌全鎮的宴席', tp: {}, dk: '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。', dp: { who: a.name }, cost: { food: 40 }, category: 'welfare', jobBias: ['cook'] }) });
+        if (food >= 120 && avgMood < 58 && cool('feast', 10)) out.push({ kind: 'feast', key: 'feast', weight: 1.4, jobs: ['cook', 'tavern', 'trader'], make: (a) => ({ kind: 'feast', key: 'feast', tk: '辦一桌全鎮的宴席', tp: {}, dk: '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。', dp: { who: a.name }, cost: { food: 40 }, category: 'welfare', jobBias: ['cook'] }) });
         // 救濟
         // v6.87.0 救濟也看錢包:身上快沒錢的人優先(以前只看心情,錢也沒發到人手上)
         const bal = (a) => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99);
@@ -383,22 +387,22 @@ class ProposalSystem {
         // v6.87.0 公庫生活補助:公庫錢多、窮人也多時,從公庫發錢給身上沒錢的人(錢不再卡在公庫)
         const poorList = npcs.filter(a => bal(a) < 8);
         const TRS = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null; const canGive = TRS ? TRS.budget(w) * 0.35 : silver * 0.35; // v10.7.0 公庫先留安全存量，超過的部分才拿來發補助
-        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && (TRS ? canGive >= 5 * poorList.length : silver >= 200 + npcs.length * 6) && this._cool(day, 'stipend', 10)) {
+        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && (TRS ? canGive >= 5 * poorList.length : silver >= 200 + npcs.length * 6) && cool('stipend', 10)) {
             const per = Math.max(5, Math.min(20, Math.floor(canGive / poorList.length))); const total = per * poorList.length;
             out.push({ kind: 'stipend', key: 'stipend', weight: 1.8, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
         }
         // v6.87.0 最低工資是政治選擇,不是天生就有:做滿一天扣完稅還不夠過活的人一多,底層勞工會提,要投票通過才生效(錢從公庫出,有錢人多半反對)
-        if (typeof WALLET !== 'undefined' && w.wallet && !(w.wallet.minWage > 0) && this._cool(day, 'minwage', 30)) {
+        if (typeof WALLET !== 'undefined' && w.wallet && !(w.wallet.minWage > 0) && cool('minwage', 30)) {
             const Wt = w.wallet.tax || 0; const working = npcs.filter(a => WALLET.WAGE[a.job?.key]); const PL = typeof INFL !== 'undefined' ? INFL.p(w) : 1, WI = WALLET.wageIdx ? WALLET.wageIdx() : 1; const under = working.filter(a => WALLET.WAGE[a.job.key] * WI * (1 - Wt) < WALLET.FLOOR * PL); // v8.9.0 夠不夠過活要看物價
             if (working.length >= 6 && under.length >= Math.max(3, Math.ceil(working.length * 0.25))) {
                 const underN = under.length, yearCost = Math.round(under.reduce((t2, a) => t2 + (WALLET.FLOOR - WALLET.WAGE[a.job.key] * (1 - Wt)), 0) * 60); // v10.8.0 人數與金額當場算好：以前等到真的成案才算，這中間有人丟了工作就會讀到空的職業而出錯
                 out.push({ kind: 'minwage', key: 'minwage', weight: w.union?.on ? 3 : 1.2, jobs: ['farmer', 'miner', 'priest', 'tailor', 'guard'], pred: (a) => bal(a) < 15 || this._hasValue(a, '社群') || !!w.union?.members?.[a.agentId], /* v6.93.0 有工會時會員常提 */ make: () => ({ kind: 'minwage', key: 'minwage', tk: '訂定最低工資', tp: {}, dk: '做滿一天、扣完稅還不夠吃穿的有 {n} 人。提議扣稅後每天至少領 {f} 銀幣，差額由公庫補，一年約多花 {y} 銀幣。', dp: { n: underN, f: WALLET.FLOOR, y: yearCost }, cost: {}, effects: {}, category: 'welfare' }) });
             }
         }
-        if (low && silver >= 60 && this._cool(day, 'relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
+        if (low && silver >= 60 && cool('relief:' + low.agentId, 15)) out.push({ kind: 'relief', key: 'relief:' + low.agentId, weight: 1.6, jobs: ['priest', 'doctor', 'mayor'], pred: (a) => this._hasTrait(a, 'kind'), make: (a) => ({ kind: 'relief', key: 'relief:' + low.agentId, refKey: low.agentId, tk: '撥一筆救濟金給{name}', tp: { name: low.name }, dk: '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。', dp: { name: low.name, who: a.name }, cost: { silver: 20 }, category: 'welfare', jobBias: ['priest', 'doctor'] }) });
         // 考驗對策
         const tr = w.trials?.current;
-        if (tr && tr.status === 'active' && this._cool(day, 'trial:' + tr.type, 8)) {
+        if (tr && tr.status === 'active' && cool('trial:' + tr.type, 8)) {
             const M = {
                 famine:   { jobs: ['farmer', 'cook'], tk: '全鎮加班下田', dk: '糧荒當前，{who}提議接下來半個月大家都多下田：農產 +30%。', cost: {}, effects: { farm_bonus: 0.3 } },
                 plague:   { jobs: ['doctor', 'priest'], tk: '組一支採藥隊', dk: '瘟疫蔓延，{who}提議花 30 銀幣組採藥隊進山：帶回 12 份草藥。', cost: { silver: 30 }, gain: { herbs: 12 } },
@@ -410,24 +414,24 @@ class ProposalSystem {
         // ---------- v6.30.0 人際類 ----------
         // 調解:鎮上有一對結了怨的人(好感 ≤ −40),由神父／鎮長／醫生或心軟的人出面
         {
-            let worst = null;
+            let worst = null; const inTown = SCAN.off() ? npcs : new Set(npcs); const isIn = (y) => inTown === npcs ? npcs.includes(y) : inTown.has(y); // v11.2.1 每一對結怨的人都把全鎮名單從頭找一遍 → 查表
             for (const x of npcs) for (const [tid, r] of Object.entries(x.relationships?.relationships || {})) {
-                if ((r.affinity || 0) > -40) continue; const y = w.agents[tid]; if (!y || y.isPlayer || y.isDead || !npcs.includes(y)) continue;
-                const key = [x.agentId, tid].sort().join('|'); if (!this._cool(day, 'mediate:' + key, 20)) continue;
+                if ((r.affinity || 0) > -40) continue; const y = w.agents[tid]; if (!y || y.isPlayer || y.isDead || !isIn(y)) continue;
+                const key = [x.agentId, tid].sort().join('|'); if (!cool('mediate:' + key, 20)) continue;
                 if (!worst || r.affinity < worst.aff) worst = { x, y, aff: r.affinity, key };
             }
             if (worst) out.push({ kind: 'mediate', key: 'mediate:' + worst.key, weight: 1.5, jobs: ['priest', 'mayor', 'doctor'], pred: (a) => a.agentId !== worst.x.agentId && a.agentId !== worst.y.agentId && (this._hasTrait(a, 'kind') || this._hasValue(a, '和平')),
                 make: (a) => ({ kind: 'mediate', key: 'mediate:' + worst.key, refKey: worst.key, pair: [worst.x.agentId, worst.y.agentId], tk: '替{a}和{b}調解', tp: { a: worst.x.name, b: worst.y.name }, dk: '{a}和{b}結怨很久了，{who}想擺一桌把兩人請來把話說開：花 10 銀幣，成了的話兩人關係回暖、全鎮氣氛也好一點。', dp: { a: worst.x.name, b: worst.y.name, who: a.name }, cost: { silver: 10 }, category: 'welfare', jobBias: ['priest', 'mayor', 'doctor'] }) });
         }
         // 表揚:技能最強或提案落實最多的人,鎮長／神父／學者提議公開表揚(士氣低時更想辦)
-        if (this._cool(day, 'honor', 20) && npcs.length >= 4) {
-            const score = (a) => (a.skills?.totalLevel || 0) + (this.record(a.agentId).done || 0) * 4;
+        if (cool('honor', 20) && npcs.length >= 4) {
+            const score = SCAN.keyed((a) => (a.skills?.totalLevel || 0) + (this.record(a.agentId).done || 0) * 4); // v11.2.1 排序時每比一次就把兩個人的技能重加一遍：每人只算一次（排出來的順序一樣）
             const star = npcs.slice().sort((x, y) => score(y) - score(x))[0];
             if (star && score(star) >= 6) out.push({ kind: 'honor', key: 'honor', weight: avgMood < 50 ? 1.4 : 0.7, jobs: ['mayor', 'priest', 'researcher'], pred: (a) => a.agentId !== star.agentId,
                 make: (a) => ({ kind: 'honor', key: 'honor', refKey: star.agentId, tk: '公開表揚{name}', tp: { name: star.name }, dk: '{who}覺得{name}這陣子為鎮上出了最多力（{why}），想在廣場辦個小儀式表揚：花 15 銀幣，當事人心情大好、大家也更敬重他。', dp: { who: a.name, name: star.name, why: (this.record(star.agentId).done || 0) >= 2 ? '提案一件件落實' : '手藝是鎮上最好的' }, cost: { silver: 15 }, category: 'culture', jobBias: ['mayor', 'priest', 'researcher'] }) });
         }
         // 帶徒弟:同行裡有師傅(主技能 ≥ 4)與學徒(主技能 ≤ 1)
-        if (this._cool(day, 'mentor', 18)) {
+        if (cool('mentor', 18)) {
             const JS = (typeof JOB_SKILL_MAP !== 'undefined') ? JOB_SKILL_MAP : {};
             let pick = null;
             for (const m of npcs) {
@@ -443,22 +447,22 @@ class ProposalSystem {
         {
             const wood = sp?.get?.('wood') || 0;
             const res = food >= 160 ? 'food' : wood >= 120 ? 'wood' : null;
-            if (res && this._cool(day, 'trade', 12)) out.push({ kind: 'trade', key: 'trade', weight: silver < 300 ? 1.4 : 0.6, jobs: ['trader', 'farmer', 'carpenter'], make: (a) => ({ kind: 'trade', key: 'trade', refKey: res, tk: '派商隊把{res}載去鄰鎮賣', tp: { res: res === 'food' ? '餘糧' : '木材' }, dk: '{who}說倉庫的{res}放著也是放著，載 40 份去鄰鎮大約能換 55 銀幣回來；路上有一點被劫的風險。', dp: { who: a.name, res: res === 'food' ? '餘糧' : '木材' }, cost: { [res]: 40 }, category: 'economy', jobBias: ['trader'] }) });
+            if (res && cool('trade', 12)) out.push({ kind: 'trade', key: 'trade', weight: silver < 300 ? 1.4 : 0.6, jobs: ['trader', 'farmer', 'carpenter'], make: (a) => ({ kind: 'trade', key: 'trade', refKey: res, tk: '派商隊把{res}載去鄰鎮賣', tp: { res: res === 'food' ? '餘糧' : '木材' }, dk: '{who}說倉庫的{res}放著也是放著，載 40 份去鄰鎮大約能換 55 銀幣回來；路上有一點被劫的風險。', dp: { who: a.name, res: res === 'food' ? '餘糧' : '木材' }, cost: { [res]: 40 }, category: 'economy', jobBias: ['trader'] }) });
         }
         // 派使者結盟:匪患當前或每隔一陣子,花 25 銀幣送禮換 20 天少被襲擊、也更吸引人搬來
-        if (silver >= 25 && this._cool(day, 'envoy', 30) && !(w.council?.activeDecrees || []).some(d => d.id === 'prop_envoy')) out.push({ kind: 'envoy', key: 'envoy', weight: w.trials?.current?.type === 'bandits' ? 1.8 : 0.5, jobs: ['mayor', 'trader', 'guard'], pred: (a) => this._hasTrait(a, 'charismatic') || this._hasValue(a, '和平'),
+        if (silver >= 25 && cool('envoy', 30) && !(w.council?.activeDecrees || []).some(d => d.id === 'prop_envoy')) out.push({ kind: 'envoy', key: 'envoy', weight: w.trials?.current?.type === 'bandits' ? 1.8 : 0.5, jobs: ['mayor', 'trader', 'guard'], pred: (a) => this._hasTrait(a, 'charismatic') || this._hasValue(a, '和平'),
             make: (a) => ({ kind: 'envoy', key: 'envoy', tk: '派使者去鄰鎮結盟', tp: {}, dk: '{who}願意帶著 25 銀幣的禮物走一趟鄰鎮談互保：20 天內襲擊機率下降、鎮上名聲也會傳出去。', dp: { who: a.name }, cost: { silver: 25 }, effects: { raid_chance: -0.08, immigration_chance: 0.05 }, category: 'defense', jobBias: ['mayor', 'guard'] }) });
         // 招募新居民:人口不多、糧食夠,貼告示請人搬來
         {
             const tp = (w.events?.TARGET_POPULATION || 12) + 3; const recentLeft = (w.movedOut || []).filter(m => day - (m.absDay || 0) <= 15).length;
-            if (npcs.length < tp && food >= 80 && silver >= 30 && this._cool(day, 'recruit', 20)) out.push({ kind: 'recruit', key: 'recruit', weight: recentLeft ? 1.8 : 1.0, jobs: ['mayor', 'trader', 'priest'], make: (a) => ({ kind: 'recruit', key: 'recruit', tk: '貼告示招人搬來鎮上', tp: {}, dk: '{who}覺得鎮上人手不夠（現在 {n} 人），想花 30 銀幣到鄰鎮貼告示、備一間屋子，招一戶人家搬來。', dp: { who: a.name, n: npcs.length }, cost: { silver: 30 }, category: 'welfare', jobBias: ['mayor', 'trader'] }) });
+            if (npcs.length < tp && food >= 80 && silver >= 30 && cool('recruit', 20)) out.push({ kind: 'recruit', key: 'recruit', weight: recentLeft ? 1.8 : 1.0, jobs: ['mayor', 'trader', 'priest'], make: (a) => ({ kind: 'recruit', key: 'recruit', tk: '貼告示招人搬來鎮上', tp: {}, dk: '{who}覺得鎮上人手不夠（現在 {n} 人），想花 30 銀幣到鄰鎮貼告示、備一間屋子，招一戶人家搬來。', dp: { who: a.name, n: npcs.length }, cost: { silver: 30 }, category: 'welfare', jobBias: ['mayor', 'trader'] }) });
         }
         // ---------- v6.37.0 村民全自主:研究／買賣／升級 ----------
         // 研究:沒在研究時，學者／相關行業提「研究某項」(三天沒人提，學者會自己挑)
         if (w.research && !w.research.current) {
             const REL = { agriculture: ['farmer'], metallurgy: ['blacksmith', 'miner'], medicine_research: ['doctor'], fortification: ['guard'], commerce: ['trader'], architecture: ['carpenter'], brewing: ['cook'], logistics: ['trader'], education: ['researcher'], masonry: ['miner', 'carpenter'], carpentry: ['carpenter'], pottery: ['miner', 'carpenter'], writing: ['researcher', 'priest'], textiles: ['tailor'], herbalism: ['doctor'], milling: ['cook', 'farmer'], smithing: ['blacksmith'], cartography: ['guard', 'trader'], engineering: ['carpenter', 'blacksmith'], printing: ['researcher'], banking: ['trader', 'mayor'], surgery: ['doctor'], civics: ['mayor'], astronomy: ['researcher'], fine_arts: ['priest', 'tailor'], sanitation: ['doctor', 'carpenter'], siegecraft: ['guard'], trade_routes: ['trader'] }; // v6.40.0
             for (const pr of (w.research.getAvailable?.() || [])) {
-                if (!this._cool(day, 'research:' + pr.key, 6)) continue;
+                if (!cool('research:' + pr.key, 6)) continue;
                 const jobs = ['researcher', ...(REL[pr.key] || [])];
                 let weight = (1.2 + (3 - Math.min(pr.era || 1, 6)) * 0.3) * ((typeof TECH !== 'undefined' && TECH.pickWeight) ? TECH.pickWeight(w, pr) : 1); if (weight <= 0.05) weight = 0.05; if (pr.key === 'agriculture' && food < 150) weight += 1; // v6.40.0 低時代先 if (pr.key === 'medicine_research' && npcs.some(x => x.isSick || (x.health ?? 100) < 50)) weight += 1; if (pr.key === 'fortification' && w.trials?.current?.type === 'bandits') weight += 1;
                 out.push({ kind: 'research', key: 'research:' + pr.key, weight, jobs, make: (a) => ({ kind: 'research', key: 'research:' + pr.key, refKey: pr.key, tk: '研究「{name}」', tp: { name: pr.name }, dk: '{who}覺得鎮上該把{name}研究出來：{desc}（要累積 {cost} 點研究進度）。', dp: { who: a.name, name: pr.name, desc: pr.description, cost: pr.cost }, cost: {}, category: 'culture', jobBias: jobs }) });
@@ -472,7 +476,7 @@ class ProposalSystem {
                 const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
                 if (pr && pr.next && pr.streak >= pr.need && pr.matLack && Object.keys(pr.matLack).length) {
                     for (const [r, lackN] of Object.entries(pr.matLack)) {
-                        if (!SI[r] || !(lackN > 0) || !this._cool(day, 'market:buy:tier:' + r, 4)) continue;
+                        if (!SI[r] || !(lackN > 0) || !cool('market:buy:tier:' + r, 4)) continue;
                         const qty = Math.ceil(lackN + 10), price = SI[r].buyPrice * qty;
                         if (silver < price + 40) continue;
                         const tier = t(pr.next.zh);
@@ -481,28 +485,28 @@ class ProposalSystem {
                 }
             } catch (e) {}
             for (const r of ['wood', 'stone', 'metal', 'cloth', 'herbs']) {
-                if (!SI[r] || (sp?.get?.(r) || 0) >= 25 || silver < SI[r].buyPrice * 30 + 60 || !this._cool(day, 'market:buy:' + r, 8)) continue;
+                if (!SI[r] || (sp?.get?.(r) || 0) >= 25 || silver < SI[r].buyPrice * 30 + 60 || !cool('market:buy:' + r, 8)) continue;
                 const qty = 30, price = SI[r].buyPrice * qty;
                 out.push({ kind: 'market', key: 'market:buy:' + r, weight: 1.3, jobs: ['trader', 'mayor', 'carpenter', 'blacksmith'], make: (a) => ({ kind: 'market', key: 'market:buy:' + r, refKey: r, qty, side: 'buy', tk: '進一批{item}備料', tp: { item: SI[r].name() }, dk: '{item}快見底了，{who}提議從公庫撥 {n} 銀幣去商店進 {qty} 份。', dp: { item: SI[r].name(), who: a.name, n: price, qty }, cost: { silver: price }, category: 'economy', jobBias: ['trader'] }) });
             }
             const foodCap = 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0);
             for (const r of Object.keys(SI)) {
                 const have = sp?.get?.(r) || 0; const over = r === 'food' ? have > foodCap : have > 250;
-                if (!over || !this._cool(day, 'market:sell:' + r, 8)) continue;
+                if (!over || !cool('market:sell:' + r, 8)) continue;
                 const qty = r === 'food' ? Math.max(20, Math.floor(have - foodCap * 0.85)) : 80, gain = SI[r].sellPrice * qty;
                 out.push({ kind: 'market', key: 'market:sell:' + r, weight: 1.4, jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
             }
         }
         // 升級既有建築
         if (w.buildings?.getUpgradeable) for (const u of w.buildings.getUpgradeable(w)) {
-            if (!this._cool(day, 'upgrade:' + u.buildingKey, 15)) continue;
+            if (!cool('upgrade:' + u.buildingKey, 15)) continue;
             const jobs = Object.entries(PROPOSAL_JOB_BUILDINGS).filter(([, ks]) => ks.includes(u.buildingKey)).map(([j]) => j);
             out.push({ kind: 'upgrade', key: 'upgrade:' + u.buildingKey, weight: u.can_afford ? 0.9 : 0.3, jobs, make: (a) => ({ kind: 'upgrade', key: 'upgrade:' + u.buildingKey, refKey: u.buildingKey, tk: '把{name}升到 Lv{lv}', tp: { name: u.name, lv: u.nextLevel }, dk: '{who}提議升級：{desc}', dp: { who: a.name, desc: u.description }, cost: { ...u.costs }, category: 'economy', jobBias: jobs }) });
         }
         // v6.81.0 申請升格:連續達標、建材也備好了，就由首長或議員提案(建材不夠時先提「為升格進一批…」)
         try {
             const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
-            if (pr && pr.next && TIERS.ready?.(w) && !Object.keys(pr.matLack || {}).length && this._cool(day, 'tier_up', 10)) {
+            if (pr && pr.next && TIERS.ready?.(w) && !Object.keys(pr.matLack || {}).length && cool('tier_up', 10)) {
                 const tier = t(pr.next.zh), SIx = (typeof SHOP_ITEMS !== 'undefined') ? SHOP_ITEMS : {};
                 const matTxt = Object.entries(pr.mat || {}).map(([r, n]) => `${SIx[r]?.name?.() || t(r)} ${n}`).join(t('、'));
                 const leader = t(pr.next.leader), seats = pr.next.seats;
@@ -520,7 +524,7 @@ class ProposalSystem {
             const FAC = (typeof FACTORIES !== 'undefined') ? FACTORIES : {}, CR = (typeof CROPS !== 'undefined') ? CROPS : {};
             const need = (r) => (typeof FLOW !== 'undefined' && FLOW.need) ? FLOW.need(w, r) : 0;
             for (const [key, data] of Object.entries(w.industry.industries)) {
-                const def = IND[key], lv = data.level || 1; const next = def?.levels?.find(l => l.lv === lv + 1); if (!next || !this._cool(day, 'indup:' + key, 12)) continue;
+                const def = IND[key], lv = data.level || 1; const next = def?.levels?.find(l => l.lv === lv + 1); if (!next || !cool('indup:' + key, 12)) continue;
                 const afford = Object.entries(next.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.8);
                 const gap = Math.max(0, target - lv), n = jobN[def.npcJob] || 0, crowd = n >= lv * 4 + 2;
                 // 等著原料的工坊：農業看「蓋好了卻沒開工、原料要更高級的田才種得出來」；其他三個看下一級多產的東西鎮上缺不缺

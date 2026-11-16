@@ -47,8 +47,12 @@ const WALLET = (() => {
     function S(w) {
         if (!w.wallet || typeof w.wallet.bal !== 'object') w.wallet = { bal: {}, tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } };
         const W = w.wallet; W.stats = W.stats || { wages: 0, taxes: 0, spent: 0 }; if (typeof W.tax !== 'number') W.tax = 0.1;
+        // v11.2.1 SCAN.run 包住的段落裡（每天付三餐、衣服、柴火那一圈）沒有新的人進鎮、也不會刪掉誰的錢包：全鎮補過一次之後再掃也補不到人，同一圈就不重掃
+        // （以前每一筆買賣進帳都把全鎮掃一遍，百人的城一天上萬次）
+        if (SCAN.get('wallet.S') === W) return W;
         for (const a of npcs(w)) if (typeof W.bal[a.agentId] !== 'number') initBal(w, W, a);
         W.started = true; W_OK.add(W); // 結構檢查過了;S1 之後只補單人
+        SCAN.set('wallet.S', W);
         return W;
     }
     // v7.7.0 初始存款:小孩從 0 開始(由爸媽養);開局以後才出現的大人是從外地搬來的,帶著自己的積蓄(記進月報的「移民帶來」)
@@ -81,7 +85,7 @@ const WALLET = (() => {
     // ---------- 每天 ----------
     function daily(w) {
         const W = S(w), today = day(w), all = npcs(w); if (!all.length || W.lastDay === today) return; W.lastDay = today;
-        payday(w, W, all); try { if (typeof MARKET !== 'undefined') MARKET.payroll(w, W, all); } catch (e) { console.warn('[Market] payroll', e); } living(w, W, all);
+        payday(w, W, all); try { if (typeof MARKET !== 'undefined') MARKET.payroll(w, W, all); } catch (e) { console.warn('[Market] payroll', e); } SCAN.run(() => living(w, W, all)); // v11.2.1 這一圈只有錢在動，沒有人進出
         try { social(w, W, all, today); } catch (e) { console.warn('[Wallet] social', e); }
         try { if (typeof MARKET !== 'undefined') MARKET.daily(w, W, all); } catch (e) { console.warn('[Market] daily', e); } // v6.89.0 產權、調薪、挨餓
         for (const id of Object.keys(W.bal)) if (!w.agents[id] && !(w.isAway?.(id))) { const v = +W.bal[id] || 0; delete W.bal[id]; let lv = 0; try { lv = (typeof FISCAL !== 'undefined') ? FISCAL.levy(w, id, v) : 0; } catch (e) {} /* v10.8.0 離境稅：留下來的那一份進公庫 */ if (v - lv > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -(v - lv)); } // v8.8.0 帶走的錢記到「搬走帶走」 // 搬走或過世的人(v6.87.0 出遠門的人錢包留著;過世的人的錢在過世時就由家人繼承)

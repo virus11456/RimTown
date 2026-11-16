@@ -75,7 +75,9 @@ const FAITH = (() => {
         const F = w.faith; F.of = F.of || {}; F.prayers = F.prayers || {};
         if (!F._reg) { F._reg = true; for (const R of F.rels) regNames(R); }
         // 新來的人(出生、移民)也要有信仰:先跟父母,沒有就依鎮上比例
+        if (SCAN.get('faith.S') === F) return F; // v11.2.1 SCAN.run 期間沒有新的人：全鎮補過一次信仰之後，同一輪不再重掃
         for (const a of npcs(w)) if (!F.of[a.agentId]) assign(w, F, a);
+        SCAN.set('faith.S', F);
         return F;
     }
     function assign(w, F, a) {

@@ -414,16 +414,19 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         for (const k of Object.keys(X.cool)) if (X.cool[k] <= d) delete X.cool[k];
         // 掃一遍：每人一天最多拿一件事的主意（急的先）
         const kinds = Object.values(KINDS).filter(K => K.scan).sort((x, y) => y.pri - x.pri); const offers = []; const P0 = pend(X);
-        for (const a of here(w)) {
+        // v11.2.1 這一輪只是問（when／options 只看不改，真正動手是下面 dispatch 的事），期間沒有人進出鎮上：
+        // 包進 SCAN.run，底下「全鎮誰在、每個人住哪棟」這類每問一次就重算一次的東西，整輪只算一次
+        SCAN.run(() => { for (const a of here(w)) {
             if (pendOf(P0, a.agentId).length || (w.civic?.jail?.[a.agentId] > d)) continue;
             for (const K of kinds) {
                 const ck = a.agentId + '|' + K.key; if (X.cool[ck] > d) continue;
                 const ctx = whenOf(w, a, K); if (!ctx) continue; const opts = optsOf(w, a, K, ctx); if (opts.length < 2) continue;
                 X.cool[ck] = d + K.cool; X.st.offer++; offers.push({ a, K, ctx, opts }); break;
             }
-        }
+        } });
         // AI 一天問得有限：急的事、鎮上的重要人物先
-        offers.sort((x, y) => (y.K.pri + (notable(w, y.a) ? 0.5 : 0)) - (x.K.pri + (notable(w, x.a) ? 0.5 : 0)));
+        const nb = SCAN.keyed((a) => notable(w, a)); // v11.2.1 是不是重要人物：排序時每比一次就把全鎮數一遍，改成每人只問一次
+        offers.sort((x, y) => (y.K.pri + (nb(y.a) ? 0.5 : 0)) - (x.K.pri + (nb(x.a) ? 0.5 : 0)));
         dispatch(w, X, offers, d); drain(w, X, d);
     }
     // 立刻照個性替這個人決定一件事（測試、除錯用；steady = 不加當天的心情起伏）。回傳那筆紀錄
@@ -456,7 +459,8 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
     const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
-    const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+    const here0 = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+    const here = (w) => SCAN.on() ? SCAN.memo('decide.here', () => here0(w)).slice() : here0(w); // v11.2.1 每天掃一輪時，每個人的選項都要「現在鎮上有誰」：整輪只篩一次（每次給一份新的陣列，用的人怎麼排都不影響別人）
     const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
     const pct1 = (y) => Math.round(y * 1000) / 10; const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const bankOk = (w) => typeof BANK !== 'undefined' && w.bank?.open && w.bank.status === 'ok';
