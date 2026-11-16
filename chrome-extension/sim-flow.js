@@ -55,10 +55,13 @@ const FLOW = (() => {
         const T = want(w, r); const lo = r === 'food' ? 0.35 : 0.15; if (T <= 0) return lo; // 糧食最少留三成五(季節與災害的緩衝)
         const s = get(w, r);
         if (r === 'food' && s >= T * 3) return 0.1; // v11.3.0 存糧已經是目標的三倍：種田打魚的再放慢（以前爆倉也照做三成五，一百多人的城市堆到三萬多）
+        if (r !== 'food' && s >= T * 3) return 0.05; // v11.3.0 其他東西堆到目標的三倍：只做半成（以前堆再多也照做一成五，城市的石材想備 890、實際堆到一萬四還在挖）
         if (s <= T * 0.6) return 1;
         if (s >= T) return lo;
         return lo + (1 - lo) * (T - s) / (T * 0.4);
     }
+    // v11.3.0 「多出來才賣」的那條線：以前各處寫死（提案 250、行商留 20～40、出口留幾十），城鎮以上比自己想備的量還低，一邊趕工補貨一邊往外賣；城鎮以上至少留到目標量的 1.2 倍，村莊照舊（糧食另外看糧倉容量，不走這裡）
+    function keepLine(w, r, old) { let lv = 0; try { lv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(w).lv || 0) : 0; } catch (e) { lv = 0; } return lv > 0 ? Math.max(old, Math.ceil(want(w, r) * 1.2)) : old; }
     const JOB_GOOD = { farmer: ['food'], cook: ['meals'], blacksmith: ['tools'], carpenter: ['furniture'], tailor: ['clothing'], doctor: ['medicine'], miner: ['stone', 'metal'], researcher: ['research_points'] };
     function jobDemand(w, jobKey) { const goods = JOB_GOOD[jobKey]; if (!goods) return 1; return Math.max(...goods.map(r => demandMult(w, r))); }
     const multiOut = (jobKey) => (JOB_GOOD[jobKey] || []).length > 1;
@@ -248,7 +251,7 @@ const FLOW = (() => {
         if (r === 'cotton' && need(w, 'cloth') > 0.5) n = Math.max(n, 10);
         return n;
     }
-    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, fine, addFine, wear, wearRate, FINE_FROM, FINE_WEAR, diet, mealFactor, dietScore, daily, CROP_FOOD, SUB, KEEP };
+    return { want, need, demandMult, keepLine, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, fine, addFine, wear, wearRate, FINE_FROM, FINE_WEAR, diet, mealFactor, dietScore, daily, CROP_FOOD, SUB, KEEP };
 })();
 if (typeof window !== 'undefined') window.FLOW = FLOW;
 

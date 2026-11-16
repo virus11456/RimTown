@@ -7387,6 +7387,7 @@
         '{who}想帶兩三個人去{zone}走一趟，約 {d} 天來回，可能帶回物資或發現。': '{who} wants to take two or three people to {zone}, about {d} days there and back, maybe bringing back supplies or a discovery.',
         '辦一桌全鎮的宴席': 'Hold a feast for the whole town',
         '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。': '{who} wants to turn 40 food into a meal everyone shares: mood +6 for all, and people grow closer over dinner.',
+        '{who}想用 {n} 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。': '{who} wants to turn {n} food into a meal everyone shares: mood +6 for all, and people grow closer over dinner.', // v11.3.0 份量跟著人數
         '撥一筆救濟金給{name}': 'Grant relief money to {name}',
         '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。': '{name} has been having a hard time. {who} proposes 20 silver from the treasury to help {name} catch a breath.',
         '全鎮加班下田': 'All hands to the fields',
@@ -8726,6 +8727,7 @@
         '我回田裡種地了。': 'I went back to farming the fields.',
         '🔨 {a}想把家翻修成{s}，但鎮上{m}不夠，只好先等。': '🔨 {a} wants to renovate their home into a {s}, but the town is short of {m}, so it has to wait.',
         '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。': '🏗️ The town qualifies to become a {n}, but there is not enough {m} to expand the town hall yet; materials come first.',
+        '🏗️ 升格案通過了，鎮公所開始為擴建備料：還缺{m}，公庫去買，到齊就動工。': '🏗️ The upgrade was approved and the town hall is gathering materials for the expansion: still short of {m}; the treasury is buying it and work starts once it all arrives.', // v11.3.0
         '開一個世界': 'Start a world',
         '每場遊戲都是獨立的世界，從邊境鎮開始。鄰鎮、道路和遠方的城鎮只屬於這一場，跟其他存檔互不影響。': 'Every game is its own world, starting from Frontier Town. Its neighbors, roads and far-off towns belong to that game only and never touch your other saves.',
         '在天上看': 'Watch from above',
@@ -8980,6 +8982,7 @@
         '申請升格': 'Apply to upgrade',
         '申請升格為{tier}': 'Apply to become a {tier}',
         '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。': 'The town has qualified for several days in a row (population {pop}, prosperity {pros}). {who} proposes expanding the town hall and officially becoming a {tier}: it uses {mat}; afterwards the council grows to {seats} seats, the leader becomes the {leader}, and more people can settle here.',
+        '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；倉庫裡還缺{lack}，通過後由公庫向外地買齊，大約要花 {n} 銀幣；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。': 'The town has qualified for several days in a row (population {pop}, prosperity {pros}). {who} proposes expanding the town hall and officially becoming a {tier}: it uses {mat}; the storehouse is still short of {lack}, which the treasury will buy from outside once this passes, for about {n} silver; afterwards the council grows to {seats} seats, the leader becomes the {leader}, and more people can settle here.', // v11.3.0 建材不夠也能提升格案
         '想讓鎮上更興旺': 'wants the town to grow',
         '喜歡現在的樣子': 'likes things as they are',
         '正式升格了': 'Officially upgraded',

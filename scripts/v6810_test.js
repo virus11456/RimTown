@@ -88,7 +88,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.birth.after === r.birth.pop + 1, '人口超過 20 也能生小孩(只要還沒到上限)', r.birth);
       ok(r.uniq1 && r.uniq2 && r.dupNow === 0, '新來的人不會跟鎮上或出遠門的人同名', { u1: r.uniq1, u2: r.uniq2, dup: r.dupNow });
       ok(r.wood === 2, '雜貨商賣木材和石材', r.wood);
-      ok(r.lackMat.lv === 0 && r.lackMat.buy && !r.lackMat.tierProp, '夠格但缺建材：不升格、先提「為升格進一批…」', r.lackMat);
+      ok(r.lackMat.lv === 0 && r.lackMat.buy && r.lackMat.tierProp, '夠格但缺建材：不升格；可以提「為升格進一批…」，也可以直接提升格案', r.lackMat); // v11.3.0 以前缺建材時不會有升格案（城市永遠湊不齊）；現在缺的料列成升格案的成本，通過後公庫去買（細節見 v110300_test.js）
       ok(r.noAuto === 0 && r.tierCand && /升格為/.test(r.tierText), '建材備好也不會自動升格，而是提「申請升格」提案', { lv: r.noAuto, cand: r.tierCand, text: r.tierText.slice(0, 60) });
       ok(r.exec && r.exec.status === 'done' && r.exec.lv === 1 && r.exec.wood < 200, '提案通過後才正式升格並付建材', r.exec);
       ok(r.fallback.mid === 1 && r.fallback.after === 2, '夠格 60 天都沒升格就直接升(不會卡死)', r.fallback);
