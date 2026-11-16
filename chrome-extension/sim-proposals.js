@@ -760,6 +760,7 @@ class ProposalSystem {
                 case 'law_repeal': case 'law_restore': { result = (typeof REPEAL !== 'undefined') ? REPEAL.enact(w, p) : ''; ok = !!result; break; } // v10.4.0 投票通過的規定可以再投票廢除
                 case 'recall': { result = (typeof REPEAL !== 'undefined') ? REPEAL.recallEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 罷免首長（全鎮投票決定）
                 case 'pardon': { result = (typeof REPEAL !== 'undefined') ? REPEAL.pardonEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 赦免（判決翻案）
+                case 'demolish': { result = (typeof DEMOLISH !== 'undefined') ? DEMOLISH.enact(w, p) : ''; ok = !!result; break; } // v10.6.0 蓋出來的建築、工廠、產業可以表決拆掉
                 case 'thing_ban': { result = (typeof THINGS !== 'undefined') ? THINGS.enact(w, p) : ''; ok = !!result; break; } // v9.0.0 禁止鎮上的新東西（村民自己提）
                 case 'infl_raise': { result = (typeof INFL !== 'undefined') ? INFL.enact(w, p) : ''; ok = !!result; break; } // v8.9.0 工資跟上物價
                 case 'ae_use': case 'ae_grant': { result = (typeof LONGEV !== 'undefined') ? LONGEV.enact(w, p) : ''; ok = !!result; break; } // v8.7.0 長生:以太存還是用、賢者之石給誰

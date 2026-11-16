@@ -32,7 +32,7 @@ const ASSEMBLY = (() => {
     const R = (w, id) => { const A = S(w); return A.rec[id] || (A.rec[id] = { terms: 0, since: null, votes: [], nv: 0, ns: 0, good: 0, bad: 0, bribes: 0, exposed: 0, bought: 0 }); };
 
     // ---------- 哪些案子算大事 ----------
-    const MAJOR = new Set(['build', 'industry', 'factory', 'upgrade', 'industry_up', 'tax', 'policy', 'tier_up']);
+    const MAJOR = new Set(['build', 'industry', 'factory', 'upgrade', 'industry_up', 'tax', 'policy', 'tier_up', 'demolish']); // v10.6.0 拆除跟興建一樣是大事
     const VILLAGE = new Set(['tier_up', 'tax']);
     function seated(w) {
         const C = w.council; if (!C?._formed) return [];
