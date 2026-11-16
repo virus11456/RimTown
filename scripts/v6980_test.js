@@ -49,9 +49,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const jump = await page.evaluate(() => { const L = document.getElementById('landing'); const vis = [...document.querySelectorAll('#landing-features .lp-chapter')].filter(c => c.getBoundingClientRect().height > 0).map(c => c.id); return { vis, st: L.scrollTop, open: !document.getElementById('lp-sheet').hidden, on: document.querySelector('.lp-chnav a.on')?.getAttribute('href') }; });
       ok(jump.open && jump.st === before && jump.vis.join() === 'lp-ch-living' && jump.on === '#lp-ch-living', '面板裡的章節導覽點「討生活」會換到那一章（只顯示那一章），導覽列也亮在那一章，底下的頁面沒有被捲走', jump);
       await page.keyboard.press('Escape'); await page.waitForTimeout(300);
-      const shut = await page.evaluate(() => { const L = document.getElementById('landing'); const h = document.getElementById('lp-sheet').hidden; L.scrollTop = document.getElementById('landing-decide').offsetTop; return { hidden: h, lock: L.classList.contains('lp-lock') }; }); await page.waitForTimeout(400);
+      const shut = await page.evaluate(() => { const L = document.getElementById('landing'); const h = document.getElementById('lp-sheet').hidden; L.scrollTop = document.getElementById('landing-decide').offsetTop; return { hidden: h, lock: L.classList.contains('lp-lock') }; });
       ok(shut.hidden && !shut.lock, '按 Esc 關掉面板，頁面恢復可以捲動', shut);
-      // 捲出畫面後 3D 停止(不再重畫)
+      // 捲出畫面後 3D 停止(不再重畫)。IntersectionObserver 回報的時間不固定(忙的時候會超過 400ms),所以等到主視覺標成暫停再開始數;
+      // 一直沒暫停的話這裡等到逾時,下面照樣數到還在畫而失敗
+      await page.waitForFunction(() => document.getElementById('lp-stage')?.classList.contains('lp-stage-idle'), null, { timeout: 10000 }).catch(() => {});
       const stopped = await page.evaluate(async () => { const c = document.querySelector('.lp-stage-canvas'); if (!c) return null; const gl = c.getContext('webgl2') || c.getContext('webgl'); let n = 0; const orig = gl.drawArrays.bind(gl); gl.drawArrays = (...a) => { n++; return orig(...a); }; await new Promise(r => setTimeout(r, 800)); return n; });
       ok(stopped === 0, '主視覺捲出畫面就停止繪製', stopped);
       ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

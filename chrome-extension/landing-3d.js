@@ -341,6 +341,7 @@ const LANDING3D = (() => {
         resize();
         const tick = (now) => {
             st.raf = 0; if (!st.alive) return;
+            if (!st.visible || document.hidden) return; // 暫停前就排好的那一格不能再畫;回到畫面時由 IntersectionObserver／visibilitychange 重新排
             if (now - st.last < (mobile ? 30 : 14)) { schedule(); return; }
             const dt = Math.min(0.06, (now - (st.last || now)) / 1000); st.last = now; st.frame++;
             impl.frame((now - st.t0) / 1000, dt);
@@ -349,12 +350,12 @@ const LANDING3D = (() => {
         };
         const schedule = () => { if (!st.raf && st.visible && !document.hidden && st.alive) st.raf = requestAnimationFrame(tick); };
         st.kick = () => { if (still) { if (!st.raf) st.raf = requestAnimationFrame(tick); } else schedule(); };
-        try { st.io = new IntersectionObserver(es => { st.visible = es.some(e => e.isIntersecting); host.classList.toggle('lp-stage-idle', !st.visible); schedule(); }, { rootMargin: '80px' }); st.io.observe(host); } catch (e) {}
+        try { st.io = new IntersectionObserver(es => { st.visible = es.some(e => e.isIntersecting); host.classList.toggle('lp-stage-idle', !st.visible); if (!st.visible && st.raf) { cancelAnimationFrame(st.raf); st.raf = 0; } schedule(); }, { rootMargin: '80px' }); st.io.observe(host); } catch (e) {}
         st.onVis = () => schedule(); document.addEventListener('visibilitychange', st.onVis);
         let rt = 0; st.onResize = () => { clearTimeout(rt); rt = setTimeout(() => { resize(); st.kick(); }, 120); }; window.addEventListener('resize', st.onResize);
         canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); kill(st); impl.lost?.(); });
         st.impl = impl; live.add(st); host.classList.add('lp-stage-live');
-        requestAnimationFrame(tick);
+        st.raf = requestAnimationFrame(tick);
         return st;
     }
     function kill(st) {
