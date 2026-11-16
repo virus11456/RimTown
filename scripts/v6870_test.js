@@ -75,7 +75,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       out.keep = { bal: Wl.bal[tr.agentId], title: !!CL.titles[tr.agentId], shop: !BZ.shops.find(s => s.id === 'BT')?.closed, loan: !!B.loans[tr.agentId], jail: !!CIVIC.S(w).jail[tr.agentId] };
       // 回來
       for (const t2 of w.events._travellingAgents) if (t2.agentData.agentId === tr.agentId) t2.returnTick = w.tickCount;
-      { const _md = MARKET.daily; MARKET.daily = () => {}; /* v8.7 合股會把回來的人身上的錢拉去入股:這天只看錢有沒有留著 */ try { runDay(); } finally { MARKET.daily = _md; } } const back = w.agents[tr.agentId]; out.back = !!back; out.backBal = back ? WALLET.get(w, back) : null;
+      { const _md = MARKET.daily; MARKET.daily = () => {}; const _dt = typeof DAY !== 'undefined' ? DAY.tick : null; if (_dt) DAY.tick = () => {}; /* v8.7 合股會把回來的人身上的錢拉去入股；v11.2.0 當晚可能去酒館花錢:這天只看錢有沒有留著 */ try { runDay(); } finally { MARKET.daily = _md; if (_dt) DAY.tick = _dt; } } const back = w.agents[tr.agentId]; out.back = !!back; out.backBal = back ? WALLET.get(w, back) : null;
       // 6) 新生兒記得爸媽:出生、存讀檔、出遠門
       const pa = npcs().find(a => a.age >= 22 && a.age < 45), pb = npcs().find(a => a !== pa && a.age >= 22 && a.age < 45);
       const nBefore = Object.keys(w.agents).length; w.lifecycle._birthChild(w, pa, pb, false);
