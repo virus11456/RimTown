@@ -360,9 +360,12 @@ class ProposalSystem {
         // v6.40.1 已經有一件產業案在等(投票中／擱置／已批准)就不再提第二件,避免兩案搶同一個名額、後者執行時才失敗
         const indPending = this.items.some(p => p.kind === 'industry' && ['open', 'shelved', 'approved'].includes(p.status));
         if (!indPending && w.industry && (w.industry.needsIndustryChoice || w.industry._pendingUnlock) && Object.keys(w.industry.industries || {}).length < (w.industry.maxIndustries || 1)) {
+            // v11.0.1 名額空著越久越虧：鎮越大、做這行的人越多，越會有人出來提（以前固定 1.6，城市裡常常空著一個名額好幾季）
+            const tl0 = (typeof TIERS !== 'undefined' && TIERS.S) ? (TIERS.S(w).lv || 0) : 0, all0 = this._npcs(w);
             for (const [key, def] of Object.entries(IND)) {
                 if (w.industry.industries?.[key] || !this._cool(day, 'industry:' + key, 6)) continue;
-                out.push({ kind: 'industry', key: 'industry:' + key, weight: 1.6, jobs: [def.npcJob].filter(Boolean), make: (a) => ({ kind: 'industry', key: 'industry:' + key, refKey: key, tk: '把{name}做成鎮上的主業', tp: { name: def.name }, dk: '{who}說自己這行做得來，想帶幾個人一起把它做大。', dp: { who: a.name }, cost: {}, category: 'economy', jobBias: [def.npcJob] }) });
+                const n0 = all0.filter(a => a.job?.key === def.npcJob).length;
+                out.push({ kind: 'industry', key: 'industry:' + key, weight: Math.min(4, 1.6 + (n0 >= 4 ? 1.2 : 0) + tl0 * 0.6), jobs: [def.npcJob].filter(Boolean), make: (a) => ({ kind: 'industry', key: 'industry:' + key, refKey: key, tk: '把{name}做成鎮上的主業', tp: { name: def.name }, dk: '{who}說自己這行做得來，想帶幾個人一起把它做大。', dp: { who: a.name }, cost: {}, category: 'economy', jobBias: [def.npcJob] }) });
             }
         }
         // 探險
@@ -507,10 +510,27 @@ class ProposalSystem {
             }
         } catch (e) {}
         // 產業升級
-        if (w.industry?.industries) for (const [key, data] of Object.entries(w.industry.industries)) {
-            const def = IND[key]; const next = def?.levels?.find(l => l.lv === (data.level || 1) + 1); if (!next || !this._cool(day, 'indup:' + key, 12)) continue;
-            const afford = Object.entries(next.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.8);
-            out.push({ kind: 'industry_up', key: 'indup:' + key, weight: afford ? 1.0 : 0.3, jobs: [def.npcJob, 'mayor'].filter(Boolean), make: (a) => ({ kind: 'industry_up', key: 'indup:' + key, refKey: key, tk: '把{name}升到 Lv{lv}「{lvname}」', tp: { name: def.name, lv: next.lv, lvname: next.name }, dk: '{who}覺得{name}該擴大了：升級後 {bonus}。', dp: { who: a.name, name: def.name, bonus: next.bonus || next.name }, cost: { ...(next.cost || {}) }, category: 'economy', jobBias: [def.npcJob].filter(Boolean) }) });
+        // v11.0.1 以前固定權重 1：候選一多就排不進前幾名，開了智能體的鎮只會看到權重最高的幾個，所以幾乎沒人提。
+        // 一個十三年、117 人的城市四個產業都還在一級：田只有 4 塊、只能種小麥玉米，木板磚塊鋼鐵黃金與大半工坊的原料全卡在這裡。
+        // 現在看鎮上實際的壓力：鎮的等級與時代比產業高幾級、做這行的人擠不擠、有沒有工坊等著它升級後才有的原料。要不要提、要不要過還是村民自己決定。
+        if (w.industry?.industries) {
+            const tierLv = (typeof TIERS !== 'undefined' && TIERS.S) ? (TIERS.S(w).lv || 0) : 0, era = w.research?.currentEra?.() || 1;
+            const target = Math.min(5, 1 + tierLv + (era >= 3 ? 1 : 0) + (era >= 5 ? 1 : 0));
+            const jobN = {}; for (const a of this._npcs(w)) if (a.job?.key) jobN[a.job.key] = (jobN[a.job.key] || 0) + 1;
+            const FAC = (typeof FACTORIES !== 'undefined') ? FACTORIES : {}, CR = (typeof CROPS !== 'undefined') ? CROPS : {};
+            const need = (r) => (typeof FLOW !== 'undefined' && FLOW.need) ? FLOW.need(w, r) : 0;
+            for (const [key, data] of Object.entries(w.industry.industries)) {
+                const def = IND[key], lv = data.level || 1; const next = def?.levels?.find(l => l.lv === lv + 1); if (!next || !this._cool(day, 'indup:' + key, 12)) continue;
+                const afford = Object.entries(next.cost || {}).every(([r, n]) => (sp?.get?.(r) || 0) >= n * 0.8);
+                const gap = Math.max(0, target - lv), n = jobN[def.npcJob] || 0, crowd = n >= lv * 4 + 2;
+                // 等著原料的工坊：農業看「蓋好了卻沒開工、原料要更高級的田才種得出來」；其他三個看下一級多產的東西鎮上缺不缺
+                let wait = null;
+                if (key === 'farming') { for (const [fk, f] of Object.entries(w.processing?.builtFactories || {})) { if (f.status !== 'active' || f.recipe) continue; if ((FAC[fk]?.recipes || []).some(rc => Object.keys(rc.input || {}).some(r => CR[r] && CR[r].reqLevel > lv && (sp?.get?.(r) || 0) < rc.input[r]))) { wait = FAC[fk].name; break; } } }
+                else { const cur = def.levels.find(l => l.lv === lv)?.output || {}; const r = Object.keys(next.output || {}).find(r => !(r in cur) && need(r) > 0.5); if (r) wait = (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[r]) || r; }
+                const weight = Math.min(5, (afford ? 1.0 : 0.3) * (1 + gap + (crowd ? 1 : 0) + (wait ? 1.5 : 0)));
+                const why = wait ? (key === 'farming' ? '{fac}蓋好了卻沒有原料開工。' : '鎮上缺{fac}。') : crowd ? '現在做這行的有 {n} 人，地方早就不夠用。' : gap >= 2 ? '鎮都發展到這個地步了，{name}還停在 Lv{cur}。' : '';
+                out.push({ kind: 'industry_up', key: 'indup:' + key, weight, jobs: [def.npcJob, 'mayor'].filter(Boolean), make: (a) => ({ kind: 'industry_up', key: 'indup:' + key, refKey: key, tk: '把{name}升到 Lv{lv}「{lvname}」', tp: { name: def.name, lv: next.lv, lvname: next.name }, dk: why ? '{who}覺得{name}該擴大了：升級後 {bonus}。{why}' : '{who}覺得{name}該擴大了：升級後 {bonus}。', dp: why ? { who: a.name, why, name: def.name, bonus: next.bonus || next.name, fac: wait || '', n, cur: lv } : { who: a.name, name: def.name, bonus: next.bonus || next.name }, cost: { ...(next.cost || {}) }, category: 'economy', jobBias: [def.npcJob].filter(Boolean) }) });
+            }
         }
         return out;
     }

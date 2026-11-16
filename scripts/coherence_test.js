@@ -100,6 +100,14 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       fresh(0, 17); rich(3000); setInd(1); const vil = cand();
       out.indProp = { city, kept, maxed, vil, era: [w.research.currentEra?.()] }; }
 
+    // ---------- 6c) 產業名額空著就會一直等人提（v11.0.1：以前選了一個就不再提，城市可能永遠沒有農業、一塊田都沒有） ----------
+    { fresh(2, 19); const I = w.industry, P = w.proposals; I.industries = {}; I.townLevel = 7; I.maxIndustries = 4; I.needsIndustryChoice = true; I._pendingUnlock = false; const seq = [];
+      for (const k of ['lumber', 'quarry', 'mining']) { I.chooseIndustry(k, w); seq.push(I._pendingUnlock); }
+      // 舊存檔卡住的樣子：四個名額只開了三個、沒有在等人提
+      I._pendingUnlock = false; I.dailyUpdate(w); const repaired = I._pendingUnlock; P.cooldown = {}; P.items = P.items.filter(p => p.kind !== 'industry');
+      const cs = P._candidates(w, w._absDay()).filter(c => c.kind === 'industry'); const execd = I.chooseIndustry('farming', w); I.dailyUpdate(w); try { w.farm.dailyUpdate(w); } catch (e) {}
+      out.slot = { seq, repaired, cand: cs.map(c => [c.key, c.weight]), ok: !!execd?.ok, after: I._pendingUnlock, plots: (w.farm?.maxPlots || 0) }; }
+
     // ---------- 8) 每種店都開得起來 ----------
     { fresh(2, 15); const res = {}; const A = npcs().filter(a => (a.age ?? 30) >= 20 && a.job?.key !== 'mayor'); const used = new Set(); const S = BIZ.S(w); const day = w._absDay();
       const tr = (a) => a.personality?.traits || (a.personality.traits = []);
@@ -123,6 +131,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (let i = 0; i < 12; i++) { const d0 = w._absDay(); for (let k = 0; k < 400 && w._absDay() === d0; k++) { w.paused = false; w.tick(); } w.paused = true; for (const a of npcs()) { const k = a.job?.key || '(無)'; jobs[k] = (jobs[k] || 0) + 1; } await new Promise(r => setTimeout(r, 5)); }
       sp.add = add0; sp.consume = con0; BM.getEffect = ge0;
       out.fxRead = Object.keys(fxRead); out.jobs = jobs; out.flows = Object.fromEntries(Object.entries(flows).map(([k, f]) => [k, { in: Math.round(f.in * 10) / 10, out: Math.round(f.out * 10) / 10 }]));
+      // 備用建材（硬木、大理石）平常不動，翻修房子與擴建鎮公所付木材石材時會先拿來用
+      { for (const k of ['wood', 'stone', 'hardwood', 'marble']) sp.resources[k] = 60; const ok = FLOW.pay(w, { wood: 9, stone: 9 }, '測試'); out.subUse = { ok, hardwood: 60 - sp.get('hardwood'), marble: 60 - sp.get('marble') }; }
       out.jobOut = Object.fromEntries(Object.entries(JOB_PRODUCTION).map(([j, d]) => [j, Object.keys(d.outputs || {}).map(o => o + ':' + Math.round(flows[o]?.in || 0)).join(',')]));
       // 結構上的來源與去處（登記表裡寫明的）
       const src = {}, sink = {}; const S1 = (m, k, v) => (m[k] = m[k] || []).push(v);
@@ -135,6 +145,15 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       for (const [base, list] of Object.entries(FLOW.SUB || {})) for (const [sub] of list) S1(sink, sub, '代替' + base + '使用');
       out.srcSink = Object.fromEntries(STOCK.map(k => [k, { src: (src[k] || []).length, sink: (sink[k] || []).length, in: Math.round(flows[k]?.in || 0), out: Math.round(flows[k]?.out || 0), inBy: Object.keys(flows[k]?.inBy || {}).slice(0, 3).join('、'), outBy: Object.keys(flows[k]?.outBy || {}).slice(0, 3).join('、'), firstSrc: (src[k] || [])[0] || '', firstSink: (sink[k] || [])[0] || '' }]));
       out.noSrc = STOCK.filter(k => !(src[k] || []).length && !(flows[k]?.in > 0)); out.noSink = STOCK.filter(k => !(sink[k] || []).length && !(flows[k]?.out > 0)); }
+
+    // ---------- 商行的 14 樣貨買得到也賣得掉；七種行業都有做這行的職位、鎮上都有東家或公營 ----------
+    { fresh(2, 18); const res = {}; for (const k of Object.keys(SHOP_ITEMS)) { if (!STOCK.includes(k)) { res[k] = '不是倉庫裡的資源'; continue; } w.stockpile.resources.silver = 500; w.stockpile.resources[k] = 10;
+        const b = w.shop.buy(k, 2, w), n1 = w.stockpile.get(k), s1 = w.stockpile.get('silver'); const se = w.shop.sell(k, 1, w), n2 = w.stockpile.get(k), s2 = w.stockpile.get('silver');
+        res[k] = (b?.success && n1 === 12 && s1 < 500 && se?.success && n2 === 11 && s2 > s1) ? 'ok' : `買:${b?.success} ${n1} 賣:${se?.success} ${n2}`; }
+      out.shopBad = Object.entries(res).filter(([, v]) => v !== 'ok').map(([k, v]) => k + ':' + v);
+      const sec = {}; for (let i = 0; i < 3; i++) { const d0 = w._absDay(); for (let k = 0; k < 400 && w._absDay() === d0; k++) { w.paused = false; w.tick(); } } w.paused = true;
+      for (const [k, d] of Object.entries(MARKET.SECTORS)) { const noJob = d.jobs.filter(j => !JOB_DEFINITIONS[j]); const workers = npcs().filter(a => d.jobs.includes(a.job?.key)).length; sec[k] = noJob.length ? '職位不存在:' + noJob.join(',') : !workers ? '鎮上沒人做這行' : 'ok'; }
+      out.secBad = Object.entries(sec).filter(([, v]) => v !== 'ok').map(([k, v]) => k + ':' + v); out.secN = Object.keys(MARKET.SECTORS).length; out.shopN = Object.keys(SHOP_ITEMS).length; }
 
     // ---------- 資源的名字：三個取名字的地方都認得全部資源 ----------
     { out.names = Object.fromEntries(STOCK.map(k => [k, (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[k]) || '']));
@@ -169,6 +188,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   console.log('— 產業');
   ok(r.indBad.length === 0, `${n.ind} 個產業的每一級都有產出`, r.indBad);
   ok(Object.values(r.indUp).every(v => v === 5), '材料夠的時候，每個產業都能從第一級升到第五級', r.indUp);
+  ok(r.slot.seq.every(Boolean) && r.slot.repaired && r.slot.cand.length === 1 && r.slot.cand[0][0] === 'industry:farming' && r.slot.cand[0][1] >= 2.5, '產業名額還有空就會有人提（選了一個不會把剩下的名額關掉；舊存檔卡住的會補回來）', r.slot);
+  ok(r.slot.ok && r.slot.after === false && r.slot.plots >= 4, '補上農業之後名額用完、田就開出來了', r.slot);
   { const q = r.indProp;
     ok(q.city.length === n.ind && q.city.every(c => c.weight >= 4 && c.rank < 6), '城市的產業還停在一級時，四個升級都排進村民點子的前六名（智能體看得到）', q.city.map(c => [c.key, c.weight, c.rank]));
     ok(q.city.every(c => !c.raw && c.desc.length > 20) && q.city.some(c => /Lv1|不夠用|沒有原料|缺/.test(c.desc)), '升級的點子寫得出理由，沒有漏填的欄位', q.city.map(c => c.desc));
@@ -182,12 +203,17 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(noOut.length === 0, '登記了產出的職位，跑 12 天都真的有東西進倉', noOut);
   console.log('— 店');
   ok(r.bizBad.length === 0, `${n.biz} 種店都開得起來`, r.bizBad);
+  ok(r.shopBad.length === 0, `商行的 ${r.shopN} 樣貨都買得到、賣得掉`, r.shopBad);
+  ok(r.secBad.length === 0, `${r.secN} 種行業（農莊、食堂、布莊、木作坊、礦場、鐵鋪、商行）都有對應的職位、鎮上都有人做`, r.secBad);
   console.log('— 資源');
   // 登記表和這 12 天都沒看到的，再看程式裡有沒有直接進倉／出倉的地方（例如靠海才曬得出鹽、鎮上有錢人才添購精裝家具）
   const srcCode = (k) => new RegExp(`\\.add\\(\\s*['"]${k}['"]`).test(srcAll), sinkCode = (k) => new RegExp(`(\\.consume\\(|enjoy\\(\\s*w,|eat\\(\\s*w,)\\s*['"]${k}['"]`).test(srcAll);
   const noSrc = r.noSrc.filter(k => !srcCode(k)), noSink = r.noSink.filter(k => !sinkCode(k));
   ok(noSrc.length === 0, `${n.res} 種資源都至少有一個來源`, noSrc);
   ok(noSink.length === 0, `${n.res} 種資源都至少有一個去處`, noSink);
+  { const idle = Object.keys(r.names).filter(k => !(r.flows[k]?.out > 0));
+    ok(idle.every(k => ['hardwood', 'marble'].includes(k)), '城市跑 12 天，每種物資都真的有人用掉（備用建材硬木、大理石除外）', idle);
+    ok(r.subUse.ok && r.subUse.hardwood > 0 && r.subUse.marble > 0, '硬木與大理石在翻修、擴建付木材石材時會先被用掉', r.subUse); }
   const dict = fs.readFileSync(path.join(DIR, 'i18n-en.js'), 'utf8'); const noEn = Object.entries(r.names).filter(([, zh]) => zh && !dict.includes(`'${zh}':`)).map(([k, zh]) => k + ':' + zh);
   ok(r.noName.length === 0 && noEn.length === 0, '每種資源在各處都有名字（中文、英文）', { noName: r.noName, noEn });
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
