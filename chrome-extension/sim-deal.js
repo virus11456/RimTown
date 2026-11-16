@@ -148,7 +148,7 @@ const DEAL = (() => {
         rec.dead = died; D.harm.push(rec); if (D.harm.length > HARM_CAP) D.harm.splice(0, D.harm.length - HARM_CAP);
         D.st.sick = (D.st.sick || 0) + 1; if (f) f.harm = (f.harm || 0) + 1;
         suspect(w, a, rec, f);
-        if (died) { D.st.dead = (D.st.dead || 0) + 1; if (f) f.dead = (f.dead || 0) + 1; rec.cause = H.dead; D.deaths = D.deaths || []; D.deaths.push({ id: a.agentId, name: a.name, key, kind, d, fid: f?.id || null, cause: H.dead, linked: false }); try { a._deathCause = t(H.dead); a._dealDeath = { key, fid: f?.id || null }; w.lifecycle._killNpc(w, a); } catch (e) { console.warn('[Deal] death', e); } }
+        if (died) { D.st.dead = (D.st.dead || 0) + 1; if (f) f.dead = (f.dead || 0) + 1; rec.cause = H.dead; D.deaths = D.deaths || []; D.deaths.push({ id: a.agentId, name: a.name, key, kind, d, fid: f?.id || null, cause: H.dead, linked: false, kin: (typeof RIOT !== 'undefined' && RIOT) ? RIOT.kinIds(w, a) : [] }); if (D.deaths.length > 30) D.deaths.shift(); try { a._deathCause = t(H.dead); a._dealDeath = { key, fid: f?.id || null }; w.lifecycle._killNpc(w, a); } catch (e) { console.warn('[Deal] death', e); } }
     }
     // 受害的人起不起疑：同一家出事兩次，或親近的人也在同一家中了
     function suspect(w, a, rec, f) {

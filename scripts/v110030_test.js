@@ -30,7 +30,7 @@ async function run(browser, dev, lang) {
     const MY = w.election.currentMayor(w); const adults = npcs().filter(a => (a.age || 30) >= 20 && (a.age || 30) < 55 && a !== MY);
     const [TG, LEAD, A1, A2, A3, A4, A5, A6, A7, GD, O1, O3, CM1, CM2, CM3, CM4, J] = adults; const cast = [TG, LEAD, A1, A2, A3, A4, A5, A6, A7, GD, O1, O3, CM1, CM2, CM3, CM4, J, MY];
     for (const a of cast) { traits(a, []); bal(a, 200); for (const b of cast) if (a !== b) like(a, b, 0); a.job = new Job('farmer'); }
-    for (const a of npcs()) { if (a.job?.key === 'guard') a.job = new Job('farmer'); if (a !== MY) { like(a, MY, 0); } }
+    for (const a of npcs()) { if (a.job?.key === 'guard') a.job = new Job('farmer'); if (a !== MY) { like(a, MY, 0); } if (a !== GD) like(GD, a, 0); } // 衛兵原本的交情歸零，後面才看得出「人群裡有親友」的差別
     for (const k of Object.keys(M.owners)) delete M.owners[k]; M.rival = {}; M.owners.kitchen = O1.agentId; M.owners.textile = O3.agentId; O1.job = new Job('trader'); O3.job = new Job('trader'); MY.job = MY.job?.key === 'mayor' ? MY.job : new Job('mayor');
     const P1 = { id: 'P1', st: 'town', name: ['鎮報', 'Town Paper'], cred: 60, owner: null, journo: J.agentId, stories: [], fame: 0 }; I18N.registerName('鎮報', 'Town Paper'); w.press.papers = [P1]; w.press.reads = {}; for (const a of [A5, A6]) w.press.reads[a.agentId] = 'P1'; PW.inf = {}; PW.scandal = {};
     w.deallaw = null; w.office = null; w.tips = null; w.unrest = null; w.camps = null; D.reports = []; D.tips = []; D.harm = []; if (w.union) { w.union.on = false; w.union.members = {}; }
