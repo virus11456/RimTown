@@ -72,7 +72,7 @@ Object.assign(RimTownApp.prototype, {
     _overviewCards() {
         this._icAlerts = []; const cards = [];
         const add = (fn) => { try { const h = fn(); if (h) cards.push(h); } catch (e) { console.warn('[cards]', e); } };
-        add(() => this._icProsperity()); add(() => this._icKeyRes()); add(() => this._icWallet()); add(() => this._icPrices());
+        add(() => this._icProsperity()); add(() => this._icKeyRes()); add(() => this._icWallet()); add(() => this._icTreasury()); add(() => this._icPrices());
         add(() => this._icHealth()); add(() => this._icMyth()); add(() => this._icMoney()); add(() => this._icEnv()); add(() => this._icAuto());
         const brief = this._icBrief(this._icAlerts); this._icAlerts = null;
         const lb = `<button type="button" class="ic-lb" data-action="show-leaderboard">🏆 ${t('全球繁榮排行榜')}</button>`;
@@ -99,6 +99,26 @@ Object.assign(RimTownApp.prototype, {
         return this._ic({ id: 'keyres', icon: '💎', title: t('關鍵資源'), chip: alert ? { t: alert.tone === 'r' ? t('吃緊') : t('留意'), tone: alert.tone } : { t: t('充足'), tone: 'g' },
             sum: `🌾 ${this._icNum(food)} · 💰 ${this._icNum(silver)}`, defOpen: !!alert, alert,
             kpis: [{ v: this._icNum(food), u: `/${cap}`, l: '🌾 ' + t('食物'), tone: fTone }, { v: this._icNum(silver), l: '💰 ' + t('公庫銀幣'), tone: sTone }, { v: (food / pop).toFixed(1), l: t('每人存糧') }] });
+    },
+    // v10.7.0 公庫：夠付幾天、離安全存量還差多少、錢從哪來往哪去
+    _icTreasury() {
+        const w = this.world; if (typeof TREASURY === 'undefined' || !w?.wallet || !w.observerMode) return ''; let v; try { v = TREASURY.view(w); } catch (e) { return ''; }
+        const esc = (x) => this._icEsc(x); const N = (n) => this._icNum(Math.round(n)); const d = Math.floor(v.days);
+        const owing = v.unpaid > 0 || v.short; const pct = Math.max(0, Math.min(100, Math.round(v.silver / Math.max(1, v.reserve) * 100)));
+        const chip = owing ? { t: t('發不出全薪'), tone: 'r' } : v.low ? { t: t('吃緊'), tone: 'y' } : v.spare > 0 ? { t: t('存量充足'), tone: 'g' } : { t: t('還在存'), tone: 'n' };
+        const alert = owing ? { t: t('公庫最近發不出全薪'), tone: 'r' } : v.low ? { t: t('公庫只夠付 {d} 天的薪水與維護').replace('{d}', d), tone: 'y' } : null;
+        const body = `<div class="ic-split"><span>${t('安全存量（{n} 天的固定支出）').replace('{n}', v.RES_DAYS)}</span><span>${N(v.silver)} / ${N(v.reserve)}</span></div><div class="ic-bar"><i style="width:${pct}%"></i></div>`;
+        const jobs = Object.entries(v.jobs).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(t(v.jobName[k] || k))} ${n}`);
+        const rows = (side) => Object.entries(v.ledger[side]).sort((a, b) => b[1] - a[1]).filter(([, x]) => x >= 0.5).map(([k, x]) => [esc(t(TREASURY.NAME[k] || k)), N(x)]);
+        const L = v.ledger; const net = Math.round(L.inSum - L.outSum);
+        const detail = this._icSub(t('每天的固定支出'), this._icRows([[t('公職薪水（{n} 人，占人口 {p}%）').replace('{n}', v.staff).replace('{p}', Math.round(v.staff / Math.max(1, v.pop) * 100)), N(v.payroll)], [t('建築維護'), N(v.upkeep)], v.debt ? [t('還債'), N(v.debt)] : null]) + this._icPills(jobs))
+            + this._icSub(t('最近 {n} 天平均每天收入').replace('{n}', L.days) + ` <b>${N(L.inSum)}</b>`, this._icRows(rows('in')))
+            + this._icSub(t('最近 {n} 天平均每天支出').replace('{n}', L.days) + ` <b>${N(L.outSum)}</b>`, this._icRows(rows('out')))
+            + this._icRows([[t('每天結餘'), (net >= 0 ? '+' : '') + N(net), net < 0 ? 'r' : 'g'], [t('可以動用的錢（公共建設、補助）'), N(v.budget)], v.tax != null ? [t('薪水先扣的稅'), Math.round(v.tax * 100) + '%'] : null, v.owed ? [t('還欠的紓困債'), N(v.owed)] : null]);
+        return this._ic({ id: 'treasury', icon: '🏦', title: t('公庫'), chip, sum: `${N(v.silver)}`, defOpen: !!alert, alert,
+            kpis: [{ v: N(v.silver), l: '💰 ' + t('公庫銀幣'), tone: owing ? 'r' : v.low ? 'y' : '' }, { v: d, u: t('天'), l: t('夠付幾天'), tone: owing ? 'r' : v.low ? 'y' : '' }, { v: (net >= 0 ? '+' : '') + N(net), l: t('每天結餘'), tone: net < 0 ? 'r' : '' }],
+            body, detail,
+            info: esc(t('固定支出是公職薪水、建築維護和每天要還的債。公庫先留 {a} 天的固定支出當安全存量，超過的才拿去蓋公共建設、發補助。不夠付 {b} 天時會有人提加稅；夠付 {c} 天以上而且窮人多，才會有人提減稅。').replace('{a}', v.RES_DAYS).replace('{b}', v.LOW_DAYS).replace('{c}', v.HIGH_DAYS)) });
     },
     _icWallet() {
         const w = this.world; if (typeof WALLET === 'undefined' || !w?.wallet) return ''; const ws = WALLET.summary(w); if (!ws) return '';

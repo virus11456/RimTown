@@ -50,7 +50,7 @@ const LEGACY = (() => {
             for (const o of npcs(w)) if (Math.random() < 0.3) mem(w, o, '大家都在懷念{a}，他是鎮上的傳奇。', { a: x.name }, 6);
             // 公庫寬裕就立像
             const tr = w.stockpile?.get?.('silver') || 0;
-            if (tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念'), 'upkeep'); /* v8.8.0 雕像工錢付給本地工匠 */ lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = `${x.name}像`; /* v9.7.0 修：以前存成模板物件，名牌顯示 [object Object] */ statueName(sn, x.name); Lm.push({ name: sn, of: x.name, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
+            if ((typeof TREASURY !== 'undefined' && w.observerMode && w.wallet) ? TREASURY.budget(w) >= 80 : tr >= 150) { w.stockpile.consume('silver', 80, w.tickCount, t('立像紀念'), 'upkeep'); /* v8.8.0 雕像工錢付給本地工匠 */ lg.statue = true; const P = w.proposals; if (P) { const Lm = P.landmarks || (P.landmarks = []); const sn = `${x.name}像`; /* v9.7.0 修：以前存成模板物件，名牌顯示 [object Object] */ statueName(sn, x.name); Lm.push({ name: sn, of: x.name, icon: '🗽', by: t('全鎮'), id: 'LG' + d, day: d }); if (Lm.length > 6) Lm.splice(0, Lm.length - 6); } log(w, 'system', '🗽 全鎮出錢在廣場為{a}立像。', { a: x.name }); }
         }
     }
     // ---------- 家族與世仇 ----------

@@ -344,7 +344,7 @@ const CYCLE = (() => {
     }
     // 公共工程:公庫超過「每人 40 銀幣＋200」的部分,每週撥 8%(衰退時 15%),付給本地木作坊、礦場、鐵鋪(依工人數分;公營的錢回到公庫)
     function publicWorks(w, C, pop) {
-        if (typeof MARKET === 'undefined' || !w.market) return; const sp = w.stockpile; const silver = sp.get('silver') || 0; const excess = silver - (pop * 25 + 150); if (excess <= 0) return; // v8.9.0 門檻放低(以前 40/人＋200),公庫的錢更常拿去蓋公共建設
+        if (typeof MARKET === 'undefined' || !w.market) return; const sp = w.stockpile; const silver = sp.get('silver') || 0; const excess = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY.budget(w) : silver - (pop * 25 + 150); if (excess <= 0) return; // v10.7.0 門檻改成公庫可以動用的錢（先留安全存量，見 sim-treasury.js） // v8.9.0 門檻放低(以前 40/人＋200),公庫的錢更常拿去蓋公共建設
         const n = Math.round(excess * (C.c < -0.2 ? 0.2 : 0.12)); if (n < 20) return; /* v8.9.0 8%→12%:公庫錢多就多蓋公共建設 */ const all = npcs(w);
         const parts = [['timber', 0.4], ['mine', 0.3], ['forge', 0.3]].map(([k, f]) => [k, f * (MARKET.workersOf(w, k, all).length ? 1 : 0)]); const tot = parts.reduce((s, [, f]) => s + f, 0); if (!tot) return;
         if (typeof WORKS !== 'undefined') { try { if (WORKS.tender(w, n, parts, tot, all, C)) return; } catch (e) { console.warn('[Works] tender', e); } } // v8.9.0 改成村民競標承包
@@ -356,7 +356,7 @@ const CYCLE = (() => {
     // 公庫太多:有人提案減稅(用原本的稅率提案,投票照舊)
     function taxCut(w, C, pop, d) {
         const P = w.proposals; if (!P?._createWith || !w.wallet || d - (C.lastTaxProp || -99) < 60) return; const tax = w.wallet.tax ?? 0.1; const silver = w.stockpile.get('silver') || 0;
-        if (silver < pop * 80 || tax <= 0.06) return; // 公庫超過每人 80 銀幣才提;這條路最多降到 6% if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return;
+        if (((typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY.days(w) < TREASURY.HIGH_DAYS * 1.5 : silver < pop * 80) || tax <= 0.06) return; // v10.7.0 公庫夠付兩個多月才提 // 公庫超過每人 80 銀幣才提;這條路最多降到 6% if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return;
         const who = npcs(w).filter(a => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 0) >= 60).sort(() => Math.random() - 0.5)[0]; if (!who) return; C.lastTaxProp = d;
         const nt = Math.round((tax - 0.05) * 100) / 100;
         const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir: 'down', tk: '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: '{who}說公庫存了 {s} 銀幣用不完，提議把稅從 {a}% 降到 {n}%，錢還給大家。', dp: { who: who.name, s: Math.round(silver), a: Math.round(tax * 100), n: Math.round(nt * 100) }, cost: {}, category: 'economy' }) };

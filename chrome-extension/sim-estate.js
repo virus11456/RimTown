@@ -169,7 +169,7 @@ const ESTATE = (() => {
         { const left = short - Object.values(E.units).filter(u => u.built === day(w)).length; const sp = w.stockpile;
           const needPub = homeless > 0 && !Object.values(E.units).some(u => !u.occ); // 真的有人睡街上、又一間空屋都沒有才蓋
           for (let k = 0; needPub && k < Math.min(2, left); k++) {
-            const cost = 100, mat = { wood: 10, stone: 6 }; if (!sp || sp.get('silver') < cost + 400 || !sp.canAfford(mat)) break;
+            const cost = 100, mat = { wood: 10, stone: 6 }; if (!sp || ((typeof TREASURY !== 'undefined' && w.observerMode && w.wallet) ? TREASURY.budget(w) < cost : sp.get('silver') < cost + 400) || !sp.canAfford(mat)) break; // v10.7.0 用公庫可以動用的錢蓋
             sp.consume('silver', cost, w.tickCount, t('興建公有房舍'), 'upkeep'); sp.pay(mat, w.tickCount, t('興建公有房舍'));
             const id = 'U' + (++E.n); E.units[id] = { id, owner: null, occ: null, lv: 0, built: day(w), pub: 1 }; E.stats.publicBuilt = (E.stats.publicBuilt || 0) + 1;
             if (k === 0) log(w, '🏗️ 鎮上缺房子，公庫出錢蓋了公有房舍。', {}, '');

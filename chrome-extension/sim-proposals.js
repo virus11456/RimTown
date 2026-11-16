@@ -379,8 +379,9 @@ class ProposalSystem {
         const low = npcs.filter(a => bal(a) < 6).sort((x, y) => bal(x) - bal(y))[0] || npcs.filter(a => (a.mood || 0) < 15).sort((x, y) => (x.mood || 0) - (y.mood || 0))[0];
         // v6.87.0 公庫生活補助:公庫錢多、窮人也多時,從公庫發錢給身上沒錢的人(錢不再卡在公庫)
         const poorList = npcs.filter(a => bal(a) < 8);
-        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && silver >= 200 + npcs.length * 6 && this._cool(day, 'stipend', 10)) {
-            const per = Math.max(5, Math.min(20, Math.floor((silver * 0.35) / poorList.length))); const total = per * poorList.length;
+        const TRS = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null; const canGive = TRS ? TRS.budget(w) * 0.35 : silver * 0.35; // v10.7.0 公庫先留安全存量，超過的部分才拿來發補助
+        if (poorList.length >= Math.max(3, Math.ceil(npcs.length * 0.15)) && (TRS ? canGive >= 5 * poorList.length : silver >= 200 + npcs.length * 6) && this._cool(day, 'stipend', 10)) {
+            const per = Math.max(5, Math.min(20, Math.floor(canGive / poorList.length))); const total = per * poorList.length;
             out.push({ kind: 'stipend', key: 'stipend', weight: 1.8, jobs: ['priest', 'doctor', 'mayor'], make: () => ({ kind: 'stipend', key: 'stipend', tk: '從公庫發放生活補助', tp: {}, dk: '鎮上有 {n} 人身上快沒錢、三餐不繼，公庫卻存了 {s} 銀幣。每人發 {per} 銀幣補助，共 {total} 銀幣。', dp: { n: poorList.length, s: Math.round(silver), per, total }, cost: { silver: total }, per, effects: { mood_all: 1 }, category: 'welfare' }) });
         }
         // v6.87.0 最低工資是政治選擇,不是天生就有:做滿一天扣完稅還不夠過活的人一多,底層勞工會提,要投票通過才生效(錢從公庫出,有錢人多半反對)

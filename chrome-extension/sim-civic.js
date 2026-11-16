@@ -56,20 +56,29 @@ const CIVIC = (() => {
         // v9.6.0 公庫見底(付不出公職薪水、或剩不到每人 4 銀幣)先加稅;公庫還算寬裕(每人 8 銀幣以上)才因為窮人多而減稅
         // 以前只要四分之一的人窮就一直減稅,稅率卡在 2%,公庫空了也沒人提加稅
         const short = (w.wallet.shortDay ?? -99) >= d - 7;
-        let dir = null; if ((tr < Math.max(60, all.length * 4) || short) && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04 && tr >= all.length * 8) dir = 'down';
+        // v10.7.0 門檻改成「公庫夠付幾天的固定支出」：不夠 10 天先加稅，夠 45 天以上而且窮人多才減稅（以前是每人 4／8 銀幣，百人的鎮每人 8 銀幣只夠花一天半，稅率一路被減到 2%）
+        const TR = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null;
+        let dir = null; if (((TR ? TR.needTax(w) : tr < Math.max(60, all.length * 4)) || short) && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04 && (TR ? TR.high(w) : tr >= all.length * 8)) dir = 'down';
         if (!dir) return;
         const who = dir === 'up' ? (all.find(a => a.job?.key === 'mayor') || all.find(a => has(a, 'hardworking'))) : (all.filter(a => cash(w, a) < 10).sort((x, y) => (has(y, 'charismatic') ? 1 : 0) - (has(x, 'charismatic') ? 1 : 0))[0]);
         if (!who) return; C.lastTax = d;
         const nt = Math.round((dir === 'up' ? tax + 0.05 : tax - 0.05) * 100) / 100;
-        const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir, tk: dir === 'up' ? '加稅到 {n}%' : '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: dir === 'up' ? '{who}說公庫快見底了，提議把稅從 {a}% 調到 {n}%。' : '{who}說大家快活不下去了，提議把稅從 {a}% 降到 {n}%。', dp: { who: who.name, a: Math.round(tax * 100), n: Math.round(nt * 100) }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) };
+        const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir, tk: dir === 'up' ? '加稅到 {n}%' : '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: dir === 'up' ? (TR ? '{who}說公庫只夠付 {d} 天的薪水與維護，提議把稅從 {a}% 調到 {n}%。' : '{who}說公庫快見底了，提議把稅從 {a}% 調到 {n}%。') : '{who}說大家快活不下去了，提議把稅從 {a}% 降到 {n}%。', dp: { who: who.name, a: Math.round(tax * 100), n: Math.round(nt * 100), d: TR ? Math.floor(TR.days(w)) : 0 }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) };
         const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = dir; }
         return p;
     }
     function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return t('稅率從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(w.wallet.tax * 100)); } // v9.18.0 以前回傳 tpl 物件，提案卡顯示成 [object Object]
     function taxVote(w, p, a) {
         const c = cash(w, a), tr = w.stockpile?.get?.('silver') || 0;
-        if (p.dir === 'down') return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against';
+        const TR = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null;
         const civic = a.job?.key === 'mayor' || has(a, 'hardworking') || has(a, 'stoic');
+        if (TR) { // v10.7.0 領公庫薪水的人知道公庫空了自己就領不到：公庫吃緊時他們贊成加稅、反對減稅
+            const pub = typeof MARKET !== 'undefined' && MARKET.PUBLIC.includes(a.job?.key) && !MARKET.privatePaid?.(w, a); const tight = TR.low(w) || (w.wallet?.shortDay ?? -99) >= day(w) - 7;
+            if (p.dir === 'down') { if (tight && (pub || civic)) return 'against'; return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against'; }
+            if (tight && (pub || (civic && c >= 20))) return 'for';
+            return Math.random() < (tight ? (c < 20 ? 0.15 : c > 300 ? 0.2 : 0.45) : 0.15) ? 'for' : 'against';
+        }
+        if (p.dir === 'down') return (c < 50 || c > 200 || Math.random() < 0.4) ? 'for' : 'against';
         return (tr < 60 && civic && c >= 20) || Math.random() < 0.2 ? 'for' : 'against';
     }
     // ---------- 地價房租 ----------
