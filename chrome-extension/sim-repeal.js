@@ -272,8 +272,10 @@ const REPEAL = (() => {
     const holder = (w) => { try { return w.election?._officeHolder?.(w) || null; } catch (e) { return null; } };
     const titleOf = (w) => { try { return (typeof TIERS !== 'undefined') ? TIERS.leaderTitle(w) : t('鎮長'); } catch (e) { return t('鎮長'); } };
     const nextElection = (w) => { if (typeof ELECT !== 'undefined') return ELECT.nextMayorDay(w); const d = day(w); let c = Math.floor((d - 1) / 60) * 60 + 31; if (c <= d) c += 60; return c; }; // 單數年秋季第 1 天
-    const dislike = (w, a, L) => (a.relationships?.relationships?.[L.agentId]?.affinity || 0) / 25 - (w.power?.scandal?.[L.agentId] || 0) * 0.6 + 0.3; // <0＝不滿
-    const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < -0.5); // 連署要真的不滿（沒醜聞時好感低於 -20）；真模型實測發現只要有一樁醜聞，沒意見的人也全算進來
+    // <0＝不滿。醜聞只會讓人更容易不滿，不會讓不認識他的人直接變成反對者：最多扣 0.45（三樁以上算滿）
+    // v10.4.1 原本每 1 分醜聞扣 0.6，首長被揭發一次就是 2 分，跟他沒交情的人全被算成願意連署（115 人的鎮連署 100 人，實際討厭他的只有 21 人）
+    const dislike = (w, a, L) => (a.relationships?.relationships?.[L.agentId]?.affinity || 0) / 25 - Math.min(3, w.power?.scandal?.[L.agentId] || 0) * 0.15 + 0.3;
+    const signers = (w, L) => adults(w).filter(a => a.agentId !== L.agentId && dislike(w, a, L) < -0.5); // 連署要真的不滿：沒醜聞時好感低於 -20，有一樁醜聞（2 分）低於 -12.5，醜聞纏身（3 分以上）低於 -8.75
     function recallInfo(w, a) {
         const E = w.election; const L = holder(w); const R = S(w); const d = day(w); if (!L || !E) return { ok: false, why: 'none' };
         const term = E.lastElectionDay || 0; const sg = signers(w, L); const need = Math.max(RC.minSign, Math.ceil((adults(w).length - 1) * RC.sign));
