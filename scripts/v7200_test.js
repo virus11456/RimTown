@@ -34,7 +34,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const pop = npcs().length; const ownersBefore = { ...w.market.owners }; ['timber', 'mine', 'forge'].forEach((k, i) => { w.market.owners[k] = npcs()[3 + i].agentId; }); sp.resources.silver = pop * 40 + 200 + 1000; const t0 = inTown(), s0b = sp.get('silver'); C.works = 0; CYCLE.publicWorks(w, C, pop);
       out.works = { spent: Math.round(s0b - sp.get('silver')), drift: Math.round((inTown() - t0) * 100) / 100, logged: C.works }; w.market.owners = ownersBefore;
       // 4) 公庫太多:有人提案減稅
-      const P = w.proposals; P.items = P.items.filter(p => p.kind !== 'tax' && p.kind !== 'antitrust'); w.wallet.tax = 0.15; C.lastTaxProp = -99; sp.resources.silver = pop * 100;
+      const P = w.proposals; P.items = P.items.filter(p => p.kind !== 'tax' && p.kind !== 'antitrust'); w.wallet.tax = 0.15; C.lastTaxProp = -99; sp.resources.silver = (typeof TREASURY !== 'undefined') ? Math.ceil(TREASURY.fixed(w) * 80) : pop * 100; // v10.7.0 「存太多」改成夠付兩個多月的固定支出（以前是每人 80 銀幣）
       for (const a of npcs().slice(0, 4)) WALLET.add(w, a, 200);
       const _ad2 = w._absDay; w._absDay = () => 7 * 50 + 5; C.lastDay = -1; CYCLE.daily(w); w._absDay = _ad2;
       const tp = P.items.find(p => p.kind === 'tax'); out.taxProp = tp ? { dir: tp.dir, newTax: tp.newTax } : null;
