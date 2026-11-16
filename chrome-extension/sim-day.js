@@ -88,6 +88,9 @@ const DAY = (() => {
         return out;
     }
     const whyHas = (ctx, k) => (ctx?.why || []).includes(k);
+    // 突發的理由（宿醉、沒睡飽、不舒服、有約）當天就問；一直都在的理由（工資被壓、心情差、懶、節慶、喪親）三天才問一次，不然天天問同一題
+    const FRESH = ['hang1', 'hang2', 'tired', 'ill', 'pact'];
+    const askable = (w, a, why) => { if (!why.length) return false; if (why.some(x => FRESH.includes(x.k))) return true; const X = S(w); const q0 = X.warn['w' + a.agentId]; return q0 == null || X.d - q0 >= 3; };
 
     // ================= 結算：決定變成今天的安排 =================
     function setWork(w, a, how, ctx) {
@@ -211,7 +214,7 @@ const DAY = (() => {
             if (works(w, a)) {
                 const [ws, we] = a.job.workHours;
                 // 上工前一小時：有理由才問去不去
-                if (h === (ws + 23) % 24 && !r.work && !r.wq) { const why = reasons(w, a); if (why.length) { r.wq = 1; for (const x of why) X.st['r_' + x.k] = (X.st['r_' + x.k] || 0) + 1; q(w, a, 'workday', { d, why: why.map(x => x.k), ws }); asked++; } else r.work = 'go'; }
+                if (h === (ws + 23) % 24 && !r.work && !r.wq) { const why = reasons(w, a); if (askable(w, a, why)) { r.wq = 1; X.warn['w' + id] = d; for (const x of why) X.st['r_' + x.k] = (X.st['r_' + x.k] || 0) + 1; q(w, a, 'workday', { d, why: why.map(x => x.k), ws }); asked++; } else r.work = 'go'; }
                 // 沒說一聲就不來：兩個鐘頭後東家發現
                 if (h === ws + 2 && r.work === 'skip' && !r.bq) { r.bq = 1; const b = bossOf(w, a); if (b) { q(w, b, 'noshow', { d, x: id, n: strikes(w, a) }); asked++; } }
                 // 請了病假卻在外面晃：被東家看到，或被愛說話、跟他不對盤的人看到
@@ -294,13 +297,13 @@ const DAY = (() => {
 
     // 清晨排行程時 AI 順便決定今天去不去上工（有理由的人才會被問到）
     function planAsk(w, a) {
-        if (!on(w) || !works(w, a) || rec(w, a).work) return ''; const why = reasons(w, a); if (!why.length) return '';
+        if (!on(w) || !works(w, a) || rec(w, a).work) return ''; const why = reasons(w, a); if (!askable(w, a, why)) return '';
         return fill('【今天要拿主意】{why}上工的事在 JSON 多寫一個 "work"：go 照常去、late 晚兩個鐘頭到、leave 跟東家請一天假（沒工資）、skip 不說一聲就不去（沒工資，東家會知道）。', { why: { raw: why.map(x => tx(x.s)).join('') } });
     }
     function fromPlan(w, a, v) {
         v = String(v || '').trim().toLowerCase(); if (!['go', 'late', 'leave', 'skip'].includes(v) || !on(w) || !works(w, a)) return false; const r = rec(w, a); if (r.work || r.wq) return false;
         const h = w.clock.hour, [ws] = a.job.workHours; if (h >= ws) return false; const why = reasons(w, a); if (!why.length) return false;
-        const res = setWork(w, a, v, { why: why.map(x => x.k) }); r.ai = 1;
+        S(w).warn['w' + a.agentId] = S(w).d; const res = setWork(w, a, v, { why: why.map(x => x.k) }); r.ai = 1;
         try { const K = DECIDE.KINDS.workday; const op = K.options(w, a, { d: day(w), why: why.map(x => x.k), dry: 1 }).find(o => o.id === v); if (op) DECIDE.record(w, DECIDE.S(w), a, K, op, null, res, 'ai', day(w), null); } catch (e) {}
         return true;
     }
