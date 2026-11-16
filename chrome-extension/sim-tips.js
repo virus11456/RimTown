@@ -10,6 +10,7 @@ const TIPS = (() => {
     if (typeof DECIDE === 'undefined' || typeof DEAL === 'undefined' || typeof DEALASK === 'undefined' || !DEALASK || typeof PRESS === 'undefined') return null;
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+    const fam = (w, a, b) => { try { return !!(a && b && a !== b && (MONEY.familyOf(w, a) || []).some(f => f === b)); } catch (e) { return false; } }; // v11.0.0 真模型實測：家人要寫成家人，不只是「交情不錯」
     const cash = (w, a) => (typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : x));
@@ -128,7 +129,7 @@ const TIPS = (() => {
         facts(w, a, c) { const P = paper(w, c.pid); const list = (c.ids || []).map(id => tipOf(w, id)).filter(x => x && x.st === 'new'); if (!P || !list.length) return '';
             const own = live(w, P.owner);
             return fill('你是{paper}的記者。手上有這幾條線索：{list}{own}查一件事要花好幾天，會得罪人；不查，知道的人就只有那幾個。', { paper: P.name[0], own: own ? { k: '報社老闆是{o}。', p: { o: own.name } } : { raw: '' },
-                list: { raw: list.map((x, i) => fill('（{i}）{x}（{src}{more}）{rel}', { i: i + 1, x: tipText(w, x), src: srcText(w, x), more: x.more ? { k: '，另外還有 {n} 人來說', p: { n: x.more } } : { raw: '' }, rel: relText(w, a, P, x) })).join('') } }); },
+                list: { raw: list.map((x, i) => fill('（{i}）{x}（{src}{more}）{hurt}{rel}', { i: i + 1, x: tipText(w, x), src: srcText(w, x), more: x.more ? { k: '，另外還有 {n} 人來說', p: { n: x.more } } : { raw: '' }, hurt: hurtText(w, x), rel: relText(w, a, P, x) })).join('') } }); },
         options(w, a, c) {
             const P = paper(w, c.pid); const T = S(w); if (!P || P.journo !== a.agentId || T.cases[P.id]) return []; const list = (c.ids || []).map(id => tipOf(w, id)).filter(x => x && x.st === 'new'); if (!list.length) return [];
             const keen = (has(a, 'perfectionist') ? 1.4 : 1) * (has(a, 'lazy') ? 0.5 : 1);
@@ -142,8 +143,10 @@ const TIPS = (() => {
             return out;
         },
     });
+    // v11.0.0 真模型實測：偷工減料的線索越堆越多、出事的人越來越多，記者看到的題目卻每週一樣，於是每週都用同一句話放著不查。出事的人數寫進題目
+    function hurtText(w, x) { const f = x.fid ? DEAL.factOf(w, x.fid) : null; if (!f || f.kind !== 'cut' || !(f.harm > 0)) return { raw: '' }; return { k: '聽說已經有 {n} 個客人用了出事{d}。', p: { n: f.harm, d: f.dead ? { k: '，其中 {m} 人死了', p: { m: f.dead } } : { raw: '' } } }; }
     function relText(w, J, P, x) { const o = live(w, x.about); if (!o) return { raw: '' }; const v = aff(J, o); const cap = typeof POWER !== 'undefined' && POWER.captured(w, P, [o.agentId]);
-        return { k: '你跟{o}{r}{c}。', p: { o: o.name, r: v >= 40 ? '交情不錯' : v <= -20 ? '有些過節' : '沒什麼交情', c: cap ? '，他跟報社老闆有往來' : { raw: '' } } }; }
+        return { k: '你跟{o}{r}{c}。', p: { o: o.name, r: fam(w, J, o) ? '是一家人' : v >= 40 ? '交情不錯' : v <= -20 ? '有些過節' : '沒什麼交情', c: cap ? '，他跟報社老闆有往來' : { raw: '' } } }; }
 
     // ================= 記者來問你 =================
     DECIDE.kind('tipAsked', {

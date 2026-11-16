@@ -13472,6 +13472,11 @@
         '直接登了': 'printed it straight away',
         '你跟{o}{r}{c}。': ' You and {o} {r}{c}.',
         '交情不錯': 'are on good terms',
+        // v11.0.0 真模型實測後補：家人要寫成家人、出事的人數寫進記者的題目
+        '是一家人': 'are family',
+        '，是你的家人': ', family of yours',
+        '他是你的家人。': 'They are your family.',
+        '聽說已經有 {n} 個客人用了出事{d}。': ' Word is that {n} customers have already been hurt by it{d}.',
         '，他跟報社老闆有往來': ', and he has dealings with the paper\'s owner',
         '記者來問你知道的事': 'A reporter asks what you know',
         '{paper}的記者{j}來問你：{x}，是不是真的。{how}說了，這件事可能登上報；被{o}知道是你說的，他不會放過你。': '{j}, the reporter at {paper}, asks you whether this is true: {x}. {how} If you talk, it may end up in print; if {o} learns it came from you, he will not let it pass.',

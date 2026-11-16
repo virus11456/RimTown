@@ -14,6 +14,7 @@ const OFFICE = (() => {
     const PT_PAY = 1.5, FT_PAY = 4, NOM_GAP = 10;
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+    const fam = (w, a, b) => { try { return !!(a && b && a !== b && (MONEY.familyOf(w, a) || []).some(f => f === b)); } catch (e) { return false; } }; // v11.0.0 真模型實測：稅務員查的是自己的伴侶，題目卻只寫「是你的朋友」
     const cash = (w, a) => (typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : x));
@@ -142,7 +143,7 @@ const OFFICE = (() => {
         when() { return null; },
         facts(w, a, c) { const ts = targets(w, a, c.post); if (!ts.length) return ''; const M = mayor(w);
             return fill('你是{p}，{duty}。這禮拜還可以查 {n} 家。{owe}可以查的：{list}', { p: pname(c.post), duty: POSTS[c.post].duty, n: c.left || 1, owe: (S(w).posts[c.post]?.owe || 0) >= 3 ? { k: '公庫已經 {n} 天沒發你津貼。', p: { n: S(w).posts[c.post].owe } } : { raw: '' },
-                list: { raw: ts.map(x => fill('{s}（東家{o}{me}{rep}{ill}{fr}{dn}）', { s: x.key ? DEAL.sname(x.key) : { raw: '' }, o: x.o.name, me: x.o === a ? '，就是你自己' : { raw: '' }, rep: x.rep ? { k: '，有 {n} 人告發', p: { n: x.rep } } : { raw: '' }, ill: x.ill ? '，價錢明顯超過上限' : { raw: '' }, fr: x.o !== a && aff(a, x.o) >= 40 ? '，是你的朋友' : { raw: '' }, dn: M && inf(w, M, x.o) >= 20 ? '，給過首長不少錢' : { raw: '' } })).join(t('；')) } }); },
+                list: { raw: ts.map(x => fill('{s}（東家{o}{me}{rep}{ill}{fr}{dn}）', { s: x.key ? DEAL.sname(x.key) : { raw: '' }, o: x.o.name, me: x.o === a ? '，就是你自己' : { raw: '' }, rep: x.rep ? { k: '，有 {n} 人告發', p: { n: x.rep } } : { raw: '' }, ill: x.ill ? '，價錢明顯超過上限' : { raw: '' }, fr: x.o !== a && fam(w, a, x.o) ? '，是你的家人' : x.o !== a && aff(a, x.o) >= 40 ? '，是你的朋友' : { raw: '' }, dn: M && inf(w, M, x.o) >= 20 ? '，給過首長不少錢' : { raw: '' } })).join(t('；')) } }); },
         options(w, a, c) {
             if (postOf(w, a) !== c.post) return []; const ts = targets(w, a, c.post); if (!ts.length) return []; const M = mayor(w); const lazy = has(a, 'lazy') ? 0.5 : has(a, 'perfectionist') ? 1.4 : 1;
             const out = [{ id: 'skip', quiet: true, mute: true, text: '這禮拜不查了', say: '這禮拜沒有去查', why: '沒事何必得罪人', base: REF, lean: { safe: 0.3 }, run: () => null }];
@@ -186,7 +187,7 @@ const OFFICE = (() => {
         title: '查到問題了，怎麼辦', scan: false, pri: 1.6, aiGroup: G,
         when() { return null; },
         facts(w, a, c) { const o = live(w, c.oid); if (!o) return ''; const P = S(w).posts[c.post]; const M = mayor(w);
-            return fill('你查到{o}{s}{x}。照規定該罰 {n} 銀幣並公告。{o}手上有 {c} 銀幣。{fr}{dn}{owe}', { o: o.name, s: c.key ? { k: '的{s}', p: { s: DEAL.sname(c.key) } } : { raw: '' }, x: whatText(c.what), n: c.n, c: Math.floor(cash(w, o)), fr: aff(a, o) >= 40 ? '他是你的朋友。' : { raw: '' }, dn: M && inf(w, M, o) >= 20 ? { k: '他給過{m}不少錢，你這個位子是{m}給的。', p: { m: M.name } } : { raw: '' }, owe: (P?.owe || 0) >= 3 ? { k: '公庫已經 {n} 天沒發你津貼。', p: { n: P.owe } } : { raw: '' } }); },
+            return fill('你查到{o}{s}{x}。照規定該罰 {n} 銀幣並公告。{o}手上有 {c} 銀幣。{fr}{dn}{owe}', { o: o.name, s: c.key ? { k: '的{s}', p: { s: DEAL.sname(c.key) } } : { raw: '' }, x: whatText(c.what), n: c.n, c: Math.floor(cash(w, o)), fr: fam(w, a, o) ? '他是你的家人。' : aff(a, o) >= 40 ? '他是你的朋友。' : { raw: '' }, dn: M && inf(w, M, o) >= 20 ? { k: '他給過{m}不少錢，你這個位子是{m}給的。', p: { m: M.name } } : { raw: '' }, owe: (P?.owe || 0) >= 3 ? { k: '公庫已經 {n} 天沒發你津貼。', p: { n: P.owe } } : { raw: '' } }); },
         options(w, a, c) {
             const o = live(w, c.oid); if (!o || postOf(w, a) !== c.post) return []; const P = S(w).posts[c.post]; const M = mayor(w); const hon = honesty(a); const fr = aff(a, o) >= 40; const dn = M && inf(w, M, o) >= 20; const m = Math.max(5, Math.round(c.n * 0.5));
             const out = [{ id: 'fine', text: { k: '照規定罰 {n} 銀幣並公告', p: { n: c.n } }, say: { k: '照規定罰了{o}', p: { o: o.name } }, why: '查到了就照規定辦', base: REF + 0.4 + (hon >= 4 ? 0.5 : 0), lean: { face: 0.3, safe: -0.1 }, run: (w2, a2) => { const g = punish(w2, a2, c, false); return { k: '罰了 {n} 銀幣', p: { n: g } }; } }];
@@ -249,7 +250,7 @@ const OFFICE = (() => {
         title: '你提名的官員上了報', scan: false, pri: 1.8, aiGroup: G,
         when() { return null; },
         facts(w, a, c) { const o = live(w, c.id); const P = (w.press?.papers || []).find(x => x.id === c.pid); if (!o || !P) return '';
-            return fill(c.paid ? '{paper}登出：{o}（{p}）收了店家的錢，查到的事沒有辦。{n} 個讀者相信了。他是你提名的。{fr}' : '{paper}登出：{o}（{p}）接到告發卻沒有辦。{n} 個讀者相信了。他是你提名的。{fr}', { paper: P.name[0], o: o.name, p: pname(c.post), n: c.n, fr: aff(a, o) >= 40 ? '他是你的朋友。' : inf(w, a, o) >= 15 ? '他給過你錢。' : { raw: '' } }); },
+            return fill(c.paid ? '{paper}登出：{o}（{p}）收了店家的錢，查到的事沒有辦。{n} 個讀者相信了。他是你提名的。{fr}' : '{paper}登出：{o}（{p}）接到告發卻沒有辦。{n} 個讀者相信了。他是你提名的。{fr}', { paper: P.name[0], o: o.name, p: pname(c.post), n: c.n, fr: fam(w, a, o) ? '他是你的家人。' : aff(a, o) >= 40 ? '他是你的朋友。' : inf(w, a, o) >= 15 ? '他給過你錢。' : { raw: '' } }); },
         options(w, a, c) {
             const o = live(w, c.id); if (!o || mayor(w) !== a || postOf(w, o) !== c.post) return []; const hon = honesty(a); const tie = (aff(a, o) >= 40 ? 2 : 1) * (inf(w, a, o) >= 15 ? 1.8 : 1);
             return [

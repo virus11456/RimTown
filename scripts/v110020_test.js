@@ -89,6 +89,7 @@ async function run(browser, dev, lang) {
     // 6) 每週查誰、查到之後
     DEAL.setCut(w, 'textile', 1); const ft = DEAL.liveFact(w, 'textile', 'cut'); DEAL.F(w, 'textile').gain = 40; DEALASK.report(w, C1, ft);
     const tg = OFFICE.targets(w, OFF, 'market'); const tx = tg.find(x => x.key === 'textile'); out.work = { tgt: !!tx && tx.rep === 1 && tx.ill === true, ids: ids('officeWork', OFF, { post: 'market', left: 1 }).join(), notMine: K.officeWork.options(w, C1, { post: 'market', left: 1 }).length === 0, facts: K.officeWork.facts(w, OFF, { post: 'market', left: 1 }) };
+    { const fam0 = MONEY.familyOf; MONEY.familyOf = (W, a) => (a === OFF ? [O3] : fam0(W, a)); out.work.kin = /家人|family/.test(K.officeWork.facts(w, OFF, { post: 'market', left: 1 })); MONEY.familyOf = fam0; out.work.notKin = !/家人|family/.test(K.officeWork.facts(w, OFF, { post: 'market', left: 1 })); } // v11.0.0 真模型實測後補
     const bw0 = opt('officeWork', OFF, { post: 'market', left: 1 }, 'go:textile').base; like(OFF, O3, 60); out.work.friend = opt('officeWork', OFF, { post: 'market', left: 1 }, 'go:textile').base < bw0; like(OFF, O3, 0);
     DEAL.setUp(w, 'textile', 0); DEAL.setCut(w, 'textile', 0); DEAL.setCut(w, 'textile', 1); const ft2 = DEAL.liveFact(w, 'textile', 'cut'); DEAL.F(w, 'textile').gain = 40; D.reports.length = 0; DEALASK.report(w, C1, ft2);
     const tgt = () => OFFICE.targets(w, OFF, 'market').find(x => x.key === 'textile');
@@ -165,7 +166,7 @@ async function run(browser, dev, lang) {
   ok(r.nom.made && r.nom.major && r.nom.votes.mine.why === 'office_mine' && r.nom.votes.me.why === 'office_me' && r.nom.votes.like.v === 'for' && r.nom.votes.dis.v === 'against' && r.nom.sway && r.nom.conflict && r.nom.noDouble, '提名開成提案、算大事；正在表決的人不會同時被提去別的職位；投票看跟被提名人的交情；金主被提名時收過錢的人偏向他；自己開店的人來管店有人反對', r.nom);
   ok(r.seat.holder && r.seat.post === 'market' && r.seat.badge && r.seat.payroll && r.seat.mem, '通過就上任：掛上官職、津貼算進公庫的固定支出', r.seat);
   ok(r.seat.paid && r.seat.owe, '每天從公庫發津貼（錢一分不差）；公庫沒錢就記欠', r.seat);
-  ok(r.work.tgt && r.work.ids.startsWith('skip,go:textile') && r.work.notMine && r.work.friend, '每週查誰：有人告發的、價錢超過上限的排前面；可以不查；是朋友就比較不想查', r.work);
+  ok(r.work.tgt && r.work.ids.startsWith('skip,go:textile') && r.work.notMine && r.work.friend && r.work.kin && r.work.notKin, '每週查誰：有人告發的、價錢超過上限的排前面；可以不查；是朋友就比較不想查；東家是家人時題目寫明是家人', r.work);
   ok(r.work.miss && r.found.hit && r.found.asked, '去查不一定查得到；查到了由他自己決定怎麼辦', [r.work.miss, r.found]);
   ok(r.found.ids === 'fine,bribe,warn,sit,up' && r.found.notMine && r.found.greedy && r.found.honest, '查到之後：照罰／暗示花錢了事／私下警告／壓著／交給首長；貪心的比較會收、老實的幾乎不收', r.found);
   ok(r.graft.paid && r.graft.leak === 0 && r.graft.fact && r.graft.still && r.graft.snub && r.graft.guess, '收錢了事：錢真的過手、店照舊偷工、記成一件有人知道的事；告發的人發現沒有下文', r.graft);

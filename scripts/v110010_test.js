@@ -46,6 +46,8 @@ async function run(browser, dev, lang) {
 
     // 2) 記者選題
     const pc = { pid: 'P1', ids: [x.id, xh.id] }; out.pick = { ids: ids('tipPick', J, pc).join(), facts: K.tipPick.facts(w, J, pc), notMine: K.tipPick.options(w, J2, pc).length === 0 };
+    { const h0 = f.harm, fam0 = MONEY.familyOf; f.harm = 3; out.pick.hurt = /3 個客人|3 customers/.test(K.tipPick.facts(w, J, pc)); f.harm = h0; out.pick.noHurt = !/個客人用了出事|customers have already been hurt/.test(K.tipPick.facts(w, J, pc)) || h0 > 0;
+      MONEY.familyOf = (W, a) => (a === J ? [O1] : fam0(W, a)); out.pick.kin = /一家人|are family/.test(K.tipPick.facts(w, J, pc)); MONEY.familyOf = fam0; } // v11.0.0 真模型實測後補：出事人數與家人關係寫進記者的題目
     const b0 = opt('tipPick', J, pc, 'go:' + x.id).base; J.relationships.getOrCreate(O1.agentId, O1.name).affinity = 60; const bFriend = opt('tipPick', J, pc, 'go:' + x.id).base; J.relationships.getOrCreate(O1.agentId, O1.name).affinity = 0;
     P1.owner = PO.agentId; PW.inf[PO.agentId] = { [O1.agentId]: 30 }; const bCap = opt('tipPick', J, pc, 'go:' + x.id).base; out.pick.cap = /往來|dealings/.test(K.tipPick.facts(w, J, pc)); PW.inf = {}; P1.owner = null;
     traits(J, ['gossip']); out.pick.rush = ids('tipPick', J, pc).includes('rush:' + x.id); traits(J, []);
@@ -114,7 +116,7 @@ async function run(browser, dev, lang) {
   });
   ok(!r.board.on && r.board.papers === 0 && r.board.noTip, '只有公告欄的小地方：沒有記者，也沒有「向報社說」這條路', r.board);
   ok(r.box.on && r.box.anon && r.box.one && r.box.more && r.box.self, '線索進箱：匿名爆料、同一件事多人來說併成一條、記者自己看到的大幅漲價', r.box);
-  ok(r.pick.ids.startsWith('none,go:') && r.pick.ids.split(',').length === 3 && r.pick.notMine && r.pick.lean && r.pick.cap && r.pick.rush, '記者選題：每條線索一個選項；跟當事人有交情、他跟報社老闆有往來，就比較不想查；愛八卦的可以不查就登', r.pick);
+  ok(r.pick.ids.startsWith('none,go:') && r.pick.ids.split(',').length === 3 && r.pick.notMine && r.pick.lean && r.pick.cap && r.pick.rush && r.pick.hurt && r.pick.noHurt && r.pick.kin, '記者選題：每條線索一個選項；跟當事人有交情、他跟報社老闆有往來，就比較不想查；愛八卦的可以不查就登；題目寫出已經有幾個客人出事、當事人是不是家人', r.pick);
   ok(r.pick.started, '選了就立案：線索標成查證中，手上還只有傳聞', r.pick);
   ok(r.dig.asked && r.dig.ids === 'no,talk,anon,money', '查證：每天去問最多兩位知情的人；對方可以不說、具名說、不具名說、要錢才說', r.dig);
   ok(r.dig.lv1 && r.dig.lv2 && r.dig.victim && r.dig.money && r.dig.honest, '員工具名是人證、再一位不具名就是鐵證；受害人的話只算一半；花錢買得到說法；老實的人比較肯說', r.dig);
