@@ -89,6 +89,9 @@ class ProposalSystem {
     pending() { return this.items.filter(p => p.status === 'open' || p.status === 'shelved'); }
     byId(id) { return this.items.find(p => p.id === id) || null; }
     _cost(p) { return p.cost || {}; }
+    // v11.3.0 缺的材料向外地訂大概要花多少銀幣（算法同下面 _procure 的外地訂貨：貴六成，木材這類每天會用掉的多訂四分之一再加 3）；寫進提案說明，投票的人和首長才知道這一案要動多少公庫
+    _buyEst(w, cost) { const BURN = { wood: 1, food: 1, meals: 1, cloth: 1, herbs: 1 }; let n = 0; for (const [r, q] of Object.entries(cost || {})) { if (r === 'silver' || typeof BASE_PRICES === 'undefined' || BASE_PRICES[r] == null) continue; let need = Math.ceil(q - (w.stockpile?.get?.(r) || 0)); if (!(need > 0)) continue; if (BURN[r]) need = Math.ceil(need * 1.25) + 3; n += need * Math.round(BASE_PRICES[r] * 1.6 * 10) / 10; } return Math.ceil(n); }
+    _silverCost(p) { return (this._cost(p).silver || 0) + (p.buyEst || 0); } // v11.3.0 投票與裁決掂量的花費：直接要付的銀幣＋買缺料的估價（以前只看前者）
     // v7.2.1 已批准的提案先保留材料:較早批准的優先,後面的要扣掉前面保留的才算夠
     _approvedQueue() { return this.items.filter(x => x.status === 'approved').sort((a, b) => (a.approvedDay || 0) - (b.approvedDay || 0) || (a.n || 0) - (b.n || 0)); }
     _reservedBefore(p) { const R = {}; for (const x of this._approvedQueue()) { if (x === p) break; for (const [r, n] of Object.entries(this._cost(x))) R[r] = (R[r] || 0) + n; } return R; }
@@ -174,6 +177,7 @@ class ProposalSystem {
         for (const p of this.items) {
             if (p._ruling && p._rulingDay === day) continue; // v6.39.0 鎮長還在想(LLM 回覆中)
             if (p._ruling) { p._ruling = false; delete p._rulingDay; p._llmRuledDay = day; p._rulingTicket = (p._rulingTicket || 0) + 1; } // v6.43.7 換號:遲到的舊回覆作廢 // v6.43.6 隔天還掛著(回覆丟了或讀檔帶進來)就不再等,今天直接照規則裁決(不再重問 AI,免得一直卡在等回覆)
+            if (p.order && (p.status === 'done' || p.status === 'failed')) this._deliver(w, p, day); // v11.3.0 貨還在路上、提案卻先辦完了（倉庫剛好補夠）：以前付了錢的貨就不見了，現在到了照樣進倉庫
             if (p.status === 'open') {
                 // v6.37.0 上帝視角:觀察者不再批准／否決,由村民投票 + NPC 鎮長裁決
                 const voted = Object.keys(p.votes || {}).length, pop = Math.max(1, this._npcs(w).length - 1);
@@ -252,7 +256,7 @@ class ProposalSystem {
         if (this._hasTrait(a, 'pessimist')) add('pessimist', -1); if (this._hasTrait(a, 'optimist')) add('optimist', 1);
         if (a.job?.key && p.jobBias && p.jobBias.includes(a.job.key)) add('job', 2);
         const rel = a.relationships?.relationships?.[p.proposerId]; if (rel) { const d = (rel.affinity || 0) / 100 * 4; add(d >= 0 ? 'relgood' : 'relbad', d); }
-        const silverCost = this._cost(p).silver || 0; if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
+        const silverCost = this._silverCost(p); if (silverCost && silverCost > (w.stockpile?.get?.('silver') || 0)) add('cost', -2);
         s += (Math.random() - 0.5) * 4;
         p.votes[a.agentId] = s >= 0 ? 'for' : 'against';
         const side = s >= 0 ? 1 : -1; let best = null; for (const [k, d] of R) if (Math.sign(d) === side && Math.abs(d) >= 0.5 && (!best || Math.abs(d) > Math.abs(best[1]))) best = [k, d];
@@ -482,7 +486,8 @@ class ProposalSystem {
             // v6.81.0 已經夠格升格、只差擴建鎮公所的建材:馬上有人提案去進貨(以前只會等，沒有木材的鎮會卡在村莊很久)
             try {
                 const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
-                if (pr && pr.next && pr.streak >= pr.need && pr.matLack && Object.keys(pr.matLack).length) {
+                const tierBusy = this.items.some(x => x.kind === 'tier_up' && (x.status === 'open' || x.status === 'shelved' || x.status === 'approved')); // v11.3.0 升格案已經在表決或備料：缺的料由那一案買，不再另外提「為升格進一批」（免得買兩次）
+                if (pr && pr.next && pr.streak >= pr.need && pr.matLack && Object.keys(pr.matLack).length && !tierBusy) {
                     for (const [r, lackN] of Object.entries(pr.matLack)) {
                         if (!SI[r] || !(lackN > 0) || !this._cool(day, 'market:buy:tier:' + r, 4)) continue;
                         const qty = Math.ceil(lackN + 10), price = SI[r].buyPrice * qty;
@@ -517,11 +522,14 @@ class ProposalSystem {
         // v6.81.0 申請升格:連續達標、建材也備好了，就由首長或議員提案(建材不夠時先提「為升格進一批…」)
         try {
             const pr = (typeof TIERS !== 'undefined' && TIERS.progress) ? TIERS.progress(w) : null;
-            if (pr && pr.next && TIERS.ready?.(w) && !Object.keys(pr.matLack || {}).length && this._cool(day, 'tier_up', 10)) {
+            // v11.3.0 建材不夠也可以提升格案：以前要倉庫裡同時湊齊才有人提，城市的木材每天都被用掉、永遠湊不齊（一百多人的城市夠格當王都三百多天都升不上去）。現在缺料時把建材列成這一案的成本，通過後照一般提案保留材料、公庫去買缺的；建材本來就夠的照舊
+            const tierLack = pr ? (pr.matLack || {}) : {}, tierShort = Object.keys(tierLack).length > 0;
+            if (pr && pr.next && TIERS.ready?.(w) && (!tierShort || (pr.mat && this._obtainable(w, pr.mat))) && this._cool(day, 'tier_up', 10) && !this.items.some(x => x.kind === 'tier_up' && x.status === 'approved')) { // 已經有一案通過、正在備料就不再提
                 const tier = t(pr.next.zh), SIx = (typeof SHOP_ITEMS !== 'undefined') ? SHOP_ITEMS : {};
                 const matTxt = Object.entries(pr.mat || {}).map(([r, n]) => `${SIx[r]?.name?.() || t(r)} ${n}`).join(t('、'));
                 const leader = t(pr.next.leader), seats = pr.next.seats;
-                out.push({ kind: 'tier_up', key: 'tier_up', weight: 4, jobs: ['mayor', 'trader', 'guard', 'researcher'], make: (a) => ({ kind: 'tier_up', key: 'tier_up', refKey: pr.next.key, tk: '申請升格為{tier}', tp: { tier }, dk: '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。', dp: { who: a.name, tier, pop: pr.pop[0], pros: pr.pros[0], mat: matTxt, seats, leader }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) });
+                const tierEst = tierShort ? this._buyEst(w, pr.mat) : 0, tierMissTxt = tierShort ? this._missText(Object.fromEntries(Object.entries(pr.mat).map(([r, n]) => [r, n - (sp?.get?.(r) || 0)]).filter(([, n]) => n > 0))) : ''; // 缺多少照倉庫裡實際的數量算（跟公庫去買的數量同一個算法）
+                out.push({ kind: 'tier_up', key: 'tier_up', weight: 4, jobs: ['mayor', 'trader', 'guard', 'researcher'], make: (a) => ({ kind: 'tier_up', key: 'tier_up', refKey: pr.next.key, tk: '申請升格為{tier}', tp: { tier }, dk: tierShort ? '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；倉庫裡還缺{lack}，通過後由公庫向外地買齊，大約要花 {n} 銀幣；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。' : '鎮上已經連續好幾天夠格（人口 {pop}、繁榮 {pros}）。{who}提議擴建鎮公所、正式升格為{tier}：要用掉{mat}；升格後議會擴大到 {seats} 席、首長改稱{leader}，鎮上也住得下更多人。', dp: { who: a.name, tier, pop: pr.pop[0], pros: pr.pros[0], mat: matTxt, lack: tierMissTxt, n: tierEst, seats, leader }, cost: tierShort ? { ...pr.mat } : {}, ...(tierShort ? { buyEst: tierEst } : {}), category: 'economy', jobBias: ['mayor', 'trader'] }) });
             }
         } catch (e) {}
         // 產業升級
@@ -575,7 +583,7 @@ class ProposalSystem {
         for (const v of (PROPOSAL_POLICY_VALUES[p.category] || [])) if (this._hasValue(m, v)) s += 1;
         if (p.proposerId === m.agentId) s += 2;
         const rel = m.relationships?.relationships?.[p.proposerId]; if (rel) s += (rel.affinity || 0) / 50;
-        if (this._hasTrait(m, 'greedy') && (this._cost(p).silver || 0) > 30) s -= 1;
+        if (this._hasTrait(m, 'greedy') && this._silverCost(p) > 30) s -= 1;
         if (this._hasTrait(m, 'pessimist')) s -= 0.5; if (this._hasTrait(m, 'optimist')) s += 0.5;
         if (p.kind === 'trial' || p.kind === 'relief') s += 1;
         if (w && this._glutOf(w, p) >= 1) s += 1;
@@ -586,7 +594,7 @@ class ProposalSystem {
         // v6.39.0 完整智能體:鎮長用 LLM 裁決(非同步);失敗退回下面的規則
         if (m && w.fullAgentMode && w.conversationEngine?.decideMayor && !p._ruling && p._llmRuledDay !== day) { p._ruling = true; p._rulingDay = day; const ticket = p._rulingTicket = (p._rulingTicket || 0) + 1; this._mayorRuleLLM(w, p, day, final, m, ticket); return; }
         const f = this._count(p, 'for'), a = this._count(p, 'against'), total = f + a;
-        const silver = w.stockpile?.get?.('silver') || 0, cost = this._cost(p).silver || 0;
+        const silver = w.stockpile?.get?.('silver') || 0, cost = this._silverCost(p);
         let action, why;
         if (!m) { action = f >= a ? 'approve' : 'reject'; why = 'nomayor'; }
         else if (cost > 40 && cost > silver * 1.5) { action = 'reject'; why = 'cost'; }
@@ -670,6 +678,7 @@ class ProposalSystem {
         this._deliver(w, p, day);
         if (!this._affordable(w, p)) this._procure(w, p, day);
         if (!this._affordable(w, p)) {
+            if (p.kind === 'tier_up' && !p.prepNoted && !p.buyShort) { p.prepNoted = true; w.logMessageT?.('event', '🏗️ 升格案通過了，鎮公所開始為擴建備料：還缺{m}，公庫去買，到齊就動工。', { m: this._missText(this._shortfall(w, p)) }); } // v11.3.0 讓看的人知道鎮公所在備料
             p.waitDays = (p.waitDays || 0) + 1;
             if (p.waitDays > ProposalSystem.WAIT_DAYS && !(p.order && p.order.day <= day + 3 && p.waitDays <= ProposalSystem.WAIT_DAYS + 5)) { // 外地的貨快到了就多等幾天
                 const miss = this._shortfall(w, p); p.short = miss; p.status = 'failed'; p.resolvedDay = day;

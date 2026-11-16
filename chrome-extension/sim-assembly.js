@@ -42,7 +42,7 @@ const ASSEMBLY = (() => {
     }
     function isMajor(w, p) {
         if (!p || p.kind === 'verdict') return false;
-        let cost = 0; try { cost = w.proposals?._cost?.(p)?.silver || 0; } catch (e) {}
+        let cost = 0; try { cost = w.proposals?._silverCost ? w.proposals._silverCost(p) : (w.proposals?._cost?.(p)?.silver || 0); } catch (e) {} // v11.3.0 連買缺料的估價一起算
         if (lv(w) === 0) return VILLAGE.has(p.kind);
         return MAJOR.has(p.kind) || cost >= 100;
     }
@@ -79,7 +79,7 @@ const ASSEMBLY = (() => {
             pubPart = lean * 3.5 * k; s += pubPart;
         }
         s += 0.7; // 送到議會的案子多半已經過了民意一關,議員傾向放行
-        let cost = 0; try { cost = ps._cost(p).silver || 0; } catch (e) {}
+        let cost = 0; try { cost = ps._silverCost ? ps._silverCost(p) : (ps._cost(p).silver || 0); } catch (e) {} // v11.3.0 連買缺料的估價一起算
         if (cost >= 100 && (has(a, 'greedy') || hasV(a, '財富'))) s -= 0.6;
         const rel = aff(a, w.agents[p.proposerId]); s += rel / 60;
         s += (Math.random() - 0.5) * 1.6;

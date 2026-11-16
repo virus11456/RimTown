@@ -7,6 +7,7 @@
 //   6) 心動：浪漫的人聊得來會心動，隔幾天才會再有；交情不夠、性子也不特別合的不會
 //   7) 沒開觀察者模式時照舊；放著跑 10 天沒有錯誤
 //   8) 糧倉容量跟著城鎮等級；9) 其他寫死的數字也跟著規模長（30 人的村莊照舊、118 人的城市變大）：原料保底、多出來才賣的線、堆太多放慢、宴席與被搶的糧食、來襲強度、提案上限、拿藥人數、擠兌門檻
+//   10) 夠格升格但建材不夠：升格案照樣提、通過後公庫買齊再升格，建材只付一次
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -101,6 +102,23 @@ async function run(browser, dev, lang) {
           return o; };
         sizeTo(30); T0.lv = 0; out.scaleV = snap(); sizeTo(118); T0.lv = 2; out.scaleC = snap(); T0.lv = lv0;
         out.bankLine = [BANK.badLine({ dep: { a: 300, b: 500 } }), BANK.badLine({ dep: { a: 3000 } })]; }
+      // 10) 夠格升格但建材不夠：升格案照樣提得出來，通過後公庫把缺的買齊再升格（建材只付一次）；建材本來就夠的照舊；公庫沒錢就寫明原因作罷
+      { const tierCase = async (seed, wood, silver, mode) => { fresh(seed); const T = TIERS.S(w); const met0 = TIERS.met; TIERS.met = () => 3; const o = { wood0: wood }; try {
+          T.lv = 2; T.up = 3; T.readySince = null; const P = w.proposals; P.items = []; P.cooldown = {}; const day = w._absDay(); const sp = w.stockpile; const set = (k, n) => { sp.resources[k] = n; };
+          for (const k of ['hardwood', 'plank', 'marble', 'brick', 'steel', 'luxury_furniture']) set(k, 0); set('wood', wood); set('stone', 500); set('metal', 100); set('furniture', 50); set('silver', silver); sp.reserved = {}; if (w.trade) w.trade.merchant = null;
+          o.mat = ECON.tierMat(3); o.ready = TIERS.ready(w); const cs = P._candidates(w, day) || []; const cand = cs.find(x => x.key === 'tier_up'); o.cand = !!cand; o.buyBefore = cs.some(x => String(x.key).startsWith('market:buy:tier:')); if (!cand) return o;
+          const a = Object.values(w.agents).find(x => !x.isPlayer && !x.isDead); const p = P._createWith(w, day, cand, a); o.cost = p.cost; o.desc = P.desc(p); o.est = p.buyEst || 0; o.weigh = P._silverCost(p);
+          if (mode === 'mayor') { const m = P._mayor(w); o.hasMayor = !!m; w.fullAgentMode = false; P._mayorRule(w, p, day, true); o.status = p.status; o.why = p.mayorWhy; o.whyText = P.mayorWhyText(p); o.lv = T.lv; o.silver = sp.get('silver'); return o; } o.buyWhileOpen = (P._candidates(w, day) || []).some(x => String(x.key).startsWith('market:buy:tier:'));
+          const get = () => ({ silver: Math.round(sp.get('silver') * 10) / 10, wood: Math.round(sp.get('wood') * 10) / 10, stone: sp.get('stone'), metal: sp.get('metal'), furniture: sp.get('furniture') }); const s0 = get(); const log0 = (w.messageLog || []).length; const h0 = sp.history.length;
+          P.decide(w, p.id, 'approve'); o.afterApprove = { status: p.status, lv: T.lv, order: p.order ? { items: p.order.items, paid: p.order.paid, in: p.order.day - day } : null, spent: Math.round((s0.silver - sp.get('silver')) * 10) / 10, reservedWood: (sp.reserved || {}).wood || 0, again: (P._candidates(w, day + 11) || []).some(x => x.key === 'tier_up') };
+          o.prepLog = (w.messageLog || []).slice(log0).map(m => String(m.content || (m.k ? t(m.k) : ''))).filter(x => /備料|gathering materials/.test(x)).length;
+          let days = 0;
+          if (mode === 'ticks') { const d0 = w._absDay(); let n = 0; while (T.lv < 3 && w._absDay() - d0 < 6 && n++ < 700) { w.paused = false; w.tick(); if (n % 240 === 0) await new Promise(r2 => setTimeout(r2, 5)); } days = w._absDay() - d0; }
+          else { while (p.status === 'approved' && days < 20) { days++; P._execute(w, p, day + days); } }
+          const s1 = get(); o.days = days; o.lv = T.lv; o.status = p.status; o.result = t(p.result || ''); o.leftOrder = !!p.order; o.d = { silver: Math.round((s0.silver - s1.silver) * 10) / 10, wood: Math.round((s1.wood - s0.wood) * 10) / 10, stone: s0.stone - s1.stone, metal: s0.metal - s1.metal, furniture: s0.furniture - s1.furniture }; o.reservedAfter = Object.keys(sp.reserved || {}).length;
+          if (mode !== 'ticks') { const hs = sp.history.slice(h0).filter(e => e.resource === 'silver'); const outs = hs.filter(e => e.amount < 0); o.pay = { n: outs.length, sum: Math.round(-outs.reduce((x, e) => x + e.amount, 0) * 10) / 10, back: Math.round(hs.filter(e => e.amount > 0).reduce((x, e) => x + e.amount, 0) * 10) / 10, backWhy: [...new Set(hs.filter(e => e.amount > 0).map(e => e.reason))] }; }
+        } catch (e) { o.err = String(e && e.stack || e).slice(0, 400); } finally { TIERS.met = met0; } return o; };
+        out.tierShort = await tierCase(31, 8, 3000, 'step'); out.tierHave = await tierCase(31, 300, 3000, 'step'); out.tierPoor = await tierCase(31, 8, 100, 'step'); out.tierMayor = await tierCase(31, 8, 100, 'mayor'); out.tierRun = await tierCase(33, 8, 3000, 'ticks'); }
       // 7) 關掉時照舊；放著跑
       fresh(17); w.observerMode = false; { const a = npcs()[0]; a.activity = 'wandering'; a._dayLoc = 'x'; DAY.steer(w, a); out.off = a._dayLoc; } w.observerMode = true;
       for (let i = 0; i < 10 * 96; i++) { w.paused = false; w.tick(); if (i % 480 === 479) await new Promise(r2 => setTimeout(r2, 5)); } out.run = DAY.view(w).st; out.en = [t('跟朋友約好了'), t('想約{b}出去走走，他說改天。')];
@@ -151,8 +169,18 @@ async function run(browser, dev, lang) {
     ok(V.maxOpen && V.maxOpen.join() === '4,5,6,7' && V.maxStatic === 4 && V.genOpen === 4 && C.genOpen === 5, `${tag} 同時開著的提案上限：村莊 4、城鎮 5、城市 6、王都 7；已有 4 案時村莊不再開新案，城市還會開`, { m: V.maxOpen, v: V.genOpen, c: C.genOpen });
     ok(V.med && V.med.got && V.med.got.join() === '5,6,7' && C.med.got && C.med.got.join() === '5,6,7,8,9,10,11,12', `${tag} 心情低落去拿藥：村莊（兩位醫生）照舊 3 人，城市（五位醫生）8 人，都是心情最差的先看`, { v: V.med, c: C.med });
     ok(r.bankLine && r.bankLine[0] === 40 && r.bankLine[1] === 150, `${tag} 擠兌的呆帳門檻：存款 800 照舊 40，存款 3000 是 150`, r.bankLine); }
+  { const S = r.tierShort || {}, H = r.tierHave || {}, Q = r.tierPoor || {}, R = r.tierRun || {}; const A = S.afterApprove || {}; const paid = A.order ? A.order.paid : -1; const got = A.order ? (A.order.items.wood || 0) : 0;
+    ok(!S.err && S.ready && S.cand && S.cost && S.cost.wood === 150 && S.cost.stone === 220 && S.cost.metal === 40 && S.cost.furniture === 15 && S.est === 435 && S.weigh === 435 && (zh ? /還缺.*142.*大約要花 435 銀幣/.test(S.desc) : /short of .*142.*about 435 silver/.test(S.desc)), `${tag} 夠格當王都、木材只有 8：升格案照樣提得出來，建材列成這一案的成本，說明寫明缺木材 142、公庫大約要花 435 銀幣`, { e: S.err, ready: S.ready, cand: S.cand, cost: S.cost, est: S.est, desc: S.desc });
+    ok(S.buyBefore === true && S.buyWhileOpen === false && A.again === false, `${tag} 升格案在表決或備料時，不再另外提「為升格進一批」，也不會再提第二個升格案`, { before: S.buyBefore, open: S.buyWhileOpen, again: A.again });
+    ok(A.status === 'approved' && A.lv === 2 && A.order && got >= 142 && A.order.in >= 2 && A.order.in <= 3 && paid === S.est && S.prepLog >= 1, `${tag} 通過之後公庫才去買：向外地訂了缺的木材（2～3 天到）、花的錢跟提案上寫的一樣、建材先保留、日誌寫鎮公所開始備料`, { a: A, log: S.prepLog });
+    ok(S.lv === 3 && S.status === 'done' && S.days >= 2 && S.days <= 3 && !S.leftOrder && S.reservedAfter === 0, `${tag} 貨到的那天就升格成王都（三天內），不再保留建材`, { lv: S.lv, st: S.status, days: S.days, res: S.result });
+    ok(S.d && S.pay && S.pay.n === 1 && S.pay.sum === paid && S.pay.backWhy.length <= 1 && Math.abs(S.d.silver - (paid - S.pay.back)) < 0.11 && S.d.wood === got - 150 && S.d.stone === 220 && S.d.metal === 40 && S.d.furniture === 15, `${tag} 帳對得起來：公庫只付訂貨那一筆（其中付給本地公營承包商的工程款照舊回到公庫），木材＝訂來的－150，石材 220、金屬 40、家具 15 各只扣一次`, { d: S.d, pay: S.pay, paid, got });
+    ok(!H.err && H.cand && H.cost && Object.keys(H.cost).length === 0 && H.buyBefore === false && H.est === 0 && H.weigh === 0 && H.afterApprove.lv === 3 && H.status === 'done' && H.afterApprove.order === null && H.pay.n === 0 && H.d.silver === 0 && H.d.wood === -150 && H.d.stone === 220 && H.d.metal === 40 && H.d.furniture === 15 && (zh ? !/由公庫/.test(H.desc) : !/treasury will buy/.test(H.desc)), `${tag} 建材本來就夠的照舊：提案不帶成本、通過當天就升格、不花銀幣、建材扣一次`, { e: H.err, cost: H.cost, a: H.afterApprove, st: H.status, d: H.d });
+    ok(!Q.err && Q.cand && Q.afterApprove.order === null && Q.lv === 2 && Q.status === 'failed' && Q.days <= 9 && Q.prepLog === 0 && Q.pay.n === 0 && Q.d.silver === 0 && Q.d.wood === 0 && Q.d.stone === 0 && (zh ? /公庫的錢也不夠買/.test(Q.result) : !/[一-鿿]/.test(Q.result)), `${tag} 公庫買不起：等一週後寫明缺什麼作罷，沒升格、錢和建材都沒動`, { e: Q.err, a: Q.afterApprove, lv: Q.lv, st: Q.status, days: Q.days, res: Q.result, d: Q.d });
+    { const M = r.tierMayor || {}; ok(!M.err && M.cand && M.weigh === 435 && M.lv === 2 && M.silver === 100 && (M.hasMayor ? (M.status === 'rejected' && M.why === 'cost') : true), `${tag} 公庫只有 100、買料要 435：照規則裁決的首長會因為花費否決（投票與裁決掂量的花費含買料的估價），沒有自動買料`, M); }
+    ok(!R.err && R.cand && R.lv === 3 && R.status === 'done' && R.days <= 4, `${tag} 真的放著跑：通過後四天內升格成王都`, { e: R.err, lv: R.lv, st: R.status, days: R.days, a: R.afterApprove }); }
   if (r.run) console.log('   ', JSON.stringify(r.run));
-  if (process.env.SHOW) console.log('   ', JSON.stringify({ v: r.scaleV, c: r.scaleC }));
+  if (process.env.SHOW) console.log('   ', JSON.stringify({ v: r.scaleV, c: r.scaleC, tier: [r.tierShort, r.tierHave, r.tierPoor, r.tierMayor, r.tierRun] }));
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }
