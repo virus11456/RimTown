@@ -89,7 +89,7 @@ const DEALASK = (() => {
     }
 
     // ================= 老闆每週怎麼做生意 =================
-    const P_UP = { 0.1: 0.16, 0.2: 0.08, 0.3: 0.03, 0.5: 0.01 }, P_CUT = { 1: 0.06, 2: 0.02 }; // 一週裡大約有幾成機會選這一項（個性與處境會再調）
+    const P_UP = { 0.1: 0.16, 0.2: 0.08, 0.3: 0.03, 0.5: 0.01 }, P_CUT = { 1: 0.085, 2: 0.03 }; // 傾向的強度（個性與處境會再調）。選項彼此搶，實際被選到的比例跟這裡的數字不一樣。v11.0.0 實測（沒開 AI，拿鎮上每個大人當東家各擲 400 次）：一週約兩成漲價（多半一成）、約 6% 開始偷工（手頭有錢的東家大約一半）
     function runInfo(w, a) {
         if (!on(w)) return null; const keys = DEAL.firmsOf(w, a.agentId); if (!keys.length) return null; const d = day(w); const key = keys[d % keys.length]; const k = DEAL.kOf(key);
         const st = DEAL.F(w, key); const alt = DEAL.other(w, key); const M = MARKET.S(w); const R = MARKET.rivalOf(w, k); const hist = (DEAL.isRiv(key) ? R?.hist : M.hist?.[k]) || [];
