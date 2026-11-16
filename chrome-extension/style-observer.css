@@ -1595,3 +1595,34 @@ body.rimtown-page { font-family: 'Noto Sans TC', 'Nunito', 'PingFang TC', 'Micro
 /* v10.1.0 心聲卡片：翻開手記改成名字旁邊的小圖示 */
 .pv-nb{min-width:40px;min-height:40px;border:1px solid #39435a;border-radius:99px;background:#222a3a;color:inherit;font:inherit;font-size:15px;cursor:pointer;line-height:1}
 .pv-nb:hover,.pv-nb:focus-visible{border-color:#f0b35a}
+
+/* v11.0.0 市場與輿論（提案分頁的「市場」子分頁） */
+.rimtown-container .mk-shop{padding:8px 0;border-bottom:1px solid var(--border,#2b3446)}
+.rimtown-container .mk-shop:last-child{border-bottom:0}
+.rimtown-container .mk-shop-h{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.rimtown-container .mk-shop-n{font-size:.86rem;font-weight:600;color:var(--text-primary)}
+.rimtown-container .mk-shop-n small{font-weight:400;color:var(--text-muted);margin-left:2px}
+.rimtown-container .mk-shop-o{font-size:.74rem;color:var(--text-muted)}
+.rimtown-container .mk-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:6px}
+.rimtown-container .mk-fact{padding:6px 0;border-bottom:1px dashed var(--border,#2b3446);font-size:.8rem;line-height:1.5}
+.rimtown-container .mk-fact:last-child{border-bottom:0}
+.rimtown-container .mk-fact.off{opacity:.6}
+.rimtown-container .mk-fact-t{display:block;color:var(--text-primary)}
+.rimtown-container .mk-fact-m{display:block;font-size:.72rem;color:var(--text-muted)}
+.rimtown-container .mk-story{border:1px solid var(--border,#2b3446);border-left:3px solid #8a93a3;border-radius:10px;padding:8px 10px;margin:0 0 8px;background:rgba(255,255,255,.03)}
+.rimtown-container .mk-story.on{border-left-color:#e9b95a}
+.rimtown-container .mk-story-h{display:flex;justify-content:space-between;gap:8px;align-items:flex-start;font-size:.82rem;line-height:1.5;color:var(--text-primary)}
+.rimtown-container .mk-story-h>span:first-child{min-width:0;overflow-wrap:anywhere}
+.rimtown-container .mk-story-h .ic-chip{flex:0 0 auto}
+.rimtown-container .mk-story-m{font-size:.72rem;color:var(--text-muted);margin-top:2px}
+.rimtown-container .mk-log{list-style:none;margin:6px 0 0;padding:0 0 0 10px;border-left:2px solid var(--border,#2b3446)}
+.rimtown-container .mk-log li{font-size:.76rem;line-height:1.55;color:var(--text-secondary,#c5cbd6);padding:2px 0;overflow-wrap:anywhere}
+.rimtown-container .mk-ago{display:inline-block;min-width:3.6em;margin-right:6px;color:var(--text-muted);font-size:.7rem}
+.rimtown-container .mk-camp{padding:8px 0;border-bottom:1px solid var(--border,#2b3446)}
+.rimtown-container .mk-camp:last-of-type{border-bottom:0}
+.rimtown-container .mk-camp-h{font-size:.86rem;font-weight:600;color:var(--text-primary);display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.rimtown-container .mk-camp-m{font-size:.74rem;color:var(--text-muted);margin-top:2px;line-height:1.5}
+/* v11.0.0 六個子分頁：沒選到的分頁只留圖示，數字縮成右上角的小標，才不會被切掉 */
+.rimtown-container .pp-tabs.pp-six .pp-tab{position:relative;padding:0 2px}
+.rimtown-container .pp-tabs.pp-six .pp-tab:not(.on) .pp-tab-n{position:absolute;top:2px;right:0;min-width:14px;padding:0 3px;font-size:.58rem;line-height:14px}
+.rimtown-container .pp-tabs.pp-six .pp-tab.on{flex:1.6 1 auto}
