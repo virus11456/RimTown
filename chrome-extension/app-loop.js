@@ -130,7 +130,7 @@ Object.assign(RimTownApp.prototype, {
             if (e.target.closest?.('.pc-close') || e.target === ov) ov.remove();
         });
     },
-    _resLabel(res) { return (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : (res === 'silver' ? t('銀幣') : res); },
+    _resLabel(res) { return (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[res]?.name) ? SHOP_ITEMS[res].name() : (typeof RESOURCE_NAMES_ZH !== 'undefined' && RESOURCE_NAMES_ZH[res]) ? t(RESOURCE_NAMES_ZH[res]) : res; }, // v11.0.1 商店沒賣的資源也有名字
     _renderPlayerCaravan() {
         const pc = this.state?.playerCaravan; if (!pc || this.world?.observerMode) return ''; // v6.25.0
         const esc = (x) => this._escapeHtml(String(x));
