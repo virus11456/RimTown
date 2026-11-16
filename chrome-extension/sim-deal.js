@@ -44,7 +44,8 @@ const DEAL = (() => {
         const k = kOf(key); const R = MARKET.rivalOf(w, k); const ws = MARKET.workersOf(w, k, all || npcs(w)); const id = ownerId(w, key);
         return ws.filter(a => a.agentId !== id && (isRiv(key) ? !!R?.emp?.[a.agentId] : !R?.emp?.[a.agentId]));
     }
-    const dirty = (w, k) => { const D = S(w); for (const key of [k, k + '#r']) { const st = D.f[key]; if (st && (st.up > 0 || st.cut > 0) && ownerId(w, key) === st.by) return true; } return !!D.prefN?.[k]; };
+    const shut = (w, key) => { try { return typeof DEALLAW !== 'undefined' && DEALLAW && DEALLAW.closedNow(w, key); } catch (e) { return false; } };
+    const dirty = (w, k) => { const D = S(w); if (shut(w, k) || shut(w, k + '#r')) return true; for (const key of [k, k + '#r']) { const st = D.f[key]; if (st && (st.up > 0 || st.cut > 0) && ownerId(w, key) === st.by) return true; } return !!D.prefN?.[k]; };
     // ---------- 客人去哪一家、付多少 ----------
     function prefOf(w, a, k) { const p = S(w).pref[a.agentId]?.[k]; return p && p.until >= day(w) ? p : null; }
     function setPref(w, a, k, f, why) { const D = S(w); (D.pref[a.agentId] || (D.pref[a.agentId] = {}))[k] = { f, until: day(w) + PREF_DAYS, why: why || '' }; countPref(w); }
@@ -53,6 +54,7 @@ const DEAL = (() => {
     function rivalShare(w, k) { let s = MARKET.shareOf(w, k); const ui = 1 + F(w, k).up, ur = 1 + F(w, k + '#r').up; const a = s * ui * ui, b = (1 - s) * ur * ur; return a + b > 0 ? a / (a + b) : s; }
     function choose(w, a, k) {
         const hasI = !!ownerId(w, k), hasR = !!ownerId(w, k + '#r'); if (!hasI) return null; if (!hasR) return k;
+        if (shut(w, k) && !shut(w, k + '#r')) return k + '#r'; if (shut(w, k + '#r') && !shut(w, k)) return k; // 一家被勒令歇業，客人都去另一家
         const p = prefOf(w, a, k); if (p?.f === 'r') return k + '#r'; if (p?.f === 'i') return k;
         return Math.random() < rivalShare(w, k) ? k + '#r' : k;
     }
@@ -62,15 +64,18 @@ const DEAL = (() => {
         const pf = prefOf(w, a, k);
         if (pf?.f === 'none') { if (kind !== 'meal' || Math.random() < 0.34) return { p: P, skip: true, k }; } // 抵制又沒有別家：衣服柴火不買，飯三天少吃一天
         const key = choose(w, a, k); if (!key) return { p: P }; const st = F(w, key);
+        if (shut(w, key)) return { p: P, key }; // 代管期間照原價、料用足
         return { p: r2(P * (1 + st.up + (kind === 'firewood' ? FUEL[st.cut] : 0))), key };
     }
     // 客人付了錢以後分給各家。P 是沒漲以前的價錢，q 是 price() 的結果
     function sale(w, a, kind, P, q) {
         if (!q || !q.key) return MARKET.sale(w, kind, q ? q.p : P);
-        const D = S(w); const k = RETAIL[kind]; const st = F(w, q.key); const parts = MARKET.SPLIT[kind] || [[k, 1]];
+        const D = S(w); const k = RETAIL[kind]; const st = shut(w, q.key) ? { up: 0, cut: 0 } : F(w, q.key); const parts = MARKET.SPLIT[kind] || [[k, 1]];
         let left = r2(P), retail = 0, skim = 0;
         parts.forEach(([kk, f], i) => { const v = i === parts.length - 1 ? left : r2(P * f); left = r2(left - v); if (kk === k) retail = r2(retail + v); else { const s = r2(v * SKIM[st.cut]); skim = r2(skim + s); MARKET.sell(w, kk, r2(v - s), t('村民消費')); } });
-        const extra = r2(q.p - P); MARKET.sellFirm(w, k, r2(retail + skim + extra), t('村民消費'), isRiv(q.key));
+        const extra = r2(q.p - P);
+        if (shut(w, q.key)) { w.stockpile?.add?.('silver', r2(retail + skim + extra), w.tickCount, t('代管店面的收入')); return; } // 勒令歇業期間由公所代管，賣的錢進公庫
+        MARKET.sellFirm(w, k, r2(retail + skim + extra), t('村民消費'), isRiv(q.key));
         if (extra > 0 || skim > 0) { st.gain = r2((st.gain || 0) + extra + skim); D.st.extra = r2((D.st.extra || 0) + extra); D.st.skim = r2((D.st.skim || 0) + skim); }
         if (st.up > 0) notice(w, a, q.key, st, kind);
         if (st.cut > 0) harm(w, a, kind, q.key, st);

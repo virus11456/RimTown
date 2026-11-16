@@ -29,10 +29,12 @@ const DEALASK = (() => {
     const friends = (w, a, min = 30) => Object.values(a.relationships?.relationships || {}).filter(r => r.affinity >= min).map(r => w.agents[r.targetId]).filter(o => o && !o.isDead && !o.isPlayer).sort((x, y) => aff(a, y) - aff(a, x));
     // 鎮上有沒有會登新聞的報社（公告欄與官報不算）：沒有的話，就沒有「向報社說」這條路
     const hasPaper = (w) => (w.press?.papers || []).some(P => !P.banned && P.st !== 'board' && P.st !== 'crown');
+    const LW = () => (typeof DEALLAW !== 'undefined' && DEALLAW ? DEALLAW : null);
+    const law = (w, kind) => { try { return !!LW()?.lawOn(w, kind); } catch (e) { return false; } };
     const sn = (key) => DEAL.sname(key);
     const gname = (key) => DEAL.GNAME[DEAL.GOOD[DEAL.kOf(key)]];
     // 一件事用一句話講
-    const factText = (w, f) => { const o = w.agents[f.by]?.name || ''; return f.kind === 'hike' ? { k: '{o}把{s}的價錢漲了 {p}%', p: { o, s: sn(f.key), p: pct(f.lv) } } : f.kind === 'cut' ? { k: '{o}的{s}偷工減料', p: { o, s: sn(f.key) } } : { k: '{o}找{b}講好兩家一起漲價', p: { o, b: w.agents[f.with]?.name || '', s: sn(f.key) } }; };
+    const factText = (w, f) => { const o = w.agents[f.by]?.name || ''; return f.kind === 'hike' ? { k: '{o}把{s}的價錢漲了 {p}%', p: { o, s: sn(f.key), p: pct(f.lv) } } : f.kind === 'cut' ? { k: '{o}的{s}偷工減料', p: { o, s: sn(f.key) } } : f.kind === 'bribe' ? { k: '{o}塞錢給{b}把事情擺平', p: { o, b: w.agents[f.with]?.name || '' } } : f.kind === 'cover' ? { k: '{o}出面替{b}把事情壓下來', p: { o, b: w.agents[f.with]?.name || '' } } : { k: '{o}找{b}講好兩家一起漲價', p: { o, b: w.agents[f.with]?.name || '', s: sn(f.key) } }; };
 
     // ---------- 做了之後發生什麼 ----------
     // 跟朋友講：朋友知道這件事，對老闆的印象變差
@@ -94,14 +96,15 @@ const DEALASK = (() => {
         const rev = Math.round(hist.reduce((s, x) => s + (x[0] || 0), 0)), cost = Math.round(hist.reduce((s, x) => s + (x[1] || 0), 0));
         const idx = (typeof PRICES !== 'undefined' && w.prices) ? PRICES.idx(w, { kitchen: 'food', textile: 'cloth', timber: 'fuel' }[k]) : 1;
         const fc = DEAL.liveFact(w, key, 'cut'); const pf = st.pact ? DEAL.factOf(w, st.pact) : null;
-        return { key, k, st, alt, altSt: alt ? DEAL.F(w, alt) : null, altOwner: alt ? DEAL.owner(w, alt) : null, rev, cost, cash: Math.floor(cash(w, a)), short: idx >= 1.3, harm: fc?.harm || 0, dead: fc?.dead || 0, boy: boycotters(w, key), pact: pf && pf.end == null ? pf : null, days: st.cut ? d - st.cutD : 0 };
+        return { key, k, st, alt, altSt: alt ? DEAL.F(w, alt) : null, altOwner: alt ? DEAL.owner(w, alt) : null, rev, cost, cash: Math.floor(cash(w, a)), short: idx >= 1.3, harm: fc?.harm || 0, dead: fc?.dead || 0, boy: boycotters(w, key), pact: pf && pf.end == null ? pf : null, days: st.cut ? d - st.cutD : 0, cap: law(w, 'deal_cap'), check: law(w, 'deal_check'), cartel: law(w, 'deal_cartel'), shut: LW()?.closedNow(w, key) ? Math.max(0, (w.deallaw.closed[key] || d) - d) : 0 };
     }
     DECIDE.kind('dealRun', {
         title: '這禮拜怎麼做生意', cool: 7, pri: 1.2, aiGroup: G,
         when(w, a) { const I = runInfo(w, a); return I ? { key: I.key } : null; },
         facts(w, a) {
             const I = runInfo(w, a); if (!I) return ''; const g = gname(I.key);
-            return fill('你是{s}的東家，賣{g}給鎮上的人。這七天收進 {rev} 銀幣、付出工資 {cost}，你手上有 {c} 銀幣。{riv}{now}{short}{harm}{boy}{pact}', { s: sn(I.key), g, rev: I.rev, cost: I.cost, c: I.cash,
+            return fill('你是{s}的東家，賣{g}給鎮上的人。這七天收進 {rev} 銀幣、付出工資 {cost}，你手上有 {c} 銀幣。{riv}{now}{short}{harm}{boy}{pact}{law}', { s: sn(I.key), g, rev: I.rev, cost: I.cost, c: I.cash,
+                law: { raw: [I.shut ? t('你的店被勒令歇業，還有 {n} 天，現在由公所代管。').replace('{n}', I.shut) : '', I.cap ? t('鎮上規定不得比原價貴超過 12%，超過被查到要罰。') : '', I.check ? t('管市場的人可以隨時到店裡抽查。') : '', I.cartel ? t('店家講好一起漲價是違法的。') : ''].join('') },
                 riv: I.alt ? { k: '對面是{o}的店，他現在{x}。', p: { o: I.altOwner?.name || '', x: I.altSt.up ? { k: '比原價貴 {p}%', p: { p: pct(I.altSt.up) } } : '照原價賣' } } : '鎮上只有你這一家，客人沒有別處可去。',
                 now: I.st.cut ? { k: '你現在{u}，而且偷工減料已經 {n} 天。', p: { u: I.st.up ? { k: '比原價貴 {p}%', p: { p: pct(I.st.up) } } : '照原價賣', n: I.days } } : I.st.up ? { k: '你現在比原價貴 {p}%，料用足。', p: { p: pct(I.st.up) } } : '你現在照原價賣，料也用足。',
                 short: I.short ? { k: '最近{g}缺貨，大家搶著買。', p: { g } } : { raw: '' },
@@ -112,19 +115,21 @@ const DEALASK = (() => {
         options(w, a) {
             const I = runInfo(w, a); if (!I) return []; const { key, st } = I; const greedy = has(a, 'greedy') ? 2 : 1, soft = (has(a, 'kind') || has(a, 'generous')) ? 0.3 : 1, hon = honesty(a);
             const out = [{ id: 'keep', quiet: true, mute: true, text: '照現在這樣做', say: '生意照舊', why: '現在這樣就好', base: REF, lean: { safe: 0.2 }, run: () => null }];
+            if (I.shut) return out; const CAPV = LW()?.CAP ?? 0.12;
             if (st.up > 0 || st.cut > 0) out.push({ id: 'fair', quiet: true, text: '恢復原價，把料用足', say: { k: '把{s}改回原價、料用足', p: { s: sn(key) } }, why: '這樣賺的錢拿得不安穩',
                 base: REF + tilt(clampN(0.12 + (soft < 1 ? 0.2 : 0) + (I.harm ? 0.2 : 0) + (I.dead ? 0.3 : 0) + Math.min(0.3, I.boy * 0.05), 0.02, 0.9)), lean: { bond: 0.3, safe: 0.3, gain: -0.3 },
                 run: (w2) => { const p = st.pact ? DEAL.factOf(w2, st.pact) : null; if (p) DEAL.endPact(w2, p, 'quit'); DEAL.setCut(w2, key, 0); DEAL.setUp(w2, key, 0); return { k: '改回原本的做法' }; } });
             for (const u of DEAL.UPS) { if (u <= st.up + 1e-9) continue;
-                out.push({ id: 'up:' + u, text: { k: '把價錢漲到比原價貴 {p}%', p: { p: pct(u) } }, say: { k: '把{s}的價錢漲了 {p}%', p: { s: sn(key), p: pct(u) } }, why: '東西是我的，能賣多少就賣多少',
-                    base: REF + tilt(clampN(P_UP[u] * greedy * soft * (I.alt ? 1 : 1.6) * (I.short ? 1.5 : 1) * (I.cash < 30 ? 1.5 : 1) * (I.boy ? 0.4 : 1), 0.004, 0.6)), lean: { gain: 0.5, bond: -0.4, face: -0.2 },
+                const bad = I.cap && u > CAPV + 1e-9;
+                out.push({ id: 'up:' + u, text: { k: bad ? '把價錢漲到比原價貴 {p}%（違反價格上限）' : '把價錢漲到比原價貴 {p}%', p: { p: pct(u) } }, say: { k: '把{s}的價錢漲了 {p}%', p: { s: sn(key), p: pct(u) } }, why: '東西是我的，能賣多少就賣多少',
+                    base: REF + tilt(clampN(P_UP[u] * greedy * soft * (I.alt ? 1 : 1.6) * (I.short ? 1.5 : 1) * (I.cash < 30 ? 1.5 : 1) * (I.boy ? 0.4 : 1) * (bad ? 0.35 : 1), 0.004, 0.6)), lean: { gain: 0.5, bond: -0.4, face: -0.2 },
                     run: (w2) => { DEAL.setUp(w2, key, u); return { k: '價錢漲了 {p}%', p: { p: pct(u) } }; } }); }
             for (const lv of [1, 2]) { if (lv <= st.cut) continue;
                 out.push({ id: 'cut:' + lv, quiet: true, mute: true, text: lv === 1 ? '料用少一點、換便宜的貨（客人可能出事）' : '能省就省，壞掉的也照賣（客人可能出人命）', say: '在貨上動了手腳', why: '省下來的都是賺的',
-                    base: REF + tilt(clampN(P_CUT[lv] * greedy * soft * (hon >= 4 ? 0.2 : hon <= 1.5 ? 2 : 1) * (I.cash < 30 ? 2 : 1) * (I.dead ? 0.2 : 1), 0.004, 0.5)), lean: { gain: 0.5, safe: -0.4, bond: -0.3 },
+                    base: REF + tilt(clampN(P_CUT[lv] * greedy * soft * (hon >= 4 ? 0.2 : hon <= 1.5 ? 2 : 1) * (I.cash < 30 ? 2 : 1) * (I.dead ? 0.2 : 1) * (I.cap ? 1.4 : 1) * (I.check ? 0.6 : 1), 0.004, 0.5)), lean: { gain: 0.5, safe: -0.4, bond: -0.3 }, // 有價格上限時更想從料上省；有人會來抽查時收斂一點
                     run: (w2) => { DEAL.setCut(w2, key, lv); return { k: '開始偷工減料' }; } }); }
             if (I.alt && I.altOwner && !I.pact && I.st.up < DEAL.PACT_UP) out.push({ id: 'pact', quiet: true, mute: true, text: { k: '私下找{o}講好，兩家一起漲 {p}%', p: { o: I.altOwner.name, p: pct(DEAL.PACT_UP) } }, say: { k: '私下去找了{o}', p: { o: I.altOwner.name } }, why: '兩家別再互相殺價，大家都好過',
-                base: REF + tilt(clampN(0.06 * (greedy > 1 ? 1.5 : 1) * (has(a, 'charismatic') ? 1.3 : 1) * (aff(a, I.altOwner) < -20 ? 0.3 : 1) * soft, 0.004, 0.5)), lean: { gain: 0.4, safe: -0.3 },
+                base: REF + tilt(clampN(0.06 * (greedy > 1 ? 1.5 : 1) * (has(a, 'charismatic') ? 1.3 : 1) * (aff(a, I.altOwner) < -20 ? 0.3 : 1) * soft * (I.cartel ? 0.5 : 1), 0.004, 0.5)), lean: { gain: 0.4, safe: -0.3 },
                 run: (w2, a2) => { DECIDE.enqueue(w2, I.altOwner, 'dealPact', { key, by: a2.agentId }); return { k: '去找{o}談了', p: { o: I.altOwner.name } }; } });
             return out;
         },
@@ -139,12 +144,12 @@ const DEALASK = (() => {
             const o = w.agents[c.by]; if (!o || o.isDead || !DEAL.other(w, c.key) || DEAL.ownerId(w, DEAL.other(w, c.key)) !== a.agentId) return []; const hon = honesty(a), g = has(a, 'greedy') ? 1.5 : 1;
             return [
                 { id: 'no', quiet: true, text: '不答應', say: { k: '沒有答應{o}', p: { o: o.name } }, why: '生意各做各的', base: REF, lean: { safe: 0.2 }, run: () => { rel(o, a)?.modifyAffinity?.(-4); return null; } },
-                { id: 'yes', quiet: true, mute: true, text: '答應，兩家一起漲', say: { k: '跟{o}談妥了', p: { o: o.name } }, why: '有錢大家賺', base: REF + tilt(clampN(0.4 * g * (aff(a, o) < -20 ? 0.4 : 1) * (has(a, 'kind') ? 0.5 : 1) * (hon >= 4 ? 0.5 : 1), 0.02, 0.9)), lean: { gain: 0.5, safe: -0.2 },
+                { id: 'yes', quiet: true, mute: true, text: '答應，兩家一起漲', say: { k: '跟{o}談妥了', p: { o: o.name } }, why: '有錢大家賺', base: REF + tilt(clampN(0.4 * g * (aff(a, o) < -20 ? 0.4 : 1) * (has(a, 'kind') ? 0.5 : 1) * (hon >= 4 ? 0.5 : 1) * (law(w, 'deal_cartel') ? 0.6 : 1), 0.02, 0.9)), lean: { gain: 0.5, safe: -0.2 },
                     run: (w2) => { DEAL.pact(w2, c.key, false); rel(o, a)?.modifyAffinity?.(4); return { k: '兩家講好一起漲' }; } },
                 { id: 'fake', quiet: true, mute: true, text: '嘴上答應，自己照原價賣，把他的客人搶過來', say: { k: '跟{o}談妥了', p: { o: o.name } }, why: '他漲我不漲，客人自然往我這邊來', base: REF + tilt(clampN(0.12 * (hon <= 1.5 ? 2 : 1) * (aff(a, o) < 0 ? 1.6 : 1) * (hon >= 4 ? 0.3 : 1), 0.01, 0.6)), lean: { gain: 0.4, bond: -0.4 },
                     run: (w2) => { DEAL.pact(w2, c.key, true); return { k: '假裝答應' }; } },
-                { id: 'tell', quiet: true, text: '不答應，還把這件事說出去', say: { k: '把{o}來談的事說了出去', p: { o: o.name } }, why: '這種事不該瞞著大家', base: REF + tilt(clampN(0.06 * (hon >= 4 ? 2.5 : 1) * (aff(a, o) < -20 ? 2 : 1), 0.01, 0.6)), lean: { face: 0.3, bond: -0.2 },
-                    run: (w2, a2) => { const f = DEAL.fact(w2, { kind: 'pact', key: c.key, k: DEAL.kOf(c.key), by: o.agentId, with: a2.agentId, lv: DEAL.PACT_UP, attempt: true, end: day(w2) }); DEAL.learn(w2, f, a2, 'party'); tell(w2, a2, f, 3); tip(w2, a2, f, false); rel(o, a2)?.modifyAffinity?.(-12); return { k: '把事情說出去了' }; } },
+                { id: 'tell', quiet: true, text: '不答應，還把這件事說出去', say: { k: '把{o}來談的事說了出去', p: { o: o.name } }, why: '這種事不該瞞著大家', base: REF + tilt(clampN(0.06 * (hon >= 4 ? 2.5 : 1) * (aff(a, o) < -20 ? 2 : 1) * (law(w, 'deal_cartel') ? 2 : 1), 0.01, 0.6)), lean: { face: 0.3, bond: -0.2 },
+                    run: (w2, a2) => { const f = DEAL.fact(w2, { kind: 'pact', key: c.key, k: DEAL.kOf(c.key), by: o.agentId, with: a2.agentId, lv: DEAL.PACT_UP, attempt: true, end: day(w2) }); DEAL.learn(w2, f, a2, 'party'); tell(w2, a2, f, 3); if (hasPaper(w2)) tip(w2, a2, f, false); if (law(w2, 'deal_cartel')) { f.leniency = a2.agentId; report(w2, a2, f); } rel(o, a2)?.modifyAffinity?.(-12); return { k: '把事情說出去了' }; } },
             ];
         },
     });
@@ -202,6 +207,7 @@ const DEALASK = (() => {
             out.push({ id: 'tell', quiet: true, text: '跟親近的人說，要他們小心', say: { k: '要親近的人小心{s}的東西', p: { s: sn(f.key) } }, why: '不能讓他們也出事', base: REF + tilt(clampN(0.45 * dead, 0.05, 0.9)), lean: { bond: 0.4 }, run: (w2, a2) => { const n = tell(w2, a2, f, 3); return n ? { k: '跟 {n} 個人說了', p: { n } } : { k: '身邊的人都知道了' }; } });
             if (!isAngry(w, a, f)) out.push({ id: 'confront', text: { k: '去找{o}理論，要他給個交代', p: { o: o.name } }, say: { k: '去找{o}理論', p: { o: o.name } }, why: '錢和身體都賠了，不能就這樣算了', base: REF + tilt(clampN(0.2 * dead * shy * (has(a, 'abrasive') ? 1.6 : 1), 0.02, 0.8)), lean: { face: 0.3, safe: -0.3 }, run: (w2, a2) => (face(w2, a2, f, 'confront') ? { k: '找上門去了' } : null) });
             if (hasPaper(w)) out.push({ id: 'tip', quiet: true, text: '向報社爆料', say: { k: '向報社說了{s}的事', p: { s: sn(f.key) } }, why: '登出來大家才會小心', base: REF + tilt(clampN(0.1 * mad * dead, 0.02, 0.8)), lean: { face: 0.2 }, run: (w2, a2) => (tip(w2, a2, f, false) ? { k: '向報社說了' } : null) });
+            if (LW() && !f.tried && f.kind === 'cut' && (f.pub || (f.harm || 0) >= 3 || f.dead)) out.push({ id: 'trial', text: { k: '提案把{o}交付審判', p: { o: o.name } }, say: { k: '提案審判{o}', p: { o: o.name } }, why: '讓全鎮的人來評這個理', base: REF + tilt(clampN(0.1 * mad * dead * shy, 0.01, 0.8)), lean: { face: 0.4, safe: -0.3 }, run: (w2, a2) => (LW().trial(w2, f, a2) ? { k: '提案送出去了' } : { k: '已經有人提了' }) });
             out.push({ id: 'report', quiet: true, text: '去告發，要上面的人來查', say: { k: '去告發{s}', p: { s: sn(f.key) } }, why: '該有人來管', base: REF + tilt(clampN(0.08 * mad * dead, 0.02, 0.8)), lean: { face: 0.2, safe: -0.1 }, run: (w2, a2) => (report(w2, a2, f) ? { k: '去告發了' } : null) });
             return out;
         },

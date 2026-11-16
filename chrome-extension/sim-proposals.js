@@ -762,6 +762,8 @@ class ProposalSystem {
                 case 'law_repeal': case 'law_restore': { result = (typeof REPEAL !== 'undefined') ? REPEAL.enact(w, p) : ''; ok = !!result; break; } // v10.4.0 投票通過的規定可以再投票廢除
                 case 'recall': { result = (typeof REPEAL !== 'undefined') ? REPEAL.recallEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 罷免首長（全鎮投票決定）
                 case 'pardon': { result = (typeof REPEAL !== 'undefined') ? REPEAL.pardonEnact(w, p) : ''; ok = !!result; break; } // v10.4.0 赦免（判決翻案）
+                case 'deal_cap': case 'deal_check': case 'deal_cartel': case 'deal_trial': { result = (typeof DEALLAW !== 'undefined' && DEALLAW) ? DEALLAW.enact(w, p) : ''; ok = !!result; break; } // v11.0.0 管店家的三條規定與審判（sim-deallaw.js）
+                case 'office_appoint': { result = (typeof OFFICE !== 'undefined' && OFFICE) ? OFFICE.enact(w, p) : ''; ok = !!result; break; } // v11.0.0 任命管店家的官員（sim-office.js）
                 case 'fisc_exit': case 'fisc_wealth': case 'fisc_bond': { result = (typeof FISCAL !== 'undefined') ? FISCAL.enact(w, p) : ''; ok = !!result; break; } // v10.8.0 離境稅、財產稅、公債
                 case 'demolish': { result = (typeof DEMOLISH !== 'undefined') ? DEMOLISH.enact(w, p) : ''; ok = !!result; break; } // v10.6.0 蓋出來的建築、工廠、產業可以表決拆掉
                 case 'thing_ban': { result = (typeof THINGS !== 'undefined') ? THINGS.enact(w, p) : ''; ok = !!result; break; } // v9.0.0 禁止鎮上的新東西（村民自己提）

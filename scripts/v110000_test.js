@@ -90,7 +90,8 @@ async function run(browser, dev, lang) {
     const pc = { key: 'kitchen', by: O1.agentId }; out.pactD = { ids: ids('dealPact', O2, pc).join(), wrong: K.dealPact.options(w, C1, pc).length === 0, facts: K.dealPact.facts(w, O2, pc) };
     opt('dealPact', O2, pc, 'yes').run(w, O2); out.pactD.yes = DEAL.F(w, 'kitchen#r').up === 0.2 && !!DEAL.F(w, 'kitchen').pact; out.run.noPact = !ids('dealRun', O1).includes('pact');
     const lp = DEAL.factOf(w, DEAL.F(w, 'kitchen').pact); DEAL.endPact(w, lp, 't'); DEAL.setUp(w, 'kitchen', 0); DEAL.setUp(w, 'kitchen#r', 0);
-    const t0 = D.tips.length; opt('dealPact', O2, pc, 'tell').run(w, O2); out.pactD.tell = D.tips.length === t0 + 1 && D.facts.some(f => f.attempt && f.by === O1.agentId && f.end != null);
+    w.press = w.press || { papers: [], reads: {}, n: 0 }; if (!w.press.papers.length) w.press.papers.push({ id: 'P1', st: 'town', name: ['鎮報', 'Town Paper'], cred: 60, stories: [] });
+    const t0 = D.tips.length; opt('dealPact', O2, pc, 'tell').run(w, O2); out.pactD.tell = D.tips.length === t0 + 1 && D.facts.some(f => f.attempt && f.by === O1.agentId && f.end != null); w.press.papers.length = 0; // 先拿掉報社：下面要確認沒有報社時客人沒有「向報社投訴」這個選項
     // 客人
     DEAL.setUp(w, 'kitchen', 0.3); const fk = DEAL.liveFact(w, 'kitchen', 'hike'); const cc = { key: 'kitchen', fid: fk.id }; C1.relationships.getOrCreate(C2.agentId, C2.name).affinity = 60; C2.relationships.getOrCreate(C1.agentId, C1.name).affinity = 60;
     out.cust = { ids: ids('dealCust', C1, cc).join(), facts: K.dealCust.facts(w, C1, cc) };
@@ -144,7 +145,7 @@ async function run(browser, dev, lang) {
   ok(r.pactD.ids === 'no,yes,fake,tell' && r.pactD.wrong && r.pactD.yes && r.pactD.tell, '同行被找上：答應／拒絕／假裝／說出去（說出去會進報社線索）', r.pactD);
   ok(r.cust.ids === 'pay,switch,gripe,boycott' && r.cust.sw && r.cust.gripe && r.cust.boy && r.cust.tip, '客人：照買／換一家／抱怨／號召別買／向報社投訴，各自生效', r.cust);
   ok(r.join.ids === 'no,join' && r.join.in && r.join.ownerSees && r.join.fairUp, '有人響應抵制；老闆看得到有幾人不來，比較願意改回原價', r.join);
-  ok(r.vic.ids === 'swallow,switch,tell,confront,tip,report' && r.vic.faced && r.vic.report && r.vic.told, '起疑的受害人：算了／換店／告訴親近的人／找老闆理論／爆料／告發', r.vic);
+  ok(r.vic.ids === 'swallow,switch,tell,confront,tip,trial,report' && r.vic.faced && r.vic.report && r.vic.told, '起疑的受害人：算了／換店／告訴親近的人／找老闆理論／爆料／提案審判／告發', r.vic);
   ok(r.staff.ids === 'quiet,tell,tip,report,hush,quit' && r.staff.honest && r.staff.hushAsk && r.staff.quit, '員工：裝不知道／講出去／匿名爆料／告發／要封口費／辭職；老實的人比較會爆料', r.staff);
   ok(r.faced.ids === 'deny,pay,fire' && r.faced.paid, '封口費：老闆給了錢，員工之後比較不會說，也不能再要一次', r.faced);
   ok(r.faced.ids2 === 'deny,pay,fix' && r.faced.deny && r.faced.fix, '被找上門：不認帳（對方會更氣、再想一次）／賠錢／認錯改過', r.faced);

@@ -31,13 +31,14 @@ const TIPS = (() => {
     const papers = (w) => (w.press?.papers || []).filter(P => !P.banned && P.st !== 'board' && P.st !== 'crown' && live(w, P.journo));
     const paper = (w, pid) => (w.press?.papers || []).find(P => P.id === pid) || null;
     const tipOf = (w, id) => S(w).box.find(x => x.id === id) || null;
+    const evFact = (w, x) => (x?.fid ? DEAL.factOf(w, x.fid) : x?.cover ? DEAL.factOf(w, x.cover) : null); // 查證時要去問的那件事（店家的手法，或是護航、收錢這件事）
     const owedTo = (w, pol, donor) => { try { return (typeof POWER !== 'undefined' && POWER.S(w).inf[pol.agentId]?.[donor.agentId]) || 0; } catch (e) { return 0; } }; // 這位金主前後給過這位官員多少
     const mayor = (w) => { try { return w.election?.currentMayor?.(w) || null; } catch (e) { return null; } };
     // 一條線索用一句話講
     function tipText(w, x) {
         if (x.fid) { const f = DEAL.factOf(w, x.fid); return f ? DEALASK.factText(w, f) : { raw: '' }; }
         const o = w.agents[x.about]?.name || '';
-        return x.type === 'secret' ? { k: '{o}有事瞞著大家', p: { o } } : x.type === 'wage' ? { k: '{o}把工資壓得很低', p: { o } } : x.type === 'evict' ? '最近有好幾戶人家被趕出去' : x.type === 'bank' ? '銀行的準備金恐怕不夠' : x.type === 'bribe' ? { k: '{o}想用錢擺平報導', p: { o } } : x.type === 'cover' ? { k: '{o}出面要報社別登', p: { o } } : { raw: '' };
+        return x.type === 'secret' ? { k: '{o}有事瞞著大家', p: { o } } : x.type === 'wage' ? { k: '{o}把工資壓得很低', p: { o } } : x.type === 'evict' ? '最近有好幾戶人家被趕出去' : x.type === 'bank' ? '銀行的準備金恐怕不夠' : x.type === 'bribe' ? { k: '{o}想用錢擺平報導', p: { o } } : x.type === 'cover' ? { k: '{o}出面要報社別登', p: { o } } : x.type === 'shield' ? { k: '{o}接到告發卻沒有辦', p: { o } } : { raw: '' };
     }
     const srcText = (w, x) => (x.src === 'anon' ? '匿名來信' : x.src === 'self' ? '你自己看到的' : x.src === 'public' ? '公開的數字' : x.src === 'pass' ? '別家報社轉來的' : { k: '{a}來說的', p: { a: w.agents[x.by]?.name || '' } });
     function add(w, o) { const T = S(w); const x = Object.assign({ id: 'L' + (++T.n), d: day(w), st: 'new' }, o); T.box.push(x); if (T.box.length > 40) { const i = T.box.findIndex(y => y.st !== 'working'); T.box.splice(i >= 0 ? i : 0, 1); } return x; }
@@ -46,7 +47,7 @@ const TIPS = (() => {
         const D = DEALASK.S(w);
         for (const x of D.tips) { if (x.in) continue; x.in = 1; const dup = T.box.find(y => y.fid === x.fid && y.st !== 'dropped'); if (dup) { dup.more = (dup.more || 0) + 1; continue; } add(w, { src: x.anon ? 'anon' : 'tip', by: x.by, about: x.about, fid: x.fid }); }
         try { if (typeof POWER !== 'undefined') for (const tp of POWER.topics(w)) { const key = tp.type + ':' + (tp.s?.id || tp.k || ''); if (T.box.some(y => y.topic === key && d - y.d < 30)) continue; add(w, { src: 'public', topic: key, type: tp.type, about: tp.ids?.[0] || null }); } } catch (e) {}
-        for (const P of papers(w)) { const J = w.agents[P.journo]; for (const f of DEAL.knownBy(w, J)) { if (f.end != null || f.pub || (f.kind === 'hike' && (f.lv || 0) < 0.3)) continue; if (T.box.some(y => y.fid === f.id && y.st !== 'dropped')) continue; add(w, { src: 'self', by: J.agentId, about: f.by, fid: f.id }); } }
+        for (const P of papers(w)) { const J = w.agents[P.journo]; for (const f of DEAL.knownBy(w, J)) { if (f.end != null || f.pub || !['hike', 'cut', 'pact'].includes(f.kind) || (f.kind === 'hike' && (f.lv || 0) < 0.3)) continue; if (T.box.some(y => y.fid === f.id && y.st !== 'dropped')) continue; add(w, { src: 'self', by: J.agentId, about: f.by, fid: f.id }); } }
         for (const x of T.box) if (x.st === 'new' && d - x.d > 45) x.st = 'dropped';
     }
     const fresh = (w, T) => T.box.filter(x => x.st === 'new' && x.d <= day(w) && (!x.about || live(w, x.about)) && (!x.fid || (DEAL.factOf(w, x.fid) && !DEAL.factOf(w, x.fid).pub)));
@@ -64,7 +65,7 @@ const TIPS = (() => {
             if (!C) { const c = fresh(w, T).filter(x => x.about !== J.agentId); if (c.length && d - (T.last[P.id] ?? -99) >= IDLE) { T.last[P.id] = d; c.sort((x, y) => juicy(w, y) - juicy(w, x)); DECIDE.enqueue(w, J, 'tipPick', { pid: P.id, ids: c.slice(0, 3).map(x => x.id) }); } continue; }
             C._d = d; const x = tipOf(w, C.tid); const f = x?.fid ? DEAL.factOf(w, x.fid) : null; const target = live(w, x?.about);
             if (!x || d - C.d0 > STALE) { close(w, T, P, C, 'drop'); continue; }
-            if (f) { let n = 0; for (const a of DEAL.knowers(w, f)) { if (n >= 2) break; if (a === J || C.asked[a.agentId]) continue; C.asked[a.agentId] = 1; n++; DECIDE.enqueue(w, a, 'tipAsked', { pid: P.id, tid: x.id }); } }
+            const kf = evFact(w, x); if (kf) { let n = 0; const ps = f ? [] : [live(w, kf.by), live(w, kf.with)].filter(Boolean); for (const a of DEAL.knowers(w, kf).concat(ps)) { if (n >= 2) break; if (a === J || a === target || C.asked[a.agentId]) continue; C.asked[a.agentId] = 1; n++; DECIDE.enqueue(w, a, 'tipAsked', { pid: P.id, tid: x.id }); } }
             if (!C.heard && d - C.d0 >= HEAR && target && target !== J) { C.heard = true; DECIDE.enqueue(w, target, 'tipTarget', { pid: P.id, tid: x.id }); }
             if (!C.printAsk && d - C.d0 >= DIG) { C.printAsk = true; DECIDE.enqueue(w, J, 'tipPrint', { pid: P.id, tid: x.id }); }
         }
@@ -73,7 +74,7 @@ const TIPS = (() => {
         try { DECIDE.drain(w, DECIDE.S(w), d); } catch (e) {}
     }
     // 這條線索有多值得查（給排序用；記者自己怎麼選是他的決定）
-    function juicy(w, x) { const f = x.fid ? DEAL.factOf(w, x.fid) : null; return (f ? (f.dead || 0) * 5 + (f.harm || 0) + (f.kind === 'cut' ? 2 : f.kind === 'pact' ? 2 : (f.lv || 0) * 3) : x.type === 'secret' ? 3 : 1.5) + (x.more || 0) * 0.5; }
+    function juicy(w, x) { const f = x.fid ? DEAL.factOf(w, x.fid) : null; return (f ? (f.dead || 0) * 5 + (f.harm || 0) + (f.kind === 'cut' ? 2 : f.kind === 'pact' ? 2 : (f.lv || 0) * 3) : x.type === 'secret' ? 3 : x.type === 'shield' ? 2.5 : 1.5) + (x.more || 0) * 0.5; }
     function start(w, P, J, x, rush) {
         const T = S(w); x.st = 'working'; x.paper = P.id; T.st.picked = (T.st.picked || 0) + 1;
         const C = T.cases[P.id] = { tid: x.id, pid: P.id, j: J.agentId, d0: day(w), _d: day(w), ev: x.src === 'public' ? 2 : x.src === 'self' ? 0.5 : x.src === 'tip' ? 0.5 : 0.3, asked: {}, heard: false, printAsk: false, log: [] };
@@ -87,12 +88,15 @@ const TIPS = (() => {
     function print(w, P, J, C, soft) {
         const T = S(w), d = day(w); const x = tipOf(w, C.tid); if (!x) return close(w, T, P, C, 'drop'); const lv = level(C); const target = live(w, x.about);
         const f = x.fid ? DEAL.factOf(w, x.fid) : null;
-        if (!f && x.type === 'cover') { // 首長出面護航：登出來，相信的讀者對首長的印象變差
-            if (soft || !target) return close(w, T, P, C, soft ? 'soft' : 'drop'); const R0 = w.press; let n = 0;
-            PRESS.story(w, P, 'expose', '調查報導：{x}', { x: tipText(w, x) }, target.agentId, { by: J.agentId, ev: 2 });
-            for (const a of npcs(w)) { if (R0.reads[a.agentId] !== P.id || a === target || a === J) continue; if (Math.random() >= PRESS.trust(w, a, P) * (aff(a, target) >= 40 ? 0.5 : 1)) continue; n++; rel(a, target)?.modifyAffinity?.(-8); a.addThought?.('outraged', w); }
+        if (!f && (x.type === 'cover' || x.type === 'shield')) { // 首長出面護航、官員接到告發不辦：登出來，相信的讀者對他的印象變差
+            if (soft || !target) return close(w, T, P, C, soft ? 'soft' : 'drop'); const R0 = w.press; let n = 0; const cf = x.cover ? DEAL.factOf(w, x.cover) : null;
+            const paid = x.type === 'shield' && cf && cf.kind === 'bribe' && lv >= 1; // 查到是收了錢才不辦的
+            const txt = paid ? { k: '{o}收了{b}的錢，查到的事沒有辦', p: { o: target.name, b: w.agents[cf.by]?.name || '' } } : tipText(w, x); const ev = x.type === 'cover' ? 2 : lv;
+            PRESS.story(w, P, 'expose', '調查報導：{x}', { x: txt }, target.agentId, { by: J.agentId, ev });
+            for (const a of npcs(w)) { if (R0.reads[a.agentId] !== P.id || a === target || a === J) continue; if (Math.random() >= PRESS.trust(w, a, P) * [0.45, 0.75, 1][ev] * (aff(a, target) >= 40 ? 0.5 : 1)) continue; n++; rel(a, target)?.modifyAffinity?.(paid ? -12 : -8); a.addThought?.('outraged', w); if (cf) DEAL.learn(w, cf, a, 'read'); }
             try { const PW = POWER.S(w); PW.scandal[target.agentId] = (PW.scandal[target.agentId] || 0) + 1; } catch (e) {}
-            const cf = x.cover ? DEAL.factOf(w, x.cover) : null; if (cf) cf.pub = d; P.cred = clampN(P.cred + 2, 15, 95); T.st.printed = (T.st.printed || 0) + 1; note(C, '{paper}登出來了（{lv}），{n} 個讀者相信', { paper: P.name[0], lv: LV[2], n }); mem(w, target, '{paper}把我的事登出來了。', { paper: P.name[0] }, 8);
+            if (cf) cf.pub = d; P.cred = clampN(P.cred + (ev === 2 ? 2 : ev === 1 ? 0 : -2), 15, 95); T.st.printed = (T.st.printed || 0) + 1; note(C, '{paper}登出來了（{lv}），{n} 個讀者相信', { paper: P.name[0], lv: LV[ev], n }); mem(w, target, '{paper}把我的事登出來了。', { paper: P.name[0] }, 8);
+            try { if (typeof OFFICE !== 'undefined' && OFFICE) OFFICE.exposed(w, target, P, paid, n); } catch (e) { console.warn('[Tips] office', e); }
             return close(w, T, P, C, 'print');
         }
         if (!f) { // 公開數字與祕密：沿用原本的後果
@@ -145,13 +149,13 @@ const TIPS = (() => {
     DECIDE.kind('tipAsked', {
         title: '記者來問你知道的事', scan: false, pri: 1.2, aiGroup: G,
         when() { return null; },
-        facts(w, a, c) { const P = paper(w, c.pid); const x = tipOf(w, c.tid); const f = x?.fid ? DEAL.factOf(w, x.fid) : null; const J = live(w, P?.journo); if (!f || !J) return ''; const how = f.knows[a.agentId];
-            return fill('{paper}的記者{j}來問你：{x}，是不是真的。{how}說了，這件事可能登上報；被{o}知道是你說的，他不會放過你。', { paper: P.name[0], j: J.name, x: DEALASK.factText(w, f), o: w.agents[f.by]?.name || '',
+        facts(w, a, c) { const P = paper(w, c.pid); const x = tipOf(w, c.tid); const f = evFact(w, x); const J = live(w, P?.journo); if (!f || !J) return ''; const how = f.knows[a.agentId] || (a.agentId === f.by || a.agentId === f.with ? 'party' : null);
+            return fill('{paper}的記者{j}來問你：{x}，是不是真的。{how}說了，這件事可能登上報；被{o}知道是你說的，他不會放過你。', { paper: P.name[0], j: J.name, x: tipText(w, x), o: w.agents[x.about]?.name || '',
                 how: how === 'staff' ? '你在那裡做事，內情你最清楚。' : how === 'party' ? '這件事你就是當事人之一。' : how === 'victim' ? '你自己出過事。' : '這件事你是聽別人說的。' }); },
         options(w, a, c) {
-            const P = paper(w, c.pid); const T = S(w); const C = T.cases[c.pid]; const x = tipOf(w, c.tid); const f = x?.fid ? DEAL.factOf(w, x.fid) : null; const J = live(w, P?.journo); const o = live(w, f?.by); if (!C || C.tid !== c.tid || !f || !J || !o) return [];
-            const how = f.knows[a.agentId]; const w8 = how === 'staff' || how === 'party' ? 1 : how === 'victim' ? 0.5 : 0.3; const hon = honesty(a); const paid = DEALASK.S(w).hush[a.agentId + '|' + f.id] ? 0.3 : 1; const mad = DEALASK.S(w).angry?.[a.agentId + '|' + f.id] ? 2 : 1;
-            const tell = (anon) => (w2, a2) => { C.ev += w8 * (anon ? 0.7 : 1); note(C, anon ? '有人不具名證實了' : '{a}證實了', { a: a2.name }); if (!anon) mem(w2, a2, '我把{s}的事告訴了記者{j}。', { s: DEAL.sname(f.key), j: J.name }, 6); return { k: '說了' }; };
+            const P = paper(w, c.pid); const T = S(w); const C = T.cases[c.pid]; const x = tipOf(w, c.tid); const f = evFact(w, x); const J = live(w, P?.journo); const o = live(w, x?.about); if (!C || C.tid !== c.tid || !f || !J || !o || o === a) return [];
+            const how = f.knows[a.agentId] || (a.agentId === f.by || a.agentId === f.with ? 'party' : null); const w8 = how === 'staff' || how === 'party' ? 1 : how === 'victim' ? 0.5 : 0.3; const hon = honesty(a); const paid = DEALASK.S(w).hush[a.agentId + '|' + f.id] ? 0.3 : 1; const mad = DEALASK.S(w).angry?.[a.agentId + '|' + f.id] ? 2 : 1;
+            const tell = (anon) => (w2, a2) => { C.ev += w8 * (anon ? 0.7 : 1); note(C, anon ? '有人不具名證實了' : '{a}證實了', { a: a2.name }); if (!anon) { if (x.fid) mem(w2, a2, '我把{s}的事告訴了記者{j}。', { s: DEAL.sname(f.key), j: J.name }, 6); else mem(w2, a2, '我把{o}的事告訴了記者{j}。', { o: o.name, j: J.name }, 6); } return { k: '說了' }; };
             const out = [
                 { id: 'no', quiet: true, mute: true, text: '不說，請他別再來問', say: '什麼都沒跟記者說', why: '這種事我不想沾', base: REF + (how === 'staff' ? 0.3 : 0), lean: { safe: 0.4 }, run: () => { note(C, '有人不願意說'); return null; } },
                 { id: 'talk', quiet: true, text: '照實說，可以寫我的名字', say: { k: '把知道的告訴了記者{j}', p: { j: J.name } }, why: '事情是真的，沒什麼不能說', base: REF + tilt(clampN(0.2 * (hon >= 4 ? 2 : hon <= 1.5 ? 0.5 : 1) * mad * paid * (aff(a, o) >= 40 ? 0.3 : 1) * (how === 'staff' ? 0.5 : 1), 0.01, 0.9)), lean: { face: 0.3, safe: -0.4 }, run: tell(false) },
@@ -277,6 +281,7 @@ const TIPS = (() => {
             if (alt) out.push({ id: 'switch', quiet: true, text: { k: '以後改去{o}的店', p: { o: DEAL.owner(w, alt).name } }, say: { k: '不再去{s}買東西', p: { s: DEAL.sname(f.key) } }, why: '那家的東西我不敢再碰', base: REF + tilt(clampN(0.4 * hurt * (f.kind === 'cut' ? 1.3 : 0.8), 0.05, 0.95)), lean: { safe: 0.3 }, run: (w2, a2) => (DEALASK.switchTo(w2, a2, f.key) ? { k: '換了一家買' } : null) });
             out.push({ id: 'boycott', text: going ? { k: '跟著大家不去{s}買', p: { s: DEAL.sname(f.key) } } : { k: '號召大家別再去{s}買', p: { s: DEAL.sname(f.key) } }, say: { k: '號召大家別去{s}買東西', p: { s: DEAL.sname(f.key) } }, why: '不能讓這種店繼續賺錢',
                 base: REF + tilt(clampN((going ? 0.3 : 0.06) * hurt * dead * (has(a, 'shy') ? 0.4 : 1), 0.01, 0.9)), lean: { face: 0.3, safe: -0.2 }, run: (w2, a2) => ((going ? DEALASK.join(w2, a2, f.key) : DEALASK.boycott(w2, a2, f.key)) ? { k: '不去買了' } : null) });
+            if (typeof DEALLAW !== 'undefined' && DEALLAW && !f.tried && f.kind === 'cut' && (f.harm || f.dead)) out.push({ id: 'trial', text: { k: '提案把{o}交付審判', p: { o: o.name } }, say: { k: '提案審判{o}', p: { o: o.name } }, why: '讓全鎮的人來評這個理', base: REF + tilt(clampN(0.07 * hurt * dead * (has(a, 'shy') ? 0.4 : 1), 0.01, 0.8)), lean: { face: 0.4, safe: -0.3 }, run: (w2, a2) => (DEALLAW.trial(w2, f, a2) ? { k: '提案送出去了' } : { k: '已經有人提了' }) });
             out.push({ id: 'tell', quiet: true, text: '拿去講給沒看報的人聽', say: { k: '到處講{s}的事', p: { s: DEAL.sname(f.key) } }, why: '大家都該知道', base: REF + tilt(clampN(0.3 * (has(a, 'gossip') ? 1.6 : 1) * dead, 0.03, 0.9)), lean: { bond: 0.3 }, run: (w2, a2) => { const n = DEALASK.tell(w2, a2, f, 3); return n ? { k: '跟 {n} 個人說了', p: { n } } : { k: '身邊的人都知道了' }; } });
             return out;
         },

@@ -125,7 +125,7 @@ async function run(browser, dev, lang) {
   ok(r.print.ids === 'kill,print,soft,pass' && r.print.lean, '登不登：受到壓力、證據不夠時比較不敢登', r.print);
   ok(r.print.done && r.print.readers, '照登：訂報的人讀到、相信的人知道了這件事、對當事人印象變差，之後自己決定怎麼辦', r.print);
   ok(r.print.fired, '不顧老闆照登：記者被開除，報社信譽上升', r.print);
-  ok(r.read.ids === 'shrug,boycott,tell' && r.read.hurt && r.read.boy && r.read.join, '讀到的人：看看就算了／號召或跟著抵制／講給別人聽', r.read);
+  ok(r.read.ids === 'shrug,boycott,trial,tell' && r.read.hurt && r.read.boy && r.read.join, '讀到的人：看看就算了／號召或跟著抵制／提案審判／講給別人聽', r.read);
   ok(r.print.nobody && r.print.soft && r.print.kill && r.print.passOpt && r.print.pass && r.print.passed, '只有傳聞就登沒人信、信譽下降；淡化不指名；撤稿；轉給別家時查到的證據跟著過去', r.print);
   ok(r.sorry.ok && r.sorry.noFix && r.sorry.story, '當事人公開道歉：賠錢給出事的人、改回來，報導會寫他已經道歉', r.sorry);
   ok(r.cover.ev && r.cover.done, '首長護航被登出來：讀者對首長印象變差、多一筆醜聞', r.cover);

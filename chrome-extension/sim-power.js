@@ -34,7 +34,10 @@ const POWER = (() => {
     const owed = (w, pol) => { const m = S(w).inf[pol?.agentId] || {}; return Object.values(m).reduce((s, v) => s + v, 0); };
     // 金主對這個人的影響:收的錢越多,越偏向金主的利益(上限)
     function sway(w, pol, p) {
-        if (!pol || !w.power) return 0; const n = owed(w, pol); if (n < 20) return 0;
+        if (!pol || !w.power) return 0;
+        try { if (typeof DEALLAW !== 'undefined' && DEALLAW) { const v = DEALLAW.sway(w, pol, p); if (v != null) return v; } } catch (e) {} // v11.0.0 審到管店家的案子：看的是這位東家給過多少
+        try { if (typeof OFFICE !== 'undefined' && OFFICE) { const v = OFFICE.sway(w, pol, p); if (v != null) return v; } } catch (e) {}
+        const n = owed(w, pol); if (n < 20) return 0;
         const k = Math.min(3, n / 30);
         if (HURTS(p)) return -k; if (HELPS(p)) return k * 0.6; return 0;
     }
