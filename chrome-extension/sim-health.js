@@ -270,8 +270,8 @@ const HEALTH = (() => {
         const cand = { kind: 'medaid', key: 'medaid:' + d, jobs: [], make: () => ({ kind: 'medaid', key: 'medaid:' + d, tk: '公費醫療補助', tp: {}, dk: '{who}說最近好幾個人病了卻付不起醫藥費，只能拖著。提議公庫幫付不起的人出一半醫藥費。', dp: { who: who.name }, cost: {}, category: 'welfare', jobBias: ['doctor'] }) };
         return P._createWith(w, d, cand, who);
     }
-    function vote(w, p, a) { const cash = WL() ? WL().get(w, a) : 50; let s = (cash < 40 ? 2 : 0) - (cash > 250 ? 2 : 0) + (a.job?.key === 'doctor' ? 2 : 0) + (ails(w, a).length ? 2 : 0) + (trait(a, 'kind') ? 1 : 0) + (Math.random() - 0.5) * 2; return { v: s > 0 ? 'for' : 'against', why: cash > 250 ? 'purse' : 'welfare' }; }
-    function setAid(w) { S(w).medaid = true; log(w, '🏥 公費醫療補助上路：付不起醫藥費的人，公庫幫出一半。', {}); return t('公費醫療補助上路'); }
+    function vote(w, p, a) { const cash = WL() ? WL().get(w, a) : 50; let s = (cash < 40 ? 2 : 0) - (cash > 250 ? 2 : 0) + (a.job?.key === 'doctor' ? 2 : 0) + (ails(w, a).length ? 2 : 0) + (trait(a, 'kind') ? 1 : 0) + (Math.random() - 0.5) * 2; return { v: s > 0 ? 'for' : 'against', why: s > 0 ? 'welfare' : 'purse' }; /* v10.4.0 理由跟著立場走,並補上文字(以前兩個代號都沒有文字,一律顯示「憑直覺」) */ }
+    function setAid(w) { S(w).medaid = true; S(w).medaidDay = day(w); /* v10.4.0 記下哪一天上路的(sim-repeal.js) */ log(w, '🏥 公費醫療補助上路：付不起醫藥費的人，公庫幫出一半。', {}); return t('公費醫療補助上路'); }
     // ---------- 每天 ----------
     function daily(w) {
         if (!w.observerMode) return; const H = S(w), d = day(w); if (H.lastDay === d) return; H.lastDay = d;
@@ -332,6 +332,7 @@ if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
     cured: { mood: 8, opinion: 0, days: 5, label: t('病治好了') },
 });
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.medaid = { icon: '🏥', label: '公費醫療' };
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { welfare: '生病不該因為沒錢就拖著', purse: '不想公庫多花這筆錢' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) { const r = _daily.call(this, w, ...rest); try { if (w.observerMode) HEALTH.daily(w); } catch (e) { console.warn('[Health] daily', e); } return r; };

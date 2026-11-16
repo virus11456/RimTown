@@ -203,7 +203,7 @@
     DECIDE.kind('run', {
         title: '快選舉了', cool: 20, pri: 2.5,
         when(w, a) {
-            const E = w.election; if (!E || E.active || typeof E._runScore !== 'function' || !w.clock || w.clock.season !== '夏季' || w.clock.day <= (w.clock.DAYS_PER_SEASON || 15) - RUN_DAYS) return null;
+            const E = w.election; if (!E || E.active || typeof E._runScore !== 'function' || !w.clock || w.clock.season !== '夏季' || (typeof ELECT !== 'undefined' && !ELECT.mayorYear(w.clock.year)) /* v10.4.0 一任兩年：不是選舉年就不問 */ || w.clock.day <= (w.clock.DAYS_PER_SEASON || 15) - RUN_DAYS) return null;
             if (runS(w)[a.agentId] && day(w) - runS(w)[a.agentId].d <= 10) return null;
             const Pp = runPool(w); return Pp.ids.has(a.agentId) ? { r: Pp.rank[a.agentId] } : null;
         },

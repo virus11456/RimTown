@@ -405,7 +405,7 @@ const CASINO = (() => {
         const s = (devout(w, a) || a.job?.key === 'priest' ? 1.6 : 0) + (hurt ? 1.4 : 0) + (has(a, 'kind') ? 0.5 : 0) + (has(a, 'ascetic') ? 0.6 : 0) - (own ? 5 : 0) - (gambler ? 1.5 : 0) - (kitchen ? 1 : 0) - (has(a, 'greedy') ? 0.6 : 0) + (Math.random() - 0.5);
         return { v: s > 0 ? 'for' : 'against', why: s > 0 ? (hurt ? 'cas_hurt' : 'cas_sin') : (own || kitchen ? 'cas_money' : 'cas_free') };
     }
-    function enact(w, p0) { const C = S(w); const nm = C.name?.[0] || ''; C.ban = true; if (C.open) close(w, C, 'ban'); log(w, '🚫 小鎮決定禁賭，「{s}」關門了。', { s: nm }); return t('全鎮禁賭'); }
+    function enact(w, p0) { const C = S(w); const nm = C.name?.[0] || ''; C.ban = true; C.banDay = day(w); /* v10.4.0 記下哪一天禁的:滿 60 天後可以提案廢除(sim-repeal.js) */ if (C.open) close(w, C, 'ban'); log(w, '🚫 小鎮決定禁賭，「{s}」關門了。', { s: nm }); return t('全鎮禁賭'); }
     function view(w) { const C = w.casino; if (!C || (!C.open && !C.ban && !C.st?.visits)) return null; return { open: C.open, ban: C.ban, name: nameOf(C), owner: C.owner && w.agents[C.owner] ? t(w.agents[C.owner].name) : '', st: C.st, today: C.today || { n: 0, net: 0 } }; }
     function brief(w, a) {
         const C = w.casino; if (!C) return ''; if (a.agentId === C.owner && C.open) return t('你在鎮上開賭場，莊家長期下來總是贏。');
