@@ -36,6 +36,8 @@ async function run(browser, lang) {
       const lvs = ws.map(a => a.skills.get(JOB_SKILL_MAP[a.job.key].primary[0])?.level || 0);
       out.year = { n: lvs.length, avg: lvs.reduce((s, x) => s + x, 0) / Math.max(1, lvs.length), max: Math.max(...lvs), at20: lvs.filter(x => x >= 20).length };
       out.mst = Object.entries(MOBILITY.S(w).mst || {}).map(([k, id]) => { const a = w.agents[id]; return a ? (MOBILITY.skillOfJob(a)?.lv || 0) : null; }).filter(x => x != null);
+      // 有資格出名匠的行業（同一行兩個大人以上、有人 11 級以上）；鎮上剛好沒有這種行業時，沒有名匠是對的
+      out.cand = ['farmer', 'miner', 'cook', 'blacksmith', 'carpenter', 'tailor', 'doctor', 'researcher', 'trader'].filter(k => { const ppl = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && a.job?.key === k && (a.age ?? 30) >= 18); return ppl.length >= 2 && ppl.some(a => (MOBILITY.skillOfJob(a)?.lv || 0) >= 11); }).length;
     } catch (e) { out.err = String(e && e.stack || e).slice(0, 500); }
     return out;
   });
@@ -49,7 +51,7 @@ async function run(browser, lang) {
   ok(Math.abs(r.heal0 - 0.55) < 0.001 && Math.abs(r.heal20 - 0.85) < 0.001, `${tag} 看病：新手醫生 55%、20 級 85%（不算科技與建築）`, { h0: r.heal0, h20: r.heal20 });
   ok(!r.research || r.research.pts >= r.research.n * 7 * 0.8 - 0.01, `${tag} 研究：每位學者至少 7 點（新手也有貢獻）`, r.research);
   ok(r.year && r.year.n > 5 && r.year.avg >= 5 && r.year.avg <= 11 && r.year.at20 === 0, `${tag} 跑 60 天：平均主技能約 8 級、沒有人練滿 20 級`, r.year);
-  ok(Array.isArray(r.mst) && r.mst.length > 0 && r.mst.every(x => x >= 10), `${tag} 名匠都在本行 10 級以上`, r.mst);
+  ok(Array.isArray(r.mst) && r.mst.every(x => x >= 10) && (r.mst.length > 0 || r.cand === 0), `${tag} 名匠都在本行 10 級以上（有行業夠資格時一定有名匠）`, { mst: r.mst, cand: r.cand });
   ok(!errs.length, `${tag} 沒有頁面錯誤`, errs.slice(0, 3));
   await ctx.close();
 }
