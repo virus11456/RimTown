@@ -3,6 +3,7 @@
 // 用法:node scripts/money_conservation_test.js [天數=400]
 // 1. 個別修正:每一段呼叫前後比對全鎮的錢(MONEY.total)與有記帳的流量(MONEY 的 pend),兩者要一致
 // 2. 真正的遊戲迴圈跑幾百天:每一格都比對「全鎮的錢變化」與「這一格記進月報的流量」,每天結帳的「其他」都要是 0
+// 3. 出遠門回來、新居民搬來、襲擊(擋下／沒擋住)、存檔再讀檔之後才搬來的人:全鎮的錢變化都有記帳
 const { chromium } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
 const DAYS = +(process.argv[2] || process.env.DAYS || 400);
@@ -124,6 +125,42 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(L.closed >= DAYS - 3, '每天都有結帳', L.closed);
   ok(!Object.keys(L.others).length, '每天結帳的「其他」都是 0', L.others);
   ok(!L.ticks.length, '每一格全鎮的錢變化都記進了月報', L.ticks);
+
+  // ---------- 3. 出遠門回來、新居民搬來、襲擊、讀檔後搬來 ----------
+  const v = await page.evaluate(() => {
+    const w = window.rimtownApp.world; const out = {}; const R0 = Math.random; const r2 = (n) => Math.round(n * 100) / 100;
+    const M = () => MONEY.S(w); const run = (n) => { for (let i = 0; i < n; i++) { w.paused = false; w.tick(); } };
+    const leak = (fn) => { const T0 = MONEY.total(w), P0 = M().pend, C0 = M().lastClose; fn(); if (M().lastClose !== C0) return 'closed'; return r2((MONEY.total(w) - T0) - (M().pend - P0)); };
+    const cat = (c) => (M().days[w._absDay()] || {})[c] || 0;
+    const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
+    const touch = () => { for (const a of npcs()) WALLET.get(w, a); WALLET.S(w); }; // 補齊每個人的錢包(新來的人這時才拿到初始存款)
+    const spawn = () => { const before = new Set(Object.keys(w.agents)); const f0 = cat('immigrant'); const l = leak(() => { w.events._spawnImmigrant(w); touch(); }); const nid = Object.keys(w.agents).find(k => !before.has(k)); return { leak: l, bal: nid ? w.wallet.bal[nid] : null, flow: r2(cat('immigrant') - f0) }; };
+    if (w.clock.hour >= 23) run(8); // 不要剛好卡在每天結帳那一格
+    // 襲擊擋下來:錢不變
+    { const gs = npcs().filter(a => (a.age ?? 30) >= 18).slice(0, 8), old = gs.map(a => a.job); for (const a of gs) a.job = new Job('guard'); out.repelled = leak(() => { w.events._triggerRaid(w); touch(); }); gs.forEach((a, i) => { a.job = old[i]; }); }
+    // 襲擊沒擋住:被搶走的銀幣記進「事件」;嚇跑的人錢包留著
+    { const gs = npcs().filter(a => a.job?.key === 'guard'), old = gs.map(a => a.job); for (const a of gs) a.job = null; const ge = w.buildings.getEffect, nm = w.news?.getModifier;
+      w.buildings.getEffect = function (k, d) { return k === 'defense_bonus' ? 0 : ge.apply(this, arguments); }; if (nm) w.news.getModifier = function (k, d) { return k === 'defense_bonus' ? 0 : nm.apply(this, arguments); };
+      w.stockpile.add('silver', 200, w.tickCount, 'test'); M().lastT = (M().lastT || 0) + 200; // 測試放進去的錢不算流量
+      out.breached = []; for (let i = 0; i < 6; i++) { const e0 = cat('event'), s0 = w.stockpile.get('silver'), a0 = w.events._travellingAgents.length; Math.random = () => 0.05 + i * 0.05; let l; try { l = leak(() => { w.events._triggerRaid(w); touch(); }); } finally { Math.random = R0; } out.breached.push({ leak: l, silver: r2(w.stockpile.get('silver') - s0), flow: r2(cat('event') - e0), fled: w.events._travellingAgents.length - a0 }); }
+      gs.forEach((a, i) => { a.job = old[i]; }); w.buildings.getEffect = ge; if (nm) w.news.getModifier = nm; }
+    // 出遠門再回來:錢包原封不動,不會被當成新來的人再發一次初始存款
+    { out.trips = []; for (const a of npcs().filter(x => (x.age ?? 30) >= 18 && !String(x.agentId).startsWith('visit_')).slice(0, 5)) { const id = a.agentId, bal0 = WALLET.get(w, a), i0 = cat('immigrant');
+        const l1 = leak(() => { w.events._sendAgentTravelling(w, a, '去外地探親', 3); touch(); }); const away = w.wallet.bal[id];
+        const l2 = leak(() => { const x = w.events._travellingAgents.find(y => y.agentData.agentId === id); w.events._travellingAgents = w.events._travellingAgents.filter(y => y !== x); w.events._returnAgent(w, x); touch(); });
+        out.trips.push({ leave: l1, back: l2, same: bal0 === away && away === WALLET.get(w, w.agents[id]), imm: r2(cat('immigrant') - i0) }); } }
+    // 新居民搬來:帶來的積蓄記進「移民帶來」
+    out.arrivals = [spawn(), spawn(), spawn()];
+    // 存檔再讀檔之後才搬來的人,一樣要記(以前讀檔後第一次補錢包不記帳)
+    { const data = JSON.parse(JSON.stringify(w.serialize())); w.loadSave(data); w.observerMode = true; out.loaded = [spawn(), spawn()]; }
+    return out;
+  });
+  console.log('出遠門、新居民、襲擊、讀檔');
+  ok(v.repelled === 0, '襲擊擋下來:全鎮的錢不變', v.repelled);
+  ok(v.breached.some(x => x.silver < 0) && v.breached.every(x => x.leak === 0 && x.flow === x.silver), '襲擊沒擋住:被搶走的銀幣記進「事件」', v.breached);
+  ok(v.trips.length >= 3 && v.trips.every(x => x.leave === 0 && x.back === 0 && x.same && x.imm === 0), '出遠門再回來:錢包原封不動,不會再發一次初始存款', v.trips);
+  ok(v.arrivals.every(x => x.leak === 0 && x.bal > 0 && x.flow === x.bal), '新居民搬來:帶來的積蓄記進「移民帶來」', v.arrivals);
+  ok(v.loaded.every(x => x.leak === 0 && x.bal > 0 && x.flow === x.bal), '讀檔之後才搬來的人:帶來的積蓄也記進「移民帶來」', v.loaded);
   ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 5));
   await browser.close();
   console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);
