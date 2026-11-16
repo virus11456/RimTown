@@ -26,9 +26,9 @@ const TREASURY = (() => {
         let jail = null; try { jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; } catch (e) {}
         return npcs(w).filter(a => WALLET.WAGE[a.job?.key] && !(typeof MARKET !== 'undefined' && MARKET.privatePaid?.(w, a)) && !(jail && jail.has(a.agentId)));
     }
-    function payroll(w) { if (typeof WALLET === 'undefined' || !w?.wallet) return 0; const W = w.wallet; return r2(staff(w).reduce((s, a) => s + Math.max(W.minWage || 0, WALLET.wageOf(a) * (1 - (W.tax || 0))), 0)); }
+    function payroll(w) { if (typeof WALLET === 'undefined' || !w?.wallet) return 0; const W = w.wallet; const PR = (typeof FISCAL !== 'undefined') ? FISCAL.pubRate(w) : 1; return r2(staff(w).reduce((s, a) => s + Math.max(W.minWage || 0, WALLET.wageOf(a) * PR * (1 - (W.tax || 0))), 0)); }
     const upkeep = (w) => (w?.buildings?.completed || []).reduce((s, b) => s + (BIG.includes(b.buildingKey) ? 4 : 2) * (b.level || 1), 0);
-    function debt(w) { const D = w?.bank?.debt; return D && D.owed > 0 ? Math.min(D.owed, Math.max(2, Math.ceil(D.owed * 0.03))) : 0; }
+    function debt(w) { const D = w?.bank?.debt; let bond = 0; try { bond = (typeof FISCAL !== 'undefined') ? FISCAL.debtDaily(w) : 0; } catch (e) {} return r2((D && D.owed > 0 ? Math.min(D.owed, Math.max(2, Math.ceil(D.owed * 0.03))) : 0) + bond); } // v10.8.0 公債的利息與還本也算
     const fixedNow = (w) => r2(payroll(w) + upkeep(w) + debt(w));
     // 平滑過的固定支出（一兩天的人事變動不會讓門檻跳來跳去）
     function fixed(w) { const T = S(w); if (!(T.fx > 0)) T.fx = fixedNow(w); return Math.max(1, T.fx); }
@@ -43,11 +43,11 @@ const TREASURY = (() => {
     // ---------- 公庫的帳 ----------
     // 依原因歸類。原因是當下語言的字串，所以用翻譯後的字比對；比不到的算「其他」
     const CATS = {
-        in: [['tax_sales', ['營業稅']], ['tax_corp', ['營利事業所得稅']], ['tax_income', ['所得稅']], ['tax_prop', ['地價稅', '遺產稅', '關稅', '無人繼承的遺產']],
+        in: [['tax_sales', ['營業稅']], ['tax_corp', ['營利事業所得稅']], ['tax_income', ['所得稅']], ['tax_prop', ['地價稅', '遺產稅', '關稅', '無人繼承的遺產', '離境稅', '財產稅', '宗教捐獻稅']], ['bond', ['發行公債']],
             ['rent', ['店租與營業開銷', '公有房舍租金', '公有房舍標售', '公營產業標售']], ['fine', ['罰款', '沒收犯罪者財產']], ['fee', ['醫療收入：看診', '醫療收入：手術', '醫療收入']],
             ['goods', ['商人出口的貨款', '賣貨給商行', '商店出售', '酒館', '村民消費', '商人出口', '跨鎮商隊', '賣出多餘的貨', '賣給外地', '賣出', '訂單完成']]],
         out: [['pay', ['發薪水']], ['upkeep', ['建築維護']], ['works', ['公共開支', '公共工程', '興建公有房舍', '公有房舍修繕']], ['import', ['原料進口', '向商行買進口貨']],
-            ['relief', ['生活補助', '救濟金', '公費醫療補助']], ['debt', ['償還紓困債']], ['goods', ['貨款轉給產業', '公庫收購產業']]],
+            ['relief', ['生活補助', '救濟金', '公費醫療補助']], ['debt', ['償還紓困債', '公債利息', '償還公債']], ['goods', ['貨款轉給產業', '公庫收購產業']]],
     };
     let _tab = null, _tabLang = null;
     function table() {
@@ -82,7 +82,7 @@ const TREASURY = (() => {
     function trend(w, n = 7) { const T = S(w), d = day(w); const ks = Object.keys(T.led).filter(k => +k > d - n && +k <= d); if (Object.keys(T.led).length < 5 || !ks.length) return null; let s = 0; for (const k of ks) for (const [c, v] of Object.entries(T.led[k])) s += c[0] === '+' ? v : -v; return r2(s / ks.length); }
     // 該不該加稅：公庫不夠付 10 天，而且不是正在回升（剛開鎮、剛付完一筆大錢，公庫低但每天都在進帳，就不急著加）
     const needTax = (w) => { if (!low(w)) return false; const tr = trend(w); return tr !== null && tr <= 0; };
-    const NAME = { tax_sales: '營業稅', tax_corp: '營利事業所得稅', tax_income: '所得稅', tax_prop: '財產與關稅', rent: '租金與標售', fine: '罰款與沒收', fee: '醫療收入', goods: '賣公家倉庫的貨', pay: '公職薪水', upkeep: '建築維護', works: '公共建設', import: '進口', relief: '救濟與補助', debt: '還債', other: '其他' };
+    const NAME = { tax_sales: '營業稅', tax_corp: '營利事業所得稅', tax_income: '所得稅', tax_prop: '財產與關稅', bond: '借來的公債', rent: '租金與標售', fine: '罰款與沒收', fee: '醫療收入', goods: '賣公家倉庫的貨', pay: '公職薪水', upkeep: '建築維護', works: '公共建設', import: '進口', relief: '救濟與補助', debt: '還債', other: '其他' };
     function view(w) {
         const st = staff(w); const jobs = {}, jobName = {}; for (const a of st) { jobs[a.job.key] = (jobs[a.job.key] || 0) + 1; jobName[a.job.key] = a.job.title || a.job.key; }
         const L = ledger(w); const pop = npcs(w).length;

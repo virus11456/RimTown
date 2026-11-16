@@ -114,7 +114,14 @@ Object.assign(RimTownApp.prototype, {
         const detail = this._icSub(t('每天的固定支出'), this._icRows([[t('公職薪水（{n} 人，占人口 {p}%）').replace('{n}', v.staff).replace('{p}', Math.round(v.staff / Math.max(1, v.pop) * 100)), N(v.payroll)], [t('建築維護'), N(v.upkeep)], v.debt ? [t('還債'), N(v.debt)] : null]) + this._icPills(jobs))
             + this._icSub(t('最近 {n} 天平均每天收入').replace('{n}', L.days) + ` <b>${N(L.inSum)}</b>`, this._icRows(rows('in')))
             + this._icSub(t('最近 {n} 天平均每天支出').replace('{n}', L.days) + ` <b>${N(L.outSum)}</b>`, this._icRows(rows('out')))
-            + this._icRows([[t('每天結餘'), (net >= 0 ? '+' : '') + N(net), net < 0 ? 'r' : 'g'], [t('可以動用的錢（公共建設、補助）'), N(v.budget)], v.tax != null ? [t('薪水先扣的稅'), Math.round(v.tax * 100) + '%'] : null, v.owed ? [t('還欠的紓困債'), N(v.owed)] : null]);
+            + this._icRows([[t('每天結餘'), (net >= 0 ? '+' : '') + N(net), net < 0 ? 'r' : 'g'], [t('可以動用的錢（公共建設、補助）'), N(v.budget)], v.tax != null ? [t('薪水先扣的稅'), Math.round(v.tax * 100) + '%'] : null, v.owed ? [t('還欠的紓困債'), N(v.owed)] : null])
+            + (() => { if (typeof FISCAL === 'undefined') return ''; let f; try { f = FISCAL.view(w); } catch (e) { return ''; } // v10.8.0 其他財源、公債、公職薪水
+                return this._icSub(t('其他財源與公職薪水'), this._icRows([
+                    [t('離境稅（搬走的人留下 {r}%）').replace('{r}', Math.round(f.exitRate * 100)), f.exit ? t('已開徵，至今收了 {n}').replace('{n}', N(f.st.exit || 0)) : t('還沒有')],
+                    [t('財產稅（超過 {f} 的部分每週 {r}%）').replace('{f}', N(f.wealthFree)).replace('{r}', Math.round(f.wealthRate * 100)), f.wealth ? t('已開徵，至今收了 {n}').replace('{n}', N(f.st.wealth || 0)) : t('還沒有，現在有 {n} 人超過').replace('{n}', f.over)],
+                    [t('公債'), f.bond ? t('還欠銀行 {n}').replace('{n}', N(f.bond.owed)) : t('沒有欠'), f.bond ? 'y' : ''],
+                    [t('公職薪水倍率（跟著民間行情）'), '×' + f.rate.toFixed(2)],
+                    f.payShare != null ? [t('公職薪水占公庫收入（超過 {c}% 不再設新職位）').replace('{c}', Math.round(f.CAP * 100)), Math.round(f.payShare * 100) + '%', f.payShare >= f.CAP ? 'y' : ''] : null])); })();
         return this._ic({ id: 'treasury', icon: '🏦', title: t('公庫'), chip, sum: `${N(v.silver)}`, defOpen: !!alert, alert,
             kpis: [{ v: N(v.silver), l: '💰 ' + t('公庫銀幣'), tone: owing ? 'r' : v.low ? 'y' : '' }, { v: d, u: t('天'), l: t('夠付幾天'), tone: owing ? 'r' : v.low ? 'y' : '' }, { v: (net >= 0 ? '+' : '') + N(net), l: t('每天結餘'), tone: net < 0 ? 'r' : '' }],
             body, detail,

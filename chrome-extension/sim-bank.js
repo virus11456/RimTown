@@ -54,7 +54,7 @@ const BANK = (() => {
         // v6.87.0 呆帳慢慢沖銷(約三週減半),以前只增不減,呆帳一過 40 就天天有擠兌風險
         B.bad = Math.max(0, Math.round(((B.bad || 0) * 0.97 - 0.5) * 10) / 10);
         // 搬走的人把存款領走(出遠門的人存款留著)
-        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; const out = Math.min(v, Math.max(0, B.reserve)); B.reserve -= out; /* 不再把負的準備金拉回 0(會憑空生錢) */ delete B.dep[id]; if (out > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -out); } // v8.8.0 搬走的人帶走的存款記到「搬走帶走」
+        for (const id of Object.keys(B.dep)) if (!w.agents[id] && !w.isAway?.(id)) { const v = B.dep[id] || 0; const out = Math.min(v, Math.max(0, B.reserve)); B.reserve -= out; /* 不再把負的準備金拉回 0(會憑空生錢) */ delete B.dep[id]; let lv = 0; try { lv = (typeof FISCAL !== 'undefined') ? FISCAL.levy(w, id, out) : 0; } catch (e) {} /* v10.8.0 離境稅 */ if (out - lv > 0 && typeof MONEY !== 'undefined') MONEY.flow(w, 'emigrant', -(out - lv)); } // v8.8.0 搬走的人帶走的存款記到「搬走帶走」
         if (B.status === 'run') { bankRun(w, B, d); return; }
         if (B.reserve < totalDep(B) * 0.35 && totalDep(B) >= 40 && !B.bonds.length && d - (B.lastIssue ?? -99) >= 20 && Math.random() < 0.3) issueBonds(w, B, d, 80, false);
         const all = npcs(w);
