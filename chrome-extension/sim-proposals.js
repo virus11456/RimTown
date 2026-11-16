@@ -572,6 +572,7 @@ class ProposalSystem {
                 out.push({ kind: 'market', key: 'market:buy:' + r, weight: 1.3, jobs: ['trader', 'mayor', 'carpenter', 'blacksmith'], make: (a) => ({ kind: 'market', key: 'market:buy:' + r, refKey: r, qty, side: 'buy', tk: '進一批{item}備料', tp: { item: SI[r].name() }, dk: '{item}快見底了，{who}提議從公庫撥 {n} 銀幣去商店進 {qty} 份。', dp: { item: SI[r].name(), who: a.name, n: price, qty }, cost: { silver: price }, category: 'economy', jobBias: ['trader'] }) });
             }
             const foodCap = typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const sellFrom = out.length;
             for (const r of Object.keys(SI)) {
                 // v11.3.0 其他東西以前一律超過 250 就算多：城市自己想備的石材 890、木材 554 都比 250 高，一邊補一邊提議賣；城鎮以上改成超過目標量的 1.2 倍才算多（村莊照舊 250）
                 const have = sp?.get?.(r) || 0; const line = r === 'food' ? foodCap : (typeof FLOW !== 'undefined' && FLOW.keepLine ? FLOW.keepLine(w, r, 250) : 250); const over = have > line;
@@ -579,8 +580,10 @@ class ProposalSystem {
                 const glut = Math.max(0, have / Math.max(1, line) - 1);
                 if (!over || !this._cool(day, 'market:sell:' + r, glut >= 2 ? 4 : 8)) continue;
                 const qty = r === 'food' ? Math.max(20, Math.floor(have - foodCap * 0.85)) : 80, gain = SI[r].sellPrice * qty;
-                out.push({ kind: 'market', key: 'market:sell:' + r, weight: Math.min(5, 1.4 + glut * (r === 'food' ? 1.5 : 0.6)), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
+                out.push({ kind: 'market', key: 'market:sell:' + r, glut, weight: Math.min(5, 1.4 + glut * (r === 'food' ? 1.5 : 0.6)), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
             }
+            // v11.3.0 好幾樣東西同時堆太多時，只有最嚴重的兩樣排到前面，其餘照平常的份量（不然十幾個「賣掉某某」會把別的事全擠到後面，開了智能體的鎮只看得到賣貨）
+            out.slice(sellFrom).filter(c => String(c.key).startsWith('market:sell:')).sort((x, y) => (y.glut || 0) - (x.glut || 0)).slice(2).forEach(c => { c.weight = Math.min(c.weight, 1.4); });
         }
         // 升級既有建築
         if (w.buildings?.getUpgradeable) for (const u of w.buildings.getUpgradeable(w)) {

@@ -264,7 +264,7 @@ const DAY = (() => {
     function steer(w, a) {
         a._dayLoc = null; a._dayWhy = null; if (!on(w) || a.isPlayer || a.isDead || !a.needs) return;
         if (a.status === 'hospitalized' && a.needs.hunger >= 15) { a.activity = 'sleeping'; a._dayLoc = w.townMap?.locations?.clinic ? 'clinic' : a.homeLocation; a._dayWhy = '受了傷，躺在診所'; return; }
-        if (a.needs.hunger < 15 || a.needs.rest < 10) return; const X = S(w), id = a.agentId, h = w.clock.hour;
+        if (a.needs.hunger < 15 || a.needs.rest < 10) return; if (a._ceremony || a._thingAt || (a._thingGo && w.tickCount >= a._thingGo.from && w.tickCount < a._thingGo.until)) return; /* 正在參加婚喪典禮、或這個時間已經約好去某個地方（賭場、寫信約的見面、告示上的聚會、門口抗議）的人照原本的安排 */ const X = S(w), id = a.agentId, h = w.clock.hour;
         const set = (act, loc, why) => { a.activity = act; a._dayLoc = loc === 'home' ? a.homeLocation : loc; a._dayWhy = why; };
         const y = X.y[id]; if (h < 6 && y && (y.until || 0) > h + 24) return set('socializing', 'tavern', '在酒館喝到半夜');
         const r = X.t[id]; if (!r) return freeSteer(w, a);

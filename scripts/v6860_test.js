@@ -61,12 +61,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const [A, B] = alive().slice(0, 2); const guests = alive().slice(2, 8);
       for (const g of guests) { g.relationships.getOrCreate(A.agentId, A.name).affinity = 60; if (typeof WALLET !== 'undefined') WALLET.add(w, g, 50); }
       const foe = alive()[9]; const rf = foe.relationships.getOrCreate(A.agentId, A.name); rf.status = 'ex'; rf.affinity = -50;
-      const wbefore = typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0;
+      const wbefore = typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0; const _dt = typeof DAY !== 'undefined' ? DAY.tick : null; if (_dt) DAY.tick = () => {}; /* v11.2.0 新人當晚可能去酒館花錢，這裡只看禮金有沒有進帳 */
       const wc = CEREMONY.planWedding(w, A, B); out.wedPlan = { inDays: wc ? wc.day - w._absDay() : null, log: logs().filter(l => /💍/.test(l)).slice(-1)[0] || '' };
       const orig = Math.random; let atSquare = 0;
       for (let i = 0; i < 96 * 7 && wc.status !== 'held'; i++) { if (wc.status === 'ongoing' && w.clock.hour >= CEREMONY.WED_END - 1) Math.random = () => 0.01; step(1); Math.random = orig; if (wc.status === 'ongoing') atSquare = Math.max(atSquare, Object.values(w.agents).filter(a => a._ceremony?.id === wc.id && a.targetLocation === wc.loc).length); }
       Math.random = orig;
-      out.wed = { status: wc.status, guests: (wc.guests || []).length, atSquare, gifts: wc.gifts, speaker: wc.speaker, scene: wc.scene || '', moneyUp: (typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0) > wbefore - 40, log: logs().filter(l => /💒/.test(l)).slice(-1)[0] || '' };
+      out.wed = { status: wc.status, guests: (wc.guests || []).length, atSquare, gifts: wc.gifts, speaker: wc.speaker, scene: wc.scene || '', moneyUp: (typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0) > wbefore - 40, log: logs().filter(l => /💒/.test(l)).slice(-1)[0] || '' }; if (_dt) DAY.tick = _dt;
       // 結婚不再一次辦完(原始碼)
       out.noInstant = /CEREMONY\.planWedding/.test(World.prototype.tick.toString() + Object.getOwnPropertyNames(World.prototype).map(k => { try { return String(World.prototype[k]); } catch (e) { return ''; } }).join('\n'));
       // 地點卡

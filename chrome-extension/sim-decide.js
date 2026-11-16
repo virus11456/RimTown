@@ -361,7 +361,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         if (w.decide !== X) return;
         list.forEach((o, i) => {
             if (P0.get(pk(o.a.agentId, K))?.tok !== o.tok) return; // 等太久，已經先照個性決定了
-            P0.delete(pk(o.a.agentId, K)); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) return;
+            P0.delete(pk(o.a.agentId, K)); const a = w.agents[o.a.agentId]; if (!a || a.isDead || !inTown(w, a)) { if (OBS.length) emit('dropped', { w, a: a || o.a, K }); return; }
             const ctx = K.scan ? whenOf(w, a, K) : o.ctx; if (!ctx) { if (OBS.length) emit('dropped', { w, a, K }); return; } // 等的這段時間事情已經過去了
             const opts = optsOf(w, a, K, ctx); if (!opts.length) { if (OBS.length) emit('dropped', { w, a, K }); return; }
             // v10.0.0 只問一個人時，模型有時直接回一個物件、沒包成陣列（真模型實測 40 次裡有 10 個人的回答因此作廢）：照樣收；只有一個人、回來也只有一筆時不必對序號
@@ -406,7 +406,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; X._asked = 0; X._kAsked = {}; X._gAsked = {};
         const all = npcs(w);
         // 昨天問 AI 的還沒回話（太慢、沒額度、遊戲開很快）：不讓人卡著，先照個性決定；晚到的回話就不算了
-        { const P1 = pend(X); for (const [key, q] of [...P1]) { if (q.d >= d) continue; P1.delete(key); const id = q.id; const a = w.agents[id]; if (!a || !inTown(w, a)) continue; const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) continue; X.st.aiMiss++; resolveRule(w, X, { a, K: q.K, ctx }, d); } }
+        { const P1 = pend(X); for (const [key, q] of [...P1]) { if (q.d >= d) continue; P1.delete(key); const id = q.id; const a = w.agents[id]; const gone = () => { if (OBS.length) emit('dropped', { w, a: a || { agentId: id }, K: q.K }); }; /* v11.2.0 事情已經過去（人不在了、時機過了、已經沒有選項）也要說一聲，不然觀察工具會以為這件事還在等 */ if (!a || !inTown(w, a)) { gone(); continue; } const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) { gone(); continue; } X.st.aiMiss++; if (!resolveRule(w, X, { a, K: q.K, ctx }, d)) gone(); } }
         // 每週記一次身家，帳本才說得出「這一週多了還是少了」
         for (const a of all) { const n = X.nw[a.agentId]; if (!n) X.nw[a.agentId] = { d, v: worth(w, a), prev: null }; else if (d - n.d >= 7) X.nw[a.agentId] = { d, v: worth(w, a), prev: n.v }; }
         // 不在了的人清掉（出遠門的留著）

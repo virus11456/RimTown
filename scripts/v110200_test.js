@@ -101,6 +101,9 @@ async function run(browser, dev, lang) {
 
       // 10) 存讀檔、關掉時不介入
       { const d = w.serialize(); out.saved = !!d.dayx && d.dayx.t?.[A.agentId]?.work === 'leave'; const tBefore = JSON.stringify(X().t[A.agentId]); w.loadSave(JSON.parse(JSON.stringify(d))); w.observerMode = true; DAY.roll(w); out.loaded = JSON.stringify(DAY.S(w).t[A.agentId]) === tBefore; }
+      { const a = Object.values(w.agents).find(x => !x.isPlayer && x.job && !x.isDead); const X0 = DAY.S(w); const t0 = X0.t[a.agentId]; const h0 = w.clock.hour; const n0 = [a.needs.hunger, a.needs.rest]; a.needs.hunger = 80; a.needs.rest = 80; w.clock.hour = 20; X0.t[a.agentId] = { eve: 'drink', until: 23, e0: 18 };
+        DAY.steer(w, a); const plain = a._dayLoc; a._thingGo = { place: 'park', from: w.tickCount - 1, until: w.tickCount + 8 }; DAY.steer(w, a); const appt = a._dayLoc; delete a._thingGo; a._ceremony = { loc: 'town_square', act: 'socializing' }; DAY.steer(w, a); const cere = a._dayLoc; delete a._ceremony;
+        out.keep = { plain, appt, cere }; w.clock.hour = h0; a.needs.hunger = n0[0]; a.needs.rest = n0[1]; if (t0) X0.t[a.agentId] = t0; else delete X0.t[a.agentId]; }
       { const a = Object.values(w.agents).find(x => !x.isPlayer && x.job); w.observerMode = false; a._dayLoc = 'x'; DAY.steer(w, a); out.off = { loc: a._dayLoc, mult: DAY.workMult(w, a), noPay: DAY.noPay(w, a) }; w.observerMode = true; }
 
       // 12) 打架：動手是本人選的；還手或退開；重傷躺診所、不能上工；兩套舊的擲骰關掉
@@ -154,6 +157,7 @@ async function run(browser, dev, lang) {
   ok(r.fromPlan === true && r.planWork === 'leave' && r.planLog && r.planLog.kind === 'workday' && r.planLog.ai === 1 && r.fromPlanBad === false, `${tag} AI 在行程裡寫請假就真的請假，並記成 AI 的決定；亂寫的不採用`, { f: r.fromPlan, w: r.planWork, l: r.planLog, bad: r.fromPlanBad });
   ok(r.saved && r.loaded, `${tag} 存檔讀檔不丟，同一天讀檔不會把今天當成昨天`, { s: r.saved, l: r.loaded });
   ok(r.off && r.off.loc === null && r.off.mult === 1 && r.off.noPay === false, `${tag} 沒開觀察者模式時不介入`, r.off);
+  ok(r.keep && r.keep.plain === 'tavern' && r.keep.appt === null && r.keep.cere === null, `${tag} 今晚本來要去酒館，但已經約好去別處、或正在參加典禮的人照原本的安排`, r.keep);
   ok(r.run && r.run.tot > 100 && r.run.at / r.run.tot >= 0.82 && ((r.run.st.leave || 0) + (r.run.st.sick || 0) + (r.run.st.skip || 0)) / r.run.tot <= 0.08, `${tag} 跑 20 天：上午十一點八成以上的人在工作地點（沒有這個功能時是九成一到九成六），整天沒去的不到 8%`, r.run && { at: r.run.at, tot: r.run.tot, off: (r.run.st.leave || 0) + (r.run.st.sick || 0) + (r.run.st.skip || 0) });
   ok(r.run && (r.run.st.drink || 0) > 0 && Object.keys(r.run.pick).some(k => k.startsWith('evening.')), `${tag} 跑 20 天：有人去酒館、每晚都有人在拿主意`, r.run && r.run.st);
   ok(r.hitMild && !r.hitMild.includes('hit') && r.hitHate.includes('hit') && r.hitGap > 0, `${tag} 碰上死對頭：恨到 -55 以下才多一個「動手」，而且比忍著難選`, { mild: r.hitMild, hate: r.hitHate, gap: r.hitGap, t: r.hitText });
