@@ -59,7 +59,9 @@ const ECON = (() => {
         for (const [loc, rs] of Object.entries(NATURE_RAW)) if (L[loc]) rs.forEach(r => set.add(r));
         return set;
     }
-    function rawFloor(w, r) { return localRaws(w).has(r) ? 40 : 20; }
+    // v11.3.0 保底量跟著人口長：以前不管幾個人都只補到 40（非本地 20），一百多人的城市光取暖加木匠一天就用掉七十幾份木材，怎麼補都見底。三十人以內照舊；之後每多一個人多留他兩天的用量
+    const RAW_PER = { wood: 1.25, metal: 0.3, cloth: 0.3, herbs: 0.17 }; // 每人兩天用多少：木材＝取暖 0.3＋木匠鐵匠 0.32；金屬、布料＝鐵匠、裁縫各佔 6%×3；草藥＝醫生佔 5%×2（職缺比例見 sim-finance.js，成年人約佔八成五）
+    function rawFloor(w, r) { const base = localRaws(w).has(r) ? 40 : 20; return Math.max(base, Math.round(base + (npcs(w).length - 30) * (RAW_PER[r] || 0))); }
     // ---------- 誰去種田、捕魚、打獵 ----------
     function shares(w) {
         const W = water(w), b = baseOf(w);

@@ -125,7 +125,8 @@ class VillagerAutonomy {
         const who = this._pick(this._byJob(w, 'trader', false)) || this._pick(this._byJob(w, 'mayor', false)) || this._pick(this._npcs(w));
         if (!who) return;
         const pop = Math.max(1, this._npcs(w).length);
-        const reserve = (r) => r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
+        const reserve0 = (r) => r === 'food' ? 150 + pop * VillagerAutonomy.FOOD_RESERVE_PER_NPC : r === 'medicine' ? 30 : r === 'tools' ? 25 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? VillagerAutonomy.RAW_RESERVE : VillagerAutonomy.GOOD_RESERVE; // 藥和工具多留一點
+        const reserve = (r) => (r !== 'food' && typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, reserve0(r)) : reserve0(r); // v11.3.0 以前不管多大都只留 20～40（城市想備衣物 102、餐食 354，行商一來就賣到剩 20）；城鎮以上至少留到目標量的 1.2 倍，村莊照舊
         const low = (r) => { const b = (typeof FLOW !== 'undefined') ? FLOW.buyLow(w, r) : null; if (b != null) return b; return Math.max(r === 'food' ? 100 : ['wood', 'stone', 'metal', 'cloth', 'herbs'].includes(r) ? 15 : 5, (typeof FLOW !== 'undefined' ? FLOW.inputNeed(w, r) : 0)); }; // v6.79.0 作物只買用得到的;工坊要用的料買夠三批
         const deals = [];
         // 先賣（進帳），再買;v6.40.1 一天跟行商賣貨最多進帳 100 銀幣
@@ -179,9 +180,10 @@ class VillagerAutonomy {
         }
         for (const b of buys) this._note(w, b.who, '🛒 鎮上{item}快沒了，{who}去商店補了 {n} 份（{cost} 銀幣）。', { who: b.who?.name || '', item: SI[b.r].name(), n: b.qty, cost: b.cost }, 4, 'economy', 4);
         // 賣：沒人用得上、堆太多的（酒、傢俱、麵包…）留 15 賣掉其餘，一天最多兩樣
-        const sellable = ['beer', 'wine', 'furniture', 'bread', 'clothing'].filter(r => SI[r] && w.stockpile.get(r) > 80).sort((a, b) => w.stockpile.get(b) - w.stockpile.get(a)).slice(0, 1); // v6.40.1 一天只賣一樣、存量 80 以上才賣
+        const keepOf = (r, old) => (typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, old) : old; // v11.3.0 以前超過 80 就賣、留 50（城市想備衣物 102、麵包 94，還沒備夠就拿去賣）；城鎮以上要超過目標量的 1.2 倍才賣，村莊照舊
+        const sellable = ['beer', 'wine', 'furniture', 'bread', 'clothing'].filter(r => SI[r] && w.stockpile.get(r) > keepOf(r, 80)).sort((a, b) => w.stockpile.get(b) - w.stockpile.get(a)).slice(0, 1); // v6.40.1 一天只賣一樣、存量 80 以上才賣
         for (const r of sellable) {
-            const qty = Math.min(6, Math.floor(w.stockpile.get(r) - 50)); // 留 50、一次最多 6 份
+            const qty = Math.min(6, Math.floor(w.stockpile.get(r) - keepOf(r, 50))); if (qty < 1) continue; // 留 50、一次最多 6 份
             const res = shop.sell(r, qty, w);
             if (res?.success) { const who = this._pick(this._byJob(w, 'trader')); this._note(w, who, '💰 {who}把倉裡多出來的{item} {n} 份拿去賣了，進帳 {gain} 銀幣。', { who: who?.name || '', item: SI[r].name(), n: qty, gain: qty * SI[r].sellPrice }, 4, 'economy', 3); }
         }

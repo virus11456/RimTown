@@ -72,6 +72,8 @@ class ProposalSystem {
         this._lastDay = null;
     }
     static MAX_OPEN = 4;
+    // v11.3.0 同時開著的提案上限跟著城鎮等級：以前不管多大都是 4 案（一百多人的城市三十個人才輪得到一案）；現在村莊 4、城鎮 5、城市 6、王都 7
+    _maxOpen(w) { let lv = 0; try { lv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(w).lv || 0) : 0; } catch (e) { lv = 0; } return ProposalSystem.MAX_OPEN + Math.max(0, Math.min(3, lv)); }
     static FREE_SHARE = 1; // v6.47.0 完整智能體模式下,村民自己發想提案的比例(v6.50.0 起全部自己想;系統看到的鎮況當參考提示給 AI)
     static DECIDE_DAYS = 2; // v6.37.0 投票兩天後鎮長裁決(七成的人投完票、過了一天也會提早裁決)
     static SHELF_DAYS = 10;
@@ -223,7 +225,7 @@ class ProposalSystem {
     // v11.3.0 這一案要賣的東西堆了多少：超過容量幾倍（沒超過是 0）。投票的人和首長看得到倉庫滿出來
     _glutOf(w, p) {
         if (!p || p.kind !== 'market' || p.side !== 'sell' || !p.refKey) return 0;
-        const have = w.stockpile?.get?.(p.refKey) || 0; const cap = p.refKey === 'food' ? (typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) : 250;
+        const have = w.stockpile?.get?.(p.refKey) || 0; const cap = p.refKey === 'food' ? (typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) : (typeof FLOW !== 'undefined' && FLOW.keepLine ? FLOW.keepLine(w, p.refKey, 250) : 250); // v11.3.0 其他東西以前固定拿 250 當滿：城鎮以上改看鎮上想備的量
         return Math.max(0, have / Math.max(1, cap) - 1);
     }
     _ruleVote(w, p, a) {
@@ -260,7 +262,7 @@ class ProposalSystem {
     // ---------- 生成 ----------
     _generate(w, day) {
         const open = this.open();
-        if (open.length >= ProposalSystem.MAX_OPEN) return;
+        if (open.length >= this._maxOpen(w)) return;
         const cands = this._candidates(w, day);
         const pickWeighted = (arr) => { const total = arr.reduce((s, c) => s + c.weight, 0); let r = Math.random() * total; for (const c of arr) { r -= c.weight; if (r <= 0) return c; } return arr[0]; };
         // v6.39.0 完整智能體:今天輪到發言的人自己決定要不要提、提什麼(一天一次 LLM);失敗退回規則
@@ -287,7 +289,7 @@ class ProposalSystem {
             return;
         }
         const n = Math.random() < 0.72 ? 1 : (Math.random() < 0.35 ? 2 : 0);
-        for (let i = 0; i < n && this.open().length < ProposalSystem.MAX_OPEN; i++) {
+        for (let i = 0; i < n && this.open().length < this._maxOpen(w); i++) {
             const cs = this._candidates(w, day); if (!cs.length) return;
             this._create(w, day, pickWeighted(cs));
         }
@@ -295,7 +297,7 @@ class ProposalSystem {
     async _generateLLM(w, day, a, alts, summaries, pick) {
         let r = null;
         try { r = await w.conversationEngine.chooseProposal(w, a, summaries); } catch (e) { console.warn('[Proposals] llm choose', e); }
-        if (this.open().length >= ProposalSystem.MAX_OPEN) return;
+        if (this.open().length >= this._maxOpen(w)) return;
         if (!r) { this._create(w, day, pick); return; }
         if (r.choice <= 0 || r.choice > alts.length) { this._lastPass = { day, who: a.name }; w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; }
         const cand = alts[r.choice - 1];
@@ -382,7 +384,9 @@ class ProposalSystem {
             out.push({ kind: 'expedition', key: 'exp:' + zid, weight: 0.9, jobs: ['guard', 'researcher', 'miner'], pred: (a) => this._hasValue(a, '冒險'), make: (a) => ({ kind: 'expedition', key: 'exp:' + zid, refKey: zid, tk: '組隊去{zone}探險', tp: { zone: zone.name }, dk: '{who}想帶兩三個人去{zone}走一趟，約 {d} 天來回，可能帶回物資或發現。', dp: { who: a.name, zone: zone.name, d: zone.distance || 2 }, cost: {}, category: 'freedom', jobBias: ['guard', 'researcher'] }) });
         }
         // 宴席
-        if (food >= 120 && avgMood < 58 && this._cool(day, 'feast', 10)) out.push({ kind: 'feast', key: 'feast', weight: 1.4, jobs: ['cook', 'tavern', 'trader'], make: (a) => ({ kind: 'feast', key: 'feast', tk: '辦一桌全鎮的宴席', tp: {}, dk: '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。', dp: { who: a.name }, cost: { food: 40 }, category: 'welfare', jobBias: ['cook'] }) });
+        // v11.3.0 宴席用多少食物跟著人數：以前不管幾個人都是 40 份（三十人一人一份多，一百多人一人只有三分之一份）；三十人以內照舊 40，之後照人數加。存糧要有三倍才提（以前固定 120）
+        const feastFood = Math.max(40, Math.round(40 * npcs.length / 30));
+        if (food >= Math.max(120, feastFood * 3) && avgMood < 58 && this._cool(day, 'feast', 10)) out.push({ kind: 'feast', key: 'feast', weight: 1.4, jobs: ['cook', 'tavern', 'trader'], make: (a) => ({ kind: 'feast', key: 'feast', tk: '辦一桌全鎮的宴席', tp: {}, dk: '{who}想用 {n} 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。', dp: { who: a.name, n: feastFood }, cost: { food: feastFood }, category: 'welfare', jobBias: ['cook'] }) });
         // 救濟
         // v6.87.0 救濟也看錢包:身上快沒錢的人優先(以前只看心情,錢也沒發到人手上)
         const bal = (a) => (typeof WALLET !== 'undefined' ? WALLET.get(w, a) : 99);
@@ -495,9 +499,10 @@ class ProposalSystem {
             }
             const foodCap = typeof foodCapOf === 'function' ? foodCapOf(w) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0);
             for (const r of Object.keys(SI)) {
-                const have = sp?.get?.(r) || 0; const over = r === 'food' ? have > foodCap : have > 250;
+                // v11.3.0 其他東西以前一律超過 250 就算多：城市自己想備的石材 890、木材 554 都比 250 高，一邊補一邊提議賣；城鎮以上改成超過目標量的 1.2 倍才算多（村莊照舊 250）
+                const have = sp?.get?.(r) || 0; const line = r === 'food' ? foodCap : (typeof FLOW !== 'undefined' && FLOW.keepLine ? FLOW.keepLine(w, r, 250) : 250); const over = have > line;
                 // v11.3.0 堆得越多越該有人提：以前權重固定 1.4，開了智能體的鎮只看得到權重最高的幾個點子，爆倉十幾倍也沒人提議賣
-                const glut = r === 'food' ? Math.max(0, have / Math.max(1, foodCap) - 1) : Math.max(0, have / 250 - 1);
+                const glut = Math.max(0, have / Math.max(1, line) - 1);
                 if (!over || !this._cool(day, 'market:sell:' + r, glut >= 2 ? 4 : 8)) continue;
                 const qty = r === 'food' ? Math.max(20, Math.floor(have - foodCap * 0.85)) : 80, gain = SI[r].sellPrice * qty;
                 out.push({ kind: 'market', key: 'market:sell:' + r, weight: Math.min(5, 1.4 + glut * (r === 'food' ? 1.5 : 0.6)), jobs: ['trader', 'mayor', 'cook', 'farmer'], make: (a) => ({ kind: 'market', key: 'market:sell:' + r, refKey: r, qty, side: 'sell', tk: '把多出來的{item}賣掉', tp: { item: SI[r].name() }, dk: '{item}堆了 {have} 份，放著也是壞掉。{who}提議賣掉 {qty} 份，大約能進帳 {n} 銀幣。', dp: { item: SI[r].name(), who: a.name, have: Math.round(have), qty, n: gain }, cost: {}, category: 'economy', jobBias: ['trader'] }) });
@@ -693,7 +698,7 @@ class ProposalSystem {
                     const exp = w.exploration?.sendExpedition?.(w, p.refKey, ids); ok = !!exp; result = ok ? `${exp.agentNames.join(t('、'))}${t('出發了')}` : '隊伍組不起來'; break;
                 }
                 case 'feast': {
-                    w.stockpile.consume('food', 40, w.tickCount, t('全鎮宴席'), 'proposal');
+                    w.stockpile.consume('food', (p.cost && p.cost.food) || 40, w.tickCount, t('全鎮宴席'), 'proposal'); // v11.3.0 用提案上寫的份量（以前固定 40）
                     for (const x of this._npcs(w)) { x.moodModifier = (x.moodModifier || 0) + 6; x.memory?.addT?.(w.tickCount, w.clock.timeStr, 'social', '{who}辦的宴席，全鎮一起吃了一頓。', { who: p.proposerName }, 5, [p.proposerName]); }
                     try { w.festivals?._boostRelationships?.(w, 0.25); } catch (e) {}
                     ok = true; result = '全鎮吃了一頓好的，心情 +6'; break;

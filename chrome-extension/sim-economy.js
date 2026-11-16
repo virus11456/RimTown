@@ -178,7 +178,9 @@ function processDailyProduction(world) {
     // v5.51.0 需求波動:天冷要衣(冬季衣物耗損翻倍)
     { const cw = npcCount*(world.clock.season==='冬季'?0.06:0.03); if (typeof FLOW !== 'undefined') FLOW.wear(world, 'clothing', cw, 'clothing wear'); else sp.consume('clothing',cw,world.tickCount,'clothing wear'); } // v6.80.0 紡織廠做的衣服耐穿一倍
     // v5.51.0 需求波動:心情低落的村民找醫生拿藥(每天最多 3 人),藥品因此有了用處
-    const downcast = Object.values(world.agents).filter(a => !a.isPlayer && a.mood < 30).slice(0, 3);
+    // v11.3.0 以前不管幾個人都只給名冊上前 3 個（不是最難受的 3 個）；現在每位醫生一天看 1.5 人（至少 3 人），心情最差的先看
+    const docCount = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.job?.key === 'doctor').length;
+    const downcast = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.mood < 30).sort((x, y) => x.mood - y.mood).slice(0, Math.max(3, Math.ceil(docCount * 1.5)));
     downcast.forEach(a => {
         if (sp.consume('medicine', 1, world.tickCount, `${a.name}${t('的診療')}`)) {
             a.moodModifier = (a.moodModifier || 0) + 6;

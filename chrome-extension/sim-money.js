@@ -44,9 +44,11 @@ const MONEY = (() => {
         else w.stockpile.add('silver', v, w.tickCount, why);
     }
     function floors(w) { const pop = npcs(w).length; return { stone: Math.max(80, pop * 3), metal: Math.max(20, pop * 0.6), food: Math.max(120, pop * 12), meals: Math.max(20, pop * 3), /* 糧食要留夠(移民也看存糧),多的才賣 */ tools: Math.max(15, pop * 0.6), clothing: Math.max(12, pop * 0.5), furniture: 8, medicine: Math.max(10, pop * 0.3), paper: 20 }; }
+    // v11.3.0 出口要留的量：以前的底比鎮上想備的量低（城市石材留 354、想備 890；家具留 8、想備 55），工匠一邊趕工商人一邊運走；城鎮以上至少留到目標量的 1.2 倍，村莊照舊。糧食不動
+    function floorsKept(w) { const F = floors(w); if (typeof FLOW !== 'undefined' && FLOW.keepLine) for (const r of Object.keys(F)) if (r !== 'food') F[r] = FLOW.keepLine(w, r, F[r]); return F; }
     const GROUP = { food: 'food', meals: 'food', clothing: 'cloth' };
     const scarce = (w, r) => { try { return typeof PRICES !== 'undefined' && w.prices && GROUP[r] && PRICES.idx(w, GROUP[r]) > 1.0; } catch (e) { return false; } };
-    function surplusList(w) { const sp = w.stockpile, F = floors(w); const out = []; for (const [r, f] of Object.entries(F)) { const have = sp?.get?.(r) || 0, p = PRICE(r), extra = Math.floor(have - f - (sp.reserved?.[r] || 0)); if (p > 0 && extra >= 1 && !scarce(w, r)) out.push({ r, extra, p, v: extra * p }); } return out.sort((a, b) => b.v - a.v); }
+    function surplusList(w) { const sp = w.stockpile, F = floorsKept(w); const out = []; for (const [r, f] of Object.entries(F)) { const have = sp?.get?.(r) || 0, p = PRICE(r), extra = Math.floor(have - f - (sp.reserved?.[r] || 0)); if (p > 0 && extra >= 1 && !scarce(w, r)) out.push({ r, extra, p, v: extra * p }); } return out.sort((a, b) => b.v - a.v); }
     // 把價值大約 n 銀幣的多餘貨賣給外地,錢進公庫;沒有多的貨就賣不到
     function sellSurplus(w, n, why) {
         const sp = w.stockpile; if (!sp || !(n > 0)) return 0; let left = n, got = 0;
@@ -175,7 +177,7 @@ const MONEY = (() => {
         return { days: Math.min(n, M.hist.length), ins, outs, other: sum.other || 0, net, total: T, pop, per: pop ? Math.round(T / pop) : 0, perOld: old && old[2] ? Math.round(old[1] / old[2]) : null, label: (c) => CAT[c] || c, st: M.st };
     }
     function townBrief(w) { if (!w.money) return ''; const v = view(w); if (v.days < 7) return ''; return t('近 {n} 天鎮上的錢{dir} {m} 銀幣').replace('{n}', v.days).replace('{dir}', v.net >= 0 ? t('多了') : t('少了')).replace('{m}', Math.abs(Math.round(v.net))); }
-    return { RES2S, payGoods, S, total, flow, track, close, sellSurplus, surplusList, floors, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, familyPays, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
+    return { RES2S, payGoods, S, total, flow, track, close, sellSurplus, surplusList, floors, floorsKept, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, familyPays, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
 })();
 
 // ---------- 接上其他系統 ----------

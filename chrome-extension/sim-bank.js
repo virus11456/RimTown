@@ -26,6 +26,8 @@ const BANK = (() => {
         const B = w.bank; B.dep = B.dep || {}; B.loans = B.loans || {}; B.bonds = Array.isArray(B.bonds) ? B.bonds : []; return B;
     }
     const totalDep = (B) => Object.values(B.dep).reduce((s, v) => s + v, 0);
+    // v11.3.0 呆帳多少才會引發擠兌：以前固定 40 銀幣（城市存款幾千，一筆倒帳就一直掛著擠兌的機率）；現在是 40 與存款的 5% 取大的（存款 800 以內照舊）
+    const badLine = (B) => Math.max(40, totalDep(B) * 0.05);
     const totalLoan = (B) => Object.values(B.loans).reduce((s, l) => s + (l.owed || 0), 0);
     function pickBanker(w) { const all = npcs(w).filter(a => a.age >= 20); const tr = all.filter(a => a.job?.key === 'trader'); return (tr.length ? tr : all).sort((x, y) => cash(w, y) - cash(w, x))[0] || null; }
     function openBank(w, B) {
@@ -87,7 +89,7 @@ const BANK = (() => {
         // 謠言 → 擠兌
         const ratio = totalDep(B) ? totalLoan(B) / totalDep(B) : 0; const gossip = all.find(a => has(a, 'gossip') && (B.dep[a.agentId] || 0) > 0);
         const badNews = (w.news?.getModifier?.('mood_modifier', 0) || 0) <= -4;
-        if (totalDep(B) >= 60 && d - (B.lastRunEnd ?? -99) >= 20 && (ratio > 0.65 || badNews || B.bad > 40) && Math.random() < (gossip ? 0.12 : 0.05)) startRun(w, B, d, gossip);
+        if (totalDep(B) >= 60 && d - (B.lastRunEnd ?? -99) >= 20 && (ratio > 0.65 || badNews || B.bad > badLine(B)) && Math.random() < (gossip ? 0.12 : 0.05)) startRun(w, B, d, gossip);
     }
     async function setRate(w, B) {
         const ce = w.conversationEngine; const banker = w.agents[B.banker];
@@ -281,7 +283,7 @@ const BANK = (() => {
     function brief(w, a) { const B = w.bank; if (!B || !B.open) return ''; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; const bs = bondsOf(B, a); if (bs.length && !dv && !L) return `${t('銀行')}${t('：')}${t('持有債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; if (!dv && !L) return a.agentId === B.banker ? t('你經營鎮上的銀行') : ''; return `${t('銀行')}${t('：')}${dv ? t('存款 {n} 銀幣').replace('{n}', dv) : ''}${dv && L ? t('，') : ''}${L ? t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed)) : ''}`; }
     function chip(w, a) { const B = w.bank; if (!B || !B.open) return ''; if (a.agentId === B.banker) return `🏦 ${t('銀行家')}`; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; if (L) return `🏦 ${t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed))}`; if (dv) return `🏦 ${t('存款 {n} 銀幣').replace('{n}', dv)}`; const bs = bondsOf(B, a); if (bs.length) return `📜 ${t('債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; return ''; }
     function view(w) { const B = S(w); return { open: B.open, status: B.status, banker: w.agents[B.banker] ? t(w.agents[B.banker].name) : null, dep: Math.round(totalDep(B)), loan: Math.round(totalLoan(B)), reserve: Math.round(B.reserve), rate: Math.round(B.rate * 100), bad: Math.round(B.bad), savers: Object.keys(B.dep).length, borrowers: Object.keys(B.loans).length, biz: Object.values(B.loans).filter(L => L.kind === 'biz').length, bizLent: Math.round(B.bizLent || 0), why: B.rateWhy || '', failed: B.history.slice(-1)[0] || null, pending: B.run?.asked === 'pending', debt: B.debt ? { owed: Math.round(B.debt.owed), paid: Math.round(B.debt.paid), late: B.debt.late || 0 } : null, bail: B.lastBail ? { by: t(B.lastBail.by), yes: B.lastBail.yes, n: B.lastBail.n, why: t(B.lastBail.why || ''), day: B.lastBail.day } : null, debtDone: (B.debtHist || []).slice(-1)[0] || null, bonds: (B.bonds || []).reduce((s, x) => s + x.n, 0), bondHolders: new Set((B.bonds || []).map(x => x.holder)).size, bondRate: B.bonds?.length ? Math.round(B.bonds[B.bonds.length - 1].rate * 100) : 0, defaults: B.defaults || 0 }; }
-    return { S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, closeOffer, bondInfo, bondBy, runInfo, runBy };
+    return { S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, badLine, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, closeOffer, bondInfo, bondBy, runInfo, runBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

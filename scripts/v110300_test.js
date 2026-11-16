@@ -6,6 +6,7 @@
 //   5) 聊僵：兩個和氣又要好的人不會無故鬧僵；刻薄、心情差、宿醉的仇人會，而且同一對一天最多一次
 //   6) 心動：浪漫的人聊得來會心動，隔幾天才會再有；交情不夠、性子也不特別合的不會
 //   7) 沒開觀察者模式時照舊；放著跑 10 天沒有錯誤
+//   8) 糧倉容量跟著城鎮等級；9) 其他寫死的數字也跟著規模長（30 人的村莊照舊、118 人的城市變大）：原料保底、多出來才賣的線、堆太多放慢、宴席與被搶的糧食、來襲強度、提案上限、拿藥人數、擠兌門檻
 // 需要本機伺服器:cd chrome-extension && python3 -m http.server 8126
 const { chromium, devices } = require('playwright');
 const BASE = process.env.BASE || 'http://localhost:8126/';
@@ -71,6 +72,35 @@ async function run(browser, dev, lang) {
           w.stockpile.resources.food = Math.round(cap * 0.3); w.proposals.cooldown = {}; const lowCand = (w.proposals._candidates(w, day + 401) || []).some(x => x.key === 'trial:famine'); let lowPick = 0; for (let i = 0; i < 200; i++) if (w.trials._pick(w) === 'famine') lowPick++;
           w.trials.current = tc0; w.trials.lastType = lt0; out.glut = { g0, g1, yes, n: Math.min(30, Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead).length), famineFull: picks.famine || 0, fullCand, lowCand, lowPick, whyText: t('堆著也是放到壞') }; }
         out.spoilText = [t('超過糧倉容量，多出來的每天壞掉 {p}%'), t('超過糧倉容量，冷藏得好，暫時不會壞')]; T0.lv = lv0; }
+      // 9) 跟著規模長的數字：30 人的村莊照舊，118 人的城市變大（原料保底、多出來才賣的線、堆太多放慢、宴席與被搶的糧食、來襲強度、提案上限、拿藥人數、擠兌門檻）
+      fresh(23); { const T0 = TIERS.S(w); const lv0 = T0.lv || 0; const E = w.events; const live = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); const set = (k, n) => { w.stockpile.resources[k] = n; };
+        const sizeTo = (n) => { let g = 0; while (live().length < n && g++ < 400) { try { E._spawnImmigrant(w); w.tickCount++; } catch (e) { break; } } for (const a of live().slice(n)) delete w.agents[a.agentId]; };
+        const snap = () => { const o = { pop: live().length, lv: TIERS.S(w).lv }; const day = w._absDay(); const P = w.proposals; const pn = P._npcs(w).length; o.pn = pn;
+          const loc = ECON.localRaws(w); o.raw = {}; for (const k of ['wood', 'metal', 'herbs', 'stone']) o.raw[k] = { v: ECON.rawFloor(w, k), base: loc.has(k) ? 40 : 20 };
+          o.want = { stone: FLOW.want(w, 'stone'), furniture: FLOW.want(w, 'furniture'), clothing: FLOW.want(w, 'clothing') };
+          o.line = { stone: FLOW.keepLine(w, 'stone', 250), paper: FLOW.keepLine(w, 'paper', 250) };
+          const sellAt = (n) => { set('stone', n); P.cooldown = {}; return (P._candidates(w, day + 900) || []).some(x => x.key === 'market:sell:stone'); }; o.sell = { at600: sellAt(600), at1100: sellAt(1100) };
+          set('stone', 1100); o.glut = Math.round(P._glutOf(w, { kind: 'market', side: 'sell', refKey: 'stone' }) * 100) / 100;
+          { const F0 = MONEY.floors(w), F1 = MONEY.floorsKept(w); o.floor = { stone0: F0.stone, stone: F1.stone, furn0: F0.furniture, furn: F1.furniture, foodSame: F0.food === F1.food }; set('stone', 600); const rs0 = w.stockpile.reserved; w.stockpile.reserved = {}; const g = MONEY.surplusList(w).find(x => x.r === 'stone'); w.stockpile.reserved = rs0; o.floor.extra = g ? g.extra : 0; }
+          try { for (const k of ['beer', 'wine', 'furniture', 'bread']) set(k, 0); set('clothing', 90); set('silver', 500); w.autonomy._shop(w); o.shop = Math.round(w.stockpile.get('clothing')); } catch (e) { o.shop = 'err ' + e.message; }
+          try { set('clothing', 90); const m0 = w.trade.merchant; w.trade.merchant = { name: 'T', offers: [{ resource: 'clothing', amount: 30, price: 5, isBuying: true }] }; const R1 = Math.random; Math.random = () => 0.9; try { w.autonomy._merchant(w); } finally { Math.random = R1; } o.merch = Math.round(w.stockpile.get('clothing')); w.trade.merchant = m0; } catch (e) { o.merch = 'err ' + e.message; }
+          { const T = FLOW.want(w, 'stone'); set('stone', T * 2); const d2 = FLOW.demandMult(w, 'stone'); set('stone', T * 3.5); const d3 = FLOW.demandMult(w, 'stone'); set('stone', T * 0.5); o.dm = { d2, d3, low: FLOW.demandMult(w, 'stone') }; }
+          { const m0 = live().map(a => [a, a.mood]); for (const a of live()) a.mood = 40; const feastAt = (n) => { set('food', n); P.cooldown = {}; const c = (P._candidates(w, day + 901) || []).find(x => x.key === 'feast'); return c ? c.make(live()[0]) : null; };
+            const big = feastAt(50000); o.feast = { cost: big && big.cost.food, n: big && big.dp.n, text: big ? P._fill(big.dk, big.dp) : '', exp: Math.max(40, Math.round(40 * pn / 30)), lowOk: !!feastAt(Math.max(120, Math.max(40, Math.round(40 * pn / 30)) * 3)), lowNo: !feastAt(Math.max(120, Math.max(40, Math.round(40 * pn / 30)) * 3) - 1) };
+            try { set('food', 5000); const p = { id: 'L900', n: 900, kind: 'feast', key: 'feast', status: 'approved', approvedDay: day, cost: { food: big.cost.food }, votes: {}, proposerId: '__none', proposerName: 'x', tk: '辦一桌全鎮的宴席', tp: {} }; P.items.push(p); P._execute(w, p, day); o.feast.ate = Math.round(5000 - w.stockpile.get('food')); P.items = P.items.filter(x => x !== p); w.stockpile.reserved = {}; } catch (e) { o.feast.ate = 'err ' + e.message; }
+            for (const [a, m] of m0) a.mood = m; }
+          { const jobs0 = live().map(a => [a, a.job]); const bd = (w.buildings.getEffect('defense_bonus', 0) || 0) + (w.news ? (w.news.getModifier('defense_bonus', 0) || 0) : 0); const mult = [1, 2, 4, 6][TIERS.S(w).lv] || 1; const gWin = Math.max(0, Math.ceil((4 * mult - 2 - bd) / 2));
+            const raid = (G) => { let i = 0; for (const a of live()) { if (i < G) { a.job = new Job('guard'); i++; } else if (a.job && a.job.key === 'guard') a.job = new Job('farmer'); } set('food', 5000); set('silver', 500); const R1 = Math.random; Math.random = () => 0.6; try { E._triggerRaid(w); } finally { Math.random = R1; } return Math.round(5000 - w.stockpile.get('food')); };
+            o.raid = { bd, gWin, win: raid(gWin), lose: gWin > 0 ? raid(gWin - 1) : raid(0), exp: Math.max(22, Math.round(22 * live().length / 30)) }; for (const [a, j] of jobs0) a.job = j; }
+          { const lvNow = TIERS.S(w).lv; o.maxOpen = [0, 1, 2, 3].map(l => { TIERS.S(w).lv = l; return P._maxOpen(w); }); TIERS.S(w).lv = lvNow; o.maxStatic = ProposalSystem.MAX_OPEN;
+            try { const keepItems = P.items; const fake = [1, 2, 3, 4].map(i => ({ id: 'F' + i, key: 'fake' + i, status: 'open', votes: {} })); P.items = fake.slice(); P.cooldown = {}; set('food', 300); const R1 = Math.random; Math.random = () => 0.5; try { P._generate(w, day + 902); } finally { Math.random = R1; } o.genOpen = P.open().length; P.items = keepItems; } catch (e) { o.genOpen = 'err ' + e.message; } }
+          { const all = live(); const jobs0 = all.map(a => [a, a.job]); const mood0 = all.map(a => [a, a.mood]); const D = TIERS.S(w).lv >= 2 ? 5 : 2; let i = 0; for (const a of all) { if (i < D) { a.job = new Job('doctor'); i++; } else if (a.job && a.job.key === 'doctor') a.job = new Job('farmer'); a.mood = 60; }
+            const sad = all.slice(-10); sad.forEach((a, k) => { a.mood = 14 - k; }); const len0 = new Map(sad.map(a => [a.agentId, a.memory.entries.length])); set('medicine', 50); const str = t('去找醫生拿了藥，人舒服多了。');
+            try { processDailyProduction(w); o.med = { D, got: sad.filter(a => a.memory.entries.slice(len0.get(a.agentId)).some(e => e.content === str)).map((a) => 14 - sad.indexOf(a)).sort((x, y) => x - y) }; } catch (e) { o.med = 'err ' + e.message; }
+            for (const [a, j] of jobs0) a.job = j; for (const [a, m] of mood0) a.mood = m; }
+          return o; };
+        sizeTo(30); T0.lv = 0; out.scaleV = snap(); sizeTo(118); T0.lv = 2; out.scaleC = snap(); T0.lv = lv0;
+        out.bankLine = [BANK.badLine({ dep: { a: 300, b: 500 } }), BANK.badLine({ dep: { a: 3000 } })]; }
       // 7) 關掉時照舊；放著跑
       fresh(17); w.observerMode = false; { const a = npcs()[0]; a.activity = 'wandering'; a._dayLoc = 'x'; DAY.steer(w, a); out.off = a._dayLoc; } w.observerMode = true;
       for (let i = 0; i < 10 * 96; i++) { w.paused = false; w.tick(); if (i % 480 === 479) await new Promise(r2 => setTimeout(r2, 5)); } out.run = DAY.view(w).st; out.en = [t('跟朋友約好了'), t('想約{b}出去走走，他說改天。')];
@@ -105,7 +135,24 @@ async function run(browser, dev, lang) {
   ok(r.glut && r.glut.famineFull === 0 && r.glut.lowPick > 0, `${tag} 糧倉滿出來的鎮抽不到糧荒；存糧少的鎮抽得到`, r.glut);
   ok(r.glut && r.glut.fullCand === false && r.glut.lowCand === true, `${tag} 糧荒考驗當前但糧倉滿出來時沒人提加班下田；存糧少時有`, r.glut);
   ok(zh || !/[\u4e00-\u9fff]/.test(r.glut.whyText), `${tag} 投票理由有英文`, r.glut.whyText);
+  { const V = r.scaleV || {}, C = r.scaleC || {}; const rawOk = (S, f) => S.raw && Object.entries(S.raw).every(([k, x]) => x.v === f(k, x.base));
+    ok(V.pop === 30 && C.pop === 118 && V.lv === 0 && C.lv === 2, `${tag} 規模測試：30 人的村莊與 118 人的城市`, { v: [V.pop, V.lv], c: [C.pop, C.lv] });
+    ok(rawOk(V, (k, b) => b) && rawOk(C, (k, b) => b + Math.round(88 * ({ wood: 1.25, metal: 0.3, herbs: 0.17 }[k] || 0))) && C.raw.wood.v >= 130, `${tag} 原料保底：村莊照舊 40／20，城市木材多 110（兩天的用量）、石材不變`, { v: V.raw, c: C.raw });
+    ok(V.line && V.line.stone === 250 && C.line.stone === Math.ceil(C.want.stone * 1.2) && C.line.stone > 1000 && C.line.paper === 250, `${tag} 多出來才賣的線：村莊照舊 250，城市的石材是目標量的 1.2 倍；目標量小的東西不變`, { v: V.line, c: C.line, want: C.want });
+    ok(V.sell && V.sell.at600 === true && C.sell.at600 === false && C.sell.at1100 === true, `${tag} 石材 600 份：村莊有人提議賣，城市還沒備夠不提；1100 份城市才提`, { v: V.sell, c: C.sell });
+    ok(Math.abs(V.glut - 3.4) < 0.01 && C.glut < 0.1, `${tag} 石材 1100 份：村莊算超出 3.4 倍，城市只超出一點點`, { v: V.glut, c: C.glut });
+    ok(V.floor && V.floor.stone === V.floor.stone0 && V.floor.furn === 8 && V.floor.extra === 600 - V.floor.stone0 && V.floor.foodSame && C.floor.stone === C.line.stone && C.floor.furn === Math.ceil(C.want.furniture * 1.2) && C.floor.furn > 60 && C.floor.extra === 0 && C.floor.foodSame, `${tag} 出口要留的量：村莊照舊（家具 8），城市留到目標量的 1.2 倍（石材 600 份一份也不賣）；糧食不動`, { v: V.floor, c: C.floor });
+    ok(V.shop === 84 && C.shop === 90, `${tag} 衣物 90 份：村莊照舊拿 6 份去商店賣，城市還沒備夠不賣`, { v: V.shop, c: C.shop });
+    ok(V.merch === 70 && C.merch === 90, `${tag} 行商來收衣物：村莊照舊賣 20 份，城市留著不賣`, { v: V.merch, c: C.merch });
+    ok(V.dm && V.dm.d2 === 0.15 && V.dm.d3 === 0.05 && V.dm.low === 1 && C.dm.d2 === 0.15 && C.dm.d3 === 0.05, `${tag} 石材是目標的兩倍時照做一成五，三倍以上降到半成，不夠時全力做`, { v: V.dm, c: C.dm });
+    ok(V.feast && V.feast.cost === 40 && V.feast.ate === 40 && V.feast.lowOk && V.feast.lowNo && C.feast.cost === C.feast.exp && C.feast.cost === 157 && C.feast.ate === 157 && C.feast.lowOk && C.feast.lowNo && C.feast.text.includes('157'), `${tag} 宴席：村莊照舊 40 份食物（存糧 120 才提），城市 157 份（存糧 471 才提），真的吃掉這麼多`, { v: V.feast, c: C.feast });
+    ok(zh ? /想用 157 份食物/.test(C.feast.text) : /turn 157 food/.test(C.feast.text), `${tag} 宴席說明寫的是真正的份量，也有英文`, C.feast.text);
+    ok(V.raid && V.raid.gWin === Math.max(0, Math.ceil((2 - V.raid.bd) / 2)) && V.raid.win === 0 && (V.raid.gWin === 0 || V.raid.lose === 22) && C.raid.gWin === Math.max(0, Math.ceil((14 - C.raid.bd) / 2)) && C.raid.win === 0 && C.raid.lose === 87 && C.raid.gWin > V.raid.gWin, `${tag} 掠奪者來襲：村莊照舊一個守衛就擋得住、輸了被搶 22 份糧；城市要七個守衛，輸了被搶 87 份`, { v: V.raid, c: C.raid });
+    ok(V.maxOpen && V.maxOpen.join() === '4,5,6,7' && V.maxStatic === 4 && V.genOpen === 4 && C.genOpen === 5, `${tag} 同時開著的提案上限：村莊 4、城鎮 5、城市 6、王都 7；已有 4 案時村莊不再開新案，城市還會開`, { m: V.maxOpen, v: V.genOpen, c: C.genOpen });
+    ok(V.med && V.med.got && V.med.got.join() === '5,6,7' && C.med.got && C.med.got.join() === '5,6,7,8,9,10,11,12', `${tag} 心情低落去拿藥：村莊（兩位醫生）照舊 3 人，城市（五位醫生）8 人，都是心情最差的先看`, { v: V.med, c: C.med });
+    ok(r.bankLine && r.bankLine[0] === 40 && r.bankLine[1] === 150, `${tag} 擠兌的呆帳門檻：存款 800 照舊 40，存款 3000 是 150`, r.bankLine); }
   if (r.run) console.log('   ', JSON.stringify(r.run));
+  if (process.env.SHOW) console.log('   ', JSON.stringify({ v: r.scaleV, c: r.scaleC }));
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }

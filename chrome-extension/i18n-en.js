@@ -7369,6 +7369,7 @@
         '{who}想帶兩三個人去{zone}走一趟，約 {d} 天來回，可能帶回物資或發現。': '{who} wants to take two or three people to {zone}, about {d} days there and back, maybe bringing back supplies or a discovery.',
         '辦一桌全鎮的宴席': 'Hold a feast for the whole town',
         '{who}想用 40 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。': '{who} wants to turn 40 food into a meal everyone shares: mood +6 for all, and people grow closer over dinner.',
+        '{who}想用 {n} 份食物辦一頓大家一起吃的飯：全鎮心情 +6，吃過飯的人彼此更親近。': '{who} wants to turn {n} food into a meal everyone shares: mood +6 for all, and people grow closer over dinner.', // v11.3.0 份量跟著人數
         '撥一筆救濟金給{name}': 'Grant relief money to {name}',
         '{name}最近過得很不好。{who}提議從公庫撥 20 銀幣幫一把，讓{name}喘口氣。': '{name} has been having a hard time. {who} proposes 20 silver from the treasury to help {name} catch a breath.',
         '全鎮加班下田': 'All hands to the fields',
