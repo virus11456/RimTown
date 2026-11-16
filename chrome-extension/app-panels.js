@@ -1090,9 +1090,9 @@ Object.assign(RimTownApp.prototype, {
                 B.lore += `<div class="pp-lore pp-laws"><h4 class="pp-h">⚖️ ${t('現行規定')}</h4>`;
                 for (const x of rv.live) B.lore += `<div class="pp-lore-row" data-pgd="1">${esc(x.icon)} ${x.free ? t('「') + esc(x.name) + t('」') : esc(x.name)} <small>${t('實施第 {n} 天').replace('{n}', x.days)} · ${x.open ? t('正在表決要不要廢除') : x.wait > 0 ? t('再 {n} 天後可以提案廢除').replace('{n}', x.wait) : t('可以提案廢除')}</small></div>`;
                 for (const x of rv.done.slice(0, 6)) B.lore += `<div class="pp-lore-row pp-law-gone" data-pgd="1">🗳️ ${x.free ? t('「') + esc(x.name) + t('」') : esc(x.name)} <small>${x.ago > 0 ? t('{n} 天前表決廢除').replace('{n}', x.ago) : t('今天表決廢除')} · ${x.open ? t('正在表決要不要恢復') : x.wait > 0 ? t('再 {n} 天後可以提案恢復').replace('{n}', x.wait) : t('可以提案恢復')}</small></div>`;
-                if (rv.recall) { const RW = { settle: '上任還不滿 30 天', tail: '離下次選舉不到 30 天', once: '這個任期已經提過', sign: '連署人數不夠', electing: '正在選舉', open: '正在表決', self: '', none: '' }; const c = rv.recall;
+                if (rv.recall) { const RW = { settle: '上任還不滿 30 天', tail: '離下次選舉不到 30 天', once: '45 天內才提過', sign: '連署人數不夠', electing: '正在選舉', open: '正在表決', self: '', none: '' }; const c = rv.recall;
                     B.lore += `<div class="pp-lore-row pp-law-recall" data-pgd="1">📢 ${t('罷免{o}').replace('{o}', esc(c.title))} ${esc(t(c.name))} <small>${t('連署 {a}／{b} 人').replace('{a}', c.signers).replace('{b}', c.need)} · ${c.ok ? t('可以提案罷免') : t(RW[c.why] || '現在不能提')}</small></div>`; }
-                B.lore += `<p class="pp-law-note">${rv.ai ? t('規定是上一次表決的結果：村民隨時可以提案廢除或恢復，全鎮再投一次票。罷免要四分之一的人連署，六成贊成、且贊成的人超過全鎮四成才通過，一個任期只能提一次。') : t('規定是上一次表決的結果：實施滿 60 天可以提案廢除，廢除滿 60 天可以提案恢復，都是全鎮再投一次票。')}</p></div>`;
+                B.lore += `<p class="pp-law-note">${rv.ai ? t('規定是上一次表決的結果：村民隨時可以提案廢除或恢復，全鎮再投一次票。罷免要四分之一的人連署，六成贊成、且贊成的人超過全鎮四成才通過，沒過的 45 天內不能再提。') : t('規定是上一次表決的結果：實施滿 60 天可以提案廢除，廢除滿 60 天可以提案恢復，都是全鎮再投一次票。')}</p></div>`;
             } } } catch (e) { console.warn('[Repeal] view', e); }
             // v6.47.0 村民提案留下的傳統與地標
             if ((d.traditions || []).length || (d.landmarks || []).length) {

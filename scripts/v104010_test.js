@@ -52,7 +52,7 @@ async function run(browser, dev, lang) {
   ok(r.why[0] === 'recall_scandal' && r.why[1] === 'recall_bad', '贊成的理由：有醜聞寫醜聞，沒醜聞寫做得不好', r.why);
   ok(r.town.signers === r.town.haters && r.town.signers < r.town.need && !r.town.ok && r.town.why === 'sign', '一樁醜聞、兩成的人討厭他：連署只算那兩成，不到四分之一，提不成', r.town);
   ok(r.town2.ok && r.town2.signers >= r.town2.need, '三成的人真的討厭他：連署夠了，可以提', r.town2);
-  ok(r.ver === '10.4.1', '版本 10.4.1', r.ver);
+  ok(/^\d+\.\d+\.\d+$/.test(r.ver), '讀得到版本號', r.ver); // 不寫死版本：這支測試之後每一版都要照過
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
   await ctx.close();
 }
