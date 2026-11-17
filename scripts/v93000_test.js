@@ -87,7 +87,7 @@ async function run(browser, lang, vp) {
       const cap = Math.max(2, Math.floor(npcs().length / 6)); while (BZ.shops.length < cap) BZ.shops.push({ id: 'F' + BZ.shops.length, owner: 'x' + BZ.shops.length, name: ['測', 'T'], type: 'curio' });
       const res = o ? o.run(w, a) : null; out.resText = { asked: !!o, k: res?.k || null, shown: res?.k ? t(res.k) : null }; } catch (e) { out.resText = { err: String(e) }; }
     // 完整智能體模式：大筆貸款等銀行家(AI)回話
-    const stub = (resp) => { const s0 = { fa: w.fullAgentMode, ok: CE.fullAgentOk, aj: CE._askJson }; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async (p) => (/銀行家|banker/i.test(String(p)) ? resp : {}); return () => { w.fullAgentMode = s0.fa; CE.fullAgentOk = s0.ok; CE._askJson = s0.aj; }; };
+    const stub = (resp) => { const s0 = { fa: w.fullAgentMode, ok: CE.fullAgentOk, aj: CE._askJson }; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async (p) => (String(p).includes(t('【可以選】')) ? [{ n: 1, pick: resp.lend ? 'lend' : 'refuse', why: resp.why }] /* v11.6.0 借不借改走決策核心的題目，照選項代號回答 */ : /銀行家|banker/i.test(String(p)) ? resp : {}); return () => { w.fullAgentMode = s0.fa; CE.fullAgentOk = s0.ok; CE._askJson = s0.aj; }; };
     const mems = (a) => { try { return JSON.stringify(a.memory); } catch (e) { return ''; } };
     { clear(); const a = prep(next(), 20, 'farmer'); const restore = stub({ lend: true, why: 'ok' }); const info = BIZ.startInfo(w, a); const now = BIZ.startTry ? BIZ.startTry(w, a) : { shop: BIZ.start(w, a) };
       for (let i = 0; i < 40 && !BIZ.shopOf(w, a) && !BK.loans[a.agentId]; i++) await sleep(25); await sleep(150); restore(); const L = BK.loans[a.agentId];

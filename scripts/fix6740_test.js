@@ -19,7 +19,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const app = window.rimtownApp, w = app.world; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; WALLET.S(w);
       const tick = () => new Promise(r => setTimeout(r, 20));
       const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead);
-      let D = 501; const _ad = w._absDay; w._absDay = () => D; const out = {};
+      let D = 501; const _ad = w._absDay; w._absDay = () => D; const out = {}; const on0 = DECIDE.on; DECIDE.on = () => false; /* v11.6.0 決策核心開著時，借不借、擠兌時押多少改由銀行家的選擇點決定（v110603_test 驗）；這支驗的是決策核心沒開時留著的舊路（直接問模型、世代檢查） */
       // 讓 LLM 回覆由測試控制(走真的 _askJson,才測得到世代檢查)
       let release = null, calls = 0; const llm = { _canMakeRequest: () => true, generate: () => { calls++; return new Promise(res => { release = res; }); } };
       const setup = () => { const CE = w.conversationEngine; CE.llm = llm; CE.fullAgentOk = () => true; w.fullAgentMode = true; WALLET.S(w); TIERS.S(w); w.tierState.lv = 1; w.bank = null; const all = npcs().sort((x, y) => (x.job?.key === 'mayor') - (y.job?.key === 'mayor')); for (const a of all) w.wallet.bal[a.agentId] = 0; w.wallet.bal[all[0].agentId] = 900; all[0].job.key = 'trader'; for (const a of all.slice(1)) if (a.job?.key === 'trader') a.job.key = 'farmer'; D++; BANK.daily(w); const B = w.bank; B.reserve = 500; return { B, all }; };
@@ -59,7 +59,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.fullAgentMode = false; D += 2; B.lastDay = null; BANK.daily(w); out.timeout = pend && B.run?.asked !== 'pending' && !!B.lastBail;
       release('{"bailout":true,"why":"y"}'); await tick(); out.lateIgnored = B.lastBail?.why !== 'y';
       w._absDay = _ad;
-      return out;
+      DECIDE.on = on0; return out;
     });
     ok(r.waiting && r.flagNotSaved, '審貸等待旗標不會進存檔', r);
     ok(r.staleDropped, '讀檔前送出的審貸回覆作廢', r);

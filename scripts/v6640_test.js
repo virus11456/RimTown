@@ -29,15 +29,15 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 利息(第 7 的倍數天)
       const dv0 = B.dep[saver.agentId]; B.earned = (B.earned || 0) + 50; /* v6.90 存款利息由放款賺到的利息支付 */ D = 308; fix(0.99, () => { B.lastDay = null; BANK.daily(w); }); out.interest = B.dep[saver.agentId] > dv0;
       // 借款與還款
-      const poor = all[2]; w.wallet.bal[poor.agentId] = 0; D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); { const op = DECIDE.KINDS.pinch.options(w, poor, DECIDE.KINDS.pinch.when(w, poor)).find(o => o.id === 'bankloan'); out.loanOpt = !!op; if (op) op.run(w, poor); } /* v9.19.0 要不要跟銀行借由本人決定;這裡驗「選了以後」的結算 */
+      const poor = all[2]; w.wallet.bal[poor.agentId] = 0; D++; fix(0.01, () => { B.lastDay = null; BANK.daily(w); }); { const op = DECIDE.KINDS.pinch.options(w, poor, DECIDE.KINDS.pinch.when(w, poor)).find(o => o.id === 'bankloan'); out.loanOpt = !!op; if (op) fix(0.99, () => op.run(w, poor)); } /* v9.19.0 要不要跟銀行借由本人決定;這裡驗「選了以後」的結算。v11.6.0 借不借改由銀行家決定:固定心情起伏,一般的借款人照借 */
       out.loan = !!B.loans[poor.agentId] && WALLET.get(w, poor) > 0; const owed0 = B.loans[poor.agentId]?.owed || 0;
       w.wallet.bal[poor.agentId] = 100; D++; fix(0.99, () => { B.lastDay = null; BANK.daily(w); }); out.repay = !B.loans[poor.agentId] || B.loans[poor.agentId].owed < owed0;
       // 呆帳
-      const deadbeat = all[3]; delete B.loans[deadbeat.agentId]; B.reserve += 100; BANK.lend(w, B, deadbeat, 20, '周轉'); B.loans[deadbeat.agentId].due = D - 20; w.wallet.bal[deadbeat.agentId] = 0;
+      const deadbeat = all.slice(3).find(a => a.agentId !== B.banker && !MONEY.familyOf(w, w.agents[B.banker]).includes(a)); { const r1 = w.agents[B.banker].relationships.getOrCreate(deadbeat.agentId, deadbeat.name); r1.affinity = 0; } /* v11.6.0 逾期的人怎麼辦由銀行家決定：這裡驗原本的規則（不熟的人打成呆帳），挑一個跟他不熟的 */ delete B.loans[deadbeat.agentId]; B.reserve += 100; fix(0.99, () => BANK.lend(w, B, deadbeat, 20, '周轉')); /* v11.6.0 同上 */ B.loans[deadbeat.agentId].due = D - 20; w.wallet.bal[deadbeat.agentId] = 0;
       D++; fix(0.99, () => { B.lastDay = null; BANK.daily(w); }); out.bad = !B.loans[deadbeat.agentId] && B.bad > 0 && logHas(/呆帳|bad debt/);
       // 利率(AI)
-      const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async () => ({ rate: 15, why: '風險變高了' });
-      await BANK.setRate(w, B); out.aiRate = Math.round(B.rate * 100) === 15 && B.rateWhy === '風險變高了';
+      const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async () => [{ n: 1, pick: 'up2', why: '風險變高了' }]; /* v11.6.0 利率改走決策核心:銀行家從調高調低一兩成、不動裡面挑，理由放進介面 */
+      await DECIDE.flush(); /* 前面每週定利率時已經問過一次 AI：等它回完，銀行家手上沒有還在等的事 */ const r0 = Math.round(B.rate * 100); B.rateAsk = null; await BANK.setRate(w, B); await DECIDE.flush(); await new Promise(r => setTimeout(r, 20)); out.aiRate = Math.round(B.rate * 100) === Math.min(20, r0 + 2) && BANK.view(w).why === '風險變高了';
       w.fullAgentMode = _fa; CE.fullAgentOk = _ok; CE._askJson = _aj;
       // 畫面與 AI
       out.brief = JSON.stringify(CE._agentBrief(w, saver, null)); out.chip = BANK.chip(w, saver);

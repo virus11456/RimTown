@@ -81,7 +81,10 @@ async function run(browser, lang) {
         delete w.agents[X.agentId]; try { MONEY.finesDaily(w); } catch (e) {} out.away = { kept: !!F[X.agentId] }; w.agents[X.agentId] = keep; w.isAway = ia; delete F[X.agentId]; }
       // L. 老闆過世:小店交給合夥人(以前跟著關掉)
       { const [X, P] = pick(2); reset(); const sh = { id: 'xd1', type: Object.keys(BIZ.TYPES)[0], name: ['過世測試鋪', 'Passing Test Shop'], owner: X.agentId, partner: P.agentId, price: 3, till: 0, week: 0, profit: 0, lossDays: 0, closed: false }; BIZ.S(w).shops.push(sh);
-        X._deathCause = 'test'; w.lifecycle._killNpc(w, X); out.shopHeir = { owner: sh.owner === P.agentId, open: !sh.closed, log: logs().slice(-8).some(q => /接手|taken over/.test(q)) }; }
+        // v11.6.0 前提變了：決策核心開著時，合夥人要被問接不接（隔天的帳時問，sim-biz.js shopHeir），不再過世當下自動交給他。這裡讓他照個性回答（固定心情，賺錢的店合夥人會接），檢查的東西不變
+        sh.h = [3, 3, 3, 3, 3, 3, 3]; const pt0 = P.personality.traits.slice(); P.personality.traits = []; const R0 = Math.random;
+        X._deathCause = 'test'; w.lifecycle._killNpc(w, X); const fa0 = w.fullAgentMode, fo0 = window.rimtownApp._fullAgentOn; w.fullAgentMode = false; window.rimtownApp._fullAgentOn = () => false; /* 不送 AI（沒有接 AI 時照個性當場回答） */ Math.random = () => 0.5; try { BIZ.trade(w, BIZ.S(w), w._absDay()); } finally { Math.random = R0; P.personality.traits = pt0; w.fullAgentMode = fa0; window.rimtownApp._fullAgentOn = fo0; }
+        out.shopHeir = { owner: sh.owner === P.agentId, open: !sh.closed, log: logs().slice(-8).some(q => /接手|接下了|taken over|took over/.test(q)) }; }
       // M. 驅逐門檻:第 3 次勞役、第 5 次才逐出;兩個月沒再犯前科會淡
       { const [X, Y, Z] = pick(3); const D = DARK.S ? DARK.S(w) : w.dark; D.exposedCount = D.exposedCount || {}; D.lastHeavy = D.lastHeavy || {}; const P = w.proposals; const pen = (cnt, ago) => { D.exposedCount[X.agentId] = cnt; D.lastHeavy[X.agentId] = w._absDay() - ago; P.items = (P.items || []).filter(q => !(q.kind === 'verdict' && q.status === 'open'));
           const sc = DARK.secret(w, { kind: 'sabotage', culprit: X.agentId, victim: Y.agentId, k: '{a}偷偷破壞了{v}的工作', p: { a: X.name, v: Y.name } }); const R2 = Math.random; Math.random = () => 0.99; try { DARK.reveal(w, sc, Z); } finally { Math.random = R2; } return (P.items || []).find(q => q.kind === 'verdict' && q.status === 'open' && q.culprit === X.agentId)?.pen; };

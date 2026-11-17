@@ -58,7 +58,7 @@ async function run(browser, lang) {
       for (let d = 0; d < 120 && F.list.includes(fz); d++) tick(96);
       out.fade = { gone: !F.list.includes(fz), hist: F.hist.some(h => h.ix === fz.ix), log: /退流行|went out of fashion|沒能流行|never really caught on/.test(logs()) };
       // G. 變成習俗(消遣):跟的人夠多、撐得夠久
-      F.list = []; const playIx = FADS.LIST.findIndex(x => x.k === 'play'); const fp = FADS.spawn(w, F, ppl(), day(), { ix: playIx, by: ppl()[0] });
+      F.list = []; const playIx = FADS.LIST.findIndex(x => x.k === 'play'); F.hist = F.hist.filter(h => h.ix !== playIx); /* 前面跑的那幾天剛好自己流行過同一樣消遣的話，會被「最近流行過」擋下來 */ const fp = FADS.spawn(w, F, ppl(), day(), { ix: playIx, by: ppl()[0] });
       for (const a of ppl().slice(0, Math.ceil(ppl().length * 0.6))) fp.ad[a.agentId] = day(); fp.ph = 'hot'; fp.hd = 30; fp.life = 999; F.lastDay = null;
       Math.random = () => 0.3; try { FADS.daily(w); } finally { Math.random = rnd; }
       const T = w.proposals.traditions || []; out.custom = { dbg: { same: FADS.S(w) === F, fp: !!fp, hd: fp?.hd, cx: fp?.cx, ph: fp?.ph, ld: F.lastDay, d: day() }, trad: T.some(x => x.text === FADS.LIST[playIx].c && x.fad), log: /成了鎮上的習俗|became a town custom/.test(logs()), ended: !F.list.includes(fp), hist: F.hist[0]?.cust === 1 };

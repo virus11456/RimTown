@@ -126,7 +126,7 @@
             const out = _opts.call(this, w, a, ctx) || []; const E = ES(); let I = null; try { I = E && DECIDE.on(w) ? E.mortInfo(w, a) : null; } catch (e) {}
             if (I) out.push({ id: 'mortgage', text: { k: '拿自己的房子去銀行抵押，借 {n} 銀幣（20 天內還清；還不出來房子會被銀行收走）', p: { n: I.n } }, say: '拿房子去銀行抵押借錢', why: '房子還在，總比餓肚子好',
                 base: 1.6, lean: { safe: -0.2, face: 0.3 }, // 有房子又手頭很緊的人，大約四次裡有一次會選抵押(沒有朋友可以開口時更常)；以前是每天四成機率直接押
-                run: (w2, a2) => { const got = E.mortBy(w2, a2); return got ? { k: '抵押借到 {n} 銀幣', p: { n: got } } : { k: '銀行不肯借' }; } });
+                run: (w2, a2) => { const got = E.mortBy(w2, a2); return got ? { k: '抵押借到 {n} 銀幣', p: { n: got } } : BANK.pendingOf?.(w2, a2) ? { k: '去銀行申請了，等銀行家回話' } : { k: '銀行不肯借' }; } }); // v11.6.0
             return out;
         }; } }
 

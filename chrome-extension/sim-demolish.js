@@ -6,6 +6,7 @@
 //   誰會提：完整智能體模式下村民自己想提就提（題目裡列得出可以拆的東西）；沒開的話，公庫連續幾天見底、又養著一堆建築時，節儉的人會提拆掉最花錢的那一棟
 //   怎麼投：多數人捨不得（維持現狀佔便宜）；靠它吃飯的人反對；公庫見底時在意錢的人贊成；提的人和他的朋友贊成
 //   限制只擋洗版：同時只有一件拆除案、同一棟被否決後 20 天內不再提、剛蓋好 20 天內不提、產業至少留一個
+// v11.6.0 多一種：小店收掉後留下的空店面（sim-biz.js），空滿 30 天可以提案拆掉；通過後攤位從地圖上移除、那一格還給空地
 const DEMOLISH = (() => {
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const tr = (s) => { try { return t(s); } catch (e) { return String(s || ''); } };
@@ -31,16 +32,18 @@ const DEMOLISH = (() => {
         try { if (typeof FACTORIES !== 'undefined') for (const [k, f] of Object.entries(w.processing?.builtFactories || {})) { const F = FACTORIES[k]; if (!F || f.status !== 'active') continue; out.push({ id: 'f:' + k, kind: 'f', key: k, name: F.name, icon: F.icon || '🏭', level: 1, upkeep: 0, costs: F.cost || {}, jobs: F.preferredJob ? [F.preferredJob] : [], workers: (f.workers || []).slice() }); } } catch (e) {}
         try { if (typeof INDUSTRIES !== 'undefined') { const ks = Object.keys(w.industry?.industries || {}); if (ks.length > 1) for (const k of ks) { const I = INDUSTRIES[k]; if (!I) continue; out.push({ id: 'i:' + k, kind: 'i', key: k, name: I.name, icon: I.icon || '🏭', level: w.industry.industries[k].level || 1, upkeep: 0, costs: {}, jobs: [], workers: (w.industry.industries[k].workers || []).slice() }); } } } catch (e) {} // 產業至少留一個
         for (const x of out) { if (D.seen[x.id] === undefined) D.seen[x.id] = d; x.age = d - D.seen[x.id]; }
+        try { if (typeof BIZ !== 'undefined' && BIZ.demoList) out.push(...BIZ.demoList(w)); } catch (e) {} // v11.6.0 空店面（age＝空了幾天）
         for (const k of Object.keys(D.seen)) if (!out.some(x => x.id === k)) delete D.seen[k];
         return out;
     }
     const get = (w, id) => list(w).find(x => x.id === id) || null;
     // 現在能不能提拆這一樣（ai＝智能體：不看「剛蓋好」以外的等待）
-    function okNow(w, x, ai) { const D = S(w); const d = day(w); if (!x || busy(w)) return false; if (x.age < (ai ? AIGAP : NEW)) return false; return d - (D.last[x.id] ?? -999) >= (ai ? AIGAP : RETRY); }
+    function okNow(w, x, ai) { const D = S(w); const d = day(w); if (!x || busy(w)) return false; if (x.age < (x.kind === 'p' ? (typeof BIZ !== 'undefined' ? BIZ.IDLE_DEMO : 30) : (ai ? AIGAP : NEW))) return false; return d - (D.last[x.id] ?? -999) >= (ai ? AIGAP : RETRY); } // 空店面要空滿 30 天才能提
     // 拆掉會少什麼（給提案說明用）
     function lossText(w, x) {
         if (x.kind === 'b') { const b = (w.buildings?.completed || []).find(o => (o.buildingKey || o.id) === x.key); const eff = Object.keys(b?.effects || {}).length; return eff ? tr('它帶來的好處會跟著消失') : tr('鎮上會少一棟建築'); }
         if (x.kind === 'f') return tr('裡面做的加工品就沒有了，倉庫裡的貨歸公庫');
+        if (x.kind === 'p') return tr('那一格還給空地，之後想開店的人得花 60 銀幣蓋新的');
         return tr('這一行的產出就沒有了，做這行的人得另外找事做');
     }
     function propose(w, id, who, why) {
@@ -53,6 +56,7 @@ const DEMOLISH = (() => {
     // ---------- 投票（沒有 AI 時） ----------
     function vote(w, p, a) {
         const x = get(w, p.refKey); if (!x) return { v: 'against', why: 'demolish_keep' };
+        if (x.kind === 'p' && typeof BIZ !== 'undefined' && BIZ.demoVote) return BIZ.demoVote(w, p, a, x); // v11.6.0 空店面：住附近、愛整潔的想拆，想開店的捨不得
         if (a.agentId === p.proposerId) return { v: 'for', why: 'demolish_mine' };
         const works = (x.workers || []).includes(a.agentId) || x.jobs.includes(a.job?.key);
         const silver = w.stockpile?.get?.('silver') || 0; const broke = silver < 30 && x.upkeep > 0;
@@ -76,6 +80,8 @@ const DEMOLISH = (() => {
             const f = w.processing.builtFactories[x.key]; if (!f) return '';
             for (const [r, n] of Object.entries(f.warehouse || {})) { if (n > 0) { try { sp.add(r, n, w.tickCount, tr('工廠倉庫'), 'demolish'); } catch (e) {} } }
             delete w.processing.builtFactories[x.key]; back(x.costs, 1);
+        } else if (x.kind === 'p') {
+            if (typeof BIZ === 'undefined' || !BIZ.demoEnact(w, x.key)) return '';
         } else {
             if (Object.keys(w.industry.industries).length <= 1 || !w.industry.industries[x.key]) return '';
             delete w.industry.industries[x.key]; if (w.industry.firstChoice === x.key) w.industry.firstChoice = Object.keys(w.industry.industries)[0] || null; try { w.industry._updateSynergies?.(); } catch (e) {} w.industry._pendingUnlock = true; // 空出來的位置之後可以再提案開別的產業
@@ -117,7 +123,7 @@ if (typeof globalThis !== 'undefined') globalThis.DEMOLISH = DEMOLISH;
 
 // ---- 掛勾 ----
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.demolish = { icon: '🏚️', label: '拆除' };
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { demolish_keep: '捨不得，東西在那裡就是好的', demolish_work: '那是我做事的地方', demolish_cost: '公庫養不起了', demolish_fine: '覺得用不到了', demolish_friend: '跟提的人交情好', demolish_foe: '跟提的人處不來', demolish_mine: '這是我提的' });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { demolish_keep: '捨不得，東西在那裡就是好的', demolish_work: '那是我做事的地方', demolish_cost: '公庫養不起了', demolish_fine: '覺得用不到了', demolish_friend: '跟提的人交情好', demolish_foe: '跟提的人處不來', demolish_mine: '這是我提的', demolish_eyesore: '空店面擺著難看', demolish_spare: '留著說不定有人會再來開店' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;
