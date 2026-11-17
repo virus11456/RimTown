@@ -156,7 +156,7 @@ const BIZ = (() => {
         s.last = s.week; s.week = 0; // v9.23.0 記下這一週賺多少(合夥人看這個決定要不要拆夥)
     }
     function close(w, s, why) {
-        if (s.closed) return; s.closed = true; s.closedDay = day(w); const o = w.agents[s.owner];
+        if (s.closed) return; s.closed = true; s.closedDay = day(w); s.closeWhy = why || ''; /* v11.6.0 記下為什麼收（對照、除錯用） */ const o = w.agents[s.owner];
         if (why === 'broke' && o) { log(w, '🏚️ 「{n}」撐不下去，倒閉了。', { n: s.name[0] }, o.name); mem(w, o, '我的店「{n}」倒了，好不甘心。', { n: s.name[0] }, 8); o.moodModifier = (o.moodModifier || 0) - 8; }
         if (why === 'quit' && o) { log(w, '🔒 {a}決定把「{n}」收掉，不再硬撐。', { a: o.name, n: s.name[0] }, o.name); mem(w, o, '我把「{n}」收掉了，至少不用再賠下去。', { n: s.name[0] }, 7); o.moodModifier = (o.moodModifier || 0) - 3; }
         if (why === 'gone' && s.heir?.q?.length) log(w, '🔒 {o}留下的「{n}」沒有人接，收掉了。', { o: s.heir.name || '', n: s.name[0] }, '');
