@@ -331,7 +331,8 @@ const ORDER = (() => {
             const P = paper(w, x.pid); const sec = secOf(w, x.sid); const cu = sec && w.agents[sec.culprit]; const by = w.agents[x.by]; const cn = cu?.name || '';
             const drop = (k) => { st(w, 'verDrop'); if (by && !by.isDead) mem(w, by, k, { c: cn }, 6); };
             if (!sec || sec.found) { drop('我查證到一半，事情已經被別人登出來了。'); continue; }
-            if (!cu || cu.isDead || !live(w, cu.agentId)) { drop('我查證{c}的事查到一半，他已經不在鎮上了，這件事只好作罷。'); continue; }
+            if (!cu || cu.isDead || w.agents[cu.agentId] !== cu) { drop('我查證{c}的事查到一半，他已經不在鎮上了，這件事只好作罷。'); continue; }
+            if (!live(w, cu.agentId)) { if (d - x.at < 10) keep.push(x); else drop('我查證{c}的事查到一半，他已經不在鎮上了，這件事只好作罷。'); continue; } // 只是暫時出遠門、去探險：等他回來再問（最多等十天），不直接作廢
             if (!P || P.closed || (P.banned && !P.underground)) { drop('{c}那件事我查證好了，可是報社登不出來了。'); continue; }
             const ed = PR()?.editorOf(w, P); if (!ed || ed === cu) { if (d - x.at < 10) keep.push(x); else drop('{c}那件事我查證好了，一直沒機會登。'); continue; }
             ask(w, ed, 'pressScoop', { pid: x.pid, sid: x.sid, d, ver: 1 });

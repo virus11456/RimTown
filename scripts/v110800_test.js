@@ -192,6 +192,15 @@ async function run(browser, dev, lang) {
       // 被別人揭穿了：不再問，主筆的記憶裡留一句
       const sec9 = mk(59); runOp(KK.pressScoop, ed, { pid: P.id, sid: sec9.id, d: day() }, 'verify'); const v9 = O.ver.find(x => x.sid === sec9.id); if (v9) v9.at = day(); sec9.found = true;
       const n1 = asked.length; hold(() => ORDER.verDaily(w)); V.void = { noAsk: !since(n1, 'pressScoop').some(e => e.ctx.sid === sec9.id), mem: (ed.memory.entries || []).slice(-5).some(e => String(e.content || '').includes(t('我查證到一半，事情已經被別人登出來了。'))), gone: !O.ver.some(x => x.sid === sec9.id) };
+      // 當事人只是暫時出遠門：這一件留著等他回來（不作廢、不問）；他回來了就照樣再問；等超過十天才作罷
+      { const secA = mk(67); runOp(KK.pressScoop, ed, { pid: P.id, sid: secA.id, d: day() }, 'verify'); const vA = O.ver.find(x => x.sid === secA.id); if (vA) vA.at = day();
+        const TR = (w.events._travellingAgents = w.events._travellingAgents || []); const fake = { agentData: { agentId: c1.agentId } }; TR.push(fake);
+        const nA = asked.length, mA = (ed.memory.entries || []).length; hold(() => ORDER.verDaily(w));
+        V.away = { kept: O.ver.some(x => x.sid === secA.id), noAsk: !since(nA, 'pressScoop').some(e => e.ctx.sid === secA.id), noMem: !(ed.memory.entries || []).slice(mA).some(e => String(e.content || '').includes(t('只好作罷'))) };
+        TR.splice(TR.indexOf(fake), 1); const nB = asked.length; hold(() => ORDER.verDaily(w)); const gB = since(nB, 'pressScoop').find(e => e.ctx.sid === secA.id); V.away.back = !!gB && gB.ctx.ver === 1 && !O.ver.some(x => x.sid === secA.id);
+        const secB = mk(71); runOp(KK.pressScoop, ed, { pid: P.id, sid: secB.id, d: day() }, 'verify'); const vB = O.ver.find(x => x.sid === secB.id); if (vB) vB.at = day() - 10; TR.push(fake);
+        const nC = asked.length; hold(() => ORDER.verDaily(w)); TR.splice(TR.indexOf(fake), 1);
+        V.away.late = !O.ver.some(x => x.sid === secB.id) && !since(nC, 'pressScoop').some(e => e.ctx.sid === secB.id) && (ed.memory.entries || []).slice(-5).some(e => String(e.content || '').includes(fill('我查證{c}的事查到一半，他已經不在鎮上了，這件事只好作罷。', { c: c1.name }))); secA.found = true; secB.found = true; }
       // 談條件開出去之後選舉結束了：當事人照樣被問，事實寫著選舉已經結束
       const sec10 = mk(61); setCash(c1, 120); const hc = { pid: P.id, sid: sec10.id, by: ed.agentId, n: 20, d: day() }; V.hushIds = ids(KK.pressHush, c1, hc); const fh = KK.pressHush.facts(w, c1, hc); allTexts(KK.pressHush, c1, hc); V.hushFacts = fh.includes(t('沒有當選')) || fh.includes(t('當選了'));
       const c0 = cash(c1), e0 = cash(ed); runOp(KK.pressHush, c1, hc, 'pay'); V.hushPay = r3(c0 - cash(c1)) === 20 && r3(cash(ed) - e0) === 20 && !sec10.found;
@@ -382,6 +391,7 @@ async function run(browser, dev, lang) {
     ok(B1.off.asked === 0 && B1.off.found, `${tag} 決策核心沒開：照舊直接登`, B1.off); }
   { const V = r.B.B1b;
     ok(V.queued && V.asked && V.ids.join() === 'bury,print,deal' && Object.values(V.facts).every(Boolean) && V.print, `${tag} 先查證之後選舉結束了：兩天後照樣再問（沒有「先查證」），事實寫著選舉已經結束、不再說會傷選情；選了照實登就真的見報`, V);
+    ok(V.away.kept && V.away.noAsk && V.away.noMem && V.away.back && V.away.late, `${tag} 先查證的當事人只是暫時出遠門：留著等他回來再問，不直接作廢；等超過十天才作罷，主筆記得`, V.away);
     ok(V.void.noAsk && V.void.mem && V.void.gone, `${tag} 查證到一半事情被別人揭穿：這一件作廢，主筆記得「查證到一半，被別人登出來了」`, V.void);
     ok(V.hushIds.join() === 'refuse,pay' && V.hushFacts && V.hushPay, `${tag} 談條件開出去之後選舉結束了：當事人照樣被問，事實寫著選舉已經結束；付了 20 銀幣照樣從他到主筆`, { ids: V.hushIds, f: V.hushFacts, pay: V.hushPay }); }
   { const B2 = r.B.B2, B3 = r.B.B3;
