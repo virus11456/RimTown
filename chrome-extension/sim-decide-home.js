@@ -201,12 +201,13 @@ const HOME = (() => {
         facts(w, h, ctx) { const a = w.agents[ctx?.to]; if (!a) return ''; return fill('{a}身上沒錢吃飯，要靠你出今天的飯錢（{n} 銀幣）。你們{tie}。你身上有 {c} 銀幣。這個月你已經替他出過 {k} 次。', { a: a.name, n: ctx.n, tie: tieOf(h, a), c: Math.floor(cash(w, h)), k: helpN(w, a, h) }); },
         options(w, h, ctx) {
             const a = w.agents[ctx?.to]; if (!a || a === h) return []; const k = helpN(w, a, h); const c = cash(w, h); const f = aff(h, a);
-            const no = REF + (f <= -30 ? 1.3 : f <= -10 ? 0.5 : 0) + (c < ctx.n * 4 + 10 ? 0.6 : 0) + (has(a, 'lazy') && k >= 4 ? 0.6 : 0) + (k >= 10 ? 0.4 : 0) + (has(h, 'greedy') ? 0.4 : 0) + (has(h, 'thrifty') ? 0.2 : 0)
+            // 大多數人照樣會出（以前一定出）；真的處不來、自己也快吃不上飯、或對方好吃懶做一直伸手的，才可能不出。量過：不出的比例太高，全鎮挨餓的人次會明顯變多
+            const no = REF + (f <= -50 ? 2.0 : f <= -30 ? 1.4 : f <= -10 ? 0.5 : 0) + (c < ctx.n * 2 + 5 ? 0.3 : 0) + (has(a, 'lazy') && k >= 4 ? 0.4 : 0) + (k >= 10 ? 0.3 : 0) + (has(h, 'greedy') ? 0.3 : 0) + (has(h, 'thrifty') ? 0.1 : 0)
                 - (has(h, 'kind') ? 0.5 : 0) - (hasV(h, '家庭') ? 0.4 : 0) - (has(h, 'generous') ? 0.3 : 0) - (wedTo(h, a) ? 0.3 : 0);
             return [
                 { id: 'pay', quiet: true, mute: true, text: { k: '替他出飯錢（{n} 銀幣）', p: { n: ctx.n } }, say: { k: '替{a}出了飯錢', p: { a: a.name } }, why: '一家人，總不能看他餓肚子。', base: REF + tilt(0.99), lean: { bond: 0.3 },
                     run: (w2, h2) => { const L = S(w2).hc[a.agentId + '|' + h2.agentId] || (S(w2).hc[a.agentId + '|' + h2.agentId] = []); L.push(day(w2)); return null; } },
-                { id: 'no', quiet: true, text: '這次不出', say: { k: '這次不肯替{a}出飯錢', p: { a: a.name } }, why: f <= -10 ? '他平常那樣對我，憑什麼要我養他。' : c < ctx.n * 4 + 10 ? '我自己也快沒錢了。' : '老是靠別人，總要學著自己想辦法。', base: no, lean: { gain: 0.2, safe: 0.1 },
+                { id: 'no', quiet: true, text: '這次不出', say: { k: '這次不肯替{a}出飯錢', p: { a: a.name } }, why: f <= -10 ? '他平常那樣對我，憑什麼要我養他。' : c < ctx.n * 2 + 5 ? '我自己也快沒錢了。' : '老是靠別人，總要學著自己想辦法。', base: no, lean: { gain: 0.2, safe: 0.1 },
                     run: (w2, h2) => { stat(w2, 'feedNo'); bump(a, h2, -4); mem(w2, a, '{h}不肯替我出飯錢，我今天只能餓著。', { h: h2.name }, 6); mem(w2, h2, '{a}又沒錢吃飯，這次我沒有替他出。', { a: a.name }, 4); log(w2, 'social', '🍚 {h}這次不肯替{a}出飯錢。', { h: h2.name, a: a.name }, h2.name); return { k: '沒有替{a}出飯錢', p: { a: a.name } }; } },
             ];
         },
