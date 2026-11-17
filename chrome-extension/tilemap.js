@@ -1702,6 +1702,7 @@ class PixelTileMap {
         if (!this.grid || !this._houseSubZones) return;
         let have = Object.keys(this._houseSubZones).length;
         if (have >= needed) return;
+        const have0 = have;
         const house = TILE_BUILDING_TEMPLATES.house;
         const HW = house.w + 2, HH = house.h + 4; // 含門前空地與邊距
         const plots = this._getFactoryPlots ? this._getFactoryPlots() : [];
@@ -1770,6 +1771,8 @@ class PixelTileMap {
                 this._factoryPlots = this._factoryPlots.filter(pl => !houses.some(h => pl.x < h.x + h.w && pl.x + pl.w > h.x && pl.y < h.y + h.h && pl.y + pl.h > h.y));
             }
         }
+        // v11.7.0 畫面建好之後才加蓋的房子：以前要等換季或升級才會重畫，這段期間地圖上看不到房子、拉近也沒有屋內、窗戶不會亮。加蓋了就請畫面重建一次
+        if (have > have0) { this._sceneSrc = null; this._insideLUT = null; }
     }
 
     // v9.0.0 世界新事物(賭場等)在地圖上蓋一棟:找一塊夠大的空地(靠近鎮中心優先),回傳左上角 tile
