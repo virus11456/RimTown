@@ -1067,7 +1067,7 @@ class LifecycleSystem {
 
     _generateEpitaph(npc) {
         const lines = [];
-        if (npc.job) lines.push(`${t('曾任')}${npc.job.title}`);
+        if (npc.job) lines.push(`${t('曾任')}${t(npc.job.title)}`); // v11.7.0 職稱也照當下的語言（英文模式的墓誌銘不留中文）
         if (npc.personality.traits.includes('kind')) lines.push(t('以善良著稱'));
         else if (npc.personality.traits.includes('hardworking')) lines.push(t('勤勞一生'));
         else if (npc.personality.traits.includes('creative')) lines.push(t('才華洋溢'));

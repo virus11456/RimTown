@@ -361,7 +361,7 @@ if (typeof LifecycleSystem !== 'undefined') {
             const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || null; const o = w && TIERS.topOffice(w, npc); if (!o) return s;
             const isEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
             const head = isEn ? `Served ${o.n > 1 ? o.n + ' terms ' : ''}as ${o.title}` : `曾任${o.n > 1 ? ` ${o.n} 屆` : ''}${o.title}`;
-            const job = npc.job ? `${t('曾任')}${npc.job.title}` : '';
+            const job = npc.job ? `${t('曾任')}${t(npc.job.title)}` : ''; // v11.7.0 跟墓誌銘同一種寫法（職稱也翻）
             if (job && s.startsWith(job)) return head + s.slice(job.length);
             return head + (isEn ? '. ' : '，') + s;
         } catch (e) { return s; }
