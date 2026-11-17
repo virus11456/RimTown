@@ -106,7 +106,7 @@ const RIOT = (() => {
         for (const id of C.claims) if (C.owner !== 'sorry' && !C.who.some(x => x.id === id)) C.who.push({ id, act: 'gather' }); // 要不到賠命錢的人也到場
         const crowd = crowdOf(w, C);
         if (crowd.length < 3) { C.stage = 'after'; R.st.quiet = (R.st.quiet || 0) + 1; note(w, C, C.owner === 'sorry' ? '東家道了歉、賠了錢，沒有鬧起來' : '只有 {n} 個人到場，沒有鬧起來', { n: crowd.length }); return finish(w, C, 'quiet'); }
-        C.stage = 'riot'; R.st.riots = (R.st.riots || 0) + 1; const now = w.tickCount; const pl = place(w); for (const a of crowd) if (!a._ceremony || !C.funeral) a._thingGo = { place: pl, from: now + (C.funeral ? 8 : 0), until: now + 28, why: 'protest', id: C.id };
+        C.stage = 'riot'; R.st.riots = (R.st.riots || 0) + 1; const now = w.tickCount; const pl = place(w); for (const a of crowd) if (!a._ceremony || !C.funeral) { const g = { place: pl, from: now + (C.funeral ? 8 : 0), until: now + 28, why: 'protest', id: C.id }; if (typeof THINGS !== 'undefined' && THINGS.setGo) THINGS.setGo(a, g); else a._thingGo = g; }
         note(w, C, C.funeral ? '出殯那天，送葬的隊伍 {n} 人直接走到{s}門口' : '{n} 人聚到{s}門口', { n: crowd.length, s: sname(C.key) });
         log(w, C.funeral ? '⚱️ 出殯的隊伍沒有散，{n} 人直接走到{s}門口，要{o}出來。' : '🔥 {n} 人聚到{s}門口，要{o}出來。', { n: crowd.length, s: sname(C.key), o: C.oname }, C.oname);
         try { w.dailyNews?.collectEvent?.('politics', fill('{n} 人圍住{s}', { n: crowd.length, s: sname(C.key) }), 8, [C.oname]); } catch (e) {}

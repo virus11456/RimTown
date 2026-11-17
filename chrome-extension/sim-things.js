@@ -353,17 +353,20 @@ const THINGS = (() => {
         }
     }
     // 視覺：抗議的人實際走到那棟建築門口（地圖那邊讀 a._thingGo）
-    function gather(w, T, who) { const now = w.tickCount; for (const a of who) a._thingGo = { place: T.place ? T.place + '_front' : 'town_square', from: now, until: now + 16, why: 'protest', id: T.id }; }
+    // v11.5.0 一個人同時只記得一件「等一下要去哪」（_thingGo）。臨時冒出來的事（門口抗議、上街、今晚去賭場）以前直接蓋掉早就說定、晚一點才要去的約，
+    // 事情結束後也不還回來：答應傍晚五點在廣場見面的人，半夜被拉去抗議，結果沒赴約（全套回歸的 v101000 抓到）。現在先把比較晚的那個約收著（_thingHold），這件事結束再還給他
+    function setGo(a, g) { if (!a || !g) return; const o = a._thingGo; if (o && o.id !== g.id && o.until > g.until && !(a._thingHold && a._thingHold.until >= o.until)) a._thingHold = o; a._thingGo = g; }
+    function gather(w, T, who) { const now = w.tickCount; for (const a of who) setGo(a, { place: T.place ? T.place + '_front' : 'town_square', from: now, until: now + 16, why: 'protest', id: T.id }); }
     // 今晚去（各系統呼叫）：fromH～toH 點走到那棟建築；sit=true 時坐在門口（例如輸光的人）
     function goTonight(w, id, a, fromH, toH, sit) {
         const T = get(w, id); if (!T?.place || !a) return; const h = w.clock?.hour ?? 0, m = w.clock?.minute ?? 0; const d0 = w.tickCount - h * 4 - Math.floor(m / 15);
-        a._thingGo = { place: T.place + (sit ? '_front' : ''), from: d0 + fromH * 4, until: d0 + toH * 4, why: sit ? 'sit' : 'use', id };
+        setGo(a, { place: T.place + (sit ? '_front' : ''), from: d0 + fromH * 4, until: d0 + toH * 4, why: sit ? 'sit' : 'use', id });
     }
     // 每格：在時間窗內就把目的地設成那裡（地圖會讓人走過去）
     function tick(w) {
         for (const a of Object.values(w.agents || {})) {
             const g = a._thingGo; if (!g) continue;
-            if (w.tickCount >= g.until || a.isDead) { delete a._thingGo; if (a._thingAt) { delete a._thingAt; a._locationStayRemaining = 0; } continue; }
+            if (w.tickCount >= g.until || a.isDead) { delete a._thingGo; if (a._thingAt) { delete a._thingAt; a._locationStayRemaining = 0; } const h = a._thingHold; if (h) { delete a._thingHold; if (!a.isDead && h.until > w.tickCount) a._thingGo = h; } continue; }
             const on = w.tickCount >= g.from; if (on && a._thingAt !== g.place) { a._thingAt = g.place; a._locationStayRemaining = 0; } else if (!on && a._thingAt) { delete a._thingAt; }
         }
     }
@@ -548,7 +551,7 @@ const THINGS = (() => {
         const X = w.things; if (!X) return [];
         return Object.values(X.list || {}).filter(T => !T.gone).map(T => { const A = Object.entries(X.att[T.id] || {}).filter(([id]) => w.agents[id]); const vs = A.map(x => x[1]); return { id: T.id, icon: T.icon, name: nm(T), love: vs.filter(v => v >= 40).length, like: vs.filter(v => v >= 10 && v < 40).length, meh: vs.filter(v => v > -10 && v < 10).length, dislike: vs.filter(v => v <= -10 && v > -40).length, hate: vs.filter(v => v <= -40).length, n: vs.length, protest: T.protest, silent: silentN(w, X, T), boycott: T.boycott && day(w) <= T.boycott.until ? { lead: t(w.agents[T.boycott.lead]?.name || ''), left: T.boycott.until - day(w) } : null, stance: T.stance ? { side: T.stance.side, who: t(w.agents[T.stance.who]?.name || '') } : null, consensus: T.consensus || 0, flip: T.maj || 0, quotes: A.sort((x, y) => Math.abs(y[1]) - Math.abs(x[1])).slice(0, 2).map(([id, v]) => { const why = X.why[T.id]?.[id]; let s = ''; try { s = why ? Memory.render(why.k, why.p) : ''; } catch (e) {} return { who: t(w.agents[id].name), v, s }; }) }; });
     }
-    return { S, register, retire, get, live, att, feel, victim, useMult, buyMult, camps, splitIssue, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, goTonight, tick, syncMap, HOOKS, WHY, actInfo, actBy, rallyInfo, rallyBy, rescueInfo, rescueBy };
+    return { S, register, retire, get, live, att, feel, victim, useMult, buyMult, camps, splitIssue, quitting, daily, flush, vote, enact, brief, view, ruleAtt, prefs, gather, setGo, goTonight, tick, syncMap, HOOKS, WHY, actInfo, actBy, rallyInfo, rallyBy, rescueInfo, rescueBy };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { thing_ban: { icon: '🚫', label: '禁止新東西' } });

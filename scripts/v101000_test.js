@@ -86,7 +86,7 @@ const stage = () => {
   const drain = () => DECIDE.drain(w, DECIDE.S(w), w._absDay()); drain(); midnight(); tickN(1);
   out.h2 = { stage: B2.stage, ok: B2.out?.ok, text: V(B2.id)?.out?.text }; out.s2 = { stage: B3.stage, ok: B3.out?.ok, text: V(B3.id)?.out?.text }; out.l2 = { stage: B4.stage, ok: B4.out?.ok, kept: V(B4.id)?.kept };
   out.g2 = { stage: B5.stage, text: V(B5.id)?.out?.text }; out.v2 = { stage: B7.stage, text: V(B7.id)?.out?.text };
-  out.i1 = { stage: B6.stage, today: B6.when === w._absDay(), going: (B6.going || []).length, go: [a5, j5, k5].map(x => x._thingGo?.id === B6.id) }; out.m1 = { stage: B8.stage, go: [a7, b7].map(x => x._thingGo?.id === B8.id) };
+  out.i1 = { stage: B6.stage, today: B6.when === w._absDay(), going: (B6.going || []).length, go: [a5, j5, k5].map(x => x._thingGo?.id === B6.id) }; out.m1 = { stage: B8.stage, go: [a7, b7].map(x => x._thingGo?.id === B8.id || x._thingHold?.id === B8.id) }; // v11.5.0 臨時被拉去別的事（門口抗議）時，說定的約先收著（_thingHold），那件事結束再還給他；有沒有真的赴約看下面 17 點那一項
   toHour(17, 0); tickN(2); const sq = w.townMap?.locations?.town_square; out.m2 = { at: [a7, b7].map(x => x.currentLocation) };
   toHour(19, 0); out.i2 = { stage: B6.stage, ok: B6.out?.ok, came: (B6.came || []).length, text: V(B6.id)?.out?.text, paid: 40 - WALLET.get(w, a5) > 0 }; out.m3 = { stage: B8.stage, hasOut: !!B8.out, text: V(B8.id)?.out?.text };
   midnight(); tickN(1); midnight(); tickN(1); out.e3 = B9 ? { stage: B9.stage, text: V(B9.id)?.out?.text } : null; out.c1 = BC ? { stage: BC.stage, text: V(BC.id)?.out?.text } : null;
