@@ -269,8 +269,9 @@ const PLAGUEWAYS = (function () {
     }
 
     // ---------- ④ 送飯：病人身邊交情最好的那一位被想到，自己決定送不送 ----------
-    // 一天最多想到三個病人（誰先被想到看天）；同一個病人三天內不再想；答應了就連送三天（病好了就停）
-    const FOOD_GAP = 3, FOOD_MAX = 3, FOOD_DAYS = 3;
+    // 一天最多想到四個病人（誰先被想到看天）；同一個病人兩天內不再想；答應了就連送兩天（病好了就停）。
+    // 這樣「每個病人每天有人送飯的機會」跟以前一樣（答應的機率 × 兩天 ÷ 兩天問一次），疫情高峰一天大約送兩次，也跟以前的上限差不多
+    const FOOD_GAP = 2, FOOD_MAX = 4, FOOD_DAYS = 2;
     function thoughtOf(w, X, a, d) {
         const p = P(X); const fam = kin(w, a); const W = ways(); const r0 = W?.routineOf?.(w, a);
         const ok = (b) => b !== a && (b.age ?? 30) >= 16 && !sickI(X, b) && !(p.home[b.agentId] > d) && !(w.civic?.jail?.[b.agentId] > d);

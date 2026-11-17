@@ -17306,7 +17306,7 @@
         '{s}染上了{n}，已經病了 {k} 天{alone}。{via}你跟{s}{tie}。鎮上已經死了 {d} 個人。飯菜放在門口就好，可是你自己也可能被傳染。': '{s} has caught {n} and has been sick for {k} days{alone}. {via}You and {s} {tie}. {d} people in town have died so far. You would only have to leave the food at the door, but you could still catch it yourself.',
         '，家裡沒有人能照顧': ', with no one at home to look after them',
         '{v}託你幫忙送飯過去。': '{v} has asked you to take the food over. ',
-        '每天把飯菜送到{s}家門口（送三天）': 'Take food to {s}\'s door every day (for three days)',
+        '每天把飯菜送到{s}家門口（送兩天）': 'Take food to {s}\'s door every day (for two days)',
         '送飯到{s}家門口': 'take food to {s}\'s door',
         '{s}病著，總要有人顧他一口飯。': '{s} is sick. Someone has to make sure they eat.',
         '送飯給{s}': 'brought food to {s}',

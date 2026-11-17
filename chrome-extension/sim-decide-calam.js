@@ -83,9 +83,9 @@
         },
         options(w, b, ctx) {
             const I = PW()?.foodInfo(w, b, ctx); if (!I) return []; const PWx = PW(); const s = I.a.name;
-            const adj = -0.25 + clampN((I.af - 40) / 60, -0.5, 0.5) + (I.fam ? 0.4 : 0) + (has(b, 'kind') ? 0.5 : 0) + (hasV(b, '社群') ? 0.3 : 0) + (has(b, 'generous') ? 0.2 : 0) - (has(b, 'pessimist') ? 0.6 : 0) - (has(b, 'neurotic') ? 0.3 : 0) - ((b.age ?? 30) >= 60 ? 0.3 : 0) + (I.via ? 0.2 : 0) + (I.alone ? 0.3 : 0) - (I.cold ? 0.6 : 0);
+            const adj = -0.55 + clampN((I.af - 40) / 60, -0.5, 0.5) + (I.fam ? 0.4 : 0) + (has(b, 'kind') ? 0.5 : 0) + (hasV(b, '社群') ? 0.3 : 0) + (has(b, 'generous') ? 0.2 : 0) - (has(b, 'pessimist') ? 0.6 : 0) - (has(b, 'neurotic') ? 0.3 : 0) - ((b.age ?? 30) >= 60 ? 0.3 : 0) + (I.via ? 0.2 : 0) + (I.alone ? 0.3 : 0) - (I.cold ? 0.6 : 0);
             const out = [
-                { id: 'give', text: { k: '每天把飯菜送到{s}家門口（送三天）', p: { s } }, say: { k: '送飯到{s}家門口', p: { s } }, why: { k: '{s}病著，總要有人顧他一口飯。', p: { s } }, base: REF + tilt(I.q) + adj, lean: { bond: 0.4, safe: -0.3 },
+                { id: 'give', text: { k: '每天把飯菜送到{s}家門口（送兩天）', p: { s } }, say: { k: '送飯到{s}家門口', p: { s } }, why: { k: '{s}病著，總要有人顧他一口飯。', p: { s } }, base: REF + tilt(I.q) + adj, lean: { bond: 0.4, safe: -0.3 },
                     run: (w2, b2) => (PWx.feedBy(w2, b2, ctx) ? { k: '送飯給{s}', p: { s } } : { k: '沒送成' }) },
                 { id: 'afraid', quiet: true, text: '不敢去，怕被傳染', say: { k: '不敢送飯給{s}', p: { s } }, why: '我也怕，萬一染上了誰顧我家。', base: REF, lean: { safe: 0.3 },
                     run: (w2, b2) => (PWx.foodNo(w2, b2, ctx, false) ? { k: '沒有送飯給{s}', p: { s } } : null) }];
