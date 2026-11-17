@@ -271,6 +271,12 @@ async function run(browser, dev, lang) {
         const lg = (X.log[banker.agentId] || []).filter(x => x.kind === 'bankDesk').pop();
         o.loan = { got, pend, wait: !!wait, after: B.loans[A.agentId]?.principal || 0, cashD: Math.round(cash(A) - c0), pendAfter: !!BANK.pendingOf(w, A), ai: lg?.ai, why: lg?.why?.raw, work: X._gAsked.work || 0 };
         const p = prompts[0] || ''; const i0 = p.indexOf(t('【遇到的事】')); const part = i0 >= 0 ? p.slice(i0) : p; o.p1 = { n: prompts.length, facts: part.includes('40'), codes: /lend＝/.test(p) && /half＝/.test(p) && /refuse＝/.test(p), cjk: /[一-鿿]/.test(p), sample: (p.match(/.{0,30}[一-鿿]+.{0,30}/) || [''])[0] };
+        // 小額、看病的急用：當場照個性決定，不送題目；90 銀幣的非看病借款才送題目、回答後才撥款
+        { clearLoans(); fund(); plain(banker); for (const a of [A2, A3, A4]) { setAff(banker, a, 0); w.dark.rep[a.agentId] = {}; } X._gAsked = {}; X._kAsked = {}; const np0 = prompts.length; const n0 = BANK.D(B).st.asks;
+          const g25 = steady(() => BANK.lend(w, B, A2, 25, t('周轉'))); const gMed = steady(() => BANK.lend(w, B, A3, 60, t('看病'))); const npQuick = prompts.length - np0;
+          const lgQ = (X.log[banker.agentId] || []).filter(x => x.kind === 'bankDesk').slice(-2).map(x => x.ai);
+          reply = [{ n: 1, pick: 'lend', why: 'model reason 64' }]; const g60 = BANK.lend(w, B, A4, 90, t('周轉')); const pend60 = !!BANK.pendingOf(w, A4); await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
+          o.quick = { g25, gMed, npQuick, asked: BANK.D(B).st.asks - n0, logged: lgQ, g60, pend60, after60: B.loans[A4.agentId]?.principal || 0, np60: prompts.length - np0 - npQuick, why60: (X.log[banker.agentId] || []).filter(x => x.kind === 'bankDesk').pop()?.why?.raw }; clearLoans(); fund(); }
         // 房東定租金：AI 選「比行情便宜一點」
         const hh = HH(); const head = [...hh.keys()].map(id => w.agents[id]).find(a => a && (a.age ?? 30) >= 18 && a !== banker && a !== A && E.home[a.agentId]); const hid2 = [...hh.keys()].find(id => id !== ESTATE.headOf(w, head).agentId && E.home[id] && !E.lodge[id]); const u = E.units[E.home[hid2]]; const own0 = u.owner; u.owner = head.agentId; delete E.ll[head.agentId]; delete E.llAsk[head.agentId];
         reply = [{ n: 1, pick: 'lo', why: 'model reason 62' }]; const np = prompts.length; X._gAsked = {}; X._kAsked = {}; ESTATE.llDaily(w, day()); await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
@@ -386,6 +392,8 @@ async function run(browser, dev, lang) {
     ok(S.dup.got === 0 && S.dup.asks === 0 && !S.same.pend && S.same.loan === 30, `${tag} 等回話時同一個人再來申請不重複問；隔天照規則`, S); }
   // 10
   { const M = r.ai; ok(M.aiOn && M.loan && M.loan.got === 0 && M.loan.pend && M.loan.wait && M.loan.after === 20 && M.loan.cashD === 20 && !M.loan.pendAfter && M.loan.ai === 1 && M.loan.why === 'model reason 61' && M.loan.work >= 1, `${tag} 開智能體：申請先掛著（回 0、開店的人有得等），AI 選「只借一半」才撥 20 銀幣，用的是 work 組的額度`, M.loan);
+    { const Q = M.quick || {}; ok(Q.g25 > 0 && Q.g25 < 40 && Q.gMed >= 40 && Q.npQuick === 0 && Q.logged.length === 2 && Q.logged.every(x => x === 0), `${tag} 開智能體時，25 銀幣周轉和看病的借款由銀行家當場照個性決定、有撥款、沒有送題目，「做過的決定」照樣記`, Q);
+      ok(Q.g60 === 0 && Q.pend60 && Q.np60 === 1 && Q.after60 >= 60 && Q.why60 === 'model reason 64', `${tag} 90 銀幣的非看病借款：送出題目、先掛著，回答後才撥款`, Q); }
     ok(M.p1 && M.p1.n >= 1 && M.p1.facts && M.p1.codes, `${tag} 題目裡有借款的數字和選項代號`, M.p1);
     ok(M.ll && M.ll.tier === 'lo' && M.ll.prompts === 1 && M.p2.codes && M.sur && M.sur.plan === 'keep' && M.sur.by && M.sur.waited && M.sur.civic >= 1, `${tag} 房東定租金、公倉賣不賣：題目送出、回答被採用（便宜一點、先留著），公倉等回話那一天先不賣，用 civic 組`, { ll: M.ll, sur: M.sur });
     ok(zh || (M.p1 && !M.p1.cjk && !M.p2.cjk && !M.p3.cjk), `${tag} 英文題目裡沒有中文`, zh ? null : { p1: M.p1?.sample, p2: M.p2?.sample, p3: M.p3?.sample }); }
