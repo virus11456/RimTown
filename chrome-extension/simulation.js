@@ -4,6 +4,27 @@
 // v6.1.0 B14：村民／對話／城鎮事件／經濟／社會系統搬到 sim-agent／sim-conversation／sim-town／sim-economy／sim-society.js（在本檔之前載入），
 // 聲望／天氣／議會／決策／商店／事件選擇／求助搬到 sim-systems.js（在本檔之後載入）；本檔只剩 World 與工具函式。
 
+// v11.2.1 換日那一格太重（上百人的城要算半秒到一秒，畫面整個停住）。其中一大塊是白做的工：
+// 有幾段程式是「對每個村民問同一組問題」（今天有沒有事要拿主意、三餐的錢付給誰…），每問一次，底下的模組就把全鎮重新整理、重新篩一遍。
+// SCAN.run(fn)：fn 執行期間，同一個 key 的問題只算第一次，之後直接拿第一次的答案；fn 一結束全部丟掉。
+// 只能包「不會增減村民、也不會改到被記住的那些資料」的段落（每一處用到的地方都寫了為什麼可以）。算出來的結果跟以前一模一樣，只是不重複算。
+// 測試對照：window.RIMTOWN_NO_TICK_OPT = true 時完全不記，每次都照舊重算（scripts/v110210_test.js 用同一個種子跑兩邊，比對世界狀態）。
+const SCAN = (() => {
+    let depth = 0, store = null;
+    const off = () => typeof window !== 'undefined' && !!window.RIMTOWN_NO_TICK_OPT;
+    const stat = { runs: 0, hits: 0 }; // 測試用：包了幾段、省了幾次重算
+    return {
+        off, stat,
+        on: () => depth > 0,
+        run(fn) { if (off()) return fn(); if (depth++ === 0) store = new Map(); stat.runs++; try { return fn(); } finally { if (--depth === 0) store = null; } },
+        memo(key, fn) { if (!depth) return fn(); if (store.has(key)) { stat.hits++; return store.get(key); } const v = fn(); store.set(key, v); return v; },
+        get(key) { if (!depth) return undefined; const v = store.get(key); if (v !== undefined) stat.hits++; return v; },   // 「這一輪已經整理過了」的記號；不在掃描期間永遠是 undefined
+        set(key, v) { if (depth) store.set(key, v); },
+        // 排序用的分數：同一個人只算一次（比較的順序和結果不變，只是不重算）。關掉最佳化時原樣回傳
+        keyed(fn) { if (off()) return fn; const m = new Map(); return (x) => { if (m.has(x)) return m.get(x); const v = fn(x); m.set(x, v); return v; }; },
+    };
+})();
+
 // --- World ---
 class World {
     constructor() {

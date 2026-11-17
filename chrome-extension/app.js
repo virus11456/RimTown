@@ -2028,17 +2028,28 @@ class RimTownApp {
         if (this.world && !this.world.observerMode) this._loadQuestData();
         // v5.43.0 小鎮編年史:換日時把整天的作息/行程/足跡/對話歸檔進 IndexedDB
         if (this.world) this.world.onDayArchive = (arc) => this._chroniclePut(arc);
-        this.simInterval = setInterval(() => {
-            this.world.tick();
-            this.state = this.world.getState();
-            this._updateBGMPhase();
-            this.render();
-            // Check for ending trigger
-            if (this.world.multiEnding?.endingData && !this.world.observerMode && !this._endingShown) { // v6.58.1 觀察者沙盒沒有結局
-                this._endingShown = true;
-                this._showEndingOverlay();
-            }
-        }, this.simSpeed);
+        this.simInterval = setInterval(() => this._simStep(), this.simSpeed);
+    }
+    // v11.2.1 模擬的一格。鎮上有事時，各處的回呼以前會在這一格裡面直接「重讀狀態＋重畫面板」，換日那一格會重畫七八次，畫面整個卡住；
+    // 現在回呼只記下「要重畫」（_freshen），整格跑完在這裡畫一次。
+    _simStep() {
+        this._inTick = true; this._tickDirty = false;
+        try { this.world.tick(); } finally { this._inTick = false; }
+        this.state = this.world.getState();
+        this._updateBGMPhase();
+        if (this._tickDirty) { this._tickDirty = false; this._sidebarAt = Date.now(); try { this._autoSidebar(); } catch (e) {} } // 回呼要求的那一次重畫（跟以前一樣不看每秒一次的節流）；剛畫過，下面 render() 就不再畫
+        this.render();
+        // Check for ending trigger
+        if (this.world.multiEnding?.endingData && !this.world.observerMode && !this._endingShown) { // v6.58.1 觀察者沙盒沒有結局
+            this._endingShown = true;
+            this._showEndingOverlay();
+        }
+    }
+    // v11.2.1 鎮上有事、畫面要跟上：模擬那一格還在跑就只記下來（跑完由 _simStep 重讀狀態、畫一次）；不在格子裡（按鈕、AI 回話回來）就照舊馬上更新。
+    // redraw=false：只需要新的狀態，不必重畫面板。
+    _freshen(redraw = true) {
+        if (this._inTick) { if (redraw) this._tickDirty = true; return; }
+        try { this.state = this.world.getState(); if (redraw) this.renderSidebar(); } catch (e) {}
     }
 
     restartSimulation() {
@@ -2087,8 +2098,23 @@ class RimTownApp {
         (this._pressQ || (this._pressQ = {}))[key] = redo; return true;
     }
 
+    // v11.2.1 畫面卡住的那一兩秒裡連按的幾下會排隊，卡完一口氣全部送出來：面板開了又關、關了又開，看起來就像「按了沒反應」。
+    // 這裡在最前面攔：一下點擊如果排隊超過 0.35 秒才輪到（現在時間 − 事件時間），而且 0.3 秒內才剛放行過另一下，就丟掉。
+    // 排隊的第一下照常生效，擠在後面的不算；平常的連點不排隊（事件一來就處理），完全不受影響。
+    // 正在清這一堆的時候（0.3 秒內才處理過排隊很久的點擊），連只排了 0.1 秒以上的也算同一堆：實測卡完那一刻，最後兩三下只排了 0.1～0.3 秒，跟著擠出來又把面板關掉。
+    _wireStaleClicks() {
+        if (this._staleWired) return; this._staleWired = true; let okAt = -1e9, pileAt = -1e9;
+        document.addEventListener('click', (e) => {
+            const now = performance.now(); const ts = e.timeStamp; const waited = now - ts; const sane = ts > 0 && waited < 60000; // 事件時間不是同一種時鐘的舊瀏覽器：waited 會是負的或離譜的大，一律放行
+            const old = sane && waited > 350, pile = sane && waited > 100 && now - pileAt < 300; if (old) pileAt = now;
+            if (!this._staleOff && (old || pile) && now - okAt < 300) { e.stopImmediatePropagation(); e.preventDefault(); this._staleDropped = (this._staleDropped || 0) + 1; return; }
+            okAt = now;
+        }, true);
+    }
+
     setupTabListeners() {
         try { this._wireSidebarHold(); } catch (e) {}
+        try { this._wireStaleClicks(); } catch (e) {} // 排在 _wireSidebarHold 後面：被丟掉的點擊也要先讓「放開了」的處理跑完
         // v5.20.0 三大入口收束:小鎮 / 居民 / 故事(+設定)。主鍵即該組的「頭」分頁。
         // v6.25.0 觀察者沙盒四大入口:動態／村民／提案／日報(設定走齒輪鈕)
         this._mobileTabGroups = {
@@ -2994,12 +3020,20 @@ class RimTownApp {
         if (window.innerWidth <= 768 && this._kairoReady) {
             const card = document.getElementById('kairo-card');
             if (!card || card.classList.contains('hidden')) return;
-            const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < 1000) return; this._sidebarAt = now;
+            const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < (this._sbEvery || 1000)) return; this._sidebarAt = now;
         } else {
             // v6.54.0 桌機也節流:模擬每格都重畫整個側欄,5x 速度一秒兩三次,玩久了內容一多就卡;點按鈕等明確操作仍會立刻重畫
-            const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < 900) return; this._sidebarAt = now;
+            const now = Date.now(); if (this._sidebarAt && now - this._sidebarAt < (this._sbEvery || 900)) return; this._sidebarAt = now;
         }
-        this.renderSidebar();
+        this._autoSidebar();
+    }
+    // v11.2.1 自動重畫面板（每秒那一次、模擬格子裡要求的那一次）：
+    // 1) 畫出來的內容跟畫面上的一模一樣就不換（renderSidebar 裡看 _sbAuto），按鈕、捲動位置、展開的明細都留在原地；
+    // 2) 畫一次超過 50 毫秒（內容多、手機慢）就放慢成 2.5 秒一次，畫得快了再回到每秒一次。點按鈕等明確操作不受影響，照樣馬上畫。
+    _autoSidebar() {
+        const t0 = performance.now(); this._sbAuto = true;
+        try { this.renderSidebar(); } finally { this._sbAuto = false; }
+        this._sbEvery = (performance.now() - t0) > 50 ? 2500 : 0;
     }
 
     // v4.5.1 日夜階段圖示:一眼分辨現在是白天還是夜晚
@@ -3108,6 +3142,7 @@ class RimTownApp {
         this._syncKairoLayout();
         { const k = this.activeTab + '|' + (_sb?.className || ''); if (k !== this._ghLayoutKey) { this._ghLayoutKey = k; try { this._ghFab?.(); } catch (e) {} } } // v9.7.0 面板切換時 🃏 跟著讓位
         const content = document.getElementById('sidebar-content');
+        let genEl = null; const auto = !!this._sbAuto && !window.RIMTOWN_NO_SB_SKIP; // v11.2.1 自動重畫：先畫在還沒掛上去的容器，跟畫面上的一樣就不換（RIMTOWN_NO_SB_SKIP 是測試對照用的開關）
         const keep = this._snapDetails(content); // v6.76.5 側欄每秒重畫:記住哪些「展開明細」是打開的,畫完再還原
 
         // v5.20.0 三大入口的次級分頁列(桌面與手機皆顯示;手機聊天抽屜為全幅,不加列)
@@ -3125,20 +3160,30 @@ class RimTownApp {
             subBar += '</div>';
             const hint = this._tabHints?.[cur]; if (hint) subBar += `<div class="pp-tabhint">${hint}</div>`;
             const bar0 = content.firstElementChild;
+            const subContent = document.createElement('div');
             if (content._subBarHtml === subBar && bar0 && bar0.dataset.grpBar === '1') { // v9.1.2 分頁列一樣就沿用原本的按鈕，只換下面的內容
                 const last = hint ? bar0.nextElementSibling : bar0;
-                while (last && last.nextSibling) last.nextSibling.remove();
-            } else { content.innerHTML = subBar; content._subBarHtml = subBar; if (content.firstElementChild) content.firstElementChild.dataset.grpBar = '1'; }
-            const subContent = document.createElement('div');
-            content.appendChild(subContent);
-            this._renderTabContent(subContent);
+                if (auto && last) { // v11.2.1
+                    const old = last.nextSibling; this._renderTabContent(subContent); const gen = subContent.innerHTML;
+                    if (old && old.nodeType === 1 && !old.nextSibling && old._genHtml === gen && old._genTab === this.activeTab && old._genNode === old.firstChild) { this._sbSame = (this._sbSame || 0) + 1; return; } // 一模一樣：畫面上的不動（_genNode：中間沒有被按鈕自己的處理直接重畫過）
+                    while (last.nextSibling) last.nextSibling.remove();
+                    subContent._genHtml = gen; subContent._genTab = this.activeTab; content.appendChild(subContent); genEl = subContent;
+                } else {
+                    while (last && last.nextSibling) last.nextSibling.remove();
+                    content.appendChild(subContent); this._renderTabContent(subContent);
+                }
+            } else {
+                content.innerHTML = subBar; content._subBarHtml = subBar; if (content.firstElementChild) content.firstElementChild.dataset.grpBar = '1';
+                content.appendChild(subContent); this._renderTabContent(subContent);
+            }
         } else {
             content._subBarHtml = null;
-            this._renderTabContent(content);
+            this._renderTabContent(content); // 沒有子分頁列的面板（提案）直接畫在 content 上；提案面板自己有「內容沒變就不重畫」（v6.54.0）
         }
         this._restoreDetails(content, keep);
         try { this._pgEnhance?.(content); } catch (e) { console.warn('[pages] enhance', e); } // v9.18.0 區塊收合、長串「·」拆成小格子
         try { this._icFit?.(content); } catch (e) {} // v9.20.1 資訊卡大數字放不下時改顯示 25.5k
+        if (genEl) genEl._genNode = genEl.firstChild; // v11.2.1 記住這次畫出來的第一個節點：之後若被別處直接重畫過，就不拿來比對
     }
     // v6.76.5 <details> 開合狀態:以「分頁＋摘要文字(去掉數字,計數會變)＋第幾個同名」為鍵;使用者手動收起的也照收起還原
     _detailsKeys(root) {

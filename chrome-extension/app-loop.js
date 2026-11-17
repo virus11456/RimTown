@@ -361,15 +361,15 @@ Object.assign(RimTownApp.prototype, {
         w.onGodbook = (c) => { try { this._showCornerNotice({ icon: '📖', title: t('神之書多了一頁'), name: '', desc: `${(GODBOOK?.RAR?.[c.rar]?.icon) || ''}${c.icon} ${t(c.name)}${t('：')}${t(c.effect)}` }); this._ghRefresh?.(); } catch (err) {} }; // v8.4.0
         w.onCalamity = (kind, x) => { try { if (kind !== 'day' && x) this._showCornerNotice({ icon: x.icon, title: x.title, name: '', desc: x.desc }); this._ghRefresh?.(); } catch (err) {} }; // v7.9.0 災厄工坊
         w.fullAgentMode = this._fullAgentOn?.() || false; // v6.39.0 完整智能體模式
-        w.onSeasonRecap = () => { try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} this._showSeasonRecap(); }; // v5.98.0 季末回顧
+        w.onSeasonRecap = () => { this._freshen(); this._showSeasonRecap(); }; // v5.98.0 季末回顧 // v11.2.1 回顧視窗照樣馬上跳（它直接讀世界），面板等這一格跑完再畫
         w.onChainEvent = (kind, npcName, title, text) => { if (kind === 'start') { try { this._aiChainQuotes(w); } catch (e) {} } this._showCornerNotice({ icon: kind === 'done' ? '🏅' : kind === 'broken' ? '💔' : '📖', title: kind === 'done' ? t('委託鏈完成') : kind === 'broken' ? t('委託鏈中斷') : t('有人想拜託你'), name: `${t(npcName)} · ${title}`, desc: text || (kind === 'start' ? t('明天的委託板會多一件他的事，連做三天') : '') }); }; // v6.5.0
-        w.onGrowthEvent = (kind, v) => { if (w.observerMode) return; if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.94.0
-        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ go: { locId: 'town_square' }, icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.93.0
+        w.onGrowthEvent = (kind, v) => { if (w.observerMode) return; if (kind === 'level') this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${v} ${t('級')}`, name: '', desc: t('到「故事」分頁選一個天賦') }); else if (kind === 'attr') { this._showCornerNotice({ icon: '⬆️', title: `${t('旅人升到')} ${w.growth?.level || ''} ${t('級')}`, name: `${(typeof growthAttrLabel === 'function' ? growthAttrLabel(v) : v)} +1`, desc: t('天賦都學完了，之後每升一級隨機一項屬性 +1') }); } this._freshen(); }; // v5.94.0
+        w.onTrialEvent = (kind, title, desc) => { this._showCornerNotice({ go: { locId: 'town_square' }, icon: kind === 'passed' ? '🏅' : kind === 'failed' ? '💔' : '⚖️', title, name: '', desc }); this._freshen(); }; // v5.93.0
         w.onEndingEvent = (kind, title, desc) => { // v6.13.0 復興:中央卡(要給 content 才會是中央卡),並讓之後的結局還能彈
             if (kind === 'revived') { this._endingShown = false; this._showCenterNotification({ icon: '🌅', title, name: t(w.townName || '邊境鎮'), desc: '', content: `<div style="font-size:0.9rem;line-height:1.7">${this._escapeHtml(desc || '')}</div>`, autoDismiss: 0 }); }
-            try { this.state = w.getState(); this.renderSidebar(); } catch (e) {}
+            this._freshen();
         };
-        w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); try { this.state = w.getState(); this.renderSidebar(); } catch (e) {} }; // v5.92.0
+        w.onPlayerCaravanReturn = (result, line) => { this._showCornerNotice({ icon: result.raided ? '🏴' : '💰', title: t('商隊回報'), name: t(result.toTownName), desc: line }); this._freshen(); }; // v5.92.0
         // v5.80.0 跨鎮商隊:角落通知 + 地圖上馬車進城動畫
         w.onCaravan = (info) => {
             const label = (rs) => (typeof SHOP_ITEMS !== 'undefined' && SHOP_ITEMS[rs]?.name) ? SHOP_ITEMS[rs].name() : (rs === 'silver' ? t('銀幣') : rs);
@@ -624,7 +624,7 @@ Object.assign(RimTownApp.prototype, {
         const desc = kind === 'new' ? p.title : kind === 'outcome' ? (p.outcomeText || p.title) : (p.result || p.title);
         this._showCornerNotice({ icon: ICON[kind] || '📜', title, name: kind === 'new' ? '' : p.title, desc, go: { agentId: p.proposerId } }); // v6.29.0 去看提案人
         if (kind === 'new') { this.bgm?.sfx?.('open'); this._aiProposalPitch(w, p.id); }
-        try { this.state = w.getState(); if (this.activeTab === 'proposals') this.renderSidebar(); } catch (e) {}
+        this._freshen(this.activeTab === 'proposals'); // v11.2.1 換日時一口氣十來件提案事件，每件都重讀狀態＋重畫 → 改成整格畫一次
         this._updateProposalBadge();
     },
     // v6.38.0 事件卡:打出 → 鏡頭飛現場 + 角落通知;反應 → 泡泡 + 重畫;七天後 → 通知
@@ -676,7 +676,7 @@ Object.assign(RimTownApp.prototype, {
             this._showCornerNotice({ icon: e.icon, title: `${t('事件')}${t('：')}${e.name}`, name: '', desc: e.detail, go });
         } else if (kind === 'reaction' && npc) {
             try { this.tileMap?.addConversationBubble?.(npc.agentId, npc.agentId, npc.name, npc.name, text, ''); } catch (err) {}
-            try { this.state = this.world.getState(); if (this.activeTab === 'events') this.renderSidebar(); } catch (err) {}
+            this._freshen(this.activeTab === 'events');
             try { this._ghRefresh?.(); } catch (err) {} // v6.48.0 反應追蹤紅點／抽屜內容
         } else if (kind === 'outcome') {
             this._showCornerNotice({ icon: '📈', title: `${e.name} · ${t('七天後')}`, name: '', desc: e.outcomeText });
@@ -785,6 +785,6 @@ Object.assign(RimTownApp.prototype, {
                 else w.logMessageT('event_choice', '🤷 你決定不干涉{residentName}與{localName}的事。', { residentName: data.residentName, localName: r.localName });
             }
         } catch (e) { console.warn('[relocate]', e); }
-        this.state = w.getState(); try { this._syncHousing?.(); } catch (e) {} try { this.renderSidebar(); } catch (e) {}
+        try { this._syncHousing?.(); } catch (e) {} this._freshen(); // v11.2.1 房子照樣馬上排（那是世界的狀態），面板等這一格跑完再畫
     },
 });
