@@ -176,6 +176,13 @@ async function run(browser, dev, lang) {
   await page.locator('#sidebar-content select[data-rv-pick]').selectOption(I.J.id); await page.waitForTimeout(300);
   const J1 = await pg();
   ok(J1 && J1.who === I.J.id && J1.others.includes(I.K.id), `${tag} 上方的下拉選單選人：打開他的關係圖`, J1 && { who: J1.who, others: J1.others });
+  // 關係最多的人：最多畫 14 個，其餘一句話交代；名字仍然不重疊
+  const busy = await page.evaluate(() => { const a = window.rimtownApp; a._relmapFilters.friend = true; const D = a._rvData(); const id = D.ids.slice().sort((x, y) => (D.byP[y] || []).length - (D.byP[x] || []).length)[0]; a._rvOpen(id, null); return { id, n: (D.byP[id] || []).length, note: [...document.querySelectorAll('#sidebar-content .rv-person .ic-note')].map(e => e.textContent).join('|') }; });
+  await page.waitForTimeout(300); const Bz = await pg();
+  ok(Bz && Bz.others.length === Math.min(14, busy.n) && !Bz.over.length && !Bz.clip.length && (busy.n <= 14 || /14/.test(busy.note)), `${tag} 關係最多的人（${busy.n} 段）：畫 ${Bz && Bz.others.length} 個${busy.n > 14 ? '，其餘一句話交代' : ''}，名字不重疊`, { busy, over: Bz && Bz.over, clip: Bz && Bz.clip });
+  await checkLayout('關係很多的人');
+  if (mob && zh) { await page.evaluate(() => document.querySelector('#sidebar-content .rv-person')?.scrollIntoView({ block: 'start' })); await shot('mobile-zh-person-busy'); }
+  await page.evaluate(() => { window.rimtownApp._relmapFilters.friend = false; });
   await page.locator('#sidebar-content .rv-back[data-action="rv-back"]').click(); await page.waitForTimeout(150);
 
   // 效能：110 人打開、切換篩選、換人看；狀態沒變不重算
