@@ -395,8 +395,9 @@ async function run(browser, dev, lang) {
         w.home.lastDay = null; HOME.daily(w); o.oldDaily = true; } catch (e) { o.err = String(e.stack || e).slice(0, 300); } out.save = o; }
 
     const nm = Object.values(w.agents).map(a => a.name).filter(Boolean).sort((x, y) => y.length - x.length); const loc = (s2) => { let r2 = String(s2); try { for (const n of nm) if (r2.includes(n)) r2 = r2.split(n).join(I18N.localizeNames ? I18N.localizeNames(n, true) : n); } catch (e) {} return r2; };
-    out.seenTexts = seen.map(x => x.reason + ' ' + x.res).filter(Boolean).slice(-150).map(loc);
-    out.texts = texts.filter(Boolean).map(loc);
+    const nameLoc = [...new Set(nm.map(n => { try { return I18N.localizeNames ? I18N.localizeNames(n, true) : n; } catch (e) { return n; } }))].sort((x, y) => y.length - x.length); const unname = (s2) => { let r2 = String(s2); for (const n of nameLoc) if (n && r2.includes(n)) r2 = r2.split(n).join('NAME'); return r2; }; // 人名歸名字系統管（有些名字的英文只翻了一半），這裡只查文字
+    out.seenTexts = seen.map(x => x.reason + ' ' + x.res).filter(Boolean).slice(-150).map(loc).map(unname);
+    out.texts = texts.filter(Boolean).map(loc).map(unname);
     return out;
     function LV0(w2) { try { return TIERS.LV[TIERS.level(w2)]; } catch (e) { return { council: '鎮議會', member: '鎮議員' }; } }
     function jobTitle(k2) { try { return JOB_DEFINITIONS[k2].title; } catch (e) { return k2; } }
