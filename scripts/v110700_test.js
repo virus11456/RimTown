@@ -93,7 +93,7 @@ async function run(browser, dev, lang) {
       // 送：病人欠一份人情、好感上升，接下來兩天自動送
       const f0 = P0.food, af0 = s.relationships.relationships[b.agentId].affinity; opOf(KK.calFood, b, ctx, 'give').run(w, b, ctx);
       A2.give = { fed: P0.food - f0, feed: P0.feed[s.agentId]?.by === b.agentId, owe: !!(WAYS.S(w).owe?.[s.agentId]?.[b.agentId]), aff: s.relationships.relationships[b.agentId].affinity > af0, again: KK.calFood.options(w, b, ctx).length };
-      const f1 = P0.food; PW._t.foodDaily(w, X, day() + 1); A2.give.next = P0.food - f1; PW._t.foodDaily(w, X, day() + 3); A2.give.stop = !P0.feed[s.agentId];
+      const f1 = P0.food; PW._t.foodDaily(w, X, day() + 1); A2.give.next = P0.food - f1; for (const x of npcs()) P0.ask['fd' + x.agentId] = day() + 3; PW._t.foodDaily(w, X, day() + 3); A2.give.stop = !P0.feed[s.agentId]; // 那一天不再想到別人，只看答應的那幾天有沒有到期
       // 不敢去：病人記得
       P0.feed = {}; const af1 = s.relationships.relationships[b.agentId].affinity; opOf(KK.calFood, b, ctx, 'afraid').run(w, b, ctx); A2.afraid = { aff: s.relationships.relationships[b.agentId].affinity < af1, mem: (s.memory.entries || []).some(m => /一次都沒來過|never came once/.test(m.content || (m.k ? Memory.render(m.k, m.p || {}) : ''))) };
       // 託別人送：被託的人被問（題目裡寫著誰託的）
