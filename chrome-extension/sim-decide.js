@@ -155,7 +155,7 @@ const DECIDE = (() => {
     const memText = (e) => { try { return e.content || (e.k ? Memory.render(e.k, e.p || {}) : ''); } catch (x) { return e.content || ''; } };
     function involved(w, a, facts) { const f = String(facts || ''); return npcs(w).filter(o => o !== a && o.name && f.includes(o.name)).slice(0, 2); }
     function pastLines(w, a, K, facts, cutN, perWho = 2) {
-        const out = []; const d0 = day(w); const cutS = (x) => (x.length > cutN ? x.slice(0, cutN) + '…' : x); const myLog = w.decide?.log?.[a.agentId] || [];
+        const out = []; const d0 = day(w); const cutS = (x) => { try { if (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) x = I18N.localizeNames(x, true); } catch (e) {} return x.length > cutN ? x.slice(0, cutN) + '…' : x; }; // v11.8.0 先換人名再截短（理由同 lines） const myLog = w.decide?.log?.[a.agentId] || [];
         const ago = (d) => (d0 - d <= 0 ? t('今天') : fill('{n} 天前', { n: d0 - d }));
         for (const o of involved(w, a, facts)) {
             const v = a.relationships?.relationships?.[o.agentId]?.affinity || 0; const rel = t(v >= 60 ? '很要好' : v >= 25 ? '有交情' : v <= -40 ? '結過怨' : v <= -15 ? '不太對盤' : '交情普通');
@@ -184,7 +184,9 @@ const DECIDE = (() => {
     // o.cap 可以把某幾個領域收得更短；o.cut 是「近況」「鎮上」每一句最多幾個字（聊天摘要、傳聞很長，拿主意時不必整段看）
     function lines(L, o) {
         const out = []; const cp = Object.assign({}, CAP, o?.cap || {}); const cut = o?.cut || 0;
-        const trim = (dom, s) => (cut && (dom === 'self' || dom === 'world') && s.length > cut) ? s.slice(0, cut) + '…' : s;
+        // v11.8.0 英文題目：先把人名換成英文再截短。以前先截短，名字剛好被切在中間（「何兆…」）就換不回英文，英文題目裡留下半個中文名字
+        const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
+        const trim = (dom, s) => { if (!(cut && (dom === 'self' || dom === 'world'))) return s; const s2 = en ? I18N.localizeNames(s, true) : s; return s2.length > cut ? s2.slice(0, cut) + '…' : s2; };
         for (const dom of ['now', 'eco', 'pol', 'soc', 'self', 'world', 'did']) if (L[dom]?.length) out.push(`${t(HEAD[dom])}${L[dom].slice(0, cp[dom]).map(s => trim(dom, s)).join(t('；'))}`);
         if (L.plan) out.push(`${t(HEAD.plan)}${L.plan}`);
         return out;
