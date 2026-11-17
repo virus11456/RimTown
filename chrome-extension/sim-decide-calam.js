@@ -259,10 +259,10 @@
     const bitOk = (w, v, ctx) => { const c = zc(w); return c && v && !v.isDead && c.zb.bit[v.agentId] != null && !(c.zb.how || {})[v.agentId] && day(w) - (ctx?.d ?? 0) <= 1 ? c : null; };
     DECIDE.kind('zbBit', Object.assign({}, base, {
         title: '被喪屍咬了', pri: 2, aiKind: 2,
-        facts(w, a, ctx) { const c = bitOk(w, a, ctx); if (!c) return ''; const z = ctx.z ? w.agents[ctx.z] : null; const fam = WC().kin(w, a);
+        facts(w, a, ctx) { const c = bitOk(w, a, ctx); if (!c) return ''; const z = ctx.z ? w.agents[ctx.z] : null; const fam = WC().famHere(w, a);
             return fill('昨晚{z}撞開了你家的窗，咬傷了你的手臂。被咬的人兩天內就會變成喪屍。解藥做了 {p}%{eta}。守衛知道的話會把你帶去診所關起來。你的家人：{x}。', { z: z?.name || '喪屍', p: pctOf(c), eta: etaTxt(w, c), x: { raw: names(fam) } }); },
         options(w, a, ctx) {
-            const c = bitOk(w, a, ctx); if (!c) return []; const fam = WC().kin(w, a); if (!fam.length) return [];
+            const c = bitOk(w, a, ctx); if (!c) return []; const fam = WC().famHere(w, a); if (!fam.length) return [];
             const f = fam.slice().sort((x, y) => (y.relationships?.relationships?.[a.agentId]?.status === 'married' ? 100 : 0) + aff(y, a) - (x.relationships?.relationships?.[a.agentId]?.status === 'married' ? 100 : 0) - aff(x, a))[0];
             return [
                 { id: 'clinic', text: '自己走去診所，叫他們把我關起來', say: '被咬之後自己去診所隔離', why: '我不想變成那樣以後咬到家人。', lean: { bond: 0.2, safe: -0.2 },
@@ -276,13 +276,14 @@
         title: '家人被喪屍咬了', pri: 2.2, aiKind: 2,
         facts(w, f, ctx) { const v = ctx ? w.agents[ctx.v] : null; const c = bitOk(w, v, ctx); if (!c) return ''; const ks = kids(w, f, WC().kin(w, f)).filter(k => k !== v);
             return fill('{v}昨晚被喪屍咬了，手臂上的傷口還在流血，兩天內就會變成喪屍。解藥做了 {p}%{eta}。守衛知道的話會把人帶去診所隔離；要是被人發現你瞞著，鄰居也會怪你。你跟{v}{tie}。{k}', { v: v.name, p: pctOf(c), eta: etaTxt(w, c), tie: tieTxt(PW()?.tie?.(w, f, v) || '家人'), k: ks.length ? { k: '家裡還有{x}，萬一出了事，全家都危險。', p: { x: { raw: names(ks) } } } : { raw: '' } }); },
+        // 瞞不瞞、擋不擋：家人之間的好感多半在 70 上下，以這裡為中心算交情的加減，沒開 AI 時整體大約四成瞞、五成擋或求（跟以前一樣）
         options(w, f, ctx) {
             const v = ctx ? w.agents[ctx.v] : null; const c = bitOk(w, v, ctx); if (!c || v === f) return []; const ks = kids(w, f, WC().kin(w, f)).filter(k => k !== v);
             const guards = Object.values(w.agents).filter(o => !o.isDead && o.job?.key === 'guard' && o !== f); const distrust = hasV(f, '自由') || guards.some(g => aff(f, g) <= -10);
             const rules = hasV(f, '傳統') || has(f, 'perfectionist') || has(f, 'stoic');
             return [
                 { id: 'hide', text: '幫他瞞著，說是被狗咬的', say: { k: '幫被咬的{v}瞞著', p: { v: v.name } }, why: '說了他們會把人帶走，我捨不得。', lean: { bond: 0.4, safe: -0.3 },
-                    base: REF + 0.05 + clampN((aff(f, v) - 40) / 60, -0.4, 0.5) + (distrust ? 0.4 : 0) - (rules ? 0.4 : 0) - (ks.length ? 0.4 : 0) + (has(f, 'kind') ? 0.2 : 0) + (c.prog >= 60 ? 0.2 : 0), run: (w2, f2) => (WC().zHid(w2, f2, v, 'hide') ? { k: '幫{v}瞞了下來', p: { v: v.name } } : null) },
+                    base: REF - 0.1 + clampN((aff(f, v) - 70) / 60, -0.5, 0.4) + (distrust ? 0.4 : 0) - (rules ? 0.4 : 0) - (ks.length ? 0.4 : 0) + (has(f, 'kind') ? 0.2 : 0) + (c.prog >= 60 ? 0.2 : 0), run: (w2, f2) => (WC().zHid(w2, f2, v, 'hide') ? { k: '幫{v}瞞了下來', p: { v: v.name } } : null) },
                 { id: 'clinic', text: '帶他去診所隔離', say: { k: '把被咬的{v}帶去診所', p: { v: v.name } }, why: '瞞著只會害更多人。', base: REF, lean: { safe: 0.2 }, run: (w2, f2) => (WC().zIso(w2, v, f2) ? { k: '把{v}帶去診所了', p: { v: v.name } } : null) },
                 { id: 'tie', text: '自己動手把他綁在家裡', say: { k: '把被咬的{v}綁在家裡', p: { v: v.name } }, why: '不送走他，也不能讓他傷人。', lean: { bond: 0.2 },
                     base: REF + tilt(0.12) + (has(f, 'brave') ? 0.3 : 0) + (has(f, 'stoic') ? 0.3 : 0), run: (w2, f2) => (WC().zHid(w2, f2, v, 'tie') ? { k: '把{v}綁在家裡', p: { v: v.name } } : null) },
@@ -290,7 +291,7 @@
         },
     }));
     const zOk = (w, ctx) => { const c = zc(w); const z = c && ctx ? w.agents[ctx.z] : null; return c && z && !z.isDead && c.zb.ids.includes(z.agentId) && day(w) - (ctx.d ?? 0) <= 1 ? { c, z } : null; };
-    const zFam = (w, z, not) => WC().kinZ(w, z).filter(o => o !== not).sort((x, y) => aff(y, z) - aff(x, z));
+    const zFam = (w, z, not) => WC().famHere(w, z).filter(o => o !== not).sort((x, y) => aff(y, z) - aff(x, z));
     DECIDE.kind('zbHunt', Object.assign({}, base, {
         title: '輪到你去清剿喪屍', pri: 2, aiKind: 1,
         facts(w, h, ctx) { const Z = zOk(w, ctx); if (!Z) return ''; const fam = zFam(w, Z.z, h);
@@ -299,12 +300,12 @@
             const Z = zOk(w, ctx); if (!Z || h === Z.z) return []; const z = Z.z; const a0 = aff(h, z); const mine = WC().kinZ(w, z).includes(h); const soon = etaOf(w, Z.c) <= 3;
             return [
                 { id: 'kill', text: '動手', say: { k: '對{z}動了手', p: { z: z.name } }, why: '那已經不是他了，再拖下去會有更多人被咬。', lean: { safe: 0.3, bond: -0.2 },
-                    base: REF + tilt(0.9) - clampN(a0 / 40, 0, 1.5) - (mine ? 1.5 : 0) - (has(h, 'kind') ? 0.4 : 0) + (h.job?.key === 'guard' ? 0.3 : 0) - (soon ? 0.6 : 0),
+                    base: REF + tilt(0.95) - clampN((a0 - 15) / 30, 0, 1.5) - (mine ? 1.8 : 0) - (has(h, 'kind') ? (a0 > 15 ? 0.4 : 0.15) : 0) + (h.job?.key === 'guard' ? 0.2 : 0) - (soon ? 0.2 : 0), // 不熟的、不是家人的幾乎都動手（以前輪到的一定出手）；下不了手集中在生前有交情、家人、心軟的人
                     run: (w2, h2) => { const Z2 = zOk(w2, ctx); if (!Z2) return null; const f = zFam(w2, Z2.z, h2)[0];
                         if (f) { DECIDE.askNow(w2, [{ a: f, kind: 'zbGuard', ctx: { z: Z2.z.agentId, h: h2.agentId, d: day(w2) } }]); return { k: '舉起了斧頭' }; }
                         return WC().zKill(w2, h2, Z2.z) ? { k: '結束了{z}', p: { z: Z2.z.name } } : null; } },
                 { id: 'cant', text: '下不了手', say: { k: '對{z}下不了手', p: { z: z.name } }, why: '那是我認識的人，我做不到。', base: REF, lean: { bond: 0.3 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, false) ? { k: '放下了斧頭' } : null; } },
-                { id: 'drive', text: '只把他趕到墓園那邊', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: '先別讓他靠近大家，等解藥。', base: REF - 0.2 + (soon ? 0.4 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
+                { id: 'drive', text: '只把他趕到墓園那邊', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: '先別讓他靠近大家，等解藥。', base: REF - 0.4 + (soon ? 0.15 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
             ];
         },
     }));
@@ -316,12 +317,12 @@
             const Z = zOk(w, ctx); const h = Z && w.agents[ctx.h]; if (!Z || !h || h.isDead || f === h || f === Z.z) return []; const z = Z.z; const soon = etaOf(w, Z.c) <= 5;
             return [
                 { id: 'block', text: { k: '衝出去擋在{z}前面', p: { z: z.name } }, say: { k: '擋在變成喪屍的{z}前面', p: { z: z.name } }, why: '解藥就快好了，他還有救。', lean: { bond: 0.4, safe: -0.3 },
-                    base: REF + tilt(0.35) + clampN((aff(f, z) - 40) / 60, -0.3, 0.5) + (has(f, 'brave') ? 0.4 : 0) + (soon ? 0.3 : 0) - (has(f, 'neurotic') || has(f, 'shy') ? 0.2 : 0),
+                    base: REF + tilt(0.4) + clampN((aff(f, z) - 70) / 60, -0.4, 0.4) + (has(f, 'brave') ? 0.4 : 0) + (soon ? 0.2 : 0) - (has(f, 'neurotic') || has(f, 'shy') ? 0.2 : 0), // 擋＋求合計大約五成（以前家人 50% 擋）
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, false) ? { k: '擋住了{h}', p: { h: h2.name } } : null; } },
                 { id: 'away', text: '轉過頭不看', say: '轉過頭，讓他動手', why: '那已經不是他了，讓他走吧。', base: REF, lean: { safe: 0.2 },
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && !h2.isDead && WC().zKill(w2, h2, Z2.z) ? { k: '轉過頭，{h}動了手', p: { h: h2.name } } : null; } },
                 { id: 'beg', text: '跪下來求他再等幾天', say: { k: '求{h}再等幾天', p: { h: h.name } }, why: '求求你，再等幾天就好。', lean: { bond: 0.3 },
-                    base: REF + tilt(0.2) + (aff(f, h) >= 25 ? 0.4 : 0) + (has(f, 'kind') ? 0.2 : 0),
+                    base: REF + tilt(0.15) + (aff(f, h) >= 25 ? 0.3 : 0) + (has(f, 'kind') ? 0.2 : 0),
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, true) ? { k: '{h}答應再等幾天', p: { h: h2.name } } : null; } },
             ];
         },

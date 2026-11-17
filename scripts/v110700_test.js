@@ -42,6 +42,7 @@ async function run(browser, dev, lang) {
     const ids = (K, a, ctx) => K.options(w, a, ctx).map(o => String(o.id).split(':')[0]);
     const opOf = (K, a, ctx, id) => K.options(w, a, ctx).find(o => String(o.id).split(':')[0] === id);
     const setJob = (a, k) => { try { a.job = new Job(k); } catch (e) {} }; // 用遊戲本身的 Job（假的物件少了技能清單，之後每天的流程會出錯）
+    const loc = (s2) => { let r2 = String(s2); try { const nm = Object.values(w.agents).map(x => x.name).filter(Boolean).sort((x, y) => y.length - x.length); for (const n of nm) if (r2.includes(n)) r2 = r2.split(n).join(I18N.localizeNames ? I18N.localizeNames(n, true) : n); } catch (e) {} return r2; }; // 人名各自換成英文（長的先）
     const steady = (fn) => { Math.random = () => 0.5; try { return fn(); } finally { Math.random = R0; } };
     const offDecide = (fn) => { const on0 = DECIDE.on; DECIDE.on = () => false; try { return fn(); } finally { DECIDE.on = on0; } };
     for (const a of npcs()) { if (w.civic?.jail) delete w.civic.jail[a.agentId]; if (a.currentLocation === 'exploration') a.currentLocation = 'town_square'; }
@@ -270,6 +271,13 @@ async function run(browser, dev, lang) {
       Cr.lastDay = null; const did0 = Object.keys(Cr.did); const a1 = asked.length; AFTERMATH.daily(w); D1.again = asked.slice(a1).filter(e => e.kind === 'crisis' && did0.includes(e.who)).length; // 兩天內做過的不再問
       // 沒開：照原本自己算
       Cr.lastDay = null; Cr.did = {}; const a2 = asked.length; const s0 = Object.values(cr.n).reduce((s, v) => s + v, 0); offDecide(() => AFTERMATH.daily(w)); D1.off = { asked: asked.length - a2, acted: Object.values(cr.n).reduce((s, v) => s + v, 0) - s0 };
+      // 原因本身是要翻的詞：直接造一筆搶店（不會被抓），秘密、記憶裡的「疫情」照當下的語言顯示
+      { w.crisis = null; const cr2 = AFTERMATH.shock(w, { kind: 'epidemic', sev: 3, cause: '疫情', who: [] }); const th = adults().find(x => x !== a && (DARK.S(w).secrets || []).every(sc => sc.culprit !== x.agentId)); const rich = adults().filter(x => x !== th).sort((x, y) => cash(y) - cash(x))[0]; setCash(rich, Math.max(cash(rich), 200));
+        const n0 = (DARK.S(w).secrets || []).length; const R1 = Math.random; const g0 = w.stockpile.get; Math.random = () => 0.99; w.stockpile.get = function (k, ...r) { return k === 'food' ? 0 : g0.call(this, k, ...r); }; let okA; try { okA = AFTERMATH.act(w, th, 'loot', cr2); } finally { Math.random = R1; w.stockpile.get = g0; } // 不會被抓、沒有糧倉可搶：一定去搶店或有錢人家
+        const sec = (DARK.S(w).secrets || []).slice(n0).find(sc => sc.culprit === th.agentId); const secTxt = DARK.about(w, th).secrets.join(' ');
+        const mems = [th, rich].flatMap(x => (x.memory?.entries || []).slice(-3).map(e => e.content || Memory.render(e.k, e.p)));
+        D1.cause = { stored: cr2.cause === '疫情', acted: !!okA, secret: !!sec, secTxt: loc(secTxt), mems: mems.map(loc), en: t('疫情') };
+        texts.push(D1.cause.secTxt, ...D1.cause.mems.filter(m => /疫情|epidemic/.test(m))); }
       w.crisis = null; }
     out.D1 = D1;
 
@@ -295,7 +303,6 @@ async function run(browser, dev, lang) {
       const n1 = seen.length; w.tech.path = 'bio'; WC.S(w); const cz = WC.begin(w, 'zombie', 'lab'); let z = 0; while (w.worldcal.cur && z++ < 120) { tick(); await new Promise(r2 => setTimeout(r2, 0)); }
       let other = 0; for (const [kk, D] of Object.entries(w.money?.days || {})) if (+kk >= d0) other += Math.abs(D.other || 0);
       out.run = { errs: errs0.slice(0, 3), plague, zombie: { days: z, ended: !w.worldcal.cur, kinds: [...new Set(seen.slice(n1).map(e => e.kind))], st: cz.zst || null }, other: Math.round(other * 100) / 100 }; }
-    const nm = npcs().concat(Object.values(w.agents)).map(a => a.name).filter(Boolean).sort((x, y) => y.length - x.length); const loc = (s2) => { let r2 = String(s2); try { for (const n of nm) if (r2.includes(n)) r2 = r2.split(n).join(I18N.localizeNames ? I18N.localizeNames(n, true) : n); } catch (e) {} return r2; };
     out.seenTexts = seen.map(x => x.reason + ' ' + x.res).filter(Boolean).slice(-120).map(loc);
     out.texts = texts.filter(Boolean).map(s => { try { return I18N.localizeNames ? I18N.localizeNames(s, true) : s; } catch (e) { return s; } });
     out.lastLogs = logs().slice(-30);
@@ -385,7 +392,8 @@ async function run(browser, dev, lang) {
     ok(D.facts && D.ids.includes('none') && D.ids.length >= 5, `${tag} 事實裡有出了什麼事、身上的錢；選項是做得到的反應加照常過日子`, D.ids);
     ok(D.daily.asked > 0 && D.daily.decided === D.daily.asked && D.daily.acted > 0 && D.daily.inLog, `${tag} 每天：有反應的人被問（${D.daily.asked} 人），結算照原本，做過的決定寫進本人的紀錄`, D.daily);
     ok(D.again === 0, `${tag} 兩天內做過的不再問`, D.again);
-    ok(D.off.asked === 0 && D.off.acted >= 0, `${tag} 決策核心沒開：照原本自己算分`, D.off); }
+    ok(D.off.asked === 0 && D.off.acted >= 0, `${tag} 決策核心沒開：照原本自己算分`, D.off);
+    ok(D.cause.stored && D.cause.acted && D.cause.secret && (zh ? /疫情/.test(D.cause.secTxt) : !cjk(D.cause.secTxt) && D.cause.secTxt.includes(D.cause.en)), `${tag} 災後反應的原因存原詞、照當下的語言顯示：搶店的秘密${zh ? '' : '（英文）'}裡寫的是「${D.cause.en}」`, D.cause); }
   // AI
   { const M = r.mind;
     ok(M.aiOn && M.ai && M.ai.pending && M.ai.id === 'stay' && M.ai.src === 'ai' && M.ai.reason === 'model reason 71' && M.ai.home && M.ai.group === 1, `${tag} 開 AI：題目當場送出、等回話，採用它選的「待在家」與理由，用 calam 那一組的額度`, M.ai);

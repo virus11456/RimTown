@@ -248,7 +248,7 @@ const STEAM = (function () {
             const vs = q.v.map(id => w.agents[id]).filter(v => v && !v.isDead); for (const v of vs) { aff(v, k, -25); mark(w, v, 'scammed'); mem(w, v, '交給{q}的錢一毛都沒回來，鉛還是鉛。', { q: k.name }, 8); }
             for (const x of ad(w)) if (!vs.includes(x) && x !== k && Math.random() < 0.3) aff(x, k, -6); X.st.scam = (X.st.scam || 0) + 1;
             TECH.log(w, '🪙 說好一個月翻倍的銀子沒出現。{n}找上{q}，{q}說配方「差一味材料」。鉛還是鉛。', { n: names(vs), q: k.name }, k.name);
-            try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'gold_fever', sev: 1, cause: t('點金騙局'), who: vs, blame: k }); } catch (e) {}
+            try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'gold_fever', sev: 1, cause: '點金騙局', who: vs, blame: k }); } catch (e) {}
         } }
         for (const p of (w.proposals?.items || [])) if (p.kind === 'steam_air' && !p._noted && p.status !== 'open' && p.status !== 'shelved') { p._noted = true; X.airNo = Object.entries(p.votes || {}).filter(([, v]) => v === 'against').map(([id]) => id).slice(0, 40); }
     }

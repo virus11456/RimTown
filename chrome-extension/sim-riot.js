@@ -57,7 +57,7 @@ const RIOT = (() => {
         const kin = kinOf(w, C); const f = C.fid ? DEAL.factOf(w, C.fid) : null; for (const a of kin) { if (f) DEAL.learn(w, f, a, 'victim'); mem(w, a, '{n}是用了{s}的東西才走的。', { n: C.dead[C.dead.length - 1].name, s: sname(C.key) }, 9); if (o) rel(a, o)?.modifyAffinity?.(-30); }
         note(w, C, how === 'paper' ? '報上登出來，大家才知道人是怎麼死的' : how === 'doctor' ? '醫生告訴家屬：人是吃用了店裡的東西才死的' : how === 'kin' ? '家屬本來就覺得這家店有問題' : '同一家接連出事，家屬起了疑', {});
         log(w, '🕯️ 鎮上傳開了：{n}是用了{s}的東西才死的。', { n: C.dead.map(x => t(x.name)).join(t('、')), s: sname(C.key) }, o?.name || '');
-        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'shopdeath', cause: fill('{s}的東西害死了人', { s: sname(C.key) }), sev: clampN(C.dead.length, 1, 3), who: kin, blame: o || null }); } catch (e) { console.warn('[Riot] shock', e); }
+        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'shopdeath', cause: { k: '{s}的東西害死了人', p: { s: sname(C.key) } }, /* v11.7.0 原因存成模板，顯示時才照當下的語言翻 */ sev: clampN(C.dead.length, 1, 3), who: kin, blame: o || null }); } catch (e) { console.warn('[Riot] shock', e); }
         // 人到齊的那天：有還沒辦的葬禮就是出殯那天
         let fd = null; try { for (const c of (w.ceremony?.list || [])) if (c.kind === 'funeral' && c.status === 'planned' && C.dead.some(x => x.id === c.of) && c.day >= d) fd = fd == null ? c.day : Math.min(fd, c.day); } catch (e) {}
         C.day = fd != null ? Math.max(fd, d + 1) : d + 1; C.funeral = fd != null;

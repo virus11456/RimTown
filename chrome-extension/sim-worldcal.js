@@ -301,6 +301,8 @@ const WORLDCAL = (function () {
     const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
     // v11.7.0 家人：配偶、爸媽、孩子（MONEY.familyOf 不含孩子）；喪屍不算
     const kin = (w, a) => { const R = a?.relationships?.relationships || {}; return here(w).filter(o => o !== a && !isZ(w, o) && (R[o.agentId]?.status === 'married' || (a._parentNames || []).includes(o.name) || (o._parentNames || []).includes(a.name))); };
+    // 喪屍危機裡「家人」照原本的算法（配偶、爸媽，MONEY.familyOf）：被咬了誰會瞞、清剿時誰會擋，人數才跟以前一樣
+    const famHere = (w, a) => { const H = here(w); return famOf(w, a).filter(f => f && f !== a && !f.isDead && !isZ(w, f) && H.includes(f)); };
     const kinZ = (w, z) => { const R = z?.relationships?.relationships || {}; return here(w).filter(o => o !== z && (R[o.agentId]?.status === 'married' || (z._parentNames || []).includes(o.name) || (o._parentNames || []).includes(z.name) || (o.relationships?.relationships?.[z.agentId]?.status === 'married'))); };
     // v11.7.0 大災之後誰走：以前直接挑 cnt 個人搬走；現在從同一群人裡問 cnt ÷ 0.45 個，走不走、帶誰走由本人決定（照個性算的時候當場就有答案）
     function goAsk(w, c, pool, cnt, tk) {
@@ -417,7 +419,7 @@ const WORLDCAL = (function () {
         try { if (score > 0 && typeof CALAMITY !== 'undefined' && CALAMITY.regress && !(c.kind === 'blacksun' && !c.lostOnly?.length)) CALAMITY.regress(w, cause, score, c.kind === 'blacksun' ? { only: c.lostOnly } : ONLY[c.kind] ? { only: ONLY[c.kind] } : {}); } catch (e) {} // 黑日:只有沒救起來的那幾線會失傳
         // 災後反應:互助、怪罪(怪當初說沒事、投反對票的人)
         const blameId = (c.fixNo || []).concat(c.deny).find(id => w.agents[id] && !w.agents[id].isDead && owner(w, w.agents[id])) || (c.fixNo || []).find(id => w.agents[id] && !w.agents[id].isDead) || null;
-        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'wc_' + c.kind, sev: out2 === 'hit' ? 3 : out2 === 'eased' ? 2 : 1, cause, who: dead, blame: out2 === 'averted' ? null : (blameId ? w.agents[blameId] : null) }); } catch (e) {}
+        try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'wc_' + c.kind, sev: out2 === 'hit' ? 3 : out2 === 'eased' ? 2 : 1, cause: K.name, who: dead, blame: out2 === 'averted' ? null : (blameId ? w.agents[blameId] : null) }); } catch (e) {}
         if (c.kind === 'ai' && out !== 'averted') { c.ctrl = out === 'hit' ? 1 : 0; }
         if ((c.kind === 'nukewar' || c.kind === 'iceage') && out !== 'averted') c.winter = c.kind === 'iceage' && out === 'hit' ? 2 : 1;
     }
@@ -448,7 +450,7 @@ const WORLDCAL = (function () {
         for (const id of zb.ids.slice()) { if (zb.ids.length + Object.keys(zb.bit).length >= cap || ppl.length <= 5) break; if (Math.random() > 0.3 * (c.prep ? 0.5 : 1)) continue;
             const z = w.agents[id]; const v = rnd(ppl.filter(a => !zb.bit[a.agentId])); if (!v) break; zb.bit[v.agentId] = d; zb.st.bitten++; ppl.splice(ppl.indexOf(v), 1);
             const fam = famOf(w, v).filter(f => !f.isDead && !isZ(w, f));
-            if (deciding(w, 'zbBit') && kin(w, v).length) { ask(w, [{ a: v, kind: 'zbBit', ctx: { z: z?.agentId || null, d } }]); continue; } // v11.7.0 被咬的人自己先決定要不要去診所；回家的話由最親的家人決定瞞不瞞
+            if (deciding(w, 'zbBit') && famHere(w, v).length) { ask(w, [{ a: v, kind: 'zbBit', ctx: { z: z?.agentId || null, d } }]); continue; } // v11.7.0 被咬的人自己先決定要不要去診所；回家的話由最親的家人決定瞞不瞞
             if (fam.length && Math.random() < 0.4) { zb.st.hid++; const f = rnd(fam); mem(w, f, '{a}被咬了。我把傷口包起來，誰也沒說——說了，守衛會把人帶走。', { a: v.name }, 8); mem(w, v, '我被咬了，家人幫我瞞著。', {}, 9); log(w, '🤫 半夜{z}撞開了{a}家的窗。天亮以後，{a}的手臂纏著繃帶，家人說是被狗咬的。', { z: z?.name || t('喪屍'), a: v.name }, v.name); }
             else { log(w, '🩸 {z}在夜裡咬傷了{a}。{a}被帶到診所隔離，大家只能等。', { z: z?.name || t('喪屍'), a: v.name }, v.name); mem(w, v, '我被咬了，再兩天我就會變成那個樣子。', {}, 9); v.addThought?.('wc_fear', w); }
         }
@@ -639,7 +641,7 @@ const WORLDCAL = (function () {
         const K = KINDS[c.kind]; if (c.deny.includes(a.agentId)) return fill('我覺得{name}只是危言聳聽', { name: K.name }); if (c.warn.includes(a.agentId)) return fill('我很怕{name}，覺得要趕快準備', { name: K.name });
         return '';
     }
-    return { isZombie: isZ, zIds, FRONTS, SEVEN, allSeven, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, kin, kinZ, goBy, bunkBy, bunkCost, zHid, zIso, zKill, zSpare, zBlock, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll, goAsk, kill } };
+    return { isZombie: isZ, zIds, FRONTS, SEVEN, allSeven, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, kin, kinZ, famHere, goBy, bunkBy, bunkCost, zHid, zIso, zKill, zSpare, zBlock, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll, goAsk, kill } };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {

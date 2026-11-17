@@ -16,7 +16,7 @@ const DARK = (() => {
     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
     const rel = (a, b) => a.relationships?.getOrCreate?.(b.agentId, b.name);
     const aff = (a, b) => a.relationships?.relationships?.[b.agentId]?.affinity || 0;
-    const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(String(v)); return s; };
+    const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(v && typeof v === 'object' && v.k ? fill(v.k, v.p) : typeof v === 'string' ? t(v) : String(v)); return s; }; // v11.7.0 參數本身是要翻的詞（例如災後反應的「疫情」）也照當下的語言翻，跟 Memory.render 一樣
     const mem = (w, a, k, p, imp, cat) => { try { a.memory?.addT?.(w.tickCount, w.clock.timeStr, cat || 'social', k, p || {}, imp || 5, []); } catch (e) {} };
     const log = (w, type, k, p, who) => { try { w.logMessageT?.(type, k, p || {}, who || ''); } catch (e) {} };
     const day = (w) => (w.proposals?._abs?.(w)) ?? (w.clock ? (w.clock.year * 400 + ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock.season) * 100 + w.clock.day) : 0);

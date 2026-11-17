@@ -19,7 +19,8 @@ const AFTERMATH = (() => {
     const hasT = (a, k) => (a?.personality?.traits || []).includes(k);
     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
     const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(typeof b === 'string' ? t(b) : b); return s; };
+    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(b && typeof b === 'object' && b.k ? fill(b.k, b.p) : typeof b === 'string' ? t(b) : b); return s; }; // v11.7.0 參數可以是 {k,p}（災後反應的原因，例如「某家店的東西害死了人」）
+    const causeTxt = (c) => (c && typeof c === 'object' && c.k ? fill(c.k, c.p) : t(c || '')); // 原因照當下的語言顯示
     const log = (w, k, p, who) => { try { w.logMessageT?.('event', k, p || {}, who); } catch (e) {} };
     const news = (w, k, p, imp, names) => { try { w.dailyNews?.collectEvent?.('event', fill(k, p), imp || 7, names || []); } catch (e) {} };
     const mem = (w, a, k, p, imp) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'event', k, p || {}, imp || 6, []); } catch (e) {} };
@@ -46,7 +47,7 @@ const AFTERMATH = (() => {
         if (!w || !o) return null; const C = S(w); const d = day(w); const sev = Math.max(1, Math.min(3, o.sev || 1));
         const who = (o.who || []).filter(Boolean); const vic = new Set(who.filter(a => w.agents[a.agentId] && !a.isDead).map(a => a.agentId)); // 死去的人不算,但他的家人算
         for (const a of who) for (const f of family(w, a)) if (w.agents[f.agentId] && !f.isDead) vic.add(f.agentId);
-        const cr = { id: 'K' + ((C.n = (C.n || 0) + 1)), kind: o.kind || 'event', cause: o.cause || t(CAUSE[o.kind] || '災難'), sev, d, until: d + sev * 3, vic: [...vic], blame: o.blame?.agentId || null, n: {} };
+        const cr = { id: 'K' + ((C.n = (C.n || 0) + 1)), kind: o.kind || 'event', cause: o.cause || CAUSE[o.kind] || '災難', /* v11.7.0 存中文原詞，顯示時（日誌、記憶、秘密、新聞）才照當下的語言翻 */ sev, d, until: d + sev * 3, vic: [...vic], blame: o.blame?.agentId || null, n: {} };
         C.cur = C.cur.filter(x => x.until >= d).concat(cr).slice(-4);
         for (const a of here(w)) {
             let s = vic.has(a.agentId) ? 30 * sev : 6 * sev;
@@ -176,7 +177,7 @@ const AFTERMATH = (() => {
         const opts = Object.entries(R).map(([k, v]) => `${k}=${t(v.name)}`).join(', ');
         const rows = pool.map((a, i) => { const friends = Object.entries(C.did).filter(([id, x]) => d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => `${t(w.agents[id].name)}${t('：')}${t(R[x[1]]?.name || '')}`).slice(0, 3).join(t('、')) || t('沒有');
             return `${i + 1}. ${t(a.name)}${t('（')}${t(a.job?.title || '')}${t('，')}${a.age ?? 30}${t('歲')}${t('；性格：')}${(a.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('；身上有')} ${Math.round(cash(w, a))} ${t('銀幣')}${cr.vic.includes(a.agentId) ? t('；家人受害了') : ''}${cr.blame === a.agentId ? t('；大家在怪他') : ''}${t('；身邊的人在做：')}${friends}${t('）')}`; }).join('\n');
-        const prompt = `${t('小鎮剛發生')}${t(cr.cause)}${t('。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：')}${opts}${t('，或 none。')}\n${rows}\n${t('只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]')}`;
+        const prompt = `${t('小鎮剛發生')}${causeTxt(cr.cause)}${t('。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：')}${opts}${t('，或 none。')}\n${rows}\n${t('只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]')}`;
         const ids = new Set(pool.map(a => a.agentId)); C.aiPend = { d, ids: [...ids] }; C.st.ai = (C.st.ai || 0) + 1;
         ce._askJson(prompt, 80 + pool.length * 60).then(j => {
             const arr = Array.isArray(j) ? j : (Array.isArray(j?.list) ? j.list : []); C.aiPend = null; let n = 0;
@@ -242,7 +243,7 @@ const AFTERMATH = (() => {
         if (r === 'none') return 'none';
         return AFTERMATH.act(w, a, r, cr) ? r : false;
     }
-    function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: x.cause, sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5), st: C.st, R }; }
+    function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: causeTxt(x.cause), sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5).map(h => ({ ...h, cause: causeTxt(h.cause) })), st: C.st, R }; }
     function brief(w, a) { const x = S(w).did[a.agentId]; if (!x || day(w) - x[0] > 6) return ''; return fill('剛發生大事，我選擇了{r}', { r: R[x[1]]?.name || '' }); }
     return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief, choices, doIt, askAll, SCALE };
 })();
