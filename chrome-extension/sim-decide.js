@@ -155,7 +155,7 @@ const DECIDE = (() => {
     const memText = (e) => { try { return e.content || (e.k ? Memory.render(e.k, e.p || {}) : ''); } catch (x) { return e.content || ''; } };
     function involved(w, a, facts) { const f = String(facts || ''); return npcs(w).filter(o => o !== a && o.name && f.includes(o.name)).slice(0, 2); }
     function pastLines(w, a, K, facts, cutN, perWho = 2) {
-        const out = []; const d0 = day(w); const cutS = (x) => { try { if (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) x = I18N.localizeNames(x, true); } catch (e) {} return x.length > cutN ? x.slice(0, cutN) + '…' : x; }; // v11.8.0 先換人名再截短（理由同 lines） const myLog = w.decide?.log?.[a.agentId] || [];
+        const out = []; const d0 = day(w); const cutS = (x) => { try { if (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) x = I18N.localizeNames(x, true); } catch (e) {} return x.length > cutN ? x.slice(0, cutN) + '…' : x; }; /* v11.8.0 先換人名再截短（理由同 lines） */ const myLog = w.decide?.log?.[a.agentId] || [];
         const ago = (d) => (d0 - d <= 0 ? t('今天') : fill('{n} 天前', { n: d0 - d }));
         for (const o of involved(w, a, facts)) {
             const v = a.relationships?.relationships?.[o.agentId]?.affinity || 0; const rel = t(v >= 60 ? '很要好' : v >= 25 ? '有交情' : v <= -40 ? '結過怨' : v <= -15 ? '不太對盤' : '交情普通');
