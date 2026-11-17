@@ -202,6 +202,7 @@ const POWER = (() => {
         if (!E.active && L.job?.key === 'mayor') { // 沒有足夠的人出來選:直接下台,職位出缺走補選
             L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null;
             log(w, 'event', '📢 {m}被罷免下台，等待補選。', { m: L.name }, L.name);
+            try { if (typeof HOME !== 'undefined' && HOME.afterOffice) HOME.afterOffice(w, L, 'recall'); } catch (e) {} // v11.9.0 下台之後做什麼由本人決定
         }
     }
     function daily(w) {

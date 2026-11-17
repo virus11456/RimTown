@@ -30,12 +30,17 @@ const CIVIC = (() => {
             const catchP = Math.min(0.85, 0.15 + guards * 0.2);
             if (Math.random() < catchP) {
                 { const back = Math.min(n, cash(w, th)); if (back > 0 && WALLET.take(w, th, back)) WALLET.add(w, vic, back); } C.caught++; /* v7.6.0 只還得回小偷身上還有的錢 */
-                const days = 3 + (C.thefts > 5 ? 2 : 0); C.jail[th.agentId] = d + days;
+                try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, th, vic, n); } catch (e) {} // v11.9.0 記下誰被偷過（偷竊罰則的提案由被偷過的人提）
+                // v11.9.0 關幾天可以由全鎮提案改：從輕（不關，罰錢給公庫）／照舊／從重（sim-decide-home.js）
+                const law = (typeof HOME !== 'undefined' && HOME.theftLaw) ? HOME.theftLaw(w) : 'normal';
+                if (law === 'light') { const fine = Math.min(10, Math.floor(cash(w, th))); if (fine > 0) WALLET.pay(w, th, null, fine, t('偷竊罰款')); log(w, 'event', '👮 衛兵抓到{a}偷了{v}的 {n} 銀幣。照鎮上的規定不關，罰了 {f} 銀幣。', { a: th.name, v: vic.name, n, f: fine }, th.name);
+                    mem(w, th, '我偷錢被抓了，罰了 {f} 銀幣。', { f: fine }, 7); mem(w, vic, '{a}偷了我的錢，抓到了只罰點錢就放了。', { a: th.name }, 7); vic.relationships.getOrCreate(th.agentId, th.name).modifyAffinity(-25); try { DARK.bump(w, th, 'exposed'); } catch (e) {} continue; }
+                const days = (law === 'harsh' ? 5 : 3) + (C.thefts > 5 ? 2 : 0); C.jail[th.agentId] = d + days;
                 log(w, 'event', '👮 衛兵抓到{a}偷了{v}的 {n} 銀幣，關進牢裡 {d} 天。', { a: th.name, v: vic.name, n, d: days }, th.name);
                 mem(w, th, '我偷錢被抓了，要在牢裡待 {d} 天。', { d: days }, 8); mem(w, vic, '{a}偷了我的錢，還好衛兵抓到了。', { a: th.name }, 7);
                 vic.relationships.getOrCreate(th.agentId, th.name).modifyAffinity(-25); try { DARK.bump(w, th, 'exposed'); } catch (e) {}
             } else {
-                mem(w, vic, '我的錢包少了 {n} 銀幣，不知道是誰偷的。', { n }, 6);
+                mem(w, vic, '我的錢包少了 {n} 銀幣，不知道是誰偷的。', { n }, 6); try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, null, vic, n); } catch (e) {}
                 try { DARK.secret(w, { kind: 'scheme', culprit: th.agentId, victim: vic.agentId, k: '{a}偷了{v}的 {n} 銀幣', p: { a: th.name, v: vic.name, n } }); } catch (e) {}
             }
         }
@@ -108,17 +113,26 @@ const CIVIC = (() => {
             try { w.dailyNews?.collectEvent?.('event', `${t('國王壽宴')}`, 9, [k.name]); } catch (e) {}
         }
         if (!k.relationships?.getPartner?.() && Math.random() < 0.02) {
-            // v9.4.0 不娶自己的親人:父母子女、兄弟姊妹(同父或同母)、王室成員(多半是國王的家人)都排除
-            const kp = k._parentNames || []; const kin = (a) => kp.includes(a.name) || (a._parentNames || []).includes(k.name) || (a._parentNames || []).some(n => kp.includes(n)) || (() => { try { return !!CLASS.S(w).titles[a.agentId]?.royal; } catch (e) { return false; } })();
-            const bride = npcs(w).filter(a => a !== k && a.gender !== k.gender && a.age >= 18 && Math.abs(a.age - k.age) <= 15 && !a.relationships?.getPartner?.() && !kin(a)).sort((x, y) => { try { return CLASS.level(w, y) - CLASS.level(w, x); } catch (e) { return 0; } })[0];
-            if (!bride) return;
-            const r1 = k.relationships.getOrCreate(bride.agentId, bride.name), r2 = bride.relationships.getOrCreate(k.agentId, k.name); r1.status = 'married'; r2.status = 'married'; r1.affinity = Math.max(r1.affinity, 50); r2.affinity = Math.max(r2.affinity, 50);
-            try { const Cc = CLASS.S(w); Cc.titles[bride.agentId] = Object.assign(Cc.titles[bride.agentId] || {}, { royal: true }); Cc.lv[bride.agentId] = 5; } catch (e) {}
-            for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + 6; if (w.crown) w.crown.legit = Math.min(100, w.crown.legit + 6);
-            log(w, 'event', '👑💍 皇家婚禮！國王{k}迎娶{b}，全城歡慶。', { k: k.name, b: bride.name }, k.name);
-            mem(w, bride, '我嫁給了國王，從今以後是王族了。', {}, 10); mem(w, k, '我娶了{b}。', { b: bride.name }, 9);
-            try { w.dailyNews?.collectEvent?.('event', t('皇家婚禮'), 10, [k.name, bride.name]); } catch (e) {}
+            const list = brides(w, k); if (!list.length) return;
+            // v11.9.0 什麼時候想成婚照舊看天；對象由國王自己從幾位人選裡挑，被挑上的人可以答應或拒絕（sim-decide-home.js）。問不到國王時照原本娶階層最高的
+            try { if (typeof HOME !== 'undefined' && HOME.royalAsk && HOME.royalAsk(w, k, list)) return; } catch (e) { console.warn('[Civic] royal ask', e); }
+            royalWed(w, k, list[0]);
         }
+    }
+    // v9.4.0 不娶自己的親人:父母子女、兄弟姊妹(同父或同母)、王室成員(多半是國王的家人)都排除；階層高的排前面
+    function brides(w, k) {
+        const kp = k._parentNames || []; const kin = (a) => kp.includes(a.name) || (a._parentNames || []).includes(k.name) || (a._parentNames || []).some(n => kp.includes(n)) || (() => { try { return !!CLASS.S(w).titles[a.agentId]?.royal; } catch (e) { return false; } })();
+        return npcs(w).filter(a => a !== k && a.gender !== k.gender && a.age >= 18 && Math.abs(a.age - k.age) <= 15 && !a.relationships?.getPartner?.() && !kin(a)).sort((x, y) => { try { return CLASS.level(w, y) - CLASS.level(w, x); } catch (e) { return 0; } });
+    }
+    function royalWed(w, k, bride) {
+        if (!k || !bride || k.relationships?.getPartner?.() || bride.relationships?.getPartner?.()) return false;
+        const r1 = k.relationships.getOrCreate(bride.agentId, bride.name), r2 = bride.relationships.getOrCreate(k.agentId, k.name); r1.status = 'married'; r2.status = 'married'; r1.affinity = Math.max(r1.affinity, 50); r2.affinity = Math.max(r2.affinity, 50);
+        try { const Cc = CLASS.S(w); Cc.titles[bride.agentId] = Object.assign(Cc.titles[bride.agentId] || {}, { royal: true }); Cc.lv[bride.agentId] = 5; } catch (e) {}
+        for (const a of npcs(w)) a.moodModifier = (a.moodModifier || 0) + 6; if (w.crown) w.crown.legit = Math.min(100, w.crown.legit + 6);
+        log(w, 'event', '👑💍 皇家婚禮！國王{k}迎娶{b}，全城歡慶。', { k: k.name, b: bride.name }, k.name);
+        mem(w, bride, '我嫁給了國王，從今以後是王族了。', {}, 10); mem(w, k, '我娶了{b}。', { b: bride.name }, 9);
+        try { w.dailyNews?.collectEvent?.('event', t('皇家婚禮'), 10, [k.name, bride.name]); } catch (e) {}
+        return true;
     }
     // ---------- 移民(等級越高越吸引人) ----------
     function migration(w) {
@@ -135,7 +149,7 @@ const CIVIC = (() => {
     }
     function view(w) { const C = S(w); return { slum: C.slum, thefts: C.thefts, caught: C.caught, jailed: Object.entries(C.jail).filter(([id, u]) => u > day(w) && w.agents[id]).map(([id]) => t(w.agents[id].name)), guards: npcs(w).filter(a => a.job?.key === 'guard').length, land: landPrice(w), rent: C.lastRent || 0, tax: Math.round((w.wallet?.tax ?? 0.1) * 100) }; }
     const chip = (w, a) => (jailed(w, a) ? `⛓️ ${t('坐牢中')}` : '');
-    return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, migration, landPrice, jailed, view, chip };
+    return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, brides, royalWed, migration, landPrice, jailed, view, chip };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tax = { icon: '💰', label: '稅率' };
 if (typeof ProposalSystem !== 'undefined') {
