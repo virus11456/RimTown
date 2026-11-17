@@ -187,10 +187,10 @@ async function run(browser, dev, lang) {
     out.E = E;
 
     // ============ F 心動突然加深、單戀撞見、發現情敵 ============
-    const F = {}; { const pp = P.slice(0, 6).sort((p, q) => (p.agentId < q.agentId ? -1 : 1)); const [a, o, z] = pp; for (const p of [a, o, z]) { single(p); plain(p); flat(p); }
+    const F = {}; { const pp = adults().filter(x => !P.includes(x) && x.job?.key !== 'mayor' && !x.isDead).slice(0, 3).sort((p, q) => (p.agentId < q.agentId ? -1 : 1)); const [a, o, z] = pp; for (const p of [a, o, z]) { single(p); plain(p); flat(p); }
       a.personality.traits = ['romantic']; o.personality.traits = ['romantic']; const ra = R(a, o); ra.affinity = 50; ra.romanticInterest = 20; ra.interactionCount = 6; ra.lastInteractionTick = w.tickCount; R(o, a).affinity = 40; R(o, a).lastInteractionTick = w.tickCount;
       const roll = (fn) => { Math.random = () => 0.01; try { return fn(); } finally { Math.random = R0; } };
-      const n0 = asked.length; const r0 = ri(a, o); roll(() => w._processRelationships()); const sp = asked.slice(n0).find(q => q.kind === 'spark' && q.who === a.agentId); F.spark = { asked: !!sp, src: sp?.ctx?.src, decided: seen.some(e => e.kind === 'spark' && e.who === a.agentId && e.ctx?.src === 'self') };
+      const n0 = asked.length; const r0 = ri(a, o); roll(() => w._processRelationships()); const sp = asked.slice(n0).find(q => q.kind === 'spark' && q.who === a.agentId); F.spark = { dbg: { a: a.agentId, o: o.agentId, aff: ra.affinity, ri: ra.romanticInterest, ic: ra.interactionCount, st: ra.status, dead: a.isDead || o.isDead, loc: a.currentLocation + '/' + o.currentLocation, tr: a.personality.traits.join() + '/' + o.personality.traits.join() }, asked: !!sp, src: sp?.ctx?.src, decided: seen.some(e => e.kind === 'spark' && e.who === a.agentId && e.ctx?.src === 'self') };
       // 心上人有伴：撞見（heartache，來意 self）
       date(o, z); ra.romanticInterest = 50; ra.affinity = 40; R(a, z).affinity = 0; const n1 = asked.length; roll(() => w._processRelationships()); const ha = asked.slice(n1).find(q => q.kind === 'heartache' && q.who === a.agentId); F.heart = { asked: !!ha, src: ha?.ctx?.src, r: ha?.ctx?.r === z.agentId };
       // 心上人單身、另一個人也喜歡他：兩個人各自被問（stir，來意 rival）
@@ -290,7 +290,7 @@ async function run(browser, dev, lang) {
   ok(!r.G1.err && r.G1.load.ok && r.G1.load.id && r.G1.load.stage === 'set' && r.G1.load.last && r.G1.load.pend && r.G1.after.stage === 'met' && r.G1.after.picks === 2, `${tag} 存讀檔：安排到一半讀回來，傍晚照樣碰上、兩個人照樣決定；導演上次出手的日子也存著`, r.G1);
   ok(!r.G1.err && r.G1.old.ok && r.G1.old.fresh, `${tag} 舊存檔（沒有導演的紀錄）讀進來照常出手`, r.G1.old);
   { const M = r.mind;
-    ok(M.aiOn && M.ai && M.ai.pending && M.ai.id === 'warm' && M.ai.src === 'ai' && M.ai.reason === 'model reason 88' && M.ai.dR >= 12 && M.ai.pick === 'warm' && M.ai.ai === 1 && M.ai.quota === 1 && M.ai.kind === 1, `${tag} 開 AI：題目送出、等回話（紀錄上寫還在想），採用它選的與理由，用預設的額度`, M.ai);
+    ok(M.aiOn && M.ai && M.ai.pending && M.ai.id === 'warm' && M.ai.src === 'ai' && M.ai.reason === 'model reason 88' && M.ai.dR >= 12 && M.ai.pick === 'warm' && M.ai.ai === 1 && M.ai.quota >= 1 && M.ai.kind === 1, /* 全鎮的額度同一時間可能也有別的事在用，只看這一種用了一件 */ `${tag} 開 AI：題目送出、等回話（紀錄上寫還在想），採用它選的與理由，用預設的額度`, M.ai);
     ok(M.prompt && M.prompt.codes && M.prompt.facts, `${tag} 題目裡有地點與選項代號`, M.prompt);
     ok(M.more && M.more.kinds.every(Boolean) && M.more.got.includes('heartache:bless') && M.more.got.includes('stir:hold'), `${tag} 另外兩種也送得出去、回答被採用`, M.more);
     ok(zh || (M.prompt && !M.prompt.cjk && M.more && !M.more.cjk), `${tag} 英文題目裡沒有中文`, zh ? null : { p: M.prompt, m: M.more }); }
