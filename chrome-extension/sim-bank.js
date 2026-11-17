@@ -354,7 +354,9 @@ const BANK = (() => {
         if (X.apply[id]) return 0; // 已經有一筆在等回話
         const ap = X.apply[id] = { n, why: why || '', d, tok: ++X.n, coll: opt?.coll || null, biz: opt?.biz ? 1 : 0 }; X.st.asks++;
         const ctx = { t: 'loan', id, tok: ap.tok, d };
-        if (DECIDE.aiOn(w)) { makeWait(B, id); if (DECIDE.inRun?.()) DECIDE.enqueue(w, b, 'bankDesk', ctx); else askNow(w, b, ctx); } // 要問 AI：別人選的那一項正在執行時排進佇列（這一輪處理完就送去問），不然當場送出；回話來了才撥款（今天的額度用完了就當場照個性）
+        // 不到 40 銀幣、或是看病的急用：銀行家當場照個性（含交情）決定，不等 AI（跟以前一樣，大筆的才值得他想；看病的人當下就要錢）
+        const urgent = n < 40 || why === '看病' || why === t('看病');
+        if (!urgent && DECIDE.aiOn(w)) { makeWait(B, id); if (DECIDE.inRun?.()) DECIDE.enqueue(w, b, 'bankDesk', ctx); else askNow(w, b, ctx); } // 要問 AI：別人選的那一項正在執行時排進佇列（這一輪處理完就送去問），不然當場送出；回話來了才撥款（今天的額度用完了就當場照個性）
         else { ruleNow(w, b, ctx); if (X.apply[id]?.tok === ap.tok) ruleLoan(w, B, ap, id); }
         const L = B.loans[id]; return L && L.tok === ap.tok ? L.principal : 0;
     }
