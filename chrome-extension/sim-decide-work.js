@@ -146,6 +146,22 @@
         facts(w, a, ctx) { const B = BS(); return B ? B.facts(w, a, ctx) : ''; },
         options(w, a, ctx) { const B = BS(); return B ? B.options(w, a, ctx) : []; } });
 
+    // ================= 小店撐不撐、接不接（v11.6.0） =================
+    // 以前連虧 15 天或欠到 40 就自動倒閉，老闆不在了店直接消失，沒有人被問過。現在：
+    //   一直虧(shopFail)：連虧 10 天或欠到 25 時問店主一次（之後每 7 天最多一次）：貼錢、降價、找朋友合夥、收掉、頂讓；原本的倒閉門檻留著當底線
+    //   朋友的店找你合夥(shopJoin)：店主選了找某某合夥，對方答應才算
+    //   老闆不在了(shopHeir)：先問合夥人、再問配偶、成年子女要不要接；都不接就收掉，店面空下來
+    // 都由 sim-biz.js 在那一刻送進來（不是每天掃），選項與結算也在那邊；跟東家看帳共用 work 那一組的 AI 額度
+    DECIDE.kind('shopFail', { title: '店一直在虧錢', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.failFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.failOptions(w, a, ctx) : []; } });
+    DECIDE.kind('shopJoin', { title: '朋友的店找你合夥', scan: false, cool: 0, pri: 3, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.joinFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.joinOptions(w, a, ctx) : []; } });
+    DECIDE.kind('shopHeir', { title: '要不要接下留下來的店', scan: false, cool: 0, pri: 2.5, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.heirFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.heirOptions(w, a, ctx) : []; } });
+
     // ---------- 合夥的店不賺錢：要不要拆夥 ----------
     const splitInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.splitInfo(w, a) : null; };
     DECIDE.kind('split', {

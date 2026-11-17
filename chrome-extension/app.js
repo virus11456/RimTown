@@ -941,6 +941,7 @@ class RimTownApp {
         for (const pl of (this.tileMap._getFactoryPlots?.() || [])) {
             if (tx >= pl.x && tx < pl.x + pl.w && ty >= pl.y && ty < pl.y + pl.h) return true;
         }
+        if ((this.world.biz?.fronts || []).some(f => f.x === tx && f.y === ty)) return true; // v11.6.0 小店的店面
         const dcs = this.tileMap.coachStation;
         if (dcs && tx >= dcs.x && tx < dcs.x + dcs.w && ty >= dcs.y && ty < dcs.y + dcs.h) return true;
         // 資源檢查與扣款
@@ -1013,6 +1014,7 @@ class RimTownApp {
         if (!this._siteBlocked) {
             const s = new Set();
             for (const d of (this.world.decorations || [])) s.add(`${d.x},${d.y}`);
+            for (const f of (this.world.biz?.fronts || [])) s.add(`${f.x},${f.y}`); // v11.6.0 小店的店面
             const sited = [...this.world.buildings.projects, ...this.world.buildings.completed].filter(b => Number.isFinite(b.siteX));
             for (const b of sited) for (let dy = 0; dy < 2; dy++) for (let dx = 0; dx < 2; dx++) s.add(`${b.siteX + dx},${b.siteY + dy}`);
             this._siteBlocked = s;
@@ -1800,7 +1802,7 @@ class RimTownApp {
         const TT = (typeof TOWN_THEMES !== 'undefined') ? TOWN_THEMES[theme] : null;
         this.tileMap.roofPalette = (TT && TT.generated && Array.isArray(TT.roof)) ? TT.roof : null;
         // v6.85.0 產圖前先告訴地圖已經蓋好的選址建築與裝飾,墓園才不會壓在舊存檔的建築上
-        try { this.tileMap.decorations = this.world?.decorations || []; this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX)); this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX)); } catch (e) {}
+        try { this.tileMap.bizFronts = this.world?.biz?.fronts || []; this.tileMap.decorations = this.world?.decorations || []; this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX)); this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX)); } catch (e) {}
         this.tileMap.generateLayout(locations, typeof baseThemeOf === 'function' ? baseThemeOf(theme) : theme);
         this._mapGenerated = true;
     }
@@ -1828,11 +1830,13 @@ class RimTownApp {
                 this.tileMap.constructionSites = (this.world?.buildings?.projects || []).filter(p => Number.isFinite(p.siteX));
                 // v5.60.1 工廠地基計算需避開玩家已蓋好的選址建築
                 this.tileMap.sitedCompleted = (this.world?.buildings?.completed || []).filter(b => Number.isFinite(b.siteX));
+                this.tileMap.bizFronts = this.world?.biz?.fronts || []; // v11.6.0 小店的店面（3D 畫攤位，蓋房子、蓋新東西時避開）
                 // v5.62.0 住房同步:夫妻同住、單身獨居,房子不夠就加蓋(每 5 秒檢查一次,兩鎮通用)
                 if (!this._housingAt || Date.now() - this._housingAt > 5000) {
                     this._housingAt = Date.now();
                     try { this._syncHousing(); } catch (e) {}
                     try { if (typeof THINGS !== 'undefined') THINGS.syncMap(this.world, this.tileMap); } catch (e) {} // v9.0.0 新東西蓋到地圖上
+                    try { if (typeof BIZ !== 'undefined' && this.world?.biz) BIZ.syncMap(this.world, this.tileMap); } catch (e) {} // v11.6.0 沒有攤位的店補一格（舊存檔、當時沒空地的）
                 }
                 // v4.9.0 相鄰組合發現慶祝(建築完工在 dailyUpdate 內觸發,這裡輪詢顯示)
                 if (this.world?._pendingComboNotifs?.length) {

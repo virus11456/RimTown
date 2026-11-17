@@ -81,6 +81,7 @@ const EXILE = (() => {
     // 回傳 { who, how, price } 或 null;final=最後一天(公庫才出手、有錢人一定會看)
     function sellOne(w, a, A, final) {
         const v = valueOf(w, A), X = S(w), id = a.agentId, M = w.market;
+        if (A.t === 'shop' && A.boss && typeof BIZ !== 'undefined' && BIZ.deferHeir?.(w, A.s)) return null; // v11.6.0 他開的店：人走了以後由合夥人、家人自己決定接不接（sim-biz.js shopHeir），這裡不替他們做主
         // 1. 家人直接接手
         const fam = family(w, a).filter(o => !(A.t === 'shop' && A.boss && BIZ.shopOf(w, o)) && !(A.t === 'rival' && A.boss && M.owners[A.k] === o.agentId));
         const owe = (w.bank?.loans?.[id]?.owed || 0) - cash(w, a) - (w.bank?.dep?.[id] || 0); // 欠銀行的錢還不夠還:先變賣抵債,不能直接送給家人
@@ -255,7 +256,7 @@ if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
         let heir = null, shops = [], goods = null;
-        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsAll(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId)) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {}
+        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsAll(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId) && !(s.owner === npc.agentId && BIZ.deferHeir?.(world, s))) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {} // v11.6.0 他開的店改由合夥人、家人自己決定接不接（BIZ.deferHeir）；決策核心沒開才照這裡的規則直接交給合夥人或家人
         const r = _kill.call(this, world, npc, ...rest);
         if (!npc || (world.agents?.[npc.agentId] && !npc.isDead)) return r; // 冥王之血復活了(過世的人會從小鎮移除)
         try {

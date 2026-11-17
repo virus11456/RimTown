@@ -4126,6 +4126,7 @@ body.landing-open { overflow: hidden; }
 .rimtown-container .t3d-label:hover, .rimtown-container .t3d-label.is-hot { background: #FFF; border-color: #E8732A; }
 .rimtown-container .t3d-num { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 50%; background: #E8732A; color: #fff; font-size: 11px; font-weight: 700; padding: 0 4px; }
 .rimtown-container .t3d-label.t3d-mini { font-size: 10px; padding: 2px 8px; background: rgba(43,33,24,0.78); color: #FFE9A8; border-color: transparent; pointer-events: none; }
+.rimtown-container .t3d-label.t3d-biz { font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 6px; background: rgba(90,62,38,0.9); border: 1px solid #C9A05A; pointer-events: auto; cursor: pointer; } /* v11.6.0 小店的招牌：點得到 */
 .rimtown-container .t3d-label.t3d-site { flex-direction: column; gap: 3px; align-items: stretch; font-size: 10px; padding: 3px 8px; background: rgba(43,33,24,0.82); color: #FFCC66; border-color: transparent; pointer-events: none; }
 .rimtown-container .t3d-bar { display: block; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); overflow: hidden; }
 .rimtown-container .t3d-bar b { display: block; height: 100%; background: #4caf50; }
