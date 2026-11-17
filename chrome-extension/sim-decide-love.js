@@ -257,8 +257,8 @@
                 return true; };
             const out = [
                 { id: 'warm', quiet: true, text: { k: '覺得{b}人不錯，想多認識他', p: B }, say: { k: '覺得{b}人不錯，想多認識他', p: B }, why: '跟他在一起的時候很自在',
-                    // 以前導演每次一定替一個人加心動；現在兩個人各自決定，照個性推估時一個人大約一半會覺得對方不錯（兩個人加起來跟以前差不多）。心動加深的那一刻以前一定加，這裡大約九成（全鎮量過）
-                    base: REF + tilt(S0 ? 0.72 : 0.3) + (has(a, 'romantic') ? 0.25 : 0) + (has(a, 'charismatic') ? 0.1 : 0) - (has(a, 'abrasive') ? 0.15 : 0) + clampN((I.aff - 30) / 100, -0.2, 0.25) + (I.single ? 0 : -0.3), lean: { joy: 0.3, bond: 0.2 },
+                    // 以前導演每次一定替一個人加心動；現在兩個人各自決定，照個性推估時一個人大約一半會覺得對方不錯（兩個人加起來跟以前差不多）。心動加深的那一刻以前一定加，這裡大約九成五（跑 120 天量過：九成時小鎮少了兩成的情侶、生的孩子也少）
+                    base: REF + tilt(S0 ? 0.9 : 0.3) + (has(a, 'romantic') ? 0.25 : 0) + (has(a, 'charismatic') ? 0.1 : 0) - (has(a, 'abrasive') ? 0.15 : 0) + clampN((I.aff - 30) / 100, -0.2, 0.25) + (I.single ? 0 : -0.3), lean: { joy: 0.3, bond: 0.2 },
                     run: (w2, a2) => (warm(w2, a2) ? { k: '對{b}多了一份心動', p: B } : null) },
                 { id: 'friend', quiet: true, mute: S0, text: '只是普通朋友，聊得還可以', say: { k: '覺得跟{b}只是普通朋友', p: B }, why: '聊得來，但也就這樣', base: REF, lean: { safe: 0.1 },
                     run: (w2, a2) => { const b = w2.agents[c.b]; if (b && !S0) bumpA(a2, b, 2); return { k: '跟{b}還是普通朋友', p: B }; } },
