@@ -16993,6 +16993,12 @@
         '上一任老闆': 'Last owner',
         '還沒有人在這裡開過店': 'Nobody has opened a shop here yet',
         '想開店的人頂下來只要 {n} 銀幣（蓋新的要 60）': 'Anyone opening a shop can take it over for {n} silver (a new one costs 60)',
+        '你是這家店的合夥人。{o}的家人沒有接，你要接下來，得照八折付他 {p} 銀幣買下他那一份（錢讓他帶走）。': 'You are this shop\'s partner. {o}\'s family did not take it over. To take it on, you must buy out {o}\'s share at 80% of its value, {p} silver, which {o} takes along. ',
+        '花 {p} 銀幣買下「{n}」，自己開下去（店名照舊）': 'Pay {p} silver to buy "{n}" and run it yourself (same name)',
+        '花 {p} 銀幣買下{o}留下的「{n}」': 'Paid {p} silver to buy "{n}", which {o} left behind',
+        '這家店我也出過力，不能讓它就這樣收掉。': 'I put work into this shop too. I cannot let it just close.',
+        '錢不夠，沒買成': 'Not enough money, so the purchase fell through',
+        '🤝 {a}照八折付了 {n} 銀幣給搬走的{o}，買下「{s}」。': '🤝 {a} paid {n} silver, 80% of its value, to {o}, who has left town, and bought "{s}".',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

@@ -189,6 +189,22 @@ async function run(browser, dev, lang) {
       // 事實（另外找一家，直接看）
       { const [o, p] = fresh(); const s = openFor(o, 'inn'); s.partner = p.agentId; BIZ.noteGone(w, o, true); s.heir = { q: [p.agentId], r: ['partner'], i: 0, at: null, from: o.agentId, name: o.name, dead: true }; const ff = KH.facts(w, p, { s: s.id, d: day() }); texts.push(ff); for (const op of KH.options(w, p, { s: s.id, d: day() })) texts.push(tx(op.text), tx(op.say), tx(op.why));
         S7.facts = { has: ff.includes(t(s.name[0])) && ff.includes(t(o.name)) && ff.includes(t('你是這家店的合夥人。')), n: KH.options(w, p, { s: s.id, d: day() }).length }; s.heir = null; s.gone = null; s.partner = null; }
+      // 活著搬走：照原本 sim-exile.js 的順序，家人先問（接手不用錢）；沒有家人才問合夥人，要照八折付錢（錢讓老闆帶走），錢不夠沒有「接下來」
+      { const o = loner()[0]; const [sp, p] = fresh().filter(x => x !== o && !wedTo(x)); const s = openFor(o, 'inn'); s.partner = p.agentId; s.h = [3, 3, 3, 3, 3, 3, 3];
+        sp.relationships.getOrCreate(o.agentId, o.name).status = 'married'; o.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; plain(sp); plain(p); setCash(p, 200);
+        const sc0 = cash(sp), pc0 = cash(p); const n0 = seen.length; w.leaveTown(o.agentId, 'test'); const L = leak(() => quiet(() => BIZ.trade(w, B, day()))); const asked = heirSeen(n0);
+        S7.leaveFam = { order: (s.heir ? s.heir.r : null), asked, famFirst: asked[0]?.who === sp.agentId, took: s.owner === sp.agentId && !s.closed, spPaid: r3(sc0 - cash(sp)), pPaid: r3(pc0 - cash(p)), pAsked: asked.some(e => e.who === p.agentId), leak: L.leak }; restore(sp); restore(p); }
+      { const o = loner()[0]; const p = fresh().filter(x => x !== o)[0]; const s = openFor(o, 'teahouse'); s.partner = p.agentId; s.h = [3, 3, 3, 3, 3, 3, 3]; s.profit = 30; plain(p); setCash(p, 200);
+        const price = EXILE.partnerPrice(w, { t: 'shop', s, boss: true }); const pc0 = cash(p); const n0 = seen.length; let facts = '', ids = [];
+        const _o = KH.options; KH.options = function (w2, a2, c2) { const r = _o.call(this, w2, a2, c2); if (a2 === p && !facts) { facts = KH.facts(w2, a2, c2); ids = r.map(x => String(x.id)); for (const op of r) texts.push(tx(op.text), tx(op.say)); } return r; };
+        w.leaveTown(o.agentId, 'test'); let L; try { L = leak(() => quiet(() => BIZ.trade(w, B, day()))); } finally { KH.options = _o; } texts.push(facts);
+        const bal = +(w.wallet.bal[o.agentId] || 0);
+        S7.leaveBuy = { price, ids, asked: heirSeen(n0).map(e => e.who === p.agentId ? e.id : '?'), took: s.owner === p.agentId && !s.closed, paid: r3(pc0 - cash(p)), toOwner: bal >= price, factsPrice: facts.includes(String(price)), leak: L.leak };
+        // 錢包每天結算時，不在鎮上的人帳上的錢記成「搬走的人帶走」（扣離境稅），全鎮的錢對得上
+        const MM0 = MONEY.S(w); const T0 = MONEY.total(w), P0 = MM0.pend; const Wd = w.wallet; const lastDay = Wd.lastDay; Wd.lastDay = -1; try { WALLET.daily(w); } catch (e) {} const emi = MONEY.S(w).pend - P0; S7.leaveBuy.settle = { gone: !(o.agentId in w.wallet.bal), leak: r3((MONEY.total(w) - T0) - emi) }; void lastDay; restore(p); }
+      { const o = loner()[0]; const p = fresh().filter(x => x !== o)[0]; const s = openFor(o, 'curio'); s.partner = p.agentId; s.profit = 30; plain(p); setCash(p, 3); let ids = null;
+        const _o = KH.options; KH.options = function (w2, a2, c2) { const r = _o.call(this, w2, a2, c2); if (a2 === p && !ids) ids = r.map(x => String(x.id)); return r; };
+        w.leaveTown(o.agentId, 'test'); try { quiet(() => BIZ.trade(w, B, day())); } finally { KH.options = _o; } S7.leavePoor = { ids, closed: s.closed }; restore(p); }
       // 出遠門：不算不在了
       { const [o] = fresh(); const s = openFor(o, 'inn'); const tr = w.events._travellingAgents = w.events._travellingAgents || []; delete w.agents[o.agentId]; tr.push({ agentData: { agentId: o.agentId, name: o.name } }); const n0 = seen.length;
         quiet(() => BIZ.trade(w, B, day())); S7.away = { open: !s.closed && B.shops.includes(s), asked: heirSeen(n0).length, heir: s.heir || null }; tr.splice(tr.findIndex(x => x.agentData?.agentId === o.agentId), 1); w.agents[o.agentId] = o; }
@@ -285,6 +301,10 @@ async function run(browser, dev, lang) {
     ok(H.none.asked >= 1 && H.none.closed && H.none.idle && H.none.last && H.none.log, `${tag} 沒人接：店收掉，攤位掛空，日誌有寫`, H.none);
     ok(H.facts.has && H.facts.n === 2, `${tag} 給接手的人看的事實有店名、誰留下的、自己是什麼身分`, H.facts);
     ok(H.away.open && H.away.asked === 0 && !H.away.heir, `${tag} 老闆出遠門：不算不在了，店先歇業、不問人`, H.away);
+    ok(H.leaveFam.famFirst && H.leaveFam.took && H.leaveFam.spPaid === 0 && H.leaveFam.pPaid === 0 && !H.leaveFam.pAsked && H.leaveFam.leak === 0, `${tag} 老闆活著搬走：家人先問，家人接不用錢（合夥人沒被問、沒付錢）`, H.leaveFam);
+    ok(H.leaveBuy.price > 0 && H.leaveBuy.ids.includes('take') && H.leaveBuy.took && H.leaveBuy.paid === H.leaveBuy.price && H.leaveBuy.toOwner && H.leaveBuy.factsPrice && H.leaveBuy.leak === 0, `${tag} 沒有家人：合夥人要照 sim-exile.js 的八折價（${H.leaveBuy.price} 銀幣）付錢才接得下，錢到搬走的老闆帳上，全鎮的錢沒變`, H.leaveBuy);
+    ok(H.leaveBuy.settle && H.leaveBuy.settle.gone && H.leaveBuy.settle.leak === 0, `${tag} 錢包結算時，這筆錢記成「搬走的人帶走」，帳對得上`, H.leaveBuy.settle);
+    ok(H.leavePoor.ids && H.leavePoor.ids.length === 1 && H.leavePoor.ids[0] === 'no' && H.leavePoor.closed, `${tag} 合夥人錢不夠：沒有「接下來」，只能不接，店收掉`, H.leavePoor);
     ok(!H.off.closed && H.off.auto && H.off.asked === 0 && H.off2.closed && H.off2.idle && H.off2.asked === 0, `${tag} 決策核心沒開：照原本的規則，合夥人直接接手；沒有合夥人、家人就收掉、攤位掛空`, { off: H.off, off2: H.off2 }); }
   // 8
   { const D = r.demo;

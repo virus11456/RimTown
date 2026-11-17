@@ -75,6 +75,8 @@ const EXILE = (() => {
         else if (A.t === 'shop') { if (A.s.owner === id) { try { BIZ.close(w, A.s, 'exile'); } catch (e) { A.s.closed = true; } } else A.s.partner = null; }
         else if (A.t === 'house') A.u.owner = null;
     }
+    // 股東、合夥人買下的價錢：估價的八折（v11.6.0 抽出來，sim-biz.js 合夥人接下搬走老闆的店時也照這個價付）
+    const partnerPrice = (w, A) => Math.round(valueOf(w, A) * 0.8);
     const pay = (w, buyer, seller, n) => { n = r2(n); if (!(n > 0)) return true; if (!W().take(w, buyer, n)) return false; W().add(w, seller, n); return true; };
 
     // ---------- 照順序找買家 ----------
@@ -92,7 +94,7 @@ const EXILE = (() => {
         else if (A.t === 'rival') co = Object.keys(M.rival?.[A.k]?.sh || {}).filter(x => x !== id).map(x => w.agents[x]);
         else if (A.t === 'shop') co = [w.agents[A.s.owner === id ? A.s.partner : A.s.owner]];
         co = co.filter(o => free(w, o)).sort((x, y) => cash(w, y) - cash(w, x));
-        const p8 = Math.round(v * 0.8);
+        const p8 = partnerPrice(w, A);
         for (const o of co) if (cash(w, o) >= p8 && pay(w, o, a, p8)) { move(w, A, a, o); X.st.partner++; return { who: o, how: 'partner', price: p8 }; }
         // 3. 夥計集資 8 折(產業、對面那家):每人最多出一半的錢,至少兩個人
         if (A.t === 'sector' || A.t === 'rival') {
@@ -225,6 +227,7 @@ const EXILE = (() => {
         try { beforeLeave0(w, id); } finally { try { kids(w, id, crime); } catch (e) { console.warn('[Exile] kids', e); } }
     }
     function beforeLeave0(w, id) {
+        try { if (typeof BIZ !== 'undefined' && BIZ.noteGone && w.agents?.[id]) BIZ.noteGone(w, w.agents[id], false); } catch (e) {} // v11.6.0 先記下誰可以接他的店（下一行會把配偶改成前任，之後就找不到了）
         try { unpair(w, id); } catch (e) {}
         const a = w.agents?.[id]; if (!a || a.isPlayer || !w.observerMode || !W() || !w.wallet) return;
         const X = S(w); const P = X.pending[id];
@@ -236,7 +239,7 @@ const EXILE = (() => {
     }
     function view(w) { const X = w.exile; if (!X) return null; return { pending: Object.entries(X.pending).filter(([id]) => w.agents[id]).map(([id, P]) => ({ name: t(w.agents[id].name), left: Math.max(0, P.until - day(w)), crime: P.crime, n: assetsOf(w, w.agents[id]).length })), hist: X.hist.map(h => ({ ...h, name: t(h.name) })), st: X.st }; }
     function brief(w, a) { const P = pendingOf(w, a.agentId); if (!P) return ''; return t('你被逐出小鎮，{n} 天內要離開，正在變賣家當').replace('{n}', Math.max(0, P.until - day(w))); }
-    return { S, GRACE, CONFISCATE, AGE_KID, order, daily, beforeLeave, kids, assetsOf, valueOf, sellOne, settle, confiscate, pendingOf, view, brief };
+    return { S, GRACE, CONFISCATE, AGE_KID, order, daily, beforeLeave, kids, assetsOf, valueOf, partnerPrice, sellOne, settle, confiscate, pendingOf, view, brief };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof World !== 'undefined' && World.prototype.leaveTown) {

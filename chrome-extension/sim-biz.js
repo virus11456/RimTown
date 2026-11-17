@@ -366,19 +366,23 @@ const BIZ = (() => {
     const ownerName = (w, id) => w.agents[id]?.name || w.departedNames?.[id] || w._nameCache?.[id] || (w.movedOut || []).find(x => x?.id === id)?.name || '';
     const ownerDead = (w, id) => { const n = ownerName(w, id); return !!w.agents[id]?.isDead || (w.lifecycle?.graveyard || []).some(g => g && (g.agentId === id || (n && g.name === n))); };
     // 先問合夥人；再來是配偶、成年子女（跟產業繼承同一套：結了婚的先、年紀大的先）。接手的人如果已經有自己的店就不問
-    function heirsFor(w, s) {
+    // leaving＝老闆活著搬走或被驅逐：照 sim-exile.js 原本的順序，家人在前（不用錢）、合夥人在後（要照八折付錢買下，錢讓老闆帶走）
+    function heirsFor(w, s, leaving) {
         const id = s.owner, oname = ownerName(w, id); const out = [], seen = new Set([id]);
-        const add = (a, r) => { if (!a || seen.has(a.agentId) || a.isPlayer || a.isDead || (a.age ?? 30) < 16) return; seen.add(a.agentId); out.push({ id: a.agentId, r }); };
-        add(partnerOf(w, s), 'partner');
+        const add = (a, r, price) => { if (!a || seen.has(a.agentId) || a.isPlayer || a.isDead || (a.age ?? 30) < 16) return; seen.add(a.agentId); out.push(price != null ? { id: a.agentId, r, price } : { id: a.agentId, r }); };
+        if (!leaving) add(partnerOf(w, s), 'partner');
         const wed = (o) => o.relationships?.relationships?.[id]?.status === 'married';
         const fam = npcs(w).filter(o => o.agentId !== id && (wed(o) || (oname && (o._parentNames || []).includes(oname) && (o.age || 0) >= 16))).sort((x, y) => wed(y) - wed(x) || (y.age || 0) - (x.age || 0));
         for (const o of fam) add(o, wed(o) ? 'spouse' : 'child');
+        if (leaving) add(partnerOf(w, s), 'buyer', buyPrice(w, s));
         return out;
     }
+    // 合夥人買下搬走老闆的店：價錢沿用 sim-exile.js 的估價八折（EXILE.partnerPrice），不另寫一套
+    const buyPrice = (w, s) => { try { return typeof EXILE !== 'undefined' && EXILE.partnerPrice ? EXILE.partnerPrice(w, { t: 'shop', s, boss: true, name: s.name?.[0] || '' }) : 0; } catch (e) { return 0; } };
     function heirStep(w, s, d) {
         if (!deciding(w, 'shopHeir')) return false; // 決策核心沒開：照舊收掉
         if (!s.heir) { const G = s.gone && s.gone.id === s.owner ? s.gone : null; const q = G ? G.q : heirsFor(w, s); if (!q.length) return false;
-            s.heir = { q: q.map(x => x.id), r: q.map(x => x.r), i: 0, at: null, from: s.owner, name: G?.name || ownerName(w, s.owner), dead: G ? !!G.dead : ownerDead(w, s.owner) }; st(w).heir++; }
+            s.heir = { q: q.map(x => x.id), r: q.map(x => x.r), p: q.map(x => x.price || 0), i: 0, at: null, from: s.owner, name: G?.name || ownerName(w, s.owner), dead: G ? !!G.dead : ownerDead(w, s.owner) }; st(w).heir++; }
         const H = s.heir;
         for (let g = 0; g < 8 && s.heir === H && !s.closed; g++) {
             if (H.i >= H.q.length) return false;
@@ -390,28 +394,38 @@ const BIZ = (() => {
         return s.heir !== H || s.closed ? true : H.i < H.q.length;
     }
     // 老闆要走了（過世、搬走）：這家店要不要留給「問接不接」處理（決策核心開著、也有人可以問）。sim-exile.js 看這個決定要不要照舊直接交給合夥人或家人
-    const deferHeir = (w, s) => !!s && !s.closed && deciding(w, 'shopHeir') && heirsFor(w, s).length > 0;
+    const deferHeir = (w, s) => !!s && !s.closed && deciding(w, 'shopHeir') && (s.gone && s.gone.id === s.owner && s.gone.d === day(w) ? s.gone.q.length > 0 : heirsFor(w, s, true).length > 0);
     // 老闆過世、搬走的那一刻記下誰可以接（過世以後配偶的關係會被改成「前任」、人也會從鎮上移除，事後就找不到了）
-    function noteGone(w, a, dead) { if (!w?.biz || !a) return; for (const s of S(w).shops) if (!s.closed && s.owner === a.agentId) s.gone = { id: a.agentId, name: a.name, dead: !!dead, q: heirsFor(w, s) }; }
+    // 同一天已經記過的不蓋掉（搬走時 sim-exile.js 會在拆散婚姻之前先記一次，之後 leaveTown 再叫一次時配偶已經是前任了）
+    function noteGone(w, a, dead) { if (!w?.biz || !a) return; const d = day(w); for (const s of S(w).shops) if (!s.closed && s.owner === a.agentId && !(s.gone && s.gone.id === a.agentId && s.gone.d === d && !!s.gone.dead === !!dead)) s.gone = { id: a.agentId, name: a.name, dead: !!dead, d, q: heirsFor(w, s, !dead) }; }
     const liveHeir = (w, a, ctx) => { const s = ctx ? S(w).shops.find(x => x.id === ctx.s && !x.closed) : null; const H = s?.heir; if (!H || !a || H.q[H.i] !== a.agentId || !here(w, a) || day(w) - (ctx.d ?? 0) > 2) return null; const own = shopOf(w, a); return own && own !== s ? null : s; };
-    const ROLE = { partner: '你是這家店的合夥人。', spouse: '你是{o}的配偶。', child: '你是{o}的孩子。' };
+    const ROLE = { partner: '你是這家店的合夥人。', spouse: '你是{o}的配偶。', child: '你是{o}的孩子。', buyer: '你是這家店的合夥人。{o}的家人沒有接，你要接下來，得照八折付他 {p} 銀幣買下他那一份（錢讓他帶走）。' };
+    const priceNow = (H) => +(H?.p?.[H.i] || 0);
     function heirFacts(w, a, ctx) {
         const s = liveHeir(w, a, ctx); if (!s) return ''; const H = s.heir; const r = H.r?.[H.i] || 'child'; const dt = debtOf(s);
         return fill('{o}{how}，留下了「{n}」（{ty}，開了 {days} 天，最近一週{wk}，{debt}）。{rel}接下來就是你自己開，店名照舊；不接的話店就收掉，店面空下來。你身上有 {c} 銀幣。',
-            { o: H.name || '', how: H.dead ? '過世了' : '搬離小鎮了', n: nm(s), ty: typeOf(s).zh, days: day(w) - (s.opened ?? day(w)), wk: plOf(weekNet(s)), debt: dt ? { k: '店裡欠了 {n} 銀幣', p: { n: dt } } : '店裡沒有欠錢', rel: { k: ROLE[r] || ROLE.child, p: { o: H.name || '' } }, c: Math.floor(cash(w, a)) });
+            { o: H.name || '', how: H.dead ? '過世了' : '搬離小鎮了', n: nm(s), ty: typeOf(s).zh, days: day(w) - (s.opened ?? day(w)), wk: plOf(weekNet(s)), debt: dt ? { k: '店裡欠了 {n} 銀幣', p: { n: dt } } : '店裡沒有欠錢', rel: { k: ROLE[r] || ROLE.child, p: { o: H.name || '', p: priceNow(H) } }, c: Math.floor(cash(w, a)) });
     }
     function heirOptions(w, a, ctx) {
         const s = liveHeir(w, a, ctx); if (!s) return []; const H = s.heir; const r = H.r?.[H.i] || 'child'; const sn = nm(s); const wk = weekNet(s); const amb = w.mind?.amb?.[a.agentId]?.key;
         const go = (fn) => (w2, a2) => { const s2 = liveHeir(w2, a2, ctx); return s2 ? fn(w2, a2, s2) : null; };
-        return [
+        const price = r === 'buyer' ? priceNow(H) : 0; const out = [];
+        if (!(price > 0) || cash(w, a) >= price) out.push( // 合夥人買下要付錢：錢不夠就不列「接下來」，只能不接
+            price > 0 ? { id: 'take', text: { k: '花 {p} 銀幣買下「{n}」，自己開下去（店名照舊）', p: { n: sn, p: price } }, say: { k: '花 {p} 銀幣買下{o}留下的「{n}」', p: { o: H.name || '', n: sn, p: price } }, why: '這家店我也出過力，不能讓它就這樣收掉。',
+                base: 0.6 + 0.8 + (has(a, 'ambitious') ? 0.3 : 0) + (has(a, 'hardworking') ? 0.3 : 0) + (amb === 'rich' ? 0.4 : 0) - (has(a, 'lazy') ? 0.6 : 0) + (wk > 0 ? 0.3 : wk < 0 ? -0.4 : 0) - ((a.age ?? 30) >= 65 ? 0.5 : 0) - (has(a, 'thrifty') ? 0.3 : 0) - Math.min(0.6, price / Math.max(1, cash(w, a))), lean: { bond: 0.3, gain: 0.3, safe: -0.2 }, run: go(inherit) } :
             { id: 'take', text: { k: '接下「{n}」，自己開下去（店名照舊）', p: { n: sn } }, say: { k: '接下{o}留下的「{n}」', p: { o: H.name || '', n: sn } }, why: { k: '{o}的心血不能就這樣收掉。', p: { o: H.name || '' } },
-                base: 0.6 + ({ partner: 0.8, spouse: 0.5, child: 0.3 }[r] || 0) + (has(a, 'ambitious') ? 0.3 : 0) + (has(a, 'hardworking') ? 0.3 : 0) + (amb === 'rich' ? 0.4 : 0) - (has(a, 'lazy') ? 0.6 : 0) + (wk > 0 ? 0.3 : wk < 0 ? -0.4 : 0) - ((a.age ?? 30) >= 65 ? 0.5 : 0), lean: { bond: 0.4, gain: 0.3 }, run: go(inherit) },
+                base: 0.6 + ({ partner: 0.8, spouse: 0.5, child: 0.3 }[r] || 0) + (has(a, 'ambitious') ? 0.3 : 0) + (has(a, 'hardworking') ? 0.3 : 0) + (amb === 'rich' ? 0.4 : 0) - (has(a, 'lazy') ? 0.6 : 0) + (wk > 0 ? 0.3 : wk < 0 ? -0.4 : 0) - ((a.age ?? 30) >= 65 ? 0.5 : 0), lean: { bond: 0.4, gain: 0.3 }, run: go(inherit) });
+        out.push(
             { id: 'no', text: '不接，讓店收掉', say: { k: '沒有接{o}留下的「{n}」', p: { o: H.name || '', n: sn } }, why: '我沒有心力開店。', base: 1.0 + ((a.age ?? 30) >= 60 ? 0.4 : 0), lean: { safe: 0.4, joy: 0.2 },
-                run: go((w2, a2, s2) => { const H2 = s2.heir; H2.i++; H2.at = null; mem(w2, a2, '{o}留下的「{n}」，我沒有接。', { o: H2.name || '', n: nm(s2) }, 6); return { k: '沒有接「{n}」', p: { n: nm(s2) } }; }) },
-        ];
+                run: go((w2, a2, s2) => { const H2 = s2.heir; H2.i++; H2.at = null; mem(w2, a2, '{o}留下的「{n}」，我沒有接。', { o: H2.name || '', n: nm(s2) }, 6); return { k: '沒有接「{n}」', p: { n: nm(s2) } }; }) });
+        return out;
     }
     function inherit(w, a, s) {
-        const H = s.heir; const was = H?.name || ''; if (s.partner === a.agentId) s.partner = null; s.owner = a.agentId; s.heir = null; s.gone = null; st(w).took++;
+        const H = s.heir; const was = H?.name || ''; const price = H?.r?.[H.i] === 'buyer' ? priceNow(H) : 0;
+        // 合夥人買下搬走老闆的店：錢從他身上付到老闆留在錢包帳上的那一格（人已經走了）。跟 sim-exile.js 原本「老闆帶著賣店的錢走」同一條帳：
+        // 錢包模組（sim-wallet.js daily）看到不在鎮上的人還有錢，扣離境稅後記成「搬走的人帶走」(MONEY.flow 'emigrant')
+        if (price > 0) { const W0 = w.wallet; if (!W0?.bal || !WALLET.take(w, a, price)) return { k: '錢不夠，沒買成' }; W0.bal[H.from] = Math.round(((+W0.bal[H.from] || 0) + price) * 100) / 100; st(w).bought = (st(w).bought || 0) + 1;
+            log(w, '🤝 {a}照八折付了 {n} 銀幣給搬走的{o}，買下「{s}」。', { a: a.name, n: price, o: was, s: nm(s) }, a.name); } if (s.partner === a.agentId) s.partner = null; s.owner = a.agentId; s.heir = null; s.gone = null; st(w).took++;
         log(w, '🏪 {a}接下了{o}留下的「{n}」，店名照舊。', { a: a.name, o: was, n: nm(s) }, a.name); mem(w, a, '我接下了{o}留下的「{n}」，要好好開下去。', { o: was, n: nm(s) }, 8);
         return { k: '接下了「{n}」', p: { n: nm(s) } };
     }
