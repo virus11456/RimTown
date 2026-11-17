@@ -226,6 +226,110 @@
         },
     });
 
+    // ================= v11.10.0 跟某人相處了一陣子（導演安排的相遇；或心動突然加深的那一刻） =================
+    // 以前：戲劇導演直接把一個人對另一個人的心動加 12～17；聊得來的兩個人每天 6% 機率，心動一口氣跳 8～16（「命中注定的感覺」）。
+    // 現在：導演只讓兩個人傍晚碰在同一個地方（simulation.js 的 _dirSet）；心動加深的那一刻照舊看天。碰面之後怎麼看待對方由本人決定，
+    // 兩個人可以選得不一樣；心動只在他自己覺得對方不錯時才動，幅度跟以前一樣。選「再約他」的接到告白（夠格的話）或寫信約見面（公告欄的信）。
+    const rnd = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+    const where = (w, c) => safe(() => (c?.place && typeof locName === 'function' ? locName(w, c.place) : '')) || t('鎮上某處');
+    const mem = (w, a, k, p, imp = 5, who = []) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'relationship', k, p || {}, imp, who); } catch (e) {} };
+    const bumpA = (a, b, n) => { try { a.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(n); } catch (e) {} };
+    const sparkOf = (w, a, c) => {
+        if (!on(w) || !c) return null; const b = w.agents[c.b]; if (!b || b.isDead || b === a) return null; const r = rel(a, b);
+        if (!r || r.status === 'dating' || r.status === 'married') return null; const via = c.via ? w.agents[c.via] : null;
+        return { b, r, ri: Math.round(r.romanticInterest || 0), aff: Math.round(r.affinity || 0), via: via && !via.isDead ? via : null, self: c.src === 'self', single: !a.relationships.getPartner() && !b.relationships.getPartner() };
+    };
+    DECIDE.kind('spark', {
+        title: '跟某人相處了一陣子', scan: false, pri: 1.1, aiKind: 2,
+        when() { return null; },
+        facts(w, a, c) {
+            const I = sparkOf(w, a, c); if (!I) return '';
+            const how = I.self ? tf('最近你跟{b}常在一起，你發現自己會不自覺地想著他。', { b: I.b.name })
+                : I.via ? tf('今天傍晚{c}約你和{b}去{p}吃飯，你跟{b2}坐在一起聊了一整晚。', { c: I.via.name, b: I.b.name, b2: I.b.name, p: where(w, c) })
+                : tf('今天傍晚你在{p}剛好碰到{b}，兩個人坐下來聊了一陣子。', { p: where(w, c), b: I.b.name });
+            return how + tf('你對{b}的好感 {f}，心動 {r}／100。', { b: I.b.name, f: I.aff, r: I.ri }) + (I.single ? t('你們兩個都還單身。') : '');
+        },
+        options(w, a, c) {
+            const I = sparkOf(w, a, c); if (!I) return []; const B = { b: I.b.name }; const S0 = I.self;
+            const warm = (w2, a2, again) => { const b = w2.agents[c.b]; const r = b && rel(a2, b); if (!r) return false; r.modifyRomantic(S0 ? rnd(8, 16) : rnd(12, 17));
+                if (S0) { mem(w2, a2, '奇怪...最近看{targetName}的眼神,好像跟以前不一樣了。', { targetName: b.name }, 7, [b.name]); safe(() => w2.logMessageT('relationship', '💓 {agent}對{other}的心動,好像悄悄加深了...', { agent: a2.name, other: b.name }, a2.name, b.name)); safe(() => w2.gossipNetwork?.createRelGossip(w2, 'crush', a2, b)); }
+                else mem(w2, a2, '跟{b}聊了一個傍晚，覺得他人不錯，想多認識他。', { b: b.name }, 7, [b.name]);
+                return true; };
+            const out = [
+                { id: 'warm', quiet: true, text: { k: '覺得{b}人不錯，想多認識他', p: B }, say: { k: '覺得{b}人不錯，想多認識他', p: B }, why: '跟他在一起的時候很自在',
+                    // 以前導演每次一定替一個人加心動；現在兩個人各自決定，一個人大約四成多會覺得對方不錯（兩個人加起來跟以前差不多）。心動加深的那一刻以前一定加，這裡大約七成
+                    base: REF + tilt(S0 ? 0.72 : 0.42) + (has(a, 'romantic') ? 0.25 : 0) + (has(a, 'charismatic') ? 0.1 : 0) - (has(a, 'abrasive') ? 0.15 : 0) + clampN((I.aff - 30) / 100, -0.2, 0.25) + (I.single ? 0 : -0.3), lean: { joy: 0.3, bond: 0.2 },
+                    run: (w2, a2) => (warm(w2, a2) ? { k: '對{b}多了一份心動', p: B } : null) },
+                { id: 'friend', quiet: true, mute: S0, text: '只是普通朋友，聊得還可以', say: { k: '覺得跟{b}只是普通朋友', p: B }, why: '聊得來，但也就這樣', base: REF, lean: { safe: 0.1 },
+                    run: (w2, a2) => { const b = w2.agents[c.b]; if (b && !S0) bumpA(a2, b, 2); return { k: '跟{b}還是普通朋友', p: B }; } },
+                { id: 'awk', quiet: true, text: '其實跟他待在一起有點不自在', say: { k: '跟{b}待在一起有點不自在', p: B }, why: '說不上來，就是不太對盤',
+                    base: REF - 0.9 + (has(a, 'shy') ? 0.3 : 0) + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'jealous') ? 0.15 : 0) - clampN((I.aff - 20) / 80, -0.2, 0.4), lean: { safe: 0.2, bond: -0.1 },
+                    run: (w2, a2) => { const b = w2.agents[c.b]; if (!b) return null; bumpA(a2, b, -3); mem(w2, a2, '跟{b}待了一陣子，總覺得有點不自在。', { b: b.name }, 5, [b.name]); return { k: '跟{b}有點疏遠了', p: B }; } },
+            ];
+            // 已經有點好感的：找機會再約他（夠格就去告白；不然寫信約他再見一面，去不去由對方決定）
+            if (I.ri >= 10 || I.aff >= 45) out.push({ id: 'again', quiet: true, text: { k: '找機會再約{b}出來', p: B }, say: { k: '想找機會再約{b}出來', p: B }, why: '想多跟他相處一點',
+                base: REF + tilt(S0 ? 0.3 : 0.22) + (has(a, 'romantic') ? 0.3 : 0) + (has(a, 'charismatic') ? 0.2 : 0) - (has(a, 'shy') ? 0.4 : 0) + clampN((I.ri - 25) / 100, -0.1, 0.3) + (I.single ? 0 : -0.4), lean: { joy: 0.3, safe: -0.2 },
+                run: (w2, a2) => { const b = w2.agents[c.b]; if (!b || !warm(w2, a2)) return null;
+                    if (safe(() => w2.confessCands?.(a2).some(x => x.b === b))) { ask(w2, a2, 'confess', {}); return { k: '想跟{b}告白', p: B }; }
+                    if (typeof BOARD !== 'undefined' && BOARD.create) { const pl = c.place || 'tavern'; const Bd = safe(() => BOARD.create(w2, a2, { kind: 'letter', want: 'meet', to: b, place: pl, hour: 18, text: { k: '那天跟你聊得很開心，明天 {h} 點在{p}再見個面好嗎？', p: { h: 18, p: where(w2, { place: pl }) } }, why: { k: '想再多認識{b}一點', p: B } }));
+                        if (Bd) return { k: '寫信約{b}再見一面', p: B }; }
+                    return { k: '對{b}多了一份心動', p: B }; } });
+            return out;
+        },
+    });
+
+    // ================= v11.10.0 看見心上人跟別人在一起 =================
+    // 以前：戲劇導演直接把單戀有主之人者的心動加 8、對情敵的好感扣 5～9；平常單戀的人每天 13% 機率對情敵扣 6～16、心情變差。
+    // 現在：導演只讓他傍晚看見那兩個人在一起（同一個地方）；平常什麼時候撞見照舊看天。看見了之後怎麼辦由他自己決定。
+    const hurtOf = (w, a, c) => {
+        if (!on(w) || !c) return null; const b = w.agents[c.b], r = w.agents[c.r]; if (!b || !r || b.isDead || r.isDead || b === a || r === a) return null; const R = rel(a, b); if (!R || R.status) return null;
+        const st = rel(b, r)?.status; return { b, r, R, ri: Math.round(R.romanticInterest || 0), fr: Math.round(rel(a, r)?.affinity || 0), married: st === 'married', self: c.src === 'self' };
+    };
+    const malice = (a) => safe(() => (typeof DARK !== 'undefined' ? DARK.malice(a) : 0)) || 0;
+    DECIDE.kind('heartache', {
+        title: '看見心上人跟別人在一起', scan: false, pri: 1.1, aiKind: 2,
+        when() { return null; },
+        facts(w, a, c) {
+            const I = hurtOf(w, a, c); if (!I) return ''; const P = { b: I.b.name, b2: I.b.name, r: I.r.name, p: where(w, c) };
+            return (I.self ? tf('你一直喜歡{b}，可是{b2}已經有{r}了。今天又看到他們走在一起。', P) : tf('今天傍晚你在{p}看見{b}和{r}在一起，兩個人有說有笑。', P))
+                + tf(I.married ? '{b}和{r}是夫妻。' : '{b}和{r}正在交往。', P) + tf('你對{b}的心動 {ri}／100，對{r}的好感 {f}。', { b: I.b.name, r: I.r.name, ri: I.ri, f: I.fr });
+        },
+        options(w, a, c) {
+            const I = hurtOf(w, a, c); if (!I) return []; const P = { b: I.b.name, r: I.r.name }; const S0 = I.self; const m = malice(a);
+            const out = [
+                { id: 'bless', quiet: true, text: '默默祝福他們，慢慢放下', say: { k: '默默祝福{b}和{r}', p: P }, why: '他過得好就好',
+                    base: REF + (has(a, 'kind') ? 0.4 : 0) + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'optimist') ? 0.2 : 0) - (has(a, 'jealous') ? 0.4 : 0) - clampN((I.ri - 45) / 100, 0, 0.3) + (I.married ? 0.15 : 0), lean: { safe: 0.2, bond: 0.2 },
+                    run: (w2, a2) => { const b = w2.agents[c.b]; const R = b && rel(a2, b); if (!R) return null; R.modifyRomantic(-rnd(8, 12)); a2.moodModifier = (a2.moodModifier || 0) + 2; mem(w2, a2, '看到{b}和{r}那麼好，我決定把這份心意放下。', P, 6, [I.b.name]); return { k: '慢慢放下對{b}的心意', p: P }; } },
+                // 以前一定照這一項（導演：心動 +8、對情敵 -5～9；平常撞見：對情敵 -6～16、心情 -6、心動慢慢冷下來），這裡大約六成
+                { id: 'pine', quiet: true, text: { k: S0 ? '心裡很不是滋味，看{r}越來越不順眼' : '心裡更放不下了，看{r}也越來越不順眼', p: P }, say: { k: S0 ? '看{r}越來越不順眼' : '對{b}更放不下了', p: P }, why: '憑什麼是他',
+                    base: REF + tilt(0.62) + (has(a, 'jealous') ? 0.4 : 0) + (has(a, 'neurotic') ? 0.2 : 0) + (has(a, 'romantic') ? 0.15 : 0) - (has(a, 'kind') ? 0.3 : 0) - (has(a, 'stoic') ? 0.2 : 0) + clampN((I.ri - 45) / 100, 0, 0.3) - clampN(I.fr / 100, -0.1, 0.3), lean: { face: 0.2, joy: -0.1 },
+                    run: (w2, a2) => { const b = w2.agents[c.b], r = w2.agents[c.r]; const R = b && rel(a2, b); if (!R || !r) return null; const jr = a2.relationships.getOrCreate(r.agentId, r.name);
+                        if (S0) { const bite = jr.affinity < 0 ? rnd(8, 16) : rnd(6, 12); jr.modifyAffinity(-bite); safe(() => a2.addThought('jealous', w2, r.agentId, r.name)); a2.moodModifier = (a2.moodModifier || 0) - 6; R.modifyRomantic(-rnd(2, 5));
+                            const dd = w2._absDay(), J = a2._jealLog || (a2._jealLog = {}); if (!(J[b.agentId] > dd - 10) && !(w2._jealLogDay > dd - 2)) { J[b.agentId] = dd; w2._jealLogDay = dd; safe(() => w2.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: a2.name, other: b.name, luckyOne: r.name }, a2.name, r.name)); }
+                            if (Math.random() < 0.4) safe(() => w2.gossipNetwork?.createRelGossip(w2, 'jealous', a2, r, b.name)); }
+                        else { R.modifyRomantic(8); jr.modifyAffinity(-rnd(5, 9)); mem(w2, a2, '看到{b}和{rival}走在一起,心口悶得發疼。憑什麼是他。', { b: b.name, rival: r.name }, 8, [b.name, r.name]); }
+                        return { k: '對{r}更冷淡了', p: P }; } },
+                { id: 'avoid', quiet: true, text: '開始疏遠他們兩個', say: { k: '開始疏遠{b}和{r}', p: P }, why: '看到他們就難受，不如少見面',
+                    base: REF - 0.6 + (has(a, 'shy') ? 0.3 : 0) + (has(a, 'abrasive') ? 0.2 : 0) + (has(a, 'pessimist') ? 0.2 : 0), lean: { safe: 0.2, bond: -0.2 },
+                    run: (w2, a2) => { const b = w2.agents[c.b], r = w2.agents[c.r]; if (!b || !r) return null; bumpA(a2, b, -4); bumpA(a2, r, -4); mem(w2, a2, '最近不太想跟{b}和{r}來往。', P, 5, [I.b.name, I.r.name]); return { k: '跟{b}和{r}疏遠了', p: P }; } },
+            ];
+            // 找對方把話說清楚：對方有伴，當面告白（confess）輪不到他，所以寫信表白；回不回、怎麼回由對方決定（公告欄的信）
+            if (typeof BOARD !== 'undefined' && BOARD.create) out.push({ id: 'tell', quiet: true, text: { k: '寫信給{b}，把心裡話說清楚', p: P }, say: { k: '寫信向{b}表白', p: P }, why: '不說出來會後悔一輩子',
+                base: REF - 0.8 + (has(a, 'romantic') ? 0.3 : 0) + (has(a, 'charismatic') ? 0.3 : 0) - (has(a, 'shy') ? 0.5 : 0) + clampN((I.ri - 60) / 100, 0, 0.3) - (I.married ? 0.3 : 0), lean: { joy: 0.2, face: -0.2, safe: -0.3 },
+                run: (w2, a2) => { const b = w2.agents[c.b]; if (!b) return null; const Bd = safe(() => BOARD.create(w2, a2, { kind: 'letter', want: 'love', to: b, text: { k: '我知道你已經有{r}了，可是有些話不說出來，我會後悔一輩子。', p: { r: I.r.name } }, why: { k: '想讓{b}知道我的心意', p: P } }));
+                    return Bd ? { k: '寫了一封信給{b}', p: P } : { k: '信沒有寫成' }; } });
+            // 個性陰暗的：在心上人面前說情敵的壞話（編的）。聽的人信不信、會不會去告訴情敵，照原本的講壞話（sim-dark.js）
+            if (typeof DARK !== 'undefined' && DARK.speak && (m >= 2 || (has(a, 'jealous') && !has(a, 'kind')))) out.push({ id: 'spoil', quiet: true, text: { k: '在{b}面前說{r}的壞話（編的）', p: P }, say: { k: '在{b}面前說了{r}的壞話', p: P }, why: '他配不上{b}',
+                base: REF - 1.3 + m * 0.35 + (has(a, 'jealous') ? 0.4 : 0) - (has(a, 'kind') ? 1 : 0) - (safe(() => DARK.honesty(a)) - 2) * 0.2, lean: { face: 0.2, bond: -0.4 },
+                run: (w2, a2) => { const b = w2.agents[c.b], r = w2.agents[c.r]; if (!b || !r) return null; safe(() => DARK.speak(w2, a2, b, r, 'dislike', true)); return { k: '在{b}面前說了{r}的壞話', p: P }; } });
+            return out;
+        },
+    });
+
+    // 導演的紀錄：誰對導演安排的那一場做了什麼決定（「真相」頁看得到）
+    DECIDE.observe((ev, o) => { try { if (!o?.w?._dirPick || !o.a) return; const key = o.K?.key || o.kind; if (!['spark', 'heartache', 'stir'].includes(key)) return; const sid = o.ctx?.sid || null; if (!sid && ev !== 'decided') return;
+        if (ev === 'decided') o.w._dirPick(sid, o.a, o.op, o.src); else if (ev === 'thinking') o.w._dirPick(sid, o.a, null, 'wait'); } catch (e) {} });
+
     // 帶參數的句子：先翻譯整句再填名字（跟其他決策檔一樣，英文字典以整句為鍵）
     function tf(k, p) { let s = t(k); for (const [x, y] of Object.entries(p || {})) s = s.split('{' + x + '}').join(typeof y === 'string' ? t(y) : String(y)); return s; }
 })();
