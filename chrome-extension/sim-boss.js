@@ -197,7 +197,8 @@ const BOSS = (() => {
             const amt = F.losing ? 0.1 : 0.05, floor = F.losing ? 0.5 : 0.6;
             if (F.pay > floor + 1e-9) { const nv = Math.max(floor, F.pay - amt);
                 out.push({ id: 'cutpay', text: { k: '把工資砍到行情的 {p}%', p: { p: pct(nv) } }, say: { k: '把{s}的工資砍到 {p}%', p: { s: { raw: sName }, p: pct(nv) } }, why: F.losing ? '店在賠錢，工資得先省下來。' : '能少付一點是一點。',
-                    base: (F.losing ? 2.4 : -0.5) + (greedy ? 1.9 : 0) + (hasV(a, '財富') ? 0.4 : 0) + (has(a, 'thrifty') ? 0.3 : 0) - (kind ? 0.6 : 0) - (gen ? 0.6 : 0), lean: { gain: 0.4, bond: -0.2 }, run: go((w2, a2, F2) => setPay(w2, a2, F2, Math.max(floor, F2.pay - amt))) }); }
+                    // 賺錢時只有貪心的會壓（原本的規則就是這樣）；看重錢、節儉的只在虧錢時更快下手（新舊對照量過：賺錢時也讓他們壓，全鎮的工資平均會比以前低一點）
+                    base: F.losing ? 2.4 + (greedy ? 0.4 : 0) + (hasV(a, '財富') ? 0.4 : 0) + (has(a, 'thrifty') ? 0.3 : 0) - (kind ? 0.6 : 0) - (gen ? 0.6 : 0) : -0.9 + (greedy ? 2.3 : 0) - (kind ? 0.6 : 0) - (gen ? 0.6 : 0), lean: { gain: 0.4, bond: -0.2 }, run: go((w2, a2, F2) => setPay(w2, a2, F2, Math.max(floor, F2.pay - amt))) }); }
         }
         if (F.pay < 1.2 - 1e-9 && (!F.losing || F.lost) && (!F.rival ? F.days >= 5 || F.lost : F.lost)) { const nv = Math.min(1.2, F.pay + 0.05); const keepers = F.lost && F.prof > 0 && !greedy;
             out.push({ id: 'raise', text: F.lost ? { k: '加薪留人：工資調到行情的 {p}%（這週被挖走 {n} 個）', p: { p: pct(nv), n: F.lost } } : { k: '給夥計加薪：工資調到行情的 {p}%', p: { p: pct(nv) } }, say: { k: '給{s}的夥計加薪到 {p}%', p: { s: { raw: sName }, p: pct(nv) } }, why: F.lost ? '人再被挖走，店就開不下去了。' : '店有賺，大家辛苦了。',
@@ -226,7 +227,8 @@ const BOSS = (() => {
         const gs = F.rival ? [] : goods(w, F.k);
         if (gs.length) { const cur = stanceOf(w, F.k), lo = Math.min(...gs.map(g => g.ratio)), hiS = Math.max(...gs.map(g => g.ratio));
             if (cur !== 'more' && hiS < 1.3) out.push({ id: 'more', text: { k: '叫{s}多做一點，倉裡多備些貨', p: { s: sName } }, say: { k: '叫{s}多做一點', p: { s: sName } }, why: '貨多備一點，不怕斷貨。', base: -0.3 + (lo < 0.5 ? 0.8 : 0) + (has(a, 'hardworking') ? 0.3 : 0) + (has(a, 'ambitious') ? 0.3 : 0) - (F.losing ? 0.5 : 0), lean: { gain: 0.3 }, run: go((w2, a2, F2) => setStock(w2, a2, F2, 'more')) });
-            if (cur !== 'less' && lo > 0.6) out.push({ id: 'less', text: { k: '叫{s}少做一點，貨夠用就好', p: { s: sName } }, say: { k: '叫{s}少做一點', p: { s: sName } }, why: '貨堆著也賣不掉，省點料。', base: -0.3 + (lo > 1.3 ? 1.0 : 0) + (F.losing ? 0.4 : 0) + (has(a, 'lazy') ? 0.3 : 0), lean: { safe: 0.2 }, run: go((w2, a2, F2) => setStock(w2, a2, F2, 'less')) });
+            // 糧食不給「少做一點」：農莊少種一點，全鎮的人都會餓到（其他行少做頂多是貨慢一點補上）
+            if (cur !== 'less' && lo > 0.6 && F.k !== 'farm') out.push({ id: 'less', text: { k: '叫{s}少做一點，貨夠用就好', p: { s: sName } }, say: { k: '叫{s}少做一點', p: { s: sName } }, why: '貨堆著也賣不掉，省點料。', base: -0.3 + (lo > 1.3 ? 1.0 : 0) + (F.losing ? 0.4 : 0) + (has(a, 'lazy') ? 0.3 : 0), lean: { safe: 0.2 }, run: go((w2, a2, F2) => setStock(w2, a2, F2, 'less')) });
             if (cur !== 'usual') out.push({ id: 'normal', text: { k: '叫{s}照平常的量做', p: { s: sName } }, say: { k: '叫{s}照平常的量做', p: { s: sName } }, why: '平常怎麼做就怎麼做。', base: 0.4 + ((cur === 'more' && lo > 1.1) || (cur === 'less' && lo < 0.7) ? 1.2 : 0), lean: { safe: 0.2 }, run: go((w2, a2, F2) => setStock(w2, a2, F2, 'usual')) });
         }
         out.push({ id: 'keep', quiet: true, text: '這週照舊，什麼都不改', say: { k: '{s}這週照舊', p: { s: sName } }, why: '生意就是這樣，不用動。', base: 1.0, lean: { safe: 0.2 }, run: () => ({ k: '這週照舊' }) });

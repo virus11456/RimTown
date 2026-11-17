@@ -74,6 +74,7 @@ async function run(browser, dev, lang) {
       o.rival = ids(riv, cR()); BOSS.noteHop(w, k, true); o.rivalLost = ids(riv, cR());
       o.stale = K.options(w, boss, { k, rival: false, d: day() - 5, by: boss.agentId }).length; o.notBoss = K.options(w, third, c0()).length;
       M.rival = {}; setStock('clothing', 0); o.lowStock = ids(boss, c0()); setStock('clothing', Math.round(FLOW.want(w, 'clothing') * 2)); o.highStock = ids(boss, c0()); setStock('clothing', Math.round(FLOW.want(w, 'clothing')));
+      { const f0 = sp.get('food'); M.owners.farm = boss.agentId; M.owners[k] = null; M.hist.farm = hist(210, 140); setStock('food', Math.round(FLOW.want(w, 'food') * 2)); o.farmHigh = ids(boss, { k: 'farm', rival: false, d: day(), by: boss.agentId }); setStock('food', f0); M.owners.farm = null; M.owners[k] = boss.agentId; }
       out.opts = o; }
 
     // 4) 選了之後數字照原本的規則變，日誌有寫，錢沒動
@@ -228,7 +229,8 @@ async function run(browser, dev, lang) {
     ok(hasA(O.withRival, 'down', 'down2') && none(O.withRival, 'up') && none(O.atFloor, 'down', 'down2') && hasA(O.atFloor, 'up') && hasA(O.near, 'down') && none(O.near, 'down2'), `${tag} 有對手才列調價：原價時只能降；降到七五折不能再降、可以漲回；離底線不到一成只列降 5%`, { r: O.withRival, f: O.atFloor, n: O.near });
     ok(none(O.rival, 'cutpay', 'raise') && hasA(O.rival, 'down', 'keep') && hasA(O.rivalLost, 'raise'), `${tag} 對面那家的東家：調價；工資只有被挖走人時才能加（跟原本一樣）`, { r: O.rival, lost: O.rivalLost });
     ok(O.stale === 0 && O.notBoss === 0, `${tag} 過期的問題、不是這家東家的人，沒有選項`, { stale: O.stale, notBoss: O.notBoss });
-    ok(hasA(O.lowStock, 'more') && none(O.lowStock, 'less') && hasA(O.highStock, 'less') && none(O.highStock, 'more'), `${tag} 倉裡不太夠才列多做一點，堆太多才列少做一點`, { low: O.lowStock, high: O.highStock }); }
+    ok(hasA(O.lowStock, 'more') && none(O.lowStock, 'less') && hasA(O.highStock, 'less') && none(O.highStock, 'more'), `${tag} 倉裡不太夠才列多做一點，堆太多才列少做一點`, { low: O.lowStock, high: O.highStock });
+    ok(O.farmHigh.length > 1 && none(O.farmHigh, 'less'), `${tag} 農莊就算存糧很多也沒有「少做一點」（糧食少種全鎮會餓到）`, O.farmHigh); }
   // 4
   { const S = r.settle; const clean = (x) => x && x.leak === 0 && x.moved === 0;
     ok(S.cutLosing.pay === 0.9 && S.cutFloor === 0.5 && S.cutLosing.logs.some(x => x.includes('✂️') && x.includes('90%')) && clean(S.cutLosing), `${tag} 虧錢時砍薪：砍一成、最低五成，日誌寫「把工資砍到原本的 90%」，錢沒動`, S.cutLosing);
