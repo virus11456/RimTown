@@ -44,7 +44,7 @@ const ORDER = (() => {
     const live = (w, id) => { const a = id && w.agents[id]; return a && !a.isDead && !a.isPlayer && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) ? a : null; };
     const honesty = (a) => { try { return typeof DARK !== 'undefined' ? DARK.honesty(a) : 2; } catch (e) { return 2; } };
     const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a).filter(f => f !== a) : []; } catch (e) { return []; } };
-    const isFam = (w, a, b) => famOf(w, a).includes(b);
+    const isFam = (w, a, b) => !!(a && b && a !== b && (famOf(w, a).includes(b) || famOf(w, b).includes(a))); // 夫妻、父母，也包括自己的孩子
     const owes = (w, a, b) => (w.ways?.owe?.[a?.agentId]?.[b?.agentId] || 0) > 0; // a 欠 b 人情（b 是 a 的恩人）
     const cold = (w, a, b) => { try { return typeof WAYS !== 'undefined' && WAYS.coldWith ? !!WAYS.coldWith(w, a, b) : false; } catch (e) { return false; } };
     const tie = (w, a, b) => (isFam(w, a, b) ? '家人' : (cold(w, a, b) || aff(a, b) <= -15) ? '有過節' : aff(a, b) >= 60 ? '很要好' : aff(a, b) >= 25 ? '有交情' : '交情普通');
@@ -141,7 +141,7 @@ const ORDER = (() => {
         facts(w, a, c) { const I = joinInfo(w, a, c); if (!I) return '';
             return fill('{b}來找你，想拉你一起成立「{f}」。一起被找的還有：{list}。你跟{b}{tie}。你現在參加了 {n} 個小團體（最多兩個）。至少要有兩個人答應才成立。', { b: I.by.name, f: FZH[c.t], list: { raw: tieList(w, a, I.others) || t('沒有別人') }, tie: tieTxt(tie(w, a, I.by)), n: I.mine }); },
         options(w, a, c) { const I = joinInfo(w, a, c); if (!I) return []; const f = FZH[c.t];
-            const adj = clampN(aff(a, I.by) / 60, -0.6, 0.4) + clampN(avgAff(a, I.others) / 80, -0.4, 0.3) + (isFam(w, a, I.by) ? 0.4 : 0) - (I.foes.length ? 0.4 : 0) - (has(a, 'shy') ? 0.3 : 0) + (has(a, 'charismatic') ? 0.2 : 0) - (hasV(a, '自由') ? 0.2 : 0) - (I.mine ? 0.15 : 0);
+            const adj = clampN(aff(a, I.by) / 40, -1.4, 0.4) + clampN(avgAff(a, I.others) / 80, -0.4, 0.3) + (isFam(w, a, I.by) ? 0.4 : 0) - (I.foes.length ? 0.4 : 0) - (has(a, 'shy') ? 0.3 : 0) + (has(a, 'charismatic') ? 0.2 : 0) - (hasV(a, '自由') ? 0.2 : 0) - (I.mine ? 0.15 : 0);
             return cal([
                 { id: 'no', quiet: true, text: '婉拒，不想加入', say: { k: '沒有加入{b}找的「{f}」', p: { b: I.by.name, f } }, why: '我不想被綁在一個圈子裡。', lean: {},
                     run: (w2, a2) => { const pe = S(w2).pend[c.t]; if (!pe || pe.by !== c.by) return null; pe.no.push(a2.agentId); const b = w2.agents[pe.by]; if (b) { bump(b, a2, -2); mem(w2, b, '我找{a}加入「{f}」，他不肯。', { a: a2.name, f }, 4); } st(w2, 'decline'); settleIfDone(w2, c.t); return { k: '婉拒了' }; } },
@@ -437,7 +437,7 @@ const ORDER = (() => {
             return fill('{h}{poor}{kids}你跟{a}{tie}{tv}。最近兩週鎮上有 {k} 起偷竊。照規矩要{back}，再關他 {d} 天。', { h: { raw: head }, a: I.th.name, poor: c.c0 != null ? { k: '他偷之前身上只剩 {c} 銀幣。', p: { c: Math.max(0, c.c0) } } : { raw: '' }, kids: I.kids.length ? { k: '他家裡有 {n} 個小孩。', p: { n: I.kids.length } } : { raw: '' },
                 tie: tieTxt(I.tth), tv: I.vic ? { k: '，跟{v}{tie}', p: { v: I.vic.name, tie: tieTxt(I.tv) } } : { raw: '' }, k: I.recent, back: c.src === 'grain' ? '把糧食扛回糧倉' : { k: '把錢還給{v}', p: { v: I.vic?.name || '' } }, d: c.days }); },
         options(w, a, c) { const I = caughtInfo(w, a, c); if (!I) return []; const th = I.th.name; const hon = honesty(a);
-            const close = I.tth === '家人' ? 1.2 : I.tth === '很要好' ? 0.6 : I.tth === '有交情' ? 0.25 : 0; const foe = I.tth === '有過節' ? 0.5 : 0; const vclose = I.tv === '家人' ? 0.6 : I.tv === '很要好' ? 0.4 : 0;
+            const close = I.tth === '家人' ? 1.6 : I.tth === '很要好' ? 0.8 : I.tth === '有交情' ? 0.3 : 0; const foe = I.tth === '有過節' ? 0.5 : 0; const vclose = I.tv === '家人' ? 0.6 : I.tv === '很要好' ? 0.4 : 0;
             const strict = (hon >= 4 ? 0.3 : 0) + (has(a, 'perfectionist') ? 0.3 : 0) + (hasV(a, '傳統') ? 0.2 : 0) + (I.recent >= 5 ? 0.3 : 0) + foe + vclose; const soft = (has(a, 'kind') ? 0.4 : 0) + (I.kids.length ? 0.2 : 0) + (c.c0 != null && c.c0 <= 1 ? 0.15 : 0);
             const out = [
                 { id: 'jail', quiet: true, text: { k: '照規矩辦：關起來 {d} 天', p: { d: c.days } }, say: { k: '把{a}關了起來', p: { a: th } }, why: '偷就是偷，不能壞了規矩。', lean: { safe: 0.1 }, adj: strict,
@@ -521,6 +521,6 @@ const ORDER = (() => {
         const _load = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.order = (data?.order && typeof data.order === 'object') ? data.order : null; } catch (e) {} return r; };
     }
     DECIDE.order = true; // 其他系統看到這個，就知道小團體、報社、治安裡的這些事交給本人決定
-    return { on, S, found, leaveCheck, rival, row, scoop, smearAsk, fixAsk, banAsk, underAsk, buyAsk, caught, raid, tiltN, tie, FZH, leaderOf, settle };
+    return { on, S, found, leaveCheck, rival, row, scoop, smearAsk, fixAsk, banAsk, underAsk, buyAsk, caught, raid, verDaily, tiltN, tie, FZH, leaderOf, settle };
 })();
 if (typeof globalThis !== 'undefined') globalThis.ORDER = ORDER;
