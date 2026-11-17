@@ -28,6 +28,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const [A, B] = npcs().filter(a => a.job?.key !== 'mayor').slice(0, 2);
       E.active = true; E.phase = 'campaign'; E.candidates = [{ agentId: A.agentId, name: A.name, votes: 0, policy: 'economy' }, { agentId: B.agentId, name: B.name, votes: 0, policy: 'welfare' }]; E.lastElectionDay = 199;
       // 收買:B 有錢、不老實
+      // v11.8.0 報社登不登、收不收錢、更不更正、查不查禁、轉不轉入地下現在由主筆和國王自己決定（sim-decide-order.js，v110800_test 測）；這裡測的是原本報社的規則，所以不問他們、照原本那條路
+      const _ordOn = typeof ORDER !== 'undefined' ? ORDER.on : null; if (_ordOn) ORDER.on = () => false;
       w.wallet.bal[B.agentId] = 1000; const _hon = DARK.honesty; DARK.honesty = (a) => a === B ? 1 : 4;
       for (const P of R.papers) { const j = w.agents[P.journo]; if (j) j.personality.traits = j.personality.traits.filter(x => x !== 'perfectionist'); }
       // A 有一個沒被發現的祕密
@@ -56,7 +58,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.crown = null; w.council._formCouncil(w); for (const id of w.council.members) { const m = w.agents[id]; for (const o of npcs()) m.relationships.getOrCreate(o.agentId, o.name).affinity = 10; }
       fix(0.5, () => CROWN.daily(w)); w.crown.legit = 30; D++;
       fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); out.banned = R.papers.some(P => P.banned) && logHas(/查禁|banned/);
-      D++; fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); out.underground = R.papers.some(P => P.underground);
+      D++; fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); out.underground = R.papers.some(P => P.underground); if (_ordOn) ORDER.on = _ordOn;
       w._absDay = _ad;
       app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.renderNews(box); /* v7.3.0 搬到日報 › 消息 */ out.ui = box.querySelector('.pp-press')?.innerText || ''; box.remove();
       const d = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); w2.loadSave(d); out.rt = w2.press?.papers?.length === R.papers.length; w2.reset(); out.reset = !w2.press;

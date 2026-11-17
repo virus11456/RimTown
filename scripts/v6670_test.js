@@ -24,6 +24,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const all = npcs(); for (const a of all) w.wallet.bal[a.agentId] = 30; // 沒人是窮人、也沒人是有錢人
       const thief = all[0], vic = all[1]; thief.personality.traits = [...thief.personality.traits, 'lazy']; w.wallet.bal[thief.agentId] = 0; w.wallet.bal[vic.agentId] = 200;
       for (const a of all) if (a.job?.key === 'guard') a.job.key = 'farmer'; all[2].job.key = 'guard'; all[3].job.key = 'guard';
+      // v11.8.0 抓到之後關不關由抓到人的守衛自己決定（sim-decide-order.js，v110800_test 測）；這裡測的是原本的治安規則，所以這幾步不問守衛、照原本那條路
+      const _ordOn = typeof ORDER !== 'undefined' ? ORDER.on : null; if (_ordOn) ORDER.on = () => false;
       // 抓到
       seq([0.01, 0.01], () => CIVIC.crime(w, C, D)); out.caught = C.jail[thief.agentId] > D && WALLET.get(w, vic) === 200 && logHas(/衛兵抓到|guards caught/);
       // 出獄
@@ -32,7 +34,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       all[2].job.key = 'farmer'; all[3].job.key = 'farmer'; w.wallet.bal[thief.agentId] = 0; D++;
       const ns = (w.dark?.secrets || []).length; seq([0.01, 0.99], () => CIVIC.crime(w, C, D)); out.secret = (w.dark?.secrets || []).length > ns && WALLET.get(w, vic) < 200;
       // 貧民區
-      for (const a of all) w.wallet.bal[a.agentId] = 0; C.poorDays = 9; D++; fix(0.99, () => CIVIC.crime(w, C, D)); out.slum = C.slum && logHas(/貧民區|slum/);
+      for (const a of all) w.wallet.bal[a.agentId] = 0; C.poorDays = 9; D++; fix(0.99, () => CIVIC.crime(w, C, D)); out.slum = C.slum && logHas(/貧民區|slum/); if (_ordOn) ORDER.on = _ordOn;
       // 稅率提案
       for (const a of all) w.wallet.bal[a.agentId] = 30; const silver = w.stockpile.get('silver'); w.stockpile.consume('silver', silver, w.tickCount, 't'); w.stockpile.add('silver', 20, w.tickCount, 't'); C.lastTax = -99;
       const tax0 = w.wallet.tax; const P = w.proposals; P.items = (P.items || []).filter(p => p.kind !== 'tax'); if (typeof TREASURY !== 'undefined') { const L = TREASURY.S(w).led = {}; for (let i = 0; i < 7; i++) L[w._absDay() - i] = { '+goods': 10, '-pay': 40 }; } /* v10.7.0 加稅要看公庫是不是真的一直在掉：補上最近七天入不敷出的帳 */ const p = CIVIC.taxProposal(w, C, D);

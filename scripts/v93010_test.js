@@ -78,7 +78,7 @@ const sheet = (page) => page.evaluate(() => { const L = document.getElementById(
     const k1 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), sel: document.querySelector('.lp-kindtab[aria-selected="true"]')?.id, n: document.querySelectorAll('#lp-kp-4 .lp-kind-tags li').length }));
     await page.keyboard.press('ArrowRight'); await page.waitForTimeout(120); const k2 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), foc: document.activeElement.id }));
     await page.focus('#lp-kt-0'); await page.keyboard.press('ArrowLeft'); await page.waitForTimeout(120); const k3 = await page.evaluate(() => ({ vis: [...document.querySelectorAll('#landing-kinds .lp-kind')].filter(e => e.offsetHeight > 0).map(e => e.id).join(), foc: document.activeElement.id }));
-    ok(k1.vis === 'lp-kp-4' && k1.sel === 'lp-kt-4' && k1.n > 0 && k2.vis === 'lp-kp-5' && k2.foc === 'lp-kt-5' && k3.vis === 'lp-kp-14' && k3.foc === 'lp-kt-14', '點分頁換類；左右鍵換到隔壁一類，第一類往左會繞到最後一類', { k1, k2, k3 });
+    ok(k1.vis === 'lp-kp-4' && k1.sel === 'lp-kt-4' && k1.n > 0 && k2.vis === 'lp-kp-5' && k2.foc === 'lp-kt-5' && k3.vis === 'lp-kp-15' && k3.foc === 'lp-kt-15', '點分頁換類；左右鍵換到隔壁一類，第一類往左會繞到最後一類', { k1, k2, k3 });
     ok(errs.length === 0, '電腦版沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close(); }
   // ── 舊連結 ──

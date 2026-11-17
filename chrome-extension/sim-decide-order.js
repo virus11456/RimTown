@@ -185,7 +185,7 @@ const ORDER = (() => {
                     run: (w2, a2) => { const f2 = facOf(w2, c.f); if (!f2 || !FS(w2)._leaveFaction(w2, f2, a2, 'fade')) return null; st(w2, 'fade'); return { k: '慢慢不去「{f}」了', p: { f } }; } },
                 { id: 'quit', quiet: true, text: '公開退出', say: { k: '退出了「{f}」', p: { f } }, why: c.why === 'kin' ? { k: '他們跟{x}作對，我不能站在那邊。', p: { x: I.x.name } } : '我受不了他們了。', lean: { face: 0.1 }, adj: (has(a, 'abrasive') ? 0.3 : 0) - (has(a, 'shy') ? 0.3 : 0) + (c.why === 'kin' ? 0.3 : 0) - stay,
                     run: (w2, a2) => { const f2 = facOf(w2, c.f); if (!f2 || !FS(w2)._leaveFaction(w2, f2, a2, 'quit')) return null; st(w2, 'quit'); for (const id of f2.members) { const o = w2.agents[id]; if (o) bump(o, a2, -3); } return { k: '退出了「{f}」', p: { f } }; } },
-            ], feud ? [0.8, 0.08, 0.12] : [0.9, 0.06, 0.04]);
+            ], feud ? [0.8, 0.08, 0.12] : [0.96, 0.025, 0.015]); // 翻臉照以前每三天 20%；家人在對頭那邊、名聲變差是新的理由，起跑機會壓低，整體退出的次數才跟以前差不多
         },
     }));
 
@@ -196,7 +196,7 @@ const ORDER = (() => {
         const them = fB.members.map(id => w.agents[id]).filter(Boolean), us = fA.members.map(id => w.agents[id]).filter(Boolean); let good = 0, bad = 0; for (const x of us) for (const y of them) { const v = aff(x, y); if (v >= 25) good++; else if (v <= -15) bad++; }
         return { fA, fB, M, them, us, good, bad, cross: us.length && them.length ? us.reduce((s, x) => s + them.reduce((s2, y) => s2 + aff(x, y), 0), 0) / (us.length * them.length) : 0, rivals: fA.rivalFactionId === fB.id, allies: fA.allyFactionId === fB.id };
     }
-    const QA = 0.8; // 對方接受示好的機會（照個性算的平均）：示好的起跑機會要除掉這一份，整體合作的次數才跟以前差不多
+    const QA = 0.9; // 對方接受示好的機會（照個性算的平均）：示好的起跑機會要除掉這一份，整體合作的次數才跟以前差不多
     DECIDE.kind('facRival', Object.assign({}, base, {
         title: '碰上另一派，怎麼對他們', pri: 1.2, aiKind: 1,
         facts(w, a, c) { const I = rivalInfo(w, a, c); if (!I) return '';
@@ -205,7 +205,7 @@ const ORDER = (() => {
         options(w, a, c) { const I = rivalInfo(w, a, c); if (!I) return []; const g = fnm(I.fB);
             // 以前：兩派對同一件事看法相反就吵（70% 那一段全是吵）；不然四成想吵（已經是死對頭才吵得起來，不是的話只有三成）、三成合作
             let pc = c.iss ? 0.85 : (0.4 / 0.7) * (I.rivals ? 1 : 0.3), pa = c.iss ? 0.05 : Math.min(0.9, (0.3 / 0.7) / QA); if (pc + pa > 0.97) { const k = 0.97 / (pc + pa); pc *= k; pa *= k; }
-            const warm = clampN(I.cross / 40, -0.4, 0.4) + clampN(aff(a, I.M) / 80, -0.3, 0.3);
+            const warm = clampN(I.cross / 80, -0.3, 0.3) + clampN(aff(a, I.M) / 120, -0.2, 0.2);
             return cal([
                 { id: 'ignore', quiet: true, mute: true, text: '不理他們', say: { k: '沒有去惹「{g}」', p: { g } }, why: '井水不犯河水。', lean: {}, run: () => null },
                 { id: 'clash', quiet: true, text: { k: '帶大家跟「{g}」槓上', p: { g } }, say: { k: '帶頭跟「{g}」槓上', p: { g } }, why: '他們太囂張了，總要有人出來說話。', lean: { face: 0.2, bond: -0.1 }, adj: -warm + (has(a, 'abrasive') ? 0.3 : 0) + (has(a, 'jealous') ? 0.2 : 0) - (has(a, 'kind') ? 0.3 : 0),
@@ -220,7 +220,7 @@ const ORDER = (() => {
         title: '另一派找上門來', pri: 1.3, aiKind: 1,
         facts(w, a, c) { const I = replyInfo(w, a, c); if (!I) return '';
             return fill(c.how === 'clash' ? '「{f}」帶頭的{l}帶著他的人跟你們「{g}」槓上了，兩邊的人都在吵。你是「{g}」帶頭的，你跟{l}{tie}。' : '「{f}」帶頭的{l}來找你，說兩邊以後互相照應。你是「{g}」帶頭的，你跟{l}{tie}。', { f: fnm(I.fA), g: fnm(I.fB), l: I.L.name, tie: tieTxt(tie(w, a, I.L)) }); },
-        options(w, a, c) { const I = replyInfo(w, a, c); if (!I) return []; const f = fnm(I.fA), l = I.L.name; const warm = clampN(aff(a, I.L) / 60, -0.4, 0.4);
+        options(w, a, c) { const I = replyInfo(w, a, c); if (!I) return []; const f = fnm(I.fA), l = I.L.name; const warm = clampN(aff(a, I.L) / 120, -0.2, 0.2);
             if (c.how === 'clash') return cal([
                 { id: 'let', quiet: true, mute: true, text: '不理他們', say: { k: '沒有理「{f}」', p: { f } }, why: '跟他們吵只會越吵越大。', lean: {}, run: () => null },
                 { id: 'back', quiet: true, text: '嗆回去', say: { k: '帶頭嗆回「{f}」', p: { f } }, why: '被欺負到頭上了，不能不回。', lean: { face: 0.2 }, adj: -warm + (has(a, 'abrasive') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0),
@@ -234,7 +234,7 @@ const ORDER = (() => {
                     run: (w2, a2) => { const I2 = replyInfo(w2, a2, c); if (!I2) return null; FS(w2)._ally(w2, I2.fA, I2.fB); st(w2, 'allied'); return { k: '跟「{f}」合作了', p: { f } }; } },
                 { id: 'refuse', quiet: true, text: '婉拒', say: { k: '婉拒了{l}', p: { l } }, why: '我們跟他們不是一路的。', lean: { face: 0.1 }, adj: -warm + (has(a, 'abrasive') ? 0.3 : 0),
                     run: (w2, a2) => { const I2 = replyInfo(w2, a2, c); if (!I2) return null; bump(I2.L, a2, -5); st(w2, 'refuse'); mem(w2, I2.L, '我去找{a}示好，他不領情。', { a: a2.name }, 5); return { k: '婉拒了{l}', p: { l } }; } },
-            ], [0.08, QA, 0.12]);
+            ], [0.04, QA, 0.06]);
         },
     }));
     // 團體裡的摩擦（以前三成的日子挑兩個人擲骰，四成鬧起來）：最受不了某人的那一位自己決定
@@ -250,11 +250,11 @@ const ORDER = (() => {
         options(w, a, c) { const I = rowInfo(w, a, c); if (!I) return []; const x = I.x.name; const v = aff(a, I.x);
             return cal([
                 { id: 'hold', quiet: true, mute: true, text: '忍著，不說什麼', say: { k: '忍著沒說{x}', p: { x } }, why: '大家都在，鬧開了不好看。', lean: {}, run: () => null },
-                { id: 'call', quiet: true, text: { k: '當眾指責{x}', p: { x } }, say: { k: '在聚會上當眾指責{x}', p: { x } }, why: { k: '{x}太過分了，我今天一定要說。', p: { x } }, lean: { face: 0.2 }, adj: (v <= -30 ? 0.3 : v >= 20 ? -0.4 : 0) + (has(a, 'abrasive') ? 0.3 : 0) - (has(a, 'shy') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0),
+                { id: 'call', quiet: true, text: { k: '當眾指責{x}', p: { x } }, say: { k: '在聚會上當眾指責{x}', p: { x } }, why: { k: '{x}太過分了，我今天一定要說。', p: { x } }, lean: { face: 0.2 }, adj: (v <= -30 ? 0.4 : v >= 30 ? -0.15 : 0) + (has(a, 'abrasive') ? 0.3 : 0) - (has(a, 'shy') ? 0.3 : 0) - (has(a, 'kind') ? 0.2 : 0),
                     run: (w2, a2) => { const I2 = rowInfo(w2, a2, c); if (!I2) return null; FS(w2)._drama(w2, I2.f, a2, I2.x); st(w2, 'call'); return { k: '當眾說了{x}', p: { x } }; } },
                 { id: 'talk', quiet: true, text: { k: '散會後私下找{x}講開', p: { x } }, say: { k: '私下找{x}講開', p: { x } }, why: '有話私下說，不用鬧到大家都知道。', lean: { bond: 0.2 }, adj: (has(a, 'kind') ? 0.3 : 0) + (hasV(a, '和平') ? 0.2 : 0) - (has(a, 'abrasive') ? 0.3 : 0),
                     run: (w2, a2) => { const I2 = rowInfo(w2, a2, c); if (!I2) return null; bump(a2, I2.x, 3); bump(I2.x, a2, 3); I2.f.cohesion = Math.min(100, (I2.f.cohesion || 50) + 3); st(w2, 'talk'); mem(w2, I2.x, '{a}私下來找我把話說開。', { a: a2.name }, 5); return { k: '跟{x}私下講開了', p: { x } }; } },
-            ], [0.45, 0.4, 0.15]);
+            ], [0.4, 0.45, 0.15]); // 以前挑到的兩個人四成會鬧起來；現在挑的是最受不了對方的那一位，處得還好的才少一點
         },
     }));
 
