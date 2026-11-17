@@ -1589,7 +1589,7 @@ class Town3D extends PixelTileMap {
         if (TH) { let nTh = 0; for (const aid in TH) { const th = TH[aid]; if (th.left <= 0 || now - th.born > 300000) { delete TH[aid]; continue; }
             // 這一格沒有他的資料就先不畫，但不要刪（有些重畫不帶村民資料）
             if (!agents[aid] || shownBubble.has(aid)) { th.seen = 0; continue; } const pos = this.agentPositions[aid]; const m = this._agentMeshes[aid]; if (!pos || !m || !m.visible) { th.seen = 0; continue; }
-            if (!th.on) { if (th.hold && (agents[aid].activity === 'sleeping' || (this._thNext || 0) > now)) continue; th.on = 1; if (th.hold) this._thNext = now + 2500; }
+            if (!th.on) { if (th.hold && (agents[aid].activity === 'sleeping' || ((this._thNext || 0) > now && aid !== selectedAgent))) continue; th.on = 1; if (th.hold && aid !== selectedAgent) this._thNext = now + 2500; } // v11.4.0 正在看的那個人不排隊：收著的話一個一個冒（隔 2.5 秒），投票也由本人說理由之後收著的變多，點了人卻要等前面八九個冒完才看得到他那一句
             if (th.kind === 'think' && m.userData.far && aid !== selectedAgent) { th.seen = 0; continue; } if (++nTh > 8) break;
             const el = this._ov('th:' + aid, 't3d-thought is-' + th.kind, th.kind === 'think' ? `<i>💭</i>${this._esc(clipText(th.text, 20))}` : `<b>${th.kind === 'idea' ? '💡' : '🧭'} ${this._esc(th.name)}</b>${this._esc(clipText(th.text, 48))}`);
             if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); if (this.onAgentClick) this.onAgentClick(aid); }); }
