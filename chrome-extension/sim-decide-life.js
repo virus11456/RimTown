@@ -196,8 +196,11 @@
             const have = Object.keys(B.TYPES).filter(k => C[k] > 0).sort((x, y) => C[y] - C[x]), none = Object.keys(B.TYPES).filter(k => !C[k]);
             const list = (have.length ? { k: '（{l}）', p: { l: { raw: have.map(k => t(B.TYPES[k].zh) + ' ' + C[k]).join(t('、')) } } } : { raw: '' });
             const lack = none.length ? { k: '還沒有人開的：{l}。', p: { l: { raw: none.map(k => t(B.TYPES[k].zh)).join(t('、')) } } } : { raw: '' };
+            // v11.6.0 廣場邊有空店面：頂下來比蓋新的便宜（本錢就是頂讓的錢）
+            const fr = I.front ? (I.front.prev ? { k: '廣場邊有一間空店面（以前是「{p}」），頂下來只要 {n} 銀幣，蓋新的要 {m}。', p: { p: I.front.prev, n: I.cost, m: B.NEW_COST || 60 } } : { k: '廣場邊有一間空店面，頂下來只要 {n} 銀幣，蓋新的要 {m}。', p: { n: I.cost, m: B.NEW_COST || 60 } }) : null;
+            const lack2 = fr ? { raw: tx(lack) + tx(fr) } : lack;
             return fill('鎮上現在有 {k} 家店{list}，還容得下新店。{lack}你最拿手的是{ty}，也可以開別種；本錢都是 {n} 銀幣，你身上有 {c} 銀幣。{how}同一種店開得越多，客人分得越散。開了店每天有進帳，但生意不好也可能撐不下去。',
-                { k: B.S(w).shops.length, list, lack, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
+                { k: B.S(w).shops.length, list, lack: lack2, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
         },
         options(w, a) {
             const I = startInfo(w, a); if (!I) return []; const B = BZ();

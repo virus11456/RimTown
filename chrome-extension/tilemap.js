@@ -1711,6 +1711,7 @@ class PixelTileMap {
             ...(this.constructionSites || []).map(p => ({ x: p.siteX, y: p.siteY, w: 2, h: 2 })),
             ...(this.sitedCompleted || []).map(b => ({ x: b.siteX, y: b.siteY, w: 2, h: 2 })),
             ...(this.decorations || []).map(d => ({ x: d.x, y: d.y, w: 1, h: 1 })),
+            ...(this.bizFronts || []).map(f => ({ x: f.x, y: f.y, w: 1, h: 1 })), // v11.6.0 小店的店面
         ];
         if (this.coachStation) rects.push(this.coachStation);
         if (this.themeKey !== 'frontier') for (const z of Object.values(this.natureZones || {})) rects.push(z); // v5.75.0 主題鎮地標不蓋房
@@ -1784,6 +1785,7 @@ class PixelTileMap {
             ...(this.constructionSites || []).map(p => ({ x: p.siteX, y: p.siteY, w: 2, h: 2 })),
             ...(this.sitedCompleted || []).map(b => ({ x: b.siteX, y: b.siteY, w: 2, h: 2 })),
             ...(loose === 1 ? Object.values(nz) : [nz.graveyard, nz.town_square].filter(Boolean)),
+            ...(this.bizFronts || []).map(f => ({ x: f.x, y: f.y, w: 1, h: 1 })), // v11.6.0 小店的店面
         ];
         const BAD = new Set([T.WATER, T.WATER2, T.PIER, T.SALT, T.NET, T.GRAVEL, T.CHASM, T.RAIL, T.ROOF, T.ROOF2, T.WALL_TOP, T.WALL_FRONT, T.FLOOR, T.FLOOR2, T.DOOR, T.WINDOW, T.STONE_PATH, T.BRIDGE, T.CROP1, T.CROP2, T.CROP3, T.FENCE_H, T.FENCE_V, T.WELL, T.ALTAR, T.STALL, T.SNOW, T.ROCK, T.DARK_FLOOR]);
         if (loose === 1) BAD.add(T.DIRT); // 嚴格版連路也不壓
