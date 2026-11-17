@@ -115,6 +115,7 @@ const COMPETE = (() => {
     function hop(w, a, k) {
         const I = hopInfo(w, a); if (!I || I.k !== k) return false; const M = S(w); const R = MK().rivalOf(w, k); const d = day(w);
         if (I.atR) { delete R.emp[a.agentId]; R.hopR = (R.hopR || 0) + 1; } else { R.emp[a.agentId] = d; R.hopI = (R.hopI || 0) + 1; }
+        try { if (typeof BOSS !== 'undefined') BOSS.noteHop(w, k, I.atR); } catch (e) {} // v11.6.0 記下哪一家這週被挖走人，東家看帳時看得到
         M.cst.poach++; mem(w, a, '{o}那邊工資比較高，我換過去做了。', { o: I.to?.name || '' }, 5);
         if (d - (R.poachLog || -99) >= 14) { R.poachLog = d; log(w, '🔀 {s}的工人跳槽：{n} 個人換到工資比較高的那一家。', { s: MK().name(k), n: 1 }); }
         return true;
@@ -129,15 +130,17 @@ const COMPETE = (() => {
             // 調價:被搶走客人、還有賺頭的那家降價;贏的那家慢慢漲回原價。吝嗇的不肯降到九折以下,心腸好的降得快
             const floor = (a) => (has(a, 'greedy') ? 0.9 : 0.75), step = (a) => ((has(a, 'kind') || has(a, 'generous')) ? 0.1 : 0.05);
             const pi0 = M.price[k] ?? 1, pr0 = R.price ?? 1; let pi = pi0, pr = pr0;
-            if (s > 0.55 && Pi > -5) pi = Math.max(floor(boss), pi - step(boss)); else if (s < 0.35) pi = Math.min(1, pi + 0.05);
-            if (s < 0.45 && Pr > -5) pr = Math.max(floor(rv), pr - step(rv)); else if (s > 0.65) pr = Math.min(1, pr + 0.05);
+            // v11.6.0 這週東家自己看過帳、拿過價錢主意的那一家跳過（sim-boss.js）；沒被問到的照這條
+            const tkI = (tp) => typeof BOSS !== 'undefined' && BOSS.took(w, k, tp), tkR = (tp) => typeof BOSS !== 'undefined' && BOSS.took(w, k + ':R', tp);
+            if (tkI('price')) { /* 東家自己定 */ } else if (s > 0.55 && Pi > -5) pi = Math.max(floor(boss), pi - step(boss)); else if (s < 0.35) pi = Math.min(1, pi + 0.05);
+            if (tkR('price')) { /* 東家自己定 */ } else if (s < 0.45 && Pr > -5) pr = Math.max(floor(rv), pr - step(rv)); else if (s > 0.65) pr = Math.min(1, pr + 0.05);
             M.price[k] = Math.round(pi * 100) / 100; R.price = Math.round(pr * 100) / 100;
             if (pi < pi0 && pr < pr0 && d - (R.warLog || -99) >= 21) { R.warLog = d; M.cst.wars++; log(w, '💥 {o}和{a}的{s}打起價格戰，一個降到 {p}%、一個降到 {q}%，村民樂得撿便宜。', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k), p: Math.round(pi * 100), q: Math.round(pr * 100) }, rv?.name || ''); news(w, '{o}和{a}的{s}打起價格戰', { o: boss?.name || '', a: rv?.name || '', s: Mk.name(k) }, 6, [boss?.name || '', rv?.name || '']); }
             // 搶工人:對面工資高一成以上，跳不跳槽由工人自己決定(hopBy)；這一週換過去的人記在 hopI／hopR
             const payI = Mk.payRate(w, k), payR = R.pay ?? 1; let lostI = R.hopI || 0, lostR = R.hopR || 0; delete R.hopI; delete R.hopR;
             // 被挖走人、還有賺錢的老闆加薪(吝嗇的不加)
-            if (lostI && Pi > 0 && !has(boss, 'greedy') && payI < 1.2) { M.pay[k] = Math.min(1.2, Math.round((payI + 0.05) * 100) / 100); M.cst.raise++; }
-            if (lostR && Pr > 0 && !has(rv, 'greedy') && payR < 1.2) { R.pay = Math.min(1.2, Math.round((payR + 0.05) * 100) / 100); M.cst.raise++; }
+            if (lostI && Pi > 0 && !has(boss, 'greedy') && payI < 1.2 && !tkI('pay')) { M.pay[k] = Math.min(1.2, Math.round((payI + 0.05) * 100) / 100); M.cst.raise++; }
+            if (lostR && Pr > 0 && !has(rv, 'greedy') && payR < 1.2 && !tkR('pay')) { R.pay = Math.min(1.2, Math.round((payR + 0.05) * 100) / 100); M.cst.raise++; }
             // 對手店的營所稅(原本那家由 MARKET.corpTax 收)
             if (Pr > 0 && rv) { const tax = Math.min(bal(w, rv), r2(Pr * CORP * (has(rv, 'greedy') ? 0.6 : 1))); if (tax > 0 && WALLET.take(w, rv, tax)) w.stockpile.add('silver', tax, w.tickCount, t('營利事業所得稅')); }
             // v9.8.0 合夥開的店:稅後利潤的六成照股份分給合夥人
@@ -191,6 +194,7 @@ const COMPETE = (() => {
                 const key = fkey(f); keep.add(key); let m = w.agents[M.mgr[key]];
                 const staff = firmStaff(w, f, all).filter(a => a.agentId !== id);
                 if (!m || m.isDead || !staff.includes(m)) {
+                    if (typeof BOSS !== 'undefined' && BOSS.selfRun(w, id)) { delete M.mgr[key]; continue; } // v11.6.0 掌櫃的事這週東家自己拿過主意（請了誰、或自己硬撐），不替他自動請
                     m = staff.sort((x, y) => (y.skills?.get?.('社交')?.level || 0) - (x.skills?.get?.('社交')?.level || 0))[0]; if (!m) { delete M.mgr[key]; continue; }
                     M.mgr[key] = m.agentId; M.cst.mgr++;
                     log(w, '👔 {o}名下店太多顧不過來，請{m}當{s}的掌櫃。', { o: o.name, m: m.name, s: Mk.name(f.k) }, o.name); mem(w, m, '{o}請我當{s}的掌櫃，多一份薪水。', { o: o.name, s: Mk.name(f.k) }, 6);

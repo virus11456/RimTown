@@ -94,11 +94,12 @@ const LABOR = (() => {
         const L = S(w), d = day(w), wk = Math.floor(d / 7); if (L.lastWeek === wk) return; L.lastWeek = wk;
         const all = npcs(w).filter(a => !(w.isAway?.(a.agentId))); const sl = slots(w, all); let fl = filled(all);
         // 1) 裁員:人比職缺多出兩成以上的行業,裁掉最不擅長的人(老闆本人、工會領袖不裁),每週最多 2 人
-        let cut = 0;
+        let cut = typeof BOSS !== 'undefined' && w.market ? BOSS.cutsThisWeek(w) : 0; // v11.6.0 東家這週自己裁的也算在一週 2 人裡
         for (const k of Object.keys(RATIO).sort((x, y) => ((fl[y] || 0) - sl[y]) - ((fl[x] || 0) - sl[x]))) {
             if (cut >= 2) break; const n = fl[k] || 0; if (n <= sl[k] + 1 || n <= sl[k] * 1.2) continue;
+            { const sec = typeof MARKET !== 'undefined' ? MARKET.JOB2S[k] : null; if (sec && typeof BOSS !== 'undefined' && w.market && BOSS.took(w, sec, 'cut')) continue; } // v11.6.0 這一行有東家、這週他自己決定過裁誰或不裁（sim-boss.js）；公職、公營的照這條
             const fit = (a) => (typeof HEALTH !== 'undefined' ? HEALTH.jobFit(a, k) : 1); const pool = all.filter(a => a.job?.key === k && !isBoss(w, a) && w.union?.leader !== a.agentId).sort((x, y) => skillOf(x, k) * fit(x) - skillOf(y, k) * fit(y)); // v7.4.0 身體不適合的先被裁
-            const a = pool[0]; if (!a) continue; a.job = null; L.jobless[a.agentId] = d; L.stats.laidOff++; cut++; fl[k] = n - 1;
+            const a = pool[0]; if (!a) continue; a.job = null; L.jobless[a.agentId] = d; L.stats.laidOff++; cut++; fl[k] = n - 1; try { if (typeof BOSS !== 'undefined' && w.market) BOSS.noteCut(w, 1); } catch (e) {}
             a.addThought?.('laid_off', w); mem(w, a, '{j}的人太多了，我被裁掉了，得重新找工作。', { j: t(jt(k)) }, 7);
             log(w, '📉 {j}的人手過剩，{a}被裁員了。', { j: t(jt(k)), a: a.name }, a.name);
         }

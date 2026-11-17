@@ -52,10 +52,10 @@ const FLOW = (() => {
     function need(w, r) { const T = want(w, r); if (T <= 0) return 0; return Math.max(0, Math.min(1, 1 - get(w, r) / T)); }
     // 生產倍率：存量在目標六成以下全力做，到目標時只剩 15%(給商隊與意外)
     function demandMult(w, r) {
-        const T = want(w, r); const lo = r === 'food' ? 0.35 : 0.15; if (T <= 0) return lo; // 糧食最少留三成五(季節與災害的緩衝)
-        const s = get(w, r);
-        if (r === 'food' && s >= T * 3) return 0.1; // v11.3.0 存糧已經是目標的三倍：種田打魚的再放慢（以前爆倉也照做三成五，一百多人的城市堆到三萬多）
-        if (r !== 'food' && s >= T * 3) return 0.05; // v11.3.0 其他東西堆到目標的三倍：只做半成（以前堆再多也照做一成五，城市的石材想備 890、實際堆到一萬四還在挖）
+        const T0 = want(w, r); const lo = r === 'food' ? 0.35 : 0.15; if (T0 <= 0) return lo; // 糧食最少留三成五(季節與災害的緩衝)
+        const s = get(w, r); const T = T0 * (typeof BOSS !== 'undefined' ? BOSS.stockF(w, r) : 1); // v11.6.0 這一行的東家說多做／少做：放慢的門檻挪一成五（下面堆到三倍的硬上限照原本的目標量）
+        if (r === 'food' && s >= T0 * 3) return 0.1; // v11.3.0 存糧已經是目標的三倍：種田打魚的再放慢（以前爆倉也照做三成五，一百多人的城市堆到三萬多）
+        if (r !== 'food' && s >= T0 * 3) return 0.05; // v11.3.0 其他東西堆到目標的三倍：只做半成（以前堆再多也照做一成五，城市的石材想備 890、實際堆到一萬四還在挖）
         if (s <= T * 0.6) return 1;
         if (s >= T) return lo;
         return lo + (1 - lo) * (T - s) / (T * 0.4);

@@ -138,6 +138,14 @@
         },
     });
 
+    // ================= 東家每週看帳（v11.6.0） =================
+    // 以前調薪、調價、被挖角就加薪、裁員、請掌櫃是五條自動規則，東家沒被問過。現在每位東家一週看一次帳，自己決定這週做哪一件事。
+    // 由 sim-boss.js 在輪到他的那一天送進來（不是每天掃）；選項照當下的帳列，結算也在那邊。另有自己的每日額度（DECIDE.AI_GROUP.work，一天 6 件）
+    const BS = () => (typeof BOSS !== 'undefined' ? BOSS : null);
+    DECIDE.kind('bossWeek', { title: '東家這週看帳', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 3,
+        facts(w, a, ctx) { const B = BS(); return B ? B.facts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BS(); return B ? B.options(w, a, ctx) : []; } });
+
     // ---------- 合夥的店不賺錢：要不要拆夥 ----------
     const splitInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.splitInfo(w, a) : null; };
     DECIDE.kind('split', {

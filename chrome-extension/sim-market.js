@@ -60,7 +60,10 @@ const MARKET = (() => {
 
     // ---------- 收錢 ----------
     // v9.7.0 兩家搶客人:人手多、服務好、價錢便宜的那家分到比較多;老闆名下店太多、自己顧不到的,服務會變差
-    function quality(w, k, id, nWorkers) { const extra = Math.max(0, firmsOf(w, id).length - 2); return (1 + nWorkers) * Math.pow(0.85, extra); }
+    function quality(w, k, id, nWorkers) { const extra = Math.max(0, firmsOf(w, id).length - 2);
+        // v11.6.0 東家這週決定不請掌櫃、自己硬撐：沒有掌櫃的那幾家顧得更不周到，再打一次八五折（請了掌櫃的照舊）
+        let self = 1; try { if (extra && typeof BOSS !== 'undefined' && BOSS.selfRun(w, id) && !S(w).mgr?.[S(w).owners[k] === id ? k : k + ':R']) self = 0.85; } catch (e) {}
+        return (1 + nWorkers) * Math.pow(0.85, extra) * self; }
     function shareOf(w, k) {
         const R = rivalOf(w, k); if (!R) return 0; const M = S(w); const ws = workersOf(w, k);
         const nr = ws.filter(a => R.emp?.[a.agentId]).length, ni = ws.length - nr;
@@ -145,6 +148,7 @@ const MARKET = (() => {
         for (const k of Object.keys(SECTORS)) { const h = M.hist[k] = (M.hist[k] || []); h.push([Math.round((M.rev[k] || 0) * 10) / 10, Math.round((M.cost[k] || 0) * 10) / 10]); if (h.length > 7) h.shift(); M.rev[k] = 0; M.cost[k] = 0;
             const R = M.rival?.[k]; if (R) { R.hist = R.hist || []; R.hist.push([Math.round((R.rev || 0) * 10) / 10, Math.round((R.cost || 0) * 10) / 10]); if (R.hist.length > 7) R.hist.shift(); R.rev = 0; R.cost = 0; } }
         assign(w, all, d);
+        try { if (typeof BOSS !== 'undefined') BOSS.daily(w); } catch (e) { console.warn('[Boss] daily', e); } // v11.6.0 今天輪到的東家看帳：帳記完、產權交接完，任何一條每週規則之前
         if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d); risk(w, all); }
         endStrikes(w, all, d);
         hunger(w, all);
@@ -193,11 +197,12 @@ const MARKET = (() => {
             if (shady) { M.corp.evaded += Math.round((prof - reported) * CORP * 100) / 100; if (a && Math.random() < 0.3) mem(w, a, '這週帳上少報了一些，稅繳得比較少。', {}, 4); }
         }
     }
-    // 每週調薪:虧錢就砍薪;吝嗇的老闆一直壓;賺很多、心腸好的老闆加一點
+    // 每週調薪:虧錢就砍薪;吝嗇的老闆一直壓;賺很多、心腸好的老闆加一點(v11.6.0 東家被問過的那幾家跳過;東家不在、決策核心沒開時才照這條)
     function adjust(w, all) {
         const M = S(w);
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id]; const h = M.hist[k] || []; if (h.length < 5) continue;
+            if (typeof BOSS !== 'undefined' && BOSS.took(w, k, 'pay')) continue; // v11.6.0 這家這週的工資由東家自己拿過主意（sim-boss.js）
             const rev = h.reduce((s, x) => s + x[0], 0), cost = h.reduce((s, x) => s + x[1], 0); const old = payRate(w, k); let nv = old;
             if (rev * (1 - TAX) < cost) nv = Math.max(0.5, old - 0.1);
             else if (boss && has(boss, 'greedy')) nv = Math.max(0.6, old - 0.05);
