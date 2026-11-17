@@ -115,6 +115,9 @@ const I18N = (() => {
     function registerName(zh, en) {
         if (!zh || !en || typeof zh !== 'string' || typeof en !== 'string') return;
         zh = zh.trim(); en = en.trim();
+        // AI 取的名字（店名、作品名、教義）回來時，裡面的英文人名已經換回中文名（Felix's Quiet Brew → 楊鋒's Quiet Brew），再登記成「中文＝中文」。
+        // 整句替換會先比到這一整條、原樣換回去，裡面的人名就永遠是中文。英文那一邊還有中文字的話，先把裡面的人名換好再登記。
+        if (/[\u4e00-\u9fff]/.test(en)) { try { en = localizeNames(en, true) || en; } catch (e) {} }
         if (!zh || !en || NAME_FIXED[zh] === en) return;
         NAME_FIXED[zh] = en;
         _nameRe = null; _revRe = null; _bump();

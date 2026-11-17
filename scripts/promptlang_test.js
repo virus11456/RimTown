@@ -67,6 +67,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     // 隨機卡司的全名以固定卡司的名字開頭：周明哲 ⊃ 周明（Milo）
     new Agent('t_zmz', '周明哲', 30); o.nameFull = I18N.localizeNames('新居民周明哲來了', true); o.nameBack = I18N.delocalizeNames(I18N.localizeName('周明哲'));
     o.nameShort = I18N.localizeNames('周明來了', true);
+    // AI 取的店名回來時人名已換回中文，登記成「中文＝中文」：整句替換要還是能把裡面的人名換成英文
+    I18N.registerName("楊鋒's Quiet Brew", "楊鋒's Quiet Brew"); o.shopName = I18N.localizeNames("我開了自己的店「楊鋒's Quiet Brew」", true); o.shopBack = I18N.delocalizeNames("Felix's Quiet Brew");
     // 規則寫的「私下的打算」與告示：存成樣板，不是原文
     const flatKinds = (x) => x == null ? 'null' : typeof x === 'string' ? 'string' : x.raw != null ? 'raw' : x.k ? 'k' : '?';
     o.scheme = []; o.board = [];
@@ -86,6 +88,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(/^32-year-old [A-Z]/.test(o.ageJob || ''), '年齡與職稱：32-year-old Farmer', o.ageJob);
     ok(!HAN.test(o.nameFull.replace('新居民', '').replace('來了', '')) && o.nameBack === '周明哲', '「周明哲」整個換成英文名，換得回來（以前變成 Milo哲）', [o.nameFull, o.nameBack]);
     ok(/^Milo/.test(o.nameShort), '「周明」還是 Milo', o.nameShort);
+    ok(/Felix's Quiet Brew/.test(o.shopName) && !/楊鋒/.test(o.shopName) && o.shopBack === "楊鋒's Quiet Brew", 'AI 取的店名裡的人名換得成英文、也換得回來（以前永遠是「楊鋒\'s Quiet Brew」）', [o.shopName, o.shopBack]);
     ok(o.scheme.length > 0 && o.scheme.every(x => !/string|raw/.test(x)), '規則寫的打算：標題與理由都是樣板', o.scheme);
     ok(o.board.length > 0 && o.board.every(x => !/string|raw/.test(x)), '規則寫的告示與信：內容與理由都是樣板', o.board);
     ok(o.buzzKey === '{x}: {y}', '「我聽說了某某：想法」這條記憶樣板有英文', o.buzzKey);
