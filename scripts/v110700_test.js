@@ -285,7 +285,12 @@ async function run(browser, dev, lang) {
         B5.stakes = { adultsNow, F: { n: F.n, pending: F.pending, cap: F.cap, left: F.left, rate: F.rate, eta, proj }, capOk: F.cap === Math.round((adultsNow + zb2.ids.length) * 0.4), leftOk: F.left === (c.ph === 'after' ? Math.max(0, c.len.after - (day() - c.pd)) : Math.max(0, c.len.arrive - (day() - c.pd)) + c.len.after), hunt: fhN.includes(stake), guard: fgN.includes(stake), hide: fzN.includes(stake), bit: fbN.includes(stake), text: stake };
         // 選項兩面都寫，不下結論
         const allOpt = [...KK.zbHunt.options(w, g, hctx), ...KK.zbGuard.options(w, zf, { z: z.agentId, h: g.agentId, d: day() }), ...KK.zbHide.options(w, fam, hctx2), ...KK.zbBit.options(w, vv, { z: z.agentId, d: day() })]; const ot = (id) => allOpt.filter(o => String(o.id) === id).map(o => tx(o.text)).join('|');
-        B5.opts = { kill: ot('kill').includes(t('動手（他不會再咬人；他也等不到解藥了）')), cant: ot('cant').includes(t('下不了手（他還有救；他今晚可能再咬人）')), drive: ot('drive').includes(t('只把他趕到墓園那邊（他還有救；他還會再出來咬人）')), noVerdict: ![fhN, fgN, fzN, fbN, ...allOpt.map(o => tx(o.text))].some(x => x.includes(t('送去診所不是送死')) || x.includes('送去診所不是送死') || x.includes('折衷')) };
+        B5.opts = { kill: ot('kill').includes(t('動手（他不會再咬人；就算解藥做出來也救不回他）')), cant: ot('cant').includes(t('下不了手（不殺他；他今晚可能再咬人）')), drive: ot('drive').includes(t('只把他趕到墓園那邊（不殺他；他還會再出來咬人）')), noVerdict: ![fhN, fgN, fzN, fbN, ...allOpt.map(o => tx(o.text))].some(x => x.includes(t('送去診所不是送死')) || x.includes('送去診所不是送死') || x.includes('折衷')) };
+        // 解藥趕不上的時候：題目和選項裡不出現無條件的「還有救」「今天不會死」
+        { const p0 = c.prog, f0 = c.fast; c.prog = 1; c.fast = 0.05; try { const all = [KK.zbHunt.facts(w, g, hctx), KK.zbGuard.facts(w, zf, { z: z.agentId, h: g.agentId, d: day() }), KK.zbHide.facts(w, fam, hctx2), KK.zbBit.facts(w, vv, { z: z.agentId, d: day() }),
+            ...[...KK.zbHunt.options(w, g, hctx), ...KK.zbGuard.options(w, zf, { z: z.agentId, h: g.agentId, d: day() }), ...KK.zbHide.options(w, fam, hctx2), ...KK.zbBit.options(w, vv, { z: z.agentId, d: day() })].map(o => tx(o.text))];
+            const BAD = ['還有救', '不會死', '等解藥', 'can still be saved', 'will not die', 'wait for the cure']; const late = t('照現在的速度，解藥趕不上。');
+            B5.late = { late: all.slice(0, 4).every(x => x.includes(late)), bad: all.filter(x => BAD.some(k => x.includes(k))).map(x => x.slice(0, 120)) }; for (const x of all) texts.push(x); } finally { c.prog = p0; c.fast = f0; } }
         for (const x of [fhN, fgN, fzN, fbN]) texts.push(x); for (const o of allOpt) texts.push(tx(o.text));
         // 自己的性子：公事公辦的人跟心軟的人看到的不一樣（沒有對應的個性就不寫）
         const hs1 = pool4[23], hs2 = pool4[24]; for (const x of [hs1, hs2]) { plain(x); setJob(x, 'guard'); setAff(x, z, 0); } hs1.personality.traits = ['stoic', 'perfectionist']; hs2.personality.traits = ['kind', 'romantic'];
@@ -452,6 +457,7 @@ async function run(browser, dev, lang) {
     ok(B.opts.kill && B.opts.cant && B.opts.drive && B.opts.noVerdict, `${tag} 選項兩面都寫（動手：不會再咬人／等不到解藥；下不了手：還有救／今晚可能再咬人），沒有替人下結論的句子`, B.opts);
     ok(B.huntT.stoic && B.huntT.kind && B.huntT.plain, `${tag} 獵人自己的性子：公事公辦的跟心軟的看到不一樣的句子，沒有這些個性的不寫`, B.huntT);
     ok(B.hideT.rules && B.hideT.close, `${tag} 瞞不瞞自己的性子：守規矩的跟離不開這個人的看到不一樣的句子`, B.hideT);
+    ok(B.late.late && B.late.bad.length === 0, `${tag} 解藥趕不上的時候：四種題目都寫趕不上，題目和選項裡沒有無條件的「還有救」「今天不會死」`, B.late);
     ok(B.noAdvice, `${tag} 性子那幾句只寫這個人（感情、脾氣、怕什麼），不寫他會怎麼做、不評價選項`, B.sample);
     ok(B.guardT.brave && B.guardT.shy, `${tag} 家人自己的性子：敢衝又跟獵人有交情的、膽小又跟獵人有過節的看到不一樣的句子`, B.guardT);
     if (zh) console.log('    sample:', JSON.stringify(B.sample).slice(0, 1600)); }

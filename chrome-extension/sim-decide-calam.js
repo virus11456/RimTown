@@ -366,13 +366,13 @@
         options(w, h, ctx) {
             const Z = zOk(w, ctx); if (!Z || h === Z.z) return []; const z = Z.z; const a0 = aff(h, z); const mine = WC().kinZ(w, z).includes(h); const soon = etaOf(w, Z.c) <= 3;
             return [
-                { id: 'kill', text: '動手（他不會再咬人；他也等不到解藥了）', say: { k: '對{z}動了手', p: { z: z.name } }, why: '那已經不是他了，再拖下去會有更多人被咬。', lean: { safe: 0.3, bond: -0.2 },
+                { id: 'kill', text: '動手（他不會再咬人；就算解藥做出來也救不回他）', say: { k: '對{z}動了手', p: { z: z.name } }, why: '那已經不是他了，再拖下去會有更多人被咬。', lean: { safe: 0.3, bond: -0.2 },
                     base: REF + tilt(0.95) - clampN((a0 - 15) / 30, 0, 1.5) - (mine ? 1.8 : 0) - (has(h, 'kind') ? (a0 > 15 ? 0.4 : 0.15) : 0) + (h.job?.key === 'guard' ? 0.2 : 0) - (soon ? 0.2 : 0), // 不熟的、不是家人的幾乎都動手（以前輪到的一定出手）；下不了手集中在生前有交情、家人、心軟的人
                     run: (w2, h2) => { const Z2 = zOk(w2, ctx); if (!Z2) return null; const f = zFam(w2, Z2.z, h2)[0];
                         if (f) { DECIDE.askNow(w2, [{ a: f, kind: 'zbGuard', ctx: { z: Z2.z.agentId, h: h2.agentId, d: day(w2) } }]); return { k: '舉起了斧頭' }; }
                         return WC().zKill(w2, h2, Z2.z) ? { k: '結束了{z}', p: { z: Z2.z.name } } : null; } },
-                { id: 'cant', text: '下不了手（他還有救；他今晚可能再咬人）', say: { k: '對{z}下不了手', p: { z: z.name } }, why: '那是我認識的人，我做不到。', base: REF, lean: { bond: 0.3 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, false) ? { k: '放下了斧頭' } : null; } },
-                { id: 'drive', text: '只把他趕到墓園那邊（他還有救；他還會再出來咬人）', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: '先別讓他靠近大家，等解藥。', base: REF - 0.4 + (soon ? 0.15 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
+                { id: 'cant', text: '下不了手（不殺他；他今晚可能再咬人）', say: { k: '對{z}下不了手', p: { z: z.name } }, why: '那是我認識的人，我做不到。', base: REF, lean: { bond: 0.3 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, false) ? { k: '放下了斧頭' } : null; } },
+                { id: 'drive', text: '只把他趕到墓園那邊（不殺他；他還會再出來咬人）', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: soon ? '先別讓他靠近大家，等解藥。' : '先別讓他靠近大家。', base: REF - 0.4 + (soon ? 0.15 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
             ];
         },
     }));
@@ -384,12 +384,12 @@
         options(w, f, ctx) {
             const Z = zOk(w, ctx); const h = Z && w.agents[ctx.h]; if (!Z || !h || h.isDead || f === h || f === Z.z) return []; const z = Z.z; const soon = etaOf(w, Z.c) <= 5;
             return [
-                { id: 'block', text: { k: '衝出去擋在{z}前面（他今天不會死；他今晚可能再咬人）', p: { z: z.name } }, say: { k: '擋在變成喪屍的{z}前面', p: { z: z.name } }, why: '解藥就快好了，他還有救。', lean: { bond: 0.4, safe: -0.3 },
+                { id: 'block', text: { k: '衝出去擋在{z}前面（擋住的話，今天不殺他；他今晚可能再咬人）', p: { z: z.name } }, say: { k: '擋在變成喪屍的{z}前面', p: { z: z.name } }, why: soon ? '解藥就快好了，他還有救。' : '我不能看著他被砍。', lean: { bond: 0.4, safe: -0.3 },
                     base: REF + tilt(0.4) + clampN((aff(f, z) - 70) / 60, -0.4, 0.4) + (has(f, 'brave') ? 0.4 : 0) + (soon ? 0.2 : 0) - (has(f, 'neurotic') || has(f, 'shy') ? 0.2 : 0), // 擋＋求合計大約五成（以前家人 50% 擋）
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, false) ? { k: '擋住了{h}', p: { h: h2.name } } : null; } },
-                { id: 'away', text: '轉過頭不看（他不會再咬人；他也等不到解藥了）', say: '轉過頭，讓他動手', why: '那已經不是他了，讓他走吧。', base: REF, lean: { safe: 0.2 },
+                { id: 'away', text: '轉過頭不看（他不會再咬人；就算解藥做出來也救不回他）', say: '轉過頭，讓他動手', why: '那已經不是他了，讓他走吧。', base: REF, lean: { safe: 0.2 },
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && !h2.isDead && WC().zKill(w2, h2, Z2.z) ? { k: '轉過頭，{h}動了手', p: { h: h2.name } } : null; } },
-                { id: 'beg', text: '跪下來求他再等幾天（他今天不會死；他今晚可能再咬人）', say: { k: '求{h}再等幾天', p: { h: h.name } }, why: '求求你，再等幾天就好。', lean: { bond: 0.3 },
+                { id: 'beg', text: '跪下來求他再等幾天（他答應的話，今天不殺他；他今晚可能再咬人）', say: { k: '求{h}再等幾天', p: { h: h.name } }, why: '求求你，再等幾天就好。', lean: { bond: 0.3 },
                     base: REF + tilt(0.15) + (aff(f, h) >= 25 ? 0.3 : 0) + (has(f, 'kind') ? 0.2 : 0),
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, true) ? { k: '{h}答應再等幾天', p: { h: h2.name } } : null; } },
             ];
