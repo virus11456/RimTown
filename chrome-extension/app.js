@@ -1,5 +1,5 @@
 // RimTown - Frontend App v7.9.0
-const RIMTOWN_APP_VERSION = '11.5.0';
+const RIMTOWN_APP_VERSION = '11.5.1';
 // v5.76.0 鄰鎮解鎖表:到達繁榮度就打通道路、在背景生成該鎮存檔(每鎮一次,永不自動刪)
 // v6.75.0 每一場「遊戲」是一個獨立的世界(存在 world.worldId,跟著存檔走):開新遊戲＝新世界,鄰鎮、道路開通、遠方城鎮、
 // 馬車目的地、互訪與跨鎮消息都只在同一個世界裡。舊存檔一律屬於原本的世界 'w0',本機鍵名維持不變(不用搬資料)
@@ -2142,7 +2142,7 @@ class RimTownApp {
         };
         this._tabHints = { // v7.3.0 每個子分頁頂端一行說明(跟提案分頁一樣)
             economy: t('繁榮度、天氣、物價與就業、大家身上的錢。'), 'econ-goods': t('倉庫裡有什麼、每天做了多少、跟商人的買賣。'), 'econ-build': t('正在蓋什麼、還能蓋什麼。'), 'econ-tech': t('研究到哪裡、走哪條科技路線、新技術帶來的問題。'), industry: t('產業與老闆、鎮上的店、銀行、農場與工廠。'),
-            residents: t('點村民看他在做什麼、在想什麼。'), relmap: t('誰愛誰、誰恨誰，一張圖看完。'),
+            residents: t('點村民看他在做什麼、在想什麼。'), relmap: t('誰愛誰、誰恨誰，有戲的排前面。'),
             records: t('每天一期的觀察者日報；AI 記者寫的日報收在下面。'), news: t('鎮上發生的事、本鎮公告、外地傳來的消息、外交與報社。'), quest: t('每一季的回顧、鎮史、文化作品、出生與墓園、編年史。'), achievements: t('小鎮達成過的里程碑。'),
         };
         // Reverse lookup: sub-tab -> parent main tab
@@ -2359,6 +2359,7 @@ class RimTownApp {
                 case 'relmap-filter':
                     if (this._relmapFilters) { this._relmapFilters[val] = !this._relmapFilters[val]; this.renderSidebar(); }
                     break;
+                case 'rv-person': case 'rv-back': case 'rv-view': case 'rv-cam': this._rvClick?.(action, val); break; // v11.5.1 關係頁（app-relmap.js）
                 case 'show-archives': this.showChatArchives(); break;
                 case 'manual-archive': this.manualArchiveChat(); break;
                 case 'back-to-chat': this.activeTab = 'chat'; this.renderSidebar(); break;
@@ -3220,172 +3221,7 @@ class RimTownApp {
         }
     }
 
-    // =====================================================
-    // v4.5.0 關係網總覽圖:一張圖看全鎮誰愛誰恨誰
-    // =====================================================
-    renderRelationMap(container) {
-        if (!this.state) return;
-        this._firstDayMark?.('relations'); // v5.18.0 第一天:發現一段關係
-        if (!this._relmapFilters) this._relmapFilters = { love: true, crush: true, foe: true, friend: false };
-        const f = this._relmapFilters;
-        const chip = (k, icon, label, color) =>
-            `<button data-action="relmap-filter" data-val="${k}" style="padding:3px 10px;border-radius:12px;font-size:0.7rem;border:1px solid ${color};background:${f[k] ? color : 'transparent'};color:${f[k] ? '#0b1020' : color};font-weight:700">${icon}${label}</button>`;
-        let html = ''; // v5.20.0 次級分頁列已由 renderSidebar 統一渲染,不在此重複
-        html += `<div class="econ-section"><h3>💞 ${t('全鎮關係網')}</h3>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
-                ${chip('love', '💕', t('戀愛'), '#ff6b9d')}
-                ${chip('crush', '💘', t('單戀'), '#ff9ec6')}
-                ${chip('foe', '💢', t('敵對'), '#e05555')}
-                ${chip('friend', '💚', t('摯友'), '#5cc46a')}
-            </div>
-            <div style="font-size:0.68rem;color:var(--text-secondary);margin-bottom:6px">${this._relmapFocus ? t('👤 個人視角:再點一次空白處返回全鎮') : t('💡 點擊任何人,只看他的關係')}</div>
-            <canvas id="relmap-canvas" style="width:100%;border:1px solid var(--border);border-radius:10px;background:#0d1426"></canvas>
-            <div id="relmap-gossip" style="margin-top:8px"></div>
-        </div>`;
-        container.innerHTML = html;
-        requestAnimationFrame(() => { this._drawRelationMap(); this._renderGossipDigest(); });
-    }
-
-    // 收集有戲劇性的關係邊(給圖與八卦摘要共用)
-    _relmapEdges() {
-        const npcs = Object.entries(this.state.agents);
-        const edges = [];
-        const seen = new Set();
-        for (const [id, a] of npcs) {
-            for (const r of Object.values(a.relationships || {})) {
-                const tid = r.target_id;
-                if (!this.state.agents[tid]) continue;
-                const key = id < tid ? `${id}|${tid}` : `${tid}|${id}`;
-                if (r.status === 'married' || r.status === 'dating') {
-                    if (!seen.has('L' + key)) { seen.add('L' + key); edges.push({ type: 'love', a: id, b: tid, married: r.status === 'married', cheating: r.is_cheating }); }
-                } else if ((r.romantic_interest || 0) > 55 && !r.status) {
-                    edges.push({ type: 'crush', a: id, b: tid }); // 單戀有方向,各自畫
-                } else if ((r.affinity || 0) < -55) {
-                    if (!seen.has('F' + key)) { seen.add('F' + key); edges.push({ type: 'foe', a: id, b: tid }); }
-                } else if ((r.affinity || 0) > 70) {
-                    if (!seen.has('R' + key)) { seen.add('R' + key); edges.push({ type: 'friend', a: id, b: tid }); }
-                }
-            }
-        }
-        return edges;
-    }
-
-    _drawRelationMap() {
-        const canvas = document.getElementById('relmap-canvas');
-        if (!canvas || !this.state?.agents) return;
-        const npcs = Object.entries(this.state.agents).filter(([id]) => id !== 'player' || !this.world?.observerMode);
-        const W = canvas.clientWidth || 320;
-        const H = Math.max(300, Math.min(430, W));
-        const dpr = window.devicePixelRatio || 1;
-        canvas.width = W * dpr; canvas.height = H * dpr;
-        canvas.style.height = H + 'px';
-        const ctx = canvas.getContext('2d');
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        const cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 34;
-        const posMap = {};
-        npcs.forEach(([id], i) => {
-            const ang = (i / npcs.length) * Math.PI * 2 - Math.PI / 2;
-            posMap[id] = { x: cx + R * Math.cos(ang), y: cy + R * Math.sin(ang) };
-        });
-        this._relmapPos = posMap;
-        this._relmapCanvasSize = { W, H };
-        const f = this._relmapFilters;
-        const focus = this._relmapFocus;
-        const edges = this._relmapEdges().filter(e => f[e.type] && (!focus || e.a === focus || e.b === focus));
-        const touched = new Set();
-        edges.forEach(e => { touched.add(e.a); touched.add(e.b); });
-        // 邊
-        for (const e of edges) {
-            const p1 = posMap[e.a], p2 = posMap[e.b];
-            if (!p1 || !p2) continue;
-            const style = {
-                love:   { color: '#ff6b9d', width: e.married ? 2.6 : 2, dash: [] },
-                crush:  { color: '#ff9ec6', width: 1.4, dash: [4, 3] },
-                foe:    { color: '#e05555', width: 1.6, dash: [] },
-                friend: { color: 'rgba(92,196,106,0.5)', width: 1, dash: [] },
-            }[e.type];
-            ctx.strokeStyle = style.color;
-            ctx.lineWidth = style.width;
-            ctx.setLineDash(style.dash);
-            ctx.beginPath();
-            ctx.moveTo(p1.x, p1.y);
-            ctx.lineTo(p2.x, p2.y);
-            ctx.stroke();
-            const mx = (p1.x + p2.x) / 2, my = (p1.y + p2.y) / 2;
-            ctx.setLineDash([]);
-            ctx.font = '10px serif'; ctx.textAlign = 'center';
-            if (e.type === 'love') ctx.fillText(e.married ? '💍' : '💕', mx, my + 3);
-            if (e.cheating) ctx.fillText('🖤', mx + 10, my + 3);
-            if (e.type === 'foe') ctx.fillText('💢', mx, my + 3);
-        }
-        ctx.setLineDash([]);
-        // 節點(焦點模式:無關的人變暗)
-        for (const [id, a] of npcs) {
-            const p = posMap[id];
-            const isP = id === 'player';
-            const dim = focus ? (id !== focus && !touched.has(id)) : false;
-            ctx.globalAlpha = dim ? 0.22 : 1;
-            ctx.fillStyle = id === focus ? '#ff6b9d' : isP ? '#ffd700' : '#3a5a94';
-            ctx.beginPath();
-            ctx.arc(p.x, p.y, id === focus ? 8 : isP ? 7 : 6, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = 'rgba(255,255,255,0.5)';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-            ctx.fillStyle = id === focus ? '#ff9ec6' : isP ? '#ffd700' : '#dde6f5';
-            ctx.font = `${isP || id === focus ? 'bold ' : ''}10px sans-serif`;
-            ctx.textAlign = 'center';
-            const dx = p.x - cx, dy = p.y - cy;
-            const len = Math.hypot(dx, dy) || 1;
-            ctx.fillText(I18N.localizeNames(a.name || id), p.x + (dx / len) * 16, p.y + (dy / len) * 16 + 3);
-            ctx.globalAlpha = 1;
-        }
-        // 點擊:選人進入個人視角/點空白返回
-        if (!canvas._relmapBound) {
-            canvas._relmapBound = true;
-            canvas.addEventListener('click', (ev) => {
-                const rect = canvas.getBoundingClientRect();
-                const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
-                let hit = null;
-                for (const [id, p] of Object.entries(this._relmapPos || {})) {
-                    if (Math.hypot(p.x - x, p.y - y) < 16) { hit = id; break; }
-                }
-                this._relmapFocus = hit === this._relmapFocus ? null : hit;
-                this.bgm?.sfx?.('click');
-                this.renderSidebar();
-            });
-        }
-    }
-
-    // 八卦頭條:把最有戲的關係用文字講出來
-    _renderGossipDigest() {
-        const el = document.getElementById('relmap-gossip');
-        if (!el || !this.state?.agents) return;
-        const name = id => this.state.agents[id]?.name || id;
-        const edges = this._relmapEdges();
-        const lines = [];
-        const loves = edges.filter(e => e.type === 'love');
-        loves.forEach(e => {
-            lines.push(`${e.married ? '💍' : '💕'} ${name(e.a)} ${t('和')} ${name(e.b)} ${e.married ? t('是夫妻') : t('正在交往')}${e.cheating ? ` 🖤<span style="color:#ff9ec6">${t('(有人偷偷出軌...)')}</span>` : ''}`);
-        });
-        // 三角關係:C 單戀著已有伴侶的人
-        const inCouple = new Set(loves.flatMap(e => [e.a, e.b]));
-        edges.filter(e => e.type === 'crush' && inCouple.has(e.b)).slice(0, 3).forEach(e => {
-            lines.push(`💔 ${name(e.a)} ${t('暗戀著名花有主的')} ${name(e.b)}${t('——三角關係醞釀中!')}`);
-        });
-        // 互相單戀(即將成真?)
-        const crushSet = new Set(edges.filter(e => e.type === 'crush').map(e => `${e.a}|${e.b}`));
-        edges.filter(e => e.type === 'crush' && crushSet.has(`${e.b}|${e.a}`) && e.a < e.b).slice(0, 3).forEach(e => {
-            lines.push(`💘 ${name(e.a)} ${t('和')} ${name(e.b)} ${t('互有好感,就差一層窗戶紙!')}`);
-        });
-        edges.filter(e => e.type === 'foe').slice(0, 3).forEach(e => {
-            lines.push(`💢 ${name(e.a)} ${t('和')} ${name(e.b)} ${t('是出了名的死對頭')}`);
-        });
-        el.innerHTML = lines.length
-            ? `<div style="font-size:0.72rem;color:var(--accent);font-weight:700;margin-bottom:4px">📰 ${t('本鎮八卦頭條')}</div>` +
-              lines.slice(0, 8).map(l => `<div style="font-size:0.74rem;padding:3px 0;color:#ffd7e6">${l}</div>`).join('')
-            : `<div style="font-size:0.72rem;color:var(--text-secondary)">${t('鎮上還很平靜...讓村民多相處幾天,八卦自然就來了。')}</div>`;
-    }
+    // v11.5.1 關係頁（renderRelationMap、清單、個人關係圖、全鎮圖）移到 app-relmap.js：一百多人的城市畫成一張圓圖讀不出來，改成分區清單＋一個人的關係圖
 
     // v6.0.0 B14：renderChat … 等方法移到 app-chat.js
 
