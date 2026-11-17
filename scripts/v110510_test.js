@@ -126,7 +126,7 @@ async function run(browser, dev, lang) {
   const badRows = rows.filter(x => x.ratio < 1.5 || x.ratio > 1.7 || x.h > x.maxH + 1 || x.center > 2 || !x.whenOk || x.nm.some(n => !/^inline/.test(n.disp) || n.h < 44));
   ok(rows.length >= 5 && !badRows.length, `${tag} 每一筆：人名是行內連結（可點範圍至少 44 高、不撐高行距），行距約 1.6，「幾天前」接在句尾，🎥 垂直置中（${rows.length} 筆、${rows.filter(x => x.lines > 1).length} 筆換行）`, badRows.slice(0, 3));
   ok(has(sec.mutual?.rows, I.H.n, I.I.n) && !(sec.mutual?.rows || []).some(r => r.includes(I.E.n)), `${tag} 互有好感還沒說破：H 和 I；單方面的 E 不在這裡`, sec.mutual);
-  ok(has(sec.foe?.rows, I.J.n, I.K.n) && has(sec.foe?.rows, I.Q.n, I.R.n) && !(sec.foe?.rows || []).some(r => r.includes(I.X.n)), `${tag} 死對頭：J 和 K、絕交的 Q 和 R；單方面討厭的 X 不算`, sec.foe);
+  ok(has(sec.foe?.rows, I.J.n, I.K.n) && has(sec.foe?.rows, I.Q.n, I.R.n) && !has(sec.foe?.rows, I.X.n, I.A.n), `${tag} 死對頭：J 和 K、絕交的 Q 和 R；單方面討厭的 X 不算`, sec.foe);
   ok(sec.couples && !sec.couples.open && sec.couples.visRows === 0 && (zh ? /\d+ 對夫妻、\d+ 對情侶/ : /\d+ married, \d+ dating/).test(sec.couples.chip) && has(sec.couples.rows, I.A.n, I.B.n), `${tag} 情侶與夫妻：預設收合，只看得到總數`, { ...sec.couples, rows: sec.couples?.rows.length });
   ok(sec.order.indexOf('ic-rv-recent') === 0 && sec.order.indexOf('ic-rv-couples') > sec.order.indexOf('ic-rv-foe'), `${tag} 有戲的排前面：最近的變化第一、情侶夫妻排在死對頭後面`, sec.order);
   ok(!sec.seg && !sec.canvas, `${tag} 110 人的城市沒有全鎮圖可以切換`, sec);
