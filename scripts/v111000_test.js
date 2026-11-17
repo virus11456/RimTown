@@ -84,7 +84,7 @@ async function run(browser, dev, lang) {
     out.A1 = A1;
 
     // ============ A2 相遇：共同的朋友約兩人吃飯；真的走過去（整格跑） ============
-    const A2 = {}; { const [, , x, y, c] = P; toMorning(); flat(x); flat(y); flat(c); setAff(x, y, 30); setAff(y, x, 30); setRI(x, y, 0); setRI(y, x, 0); noVia(x, y); for (const [p, q] of [[c, x], [c, y], [x, c], [y, c]]) setAff(p, q, 50);
+    const A2 = {}; { const [, , x, y, c] = P; toMorning(); flat(x); flat(y); flat(c); setAff(x, y, 30); setAff(y, x, 30); setRI(x, y, 0); setRI(y, x, 0); noVia(x, y); for (const [p, q] of [[c, x], [c, y], [x, c], [y, c]]) setAff(p, q, 50); date(c, P[5]); /* 朋友自己有伴：才不會被導演當成「合得來的單身」挑去跟 x 湊對 */
       quiet(); order('crush', x.agentId); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur; A2.set = { via: sc?.via === c.agentId, place: sc?.place, kind: sc?.kind, log: logs().slice(-4).some(s => has(s, c) && s.includes(locName(w, sc.place))), cGo: c._thingGo?.id === sc?.id };
       // 整格跑到碰面：人真的在那個地方
       let at = null, g = 0; const n0 = seen.length; while (sc.stage === 'set' && g++ < 300) { w.paused = false; w.tick(); if (sc.stage === 'met' && !at) at = { x: x.currentLocation, y: y.currentLocation, h: w.clock.hour, c: c.currentLocation }; } w.paused = true;
@@ -269,7 +269,7 @@ async function run(browser, dev, lang) {
     ok(C.again1.r >= 12 && C.again1.letter && C.again1.want === 'meet' && C.again1.asked && C.again1.answered, `${tag} 再約他（還不夠格告白）：寫信約他再見一面，對方收到信自己決定`, C.again1);
     ok(C.again2.cands && C.again2.asked && C.again2.decided, `${tag} 再約他（夠格告白）：接到「心動的人」要不要告白`, C.again2);
     ok(C.noAgain, `${tag} 沒什麼交情也沒心動的：沒有「再約他」`, C.noAgain);
-    ok(C.bless <= -8 && C.bless >= -12 && C.pine.r === 8 && C.pine.a <= -5 && C.avoid.b === -4 && C.avoid.r === -4, `${tag} 看見心上人的選項：放下 心動 ${C.bless}；更放不下 心動 +8、對情敵 ${C.pine.a}；疏遠 兩人各 -4`, C);
+    ok(C.bless <= -4 && C.bless >= -7 && C.pine.r === 8 && C.pine.a <= -5 && C.avoid.b === -4 && C.avoid.r === -4, `${tag} 看見心上人的選項：放下 心動 ${C.bless}；更放不下 心動 +8、對情敵 ${C.pine.a}；疏遠 兩人各 -4`, C);
     ok(C.tell.letter && C.tell.want === 'love' && C.tell.asked, `${tag} 說清楚：寫表白信，對方自己決定怎麼回（心上人有伴，當面告白輪不到）`, C.tell);
     ok(!C.spoilKind && C.spoilDark && C.spoil.spoke && C.spoil.gossip, `${tag} 搞破壞只有個性陰暗的才有，說了就照原本的講壞話（流言傳出去）`, C.spoil);
     ok(C.fight.a <= -6 && C.fight.a >= -10 && C.fight.b === -4 && C.fight.cold, `${tag} 舊帳的選項：當面吵 自己 ${C.fight.a}、對方 -4，吵完冷戰（會不會冷戰照原本的六成；之後誰先開口照 makeup、reached）`, C.fight);

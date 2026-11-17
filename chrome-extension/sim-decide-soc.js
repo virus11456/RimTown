@@ -221,9 +221,9 @@
             const out = [
                 { id: 'hold', quiet: true, mute: true, text: rv ? '不放在心上，各憑本事' : '忍下來，什麼都不提', say: rv ? { k: '沒有跟{b}較勁', p: B } : { k: '忍下來沒跟{b}提那件事', p: B }, why: rv ? '感情的事勉強不來' : '現在不想把事情鬧大',
                     base: REF + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'kind') ? 0.2 : 0) + (has(a, 'shy') ? 0.1 : 0), lean: { safe: 0.2 }, run: () => null },
-                // 以前一定照這一項（導演：兩邊各 -6～10；情敵：兩邊各 -8～20）。照個性推估時（全鎮量過）：導演那一種兩邊各自決定，一個人大約六成；情敵那一種大約八成五
+                // 以前一定照這一項（導演：兩邊各 -6～10；情敵：兩邊各 -8～20）。照個性推估時（全鎮量過）：導演那一種兩邊各自決定，一個人大約六成；情敵那一種大約九成（跑 120 天量過：情敵這一題一個人一年會被問好幾次，選別的那幾成就讓仇結得比以前慢很多）
                 { id: 'fight', quiet: true, text: rv ? { k: '暗自跟{b}較勁，看他越來越不順眼', p: B } : { k: '當面跟{b}再吵一次', p: B }, say: rv ? { k: '暗自跟{b}較勁', p: B } : { k: '當面跟{b}吵了起來', p: B }, why: rv ? '我不會讓給他' : '這口氣我嚥不下去',
-                    base: REF + (rv ? 1.45 : 0.7) + (has(a, 'abrasive') ? 0.4 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.15 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0) - (rv ? 0 : (has(a, 'shy') ? 0.3 : 0)) + clampN((-I.f - 25) / 100, -0.1, 0.2), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
+                    base: REF + (rv ? 2.1 : 0.7) + (has(a, 'abrasive') ? 0.4 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.15 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0) - (rv ? 0 : (has(a, 'shy') ? 0.3 : 0)) + clampN((-I.f - 25) / 100, -0.1, 0.2), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
                     run: (w2, a2) => { const b2 = w2.agents[b.agentId]; const R = b2 && rel(a2, b2); if (!R) return null;
                         if (rv) { // 情敵：心裡較勁，只有自己這一邊變冷（對方怎麼想由他自己的那一題決定）
                             R.modifyAffinity(-(R.affinity < -10 ? rnd(10, 20) : rnd(8, 15))); R.modifyTrust?.(-5);
@@ -241,7 +241,7 @@
             // 趁這次把話講開：正在冷戰就先開口（對方決定理不理）；欠他一個道歉就去道歉（對方決定原不原諒）；不然直接找他談（談不談得攏看兩個人）
             const cold = !!(Y && w.ways && Y.coldWith(w, a, b)); const wr = (w.dark?.wrongs || []).find(x => !x.done && x.by === a.agentId && x.to === b.agentId) || null;
             out.push({ id: 'mend', quiet: true, text: cold ? { k: '先開口跟{b}打招呼', p: B } : wr ? { k: '趁這次跟{b}道歉', p: B } : rv ? { k: '找{b}把話攤開', p: B } : { k: '趁這次把話跟{b}講開', p: B }, say: cold ? { k: '先開口跟{b}說話', p: B } : wr ? { k: '去跟{b}道歉', p: B } : { k: '去找{b}把話說開', p: B }, why: '再這樣下去沒意思',
-                base: REF - 0.7 + (has(a, 'kind') ? 0.7 : 0) + (has(a, 'charismatic') ? 0.4 : 0) - (has(a, 'abrasive') ? 0.4 : 0) - (has(a, 'shy') ? 0.5 : 0) + clampN(I.g / 60, -0.3, 0.2) + (wr ? 0.3 : 0), lean: { bond: 0.4, face: -0.1 },
+                base: REF - 0.7 + (has(a, 'kind') ? 0.7 : 0) + (has(a, 'charismatic') ? 0.4 : 0) - (has(a, 'abrasive') ? 0.4 : 0) - (has(a, 'shy') ? 0.5 : 0) + clampN(I.g / 60, -0.3, 0.2) + (wr ? 0.3 : 0) - (rv ? 0.8 : 0), lean: { bond: 0.4, face: -0.1 },
                 run: (w2, a2) => { const b2 = w2.agents[b.agentId]; if (!b2) return null;
                     if (cold && Y.coldWith(w2, a2, b2)) return Y.reach(w2, a2, b2) ? { k: '先開了口' } : null;
                     if (wr && !wr.done) return DARK.apologize(w2, wr, 0) ? { k: '話說出口了' } : null;
