@@ -7316,7 +7316,7 @@
         '{who}覺得鎮上人手不夠（現在 {n} 人），想花 30 銀幣到鄰鎮貼告示、備一間屋子，招一戶人家搬來。': '{who} thinks the town is short-handed ({n} people now) and wants to spend 30 silver on notices in the next town and a ready house to bring a household over.',
         '調解飯局': 'mediation dinner', '表揚儀式': 'commendation ceremony', '外銷商隊': 'export caravan', '結盟禮物': 'alliance gift', '招募告示': 'recruitment notices',
         '當事人不在鎮上了': 'The person is no longer in town', '兩人把話說開了，關係回暖': 'They talked it out and the ice is broken', '飯吃了，但兩人還是有點僵': 'Dinner was eaten, but things are still stiff between them',
-        '受到全鎮表揚，大家更敬重他了': ' was commended by the whole town and is held in higher regard', '師徒有人不在鎮上了': 'Master or apprentice is no longer in town',
+        '受到全鎮表揚，大家更敬重他了': ' was commended by the whole town and is held in higher regard', '師徒有人不在鎮上了': 'Master or apprentice is no longer in town', '天生學不來這一門，師傅教不動': ' simply has no aptitude for this craft; the master could not teach them',
         '路上遇劫，只帶回': 'Robbed on the road, only brought back', '商隊回來了，賺進': 'The caravan is back, earning', '鄰鎮答應互保，20 天內襲擊機率下降': 'The next town agreed to mutual defence; fewer raids for 20 days',
         '看到告示搬來了': ' saw the notice and moved in', '告示貼了，暫時沒人來': 'Notices are up, nobody has come yet',
         '{who}請我和{other}吃了一頓飯，把話說開了。': '{who} took {other} and me to dinner and we talked it out.', '{who}想替我和{other}調解，但話還是沒說開。': '{who} tried to mediate between {other} and me, but it did not clear the air.', '一起吃了調解飯': 'shared a mediation dinner',

@@ -59,16 +59,16 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const vi = voted ? ps.toItem(w, voted) : null; out.whyTop = !!vi && (vi.forWhy.length + vi.againstWhy.length) > 0 && vi.forWhy.every(x => x.why && x.n > 0);
       // 人際／對外六種:把鎮況調成會觸發的樣子,逐一生成、批准、看效果
       const npcs = ps._npcs(w); const [A, B] = npcs; const ra = A.relationships.getOrCreate(B.agentId, B.name), rb = B.relationships.getOrCreate(A.agentId, A.name); ra.affinity = -100; rb.affinity = -99; /* 調解案挑全鎮結怨最深的一對：設到最低，前面隨機階段有別對更僵時才不會挑到別人 */
-      const JS = (typeof JOB_SKILL_MAP !== 'undefined') ? JOB_SKILL_MAP : {}; const master = npcs.find(a => JS[a.job?.key]?.primary?.[0]) || npcs[2]; const prim = JS[master.job?.key].primary[0]; master.skills.skills[prim].xp = 999999; const appr = npcs.find(a => a !== master && a.job?.key === master.job?.key) || npcs.find(a => a !== master && a !== A && a !== B); if (appr && appr.job?.key !== master.job?.key) appr.age = 20; appr.skills.skills[prim].xp = 0;
+      const JS = (typeof JOB_SKILL_MAP !== 'undefined') ? JOB_SKILL_MAP : {}; const master = npcs.find(a => JS[a.job?.key]?.primary?.[0]) || npcs[2]; const prim = JS[master.job?.key].primary[0]; master.skills.skills[prim].xp = 999999; const canLearn = (a) => !a.skills.skills[prim].isIncapable; /* 四分之一的人天生有一門學不來（熱情「無能」，經驗永遠不長）：測試安排的徒弟要挑學得來的，不然這一案批准了也沒有東西可驗 */ const appr = npcs.find(a => a !== master && a.job?.key === master.job?.key && canLearn(a)) || npcs.find(a => a !== master && a !== A && a !== B && canLearn(a)); if (appr && appr.job?.key !== master.job?.key) appr.age = 20; appr.skills.skills[prim].xp = 0;
       w.stockpile.add('food', 300, 0, 'test'); w.stockpile.add('silver', 200, 0, 'test'); const tpOld = w.events.TARGET_POPULATION; w.events.TARGET_POPULATION = 99; ps.cooldown = {}; ps.proposerCooldown = {}; for (const q of ps.pending()) ps.decide(w, q.id, 'reject'); if (w.council) w.council.activeDecrees = (w.council.activeDecrees || []).filter(d => d.id !== 'prop_envoy'); // 清掉前面隨機階段留下的同類待決案與結盟政令,六種才都提得出來
       const cands = ps._candidates(w, day); out.newKinds = ['mediate', 'honor', 'mentor', 'trade', 'envoy', 'recruit'].filter(k => cands.some(c => c.kind === k));
       const fx = {};
       for (const k of out.newKinds) {
         const c = cands.find(c => c.kind === k); const p = ps._create(w, day, c); if (!p) { fx[k] = 'no-proposer'; continue; }
-        const silver0 = w.stockpile.get('silver'); const aff0 = ra.affinity; const mood0 = (w.agents[p.refKey]?.moodModifier || 0); const apP = k === 'mentor' ? w.agents[p.pair[1]] : null; const lv0 = apP ? apP.skills.skills[p.skill].level : 0; const pop0 = Object.keys(w.agents).length; const dec0 = (w.council?.activeDecrees || []).length;
+        const silver0 = w.stockpile.get('silver'); const feud = k === 'mediate' ? p.pair.map(id => w.agents[id]) : null; const affOf = () => feud[0].relationships.getOrCreate(feud[1].agentId, feud[1].name).affinity + feud[1].relationships.getOrCreate(feud[0].agentId, feud[0].name).affinity; /* 量提案上寫的那一對（不是假設一定挑到 A、B）：別對剛好也僵到底時挑的會是別人，效果一樣要看得到 */ const aff0 = feud ? affOf() : 0; const mood0 = (w.agents[p.refKey]?.moodModifier || 0); const apP = k === 'mentor' ? w.agents[p.pair[1]] : null; const lv0 = apP ? apP.skills.skills[p.skill].level : 0; const pop0 = Object.keys(w.agents).length; const dec0 = (w.council?.activeDecrees || []).length;
         ps.decide(w, p.id, 'approve');
         let ok = p.status === 'done';
-        if (k === 'mediate') ok = ok && ra.affinity > aff0;
+        if (k === 'mediate') ok = ok && affOf() > aff0;
         if (k === 'honor') ok = ok && (w.agents[p.refKey]?.moodModifier || 0) > mood0;
         if (k === 'mentor') ok = ok && apP && apP.skills.skills[p.skill].level > lv0;
         if (k === 'trade') ok = ok && w.stockpile.get('silver') > silver0;
@@ -85,6 +85,14 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
       const st = ps.periodStats(w, day0, day + 1); out.period = st; out.periodOk = st.made >= ps.items.length - 1 && st.done >= 1 && !!st.top;
       const rec = ps.record(doneP?.proposerId); out.recordOk = !!rec && rec.made >= 1 && rec.done >= 1;
       const ser2 = JSON.parse(JSON.stringify(ps.serialize())); const P3 = new ProposalSystem(); P3.loadFrom(ser2); out.trackRT = JSON.stringify(P3.track) === JSON.stringify(ps.track) && Object.keys(P3.track).length > 0;
+      // 帶徒弟不挑天生學不來的人：把鎮上調成「只有一個人這門還沒入門」，他學不來時不該被挑上，學得來時（對照）就是他
+      { const N = ps._npcs(w); const sv = N.map(a => [a.age, Object.values(a.skills.skills).map(s => [s.xp, s.passion])]);
+        const dud = N.find(a => a !== master); for (const a of N) for (const s of Object.values(a.skills.skills)) s.xp = 99999; const ds = dud.skills.skills[prim]; ds.xp = 0; ds.passion = '無能'; dud.age = 20; delete ps.cooldown.mentor;
+        const pickOf = () => { const c = ps._candidates(w, day).find(c => c.kind === 'mentor'); return c ? { c, m: c.make(master) } : null; };
+        const bad = pickOf(); out.dudSkipped = !bad || bad.m.pair[1] !== dud.agentId;
+        ds.passion = '無'; const good = pickOf(); out.dudControl = !!good && good.m.pair[1] === dud.agentId && good.m.skill === prim;
+        if (good) { const p2 = ps._createWith(w, day, good.c, master); ds.passion = '無能'; ps.decide(w, p2.id, 'approve'); out.dudOld = { status: p2.status, lv: ds.level, result: p2.result }; } // 舊存檔：提案時還沒有這條規則，批准時才發現他學不來
+        N.forEach((a, i) => { a.age = sv[i][0]; Object.values(a.skills.skills).forEach((s, j) => { s.xp = sv[i][1][j][0]; s.passion = sv[i][1][j][1]; }); }); }
       out.dict = ps.toDict(w); out.stats = ps.stats;
       out.titleSample = out.titles[0] || '';
       return out;
@@ -107,6 +115,8 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     check(r.whyAll && r.whyTop, '每一票都有理由，卡片給前兩名');
     check(r.newKinds.length === 6, `人際／對外六種都會被提出 (${r.newKinds.join(',')})`);
     check(Object.values(r.newFx || {}).every(v => v === 'ok'), `六種批准後都有效果 ${JSON.stringify(r.newFx)}`);
+    check(r.dudControl && r.dudSkipped, `帶徒弟不挑天生學不來這一門的人（學得來的同一個人會被挑上） ${JSON.stringify({ skipped: r.dudSkipped, control: r.dudControl })}`);
+    check(r.dudOld && r.dudOld.status === 'failed' && r.dudOld.lv === 0 && !/→/.test(r.dudOld.result), `已經提出的拜師案，徒弟學不來就不算完成（不再寫 Lv0 → Lv0） ${JSON.stringify(r.dudOld)}`);
     check(r.snapOk && r.outcomeOk, '做完的案子十天後有成效回報');
     check(r.periodOk, `季統計 ${JSON.stringify(r.period)}`);
     check(r.recordOk && r.trackRT, '提案戰績累計且存檔往返');

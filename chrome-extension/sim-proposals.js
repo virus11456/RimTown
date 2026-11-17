@@ -521,7 +521,8 @@ class ProposalSystem {
             let pick = null;
             for (const m of npcs) {
                 const prim = JS[m.job?.key]?.primary?.[0]; if (!prim) continue; const ml = m.skills?.skills?.[prim]?.level || 0; if (ml < 4) continue;
-                const ap = npcs.find(x => x !== m && x.job?.key === m.job?.key && (x.skills?.skills?.[prim]?.level || 0) <= 1) || npcs.find(x => x !== m && (x.age || 30) < 26 && (x.skills?.skills?.[prim]?.level || 0) <= 1);
+                const green = (x) => { const s = x.skills?.skills?.[prim]; return !s?.isIncapable && (s?.level || 0) <= 1; }; // 天生學不來這一門的人（熱情「無能」）等級永遠是 0，以前反而最容易被挑去當徒弟：批准後一點經驗都沒長，結果卻寫「Lv0 → Lv0」算完成
+                const ap = npcs.find(x => x !== m && x.job?.key === m.job?.key && green(x)) || npcs.find(x => x !== m && (x.age || 30) < 26 && green(x));
                 if (ap && (!pick || ml > pick.ml)) pick = { m, ap, prim, ml };
             }
             if (pick) out.push({ kind: 'mentor', key: 'mentor', weight: 0.9, jobs: [pick.m.job?.key].filter(Boolean), pred: (a) => a.agentId === pick.m.agentId || a.job?.key === 'mayor' || a.job?.key === 'researcher',
@@ -845,6 +846,7 @@ class ProposalSystem {
                 case 'mentor': {
                     const [m, ap] = (p.pair || []).map(id => w.agents[id]); if (!m || !ap) { result = '師徒有人不在鎮上了'; break; }
                     const sk = ap.skills?.skills?.[p.skill]; const before = sk?.level || 0;
+                    if (!sk || sk.isIncapable) { result = `${ap.name}${t('天生學不來這一門，師傅教不動')}`; break; } // 舊存檔裡已經提出、還沒執行的案子：學不來的人不算拜師成功（新提的案不會再挑到他）
                     if (sk) { const need = (typeof xpForLevel === 'function') ? xpForLevel(before + 1) - sk.xp : 120; sk.addXp(Math.max(120, need + 10)); } // 至少升一級(Lv0→1 要 120 xp)
                     const after = sk?.level || 0;
                     m.relationships?.getOrCreate?.(ap.agentId, ap.name)?.modifyAffinity?.(10); ap.relationships?.getOrCreate?.(m.agentId, m.name)?.modifyAffinity?.(12); ap.relationships?.getOrCreate?.(m.agentId, m.name)?.modifyTrust?.(10);

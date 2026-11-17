@@ -16,7 +16,10 @@ async function run(browser, lang, vp) {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; w.observerMode = true; w.fullAgentMode = false; const out = {};
     const tick = (n) => { for (let k = 0; k < n; k++) { w.paused = false; w.tick(); } };
     tick(96 * 21);
-    const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && !w.isAway?.(a.agentId));
+    // 名單只收「人在鎮上」的大人，跟遊戲自己的算法一樣（sim-things.js 的 here()）：出門探險的人每格都被跳過、THINGS.daily 也不輪到他，訪客不算鎮民。
+    // 以前名單裡混著正在探險的人，照位置分派角色時剛好派到他，那一段就整段落空：all[3]（晚上去賭場的人）不會走過去、all[13]（勸家人的人）根本沒開口（tried: 0）
+    const inTown = (a) => w.agents[a.agentId] === a && !a.isDead && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) && !String(a.agentId).startsWith('visit_');
+    const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && (a.age ?? 30) >= 18 && inTown(a));
     const B = w.wallet.bal; const T = () => MONEY.total(w); const P0 = () => MONEY.S(w).pend;
     const logs = () => (w.messageLog || []).slice(-60).map(m => String(m.content || '')).join('\n');
     const fix = (v, f) => { const R = Math.random; Math.random = () => v; try { return f(); } finally { Math.random = R; } };
@@ -61,7 +64,7 @@ async function run(browser, lang, vp) {
         out.protest = { n: Th.protest?.n || 0, go: crowd.filter(a => a._thingGo?.place === 'casino_front').length, log: /門口抗議|protest outside/.test(logs()), owner: /捐了|donates|冷冷|coldly/.test(logs()), prop: !!pr && pr.thing === id };
         tick(1); out.protest.at = crowd.filter(a => a._thingAt === 'casino_front').length; out.pr = pr ? pr.id : null; }
       // ---------- 勸家人別再去：成功就答應戒賭 ----------
-      { const reg = all[12] || all[5], fam = all[13] || all[6]; C.v[reg.agentId] = 5; reg.relationships.getOrCreate(fam.agentId, fam.name).status = 'married'; fam.relationships.getOrCreate(reg.agentId, reg.name).status = 'married'; reg.relationships.getOrCreate(fam.agentId, fam.name).affinity = 60;
+      { const home = all.filter(inTown); /* 開場到這裡已經過了大半天：只從現在還在鎮上的人裡挑，開口勸的人不在鎮上就不會有這一次勸 */ const reg = home[12] || home[5], fam = home[13] || home[6]; C.v[reg.agentId] = 5; reg.relationships.getOrCreate(fam.agentId, fam.name).status = 'married'; fam.relationships.getOrCreate(reg.agentId, reg.name).status = 'married'; reg.relationships.getOrCreate(fam.agentId, fam.name).affinity = 60;
         X.att[id][fam.agentId] = -80; X.att[id][reg.agentId] = 30; X.intent[id + '|' + fam.agentId] = 'persuade'; const p0 = X.st.pers;
         await daily(0.0); out.persuade = { tried: X.st.pers - p0, quit: THINGS.quitting(w, id, reg), mult: THINGS.useMult(w, id, reg), log: /苦勸|pleads with/.test(logs()) }; }
       // ---------- 受害者：家人跟著心寒；交情好的朋友拉一把 ----------
