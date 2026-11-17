@@ -567,6 +567,29 @@ Object.assign(RimTownApp.prototype, {
         document.getElementById('npc-quick-card')?.classList.add('hidden');
         if (this._kairoReady && window.innerWidth <= 768) this._dismissKairoPanels?.();
         const esc = (x) => this._escapeHtml(String(x ?? ''));
+        // v11.6.0 小店的店面（攤位）：沿用建築資訊卡。營業中看店名、老闆、合夥人、開了多久、這週賺賠；空著的看空了幾天、上一家是誰
+        if (String(locId).startsWith('biz:')) {
+            const I = typeof BIZ !== 'undefined' ? BIZ.frontInfo(w, String(locId).slice(4)) : null; if (!I) { card.classList.add('hidden'); return; }
+            const row = (k, v) => `<div class="nqc-mood-row"><span>${esc(k)}</span><span>${v}</span></div>`;
+            let html = `<button class="nqc-close" data-lqc="close">✕</button>`;
+            if (I.open) {
+                html += `<div class="nqc-name">${esc(I.icon)} ${esc(I.name)} <span class="nqc-job">${esc(I.type)}</span></div>`;
+                html += row(t('老闆'), esc(I.owner)) + row(t('合夥人'), esc(I.partner || t('沒有'))) + row(t('開了多久'), esc(t('{n} 天').replace('{n}', I.days)));
+                html += row(t('這週賺賠'), `<b style="color:${I.week >= 0 ? '#2E7D32' : '#C62828'}">${I.week >= 0 ? '+' : ''}${I.week}</b> ${esc(t('銀幣'))}`) + row(t('一份賣'), esc(t('{n} 銀幣').replace('{n}', I.price)));
+                if (I.heir) html += `<div class="nqc-rel nqc-dim">${esc(t('老闆不在了，正在等家人決定接不接，先歇業。'))}</div>`;
+                else if (I.lossDays > 0 || I.debt > 0) html += `<div class="nqc-rel nqc-dim">${esc(t('連虧 {d} 天，店裡欠了 {n} 銀幣').replace('{d}', I.lossDays).replace('{n}', I.debt))}</div>`;
+            } else {
+                html += `<div class="nqc-name">🪧 ${esc(t('空店面'))}</div>`;
+                html += row(t('空了多久'), esc(t('{n} 天').replace('{n}', I.idle)));
+                html += I.prev ? row(t('上一家'), `${esc(I.prev.icon)} ${esc(I.prev.name)} <small>${esc(I.prev.type)}</small>`) + row(t('上一任老闆'), esc(I.prev.owner)) : `<div class="nqc-rel nqc-dim">${esc(t('還沒有人在這裡開過店'))}</div>`;
+                html += `<div class="nqc-rel nqc-dim">${esc(t('想開店的人頂下來只要 {n} 銀幣（蓋新的要 60）').replace('{n}', I.cost))}</div>`;
+            }
+            html += `<div class="nqc-btns"><button class="nqc-detail" data-lqc="focus">🎥 ${t('定位')}</button></div>`;
+            card.innerHTML = html; card.dataset.biz = I.id;
+            card.onclick = (e) => { const el = e.target.closest('[data-lqc]'); if (!el) return; if (el.dataset.lqc === 'close') this._hideNpcCard(); else if (el.dataset.lqc === 'focus') tm.focusLocation?.(locId); };
+            card.classList.remove('hidden'); this._toastsAvoidCards?.(); return;
+        }
+        delete card.dataset.biz;
         const sub = tm._houseSubZones?.[locId];
         const baseLoc = sub ? sub.parentLocId : locId;
         const zone = tm.buildingZones[locId] || tm.natureZones[locId];

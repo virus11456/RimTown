@@ -138,6 +138,43 @@
         },
     });
 
+    // ================= 東家每週看帳（v11.6.0） =================
+    // 以前調薪、調價、被挖角就加薪、裁員、請掌櫃是五條自動規則，東家沒被問過。現在每位東家一週看一次帳，自己決定這週做哪一件事。
+    // 由 sim-boss.js 在輪到他的那一天送進來（不是每天掃）；選項照當下的帳列，結算也在那邊。另有自己的每日額度（DECIDE.AI_GROUP.work，一天 6 件）
+    const BS = () => (typeof BOSS !== 'undefined' ? BOSS : null);
+    // 額度：一天最多兩位東家輪到（原本那家一位、對面那家晚三天的一位），開智能體時前一天的追問最多再兩件，平常最多 4 件；work 一組 6 件夠用。
+    // 同一類一天最多 4 件（aiKind），超過的（錯過補問的人剛好擠在同一天）照個性決定，不會沒人問
+    DECIDE.kind('bossWeek', { title: '東家這週看帳', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 4,
+        facts(w, a, ctx) { const B = BS(); return B ? B.facts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BS(); return B ? B.options(w, a, ctx) : []; } });
+
+    // ================= v11.6.0 銀行的事由銀行家決定、房東自己定租金與欠租的事 =================
+    // 銀行家（sim-bank.js）：有人來借錢借不借、每週利率、逾期的人怎麼辦、擠兌時押多少自己的錢，四種用 ctx.t 分。
+    // 房東（sim-estate.js）：每 28 天定一次自己房子的租金檔位、房客欠租到三倍時趕不趕。都由那邊在該問的時候送進來（不是每天掃），額度跟東家看帳同一組 work
+    const BK = () => (typeof BANK !== 'undefined' ? BANK : null), ES = () => (typeof ESTATE !== 'undefined' ? ESTATE : null);
+    DECIDE.kind('bankDesk', { title: '銀行家坐櫃台', scan: false, cool: 0, pri: 2.5, aiGroup: 'work', aiKind: 3,
+        facts(w, a, ctx) { const B = BK(); return B ? B.deskFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BK(); return B ? B.deskOptions(w, a, ctx) : []; } });
+    DECIDE.kind('landlord', { title: '房東看自己的房子', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 3,
+        facts(w, a, ctx) { const E = ES(); return E && E.llFacts ? E.llFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const E = ES(); return E && E.llOptions ? E.llOptions(w, a, ctx) : []; } });
+
+    // ================= 小店撐不撐、接不接（v11.6.0） =================
+    // 以前連虧 15 天或欠到 40 就自動倒閉，老闆不在了店直接消失，沒有人被問過。現在：
+    //   一直虧(shopFail)：連虧 10 天或欠到 25 時問店主一次（之後每 7 天最多一次）：貼錢、降價、找朋友合夥、收掉、頂讓；原本的倒閉門檻留著當底線
+    //   朋友的店找你合夥(shopJoin)：店主選了找某某合夥，對方答應才算
+    //   老闆不在了(shopHeir)：先問合夥人、再問配偶、成年子女要不要接；都不接就收掉，店面空下來
+    // 都由 sim-biz.js 在那一刻送進來（不是每天掃），選項與結算也在那邊；跟東家看帳共用 work 那一組的 AI 額度
+    DECIDE.kind('shopFail', { title: '店一直在虧錢', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.failFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.failOptions(w, a, ctx) : []; } });
+    DECIDE.kind('shopJoin', { title: '朋友的店找你合夥', scan: false, cool: 0, pri: 3, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.joinFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.joinOptions(w, a, ctx) : []; } });
+    DECIDE.kind('shopHeir', { title: '要不要接下留下來的店', scan: false, cool: 0, pri: 2.5, aiGroup: 'work', aiKind: 2,
+        facts(w, a, ctx) { const B = BZ(); return B ? B.heirFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BZ(); return B ? B.heirOptions(w, a, ctx) : []; } });
+
     // ---------- 合夥的店不賺錢：要不要拆夥 ----------
     const splitInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.splitInfo(w, a) : null; };
     DECIDE.kind('split', {

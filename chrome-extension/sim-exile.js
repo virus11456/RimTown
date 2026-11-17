@@ -75,12 +75,15 @@ const EXILE = (() => {
         else if (A.t === 'shop') { if (A.s.owner === id) { try { BIZ.close(w, A.s, 'exile'); } catch (e) { A.s.closed = true; } } else A.s.partner = null; }
         else if (A.t === 'house') A.u.owner = null;
     }
+    // 股東、合夥人買下的價錢：估價的八折（v11.6.0 抽出來，sim-biz.js 合夥人接下搬走老闆的店時也照這個價付）
+    const partnerPrice = (w, A) => Math.round(valueOf(w, A) * 0.8);
     const pay = (w, buyer, seller, n) => { n = r2(n); if (!(n > 0)) return true; if (!W().take(w, buyer, n)) return false; W().add(w, seller, n); return true; };
 
     // ---------- 照順序找買家 ----------
     // 回傳 { who, how, price } 或 null;final=最後一天(公庫才出手、有錢人一定會看)
     function sellOne(w, a, A, final) {
         const v = valueOf(w, A), X = S(w), id = a.agentId, M = w.market;
+        if (A.t === 'shop' && A.boss && typeof BIZ !== 'undefined' && BIZ.deferHeir?.(w, A.s)) return null; // v11.6.0 他開的店：人走了以後由合夥人、家人自己決定接不接（sim-biz.js shopHeir），這裡不替他們做主
         // 1. 家人直接接手
         const fam = family(w, a).filter(o => !(A.t === 'shop' && A.boss && BIZ.shopOf(w, o)) && !(A.t === 'rival' && A.boss && M.owners[A.k] === o.agentId));
         const owe = (w.bank?.loans?.[id]?.owed || 0) - cash(w, a) - (w.bank?.dep?.[id] || 0); // 欠銀行的錢還不夠還:先變賣抵債,不能直接送給家人
@@ -91,7 +94,7 @@ const EXILE = (() => {
         else if (A.t === 'rival') co = Object.keys(M.rival?.[A.k]?.sh || {}).filter(x => x !== id).map(x => w.agents[x]);
         else if (A.t === 'shop') co = [w.agents[A.s.owner === id ? A.s.partner : A.s.owner]];
         co = co.filter(o => free(w, o)).sort((x, y) => cash(w, y) - cash(w, x));
-        const p8 = Math.round(v * 0.8);
+        const p8 = partnerPrice(w, A);
         for (const o of co) if (cash(w, o) >= p8 && pay(w, o, a, p8)) { move(w, A, a, o); X.st.partner++; return { who: o, how: 'partner', price: p8 }; }
         // 3. 夥計集資 8 折(產業、對面那家):每人最多出一半的錢,至少兩個人
         if (A.t === 'sector' || A.t === 'rival') {
@@ -224,6 +227,7 @@ const EXILE = (() => {
         try { beforeLeave0(w, id); } finally { try { kids(w, id, crime); } catch (e) { console.warn('[Exile] kids', e); } }
     }
     function beforeLeave0(w, id) {
+        try { if (typeof BIZ !== 'undefined' && BIZ.noteGone && w.agents?.[id]) BIZ.noteGone(w, w.agents[id], false); } catch (e) {} // v11.6.0 先記下誰可以接他的店（下一行會把配偶改成前任，之後就找不到了）
         try { unpair(w, id); } catch (e) {}
         const a = w.agents?.[id]; if (!a || a.isPlayer || !w.observerMode || !W() || !w.wallet) return;
         const X = S(w); const P = X.pending[id];
@@ -235,7 +239,7 @@ const EXILE = (() => {
     }
     function view(w) { const X = w.exile; if (!X) return null; return { pending: Object.entries(X.pending).filter(([id]) => w.agents[id]).map(([id, P]) => ({ name: t(w.agents[id].name), left: Math.max(0, P.until - day(w)), crime: P.crime, n: assetsOf(w, w.agents[id]).length })), hist: X.hist.map(h => ({ ...h, name: t(h.name) })), st: X.st }; }
     function brief(w, a) { const P = pendingOf(w, a.agentId); if (!P) return ''; return t('你被逐出小鎮，{n} 天內要離開，正在變賣家當').replace('{n}', Math.max(0, P.until - day(w))); }
-    return { S, GRACE, CONFISCATE, AGE_KID, order, daily, beforeLeave, kids, assetsOf, valueOf, sellOne, settle, confiscate, pendingOf, view, brief };
+    return { S, GRACE, CONFISCATE, AGE_KID, order, daily, beforeLeave, kids, assetsOf, valueOf, partnerPrice, sellOne, settle, confiscate, pendingOf, view, brief };
 })();
 // ---------- 接上其他系統 ----------
 if (typeof World !== 'undefined' && World.prototype.leaveTown) {
@@ -255,7 +259,7 @@ if (typeof LifecycleSystem !== 'undefined') {
     const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
     LS._killNpc = function (world, npc, ...rest) {
         let heir = null, shops = [], goods = null;
-        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsAll(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId)) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {}
+        try { if (npc && !npc.isPlayer) { heir = (typeof MARKET !== 'undefined' ? MARKET.heirsAll(world, npc) : [])[0] || null; shops = (typeof BIZ !== 'undefined' && world.biz) ? BIZ.S(world).shops.filter(s => !s.closed && (s.owner === npc.agentId || s.partner === npc.agentId) && !(s.owner === npc.agentId && BIZ.deferHeir?.(world, s))) : []; goods = world.goods?.owned?.[npc.agentId] || null; } } catch (e) {} // v11.6.0 他開的店改由合夥人、家人自己決定接不接（BIZ.deferHeir）；決策核心沒開才照這裡的規則直接交給合夥人或家人
         const r = _kill.call(this, world, npc, ...rest);
         if (!npc || (world.agents?.[npc.agentId] && !npc.isDead)) return r; // 冥王之血復活了(過世的人會從小鎮移除)
         try {

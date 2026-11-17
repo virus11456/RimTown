@@ -21,7 +21,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const logHas = (re, n = 40) => (w.messageLog || []).slice(-n).some(m => re.test(m.content || ''));
       const memHas = (a, re) => (a.memory.entries || []).slice(-8).some(m => re.test(m.text ? m.text() : m.content));
       const _r = Math.random; const fix = (v, f) => { Math.random = () => v; try { return f(); } finally { Math.random = _r; } };
-      const stubAI = (resp) => { const s = { fa: w.fullAgentMode, ok: CE.fullAgentOk, aj: CE._askJson }; let asked = null; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async (p) => { asked = p; return resp; }; return { restore: () => { w.fullAgentMode = s.fa; CE.fullAgentOk = s.ok; CE._askJson = s.aj; }, prompt: () => asked }; };
+      const stubAI = (resp) => { const s = { fa: w.fullAgentMode, ok: CE.fullAgentOk, aj: CE._askJson }; let asked = null; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async (p) => { if (String(p).includes(t('【可以選】'))) return [{ n: 1, pick: 'all', why: '撐住' }]; /* v11.6.0 擠兌時押多少自己的錢先問銀行家（決策核心的題目），他回答全押 */ asked = p; return resp; }; return { restore: () => { w.fullAgentMode = s.fa; CE.fullAgentOk = s.ok; CE._askJson = s.aj; }, prompt: () => asked }; };
       const setAff = (a, b, v) => { const R = a.relationships.getOrCreate(b.agentId, b.name); R.affinity = v; };
       w.fullAgentMode = false; // 規則路徑;AI 路徑另外 stub
       let D = 401; const _ad = w._absDay; w._absDay = () => D; const out = {};
@@ -67,7 +67,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       B.debt = { owed: 300, borrowed: 270, paid: 0, since: D, late: 0 }; const rb = BANK.ruleBailout(w, B, mayor, 100); out.ruleNo = !rb.yes && /債|debt/.test(t(rb.why)); B.debt = null;
       // C:AI 決定紓困(提示詞有缺口與利息)
       B = fresh(); for (const a of others.slice(4)) w.wallet.bal[a.agentId] = 0;
-      let s = stubAI({ bailout: true, why: '救人要緊' }); BANK.startRun(w, B, D); step();
+      let s = stubAI({ bailout: true, why: '救人要緊' }); BANK.startRun(w, B, D); step(); await DECIDE.flush(); await new Promise(r => setTimeout(r, 20)); step(); /* v11.6.0 第一天銀行先關門等銀行家決定押多少，隔天才輪到鎮長 */
       out.pending = B.run?.asked === 'pending' && logHas(/暫停營業|closed its doors/);
       await new Promise(r => setTimeout(r, 30)); s.restore();
       out.aiYes = B.lastBail?.yes && B.lastBail.why === '救人要緊' && !!B.debt; out.prompt = /紓困|bail/i.test(s.prompt() || '') && /JSON/.test(s.prompt() || '');
@@ -76,7 +76,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       BANK.startRun(w, B, D); step(); out.secret = B.lastBail?.yes && (w.dark?.secrets || []).slice(n0).some(x => /紓困也救了自己的錢/.test(x.k));
       // B:AI 拒絕 → 倒閉,存戶怪鎮長
       B = fresh(); w.wallet.bal[rich.agentId] = 0; for (const a of savers) setAff(a, mayor, 0);
-      s = stubAI({ bailout: false, why: '銀行家自己活該' }); BANK.startRun(w, B, D); step(); await new Promise(r => setTimeout(r, 30)); s.restore();
+      s = stubAI({ bailout: false, why: '銀行家自己活該' }); BANK.startRun(w, B, D); step(); await DECIDE.flush(); await new Promise(r => setTimeout(r, 20)); step(); await new Promise(r => setTimeout(r, 30)); s.restore(); /* v11.6.0 同上 */
       out.aiNo = B.lastBail && !B.lastBail.yes && logHas(/拒絕紓困|refused to bail/);
       for (const a of savers) BANK.runBy(w, a, 1); /* v9.24.0 存戶自己決定全領 */ step(0.01); out.failed = B.status === 'failed' && !B.open;
       out.blame = (savers[0].relationships.relationships[mayor.agentId]?.affinity || 0) <= -10 && memHas(savers[0], /見死不救|left the bank to die/);

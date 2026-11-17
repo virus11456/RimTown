@@ -63,7 +63,7 @@ class Town3D extends PixelTileMap {
         } catch (e) { console.warn('[Town3D] WebGL 初始化失敗', e); this.renderer = null; return; }
         // v6.28.0 WebGL 失聯(iOS Safari 記憶體吃緊時常見):擋掉預設行為讓 three 能自動復原;復原後重建場景
         this.glCanvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this._ctxLost = true; console.warn('[Town3D] WebGL context lost'); }, false);
-        this.glCanvas.addEventListener('webglcontextrestored', () => { this._ctxLost = false; this._sceneSrc = null; this._dynSig = null; this._farmSig = this._factSig = this._expSig = null; this._graveN = -1; this._festId = null; this._fx = null; this._stars = null; this._beam = null; this._needsResize = true; console.warn('[Town3D] WebGL context restored'); }, false);
+        this.glCanvas.addEventListener('webglcontextrestored', () => { this._ctxLost = false; this._sceneSrc = null; this._dynSig = null; this._bizSig = null; this._farmSig = this._factSig = this._expSig = null; this._graveN = -1; this._festId = null; this._fx = null; this._stars = null; this._beam = null; this._needsResize = true; console.warn('[Town3D] WebGL context restored'); }, false);
         this.renderer.setPixelRatio(this._dpr);
         this.renderer.outputColorSpace = THREE.SRGBColorSpace;
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -162,6 +162,7 @@ class Town3D extends PixelTileMap {
     setThought(agentId, o) { if (!agentId || !o) return; (this._thoughts || (this._thoughts = {}))[agentId] = { kind: o.kind || 'say', text: String(o.text || ''), name: String(o.name || ''), left: o.ms || 9000, born: Date.now(), hold: !!o.hold, on: 0, seen: 0 }; }
     clearThought(agentId) { if (this._thoughts) delete this._thoughts[agentId]; }
     focusLocation(locId) {
+        if (String(locId).startsWith('biz:')) { const f = (this.bizFronts || []).find(x => 'biz:' + x.id === locId); if (f) this.focusMap((f.x + 0.5) * TILE, (f.y + 0.5) * TILE, this.isMobile ? 16 : 13); return; } // v11.6.0 小店的店面
         const z = this.buildingZones[locId] || this.natureZones[locId];
         if (!z) return;
         this.focusMap((z.x + z.w / 2) * TILE, (z.y + z.h / 2) * TILE, this.isMobile ? 24 : 20);
@@ -259,6 +260,9 @@ class Town3D extends PixelTileMap {
             if (d < bestD) { bestD = d; best = aid; }
         }
         if (best) { if (this.onAgentClick) this.onAgentClick(best); return; }
+        // v11.6.0 點到小店的攤位：開店面的資訊卡（攤棚比地面高，用螢幕投影找，跟找村民一樣）
+        { let bf = null, bd = this.isMobile ? 30 : 22; for (const f of (this.bizFronts || [])) { const p = this._project(f.x + 0.5, this.groundY(f.x + 0.5, f.y + 0.5) + 0.7, f.y + 0.5); if (!p) continue; const dd = Math.hypot(p.x - sx, p.y - sy); if (dd < bd) { bd = dd; bf = f; } }
+          if (bf) { this._lastTapExact = true; if (this.onClick) this.onClick('biz:' + bf.id); return; } }
         const mp = this._screenToMap(clientX, clientY); this._lastTapExact = !!this.getLocationAt(mp.x, mp.y); // v6.29.0 app 用來決定要不要開建築卡
         super._handleTap(clientX, clientY);
     }
@@ -1041,6 +1045,43 @@ class Town3D extends PixelTileMap {
         }
     }
 
+    // ---------- v11.6.0 小店的攤位（店面） ----------
+    // 跟建成建築、裝飾同一套：資料變了才重建（簽名比對，不是每幀），全部用共用的方塊幾何與純色材質，重建後由 _mergeDynamicGroups 併成一個頂點色網格（幾十個攤位一次繪製）。
+    // 營業中：木櫃台、四根柱子、店種顏色的條紋雨棚、櫃台上的貨，招牌（店的圖示）用名牌層畫；空著的：柱子還在、雨棚捲起來收在後面、櫃台用木板釘起來
+    _syncBiz() {
+        const F = Array.isArray(this.bizFronts) ? this.bizFronts : [];
+        const sig = F.map(f => f.id + ':' + f.x + ',' + f.y + ',' + (f.face || 0) + (f.shop ? '+' + (f.type || '') + (f.icon || '') : '-')).join('|') + '|' + (this.grid ? this.cols : 0);
+        if (sig === this._bizSig) return; this._bizSig = sig;
+        if (!this._bizGroup) { this._bizGroup = new THREE.Group(); this.scene.add(this._bizGroup); }
+        this._clearGroup(this._bizGroup); this._bizLabels = [];
+        if (!this.grid) return;
+        const COL = { apothecary: '#4E9F5B', inn: '#C9533D', studio: '#4F6F93', teahouse: '#3E8A7A', jeweler: '#C9A13A', embroidery: '#A03A6B', curio: '#B07A3A' };
+        const ROT = [0, Math.PI / 2, Math.PI, -Math.PI / 2];
+        for (const f of F) {
+            if (!Number.isFinite(f.x) || !Number.isFinite(f.y)) continue;
+            const cx = f.x + 0.5, cz = f.y + 0.5, gy = this.groundY(cx, cz);
+            const g = new THREE.Group(); g.position.set(cx, gy, cz); g.rotation.y = ROT[f.face || 0] || 0; this._bizGroup.add(g);
+            this._box(0.96, 0.06, 0.92, '#A89A84', 0, 0.03, 0, g); // 地板
+            for (const [ox, oz] of [[-0.42, -0.36], [0.42, -0.36], [-0.42, 0.36], [0.42, 0.36]]) this._box(0.07, f.shop ? 1.2 : 1.05, 0.07, '#6B4A2E', ox, f.shop ? 0.6 : 0.525, oz, g);
+            if (f.shop) {
+                const c = COL[f.type] || '#B07A3A';
+                this._box(0.86, 0.48, 0.34, '#A8784E', 0, 0.27, 0.2, g); this._box(0.9, 0.05, 0.38, '#8B5A2B', 0, 0.53, 0.2, g); // 櫃台
+                for (let i = 0; i < 4; i++) { const b = this._box(0.26, 0.05, 0.98, i % 2 ? '#F4EEE2' : c, -0.375 + i * 0.25, 1.24, 0.06, g); b.rotation.x = 0.16; } // 條紋雨棚（往前斜）
+                this._box(1.0, 0.1, 0.05, c, 0, 1.13, 0.55, g); // 雨棚前緣
+                this._box(0.16, 0.14, 0.14, c, -0.25, 0.63, 0.2, g); this._box(0.12, 0.1, 0.12, '#E8D9B0', 0.02, 0.61, 0.16, g); this._box(0.14, 0.18, 0.12, '#7A5A3A', 0.26, 0.65, 0.22, g); // 櫃台上的貨
+                this._box(0.5, 0.26, 0.05, '#5A3E26', 0, 1.48, -0.3, g); // 招牌板（圖示用名牌層畫在上面）
+                const rx = Math.sin(ROT[f.face || 0] || 0), rz = Math.cos(ROT[f.face || 0] || 0); // 招牌在攤位後側：轉到世界座標
+                this._bizLabels.push({ key: 'bz:' + f.id, loc: 'biz:' + f.id, x: cx - rx * 0.3, y: gy + 1.95, z: cz - rz * 0.3, cls: 't3d-label t3d-mini t3d-biz', html: `<span class="t3d-name">${this._esc(f.icon || '🏪')}</span>` });
+            } else {
+                this._box(0.86, 0.5, 0.34, '#8C7A62', 0, 0.28, 0.2, g); // 收起來的櫃台
+                for (const [ox, rz] of [[-0.18, 0.5], [0.18, -0.5]]) { const p = this._box(0.62, 0.08, 0.03, '#6B5A44', ox, 0.3, 0.38, g); p.rotation.z = rz; } // 木板交叉釘著
+                this._box(0.12, 0.08, 0.36, '#8C7A62', 0, 0.6, 0.2, g);
+                this._box(0.98, 0.14, 0.14, '#9A8F80', 0, 1.0, -0.36, g); // 雨棚捲起來收在後面
+                this._box(0.9, 0.06, 0.06, '#6B4A2E', 0, 1.02, 0.36, g); // 前橫木
+            }
+        }
+    }
+
     // ---------- 場景重建(地圖生成或讀檔後) ----------
     _buildScene() {
         this._sceneBuiltAt = performance.now(); // v6.43.3 剛建好的幾秒不判斷畫質
@@ -1111,7 +1152,7 @@ class Town3D extends PixelTileMap {
     _mergeStatic() { for (const g of [this._bExt, this._bCut]) if (g && g.children.length) this._mergeInto(g, false); this._mergeInto(this._static, true); }
     // v6.54.0 玩久了會一直長的圖層(新蓋的建築、裝飾、地標、農地、工坊、墓園、探險／節慶標記)重建後也合併:以前每多一棟就多十幾次繪製,越玩越卡
     _clearGroup(g) { if (!g) return; g.traverse(o => { if (o.isMesh && o.name === 'merged') o.geometry.dispose(); }); g.clear(); g.userData.needMerge = true; }
-    _mergeDynamicGroups() { for (const g of [this._dyn, this._lmGroup, this._farmGroup, this._factGroup, this._graveGroup, this._expGroup, this._festGroup]) if (g && g.userData.needMerge) { g.userData.needMerge = false; if (g.children.length) this._mergeInto(g, false); } }
+    _mergeDynamicGroups() { for (const g of [this._dyn, this._bizGroup, this._lmGroup, this._farmGroup, this._factGroup, this._graveGroup, this._expGroup, this._festGroup]) if (g && g.userData.needMerge) { g.userData.needMerge = false; if (g.children.length) this._mergeInto(g, false); } }
     _mergeInto(root, verbose) {
         const sharedGeos = new Set(Object.values(this._geos));
         const skipMat = new Set([...this._glowMats, this._waterMat].filter(Boolean));
@@ -1553,6 +1594,7 @@ class Town3D extends PixelTileMap {
         }
         const extraLabels = [].concat(this._lmLabels || [], this._dynLabels || [], this._factLabels || [], this._expLabels || [], this._industryLabels(), this._graveLabel ? [this._graveLabel] : [], this._festLabel ? [this._festLabel] : [], this._caravanLabel ? [this._caravanLabel] : []);
         for (const d of extraLabels) { const el = this._ov(d.key, d.cls, d.html); this._place(el, d.x, d.y, d.z); }
+        for (const d of (this._bizLabels || [])) { const el = this._ov(d.key, d.cls, d.html); if (!el._bound) { el._bound = true; el.addEventListener('click', (e) => { e.stopPropagation(); this._lastTapExact = true; if (this.onClick) this.onClick(el._loc); }); } el._loc = d.loc; this._place(el, d.x, d.y, d.z); } // v11.6.0 攤位招牌（點了開店面資訊卡）
         // 村民名牌、表情、睡眠
         const shownBubble = new Set();
         const convos = (this._activeConvoBubbles || []).filter(c => now < c.expiry);
@@ -2034,6 +2076,7 @@ class Town3D extends PixelTileMap {
         const styleSig = (this.tierLv || 0) + '|' + (this.eraStyle ?? 1) + '|' + (this.houseVer || 0); // v6.57.0 等級／時代／翻修有變就重建
         if (this._sceneSrc !== this.grid || this._sceneSeason !== (this.season || '') || this._styleSig !== styleSig) { this._styleSig = styleSig; this._buildScene(); }
         this._syncDynamic(completedBuildings);
+        try { this._syncBiz(); } catch (e) { console.warn('[Town3D] biz', e); } // v11.6.0 小店的攤位
         this._syncExtras(extraData);
         this._syncLandmarks(); // v6.47.0 村民提案立的地標
         this._updateCamera();

@@ -118,7 +118,7 @@
             else out.push({ id: 'loan', text: { k: '跟銀行借 {n} 銀幣來翻修', p: { n: I.loan } }, say: '跟銀行借錢翻修房子', why: I.envy ? '不能輸給隔壁' : '先住得好一點，錢慢慢還',
                 base: 0.2 + (I.envy ? 0.9 : 0) + (has(a, 'jealous') ? 0.3 : 0) - (asc ? 1.5 : 0) - (thr ? 0.5 : 0), lean: { face: 0.5, safe: -0.5 },
                 run: (w, a) => {
-                    const got = BANK.lend(w, BANK.S(w), a, I.loan, t(I.envy ? '跟鄰居一樣翻修房子' : '翻修房子')); if (!got) return { k: '銀行沒有借' };
+                    const got = BANK.lend(w, BANK.S(w), a, I.loan, t(I.envy ? '跟鄰居一樣翻修房子' : '翻修房子')); if (!got) return BANK.pendingOf?.(w, a) ? { k: '去銀行申請了，等銀行家回話' } : { k: '銀行沒有借' }; // v11.6.0 問 AI 時要等銀行家回話
                     if (I.envy) { try { WAYS.envyBorrowed(w, I.home); } catch (e) {} log(w, 'economy', '🏦 {a}為了把家翻修得跟鄰居一樣，跟銀行借了 {n} 銀幣。', { a: a.name, n: got }, a.name); }
                     return H.renovateBy(w, a) === true ? { k: '借了 {n} 銀幣，家翻修成{s}了', p: { n: got, s: I.style } } : { k: '借到 {n} 銀幣，還沒動工', p: { n: got } };
                 } });
@@ -196,8 +196,11 @@
             const have = Object.keys(B.TYPES).filter(k => C[k] > 0).sort((x, y) => C[y] - C[x]), none = Object.keys(B.TYPES).filter(k => !C[k]);
             const list = (have.length ? { k: '（{l}）', p: { l: { raw: have.map(k => t(B.TYPES[k].zh) + ' ' + C[k]).join(t('、')) } } } : { raw: '' });
             const lack = none.length ? { k: '還沒有人開的：{l}。', p: { l: { raw: none.map(k => t(B.TYPES[k].zh)).join(t('、')) } } } : { raw: '' };
+            // v11.6.0 廣場邊有空店面：頂下來比蓋新的便宜（本錢就是頂讓的錢）
+            const fr = I.front ? (I.front.prev ? { k: '廣場邊有一間空店面（以前是「{p}」），頂下來只要 {n} 銀幣，蓋新的要 {m}。', p: { p: I.front.prev, n: I.cost, m: B.NEW_COST || 60 } } : { k: '廣場邊有一間空店面，頂下來只要 {n} 銀幣，蓋新的要 {m}。', p: { n: I.cost, m: B.NEW_COST || 60 } }) : null;
+            const lack2 = fr ? { raw: tx(lack) + tx(fr) } : lack;
             return fill('鎮上現在有 {k} 家店{list}，還容得下新店。{lack}你最拿手的是{ty}，也可以開別種；本錢都是 {n} 銀幣，你身上有 {c} 銀幣。{how}同一種店開得越多，客人分得越散。開了店每天有進帳，但生意不好也可能撐不下去。',
-                { k: B.S(w).shops.length, list, lack, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
+                { k: B.S(w).shops.length, list, lack: lack2, ty: I.type, n: I.cost, c: Math.floor(cash(w, a)), how: I.partner ? { k: '本錢不夠，{p}願意合夥出一部分。', p: { p: I.partner.name } } : I.loan ? (I.loanAsk ? '本錢不夠，得跟銀行借，銀行家不一定答應。' : '本錢不夠，得跟銀行借。') : { raw: '' } });
         },
         options(w, a) {
             const I = startInfo(w, a); if (!I) return []; const B = BZ();

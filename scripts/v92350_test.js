@@ -130,7 +130,8 @@ function sources() {
   const miss = need.filter(f => !/LLMClient\.clip\(/.test(fs.readFileSync(path.join(dir, f + '.js'), 'utf8')));
   ok(miss.length === 0, `${need.length} 個 AI 功能都改成切在句子結尾（不再固定字數硬切）`, miss);
   const bank = fs.readFileSync(path.join(dir, 'sim-bank.js'), 'utf8');
-  ok(/_askJson\(prompt, 200\)/.test(bank) && (bank.match(/一句話，25 字內/g) || []).length === 2, '銀行利率與紓困的理由：題目要求一句話、紓困的長度上限放寬到 200（以前理由寫太長被切斷就拿不到）', null);
+  // v11.6.0 利率改由銀行家走決策核心（bankDesk），理由的長度由決策核心管；sim-bank.js 裡直接問模型的只剩紓困那一題
+  ok(/_askJson\(prompt, 200\)/.test(bank) && (bank.match(/一句話，25 字內/g) || []).length === 1 && /DECIDE\.kind\('bankDesk'/.test(fs.readFileSync(path.join(dir, 'sim-decide-work.js'), 'utf8')), '紓困的理由：題目要求一句話、長度上限放寬到 200（以前理由寫太長被切斷就拿不到）；利率改走決策核心', null);
 }
 (async () => {
   await server(); sources();

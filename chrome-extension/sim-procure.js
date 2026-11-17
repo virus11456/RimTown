@@ -452,6 +452,52 @@ const PROCURE = (() => {
         return out;
     }
 
+    // ================= v11.6.0 公倉多出來的貨賣不賣（選擇點 surplus，登記在 sim-decide-pol.js） =================
+    // 以前倉裡超過門檻的啤酒、葡萄酒、家具、麵包、衣物每天自動賣 6 份（留 50），日誌隨機掛一位商人的名字，其實沒有人決定。
+    // 現在有貨超過門檻時，問出面談生意的人（跟行商來時去談的是同一個人，dealerOf）：照原本的速度賣／只賣一半（一天 3 份，賣到剩門檻與 50 的中間）／先留著不賣。
+    // 一週最多問一次，決定管七天；錢照舊進公庫。日誌只在他真的拿過主意時掛他的名字；沒人可問、決策核心沒開、等回話等到隔天，照原本的規則賣、不掛人名。
+    // 提案「把多出來的貨賣掉」照舊（那是全鎮表決的結果，他選了留著也照賣）；提案當天剛賣過的那一樣，這裡不再自動賣
+    const SUR = ['beer', 'wine', 'furniture', 'bread', 'clothing'];
+    const SUR_NAME = { sell: '把多出來的賣掉', half: '只賣一半', keep: '先留著不賣' };
+    const lineOf = (w, r, old) => (typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, old) : old; // 跟原本一樣：城鎮以上看鎮上想備的量，村莊照舊 80／50
+    const SIs = () => (typeof SHOP_ITEMS !== 'undefined' ? SHOP_ITEMS : {});
+    const overList = (w) => SUR.filter(r => SIs()[r] && get(w, r) > lineOf(w, r, 80)).sort((a, b) => get(w, b) - get(w, a));
+    const midOf = (w, r) => Math.round((lineOf(w, r, 80) + lineOf(w, r, 50)) / 2);
+    const soldByVote = (w, r, d) => (w.proposals?.items || []).some(p => p.kind === 'market' && p.side === 'sell' && p.refKey === r && p.status === 'done' && p.resolvedDay === d);
+    function surPlan(w) { const X = S(w).sur; const d = day(w); return X && SUR_NAME[X.mode] && d - X.d < WEEK && d >= X.d ? X : null; }
+    // 每天（商店那一段，sim-autonomy.js 呼叫）：回 true 表示這裡處理了（觀察者模式），原本那一段就不跑
+    function surplusDay(w, A) {
+        if (!on(w) || !w.shop?.sell) return false; const P = S(w), d = day(w); if (P.surDay === d) return true; P.surDay = d;
+        const items = overList(w).filter(r => !soldByVote(w, r, d)); if (!items.length) return true;
+        let plan = surPlan(w);
+        if (!plan && asking(w)) {
+            if (P.surAsk == null || d - P.surAsk >= WEEK) { const D = dealerOf(w); if (D) { P.surAsk = d; P.st.surAsks = (P.st.surAsks || 0) + 1; askNow(w, D.a, 'surplus', { d, by: D.a.agentId }); plan = surPlan(w); if (!plan) return true; } } // 問 AI 的等回話，今天先不賣
+            else if (P.surAsk === d) return true;
+        }
+        const mode = plan ? plan.mode : 'sell'; if (mode === 'keep') return true;
+        const r = items[0]; const floor = mode === 'half' ? midOf(w, r) : lineOf(w, r, 50); const qty = Math.min(mode === 'half' ? 3 : 6, Math.floor(get(w, r) - floor)); if (qty < 1) return true;
+        const SI = SIs(); const res = w.shop.sell(r, qty, w); if (!res?.success) return true;
+        const gain = qty * SI[r].sellPrice; P.st.surSold = (P.st.surSold || 0) + qty; P.st.surGain = r2((P.st.surGain || 0) + gain);
+        const who = plan ? (w.agents[plan.by] || null) : null; const tp = { who: who?.name || '', item: SI[r].name(), n: qty, gain };
+        try { if (who) A._note(w, who, '💰 {who}把倉裡多出來的{item} {n} 份拿去賣了，進帳 {gain} 銀幣。', tp, 4, 'economy', 3); else A._note(w, null, '💰 公倉把多出來的{item} {n} 份賣給商店，進帳 {gain} 銀幣。', tp, 4, 'economy', 3); } catch (e) {}
+        return true;
+    }
+    const surLive = (w, a, ctx) => !!ctx && on(w) && inTown(w, a) && day(w) - (ctx.d ?? 0) <= 1 && dealerOf(w)?.a === a && !surPlan(w) && overList(w).length > 0;
+    function surFacts(w, a, ctx) {
+        if (!surLive(w, a, ctx)) return ''; const SI = SIs(); const dd = daysOf(w);
+        const list = overList(w).map(r => fill('{item} {n} 份（超過 {line} 份算多，照老規矩賣到剩 {keep}；商店收一份 {p} 銀幣）', { item: SI[r].name(), n: Math.round(get(w, r)), line: Math.round(lineOf(w, r, 80)), keep: Math.round(lineOf(w, r, 50)), p: SI[r].sellPrice })).join(t('；'));
+        return fill('倉裡有幾樣東西堆得比平常多：{list}。照老規矩，多出來的每天挑一樣拿去商店賣，一次最多 6 份，賣得的錢進公庫。{pub}公庫現在 {s} 銀幣{days}。這一週要不要賣、賣多少，由你決定。',
+            { list: { raw: list }, pub: PUB(), s: Math.round(silver(w)), days: { raw: dd != null ? fill('，夠付 {d} 天的薪水與維護', { d: Math.floor(dd) }) : '' } });
+    }
+    function setSur(w, a, mode) { const P = S(w); P.sur = { mode, d: day(w), by: a.agentId, byName: a.name }; log(w, 'economy', '🧾 {a}看了倉裡多出來的貨，這一週決定{x}。', { a: a.name, x: SUR_NAME[mode] }, a.name); return { k: '這一週{x}', p: { x: SUR_NAME[mode] } }; }
+    function surOptions(w, a, ctx) {
+        if (!surLive(w, a, ctx)) return []; const items = overList(w); const low = lowNow(w); let need = false; try { need = typeof FLOW !== 'undefined' && items.some(r => FLOW.need(w, r) > 0.3); } catch (e) {}
+        const go = (mode) => (w2, a2) => (surLive(w2, a2, ctx) ? setSur(w2, a2, mode) : null); const r0 = items[0];
+        return [{ id: 'sell', text: '把多出來的賣掉：照平常的速度，一天最多 6 份', say: '把公倉多出來的貨賣掉', why: '貨堆著也是堆著，換成現金進公庫。', base: 1.6 + (low ? 0.5 : 0), lean: { gain: 0.3, bond: 0.1 }, run: go('sell') },
+            { id: 'half', text: { k: '只賣一半：一天最多 3 份，{item}賣到剩 {n} 份就停', p: { item: SIs()[r0].name(), n: midOf(w, r0) } }, say: '公倉多出來的貨只賣一半', why: '賣一點換現金，也留一點備著。', base: 0.4 + (has(a, 'thrifty') ? 0.3 : 0) + (need ? 0.3 : 0), lean: { safe: 0.3 }, run: go('half') },
+            { id: 'keep', text: '先留著不賣（這七天都不賣）', say: '公倉多出來的貨先留著', why: need ? '鎮上還用得到，先別賣。' : '過一陣子說不定用得上。', base: -0.2 + (need ? 0.8 : 0) - (low ? 0.6 : 0), lean: { safe: 0.4, face: 0.1 }, run: go('keep') }];
+    }
+
     // ================= 給帳本與介面 =================
     function brief(w, a) {
         if (!on(w) || !a) return ''; const P = w.procure; if (!P) return ''; const head = headOf(w) === a; if (!head && a.job?.key !== 'trader') return '';
@@ -460,9 +506,9 @@ const PROCURE = (() => {
     }
     function view(w) {
         const P = S(w), S0 = sp(w), d = day(w); const res = {}; for (const [r, n] of Object.entries(S0?.reserved || {})) { if (r === 'silver') continue; const k = Math.max(0, n - (S0.transit?.[r] || 0)); if (k > 0) res[r] = Math.ceil(k); }
-        return { mode: P.mode, name: t(MODE_NAME[P.mode]), dflt: !!P.dflt, by: P.byName || '', ago: P.d != null ? d - P.d : null, cap: P.cap ?? null, week: Math.round(P.wk?.n || 0), spent7: spent7(w), hold: P.hold ? Object.assign({}, P.hold) : null, reserved: res, pay: P.pay, payName: t(PAY_NAME[P.pay]), tech: P.tech ? Object.assign({}, P.tech) : null, miss: Object.assign({}, P.miss), keep: KEEP, st: Object.assign({}, P.st) };
+        return { sur: surPlan(w) ? { mode: P.sur.mode, by: P.sur.byName || '', d: P.sur.d } : null, mode: P.mode, name: t(MODE_NAME[P.mode]), dflt: !!P.dflt, by: P.byName || '', ago: P.d != null ? d - P.d : null, cap: P.cap ?? null, week: Math.round(P.wk?.n || 0), spent7: spent7(w), hold: P.hold ? Object.assign({}, P.hold) : null, reserved: res, pay: P.pay, payName: t(PAY_NAME[P.pay]), tech: P.tech ? Object.assign({}, P.tech) : null, miss: Object.assign({}, P.miss), keep: KEEP, st: Object.assign({}, P.st) };
     }
-    return { S, on, headOf, useOf, priceOf, line, leanCap, avail, wants, exec, watch, sync, daily, ask, reasons, noteSeed, setPlan, setPay, setTech, payFirst, techAsk, tierInfo, mayorFacts, mayorOptions, candidates, dealerOf, wantFrom, merchantPlan, dealMerchant, merchantDay, caravanAsk, tradeFacts, tradeOptions, brief, view, planText, matText, RAWS, IMPORT_PRICE, KEEP, SEED_KEEP, MODE_NAME, PAY_NAME };
+    return { surplusDay, surFacts, surOptions, surPlan, overList, SUR, SUR_NAME, S, on, headOf, useOf, priceOf, line, leanCap, avail, wants, exec, watch, sync, daily, ask, reasons, noteSeed, setPlan, setPay, setTech, payFirst, techAsk, tierInfo, mayorFacts, mayorOptions, candidates, dealerOf, wantFrom, merchantPlan, dealMerchant, merchantDay, caravanAsk, tradeFacts, tradeOptions, brief, view, planText, matText, RAWS, IMPORT_PRICE, KEEP, SEED_KEEP, MODE_NAME, PAY_NAME };
 })();
 if (typeof globalThis !== 'undefined') globalThis.PROCURE = PROCURE;
 

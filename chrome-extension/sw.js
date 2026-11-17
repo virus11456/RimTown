@@ -1,5 +1,5 @@
 // RimTown Service Worker - PWA Offline Support
-const CACHE_NAME = 'rimtown-v11.5.0';
+const CACHE_NAME = 'rimtown-v11.6.0';
 // v6.82.2 首頁(/)與遊戲(/town)分頁。Vercel 開了 cleanUrls,index.html／town.html 會轉址到 / 與 /town,
 // 轉址回應不能拿來回應頁面導覽,所以清單只放 './',遊戲頁另外試著快取 './town'(本機沒有乾淨網址就略過)
 const ASSETS_TO_CACHE = [
@@ -83,7 +83,7 @@ const ASSETS_TO_CACHE = [
   './sim-ways.js',
   './sim-plague-ways.js',
   './sim-godbook.js',
-  './sim-worldcal.js', './sim-shares.js', './sim-longevity.js', './sim-things.js', './sim-notes.js', './sim-schemes.js', './sim-board.js', './sim-spend.js', './sim-compete.js', './sim-repeal.js', './sim-aware.js', './sim-demolish.js', './sim-treasury.js', './sim-fiscal.js', './sim-procure.js', './sim-clergy.js', './sim-deal.js', './sim-deallaw.js', './sim-office.js', './sim-unrest.js', './sim-camps.js', './sim-riot.js', './sim-invest.js', './sim-exile.js', './sim-mobility.js', './sim-fads.js', './sim-epic.js', './sim-wish.js', './sim-rival.js', './sim-decide.js', './sim-decide-soc.js', './sim-decide-pol.js', './sim-decide-life.js', './sim-decide-work.js', './sim-decide-share.js', './sim-decide-fun.js', './sim-decide-dark.js', './sim-decide-crowd.js', './sim-decide-love.js', './sim-decide-deal.js', './sim-day.js', './sim-tips.js', './sim-buzz.js', './sim-arcs.js',
+  './sim-worldcal.js', './sim-shares.js', './sim-longevity.js', './sim-things.js', './sim-notes.js', './sim-schemes.js', './sim-board.js', './sim-spend.js', './sim-compete.js', './sim-repeal.js', './sim-aware.js', './sim-demolish.js', './sim-treasury.js', './sim-fiscal.js', './sim-procure.js', './sim-boss.js', './sim-clergy.js', './sim-deal.js', './sim-deallaw.js', './sim-office.js', './sim-unrest.js', './sim-camps.js', './sim-riot.js', './sim-invest.js', './sim-exile.js', './sim-mobility.js', './sim-fads.js', './sim-epic.js', './sim-wish.js', './sim-rival.js', './sim-decide.js', './sim-decide-soc.js', './sim-decide-pol.js', './sim-decide-life.js', './sim-decide-work.js', './sim-decide-share.js', './sim-decide-fun.js', './sim-decide-dark.js', './sim-decide-crowd.js', './sim-decide-love.js', './sim-decide-deal.js', './sim-day.js', './sim-tips.js', './sim-buzz.js', './sim-arcs.js',
   './villager3d.js',
   './landing-3d.js',
   './tilemap.js',
@@ -97,7 +97,7 @@ const ASSETS_TO_CACHE = [
   './app-loop.js',
   './app-towngen.js',
   './app-godhand.js',
-  './app-cards.js', './app-market.js',
+  './app-cards.js', './app-market.js', './app-relmap.js',
   './app-pages.js',
   './app-towns.js',
   './app-chat.js',

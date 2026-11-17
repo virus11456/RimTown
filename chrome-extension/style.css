@@ -4126,6 +4126,7 @@ body.landing-open { overflow: hidden; }
 .rimtown-container .t3d-label:hover, .rimtown-container .t3d-label.is-hot { background: #FFF; border-color: #E8732A; }
 .rimtown-container .t3d-num { display: inline-flex; align-items: center; justify-content: center; min-width: 20px; height: 20px; border-radius: 50%; background: #E8732A; color: #fff; font-size: 11px; font-weight: 700; padding: 0 4px; }
 .rimtown-container .t3d-label.t3d-mini { font-size: 10px; padding: 2px 8px; background: rgba(43,33,24,0.78); color: #FFE9A8; border-color: transparent; pointer-events: none; }
+.rimtown-container .t3d-label.t3d-biz { font-size: 13px; line-height: 1; padding: 2px 4px; border-radius: 6px; background: rgba(90,62,38,0.9); border: 1px solid #C9A05A; pointer-events: auto; cursor: pointer; } /* v11.6.0 小店的招牌：點得到 */
 .rimtown-container .t3d-label.t3d-site { flex-direction: column; gap: 3px; align-items: stretch; font-size: 10px; padding: 3px 8px; background: rgba(43,33,24,0.82); color: #FFCC66; border-color: transparent; pointer-events: none; }
 .rimtown-container .t3d-bar { display: block; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.25); overflow: hidden; }
 .rimtown-container .t3d-bar b { display: block; height: 100%; background: #4caf50; }
@@ -4232,3 +4233,54 @@ html.ios-standalone .rimtown-container .account-menu-popup { top: calc(var(--ios
 html.ios-standalone .npc-quick-card { max-height: calc(100% - 152px - 56px - var(--ios-top)) !important; }
 /* v9.13.1 面板拉到最高時,畫面上沒有空位放角落通知(放哪都會蓋到「返回」或分頁列),先藏起來;面板放下就回來 */
 body:has(#kairo-card.tall:not(.hidden)) #achv-toast-host { visibility: hidden !important; }
+/* v11.5.1 村民 › 關係（app-relmap.js）：清單、一個人的關係圖、小鎮的全鎮圖。可以點的東西都至少 44×44，不靠滑鼠懸停 */
+.rimtown-container .rv-wrap { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.rimtown-container .rv-top { display: flex; flex-direction: column; gap: 8px; }
+.rimtown-container .rv-pick { display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 10px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); }
+.rimtown-container .rv-pick select { flex: 1; min-width: 0; min-height: 44px; border: 0; background: transparent; color: var(--text-primary); font: inherit; font-size: 0.9rem; }
+.rimtown-container .rv-pick select option { background: #1b2238; color: #e8e8f0; }
+.rimtown-container .rv-seg { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; }
+.rimtown-container .rv-seg button { min-height: 44px; border: 0; background: none; color: var(--text-secondary); font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer; }
+.rimtown-container .rv-seg button + button { border-left: 1px solid var(--border); }
+.rimtown-container .rv-seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--accent) 22%, transparent); color: var(--text-primary); }
+.rimtown-container .rv-chips { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; } /* 四個等寬一排；標籤用短字串（英文 Friends） */
+.rimtown-container .rv-chip { --c: #ff6b9d; min-height: 44px; min-width: 0; padding: 0 4px; border-radius: 999px; border: 1px solid var(--c); background: transparent; color: var(--c); font: inherit; font-size: 0.8rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.rimtown-container .rv-chip[aria-pressed="true"] { background: var(--c); color: #0b1020; }
+.rimtown-container .rv-chip.k-crush { --c: #ff9ec6; } .rimtown-container .rv-chip.k-foe { --c: #e05555; } .rimtown-container .rv-chip.k-friend { --c: #5cc46a; }
+.rimtown-container .rv-calm { padding: 14px 4px; }
+.rimtown-container .rv-rows { display: flex; flex-direction: column; }
+.rimtown-container .rv-row { display: flex; align-items: center; gap: 6px; min-height: 44px; padding: 0; border-bottom: 1px dashed color-mix(in srgb, var(--border) 80%, transparent); cursor: pointer; font-size: 0.92rem; color: var(--text-secondary); line-height: 1.6; } /* 字 0.92rem × 行距 1.6 ≈ 23.5px：人名的可點範圍 44 高（上下各伸出半行），才不會蓋到上下行人名的正中間 */
+.rimtown-container .rv-rows > .rv-row:last-child, .rimtown-container .rv-all > .rv-row:last-child { border-bottom: 0; }
+.rimtown-container .rv-ri { flex: none; width: 1.3em; text-align: center; }
+.rimtown-container .rv-tx { flex: 1; min-width: 0; padding: 10px 0; overflow-wrap: anywhere; } /* 上下內距放在文字上（不放在整筆）：一行的時候整筆剛好 44 高，🎥 也不會把它撐高 */
+.rimtown-container .rv-when { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.rimtown-container .rv-tail { white-space: nowrap; } /* 句尾最後一小段和「幾天前」黏在一起，「幾天前」不會自己掉到下一行 */
+.rimtown-container .rv-nm { display: inline-block; height: 44px; line-height: 44px; margin: calc((1.6em - 44px) / 2) -9px; padding: 0 9px; min-width: 44px; box-sizing: border-box; text-align: center; vertical-align: top; border-radius: 6px; color: #ffd7e6; font-weight: 700; text-decoration: underline; text-decoration-color: color-mix(in srgb, #ffd7e6 45%, transparent); text-underline-offset: 3px; cursor: pointer; white-space: nowrap; } /* 行內的連結：可點範圍剛好 44 高、置中在這一行上；上下負邊距抵掉多出來的高度，不撐高行距，也不會蓋到上下行人名的正中間 */
+.rimtown-container .rv-nm:active, .rimtown-container .rv-nm:focus-visible { background: color-mix(in srgb, var(--accent) 22%, transparent); outline: none; }
+.rimtown-container .rv-go { flex: none; align-self: center; width: 44px; height: 44px; border: 0; border-radius: 10px; background: none; font-size: 1rem; cursor: pointer; opacity: 0.8; }
+.rimtown-container .rv-all > summary { display: flex; align-items: center; justify-content: center; min-height: 44px; list-style: none; cursor: pointer; color: var(--accent); font-size: 0.86rem; font-weight: 700; border-top: 1px solid var(--border); }
+.rimtown-container .rv-all > summary::-webkit-details-marker { display: none; }
+.rimtown-container .rv-all[open] > summary { display: none; }
+.rimtown-container .rv-person { display: flex; flex-direction: column; gap: 8px; }
+.rimtown-container .rv-ph { display: flex; gap: 8px; }
+.rimtown-container .rv-back { flex: 1; min-height: 44px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-card); color: var(--text-primary); font: inherit; font-size: 0.86rem; font-weight: 700; cursor: pointer; }
+.rimtown-container .rv-title { font-size: 1rem; font-weight: 800; color: var(--text-primary); }
+.rimtown-container .rv-graph { position: relative; display: flex; flex-direction: column; gap: 26px; padding: 12px 6px; border: 1px solid var(--border); border-radius: 12px; background: #0d1426; min-width: 0; }
+.rimtown-container .rv-cv { position: absolute; left: 0; top: 0; pointer-events: none; z-index: 0; }
+.rimtown-container .rv-row2 { position: relative; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.rimtown-container .rv-row2 .rv-pill { flex: 0 1 31%; }
+.rimtown-container .rv-mid { position: relative; z-index: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) minmax(0, 1fr); gap: 22px; align-items: center; }
+.rimtown-container .rv-col { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.rimtown-container .rv-ctr { display: flex; justify-content: center; min-width: 0; }
+.rimtown-container .rv-pill { --c: #ff6b9d; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; min-height: 44px; min-width: 0; padding: 4px 6px; border: 1.5px solid var(--c); border-radius: 12px; background: #141c33; color: #e8eefc; font: inherit; cursor: pointer; text-align: center; }
+.rimtown-container .rv-pill b { font-size: 0.84rem; font-weight: 700; line-height: 1.2; overflow-wrap: anywhere; }
+.rimtown-container .rv-pill small { font-size: 0.7rem; color: var(--c); line-height: 1.2; overflow-wrap: anywhere; }
+.rimtown-container .rv-pill.k-affair { --c: #c084fc; } .rimtown-container .rv-pill.k-crush { --c: #ff9ec6; border-style: dashed; } .rimtown-container .rv-pill.k-foe { --c: #e05555; } .rimtown-container .rv-pill.k-friend { --c: #5cc46a; }
+.rimtown-container .rv-pill.rv-me { --c: #ffd166; width: 100%; min-height: 56px; background: #2a2440; border-width: 2px; }
+.rimtown-container .rv-pill.rv-me b { font-size: 0.95rem; color: #ffe9a8; }
+.rimtown-container .rv-legend { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 0.74rem; color: var(--text-muted); }
+.rimtown-container .rv-lg { display: inline-flex; align-items: center; gap: 4px; } .rimtown-container .rv-lg i { display: inline-block; width: 16px; border-top: 2px solid #ff6b9d; }
+.rimtown-container .rv-lg.k-affair i { border-top: 2px dashed #c084fc; } .rimtown-container .rv-lg.k-crush i { border-top: 2px dashed #ff9ec6; } .rimtown-container .rv-lg.k-foe i { border-top-color: #e05555; } .rimtown-container .rv-lg.k-friend i { border-top-color: #5cc46a; }
+.rimtown-container .rv-town { display: flex; flex-direction: column; gap: 6px; }
+.rimtown-container .rv-tcv { width: 100%; border: 1px solid var(--border); border-radius: 10px; background: #0d1426; cursor: pointer; }
+.rimtown-container .rv-new { display: inline-block; padding: 1px 7px; border-radius: 999px; background: #f2c14e; color: #1b1630; font-size: 0.72rem; font-weight: 800; line-height: 1.5; vertical-align: middle; } /* 「最近的變化」的小標：不靠 emoji（有些裝置把 🆕 畫成黑白方框） */
