@@ -294,7 +294,7 @@ const DECIDE = (() => {
             // v9.23.2 選項用固定的代號（repay、extend…），不用 a、b、c：一次問好幾個人時每個人的選項不一樣，同一個字母對不同人是不同的事，
             // 真模型會搞混（實測：理由寫「帶點心意去道歉」，選的卻是別人清單裡的 c＝不道歉）
             const cs = codes(o.opts); const opts = o.opts.map((op, i) => `${cs[i]}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
-            const facts = K.facts(w, o.a, o.ctx); let past = []; try { past = lv < 2 ? pastLines(w, o.a, K, facts, cap(lv ? 30 : 46, lv ? 90 : 130), lv ? 1 : 2) : []; } catch (e) {} // v10.0.0 字數不夠時先收短，再不夠才拿掉
+            const facts = K.facts(w, o.a, o.ctx); let past = []; try { past = lv < 2 ? pastLines(w, o.a, K, facts, cap(lv ? 30 : 46, lv ? 90 : 130), lv ? 1 : 2) : []; } catch (e) { console.warn('[Decide] past', e); /* 出錯要看得到：以前安靜地接住，往事整段不見了好幾版都沒人發現 */ } // v10.0.0 字數不夠時先收短，再不夠才拿掉
             return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${past.length ? `${t('【跟這件事有關的往事】')}${past.join(t('；'))}\n` : ''}${t('【遇到的事】')}${facts}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
