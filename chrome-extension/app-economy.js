@@ -278,7 +278,7 @@ Object.assign(RimTownApp.prototype, {
                 // v11.5.0 這週的採購是誰定的、定成什麼；保留中的料（首長為升格保留的、已批准提案保留的）平常不能動用
                 let planNote = '';
                 try { if (typeof PROCURE !== 'undefined' && PROCURE.on(this.world)) { const pe = (x) => this._escapeHtml(String(x ?? '')); const PV = PROCURE.view(this.world);
-                    planNote = `<div class="ic-note pg-plan" style="margin-top:6px">📋 ${t('公庫這週的採購')}${t('：')}${pe(PROCURE.planText(this.world))}${!PV.dflt && PV.by ? `${t('（')}${pe(t(PV.by))}${t('定的')}${t('）')}` : ''}</div>`;
+                    planNote = `<div class="ic-note pg-plan" style="margin-top:6px">📋 ${t('公庫這週的採購')}${t('：')}${pe(PROCURE.planText(this.world))}${!PV.dflt && PV.by ? `${t('（')}${pe(t('{a}定的').replace('{a}', t(PV.by)))}${t('）')}` : ''}</div>`;
                     if (PV.hold) planNote += `<div class="ic-note pg-hold">🔒 ${t('首長為升格保留，平常不能動用')}${t('：')}${pe(PROCURE.matText(PV.hold))}</div>`;
                     if (Object.keys(PV.reserved).length) planNote += `<div class="ic-note pg-hold">🔒 ${t('已批准的提案保留，平常不能動用')}${t('：')}${pe(PROCURE.matText(PV.reserved))}</div>`; } } catch (e) {}
                 html += this._ic({ id: 'gd-raw', icon: '📦', title: t('原料倉庫'), defOpen: true, chip: { t: short.length ? t('短缺') : tight.length ? t('吃緊') : t('充足'), tone: short.length ? 'r' : tight.length ? 'y' : 'g' },
