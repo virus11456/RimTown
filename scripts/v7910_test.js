@@ -81,12 +81,13 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.group = { base, peer, thrH, vol0, vol1 };
       const T3 = MONEY.total(w); for (let i = 0; i < 9; i++) { next(); AF.daily(w); } out.group.drift = Math.round((MONEY.total(w) - T3) * 100) / 100; out.group.acts = Object.values(C.st).reduce((x, y) => x + y, 0); out.group.hist = C.hist.length;
       // 完整智能體模式:壓力最大的 8 人整批交給 AI(一天一次);AI 沒回應就照規則
-      { const ce = w.conversationEngine; const _fa = w.fullAgentMode, _ok = ce.fullAgentOk, _aj = ce._askJson; let asked = '', calls = 0;
+      // v11.7.0 決策核心開著時，災後反應改走選擇點 crisis（AI 題目由決策核心送，見 v110700_test.js）；這裡測的是決策核心沒開時原本那一批問 AI 的寫法
+      { const ce = w.conversationEngine; const _fa = w.fullAgentMode, _ok = ce.fullAgentOk, _aj = ce._askJson; let asked = '', calls = 0; const _on = DECIDE.on; DECIDE.on = () => false;
         w.fullAgentMode = true; ce.fullAgentOk = () => true; ce._askJson = async (p) => { asked = p; calls++; return [{ i: 1, r: 'protest', line: '要給個交代' }, { i: 2, r: 'protest', line: '不能再這樣' }, { i: 3, r: 'none' }]; };
         w.crisis = null; AF.shock(w, { kind: 'meltdown', sev: 3, who: [adults()[9]] }); next(); AF.daily(w); await new Promise(r => setTimeout(r, 80)); const C2 = AF.S(w);
         const rows = asked.split('\n').filter(l => /^\d+\. /.test(l)).length; const lg = (w.messageLog || []).slice(-40).map(m => m.content || '').join('\n');
         ce._askJson = async () => { throw new Error('x'); }; w.crisis = null; AF.shock(w, { kind: 'meltdown', sev: 3, who: [adults()[9]] }); next(); AF.daily(w); await new Promise(r => setTimeout(r, 50)); next(); AF.daily(w); const fb = Object.values(AF.S(w).st).reduce((x, y) => x + y, 0);
-        w.fullAgentMode = _fa; ce.fullAgentOk = _ok; ce._askJson = _aj; out.ai = { calls, rows, acts: C2.st.aiActs || 0, said: /要給個交代|不能再這樣|demand answers/.test(lg), fallback: fb }; }
+        DECIDE.on = _on; w.fullAgentMode = _fa; ce.fullAgentOk = _ok; ce._askJson = _aj; out.ai = { calls, rows, acts: C2.st.aiActs || 0, said: /要給個交代|不能再這樣|demand answers/.test(lg), fallback: fb }; }
       w.crisis = null;
       // 抗議三人以上:相關提案提早(核災→廢核)
       w.tech.pendAbandon = null; const cr2 = AF.shock(w, { kind: 'meltdown', sev: 3, who: [] }); for (const b of adults().slice(0, 3)) AF.act(w, b, 'protest', cr2); out.group.pend = w.tech.pendAbandon === w._absDay();

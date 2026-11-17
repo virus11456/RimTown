@@ -41,6 +41,7 @@ async function run(browser, dev, lang) {
     const marg = (K, a, ctx, id) => { const ops = K.options(w, a, ctx); const Ln = DECIDE.lean(w, a); const me = ops.find(o => String(o.id).split(':')[0] === id); if (!me) return null; const others = ops.filter(o => o !== me).map(o => DECIDE.score(Ln, o)); return r3(DECIDE.score(Ln, me) - Math.max(...others)); };
     const ids = (K, a, ctx) => K.options(w, a, ctx).map(o => String(o.id).split(':')[0]);
     const opOf = (K, a, ctx, id) => K.options(w, a, ctx).find(o => String(o.id).split(':')[0] === id);
+    const setJob = (a, k) => { try { a.job = new Job(k); } catch (e) {} }; // 用遊戲本身的 Job（假的物件少了技能清單，之後每天的流程會出錯）
     const steady = (fn) => { Math.random = () => 0.5; try { return fn(); } finally { Math.random = R0; } };
     const offDecide = (fn) => { const on0 = DECIDE.on; DECIDE.on = () => false; try { return fn(); } finally { DECIDE.on = on0; } };
     for (const a of npcs()) { if (w.civic?.jail) delete w.civic.jail[a.agentId]; if (a.currentLocation === 'exploration') a.currentLocation = 'town_square'; }
@@ -58,7 +59,7 @@ async function run(browser, dev, lang) {
     const heal = (a) => { delete X.st[a.agentId]; };
     X.found = day() - 3; X.phase = 'panic'; X.died = 2; const P0 = PW.P(X);
     // A1 怕的人待不待在家
-    const A1 = {}; { const a = pool[1], sp = pool[2], b = pool[3]; for (const x of [a, sp, b]) { heal(x); plain(x); unmarry(x); } marry(a, sp); a.personality.traits = ['pessimist']; sick(sp); setCash(a, 12); a.job = a.job || { key: 'farmer' };
+    const A1 = {}; { const a = pool[1], sp = pool[2], b = pool[3]; for (const x of [a, sp, b]) { heal(x); plain(x); unmarry(x); } marry(a, sp); a.personality.traits = ['pessimist']; sick(sp); setCash(a, 12); if (!a.job || a.job.key === 'mayor') setJob(a, 'farmer');
       for (const x of pool.slice(4, 8)) sick(x); const I = PW.stayInfo(w, a); const f = KK.calStay.facts(w, a, { d: day() }); texts.push(f);
       const nI = Object.values(X.st).filter(x => x.s === 'I').length;
       A1.facts = { sick: f.includes(String(nI)), died: f.includes('2'), fam: f.includes(t(sp.name)) || f.includes(sp.name), cash: f.includes('12'), wage: f.includes(t('你身上只有 {c} 銀幣，沒什麼積蓄，幾天不上工就沒飯吃。').split('{c}')[1].slice(0, 6)) };
@@ -204,7 +205,7 @@ async function run(browser, dev, lang) {
       const n0 = asked.length; opOf(KK.zbBit, v, ctx, 'home').run(w, v, ctx); DECIDE.drain(w, X0, day()); const ha = asked.slice(n0).find(e => e.kind === 'zbHide'); B1.home = { asked: ha?.who === f.agentId };
       delete (zb.how || {})[v.agentId]; const hctx = { v: v.agentId, d: day() }; const fh = KK.zbHide.facts(w, f, hctx); texts.push(fh); B1.hideFacts = { name: fh.includes(t(v.name)) || fh.includes(v.name), tie: fh.includes(t('是一家人')), kid: fh.includes(t(kid.name)) || fh.includes(kid.name) }; B1.hideIds = ids(KK.zbHide, f, hctx); for (const o of KK.zbHide.options(w, f, hctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       // 傾向：很親、不信守衛的瞞；守規矩、家裡有小孩的不瞞
-      const g = zp.find(x => x.job?.key === 'guard') || zp[5]; g.job = g.job?.key === 'guard' ? g.job : { key: 'guard', title: '守衛' }; setAff(f, g, -40); f.personality.values = ['自由']; kid._parentNames = []; setAff(f, v, 95); B1.hideLean = { close: marg(KK.zbHide, f, hctx, 'hide'), closePick: pick(KK.zbHide, f, hctx) };
+      const g = zp.find(x => x.job?.key === 'guard') || zp[5]; if (g.job?.key !== 'guard') setJob(g, 'guard'); setAff(f, g, -40); f.personality.values = ['自由']; kid._parentNames = []; setAff(f, v, 95); B1.hideLean = { close: marg(KK.zbHide, f, hctx, 'hide'), closePick: pick(KK.zbHide, f, hctx) };
       setAff(f, g, 30); f.personality.values = ['傳統']; f.personality.traits = ['perfectionist']; kid._parentNames = [f.name]; setAff(f, v, 30); B1.hideLean.rules = marg(KK.zbHide, f, hctx, 'hide'); B1.hideLean.rulesPick = pick(KK.zbHide, f, hctx); plain(f); setAff(f, v, 70);
       // 瞞著：兩天後在家裡變成喪屍
       const hid0 = zb.st.hid; opOf(KK.zbHide, f, hctx, 'hide').run(w, f, hctx); const hid = zb.st.hid - hid0; zb.bit[v.agentId] = day() - 2; const lg0 = logs().length; const R1 = Math.random; Math.random = () => 0.99; try { WC._t.zombieDaily(w, c); } finally { Math.random = R1; }
@@ -214,7 +215,7 @@ async function run(browser, dev, lang) {
       delete zb.bit[v2.agentId]; delete zb.how[v2.agentId]; }
     out.B1 = B1;
     // B2 獵人下不下手、家人擋不擋
-    const B2 = {}; { const z = zb.ids[0] ? w.agents[zb.ids[0]] : null; const f = zp[1]; const h = zp.slice(11).find(x => x !== f && x.agentId !== z?.agentId && (x.age ?? 30) >= 18 && !WC.kinZ(w, z).includes(x)); plain(h); c.prog = 40; h.job = { key: 'guard', title: '守衛' };
+    const B2 = {}; { const z = zb.ids[0] ? w.agents[zb.ids[0]] : null; const f = zp[1]; const h = zp.slice(11).find(x => x !== f && x.agentId !== z?.agentId && (x.age ?? 30) >= 18 && !WC.kinZ(w, z).includes(x)); plain(h); c.prog = 40; if (h.job?.key !== 'guard') setJob(h, 'guard');
       const ctx = { z: z.agentId, d: day() }; setAff(h, z, 0); const fh = KK.zbHunt.facts(w, h, ctx); texts.push(fh); B2.facts = { name: fh.includes(t(z.name)) || fh.includes(z.name), cure: fh.includes('40'), fam: fh.includes(t(f.name)) || fh.includes(f.name), tie: fh.includes(t('只是普通交情')) };
       B2.ids = ids(KK.zbHunt, h, ctx); for (const o of KK.zbHunt.options(w, h, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       B2.lean = { stranger: pick(KK.zbHunt, h, ctx), mS: marg(KK.zbHunt, h, ctx, 'kill') }; setAff(h, z, 85); B2.lean.friend = pick(KK.zbHunt, h, ctx); B2.lean.mF = marg(KK.zbHunt, h, ctx, 'kill'); setAff(h, z, 0); c.prog = 97; B2.lean.mSoon = marg(KK.zbHunt, h, ctx, 'kill'); c.prog = 40;
@@ -243,7 +244,7 @@ async function run(browser, dev, lang) {
     // ============ C) 末日災厄：去留與自保 ============
     const C1 = {}; { const c3 = WC.begin(w, 'nukewar', 'nature'); const rich = adults().slice(0, 40).sort((x, y) => cash(y) - cash(x)); for (const x of rich.slice(0, 5)) { setCash(x, 400); plain(x); x.personality.traits = ['pessimist']; } c3.warn = []; c3.deny = [];
       const n0 = asked.length; WC._t.onEnter(w, c3, 'rumor'); const ea = asked.slice(n0).filter(e => e.kind === 'calFlee'); C1.early = { n: ea.length, max3: ea.length <= 3, t: ea.every(e => e.ctx?.t === 'early') };
-      const avail = rich.slice(0, 5).filter(x => w.agents[x.agentId] && !ea.some(e => e.who === x.agentId)); const a = avail[0]; const ctx = { src: 'wc', t: 'early', d: day(), q: 0.4 }; c3.bunk = {}; const f = KK.calFlee.facts(w, a, ctx); texts.push(f); C1.facts = f.includes('400') || f.includes(String(Math.floor(cash(a)))); C1.ids = ids(KK.calFlee, a, ctx); for (const o of KK.calFlee.options(w, a, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
+      const avail = rich.slice(0, 5).filter(x => w.agents[x.agentId] && !ea.some(e => e.who === x.agentId)); const a = avail[0]; const ctx = { src: 'wc', t: 'early', d: day(), q: 0.4 }; c3.bunk = {}; const f = KK.calFlee.facts(w, a, ctx); texts.push(f); C1.facts = f.includes('400') || f.includes(String(Math.floor(cash(a)))); C1.dbg = { cash: cash(a), kin: WC.kin(w, a).length, bunk: !!c3.bunk[a.agentId], t: c3.kind }; C1.ids = ids(KK.calFlee, a, ctx); for (const o of KK.calFlee.options(w, a, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       // 買避難位子：錢付給公庫，大災死人時排在後面
       const t0 = w.stockpile.get('silver'); const c0 = cash(a); const L = leak(() => opOf(KK.calFlee, a, ctx, 'bunk')?.run(w, a, ctx)); C1.bunk = { paid: r3(c0 - cash(a)), tres: r3(w.stockpile.get('silver') - t0), leak: L.leak, marked: !!c3.bunk[a.agentId] };
       let deadA = 0; for (let i = 0; i < 20; i++) { const n = 8; const killed = []; const _k = w.lifecycle._killNpc; w.lifecycle._killNpc = (w4, x) => killed.push(x); try { WC._t.kill(w, n, 'x'); } finally { w.lifecycle._killNpc = _k; } if (killed.includes(a)) deadA++; } C1.bunk.last = deadA === 0;
@@ -287,7 +288,7 @@ async function run(browser, dev, lang) {
       w.fullAgentMode = false; ce._askJson = a0; app._fullAgentOn = () => false; out.mind = o; }
 
     // ============ 整場疫情、整場喪屍危機 ============
-    { const errs0 = []; const tick = () => { try { tick1(); } catch (e) { errs0.push(String(e.message).slice(0, 160)); } }; const d0 = day(); MM.lastT = MONEY.total(w) - MM.pend; const n0 = seen.length;
+    { const errs0 = []; const tick = () => { try { tick1(); } catch (e) { errs0.push(String(e.stack || e.message).slice(0, 300)); } }; const d0 = day(); MM.lastT = MONEY.total(w) - MM.pend; const n0 = seen.length;
       w.calamity.cur = null; w.calamity.coolTo = 0; w.worldcal = null; C.release(w, { route: ['droplet', 'contact'], sym: ['cough', 'fever'], speed: 'fast', lethal: 'mid', length: 'mid' }, pool[2].agentId, { natural: 1 });
       let g = 0; while (w.calamity.cur && g++ < 90) { const Y = w.calamity.cur; if (Y.found && !Y.vax) Y.vax = { p: 0, need: 60, done: 0 }; tick(); await new Promise(r2 => setTimeout(r2, 0)); }
       const plague = { days: g, ended: !w.calamity.cur, kinds: [...new Set(seen.slice(n0).map(e => e.kind))] };
@@ -373,7 +374,7 @@ async function run(browser, dev, lang) {
   // C
   { const Cc = r.C1;
     ok(Cc.early.n >= 1 && Cc.early.max3 && Cc.early.t, `${tag} 末日將至：最有錢又膽小的三個人被問要不要走`, Cc.early);
-    ok(Cc.facts && ['stay', 'go', 'bunk'].every(x => Cc.ids.includes(x)), `${tag} 選項有留下、走、花錢買避難位子`, Cc.ids);
+    ok(Cc.facts && ['stay', 'go', 'bunk'].every(x => Cc.ids.includes(x)), `${tag} 選項有留下、走、花錢買避難位子`, { ids: Cc.ids, dbg: Cc.dbg });
     ok(Cc.bunk.paid > 0 && Cc.bunk.paid === Cc.bunk.tres && Cc.bunk.leak === 0 && Cc.bunk.marked && Cc.bunk.last, `${tag} 買避難位子：${Cc.bunk.paid} 銀幣進公庫，死人的時候排在最後`, Cc.bunk);
     ok(Cc.friend && Cc.friendGo.b && Cc.friendGo.fr && Cc.friendGo.left === 2, `${tag} 可以帶走不是家人的好朋友，兩個人都算搬走`, Cc);
     ok(Cc.cap === 0, `${tag} 一個人一場災厄最多被問兩次`, Cc.cap);
