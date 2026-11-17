@@ -214,6 +214,7 @@ class World {
             if (agent.currentLocation === 'exploration') return; // Skip agents on expedition
             agent.update(this);
         });
+        try { this._directorTick(); } catch (e) { console.warn('[Director] tick', e); } // v11.10.0 導演安排的場合：人都到了就算碰上
         // NPC proactive messaging to player
         if (!this.observerMode) this.conversationEngine.tickProactiveMessages(this).catch(e => console.warn('[RimTown] Proactive msg error:', e)); // v6.83.0 觀察者模式村民不再主動傳訊息給你(你不住在鎮上)
         // v5.39.1 每個遊戲日補排一次 LLM 行程佇列:換日觸發之外,讀檔/開頁在一天中途也會立刻補生成
@@ -740,6 +741,12 @@ class World {
         if (absDay - (this._directorLastDay || -99) < 3) return; // 導演出手後至少醞釀 3 天
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
         if (npcs.length < 4) return;
+        // v11.10.0 決策核心開著：導演只安排場合（讓人傍晚碰在同一個地方），心動、心結由當事人自己決定；沒開或少了那幾個選擇點才走舊路徑直接改數值
+        if (this._dirOn()) return this._dirArrange(absDay, npcs);
+        return this._dramaDirectorOld(absDay, npcs);
+    }
+    // v5.49.0 舊路徑（決策核心沒開、舊存檔）：照原本直接改心動與好感
+    _dramaDirectorOld(absDay, npcs) {
         const strategies = shuffle(['crush', 'grudge', 'jealousy']);
         for (const strat of strategies) {
             if (strat === 'crush') {
@@ -793,6 +800,125 @@ class World {
                 }
             }
         }
+    }
+
+    // ================= v11.10.0 戲劇導演：只安排場合，不改心 =================
+    // 以前導演直接替人寫下「最近看他的眼神不一樣了」「火又上來了」「心口悶得發疼」，連帶把心動、好感改掉，當事人沒有決定過任何事。
+    // 現在導演挑的還是同一種人，但只做一件事：讓他們今天傍晚真的走到同一個地方（跟公告欄邀約、家族儀式一樣用 THINGS.setGo 約好時間地點）。
+    // 碰上了之後，各自怎麼看待這次碰面由本人決定（sim-decide-love.js 的 spark、heartache，sim-decide-soc.js 的 stir），數值只跟著他選的那件事變。
+    // 沒碰上（有人病倒、出遠門、被別的事絆住）就隔天傍晚再安排一次；再沒碰上這次就算了。觀察者在「真相」頁看得到導演安排了什麼、兩人各自怎麼選。
+    _dirOn() { try { const K = typeof DECIDE !== 'undefined' ? DECIDE.KINDS : null; return !!(K && K.spark && K.heartache && K.stir && DECIDE.on(this) && typeof THINGS !== 'undefined' && THINGS.setGo); } catch (e) { return false; } }
+    _dirS() {
+        if (!this.director || typeof this.director !== 'object') this.director = { n: 0, cur: null, log: [], st: {} };
+        const D = this.director; if (!Array.isArray(D.log)) D.log = []; D.st = Object.assign({ crush: 0, grudge: 0, jealousy: 0, met: 0, miss: 0 }, D.st || {}); return D;
+    }
+    _dirOk(x) { // 能被安排的人：在鎮上、成年、不是喪屍、沒在參加婚喪
+        if (!x || x.isPlayer || x.isDead || this.agents[x.agentId] !== x || (x.age ?? 30) < 16 || x.currentLocation === 'exploration' || this.isAway(x.agentId) || String(x.agentId).startsWith('visit_') || x._ceremony) return false;
+        try { if (this.worldcal?.cur?.zb && typeof WORLDCAL !== 'undefined' && WORLDCAL.isZombie(this, x)) return false; } catch (e) {}
+        return true;
+    }
+    // 挑人照舊（同樣的門檻），只是多看「這幾個人今天能不能出門」
+    _dirArrange(absDay, npcs) {
+        const ok = (x) => this._dirOk(x);
+        for (const strat of shuffle(['crush', 'grudge', 'jealousy'])) {
+            if (strat === 'crush') {
+                for (const a of shuffle(npcs.filter(x => ok(x) && !x.relationships.getPartner()))) {
+                    const cand = Object.values(a.relationships.relationships).find(r => { const b = this.agents[r.targetId];
+                        return ok(b) && !b.relationships.getPartner() && r.affinity >= 20 && (r.romanticInterest || 0) < 20 && !r.status; });
+                    if (cand) return this._dirSet(strat, a, this.agents[cand.targetId], null, absDay);
+                }
+            } else if (strat === 'grudge') {
+                for (const a of shuffle(npcs.filter(ok))) {
+                    const foe = Object.values(a.relationships.relationships).find(r => { const b = this.agents[r.targetId]; return ok(b) && r.affinity <= -18 && r.affinity > -34 && !r.isFeud; });
+                    if (foe) return this._dirSet(strat, a, this.agents[foe.targetId], null, absDay);
+                }
+            } else {
+                for (const c of shuffle(npcs.filter(ok))) {
+                    const crush = c.relationships.getRomanticInterests().find(r => !r.status && (r.romanticInterest || 0) >= 25); if (!crush) continue;
+                    const b = this.agents[crush.targetId]; const partner = ok(b) ? b.relationships.getPartner?.() : null; if (!partner) continue;
+                    const rival = this.agents[partner.targetId]; if (!ok(rival) || rival === c) continue;
+                    return this._dirSet(strat, c, b, rival, absDay);
+                }
+            }
+        }
+    }
+    // 去哪裡：照兩個人平常愛去的地方挑（跟約人出去挑地點的算法一樣），挑兩個人加起來最想去的
+    _dirPlace(list, x, y) {
+        const locs = this.townMap?.locations || {}; const L = list.filter(k => locs[k]); if (!L.length) return locs.town_square ? 'town_square' : Object.keys(locs).find(k => !/^residential|_front$|exploration/.test(k)) || 'town_square';
+        if (typeof DAY === 'undefined' || !DAY.freeScore) return L[0];
+        let best = L[0], bs = -Infinity;
+        for (const k of L) { let s = 0; try { s = DAY.freeScore(this, x, 'socializing', k, DAY.freeCtx(this, x)) + (y ? DAY.freeScore(this, y, 'socializing', k, DAY.freeCtx(this, y)) : 0); } catch (e) {} if (s > bs) { bs = s; best = k; } }
+        return best;
+    }
+    _dirSet(strat, x, y, z, absDay) {
+        const D = this._dirS(); const kind = strat === 'crush' ? 'meet' : strat === 'grudge' ? 'stir' : 'see'; const aff = (p, q) => p?.relationships?.relationships?.[q.agentId]?.affinity || 0;
+        let via = null;
+        // 相遇：兩個人都要好的朋友約他們一起吃飯；沒有這樣的朋友，就是兩人傍晚剛好都去了同一個地方
+        if (kind === 'meet') via = Object.values(this.agents).find(c => c !== x && c !== y && this._dirOk(c) && aff(c, x) >= 30 && aff(c, y) >= 30 && aff(x, c) >= 20 && aff(y, c) >= 20) || null;
+        const place = kind === 'meet' && via && this.townMap?.locations?.tavern ? 'tavern' : kind === 'see' ? this._dirPlace(['park', 'tavern', 'town_square'], y, z) : this._dirPlace(['tavern', 'park', 'town_square', 'library'], x, y);
+        const H = 19; const base = this.tickCount - (this.clock.hour || 0) * 4 - Math.floor((this.clock.minute || 0) / 15);
+        const who = [x, y, z].filter(Boolean);
+        const sc = { id: 'D' + String(++D.n).padStart(3, '0'), kind, strat, d: absDay, who: who.map(o => o.agentId), nm: who.map(o => o.name), via: via ? via.agentId : null, viaNm: via ? via.name : '', place, h: H, from: base + H * 4 - 2, until: base + (H + 2) * 4, tries: 1, stage: 'set', picks: {} };
+        D.cur = sc; D.log.push(sc); if (D.log.length > 20) D.log.splice(0, D.log.length - 20); D.st[strat]++; D.last = absDay; this._directorLastDay = absDay;
+        this._dirGo(sc);
+        if (via) { const P = { c: via.name, a: x.name, b: y.name, p: locName(this, place) };
+            this.logMessageT('social', '🍽️ {c}約了{a}和{b}今天傍晚一起去{p}吃飯。', P, via.name);
+            for (const o of [x, y]) o.memory.addT(this.tickCount, this.clock.timeStr, 'social', '{c}約我今天傍晚去{p}吃飯，說{b}也會來。', { c: via.name, p: P.p, b: (o === x ? y : x).name }, 4, [via.name]); }
+        return sc;
+    }
+    // 讓人真的走過去：約好的時間一到，地圖上就往那裡走（sim-things.js 的 _thingGo）
+    _dirGo(sc) {
+        try { THINGS.S(this); } catch (e) {}
+        for (const id of [...sc.who, sc.via].filter(Boolean)) { const a = this.agents[id]; if (a && !a.isDead) THINGS.setGo(a, { place: sc.place, from: sc.from, until: sc.until, why: 'director', id: sc.id }); }
+    }
+    // 每格：約好的時間裡，人都到了就算碰上了
+    _directorTick() {
+        const D = this.director, sc = D?.cur; if (!sc || sc.stage !== 'set') return;
+        if (this._dirLoadPending) { this._dirLoadPending = false; this._dirGo(sc); } // 剛讀檔：重新約好（要等讀檔全部做完、地圖那邊的資料也就位）
+        if (this.tickCount < sc.from + 2) return;
+        const P = sc.who.map(id => this.agents[id]);
+        if (P.some(x => !x || x.isDead)) { sc.stage = 'gone'; D.cur = null; return; }
+        if (P.every(x => x.currentLocation === sc.place)) return this._dirMeet(sc, P);
+        if (this.tickCount < sc.until - 1) return;
+        if (sc.tries < 2 && P.every(x => this._dirOk(x))) { sc.tries++; sc.from += 96; sc.until += 96; this._dirGo(sc); return; } // 今天沒碰上，明天傍晚再安排一次
+        sc.stage = 'miss'; D.st.miss++; D.cur = null;
+    }
+    _dirMeet(sc, P) {
+        const D = this._dirS(); sc.stage = 'met'; sc.met = this._absDay(); D.st.met++; D.cur = null; const p = locName(this, sc.place); const [x, y, z] = P; const ts = this.clock.timeStr;
+        const ctx = (b, extra) => Object.assign({ sid: sc.id, b: b.agentId, place: sc.place, d: this._absDay() }, extra || {});
+        let ask = [];
+        if (sc.kind === 'meet') {
+            if (sc.via && this.agents[sc.via]) this.logMessageT('social', '🍽️ {c}約的那頓飯，{a}和{b}坐在一起聊了一整晚。', { c: sc.viaNm, a: x.name, b: y.name }, x.name, y.name);
+            else this.logMessageT('social', '☕ {a}和{b}傍晚都到了{p}，坐在一起聊了一陣子。', { a: x.name, b: y.name, p }, x.name, y.name);
+            x.memory.addT(this.tickCount, ts, 'social', '傍晚在{p}碰到了{b}，坐下來聊了一陣子。', { p, b: y.name }, 5, [y.name]);
+            y.memory.addT(this.tickCount, ts, 'social', '傍晚在{p}碰到了{b}，坐下來聊了一陣子。', { p, b: x.name }, 5, [x.name]);
+            ask = [{ a: x, kind: 'spark', ctx: ctx(y, { via: sc.via }) }, { a: y, kind: 'spark', ctx: ctx(x, { via: sc.via }) }];
+        } else if (sc.kind === 'stir') {
+            this.logMessageT('social', '😒 {a}在{p}碰到了{b}，兩個人都愣了一下。', { a: x.name, b: y.name, p }, x.name, y.name);
+            x.memory.addT(this.tickCount, ts, 'social', '傍晚在{p}碰到了{b}，以前那件事又浮上心頭。', { p, b: y.name }, 6, [y.name]);
+            y.memory.addT(this.tickCount, ts, 'social', '傍晚在{p}碰到了{b}，氣氛有點僵。', { p, b: x.name }, 5, [x.name]);
+            ask = [{ a: x, kind: 'stir', ctx: ctx(y) }];
+            if ((y.relationships.relationships[x.agentId]?.affinity || 0) <= -10) ask.push({ a: y, kind: 'stir', ctx: ctx(x) }); // 對方也看他不順眼：兩個人各自決定
+        } else {
+            this.logMessageT('social', '👀 {c}在{p}看見{b}和{r}在一起。', { c: x.name, b: y.name, r: z.name, p }, x.name, y.name);
+            x.memory.addT(this.tickCount, ts, 'social', '傍晚在{p}看見{b}和{r}在一起，兩個人有說有笑。', { p, b: y.name, r: z.name }, 7, [y.name, z.name]);
+            ask = [{ a: x, kind: 'heartache', ctx: ctx(y, { r: z.agentId }) }];
+        }
+        sc.ask = ask.map(q => q.a.agentId);
+        try { DECIDE.askNow(this, ask); } catch (e) { console.warn('[Director] ask', e); }
+    }
+    // 決策核心通知：這個人對導演安排的那一場做了什麼決定（sim-decide-love.js 登記的觀察點會呼叫）
+    _dirPick(sid, a, op, src) {
+        // AI 自己想的做法（other）記錄時沒有帶題目：找他碰上了、還沒決定的那一場
+        const D = this.director; if (!D || !a) return; const sc = sid ? D.log.find(s => s.id === sid) : op?.id === 'other' && D.log.slice().reverse().find(s => s.stage === 'met' && (s.ask || []).includes(a.agentId) && !(s.picks[a.agentId] && !s.picks[a.agentId].wait));
+        if (!sc || !(sc.ask || []).includes(a.agentId)) return;
+        sc.picks[a.agentId] = op ? { id: String(op.id).split(':')[0], what: op.say || op.text || '', ai: src === 'ai' ? 1 : 0 } : { wait: 1 };
+    }
+    // 給「真相」頁：最近導演安排的幾場（字在畫面上才翻譯）
+    directorView(n = 8) {
+        const D = this.director; if (!D?.log?.length) return [];
+        return D.log.slice(-n).reverse().map(sc => ({ id: sc.id, kind: sc.kind, d: sc.d, place: sc.place, nm: sc.nm, viaNm: sc.viaNm, stage: sc.stage, tries: sc.tries,
+            picks: (sc.ask || []).map(id => ({ id, name: this.agents[id]?.name || sc.nm[sc.who.indexOf(id)] || '', ...(sc.picks[id] || {}) })) }));
     }
 
     // v5.34.0 逾時代選:pending 的互動選擇滿一個遊戲日(96 ticks)沒人處理就隨機結算
@@ -1048,6 +1174,7 @@ class World {
         this.dailyEcho = [];
         this.playerActions = [];
         this.dramaArchive = [];
+        this.director = null; this._directorLastDay = undefined; // v11.10.0
         this.mediations = {};
         this._feudCooldown = {};
         this.workPolicy = {};
@@ -1086,6 +1213,8 @@ class World {
     _processRelationships() {
         // v9.28.0 告白、求婚、偷情、分手、離婚由本人決定（sim-decide-love.js），這裡不擲骰
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer);
+        // v11.10.0 心動突然加深、看見心上人跟別人在一起、發現情敵：什麼時候遇上照舊看天，遇上了怎麼反應由本人決定（決策核心沒開才照舊直接改數值）
+        const dirAsk = this._dirOn(); const asks = []; const dd0 = this._absDay();
         for (const agent of npcs) {
             for (const rel of Object.values(agent.relationships.relationships)) {
                 const other = this.agents[rel.targetId];
@@ -1130,10 +1259,12 @@ class World {
                     }
                     // v5.3.0 來電火花:高好感+高相容,偶爾一次大跳躍(命中注定的感覺)
                     if (rel.affinity > 45 && compat >= 3 && rel.romanticInterest > 15 && Math.random() < 0.06) {
+                        if (dirAsk) asks.push({ a: agent, kind: 'spark', ctx: { b: other.agentId, src: 'self', d: dd0 } }); else {
                         const spark = randInt(8, 16);
                         rel.modifyRomantic(spark);
                         this.logMessageT('relationship', '💓 {agent}對{other}的心動,好像悄悄加深了...', { agent: agent.name, other: other.name }, agent.name, other.name);
                         if (this.gossipNetwork) this.gossipNetwork.createRelGossip(this, 'crush', agent, other);
+                        }
                     }
                     // v5.3.0 日久生情的回應:agent 對 other 明顯有意,若 other 對 agent 也親近且沒別的對象,
                     // other 有機會回應這份心動——這是讓「單戀」有機會變「兩情相悅」的關鍵
@@ -1154,6 +1285,7 @@ class World {
                     if (otherPartner && otherPartner.targetId !== agent.agentId) {
                         const luckyOne = this.agents[otherPartner.targetId];
                         if (luckyOne && !luckyOne.isPlayer && Math.random() < 0.13) { // v5.22.0 加溫:單戀嫉妒更常燒起來
+                            if (dirAsk) asks.push({ a: agent, kind: 'heartache', ctx: { b: other.agentId, r: luckyOne.agentId, src: 'self', d: dd0 } }); else {
                             const jealousRel = agent.relationships.getOrCreate(luckyOne.agentId, luckyOne.name);
                             // 心動越深恨越重;已經在恨了就繼續往下探(讓三角戀燒成真正的仇敵)
                             const bite = jealousRel.affinity < 0 ? randInt(8, 16) : randInt(6, 12);
@@ -1163,6 +1295,7 @@ class World {
                             rel.modifyRomantic(-randInt(2, 5)); // 慢慢死心
                             { const dd = this._absDay(), J = agent._jealLog || (agent._jealLog = {}); if (!(J[other.agentId] > dd - 10) && !(this._jealLogDay > dd - 2)) { J[other.agentId] = dd; this._jealLogDay = dd; this.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: agent.name, other: other.name, luckyOne: luckyOne.name }, agent.name, luckyOne.name); } } // v9.5.1 同一段單戀十天內只報一次
                             if (this.gossipNetwork && Math.random() < 0.4) this.gossipNetwork.createRelGossip(this, 'jealous', agent, luckyOne, other.name);
+                            }
                         }
                     } else {
                         // other 還單身,但另有他人也強烈喜歡 other → 情敵!agent 對情敵生恨
@@ -1170,6 +1303,7 @@ class World {
                             if (rival === agent || rival === other || rival.isPlayer) continue;
                             const rivalCrush = rival.relationships.relationships[other.agentId];
                             if (rivalCrush && rivalCrush.romanticInterest > 40 && Math.random() < 0.20) { // v5.22.0 加溫:情敵更容易結樑子
+                                if (dirAsk) { asks.push({ a: agent, kind: 'stir', ctx: { b: rival.agentId, o: other.agentId, src: 'rival', d: dd0 } }, { a: rival, kind: 'stir', ctx: { b: agent.agentId, o: other.agentId, src: 'rival', d: dd0 } }); break; }
                                 const feud = agent.relationships.getOrCreate(rival.agentId, rival.name);
                                 const feudBack = rival.relationships.getOrCreate(agent.agentId, agent.name);
                                 // 情敵之恨蓋過友情:已在敵對就繼續探底,直到真正水火不容
@@ -1246,6 +1380,7 @@ class World {
 
             }
         }
+        if (asks.length) { try { DECIDE.askNow(this, asks); } catch (e) { console.warn('[Director] ask', e); } }
     }
 
     _loadDefaultResidents() {
@@ -2157,6 +2292,7 @@ class World {
             dailyNews: this.dailyNews.serialize(),
             townIdentity: this.townIdentity.serialize(),
             dramaArchive: (this.dramaArchive || []).slice(-40),
+            director: this.director ? { ...this.director, last: this._directorLastDay ?? null } : (this._directorLastDay != null ? { last: this._directorLastDay } : null), // v11.10.0 導演安排到一半的場合、上次出手是哪一天（以前沒存，讀檔後導演會馬上又出手）
             npcEvents: this.npcEvents.serialize(),
             questSystem: this.questSystem ? this.questSystem.serialize() : null,
             requests: this.requests ? this.requests.serialize() : null, // v5.91.0
@@ -2527,6 +2663,10 @@ class World {
             if (data.dailyNews) this.dailyNews.loadFrom(data.dailyNews);
             if (data.townIdentity) this.townIdentity.load(data.townIdentity);
             this.dramaArchive = Array.isArray(data.dramaArchive) ? data.dramaArchive : [];
+            // v11.10.0 導演：還沒碰上的那一場重新約好（人身上的「等一下要去哪」不在存檔裡）
+            this.director = data.director && typeof data.director === 'object' && Array.isArray(data.director.log) ? data.director : null; this._directorLastDay = typeof data.director?.last === 'number' ? data.director.last : undefined;
+            if (this.director?.cur) { const c = this.director.log.find(x => x.id === this.director.cur.id); if (c) this.director.cur = c; } // 存檔裡 cur 跟紀錄裡的那一場是兩份：接回同一份，碰上了紀錄才看得到
+            this._dirLoadPending = !!(this.director?.cur && this.director.cur.stage === 'set');
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);
             // v5.63.0 任務系統一律重建再讀:存檔沒任務資料時不再殘留上一鎮的任務狀態
