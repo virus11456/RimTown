@@ -38,7 +38,7 @@ const init = ({ lang, jwt, enter }) => {
       ok(r.anims.length === 0, '首頁沒有一直在跑的 CSS 動畫（v9.29.0 首屏的動態交給 3D 畫布，捲出畫面就停）', r.anims);
       // 捲出畫面暫停
       await page.waitForFunction(() => typeof LANDING3D !== 'undefined' && LANDING3D.hero && LANDING3D.hero.frame > 0, null, { timeout: 30000 }).catch(() => {});
-      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; /* v11.2.1 等到主視覺標成看不到了(最多 10 秒)再開始量,不靠固定等 1.5 秒 */ const t0 = performance.now(); while (LANDING3D.hero?.visible !== false && performance.now() - t0 < 10000) await new Promise(r => setTimeout(r, 30)); const f0 = LANDING3D.hero?.frame; await new Promise(r => setTimeout(r, 700)); return { idle: document.querySelector('#lp-stage').classList.contains('lp-stage-idle'), f0, f1: LANDING3D.hero?.frame }; });
+      const off = await page.evaluate(async () => { const l = document.getElementById('landing'); l.scrollTop = l.scrollHeight; /* v11.5.1 等到主視覺標成看不到了(最多 10 秒)再開始量,不靠固定等 1.5 秒 */ const t0 = performance.now(); while (LANDING3D.hero?.visible !== false && performance.now() - t0 < 10000) await new Promise(r => setTimeout(r, 30)); const f0 = LANDING3D.hero?.frame; await new Promise(r => setTimeout(r, 700)); return { idle: document.querySelector('#lp-stage').classList.contains('lp-stage-idle'), f0, f1: LANDING3D.hero?.frame }; });
       ok(off.idle && off.f0 > 0 && off.f1 === off.f0, '主視覺捲出畫面就暫停（3D 不再畫）', off);
       await page.waitForFunction(() => typeof RIMTOWN_CHANGELOG !== 'undefined' && document.querySelectorAll('#landing-log .landing-log-item').length >= 5, null, { timeout: 10000 }).catch(() => {}); // 更新紀錄 640KB,忙的時候要多等一下
       const log = await page.evaluate(() => ({ items: document.querySelectorAll('#landing-log .landing-log-item').length, loaded: typeof RIMTOWN_CHANGELOG !== 'undefined' }));
@@ -57,7 +57,8 @@ const init = ({ lang, jwt, enter }) => {
       const g = await page.evaluate(() => ({ path: location.pathname, loading: !!document.getElementById('town-loading'), landingShown: !!document.querySelector('#landing:not(.hidden)') }));
       ok(/town(\.html)?$/.test(g.path) && !g.loading && !g.landingShown, '登入後進到遊戲頁，載入畫面收起、不再出現首頁', g);
       // 遊戲裡登出 → 回首頁
-      await page.evaluate(() => window.rimtownApp._doLogout()); await page.waitForFunction(() => !window.rimtownApp && document.querySelector('#landing:not(.hidden) .lp-hero'), null, { timeout: 30000 }).catch(() => {});
+      // 登出會換頁：換頁的瞬間讀頁面會失敗，所以每半秒看一次，最多等 30 秒（連到線上、或機器忙的時候換頁比較慢）
+      await page.evaluate(() => window.rimtownApp._doLogout()).catch(() => {}); for (let i = 0; i < 60; i++) { const back = await page.evaluate(() => !window.rimtownApp && !!document.querySelector('#landing:not(.hidden) .lp-hero')).catch(() => false); if (back) break; await page.waitForTimeout(500); }
       const lo = await page.evaluate(() => ({ path: location.pathname, landing: !!document.querySelector('#landing:not(.hidden)'), world: !!window.rimtownApp }));
       ok(/\/(index\.html)?$/.test(lo.path) && lo.landing && !lo.world, '遊戲裡登出回到首頁', lo);
       ok(!errs.length, '沒有頁面錯誤（首頁→登入→遊戲→登出）', errs.slice(0, 3));

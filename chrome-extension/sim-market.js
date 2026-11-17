@@ -24,7 +24,8 @@ const MARKET = (() => {
     const TAX = 0.05;        // 營業稅:營收的 5%(轉嫁給買的人)
     const CORP = 0.12;       // 營利事業所得稅:每週利潤的 12%(老闆自己報,不老實的會少報)
     // 薪資所得稅另計:由老闆從工資扣繳(稅率是村民投票決定的 WALLET.tax),上班族一毛都逃不掉
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs = (w) => SCAN.on() ? SCAN.memo('market.npcs', () => npcs0(w)).slice() : npcs0(w); // v11.2.1 SCAN.run 期間沒有人進出：全鎮名單只篩一次（每次給一份新的陣列）
     const day = (w) => (w._absDay ? w._absDay() : Math.floor((w.tickCount || 0) / 96));
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const name = (k) => (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en') ? SECTORS[k].en : SECTORS[k].zh;

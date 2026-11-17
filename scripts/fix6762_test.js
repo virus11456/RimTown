@@ -68,11 +68,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const P = w.proposals; let hist = P.items.filter(p => ['done', 'failed', 'rejected', 'expired'].includes(p.status));
       if (!hist.length && P.items.length) { const p = P.items[0]; p.status = 'rejected'; p.resolvedDay = w._absDay(); hist = [p]; }
       const h = hist.sort((a, b) => b.n - a.n)[0];
+      const oc = h.outcome; h.outcome = null; // 挑到的這一件如果本來就有成效，「成效出來」前後看不出差別（偶發失敗的原因）：先當成還沒有成效
       const d1 = P.toDict(w); const i1 = d1.history.find(x => x.id === h.id); const d2 = P.toDict(w); const i2 = d2.history.find(x => x.id === h.id);
-      const oc = h.outcome; h.outcome = { verdict: 'good', note: 'x' }; const d3 = P.toDict(w); const i3 = d3.history.find(x => x.id === h.id); h.outcome = oc;
+      h.outcome = { verdict: 'good', note: 'x' }; const d3 = P.toDict(w); const i3 = d3.history.find(x => x.id === h.id); h.outcome = null; try { h._ti = null; } catch (e) {}
       const fresh = P.toItem(w, h); delete fresh.affordable;
       const same = JSON.stringify(Object.assign({}, i1, { affordable: undefined })) === JSON.stringify(Object.assign({}, P.toItem(w, h), { affordable: undefined }));
-      out.hist = { reuse: i1 === i2, recalc: !!i3 && i3 !== i1 && !!i3.outcome, same, notSaved: !JSON.stringify(P.items).includes('"_ti"'), max20: d1.history.length <= 20 };
+      out.hist = { reuse: i1 === i2, recalc: !!i3 && i3 !== i1 && !!i3.outcome, same, notSaved: !JSON.stringify(P.items).includes('"_ti"'), max20: d1.history.length <= 20 }; h.outcome = oc; try { h._ti = null; } catch (e) {}
       const openP = P.items.find(p => p.status === 'open');
       if (openP) { const before2 = P.toDict(w).open.find(x => x.id === openP.id).forCount; const v = npcs().find(a => !openP.votes[a.agentId]); if (v) { openP.votes[v.agentId] = 'for'; } const after2 = P.toDict(w).open.find(x => x.id === openP.id).forCount; out.live = { before2, after2, voted: !!v }; delete openP.votes[v?.agentId]; }
       // 11) 錢包:新居民第一次查就有起始存款,而且之後一致

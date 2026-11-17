@@ -825,6 +825,8 @@ Object.assign(RimTownApp.prototype, {
         const { icon, title, name, desc, go, open, openLabel } = opts || {};
         if (this._modalOpen()) { const q = this._cornerHold || (this._cornerHold = []); q.push(opts); if (q.length > 3) q.shift(); this._flushCornerHold(); return; }
         const host = this._toastHost();
+        // v11.2.1 手指正按著的那張通知不能被新的擠掉（滑鼠：那一下點擊不見；手機：點擊落到新通知的按鈕上，去錯地方）。新的這則先排隊，放開以後再出來
+        { const pe = this._pressEl; if (pe && !this._pressOff && Date.now() - (this._pressAt || 0) <= (this._pressMax || 3000)) { const live = [...host.querySelectorAll('.rt-toast:not(.morning):not(.rt-more)')]; if (live.slice(0, Math.max(0, live.length - (window.innerWidth <= 768 ? 1 : 2) + 1)).some(x => x.contains(pe))) { const q = this._cornerHold || (this._cornerHold = []); q.push(opts); if (q.length > 3) q.shift(); this._flushCornerHold(); return; } } }
         if (go && this._autoCamEnabled() && !this._isPlayerBusy?.() && Date.now() - (this._lastAutoCam || 0) > 6000) { this._lastAutoCam = Date.now(); try { this._goLook(go); } catch (e) {} }
         // v5.34.1 同時最多 3 張,多的擠掉最舊的,避免洗版
         const cap = window.innerWidth <= 768 ? 1 : 2; // v6.53.0 桌機兩張、手機一張(以前會疊滿半個地圖);被擠掉的算進「還有 N 則」
@@ -842,9 +844,10 @@ Object.assign(RimTownApp.prototype, {
         if (go) el.querySelector('.rt-toast-go')?.addEventListener('click', (e) => { e.stopPropagation(); try { this._goLook(go); } catch (err) {} el.remove(); });
         if (open) { const b = document.createElement('button'); b.className = 'rt-toast-go rt-toast-open'; b.textContent = '📖 ' + (openLabel || t('看全文')); b.addEventListener('click', (e) => { e.stopPropagation(); el.remove(); try { open(); } catch (err) {} }); el.appendChild(b); } // v6.40.1
         requestAnimationFrame(() => { el.style.opacity = '1'; el.style.transform = 'translateY(0)'; });
-        const remove = () => { el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
+        let timer = null;
+        const remove = () => { if (this._pressEl && !this._pressOff && el.contains(this._pressEl) && Date.now() - (this._pressAt || 0) <= (this._pressMax || 3000)) { clearTimeout(timer); timer = setTimeout(remove, 600); return; } /* v11.2.1 正按著這張：時間到了也先不收，放開再收 */ el.style.opacity = '0'; el.style.transform = 'translateY(8px)'; setTimeout(() => el.remove(), 350); };
         // v6.13.0 手機長文(章節故事等)先夾成兩行,點一下展開再點收掉;桌機維持點一下收掉
-        let timer = setTimeout(remove, 8000);
+        timer = setTimeout(remove, 8000);
         el.addEventListener('click', () => { const d = el.querySelector('.rt-toast-desc'); if (window.innerWidth <= 768 && d && !el.classList.contains('expanded') && d.scrollHeight > d.clientHeight + 2) { el.classList.add('expanded'); clearTimeout(timer); timer = setTimeout(remove, 12000); return; } remove(); });
     },
 

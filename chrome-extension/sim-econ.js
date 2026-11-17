@@ -6,6 +6,7 @@
 // - 紙:木匠用木頭造紙;報社出報、學者做研究、銀行記帳都要用紙,缺紙報紙會停刊、研究變慢
 // - 鹽:只有靠海的鎮能曬;醃漬讓存糧腐壞減半、菜比較好吃;內陸要靠商隊買
 // - 原料不再每天自動補到 40:只有本地產得出的原料保底 40,其他只保底 20,不夠就得靠貿易
+//   （v11.5.0 這個數是「平常備多少」的量，由首長定的採購計畫拿去用：照平常備、只備最要緊的、為升格多備、或這週不買，見 sim-procure.js）
 // - 房子翻修與城鎮升格要用木材、石材(以前只花銀幣／只看人口繁榮)
 const ECON = (() => {
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
@@ -48,7 +49,7 @@ const ECON = (() => {
         if (kind === 'paper') return WOOD[b] ?? 1;
         return 1;
     }
-    // 本地產得出的原料(保底 40),其他只保底 12
+    // 本地產得出的原料(平常備 40),其他平常備 20
     const NATURE_RAW = { forest: ['wood'], cave: ['stone', 'metal'], hill: ['stone'], meadow: ['herbs', 'cloth'] };
     const BASE_RAW = { frontier: ['wood', 'herbs'], harbor: ['cloth'], mountain: ['stone', 'metal'], forest: ['wood', 'herbs'], market: ['cloth'] };
     function localRaws(w) {
@@ -59,7 +60,9 @@ const ECON = (() => {
         for (const [loc, rs] of Object.entries(NATURE_RAW)) if (L[loc]) rs.forEach(r => set.add(r));
         return set;
     }
-    function rawFloor(w, r) { return localRaws(w).has(r) ? 40 : 20; }
+    // v11.3.0 保底量跟著人口長：以前不管幾個人都只補到 40（非本地 20），一百多人的城市光取暖加木匠一天就用掉七十幾份木材，怎麼補都見底。三十人以內照舊；之後每多一個人多留他兩天的用量
+    const RAW_PER = { wood: 1.25, metal: 0.3, cloth: 0.3, herbs: 0.17 }; // 每人兩天用多少：木材＝取暖 0.3＋木匠鐵匠 0.32；金屬、布料＝鐵匠、裁縫各佔 6%×3；草藥＝醫生佔 5%×2（職缺比例見 sim-finance.js，成年人約佔八成五）
+    function rawFloor(w, r) { const base = localRaws(w).has(r) ? 40 : 20; return Math.max(base, Math.round(base + (npcs(w).length - 30) * (RAW_PER[r] || 0))); }
     // ---------- 誰去種田、捕魚、打獵 ----------
     function shares(w) {
         const W = water(w), b = baseOf(w);
@@ -154,8 +157,8 @@ const ECON = (() => {
         const carp = all.filter(a => a.job?.key === 'carpenter');
         if (carp.length && (sp.get('paper') || 0) < 40) { // 紙存到 40 就先不造,木頭留給取暖與建設(多的可以外銷)
             const make = Math.round(carp.length * 2.5 * tf * mult(w, 'paper') * 10) / 10;
-            const wood = Math.min(make * 0.7, Math.max(0, (sp.get('wood') || 0) - (E.paperShort ? 5 : 20))); // v6.79.0 缺紙時木頭只留 5(以前海港木材不夠，紙一直是 0)
-            if (wood > 0.5) { sp.consume('wood', Math.round(wood * 10) / 10, w.tickCount, t('造紙')); const out = Math.round(wood / 0.7 * 10) / 10; sp.add('paper', out, w.tickCount, t('木匠造紙')); E.made.paper = (E.made.paper || 0) + out; }
+            const wood = Math.min(make * 0.7, Math.max(0, (sp.free ? sp.free('wood') : (sp.get('wood') || 0)) - (E.paperShort ? 5 : 20))); // v6.79.0 缺紙時木頭只留 5(以前海港木材不夠，紙一直是 0)；v11.5.0 只算拿得到的木材，保留給升格或提案的不拿來造紙
+            if (wood > 0.5 && sp.consume('wood', Math.round(wood * 10) / 10, w.tickCount, t('造紙'))) { const out = Math.round(wood / 0.7 * 10) / 10; sp.add('paper', out, w.tickCount, t('木匠造紙')); E.made.paper = (E.made.paper || 0) + out; }
         }
         const papers = (w.press?.papers?.length || 0) + 1;
         const scholars = all.filter(a => a.job?.key === 'researcher').length;

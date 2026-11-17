@@ -4023,6 +4023,8 @@ body.rimtown-page .wp-block-post-title {
         padding: 9px 12px;
         border-bottom: 1px solid var(--border);
         flex-shrink: 0;
+        touch-action: none; /* v11.2.1 標題列是拖曳把手：手指上下拖交給程式處理。沒有這一行，瀏覽器第一下移動就把手勢搶去當成捲頁面，拖曳被取消，面板拉不高 */
+        -webkit-user-select: none; user-select: none;
     }
     #kairo-card-title { font-size: 0.95rem; font-weight: 700; color: var(--accent); }
     #kairo-card-back {
@@ -4079,6 +4081,10 @@ body.rimtown-page .wp-block-post-title {
     body.rt-kb-open #kairo-bar,
     body.rt-kb-open #kairo-status { display: none !important; }
     body.rt-kb-open .rt-sidebar.chat-open { bottom: 0 !important; max-height: 55vh !important; }
+    /* v11.2.1 聊天抽屜開著時收起底部狀態帶：它疊在抽屜最下面 26px 上面，「歷史對話」「立即存檔」的下半截按到的其實是它（結果跳去小鎮面板） */
+    .kairo-mode:has(.rt-sidebar.chat-open:not(.kairo-hidden):not(.mobile-collapsed)) #kairo-status { display: none !important; }
+    /* 不認得 :has 的舊瀏覽器：抽屜內容底下多留一截，按鈕不會落在狀態帶底下 */
+    @supports not selector(:has(a)) { .kairo-mode .rt-sidebar.chat-open #sidebar-content { padding-bottom: 30px !important; } }
 }
 
 /* v4.7.0 未解鎖分頁:上鎖外觀 */

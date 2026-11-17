@@ -52,7 +52,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     const pending = []; let calls = 0; E.decideMayor = () => { calls++; return new Promise(res => pending.push(res)); };
     P._advance(w, day); const t1 = p._rulingTicket;
     // 第 2 天:還沒回 → 規則裁決;讓規則選擇擱置
-    const rs = Math.random; Math.random = () => 0.9; P._advance(w, day + 1); Math.random = rs; const afterRule = p.status;
+    const rs = Math.random; const _ml = P._mayorLean; P._mayorLean = () => 0; /* v11.4.0 首長不再擲硬幣：沒人表態、他自己也沒立場時才擱置，這裡讓他沒有立場 */ Math.random = () => 0.9; P._advance(w, day + 1); Math.random = rs; P._mayorLean = _ml; const afterRule = p.status;
     // 第 3 天之後(擱置滿 3 天)鎮長重新裁決,開新一輪 AI
     const dbg = { shelvedDay: p.shelvedDay, llmRuledDay: p._llmRuledDay, day }; P._advance(w, day + 4); const t2 = p._rulingTicket, ruling2 = p._ruling; dbg.after4 = { status: p.status, ruling: p._ruling, llm: p._llmRuledDay, calls };
     // 舊回覆這時才到:想把它改成「批准」

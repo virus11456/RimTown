@@ -34,11 +34,11 @@ const stage = () => {
   const opts = K.options(w, a, ctx); const pr = DECIDE.prompt(w, K, [{ a, K, ctx, opts }]); const ce = w.conversationEngine;
   out.prompt = { len: pr.length, max: ce._promptMax ? ce._promptMax() : 0, hasBlock: pr.includes('【跟這件事有關的往事】'), hasMem: pr.includes('沒還') && pr.includes('笑我窮'), noUnrelated: !pr.split('【跟這件事有關的往事】').pop().split('【遇到的事】')[0].includes('天氣'), hasFeel: pr.includes('"feel"') && pr.includes('賭氣'), hasSay: pr.includes('"say"'), hasHuman: pr.includes('嚥不下這口氣') };
   // 2. AI 回答：不划算的選擇，有出於什麼，嘴上說的跟心裡想的不一樣
-  const m0 = b.memory.entries.length;
+  const mLast = b.memory.entries[b.memory.entries.length - 1]; // 記憶有上限，滿了以後新增一筆、最舊的就擠掉，長度不會變：用「當時最後一筆」當記號找之後新增的
   DECIDE.applyAi(w, a, K, ctx, opts, { pick: 'no', why: '他欠我十銀幣還當眾笑我窮，我才不去捧他的場', feel: '賭氣', say: '那天我店裡走不開' });
   const e1 = (X.log[a.agentId] || []).slice(-1)[0]; out.log = { feel: e1?.feel, pub: e1?.pub, ai: e1?.ai };
   const n1 = NOTES.S(w).list.filter(e => e.who === a.agentId).slice(-1)[0]; out.note = { f: n1?.f, s: n1?.s, y: n1?.y?.raw }; const f1 = NOTES.feed(w, 5)[0]; out.feed = { feel: f1?.feel, pub: f1?.pub, text: f1?.text };
-  const heard = b.memory.entries.slice(m0).map(e => e.content || Memory.render(e.k, e.p || {})); out.heard = { said: heard.some(x => x.includes('走不開')), inner: heard.some(x => x.includes('笑我窮')) };
+  const heard = b.memory.entries.slice(b.memory.entries.lastIndexOf(mLast) + 1).map(e => e.content || Memory.render(e.k, e.p || {})); out.heard = { said: heard.some(x => x.includes('走不開')), inner: heard.some(x => x.includes('笑我窮')) };
   // 嘴上說的跟心裡想的一樣：不另外記
   const P2 = SCHEME.create(w, c, { tone: 'fun', title: '請大家喝一杯', why: '好久沒聚', helpers: [a], ai: true }); const o2 = K.options(w, a, { sid: P2.id }); DECIDE.applyAi(w, a, K, { sid: P2.id }, o2, { pick: 'join', why: '好啊我去', feel: '義氣', say: '好啊我去' });
   const e2 = (X.log[a.agentId] || []).slice(-1)[0]; out.same = { feel: e2?.feel, pub: e2?.pub || '' };

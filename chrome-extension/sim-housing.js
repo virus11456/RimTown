@@ -31,7 +31,10 @@ const HOUSING = (() => {
     function S(w) {
         if (!w.housing || typeof w.housing.lv !== 'object') w.housing = { lv: {}, ver: 0 };
         const H = w.housing; if (!H.map || typeof H.map !== 'object') H.map = {};
+        // v11.2.1 「只看不改」的掃描期間（SCAN.run）沒有人搬進搬出、沒有新房子：下面這圈全鎮的房子補等級，第一次補完之後再跑也不會補到東西，同一輪就不重跑
+        if (SCAN.get('housing.S') === H) return H;
         for (const a of npcs(w)) { const h = houseOf(w, a); if (h && H.lv[h] === undefined) { H.lv[h] = maxLv(w); H.ver++; } } // 新房子照當下時代蓋
+        SCAN.set('housing.S', H);
         return H;
     }
     const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };

@@ -42,7 +42,7 @@ const ASSEMBLY = (() => {
     }
     function isMajor(w, p) {
         if (!p || p.kind === 'verdict') return false;
-        let cost = 0; try { cost = w.proposals?._cost?.(p)?.silver || 0; } catch (e) {}
+        let cost = 0; try { cost = w.proposals?._silverCost ? w.proposals._silverCost(p) : (w.proposals?._cost?.(p)?.silver || 0); } catch (e) {} // v11.3.0 連買缺料的估價一起算
         if (lv(w) === 0) return VILLAGE.has(p.kind);
         return MAJOR.has(p.kind) || cost >= 100;
     }
@@ -79,7 +79,7 @@ const ASSEMBLY = (() => {
             pubPart = lean * 3.5 * k; s += pubPart;
         }
         s += 0.7; // 送到議會的案子多半已經過了民意一關,議員傾向放行
-        let cost = 0; try { cost = ps._cost(p).silver || 0; } catch (e) {}
+        let cost = 0; try { cost = ps._silverCost ? ps._silverCost(p) : (ps._cost(p).silver || 0); } catch (e) {} // v11.3.0 連買缺料的估價一起算
         if (cost >= 100 && (has(a, 'greedy') || hasV(a, '財富'))) s -= 0.6;
         const rel = aff(a, w.agents[p.proposerId]); s += rel / 60;
         s += (Math.random() - 0.5) * 1.6;
@@ -250,13 +250,16 @@ const ASSEMBLY = (() => {
         const votes = {}; let turnout = 0, voters = 0;
         for (const v of npcs(w).filter(a => (a.age || 0) >= 16 && a.currentLocation !== 'exploration')) {
             voters++;
-            const p = 0.82 + ((v.mood ?? 50) > 60 ? 0.08 : 0) - (has(v, 'lazy') ? 0.2 : 0) - ((v.mood ?? 50) < 25 ? 0.15 : 0);
-            if (!cs.includes(v) && Math.random() > p) continue;
+            // v11.4.0 以前照機率（八成二上下）決定去不去投、再照分數抽一位。現在：懶得管又心情普通的人、心情壞到谷底的人不去；
+            // 去投的人投給自己最屬意的那一位（留一點當天的心情起伏，所以分數接近的兩個人都拿得到票）
+            const sc = cs.includes(v) ? null : cs.map(c => Math.max(-6, Math.min(6, score(w, v, c, E))) + (Math.random() - 0.5) * 1.8);
+            const top = sc ? Math.max(...sc) : 9;
+            if (!cs.includes(v) && ((has(v, 'lazy') && (v.mood ?? 50) < 55 && top < 2) || ((v.mood ?? 50) < 25 && top < 3))) continue;
             turnout++;
-            // 依好感程度抽一位(分數高的機率大,但不是全鎮都投同一人)
+            // 投給最屬意的那一位（分數接近時看當天的心情，所以不會全鎮都投同一人）
             let best = null;
             if (cs.includes(v)) best = v;
-            else { const ws = cs.map(c => Math.exp(Math.max(-6, Math.min(6, score(w, v, c, E))))); let x = Math.random() * ws.reduce((a, b) => a + b, 0); for (let i = 0; i < cs.length; i++) { x -= ws[i]; if (x <= 0) { best = cs[i]; break; } } best = best || cs[cs.length - 1]; }
+            else { best = cs[sc.indexOf(top)] || cs[cs.length - 1]; }
             votes[best.agentId] = (votes[best.agentId] || 0) + 1;
         }
         const ranked = cs.map(a => ({ id: a.agentId, name: a.name, votes: votes[a.agentId] || 0, inc: !!E.cands.find(x => x.id === a.agentId)?.inc, r: Math.random() })).sort((x, y) => y.votes - x.votes || y.r - x.r);

@@ -13,9 +13,11 @@ async function open(browser, vp, touch) {
   await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
   await page.evaluate(() => { const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; app._gameAlert = () => {}; app._showSeasonRecap = () => {};
     w.reset(); w.observerMode = true; ORIGIN.seed(w, 2, { seed: 22 }); w.observerMode = true; w.fullAgentMode = false; app._fullAgentOn = () => false; for (let i = 0; i < 96 * 2; i++) { w.paused = false; w.tick(); } app.state = w.getState();
-    window.__clk = []; document.addEventListener('click', (e) => { const b = e.target.closest?.('button,summary,[data-action],[data-gh]'); window.__clk.push({ hit: !!b, mark: b?.dataset?.probe || '', same: !!b && b === window.__downEl }); }, true);
+    // v11.2.1「同一顆按鈕」的身分：動作、參數、上面的字。重畫以後換了新節點（事先貼的記號也跟著不見），身分還是同一顆
+    window.__keyOf = (b) => b ? [b.tagName, b.dataset?.action || '', b.dataset?.val || '', b.dataset?.gh || '', (b.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 24)].join('|') : '';
+    window.__clk = []; document.addEventListener('click', (e) => { const b = e.target.closest?.('button,summary,[data-action],[data-gh]'); window.__clk.push({ hit: !!b, mark: b?.dataset?.probe || '', same: !!b && b === window.__downEl, key: window.__keyOf(b) }); }, true);
     // 按下去的那一顆是哪個元素（判斷「按下的那顆有沒有收到點擊」用，不靠事先做的記號）
-    window.__downEl = null; document.addEventListener('pointerdown', (e) => { window.__downEl = e.target.closest?.('button,summary,[data-action],[data-gh]') || null; }, true);
+    window.__downEl = null; window.__downKey = ''; document.addEventListener('pointerdown', (e) => { window.__downEl = e.target.closest?.('button,summary,[data-action],[data-gh]') || null; window.__downKey = window.__keyOf(window.__downEl); }, true);
     document.querySelectorAll('#season-recap,.rt-modal-overlay').forEach(x => x.remove()); });
   return { page, errs };
 }
@@ -79,11 +81,13 @@ const pickBtn = ({ sel, mark }) => { const root = document.querySelector(sel); i
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: Math.round(pt.x), y: Math.round(pt.y) }] }); await page.waitForTimeout(60);
       const alive = await page.evaluate(() => { window.rimtownApp.renderSidebar(); return document.contains(window.__probe); });
       await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await page.waitForTimeout(450);
-      return { alive, got: await page.evaluate((m) => window.__clk.some(c => c.hit && c.mark === m), mark) };
+      // v11.2.1 判斷標準改成「點擊有沒有送到按下去的那一顆（按鈕的處理有沒有跑）」。以前看事先貼的記號：重畫一定會把記號洗掉，
+      // 所以不管點擊實際上有沒有送到，對照組都被算成「不見」。實測 Chromium 的手指點擊在放開後才決定落點，按鈕被換掉也會送到新畫出來的同一顆。
+      return { alive, ...(await page.evaluate(() => ({ ran: !!window.__downKey && window.__clk.some(c => c.hit && c.key === window.__downKey), sameNode: window.__clk.some(c => c.same), clicks: window.__clk.length }))) };
     };
     const M0 = await tap('m0', true), M1 = await tap('m1', false);
-    ok(M0.noBtn || (!M0.alive && !M0.got), '手機對照組（保護關掉）：手指按著時重畫，點擊不見', M0);
-    ok(!M1.noBtn && M1.alive && M1.got, '手機：手指按著時先不重畫，點擊送到', M1);
+    ok(M0.noBtn || !M0.alive, `手機對照組（保護關掉）：手指按著時重畫，按著的那顆被換掉（這次點擊${M0.ran ? '改送到新畫出來的同一顆，處理有跑' : '沒有送到'}）`, M0);
+    ok(!M1.noBtn && M1.alive && M1.ran && M1.sameNode, '手機：手指按著時先不重畫，點擊送到原本那顆，按鈕的處理有跑', M1);
     ok(errs.length === 0, '手機沒有程式錯誤', errs.slice(0, 3)); await page.close();
   }
   await browser.close(); console.log(`\n${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

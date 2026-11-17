@@ -130,8 +130,8 @@ const RIVAL = (() => {
             const per = (r) => (w.stockpile.get(r) || 0) / pop; const lack = keys.slice().sort((a, b) => per(a) - per(b))[0], much = keys.slice().sort((a, b) => per(b) - per(a))[0];
             if (lack === much || per(much) < 3) return false; const rel = relOf(w, p.id);
             if (rel >= 0) {
-                const n = Math.min(40, Math.floor((w.stockpile.get(much) || 0) * 0.15)); if (n < 8) return false;
-                w.stockpile.consume(much, n, w.tickCount, t('跟鄰鎮換貨'), 'event'); w.stockpile.add(lack, n, w.tickCount, t('跟鄰鎮換貨'), 'event');
+                const n = Math.min(40, Math.floor((w.stockpile.free ? w.stockpile.free(much) : (w.stockpile.get(much) || 0)) * 0.15)); if (n < 8) return false; // v11.5.0 保留的料不拿去換
+                if (!w.stockpile.consume(much, n, w.tickCount, t('跟鄰鎮換貨'), 'event')) return false; w.stockpile.add(lack, n, w.tickCount, t('跟鄰鎮換貨'), 'event');
                 V.st.swap++; V.dep = (V.dep || 0) + 1; bump(w, p.id, 4);
                 note(w, V, 'dep', '🔁 我們缺{x}，{p}拿{x}換了我們的{y}——兩鎮越來越離不開彼此。', { p: pname(p), x: RES[lack], y: RES[much] }, true);
             } else {
