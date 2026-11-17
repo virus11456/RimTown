@@ -228,7 +228,7 @@ const HOME = (() => {
 
     // ================= 親戚的孩子沒人照顧：接不接 =================
     function adoptAsk(w, c, p, pool) {
-        if (!on(w) || !c || !(pool || []).length) return false; const H = S(w);
+        if (!on(w) || !c || !(pool || []).length || !pool.some(o => inTown(w, o))) return false; const H = S(w); // 一個都問不到（都不在鎮上）：照原本由最親的那位收養
         H.adopt[c.agentId] = { p: p?.name || '', q: pool.map(o => o.agentId), d: day(w) }; adoptNext(w, c.agentId); return true;
     }
     function adoptNext(w, cid) {
