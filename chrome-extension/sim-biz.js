@@ -58,8 +58,9 @@ const BIZ = (() => {
     function loanOk(w, a, n) {
         if (typeof BANK === 'undefined' || !w.bank || !a) return false; const BK = w.bank;
         if (!BK.open || BK.status === 'run' || BK.loans?.[a.agentId] || Math.ceil(n) < 5 || BANK.lendable(BK) < n + 20) return false;
-        // v11.6.0 銀行家在鎮上、決策核心開著：借不借由他決定，這裡不再先替他判；只擋掉「十天內才被他拒絕過」和「已經有一筆在等他回話」
-        if (BANK.teller && BANK.teller(w, BK, a)) { const d = day(w); return !(BK.refused?.[a.agentId] != null && d - BK.refused[a.agentId] < 10) && !BANK.pendingOf(w, a); }
+        // v11.6.0 借不借由銀行家決定（sim-bank.js 的 bankDesk）；這裡只是「要不要出這個選擇」：名聲太差、跟銀行家處不好的人自己知道去了也借不到，
+        // 十天內才被他拒絕過、已經有一筆在等他回話的，也不再出這個選擇
+        if (BANK.teller && BANK.teller(w, BK, a)) { const d = day(w); if ((BK.refused?.[a.agentId] != null && d - BK.refused[a.agentId] < 10) || BANK.pendingOf(w, a)) return false; }
         return vet(w, BK, a).ok;
     }
     // 這筆貸款是不是要等銀行家(AI)點頭:完整智能體模式下 40 銀幣以上的貸款由銀行家決定(見檔尾 BANK.lend)

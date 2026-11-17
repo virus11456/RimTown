@@ -92,7 +92,8 @@ async function client(browser, lang) {
       const borrower = npcs.find(a => a !== banker && !(B.loans || {})[a.agentId] && BIZ.vet(w, B, a).ok); let asked = null; out.bank.hasBorrower = !!borrower;
       ce._askJsonRaw = async (p, mt) => { asked = { p, mt }; return LLMClient.parseJson('{"lend":false,"why":"他身上只有一點錢，還欠著別人，收入又不穩定，借這麼多風險太大，我沒辦法放心把錢借出去，等他'); };
       const loans0 = Object.keys(B.loans || {}).length; const res0 = B.reserve; B.reserve = Math.max(B.reserve || 0, 500);
-      try { BANK.lend(w, B, borrower, 90, '周轉'); } /* 景氣差時放款額會打折，給大一點才一定會問銀行家 */ catch (e) { out.bank.err = String(e); }
+      const on0 = DECIDE.on; DECIDE.on = () => false; /* v11.6.0 決策核心開著時借不借改走銀行家的選擇點（v110603_test 驗）；這裡驗的是決策核心沒開時留著的舊路（直接問模型） */
+      try { BANK.lend(w, B, borrower, 90, '周轉'); } /* 景氣差時放款額會打折，給大一點才一定會問銀行家 */ catch (e) { out.bank.err = String(e); } finally { DECIDE.on = on0; }
       await new Promise(r => setTimeout(r, 300));
       out.bank.asked = !!asked; out.bank.promptGuide = asked ? asked.p.includes(t('一句理由，20 字內')) : null; out.bank.mt = asked?.mt; out.bank.refused = Object.keys(B.loans || {}).length === loans0; }
     /* 做錯事的那句話不重複主詞；「覺得對不起誰」不重複列同一個人；理由要講眼前這件事 */
