@@ -195,6 +195,7 @@ const AFTERMATH = (() => {
         for (const cr of ended) { const top = Object.entries(cr.n).filter(([k, v]) => v > 0 && R[k]).sort((x, y) => y[1] - x[1]).slice(0, 4); C.hist.unshift({ cause: cr.cause, kind: cr.kind, d: cr.d, end: d, sev: cr.sev, n: cr.n }); C.hist = C.hist.slice(0, 10); if (top.length) log(w, '📊 {c}過後，鎮上的人各自怎麼面對：{list}。', { c: cr.cause, list: top.map(([k, v]) => `${R[k].icon}${t(R[k].name)} ${v}`).join(t('、')) }); }
         C.cur = live; if (!live.length) return;
         const cr = live.slice().sort((x, y) => y.sev - x.sev)[0];
+        if (deciding(w)) { askAll(w, C, cr, d); return riotCheck(w, cr); } // v11.7.0 接進決策核心：怎麼反應由本人決定（選擇點 crisis），AI 名額照決策核心的 calam 那一組
         const byAI = batchAI(w, cr, d); // 交給 AI 的人今天不用規則決定
         for (const a of here(w).sort(() => Math.random() - 0.5)) {
             if (byAI.has(a.agentId)) continue;
@@ -203,11 +204,47 @@ const AFTERMATH = (() => {
             if (Math.random() > Math.min(0.85, s / 110)) continue;
             const r = decide(w, a, cr, d); if (r !== 'none') act(w, a, r, cr);
         }
-        const lootN = cr.n.loot || 0; if (lootN >= 3 && !cr.riot) { cr.riot = 1; log(w, '🔥 {c}之後秩序大亂，已經有 {n} 家店被搶，衛兵忙得焦頭爛額。', { c: cr.cause, n: lootN }); news(w, '🔥 {c}之後，鎮上爆發搶劫潮', { c: cr.cause }, 9, []); }
+        riotCheck(w, cr);
+    }
+    function riotCheck(w, cr) { const lootN = cr.n.loot || 0; if (lootN >= 3 && !cr.riot) { cr.riot = 1; log(w, '🔥 {c}之後秩序大亂，已經有 {n} 家店被搶，衛兵忙得焦頭爛額。', { c: cr.cause, n: lootN }); news(w, '🔥 {c}之後，鎮上爆發搶劫潮', { c: cr.cause }, 9, []); } }
+    // ---------- v11.7.0 接進決策核心 ----------
+    // 以前：自己算分、出大事那天壓力最大的 8 個人整批問 AI，結果不進決策核心，「做過的決定」和手記裡看不到。
+    // 現在：誰今天會有反應照舊（壓力越大越可能、兩天內做過的不再問）；有反應的人怎麼做是選擇點 crisis（登記在 sim-decide-calam.js），
+    // 選項就是這十種反應加「照常過日子」，傾向分數就是原本的 scores()（個性、處境、身邊的人怎麼做），結算沿用 act()。
+    // 原本的噪音是 ±0.6，決策核心是 ±0.9：分數乘 1.5，照個性推估時選到每一種的機率跟以前一模一樣。
+    const deciding = (w) => { try { return !!(w?.observerMode && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.crisis); } catch (e) { return false; } };
+    const SCALE = 1.5;
+    function askAll(w, C, cr, d) {
+        C.aiq = (C.aiq && typeof C.aiq === 'object') ? C.aiq : {}; for (const [id, x] of Object.entries(C.aiq)) if (d - x >= 2) delete C.aiq[id];
+        const list = [];
+        for (const a of here(w).sort(() => Math.random() - 0.5)) {
+            if (jailed(w, a) || C.aiq[a.agentId] != null) continue; const s = C.stress[a.agentId] || 0; if (s <= 0) continue;
+            const last = C.did[a.agentId]; if (last && d - last[0] < 2) continue;
+            if (Math.random() > Math.min(0.85, s / 110)) continue; // 今天會不會有反應：壓力越大越可能（看天）
+            list.push(a);
+        }
+        list.sort((x, y) => (C.stress[y.agentId] || 0) - (C.stress[x.agentId] || 0)); // 壓力最大的先問（AI 名額先給他們）
+        for (const a of list) C.aiq[a.agentId] = d; C.st.asked = (C.st.asked || 0) + list.length;
+        try { DECIDE.askNow(w, list.map(a => ({ a, kind: 'crisis', ctx: { cr: cr.id, d } }))); } catch (e) { console.warn('[Aftermath] ask', e); }
+    }
+    const crOf = (w, ctx) => (ctx ? S(w).cur.find(x => x.id === ctx.cr && x.until >= day(w)) : null) || null;
+    // 給選擇點：這個人現在能怎麼反應、各自的傾向（scores 乘 1.5）
+    function choices(w, a, ctx) {
+        const cr = crOf(w, ctx); if (!cr || !a || jailed(w, a) || day(w) - (ctx.d ?? 0) > 1) return null; const d = day(w); const sc = scores(w, a, cr, d);
+        const vic = cr.vic.some(id => w.agents[id] && w.agents[id] !== a && !w.agents[id].isDead); const fam = family(w, a).filter(f => !f.isDead).length > 0;
+        const ok = { flee: cr.sev >= 3, pray: devout(w, a), comfort: fam, volunteer: vic, help: vic || here(w).some(x => x !== a && cash(w, x) < 10) };
+        const list = Object.keys(R).filter(r => ok[r] !== false).map(r => ({ r, s: Math.round(sc[r] * SCALE * 1000) / 1000 }));
+        return { cr, sc, list, none: Math.round(sc.none * SCALE * 1000) / 1000, stress: Math.round(S(w).stress[a.agentId] || 0), fv: cr.vic.includes(a.agentId), friends: Object.entries(S(w).did).filter(([id, x]) => id !== a.agentId && d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => [w.agents[id], x[1]]).slice(0, 3) };
+    }
+    // 選了之後：照原本的 act() 結算（走匯出的 AFTERMATH.act，sim-ways.js 加的「受幫助的人欠一份人情」才會算到）
+    function doIt(w, a, ctx, r) {
+        const C = S(w); delete (C.aiq || {})[a.agentId]; const cr = crOf(w, ctx); if (!cr) return null;
+        if (r === 'none') return 'none';
+        return AFTERMATH.act(w, a, r, cr) ? r : false;
     }
     function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: x.cause, sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5), st: C.st, R }; }
     function brief(w, a) { const x = S(w).did[a.agentId]; if (!x || day(w) - x[0] > 6) return ''; return fill('剛發生大事，我選擇了{r}', { r: R[x[1]]?.name || '' }); }
-    return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief };
+    return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief, choices, doIt, askAll, SCALE };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {
@@ -220,7 +257,7 @@ if (typeof ConversationEngine !== 'undefined') {
 }
 if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset; World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.crisis = null; return r; };
-    const _ser = World.prototype.serialize; World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.crisis) { const C = this.crisis; d.crisis = { cur: C.cur || [], did: C.did || {}, stress: C.stress || {}, st: C.st || {}, hist: C.hist || [], n: C.n || 0 }; } return d; };
+    const _ser = World.prototype.serialize; World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.crisis) { const C = this.crisis; d.crisis = { cur: C.cur || [], did: C.did || {}, stress: C.stress || {}, st: C.st || {}, hist: C.hist || [], n: C.n || 0, aiq: C.aiq || {} }; } return d; };
     const _load = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.crisis = (data?.crisis && typeof data.crisis === 'object') ? data.crisis : null; } catch (e) {} return r; };
 }
 if (typeof window !== 'undefined') window.AFTERMATH = AFTERMATH;

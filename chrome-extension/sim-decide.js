@@ -41,8 +41,9 @@ const DECIDE = (() => {
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
     const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
-    const AI_GROUP = { deal: 20, civic: 6, work: 6 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
+    const AI_GROUP = { deal: 20, civic: 6, work: 6, calam: 12 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
     // v11.6.0 東家每週看帳（bossWeek）另外一組 work，一天 6 件
+    // v11.7.0 災難裡的人（疫情、喪屍、末日、災後反應）另外一組 calam，一天 12 件：災難時一天多出很多題，不能把平常的 10 件擠光
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
@@ -404,6 +405,12 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (offers.length) dispatch(w, X, offers, d);
         }
     }
+    // v11.7.0 馬上問（事件當下）：排著還沒輪到的事先拿開，問完原樣放回去。正在執行別人選的那一項時（選項的 run 裡）只能排進佇列，這一輪處理完就輪到，不然會重入佇列
+    function askNow(w, list) {
+        list = (list || []).filter(x => x && x.a && KINDS[x.kind]); if (!list.length) return; const X = S(w);
+        if (inRun()) { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); return; }
+        const keep = X.q.splice(0, X.q.length); try { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); drain(w, X, day(w)); } finally { if (keep.length) X.q.unshift(...keep); }
+    }
     function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
 
     // ================= 4. 每天 =================
@@ -452,7 +459,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { inRun, S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { inRun, askNow, S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================

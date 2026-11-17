@@ -35,7 +35,7 @@ const CALAMITY = (function () {
     // v7.9.0 災厄工坊(神的工具)延到基因生物、蒸汽煉金都上線之後才開放;引擎照樣跑(實驗室外洩用)。測試可用 localStorage rimtown_lab=1 打開
     const labOpen = () => true; // v8.2.0 災厄工坊正式開放
     // v8.2.0 掛勾:疫情裡的人情世故(sim-plague-ways.js)接在這裡
-    const H = { reg: null, mult: null, sus: null, brk: null, mask: null, thr: null, lesson: null, vote: null, daily: null, pre: null, die: [], end: [] };
+    const H = { reg: null, mult: null, sus: null, brk: null, mask: null, thr: null, lesson: null, vote: null, daily: null, pre: null, vax: null, flee: null, die: [], end: [] }; // v11.7.0 vax、flee：打不打疫苗、有錢人逃不逃交給本人決定
     const sandbox = () => { try { return localStorage.getItem('rimtown_god_sandbox') === '1'; } catch (e) { return false; } };
     function S(w) {
         if (!w.calamity || typeof w.calamity !== 'object') w.calamity = {};
@@ -290,7 +290,7 @@ const CALAMITY = (function () {
         if (panic) {
             if (X.phase === 'found' || X.phase === 'rumor') { X.phase = 'panic'; X.log.push([d, 'panic', '']); try { if (typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: 'epidemic', sev: X.died >= 3 || nI / pop >= 0.3 ? 3 : 2, cause: s.name, who: (X.bereaved || []).map(id => w.agents[id]).filter(Boolean) }); } catch (e) {} log(w, '😱 {n}越傳越兇，鎮上人心惶惶。', { n: s.name }); news(w, '😱 {n}擴散，鎮上陷入恐慌', { n: s.name }, 9, []); ping(w, 'panic', '😱', fill('{n}擴散，鎮上陷入恐慌', { n: s.name }), fill('{n}越傳越兇，鎮上人心惶惶。', { n: s.name })); }
             for (const a of here(w)) if (!X.st[a.agentId] || X.st[a.agentId].s === 'R') a.addThought?.('cal_fear', w);
-            if (!X.ms.lock) { const ws = adults(w).map(a => wal(w, a)).sort((x, y) => y - x); const top = ws[Math.floor(ws.length / 4)] ?? 999; const rich = adults(w).filter(a => !X.st[a.agentId] && wal(w, a) >= Math.max(40, top) && Math.random() < 0.04).slice(0, 2); /* 最有錢的四分之一先逃 */ for (const a of rich) { try { if (w.leaveTown?.(a.agentId, fill('怕染上{n}，帶著家當逃走了', { n: s.name }))) { X.fled++; log(w, '🧳 {a}怕染上{n}，收拾家當逃離了小鎮。', { a: a.name, n: s.name }, a.name); } } catch (e) {} } }
+            if (!X.ms.lock) { const ws = adults(w).map(a => wal(w, a)).sort((x, y) => y - x); const top = ws[Math.floor(ws.length / 4)] ?? 999; const rich0 = adults(w).filter(a => !X.st[a.agentId] && wal(w, a) >= Math.max(40, top)); let asked = false; try { asked = !!(H.flee && H.flee(w, X, d, rich0)); } catch (e) { console.warn('[Calamity] flee hook', e); } const rich = asked ? [] : rich0.filter(() => Math.random() < 0.04).slice(0, 2); /* v11.7.0 走不走由本人決定（sim-plague-ways.js）；沒開決策核心照舊每天 4% */ /* 最有錢的四分之一先逃 */ for (const a of rich) { try { if (w.leaveTown?.(a.agentId, fill('怕染上{n}，帶著家當逃走了', { n: s.name }))) { X.fled++; log(w, '🧳 {a}怕染上{n}，收拾家當逃離了小鎮。', { a: a.name, n: s.name }, a.name); } } catch (e) {} } }
             if (!X.hoard) { const med = w.stockpile?.get?.('medicine') || 0; const k = Math.round(med * 0.3); if (k > 0) w.stockpile.consume('medicine', k, w.tickCount, t('囤藥'), 'event'); X.hoard = d; const who = adults(w).sort((x, y) => wal(w, y) - wal(w, x))[0]; log(w, '💊 藥鋪的藥被搶走了三成，{a}家裡囤了一整櫃。', { a: who?.name || t('有人') }, who?.name); }
             const dv = here(w).filter(a => devout(w, a)); if (dv.length >= 3 && Math.random() < 0.25) { X.pray = true; log(w, '🙏 {n}個虔誠的信徒聚在一起為病人祈禱——擠在一起反而讓病傳得更快。', { n: dv.length }); }
         } else if (X.phase === 'found' && X.rumors) X.phase = 'rumor';
@@ -368,7 +368,8 @@ const CALAMITY = (function () {
             if (V.p >= V.need) { V.done = d; log(w, '💉 {n}的疫苗研究出來了！醫生開始幫大家打針。', { n: X.spec.name }); news(w, '💉 {n}疫苗問世', { n: X.spec.name }, 9, []); X.log.push([d, 'vaxdone', '']); ping(w, 'vax', '💉', fill('{n}疫苗問世', { n: X.spec.name }), fill('{n}的疫苗研究出來了！醫生開始幫大家打針。', { n: X.spec.name })); }
             return;
         }
-        X.vx = X.vx || {}; for (const a of here(w)) if (!X.st[a.agentId] && !X.vx[a.agentId] && Math.random() < 0.3) X.vx[a.agentId] = d; // 每天三成的人打到疫苗
+        X.vx = X.vx || {}; try { if (H.vax && H.vax(w, X, d)) return; } catch (e) { console.warn('[Calamity] vax hook', e); } // v11.7.0 打不打由本人決定，醫生一天打得完的照舊
+        for (const a of here(w)) if (!X.st[a.agentId] && !X.vx[a.agentId] && Math.random() < 0.3) X.vx[a.agentId] = d; // 每天三成的人打到疫苗
     }
     function vote(w, p, a) {
         const X = S(w).cur; const k = p.kind.replace(/^cal_/, ''); const x = X?.st?.[a.agentId]; const fam = X ? family(w, a).some(f => X.st[f.agentId]?.s === 'I') : false;
