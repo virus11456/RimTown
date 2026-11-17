@@ -97,7 +97,7 @@ async function run(browser, dev, lang) {
       // 不敢去：病人記得
       P0.feed = {}; const af1 = s.relationships.relationships[b.agentId].affinity; opOf(KK.calFood, b, ctx, 'afraid').run(w, b, ctx); A2.afraid = { aff: s.relationships.relationships[b.agentId].affinity < af1, mem: (s.memory.entries || []).some(m => /一次都沒來過|never came once/.test(m.content || (m.k ? Memory.render(m.k, m.p || {}) : ''))) };
       // 託別人送：被託的人被問（題目裡寫著誰託的）
-      const n1 = asked.length; opOf(KK.calFood, b, ctx, 'pass').run(w, b, ctx); const pa = asked.slice(n1).find(e => e.kind === 'calFood'); P0.feed = {}; A2.pass = { who: pa?.who === c.agentId, via: pa?.ctx?.via === b.agentId, factsVia: pa ? KK.calFood.facts(w, c, pa.ctx).includes(t(b.name)) || KK.calFood.facts(w, c, pa.ctx).includes(b.name) : false, noPass: pa ? !ids(KK.calFood, c, pa.ctx).includes('pass') : false };
+      const want = PW.foodInfo(w, b, ctx)?.pass; const n1 = asked.length; opOf(KK.calFood, b, ctx, 'pass').run(w, b, ctx); const pa = asked.slice(n1).find(e => e.kind === 'calFood'); P0.feed = {}; A2.pass = { who: !!want && pa?.who === want.agentId, via: pa?.ctx?.via === b.agentId, factsVia: pa ? KK.calFood.facts(w, c, pa.ctx).includes(t(b.name)) || KK.calFood.facts(w, c, pa.ctx).includes(b.name) : false, noPass: pa ? !ids(KK.calFood, c, pa.ctx).includes('pass') : false };
       P0.feed = {};
       // 傾向：心腸好又很親的送；悲觀、跟他不熟的不敢
       b.personality.traits = ['kind']; b.personality.values = ['社群']; setAff(b, s, 80); X.ms.quar = day(); const pKind = pick(KK.calFood, b, ctx); const mKind = marg(KK.calFood, b, ctx, 'give'); plain(b); b.personality.traits = ['pessimist', 'neurotic']; setAff(b, s, 25); const pScared = pick(KK.calFood, b, ctx); const mScared = marg(KK.calFood, b, ctx, 'give'); delete X.ms.quar; A2.lean = { kind: pKind, scared: pScared, mKind, mScared };
@@ -182,7 +182,7 @@ async function run(browser, dev, lang) {
       A6.ask = { n: fa.length, max3: fa.length <= 3, rich: fa.every(e => rich.some(x => x.agentId === e.who)) }; const n1 = asked.length; PW._t.fleeAsk(w, X, day(), rich); A6.ask.again = asked.slice(n1).filter(e => e.kind === 'calFlee' && fa.some(g => g.who === e.who)).length;
       const left = rich.filter(x => w.agents[x.agentId] && !fa.some(e => e.who === x.agentId)); const a = left[0]; const ctx = { src: 'plague', t: 'plague', d: day(), q: 0.3 }; const f = KK.calFlee.facts(w, a, ctx); texts.push(f); A6.facts = f.includes(String(Math.floor(cash(a)))); A6.f = f.slice(0, 160); A6.ids = ids(KK.calFlee, a, ctx); for (const o of KK.calFlee.options(w, a, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       const fl0 = X.fled; const L = leak(() => opOf(KK.calFlee, a, ctx, 'go').run(w, a, ctx)); A6.go = { gone: !w.agents[a.agentId], fled: X.fled - fl0 };
-      const b = left[1]; b.personality.traits = ['pessimist', 'neurotic']; A6.lean = { scared: marg(KK.calFlee, b, ctx, 'stay') }; b.personality.traits = ['brave']; b.personality.values = ['傳統']; A6.lean.brave = marg(KK.calFlee, b, ctx, 'stay'); plain(b); }
+      const b = left.find(x => x !== a && w.agents[x.agentId]) || adults().find(x => x !== a && !X.st[x.agentId]); setCash(b, 500); b.personality.traits = ['pessimist', 'neurotic']; A6.lean = { scared: marg(KK.calFlee, b, ctx, 'stay') }; b.personality.traits = ['brave']; b.personality.values = ['傳統']; A6.lean.brave = marg(KK.calFlee, b, ctx, 'stay'); plain(b); }
     out.A6 = A6;
 
     // A7 存讀檔：疫情進行到一半（有人答應送飯、有人在排隊打疫苗）；舊存檔沒有這一版的欄位
@@ -224,7 +224,7 @@ async function run(browser, dev, lang) {
       // 剛剛被照個性決定了一次（擋或不擋），換一隻喪屍測結算
       B2.guardAsked = { who: ga?.who === f.agentId };
       const z2 = zp[6]; plain(z2); unmarry(z2); const f2 = zp[7]; plain(f2); unmarry(f2); marry(z2, f2); WC._t.zTurn(w, c, z2, true); const gctx = { z: z2.agentId, h: h.agentId, d: day() }; const fg = KK.zbGuard.facts(w, f2, gctx); texts.push(fg); B2.guardFacts = { h: fg.includes(t(h.name)) || fg.includes(h.name), cure: fg.includes('40') }; B2.guardIds = ids(KK.zbGuard, f2, gctx); for (const o of KK.zbGuard.options(w, f2, gctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
-      const b0 = zb.st.block || 0; opOf(KK.zbGuard, f2, gctx, 'block').run(w, f2, gctx); B2.block = { alive: zb.ids.includes(z2.agentId) && !z2.isDead, n: (zb.st.block || 0) - b0, aff: (f2.relationships.relationships[h.agentId]?.affinity || 0) < 0 };
+      const b0 = zb.st.block || 0; const fa0 = f2.relationships.getOrCreate(h.agentId, h.name).affinity || 0; opOf(KK.zbGuard, f2, gctx, 'block').run(w, f2, gctx); B2.block = { alive: zb.ids.includes(z2.agentId) && !z2.isDead, n: (zb.st.block || 0) - b0, aff: (f2.relationships.relationships[h.agentId]?.affinity || 0) < fa0 };
       f2.personality.traits = ['brave']; setAff(f2, z2, 90); B2.guardLean = { brave: marg(KK.zbGuard, f2, gctx, 'block') }; f2.personality.traits = ['neurotic']; setAff(f2, z2, 20); B2.guardLean.timid = marg(KK.zbGuard, f2, gctx, 'block'); plain(f2);
       const k0 = zb.st.killed; opOf(KK.zbGuard, f2, gctx, 'away').run(w, f2, gctx); B2.away = { killed: zb.st.killed - k0, dead: !!z2.isDead || !w.agents[z2.agentId] || w.agents[z2.agentId].isDead };
       // 下不了手、趕到墓園：不殺
@@ -249,7 +249,7 @@ async function run(browser, dev, lang) {
       const t0 = w.stockpile.get('silver'); const c0 = cash(a); const L = leak(() => opOf(KK.calFlee, a, ctx, 'bunk')?.run(w, a, ctx)); C1.bunk = { paid: r3(c0 - cash(a)), tres: r3(w.stockpile.get('silver') - t0), leak: L.leak, marked: !!c3.bunk[a.agentId] };
       let deadA = 0; for (let i = 0; i < 20; i++) { const n = 8; const killed = []; const _k = w.lifecycle._killNpc; w.lifecycle._killNpc = (w4, x) => killed.push(x); try { WC._t.kill(w, n, 'x'); } finally { w.lifecycle._killNpc = _k; } if (killed.includes(a)) deadA++; } C1.bunk.last = deadA === 0;
       // 帶朋友走（不是家人的人）
-      const b = avail[1] || avail[0]; unmarry(b); const fr = adults().find(x => x !== b && !WC.kin(w, b).includes(x) && x !== a); setAff(b, fr, 70); setAff(fr, b, 70); C1.friend = ids(KK.calFlee, b, ctx).includes('friend'); const left0 = c3.left; opOf(KK.calFlee, b, ctx, 'friend')?.run(w, b, ctx); C1.friendGo = { b: !w.agents[b.agentId], fr: !w.agents[fr.agentId], left: c3.left - left0 };
+      const b = avail.find(x => x !== a && w.agents[x.agentId]) || adults().find(x => x !== a && cash(x) >= 50); unmarry(b); const fr = adults().find(x => x !== b && !WC.kin(w, b).includes(x) && x !== a); setAff(b, fr, 70); setAff(fr, b, 70); C1.friend = ids(KK.calFlee, b, ctx).includes('friend'); const left0 = c3.left; opOf(KK.calFlee, b, ctx, 'friend')?.run(w, b, ctx); C1.friendGo = { b: !w.agents[b.agentId], fr: !w.agents[fr.agentId], left: c3.left - left0 };
       // 一個人一場最多問兩次
       const q = rich[2]; c3.asked[q.agentId] = 2; const n1 = asked.length; WC._t.goAsk(w, c3, [q], 1, 'after'); C1.cap = asked.slice(n1).filter(e => e.who === q.agentId).length;
       // 大災之後：問 cnt÷0.45 個人，走不走由本人決定；照個性算的當場算進人數
