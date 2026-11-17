@@ -404,9 +404,11 @@ const PROCURE = (() => {
         for (const x of pl.buys) { const alt = priceOf(w, x.r) || base(x.r) * 1.6; if (alt) xs.push(Math.max(-1, Math.min(1, (1 - x.price / alt) / 0.25))); }
         return xs.length ? xs.reduce((s, v) => s + v, 0) / xs.length : 0;
     }
+    // 真模型實測：出面談的人會把自己手頭緊（「身上只剩 2 銀幣、房租快到了」）當成這趟買賣的理由，甚至因此只換一半。講明白這趟動的是公庫的錢和貨
+    const PUB = () => ({ raw: t('這是替鎮上做的買賣：付的是公庫的錢、動的是倉裡的貨，跟你自己口袋裡有多少錢沒有關係。') });
     function tradeFacts(w, a, ctx) {
         if (ctx?.t === 'c') { const o = ctx.o || {}; const u = (r) => { const n = useOf(w, r); return n > 0.05 ? { k: '（一天用 {n}）', p: { n } } : { raw: '' }; }; const hub = (o.mk ? Math.ceil(o.giveAmt * 0.2) : 0) + (o.rt ? Math.ceil(o.giveAmt * 0.2) : 0);
-            return fill('{town}的商隊到了，想用他們的{r}換鎮上的{g}：{ga} 份{g}換 {ra} 份{r}。倉裡拿得到的{g}有 {n1}{u1}，{r}有 {n2}{u2}。公庫現在的採購：{plan}。', { town: o.town || '', g: zh(o.give), r: zh(o.recv), ga: o.giveAmt, ra: o.giveAmt + hub, n1: Math.round(Math.max(0, freeOf(w, o.give))), u1: u(o.give), n2: Math.round(Math.max(0, freeOf(w, o.recv))), u2: u(o.recv), plan: { raw: planText(w) } }); }
+            return fill('{town}的商隊到了，想用他們的{r}換鎮上的{g}：{ga} 份{g}換 {ra} 份{r}。倉裡拿得到的{g}有 {n1}{u1}，{r}有 {n2}{u2}。公庫現在的採購：{plan}。{pub}', { pub: PUB(), town: o.town || '', g: zh(o.give), r: zh(o.recv), ga: o.giveAmt, ra: o.giveAmt + hub, n1: Math.round(Math.max(0, freeOf(w, o.give))), u1: u(o.give), n2: Math.round(Math.max(0, freeOf(w, o.recv))), u2: u(o.recv), plan: { raw: planText(w) } }); }
         const m = w.trade?.merchant; if (!m) return '';
         const mine = (r) => RAWS.includes(r) || SHOP_GOODS.includes(r) || !!(sp(w).hold || {})[r]; // 公庫自己會去買的東西才有得比價
         const rate = (o, isBuying) => { const alt = isBuying ? base(o.resource) : (mine(o.resource) ? priceOf(w, o.resource) : 0); return nm(o.resource) + ' ' + o.price + (alt ? fill(isBuying ? '（外地行情 {n}）' : '（公庫自己買 {n}）', { n: alt }) : ''); };
@@ -414,7 +416,7 @@ const PROCURE = (() => {
         if (ctx?.role === 'owner') { const ds = houseDeals(w); const txt = ds.map(houseText).join(t('、')) || t('沒有');
             return fill('商人{m}到了，再待 {n} 天。他收的：{buys}。他賣的：{sells}。你的商行照老算盤（外地貨落地比本地便宜一成以上又缺才進，外地開價比本地高一成以上又多才出）算得出來的：{deals}，大約賺 {g} 銀幣。你手上有 {c} 銀幣；進口的貨由公庫照本地價收，照首長的採購計畫，公庫這趟最多拿 {b} 銀幣。', { m: m.name, n: m.daysRemaining || 1, buys: { raw: he(true) }, sells: { raw: he(false) }, deals: { raw: txt }, g: ds.reduce((s, d) => s + d[3], 0), c: Math.round(typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0), b: Math.round(avail(w)) }); }
         const pl = merchantPlan(w, m, { sell: 'half', buy: true });
-        return fill('商人{m}到了，再待 {n} 天。他收的：{buys}。他賣的：{sells}。倉裡多出來、可以賣他的：{sur}。公庫現在的採購是「{plan}」；照計畫要跟他買的：{want}。買貨的預算還有 {b} 銀幣（公庫 {s} 銀幣）。', { m: m.name, n: m.daysRemaining || 1, buys: { raw: he(true) }, sells: { raw: he(false) }, sur: { raw: pl.sells.length ? listText(pl.sells) : t('沒有') }, plan: { raw: planText(w) }, want: { raw: pl.buys.length ? listText(pl.buys) : t('沒有') }, b: Math.round(avail(w)), s: Math.round(silver(w)) });
+        return fill('商人{m}到了，再待 {n} 天。他收的：{buys}。他賣的：{sells}。倉裡多出來、可以賣他的：{sur}。公庫現在的採購是「{plan}」；照計畫要跟他買的：{want}。買貨的預算還有 {b} 銀幣（公庫 {s} 銀幣）。{pub}', { pub: PUB(), m: m.name, n: m.daysRemaining || 1, buys: { raw: he(true) }, sells: { raw: he(false) }, sur: { raw: pl.sells.length ? listText(pl.sells) : t('沒有') }, plan: { raw: planText(w) }, want: { raw: pl.buys.length ? listText(pl.buys) : t('沒有') }, b: Math.round(avail(w)), s: Math.round(silver(w)) });
     }
     function tradeOptions(w, a, ctx) {
         if (!on(w) || !ctx || !inTown(w, a) || day(w) - (ctx.d ?? 0) > 2) return [];
