@@ -378,7 +378,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     // 把一批選擇點交出去：AI 開著就照先後問（每天有上限），其餘用傾向版
     function dispatch(w, X, offers, d) {
         // v11.6.0 東家看帳是在發薪、記完帳之後問的（sim-market.js），比每天掃一輪早：今天的額度先歸零，掃一輪時就不會再歸零一次，問過的照樣算在今天
-        if (X._cDay !== d && X.lastDay !== d) { X._cDay = d; X._cEarly = 1; X._asked = 0; X._kAsked = {}; X._gAsked = {}; }
+        if (X._cDay !== d && X.lastDay != null && X.lastDay !== d) { X._cDay = d; X._cEarly = 1; X._asked = 0; X._kAsked = {}; X._gAsked = {}; } // 每日流程一次都還沒跑過的新世界不提早歸零（跟以前一樣：那時全鎮的 10 件還沒開放，照個性決定）
         const ai = aiOn(w); const P0 = pend(X); const groups = {};
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)不能等：他若正在等 AI 想一件「自己的事」，這一件也照樣送去問，兩件各自等回答（v10.2.1；以前是把自己那件擱下，結果那件沒有下文）。

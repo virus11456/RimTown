@@ -57,9 +57,10 @@ const stage = () => {
       UNION.membership(w, Object.values(w.agents).filter(x => !x.isPlayer && !x.isDead), w._absDay()); out.union.after = { leader: U.leader, lWas: L.agentId, stillMember: !!U.members[L.agentId], on: U.on, newLeader: U.leader === m2.agentId };
       M.S(w).owners[other] = old; U.on = false; U.leader = null; U.members = {}; } for (const [k, v] of put) M.S(w).owners[k] = v; out.union.put = put.length; } catch (e) { out.unionErr = String(e.stack || e).slice(0, 300); }
   // 4. 提案被否決：理由回到提案人身上
+  //    （v11.6.0 記憶到上限時舊的會被擠掉、總筆數不變，所以不能只看「比原本多出來的那幾筆」：改看最後六筆）
   try { const PS = w.proposals; const p = PS.items.find(x => x.status === 'open') || (() => { for (let i = 0; i < 96 * 6 && !PS.items.some(x => x.status === 'open'); i++) { w.paused = false; w.tick(); } return PS.items.find(x => x.status === 'open'); })();
     if (p) { const pa = w.agents[p.proposerId]; const k0 = pa ? pa.memory.entries.length : 0; p.votes = {}; p.why = {}; const vs = A.filter(x => x.agentId !== p.proposerId).slice(0, 5); vs.forEach((x, i) => { p.votes[x.agentId] = 'against'; p.why[x.agentId] = i === 0 ? 'llm:公庫都快空了，這錢花不得' : 'gut'; });
-      PS._decide(w, p, 'reject', 'auto'); const got = pa ? pa.memory.entries.slice(k0).map(e => e.content || Memory.render(e.k, e.p || {})) : []; out.rej = { status: p.status, got: got.filter(x => x.includes('否決')), hasWhy: got.some(x => x.includes('公庫都快空了')) }; } else out.rej = { none: true }; } catch (e) { out.rejErr = String(e.stack || e).slice(0, 300); }
+      PS._decide(w, p, 'reject', 'auto'); const got = pa ? pa.memory.entries.slice(Math.min(k0, Math.max(0, pa.memory.entries.length - 6))).map(e => e.content || Memory.render(e.k, e.p || {})) : []; out.rej = { status: p.status, got: got.filter(x => x.includes('否決')), hasWhy: got.some(x => x.includes('公庫都快空了')) }; } else out.rej = { none: true }; } catch (e) { out.rejErr = String(e.stack || e).slice(0, 300); }
   try { app.state = w.getState(); app._kairoCardOpen = true; app.activeTab = 'proposals'; app._ppTab = 'voices'; app.renderSidebar(); } catch (e) { out.renderErr = String(e); }
   out.aid = a.agentId; return out;
 };
