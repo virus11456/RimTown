@@ -276,15 +276,17 @@ const ORDER = (() => {
         (sec.pseen || (sec.pseen = [])).push(P.id); ask(w, ed, 'pressScoop', { pid: P.id, sid: sec.id, d: day(w) }); return true;
     }
     function scoopInfo(w, a, c) {
-        const P = c && paper(w, c.pid); const sec = c && secOf(w, c.sid); if (!P || !sec || sec.found || P.banned && !P.underground || PR().editorOf(w, P) !== a || !elecOn(w) || day(w) - (c.d ?? 0) > 1) return null;
+        const P = c && paper(w, c.pid); const sec = c && secOf(w, c.sid); if (!P || !sec || sec.found || P.banned && !P.underground || P.closed || PR().editorOf(w, P) !== a || day(w) - (c.d ?? 0) > 1) return null; // v11.8.0 不再要求選舉還在進行：查證兩天、選舉在這兩天內結束，這一件也要再問一次
         const cu = w.agents[sec.culprit]; if (!cu || cu.isDead || cu === a) return null; const J = w.agents[P.journo];
-        return { P, sec, cu, J: J && J !== a ? J : null, pat: patron(w, P, a, cu), tie: tie(w, a, cu), hush: Math.floor(clampN(Math.round(cash(w, cu) * 0.3), 15, 80)), rich: cash(w, cu) >= 15 };
+        return { P, sec, cu, over: !elecOn(w), won: (() => { try { return w.election?.currentMayor?.(w) === cu; } catch (e) { return false; } })(), J: J && J !== a ? J : null, pat: patron(w, P, a, cu), tie: tie(w, a, cu), hush: Math.floor(clampN(Math.round(cash(w, cu) * 0.3), 15, 80)), rich: cash(w, cu) >= 15 };
     }
     DECIDE.kind('pressScoop', Object.assign({}, base, {
         title: '挖到候選人的醜聞', pri: 1.8, aiKind: 2,
         facts(w, a, c) { const I = scoopInfo(w, a, c); if (!I) return '';
-            return fill('你是{paper}{role}。{who}挖到候選人{c}的事：{what}。你跟{c}{tie}。{pat}{last}{cred}{ver}登出來，{c}的選情會受重傷，也會記恨你。', { paper: I.P.name[0], role: roleOf(I.P, a), who: I.J ? { k: '記者{j}', p: { j: I.J.name } } : '你自己', c: I.cu.name, what: { k: I.sec.k, p: I.sec.p }, tie: tieTxt(I.tie),
-                pat: I.pat === 'owner' ? { k: '{c}是這家報社的東家。', p: { c: I.cu.name } } : I.pat === 'donor' ? { k: '{c}前後給過你 {n} 銀幣。', p: { c: I.cu.name, n: Math.round(owedTo(w, a, I.cu)) } } : { raw: '' }, last: lastHit(w, a, I.cu), cred: credTxt(I.P), ver: c.ver ? '你已經查證過了，證據確實。' : { raw: '' } }); },
+            return fill('你是{paper}{role}。{who}挖到候選人{c}的事：{what}。你跟{c}{tie}。{pat}{last}{cred}{ver}{after}', { paper: I.P.name[0], role: roleOf(I.P, a), who: I.J ? { k: '記者{j}', p: { j: I.J.name } } : '你自己', c: I.cu.name, what: { k: I.sec.k, p: I.sec.p }, tie: tieTxt(I.tie),
+                pat: I.pat === 'owner' ? { k: '{c}是這家報社的東家。', p: { c: I.cu.name } } : I.pat === 'donor' ? { k: '{c}前後給過你 {n} 銀幣。', p: { c: I.cu.name, n: Math.round(owedTo(w, a, I.cu)) } } : { raw: '' }, last: lastHit(w, a, I.cu), cred: credTxt(I.P), ver: c.ver ? '你已經查證過了，證據確實。' : { raw: '' },
+                // v11.8.0 選舉結束了就照實寫：登出來不會再影響選票，但會照 exposeDo 做的事發生（大家知道、他的名聲變差、記恨你、報社信譽加分）
+                after: I.over ? { k: '選舉已經結束，{c}{res}。登出來，鎮上的人會知道這件事，{c}在大家眼中的名聲會變差（以後他說的話、提的案比較沒人信），他也會記恨你；報社的信譽會加分。', p: { c: I.cu.name, res: I.won ? '當選了' : '沒有當選' } } : { k: '登出來，{c}的選情會受重傷，也會記恨你。', p: { c: I.cu.name } } }); },
         options(w, a, c) { const I = scoopInfo(w, a, c); if (!I) return []; const cn = I.cu.name; const pp = I.P.name[0]; const hon = honesty(a);
             const close = I.tie === '家人' ? 1.2 : I.tie === '很要好' ? 0.6 : I.tie === '有交情' ? 0.2 : 0; const foe = I.tie === '有過節' ? 0.4 : 0; const pat = I.pat ? 0.5 : 0; const straight = (has(a, 'perfectionist') ? 0.4 : 0) + (hon >= 4 ? 0.3 : 0);
             const out = [
@@ -301,17 +303,18 @@ const ORDER = (() => {
         },
     }));
     function hushInfo(w, a, c) {
-        const P = c && paper(w, c.pid); const sec = c && secOf(w, c.sid); const ed = c && live(w, c.by); if (!P || !sec || sec.found || !ed || sec.culprit !== a.agentId || !elecOn(w) || day(w) - (c.d ?? 0) > 1) return null;
-        return { P, sec, ed, n: c.n, can: cash(w, a) >= c.n };
+        const P = c && paper(w, c.pid); const sec = c && secOf(w, c.sid); const ed = c && live(w, c.by); if (!P || !sec || sec.found || !ed || sec.culprit !== a.agentId || day(w) - (c.d ?? 0) > 1) return null; // v11.8.0 選舉結束了也照樣問（以前會悄悄不見）
+        return { P, sec, ed, n: c.n, can: cash(w, a) >= c.n, over: !elecOn(w), won: (() => { try { return w.election?.currentMayor?.(w) === a; } catch (e) { return false; } })() };
     }
     DECIDE.kind('pressHush', Object.assign({}, base, {
         title: '報社拿你的醜聞來談條件', pri: 1.9, aiKind: 1,
         facts(w, a, c) { const I = hushInfo(w, a, c); if (!I) return '';
-            return fill('{e}私下來找你：{paper}手上有你的事（{what}），他說給他 {n} 銀幣就不登。你身上有 {c} 銀幣。你跟{e}{tie}。不付，明天就見報；付了，這筆錢要是被人知道，會更難看。', { e: I.ed.name, paper: I.P.name[0], what: { k: I.sec.k, p: I.sec.p }, n: I.n, c: Math.floor(cash(w, a)), tie: tieTxt(tie(w, a, I.ed)) }); },
+            return fill('{e}私下來找你：{paper}手上有你的事（{what}），他說給他 {n} 銀幣就不登。{over}你身上有 {c} 銀幣。你跟{e}{tie}。不付，明天就見報；付了，這筆錢要是被人知道，會更難看。', { e: I.ed.name, paper: I.P.name[0], what: { k: I.sec.k, p: I.sec.p }, n: I.n, c: Math.floor(cash(w, a)), tie: tieTxt(tie(w, a, I.ed)),
+                over: I.over ? { k: '選舉已經結束，你{res}；登出來不會再影響選票，可是鎮上的人都會知道，你的名聲會變差。', p: { res: I.won ? '當選了' : '沒有當選' } } : { raw: '' } }); },
         options(w, a, c) { const I = hushInfo(w, a, c); if (!I) return []; const e = I.ed.name;
             const out = [{ id: 'refuse', quiet: true, text: '不付，要登就登', say: { k: '不肯付錢給{e}', p: { e } }, why: '被他勒索一次，就會有第二次。', lean: { face: 0.2 },
                 run: (w2, a2) => { const I2 = hushInfo(w2, a2, c); if (!I2) return null; st(w2, 'hushNo'); mem(w2, a2, '{e}要我付錢封口，我沒付。', { e }, 6); PR().exposeDo(w2, I2.P, I2.sec, I2.ed, 0); return { k: '{e}把事情登出來了', p: { e } }; } }];
-            if (I.can) out.push({ id: 'pay', quiet: true, mute: true, text: { k: '付 {n} 銀幣封口', p: { n: I.n } }, say: { k: '付錢給{e}封口', p: { e } }, why: '選舉就差這幾天，不能讓這件事見報。', lean: { safe: 0.2 }, adj: clampN((cash(w, a) - I.n * 2) / 200, -0.4, 0.4) + (has(a, 'neurotic') ? 0.2 : 0) - (has(a, 'abrasive') ? 0.3 : 0) - (honesty(a) >= 4 ? 0.4 : 0) + (has(a, 'ambitious') ? 0.2 : 0),
+            if (I.can) out.push({ id: 'pay', quiet: true, mute: true, text: { k: '付 {n} 銀幣封口', p: { n: I.n } }, say: { k: '付錢給{e}封口', p: { e } }, why: I.over ? '這件事傳出去，往後在鎮上抬不起頭。' : '選舉就差這幾天，不能讓這件事見報。', lean: { safe: 0.2 }, adj: clampN((cash(w, a) - I.n * 2) / 200, -0.4, 0.4) + (has(a, 'neurotic') ? 0.2 : 0) - (has(a, 'abrasive') ? 0.3 : 0) - (honesty(a) >= 4 ? 0.4 : 0) + (has(a, 'ambitious') ? 0.2 : 0),
                 run: (w2, a2) => { const I2 = hushInfo(w2, a2, c); if (!I2 || !I2.can) return null; if (!WALLET.pay(w2, a2, I2.ed, I2.n)) return null; st(w2, 'hushPaid');
                     try { DARK.secret(w2, { kind: 'scheme', culprit: I2.ed.agentId, victim: a2.agentId, k: '{e}拿{c}的醜聞要錢，收了 {n} 銀幣就沒登', p: { e: I2.ed.name, c: a2.name, n: I2.n } }); } catch (x) {}
                     mem(w2, a2, '我付了 {n} 銀幣給{e}，他答應不登我的事。', { n: I2.n, e }, 7); mem(w2, I2.ed, '{c}付了 {n} 銀幣，我答應不登他的事。', { c: a2.name, n: I2.n }, 7); return { k: '付了 {n} 銀幣', p: { n: I2.n } }; } });
@@ -319,8 +322,22 @@ const ORDER = (() => {
         },
     }));
     // 先查證的那幾件：兩天後再問一次（這次沒有「先查證」）
-    function verDaily(w) { const O = S(w), d = day(w); const due = O.ver.filter(x => x.at <= d); if (!due.length) return; O.ver = O.ver.filter(x => x.at > d && d - x.at < 10);
-        for (const x of due) { const P = paper(w, x.pid); const ed = P && PR()?.editorOf(w, P); if (ed) ask(w, ed, 'pressScoop', { pid: x.pid, sid: x.sid, d, ver: 1 }); } }
+    // v11.8.0 一定會再問到：選舉結束了照樣問。只有那件事已經被別人揭穿、當事人不在鎮上或過世、報社登不出來時才作廢，作廢時查證的人記得這件事（不會悄悄不見）；
+    //         主筆剛好不在鎮上就隔天再看，等十天還等不到才算了
+    function verDaily(w) {
+        const O = S(w), d = day(w); const keep = [];
+        for (const x of O.ver) {
+            if (x.at > d) { keep.push(x); continue; }
+            const P = paper(w, x.pid); const sec = secOf(w, x.sid); const cu = sec && w.agents[sec.culprit]; const by = w.agents[x.by]; const cn = cu?.name || '';
+            const drop = (k) => { st(w, 'verDrop'); if (by && !by.isDead) mem(w, by, k, { c: cn }, 6); };
+            if (!sec || sec.found) { drop('我查證到一半，事情已經被別人登出來了。'); continue; }
+            if (!cu || cu.isDead || !live(w, cu.agentId)) { drop('我查證{c}的事查到一半，他已經不在鎮上了，這件事只好作罷。'); continue; }
+            if (!P || P.closed || (P.banned && !P.underground)) { drop('{c}那件事我查證好了，可是報社登不出來了。'); continue; }
+            const ed = PR()?.editorOf(w, P); if (!ed || ed === cu) { if (d - x.at < 10) keep.push(x); else drop('{c}那件事我查證好了，一直沒機會登。'); continue; }
+            ask(w, ed, 'pressScoop', { pid: x.pid, sid: x.sid, d, ver: 1 });
+        }
+        O.ver = keep;
+    }
 
     // 抹黑：八卦報或被收買的報社，兩天問主筆一次（以前每天 25%）
     function smearAsk(w, P, cs) { const ed = PR().editorOf(w, P); if (!ed) return; const O = S(w), d = day(w), ck = 'sm|' + P.id; if ((O.cool[ck] || 0) > d) return; O.cool[ck] = d + 2; ask(w, ed, 'pressSmear', { pid: P.id, d }); }
@@ -493,7 +510,10 @@ const ORDER = (() => {
     DECIDE.kind('raidCall', Object.assign({}, base, {
         title: '襲擊來了，怎麼應對', pri: 2.5, aiKind: 1,
         facts(w, a, c) { const I = raidInfo(w, a, c); if (!I) return '';
-            return fill('{atk}正往鎮上來。你是{role}，大家等你拿主意。鎮上有 {g} 個守衛，城牆和工事加起來 {b} 點；照經驗，出去打大概有 {e} 點，守在牆內大概有 {wv} 點，對方看起來有 {t} 點，差不多的時候就看運氣。公庫有 {s} 銀幣，花 {cost} 銀幣可以打發他們走。打輸了會被搶走糧食和銀幣，有人會嚇得逃走；躲起來不會有人逃走，但會被搶得更多。{kids}', { atk: AZH[c.ri] || '敵人', role: I.role, g: I.g, b: I.b, e: I.est, wv: I.wallEst, t: I.thr, s: I.tr, cost: I.cost, kids: I.kids ? { k: '你家裡有 {n} 個小孩。', p: { n: I.kids } } : { raw: '' } }); },
+            return fill('{atk}正往鎮上來。你是{role}，大家等你拿主意。鎮上有 {g} 個守衛，城牆和工事加起來 {b} 點；照經驗，出去打大概有 {e} 點，守在牆內大概有 {wv} 點，對方看起來有 {t} 點，差不多的時候就看運氣。{judge}{money}打輸了會被搶走糧食和銀幣，有人會嚇得逃走；躲起來不會有人逃走，但會被搶得更多。{kids}', { atk: AZH[c.ri] || '敵人', role: I.role, g: I.g, b: I.b, e: I.est, wv: I.wallEst, t: I.thr,
+                // v11.8.0 照數字算出來的強弱（只講強弱，不建議怎麼做）：我們較強的那一種打法比對方多三成以上、少三成以上、或在中間
+                judge: Math.max(I.est, I.wallEst) >= I.thr * 1.3 ? '照這些數字，我們明顯比對方強。' : Math.max(I.est, I.wallEst) * 1.3 <= I.thr ? '照這些數字，對方明顯比我們強。' : '照這些數字，兩邊差不多。',
+                money: I.tr >= I.cost ? { k: '公庫有 {s} 銀幣，花 {cost} 銀幣可以打發他們走。', p: { s: I.tr, cost: I.cost } } : { k: '公庫只有 {s} 銀幣，不夠付 {cost} 銀幣打發他們走。', p: { s: I.tr, cost: I.cost } }, kids: I.kids ? { k: '你家裡有 {n} 個小孩。', p: { n: I.kids } } : { raw: '' } }); },
         options(w, a, c) { const I = raidInfo(w, a, c); if (!I) return []; const atk = AZH[c.ri] || '敵人'; const m = I.est - I.thr;
             const go = (mode) => (w2, a2) => { const I2 = raidInfo(w2, a2, c); if (!I2) return null; (S(w2).raid || (S(w2).raid = {}))[c.d + ':' + c.ri] = mode; for (const k of Object.keys(S(w2).raid)) if (day(w2) - parseInt(k, 10) > 3) delete S(w2).raid[k];
                 const r = w2.events._raidOutcome(w2, I2.rd, mode, a2); st(w2, 'raid_' + (r?.mode || mode)); if (r?.held) st(w2, 'raidHeld');
