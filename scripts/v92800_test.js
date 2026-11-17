@@ -40,6 +40,8 @@ async function run(browser, lang) {
       // 測試用的八個人：彼此、以及跟其他人都沒有感情狀態、沒有好惡
       for (const a of TEST) { traits(a, ['hardworking']); a.age = 30; for (const b of all()) if (a !== b) { for (const [x, y] of [[a, b], [b, a]]) { const r = x.relationships.relationships[y.agentId]; if (r) Object.assign(r, { affinity: 0, romanticInterest: 0, isCheating: false, statusSince: 0 }), r.status = null; } } }
       for (const a of all()) if (!TEST.includes(a)) for (const r of Object.values(a.relationships.relationships)) if (TEST.some(x => x.agentId === r.targetId)) { r.status = null; r.isCheating = false; r.romanticInterest = 0; }
+      // 伴侶剛好出遠門（不在 w.agents 裡）的話上面清不到，這個人就一直算「有伴」，告白那幾項整組問不到：測試用的八個人自己手上的每一筆都清
+      for (const a of TEST) for (const r of Object.values(a.relationships.relationships)) { r.status = null; r.isCheating = false; r.romanticInterest = 0; }
       w.otherTowns = towns0; w.onSendVisitor = send0;
     };
     const sc = (a, key, id, ctx) => { const c = ctx || K[key].when(w, a); if (!c) return null; const op = K[key].options(w, a, c).find(o => o.id === id); return op ? Math.round(DECIDE.score(DECIDE.lean(w, a), op) * 100) / 100 : null; };
