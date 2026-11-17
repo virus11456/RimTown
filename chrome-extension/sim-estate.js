@@ -25,7 +25,7 @@ const ESTATE = (() => {
     const HOMELESS_AT = 'town_square';
     function S(w) {
         if (!w.estate || typeof w.estate.units !== 'object') w.estate = { units: {}, home: {}, orig: {}, homeless: {}, arrears: {}, servants: {}, lodge: {}, n: 0, lastDay: null, stats: { built: 0, evicted: 0, foreclosed: 0, sold: 0, rent: 0, ptax: 0 } };
-        const E = w.estate; for (const k of ['units', 'home', 'orig', 'homeless', 'arrears', 'servants', 'lodge']) E[k] = E[k] || {}; E.stats = E.stats || {};
+        const E = w.estate; for (const k of ['units', 'home', 'orig', 'homeless', 'arrears', 'servants', 'lodge', 'll', 'llAsk', 'late', 'grace', 'cut']) E[k] = E[k] || {}; E.stats = E.stats || {}; // v11.6.0 ll 房東定的檔位、llAsk 上次問他的日子、late 欠租等房東回話、grace 寬限到哪天、cut 欠租期間打八折（舊存檔沒有這幾格，就是照行情、沒人在等）
         return E;
     }
     // ---------- 一戶 ----------
@@ -43,7 +43,12 @@ const ESTATE = (() => {
     function scarcity(w) { const E = S(w); const hh = households(w).size; const n = Object.keys(E.units).length || 1; return Math.max(0.8, Math.min(2, hh / n)); }
     // 房租跟著鎮上的工資水準走:基本的房子約是一週基本工資的兩成上下,缺房時漲、房子好的貴;公有房舍打八折(公營住宅)
     const WEEK_WAGE = 4.5 * 7;
-    const rentOf = (w, u) => Math.max(2, Math.round((WEEK_WAGE * (0.15 + (u.lv || 0) * 0.06 + tier(w) * 0.015) * scarcity(w) + land(w) / 80) * (u.owner ? 1 : 0.8)));
+    // v11.6.0 私人房東自己定檔位（貴一點 ×1.15／照行情／便宜一點 ×0.85，只管他名下出租的房子；公有房舍照舊）。hid：這一週付租的那一戶；
+    // 有給 hid 才算「給自己人便宜」（房客是他的家人或好朋友再打八五折）和欠租時講好的八折。找房、寄住、排便宜的房子用的是掛牌價（不給 hid）
+    const TIER_F = { hi: 1.15, mid: 1, lo: 0.85 };
+    const rawRent = (w, u) => WEEK_WAGE * (0.15 + (u.lv || 0) * 0.06 + tier(w) * 0.015) * scarcity(w) + land(w) / 80;
+    const rentOf = (w, u, hid) => { let f = u.owner ? 1 : 0.8; if (u.owner) { const P = w.estate?.ll?.[u.owner]; if (P) { f *= TIER_F[P.tier] || 1; if (hid && P.kin && kinHH(w, u.owner, hid)) f *= 0.85; } if (hid && w.estate?.cut?.[hid]?.uid === u.id) f *= 0.8; }
+        return Math.max(2, Math.round(rawRent(w, u) * f)); };
     const valueOf = (w, u) => Math.round(80 + (u.lv || 0) * 70 + land(w) * 0.6);
     const ownerAgent = (w, u) => (u.owner && w.agents[u.owner]) ? w.agents[u.owner] : null;
     const ownsOf = (w, id) => Object.values(S(w).units).filter(u => u.owner === id);
@@ -109,20 +114,22 @@ const ESTATE = (() => {
                 const amt = Math.min(tax, cash(w, payer)); if (amt > 0 && Wl.take(w, payer, amt)) { toTown(w, amt, t('地價稅')); E.stats.ptax = Math.round(((E.stats.ptax || 0) + amt) * 100) / 100; }
                 continue;
             }
-            const rent = rentOf(w, u); const payer = members.slice().sort((x, y) => cash(w, y) - cash(w, x))[0];
+            const rent = rentOf(w, u, u.occ), list = rentOf(w, u); const payer = members.slice().sort((x, y) => cash(w, y) - cash(w, x))[0];
             const paid = Math.min(rent, Math.floor(cash(w, payer)));
             if (paid > 0 && Wl.take(w, payer, paid)) { if (owner) Wl.add(w, owner, paid); else pubRent(w, paid); E.stats.rent = (E.stats.rent || 0) + paid; }
             const short = rent - paid;
             if (short > 0) { E.arrears[u.occ] = (E.arrears[u.occ] || 0) + short; if (Math.random() < 0.5) mem(w, payer, '這週房租差了 {n} 銀幣，{o}已經在催了。', { n: short, o: owner?.name || t('鎮公所') }, 6); }
             else if (E.arrears[u.occ] && cash(w, payer) > rent) { const back = Math.min(E.arrears[u.occ], Math.floor(cash(w, payer) - rent)); if (back > 0 && Wl.take(w, payer, back)) { if (owner) Wl.add(w, owner, back); else pubRent(w, back); E.arrears[u.occ] -= back; } }
-            if ((E.arrears[u.occ] || 0) > rent * 3) evict(w, u.occ, 'rent');
+            if (E.cut[u.occ]?.uid === u.id && !(E.arrears[u.occ] > 0)) { delete E.cut[u.occ]; mem(w, payer, '欠的房租還清了，{o}的房租恢復原價。', { o: owner?.name || t('房東') }, 4); } // v11.6.0 欠租還清：八折到此為止
+            overdue(w, u, u.occ, list); // v11.6.0 欠到三倍租金：私人房東在鎮上就由他決定（原本直接趕人）
         }
         // 寄住的人付一半房租給屋主(公有房舍付給公庫)
         for (const u of Object.values(E.units)) for (const hid of lodgersOf(u).slice()) {
             const members = hh.get(hid) || []; const payer = members.slice().sort((x, y) => cash(w, y) - cash(w, x))[0]; if (!payer) continue;
-            const rent = Math.ceil(rentOf(w, u) * 0.5); const owner = ownerAgent(w, u); const paid = Math.min(rent, Math.floor(cash(w, payer)));
+            const rent = Math.ceil(rentOf(w, u, hid) * 0.5), list = Math.ceil(rentOf(w, u) * 0.5); const owner = ownerAgent(w, u); const paid = Math.min(rent, Math.floor(cash(w, payer)));
             if (paid > 0 && Wl.take(w, payer, paid)) { if (owner) Wl.add(w, owner, paid); else pubRent(w, paid); E.stats.rent = (E.stats.rent || 0) + paid; }
-            if (rent - paid > 0) { E.arrears[hid] = (E.arrears[hid] || 0) + rent - paid; if ((E.arrears[hid] || 0) > rent * 3) evict(w, hid, 'rent'); }
+            if (rent - paid > 0) { E.arrears[hid] = (E.arrears[hid] || 0) + rent - paid; overdue(w, u, hid, list); }
+            else if (E.cut[hid]?.uid === u.id && !(E.arrears[hid] > 0)) { delete E.cut[hid]; mem(w, payer, '欠的房租還清了，{o}的房租恢復原價。', { o: owner?.name || t('房東') }, 4); }
         }
         market(w, hh);
         // 無家可歸的人存到錢、又有空屋,就租回來
@@ -177,7 +184,7 @@ const ESTATE = (() => {
         // 抵押:屋主缺錢要不要拿房子跟銀行借，由他自己決定(mortBy)
     }
     function mortDo(w, B, o, u) {
-        const n = BANK.lend(w, B, o, Math.round(valueOf(w, u) * 0.4), '房屋抵押'); if (n && B.loans[o.agentId]) { B.loans[o.agentId].collateral = u.id; mem(w, o, '拿房子去銀行抵押，借了 {n} 銀幣。', { n }, 7); }
+        const n = BANK.lend(w, B, o, Math.round(valueOf(w, u) * 0.4), '房屋抵押', { coll: u.id }); if (n && B.loans[o.agentId]) { B.loans[o.agentId].collateral = u.id; mem(w, o, '拿房子去銀行抵押，借了 {n} 銀幣。', { n }, 7); } // v11.6.0 抵押的房子也寫在申請上：銀行家晚一點才點頭時，撥款那一刻一起記上
         return n || 0;
     }
     // 這個人名下有沒有房子可以抵押、借得到多少(銀行有開、他沒有還在還的貸款)
@@ -196,6 +203,134 @@ const ESTATE = (() => {
         log(w, '🏦 {o}還不出房屋抵押貸款，房子被銀行收走了。', { o: o?.name || '' }, o?.name || ''); if (o) mem(w, o, '還不出貸款，房子被銀行收走了。', {}, 9);
         return true;
     }
+    // ================= v11.6.0 房東自己定租金、自己決定欠租的房客怎麼辦（選擇點 landlord，登記在 sim-decide-work.js） =================
+    // 以前全鎮同一條公式，房東不定價；房客欠到三倍租金就自動被趕。現在：
+    //   rent 每位有房客的私人房東每 28 天看一次（照人錯開；剛變成房東時先問一次）：比行情貴一點／照行情／便宜一點，或給自己人（家人、好朋友）再打八五折
+    //   late 房客欠到三倍租金、房東在鎮上：趕出去／再寬限四週／欠租期間打八折／欠的免掉一半。等回話的這段時間先不趕，隔天沒回音照原本的規則
+    // 公有房舍、房東不在鎮上、決策核心沒開：照原本的規則。錢照舊從房客的錢包付給房東，免掉的欠租只是不用付，沒有錢憑空多出來
+    const TIER_NAME = { hi: '比行情貴一點', mid: '照行情', lo: '比行情便宜一點' };
+    const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+    const bumpA = (a, b, n) => { try { a?.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(n); } catch (e) {} };
+    const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
+    const inTown = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) && !(w.civic?.jail?.[a.agentId] > day(w));
+    const famOf = (w, a) => { try { return typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []; } catch (e) { return []; } };
+    const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : x));
+    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(tx(b)); return s; };
+    const flat = (p) => { const o = {}; for (const [k, v] of Object.entries(p || {})) o[k] = (v && typeof v === 'object' && v.raw != null) ? String(v.raw) : v; return o; };
+    const llOn = (w) => !!(w?.observerMode && w.wallet && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.landlord);
+    const memberOf = (w, hid) => households(w).get(hid) || (w.agents[hid] ? [w.agents[hid]] : []);
+    // 這一戶裡有沒有房東的家人或好朋友（好感 40 以上）
+    function kinHH(w, oid, hid) { const o = w.agents[oid]; if (!o) return false; const fam = famOf(w, o); return memberOf(w, hid).some(m => m !== o && (fam.includes(m) || aff(o, m) >= 40)); }
+    // 房東跟這一戶的交情：看全家裡最親的那一個（家人 > 好朋友 > 還算熟 > 不熟；有過節看戶長）
+    function tieHH(w, o, hid) {
+        const ms = memberOf(w, hid).filter(m => m !== o); const fam = famOf(w, o); const head = w.agents[hid] || ms[0]; const v = Math.round(aff(o, head));
+        const f = ms.find(m => fam.includes(m)); if (f) return { k: 'fam', v, s: '是你的家人' };
+        const best = ms.reduce((m, x) => Math.max(m, aff(o, x)), -999);
+        if (best >= 40) return { k: 'friend', v, s: '跟你是好朋友' }; if (v <= -20) return { k: 'foe', v, s: '跟你有過節' }; if (best >= 10) return { k: 'known', v, s: '跟你還算熟' };
+        return { k: 'none', v, s: '跟你不熟' };
+    }
+    const tieW = (T) => ({ fam: 1.6, friend: 1.0, known: 0.3, none: 0, foe: -0.8 })[T.k];
+    // 每位私人房東名下「租給別人」的房子（主戶不是自己家，或有人寄住）
+    function landlords(w) {
+        const E = S(w); const hh = households(w); const m = new Map();
+        for (const u of Object.values(E.units)) { if (!u.owner) continue; const own = u.occ && (hh.get(u.occ) || []).some(x => x.agentId === u.owner); const rented = (u.occ && !own) || lodgersOf(u).length;
+            if (rented) { if (!m.has(u.owner)) m.set(u.owner, []); m.get(u.owner).push(u); } }
+        return m;
+    }
+    const slotOf = (id) => { let h = 7; for (const c of String(id || '')) h = (h * 31 + c.charCodeAt(0)) >>> 0; return h % 28; };
+    function askNow(w, a, ctx) { const X = DECIDE.S(w); const keep = X.q.splice(0, X.q.length); try { DECIDE.enqueue(w, a, 'landlord', ctx); DECIDE.drain(w, X, day(w)); } finally { if (keep.length) X.q.unshift(...keep); } }
+    // 這一戶這週付給他的房子多少（tier/kin 不給就照他現在定的）
+    const payOf = (w, u, hid, P) => { const E = S(w); const old = E.ll[u.owner]; if (P) E.ll[u.owner] = P; try { const r = rentOf(w, u, hid); return u.occ === hid ? r : Math.ceil(r * 0.5); } finally { if (P) { if (old) E.ll[u.owner] = old; else delete E.ll[u.owner]; } } };
+    function tenantsOf(w, o, us) { const out = []; const hh = households(w); for (const u of us) { if (u.occ && !(hh.get(u.occ) || []).includes(o)) out.push({ u, hid: u.occ, lodger: 0 }); for (const hid of lodgersOf(u)) out.push({ u, hid, lodger: 1 }); } return out; }
+    const weekSum = (w, ts, P) => ts.reduce((s, x) => s + payOf(w, x.u, x.hid, P), 0);
+    // 欠到三倍租金（寄住的是一半租金的三倍）
+    function overdue(w, u, hid, list) {
+        const E = S(w), d = day(w); if (!((E.arrears[hid] || 0) > list * 3)) { delete E.late[hid]; return; }
+        const G = E.grace[hid]; if (G && G.uid === u.id && d < G.until) return; // 房東答應寬限的這幾週先不趕
+        const o = ownerAgent(w, u); const ask = llOn(w) && o && inTown(w, o) && (o.age ?? 30) >= 16 && !memberOf(w, hid).includes(o);
+        if (!ask) { delete E.late[hid]; return evict(w, hid, 'rent'); } // 公有房舍、房東不在鎮上、決策核心沒開：照原本的規則
+        const P = E.late[hid]; if (P && P.uid === u.id) { if (d - P.d < 1) return; delete E.late[hid]; return evict(w, hid, 'rent'); } // 等回話的這一天先不趕；隔天沒回音照原本的規則
+        E.late[hid] = { uid: u.id, d, tok: (E.lt = (E.lt || 0) + 1), lodger: u.occ !== hid ? 1 : 0 };
+        askNow(w, o, { t: 'late', hid, uid: u.id, tok: E.late[hid].tok, d });
+    }
+    function llDaily(w, d) {
+        const E = S(w);
+        for (const [hid, P] of Object.entries(E.late)) { if (d - P.d < 1) continue; delete E.late[hid]; const u = E.units[P.uid]; if (!u || !(u.occ === hid || lodgersOf(u).includes(hid))) continue;
+            const list = P.lodger ? Math.ceil(rentOf(w, u) * 0.5) : rentOf(w, u); const G = E.grace[hid]; if ((E.arrears[hid] || 0) > list * 3 && !(G && G.uid === u.id && d < G.until)) evict(w, hid, 'rent'); }
+        for (const k of ['grace', 'cut']) for (const [hid, G] of Object.entries(E[k])) { const u = E.units[G.uid]; if (!u || !(u.occ === hid || lodgersOf(u).includes(hid)) || (k === 'grace' && d >= G.until + 28)) delete E[k][hid]; } // 搬走了、或寬限過完一陣子：清掉（寬限次數留一個月，免得剛過期又重新算）
+        if (!llOn(w)) return;
+        let n = 0; for (const [id] of landlords(w)) { if (n >= 3) break; const a = w.agents[id]; if (!a || !inTown(w, a) || (a.age ?? 30) < 18) continue;
+            const last = E.llAsk[id]; const fresh = !E.ll[id] && last == null; const due = slotOf(id) === d % 28 && (last == null || d - last >= 20); if (!fresh && !due) continue;
+            E.llAsk[id] = d; n++; askNow(w, a, { t: 'rent', d }); }
+    }
+    function setTier(w, o, tierK, kin) {
+        const E = S(w); const us = landlords(w).get(o.agentId) || []; const ts = tenantsOf(w, o, us); const before = ts.map(x => payOf(w, x.u, x.hid)); const cur = E.ll[o.agentId];
+        E.ll[o.agentId] = { tier: tierK, kin: kin ? 1 : 0, d: day(w), by: o.agentId }; let up = 0, down = 0;
+        ts.forEach((x, i) => { const now = payOf(w, x.u, x.hid); const was = before[i]; if (now === was) return; const h = w.agents[x.hid]; const payer = memberOf(w, x.hid).filter(m => (m.age ?? 30) >= 16).sort((p, q) => (WL() ? WL().get(w, q) - WL().get(w, p) : 0))[0] || h; if (!payer) return;
+            if (now > was) { up++; mem(w, payer, '{o}把房租從 {a} 漲到 {b} 銀幣。', { o: o.name, a: was, b: now }, 6); for (const m of memberOf(w, x.hid)) if ((m.age ?? 30) >= 16) bumpA(m, o, -5); }
+            else { down++; mem(w, payer, '{o}把房租從 {a} 降到 {b} 銀幣。', { o: o.name, a: was, b: now }, 5); for (const m of memberOf(w, x.hid)) if ((m.age ?? 30) >= 16) bumpA(m, o, 4); } });
+        if (up || down) log(w, up && !down ? '🏠 {o}把名下房子的房租調高了（{n} 戶）。' : down && !up ? '🏠 {o}把名下房子的房租調低了（{n} 戶）。' : '🏠 {o}重新定了名下房子的房租（{n} 戶有變）。', { o: o.name, n: up + down }, o.name);
+        E.stats.llSet = (E.stats.llSet || 0) + 1; if (!cur || cur.tier !== tierK) E.stats['ll_' + tierK] = (E.stats['ll_' + tierK] || 0) + 1;
+        return up + down ? { k: '房租有 {n} 戶跟著變了', p: { n: up + down } } : { k: '房租照舊' };
+    }
+    function liveRent(w, o, ctx) { if (!ctx || ctx.t !== 'rent' || !llOn(w) || !inTown(w, o) || day(w) - (ctx.d ?? 0) > 1) return null; const us = landlords(w).get(o.agentId); return us && us.length ? us : null; }
+    function rentFacts(w, o, us) {
+        const E = S(w); const hh = households(w); const own = ownsOf(w, o.agentId); const P = E.ll[o.agentId]; const ts = tenantsOf(w, o, us);
+        const rows = ts.slice(0, 6).map(x => { const h = w.agents[x.hid]; const T = tieHH(w, o, x.hid); const ar = Math.round(E.arrears[x.hid] || 0);
+            return fill(x.lodger ? '{a}一家寄住（{tie}，每週 {r} 銀幣{ar}）' : '{a}一家租（{tie}，每週 {r} 銀幣{ar}）', { a: h?.name || '', tie: T.s, r: payOf(w, x.u, x.hid), ar: { raw: ar ? fill('，欠了 {n}', { n: ar }) : '' } }); });
+        const self = own.filter(u => u.occ && (hh.get(u.occ) || []).includes(o)).length, vac = own.filter(u => !u.occ).length;
+        const homeless = Object.keys(E.homeless).length, allVac = Object.values(E.units).filter(u => !u.occ).length;
+        const town = fill('鎮上 {hh} 戶人家、{n} 棟房子，空屋 {v} 棟{hl}。', { hh: hh.size, n: Object.keys(E.units).length, v: allVac, hl: { raw: homeless ? fill('，{n} 戶人家無家可歸', { n: homeless }) : '' } });
+        const sums = { hi: weekSum(w, ts, { tier: 'hi', kin: P?.kin || 0 }), mid: weekSum(w, ts, { tier: 'mid', kin: P?.kin || 0 }), lo: weekSum(w, ts, { tier: 'lo', kin: P?.kin || 0 }) };
+        return fill('又到了定房租的時候。你名下有 {n} 棟房子：{list}{self}{vac}。{town}照行情，租出去的這幾戶一週合計收 {mid} 銀幣；比行情貴一點（一成五）是 {hi}，便宜一點是 {lo}。你現在的定法：{cur}{kin}。你身上有 {c} 銀幣。',
+            { n: own.length, list: { raw: rows.join(t('；')) }, self: { raw: self ? fill('；{n} 棟自己住', { n: self }) : '' }, vac: { raw: vac ? fill('；{n} 棟空著租不出去', { n: vac }) : '' }, town: { raw: town }, mid: sums.mid, hi: sums.hi, lo: sums.lo, cur: TIER_NAME[P?.tier || 'mid'], kin: { raw: P?.kin ? t('，房客是自己人的再打八五折') : '' }, c: Math.floor(cash(w, o)) });
+    }
+    function rentOptions(w, o, ctx, us) {
+        const E = S(w); const P = E.ll[o.agentId]; const cur = P?.tier || 'mid', kin = P?.kin ? 1 : 0; const ts = tenantsOf(w, o, us);
+        const kinTs = ts.filter(x => kinHH(w, o.agentId, x.hid)); const famT = kinTs.some(x => tieHH(w, o, x.hid).k === 'fam'); const vacOwn = ownsOf(w, o.agentId).some(u => !u.occ); const sc = scarcity(w); const arrT = ts.some(x => (E.arrears[x.hid] || 0) > 0);
+        const greedy = has(o, 'greedy'), kind = has(o, 'kind'), gen = has(o, 'generous'); const out = [];
+        const go = (tierK, k2) => (w2, o2) => liveRent(w2, o2, ctx) ? setTier(w2, o2, tierK, k2) : null;
+        // 照行情佔多數：貪心的、看重錢的、缺房時偏貴；心腸好、慷慨的、有房子空著租不出去時偏便宜
+        out.push({ id: 'mid', text: { k: '照行情收（一週合計 {n} 銀幣）{now}', p: { n: weekSum(w, ts, { tier: 'mid', kin }), now: { raw: cur === 'mid' ? t('（跟現在一樣）') : '' } } }, say: '房租照行情收', why: '照行情收，大家都沒話說。', quiet: cur === 'mid',
+            base: 1.4 + (cur === 'mid' ? 0.3 : 0), lean: { safe: 0.2 }, run: go('mid', kin) });
+        out.push({ id: 'hi', text: { k: '比行情貴一點（一週合計 {n} 銀幣）{now}', p: { n: weekSum(w, ts, { tier: 'hi', kin }), now: { raw: cur === 'hi' ? t('（跟現在一樣）') : '' } } }, say: '房租收得比行情貴一點', why: sc >= 1.2 ? '房子不夠住，貴一點也有人租。' : '房子是我的，租金我說了算。', quiet: cur === 'hi',
+            base: (greedy ? 1.3 : 0) + (hasV(o, '財富') ? 0.5 : 0) + (sc >= 1.3 ? 0.5 : 0) - (vacOwn ? 0.6 : 0) - (famT ? 0.4 : 0) + (cur === 'hi' ? 0.3 : 0), lean: { gain: 0.4 }, run: go('hi', kin) });
+        out.push({ id: 'lo', text: { k: '比行情便宜一點（一週合計 {n} 銀幣）{now}', p: { n: weekSum(w, ts, { tier: 'lo', kin }), now: { raw: cur === 'lo' ? t('（跟現在一樣）') : '' } } }, say: '房租收得比行情便宜一點', why: vacOwn ? '房子空著也是空著，便宜一點才租得出去。' : '大家日子都不好過，少收一點。', quiet: cur === 'lo',
+            base: (kind ? 0.8 : 0) + (gen ? 0.8 : 0) + (vacOwn ? 0.7 : 0) + (arrT ? 0.3 : 0) - (greedy ? 0.8 : 0) + (cur === 'lo' ? 0.3 : 0), lean: { bond: 0.3 }, run: go('lo', kin) });
+        if (!kin && kinTs.length) out.push({ id: 'kin', text: { k: '房客是自己人的那幾戶再打八五折（{names}）', p: { names: { raw: kinTs.slice(0, 3).map(x => t(w.agents[x.hid]?.name || '')).join(t('、')) } } }, say: '給租房子的自己人打八五折', why: '自己人，不好意思收那麼多。',
+            base: 0.2 + (famT ? 0.6 : 0) + (hasV(o, '家庭') ? 0.5 : 0) + (kind ? 0.4 : 0) + (gen ? 0.3 : 0) - (greedy ? 0.5 : 0), lean: { bond: 0.4 }, run: go(cur, 1) });
+        if (kin) out.push({ id: 'nokin', text: '自己人也照一樣的價錢收', say: '自己人的房租也照一樣收', why: '親兄弟明算帳。', base: 0.3 + (greedy ? 0.6 : 0) + (has(o, 'thrifty') ? 0.3 : 0), lean: { gain: 0.3 }, run: go(cur, 0) });
+        return out;
+    }
+    function liveLate(w, o, ctx) {
+        if (!ctx || ctx.t !== 'late' || !llOn(w) || !inTown(w, o)) return null; const E = S(w); const P = E.late[ctx.hid]; if (!P || P.tok !== ctx.tok) return null; const u = E.units[ctx.uid];
+        if (!u || u.owner !== o.agentId || !(u.occ === ctx.hid || lodgersOf(u).includes(ctx.hid))) return null; const list = P.lodger ? Math.ceil(rentOf(w, u) * 0.5) : rentOf(w, u);
+        if (!((E.arrears[ctx.hid] || 0) > list * 3)) return null; return { E, P, u, list, hid: ctx.hid };
+    }
+    function lateFacts(w, o, X) {
+        const { E, P, u, hid } = X; const ms = memberOf(w, hid); const h = w.agents[hid] || ms[0]; const T = tieHH(w, o, hid); const best = ms.reduce((m, x) => Math.max(m, cash(w, x)), 0); const jobs = ms.filter(m => m.job).length;
+        const kids = ms.filter(m => (m.age ?? 30) < 16).length, sick = ms.some(m => m.isSick || (m.health ?? 100) < 50); const G = E.grace[hid]; const allVac = Object.values(E.units).filter(x => !x.occ).length;
+        const situ = (kids ? fill('他們家有 {n} 個還小的孩子。', { n: kids }) : '') + (sick ? t('家裡有人生病。') : '') + (jobs ? '' : t('家裡沒有人有工作。'));
+        return fill('{a}一家{how}你的房子，每週 {r} 銀幣，已經欠了 {n} 銀幣房租，超過三週的租金。他們家身上最多只有 {c} 銀幣。{situ}{a}{tie}（你對他的好感 {v}）。{grace}照規矩可以把他們趕出去，他們就得去睡廣場（{vac}）。你身上有 {m} 銀幣。',
+            { a: h?.name || '', how: P.lodger ? '寄住在' : '租', r: P.lodger ? Math.ceil(rentOf(w, u, hid) * 0.5) : rentOf(w, u, hid), n: Math.round(E.arrears[hid] || 0), c: Math.floor(best), situ: { raw: situ }, tie: T.s, v: T.v, grace: { raw: G && G.uid === u.id ? fill('你已經寬限過他們 {n} 次。', { n: G.n || 1 }) : '' }, vac: allVac ? { k: '鎮上現在還有 {n} 棟空屋', p: { n: allVac } } : '鎮上已經沒有空屋了', m: Math.floor(cash(w, o)) });
+    }
+    function lateOptions(w, o, ctx, X) {
+        const { E, u, hid } = X; const ms = memberOf(w, hid); const h = w.agents[hid] || ms[0]; const T = tieHH(w, o, hid); const tw = tieW(T); const n = Math.round(E.arrears[hid] || 0); const G = E.grace[hid]; const gn = G && G.uid === u.id ? (G.n || 1) : 0;
+        const kids = ms.some(m => (m.age ?? 30) < 16), sick = ms.some(m => m.isSick || (m.health ?? 100) < 50); const kind = has(o, 'kind'), gen = has(o, 'generous'); const out = [];
+        const go = (fn) => (w2, o2) => { const X2 = liveLate(w2, o2, ctx); if (!X2) return null; delete X2.E.late[hid]; return fn(w2, o2, X2); };
+        const tell = (w2, o2, k, p, dv) => { for (const m of memberOf(w2, hid)) if ((m.age ?? 30) >= 16) { mem(w2, m, k, Object.assign({ o: o2.name }, p || {}), 6); bumpA(m, o2, dv); } };
+        out.push({ id: 'evict', text: { k: '把{a}一家趕出去（欠了 {n} 銀幣）', p: { a: h?.name || '', n } }, say: { k: '把欠租的{a}一家趕出去', p: { a: h?.name || '' } }, why: '欠了三週的房租，不能再讓他們白住。', base: 1.6 - tw, lean: { gain: 0.3 },
+            run: go((w2, o2, X2) => { evict(w2, hid, 'rent'); for (const m of memberOf(w2, hid)) if ((m.age ?? 30) >= 16) bumpA(m, o2, -12); mem(w2, o2, '{a}一家欠了三週的房租，我把他們趕出去了。', { a: h?.name || '' }, 6); X2.E.stats.llEvict = (X2.E.stats.llEvict || 0) + 1; return { k: '趕出去了' }; }) });
+        if (gn < 2) out.push({ id: 'grace', text: '再寬限四週', say: { k: '讓{a}一家的房租再緩四週', p: { a: h?.name || '' } }, why: '再給他們一點時間，人總有難處。', base: 0.2 + tw + (kind ? 0.5 : 0) + (kids ? 0.5 : 0) + (sick ? 0.3 : 0) - gn * 0.5, lean: { bond: 0.5 },
+            run: go((w2, o2, X2) => { X2.E.grace[hid] = { uid: X2.u.id, until: day(w2) + 28, n: gn + 1 }; tell(w2, o2, '{o}說欠的房租可以再緩四週。', {}, 6); log(w2, '🏠 {o}讓欠房租的{a}一家再緩四週。', { o: o2.name, a: h?.name || '' }, o2.name); X2.E.stats.llGrace = (X2.E.stats.llGrace || 0) + 1; return { k: '再緩四週' }; }) });
+        if (E.cut[hid]?.uid !== u.id) out.push({ id: 'cut', text: '這戶的房租打八折，直到欠的還清（這四週先不趕）', say: { k: '給{a}一家的房租打八折', p: { a: h?.name || '' } }, why: '少收一點，他們才還得出來。', base: tw * 0.8 + (gen ? 0.4 : 0) + (kind ? 0.2 : 0), lean: { bond: 0.4, gain: 0.1 },
+            run: go((w2, o2, X2) => { X2.E.cut[hid] = { uid: X2.u.id, d: day(w2) }; X2.E.grace[hid] = { uid: X2.u.id, until: day(w2) + 28, n: gn }; tell(w2, o2, '{o}說欠的房租還清以前，房租先打八折。', {}, 8); log(w2, '🏠 {o}給欠房租的{a}一家打八折，等他們還清。', { o: o2.name, a: h?.name || '' }, o2.name); X2.E.stats.llCut = (X2.E.stats.llCut || 0) + 1; return { k: '房租打八折' }; }) });
+        out.push({ id: 'halve', text: { k: '欠的 {n} 銀幣免掉一半', p: { n } }, say: { k: '免了{a}一家一半的欠租', p: { a: h?.name || '' } }, why: '能收回一半就好，人留著比較要緊。', base: -0.2 + tw * 0.9 + (gen ? 0.6 : 0) + (kind ? 0.3 : 0), lean: { bond: 0.5, gain: -0.3 },
+            run: go((w2, o2, X2) => { const was = Math.round(X2.E.arrears[hid] || 0); const off = Math.floor(was / 2); X2.E.arrears[hid] = Math.max(0, (X2.E.arrears[hid] || 0) - off); tell(w2, o2, '{o}把我們欠的房租免了一半（{n} 銀幣）。', { n: off }, 10); log(w2, '🏠 {o}免了{a}一家一半的欠租（{n} 銀幣）。', { o: o2.name, a: h?.name || '', n: off }, o2.name); X2.E.stats.llHalve = (X2.E.stats.llHalve || 0) + 1; return { k: '免了 {n} 銀幣', p: { n: off } }; }) });
+        return out;
+    }
+    function llFacts(w, o, ctx) { try { if (ctx?.t === 'rent') { const us = liveRent(w, o, ctx); return us ? rentFacts(w, o, us) : ''; } const X = liveLate(w, o, ctx); return X ? lateFacts(w, o, X) : ''; } catch (e) { console.warn('[Estate] facts', e); return ''; } }
+    function llOptions(w, o, ctx) { if (ctx?.t === 'rent') { const us = liveRent(w, o, ctx); return us ? rentOptions(w, o, ctx, us) : []; } const X = liveLate(w, o, ctx); return X ? lateOptions(w, o, ctx, X) : []; }
     // ---------- 傭人:有錢人請窮人幫傭 ----------
     function servants(w) {
         const E = S(w); const all = npcs(w); const Wl = WL();
@@ -224,6 +359,7 @@ const ESTATE = (() => {
             if (winter && Math.random() < 0.004 && w.lifecycle?._killNpc) { a._deathCause = t('凍死街頭'); log(w, '❄️ {a}在寒夜裡露宿街頭，沒能撐過去。', { a: a.name }, a.name); try { w.lifecycle._killNpc(w, a); } catch (e) {} }
         }
         if (d % 7 === 0) weekly(w, households(w));
+        try { llDaily(w, d); } catch (e) { console.warn('[Estate] landlord', e); } // v11.6.0 房東定租金、欠租等回話的退路
     }
     // ---------- 開局家族:一部分大人是夫妻,小孩與年輕人有爸媽 ----------
     function seedFamilies(w) {
@@ -254,8 +390,8 @@ const ESTATE = (() => {
     function brief(w, a) {
         const E = S(w); const out = []; const own = ownsOf(w, a.agentId); const h = headOf(w, a);
         if (E.homeless[h.agentId] !== undefined) out.push(t('你無家可歸，晚上睡在廣場。'));
-        else if (E.lodge[h.agentId]) { const u = E.units[E.home[h.agentId]]; out.push(t('你寄住在別人家，每週分租 {r} 銀幣。').replace('{r}', u ? Math.ceil(rentOf(w, u) * 0.5) : 0)); }
-        else { const u = E.units[E.home[h.agentId]]; if (u) { const o = ownerAgent(w, u); if (u.owner && (u.owner === a.agentId || (households(w).get(h.agentId) || []).some(m => m.agentId === u.owner))) out.push(t('你住在自家的房子。')); else out.push(t('你租{o}的房子，每週房租 {r} 銀幣。').replace('{o}', o ? t(o.name) : t('鎮公所')).replace('{r}', rentOf(w, u))); if (E.arrears[h.agentId]) out.push(t('你還欠 {n} 銀幣房租。').replace('{n}', Math.round(E.arrears[h.agentId]))); } }
+        else if (E.lodge[h.agentId]) { const u = E.units[E.home[h.agentId]]; out.push(t('你寄住在別人家，每週分租 {r} 銀幣。').replace('{r}', u ? Math.ceil(rentOf(w, u, h.agentId) * 0.5) : 0)); }
+        else { const u = E.units[E.home[h.agentId]]; if (u) { const o = ownerAgent(w, u); if (u.owner && (u.owner === a.agentId || (households(w).get(h.agentId) || []).some(m => m.agentId === u.owner))) out.push(t('你住在自家的房子。')); else out.push(t('你租{o}的房子，每週房租 {r} 銀幣。').replace('{o}', o ? t(o.name) : t('鎮公所')).replace('{r}', rentOf(w, u, h.agentId))); if (E.arrears[h.agentId]) out.push(t('你還欠 {n} 銀幣房租。').replace('{n}', Math.round(E.arrears[h.agentId]))); } }
         const rented = own.filter(u => u.occ && !(households(w).get(u.occ) || []).some(m => m.agentId === a.agentId)).length; if (rented) out.push(t('你有 {n} 棟房子租給別人。').replace('{n}', rented));
         if (E.servants[a.agentId]) out.push(t('你在{m}家幫傭。').replace('{m}', t(w.agents[E.servants[a.agentId]]?.name || '')));
         const sv = Object.values(E.servants).filter(x => x === a.agentId).length; if (sv) out.push(t('你家請了 {n} 個傭人。').replace('{n}', sv));
@@ -264,8 +400,8 @@ const ESTATE = (() => {
     function describe(w, a) {
         const E = S(w); const out = []; const own = ownsOf(w, a.agentId); const h = headOf(w, a);
         if (E.homeless[h.agentId] !== undefined) out.push(t('無家可歸，睡在廣場'));
-        else if (E.lodge[h.agentId]) { const u = E.units[E.home[h.agentId]]; const o = u && ownerAgent(w, u); out.push(t('寄住在別人家（分租 {r}）').replace('{r}', u ? Math.ceil(rentOf(w, u) * 0.5) : 0)); }
-        else { const u = E.units[E.home[h.agentId]]; if (u) { const o = ownerAgent(w, u); const self = u.owner && (households(w).get(h.agentId) || []).some(m => m.agentId === u.owner); out.push(self ? t('住自家的房子') : t('租{o}的房子（週租 {r}）').replace('{o}', o ? t(o.name) : t('鎮公所')).replace('{r}', rentOf(w, u))); if (E.arrears[h.agentId]) out.push(t('欠房租 {n}').replace('{n}', Math.round(E.arrears[h.agentId]))); } }
+        else if (E.lodge[h.agentId]) { const u = E.units[E.home[h.agentId]]; const o = u && ownerAgent(w, u); out.push(t('寄住在別人家（分租 {r}）').replace('{r}', u ? Math.ceil(rentOf(w, u, h.agentId) * 0.5) : 0)); }
+        else { const u = E.units[E.home[h.agentId]]; if (u) { const o = ownerAgent(w, u); const self = u.owner && (households(w).get(h.agentId) || []).some(m => m.agentId === u.owner); out.push(self ? t('住自家的房子') : t('租{o}的房子（週租 {r}）').replace('{o}', o ? t(o.name) : t('鎮公所')).replace('{r}', rentOf(w, u, h.agentId))); if (E.arrears[h.agentId]) out.push(t('欠房租 {n}').replace('{n}', Math.round(E.arrears[h.agentId]))); } }
         if (own.length > 1 || (own.length === 1 && !own.some(u => u.id === E.home[h.agentId]))) out.push(t('名下 {n} 棟房子').replace('{n}', own.length));
         if (E.servants[a.agentId]) out.push(t('在{m}家幫傭').replace('{m}', t(w.agents[E.servants[a.agentId]]?.name || '')));
         const sv = Object.values(E.servants).filter(x => x === a.agentId).length; if (sv) out.push(t('請了 {n} 個傭人').replace('{n}', sv));
@@ -273,10 +409,10 @@ const ESTATE = (() => {
     }
     function view(w) {
         const E = S(w); const units = Object.values(E.units); const landlords = new Set(units.filter(u => u.owner && u.occ && !(households(w).get(u.occ) || []).some(m => m.agentId === u.owner)).map(u => u.owner));
-        const rents = units.filter(u => u.occ).map(u => rentOf(w, u));
+        const rents = units.filter(u => u.occ).map(u => rentOf(w, u, u.occ)); // v11.6.0 實際收的（房東的檔位、自己人的折扣都算進去）
         return { units: units.length, lodgers: units.reduce((n, u) => n + lodgersOf(u).length, 0), vacant: units.filter(u => !u.occ).length, homeless: Object.values(E.homeless).length, homelessPeople: Object.keys(E.homeless).reduce((s, hid) => s + ((households(w).get(hid) || []).length || 1), 0), landlords: landlords.size, townOwned: units.filter(u => !u.owner).length, rent: rents.length ? Math.round(rents.reduce((s, x) => s + x, 0) / rents.length) : 0, servants: Object.keys(E.servants).length, stats: { ...E.stats } };
     }
-    return { S, init, daily, weekly, market, settle, evict, moveIn, lodgeIn, lodgeSlot, foreclose, seedFamilies, households, headOf, unitOf, isHomeless, rentOf, valueOf, ownsOf, scarcity, brief, describe, view, servants, payServants, SERVANT_PAY, HOMELESS_AT, mortInfo, mortBy };
+    return { TIER_F, kinHH, llFacts, llOptions, llDaily, overdue, landlords, setTier, S, init, daily, weekly, market, settle, evict, moveIn, lodgeIn, lodgeSlot, foreclose, seedFamilies, households, headOf, unitOf, isHomeless, rentOf, valueOf, ownsOf, scarcity, brief, describe, view, servants, payServants, SERVANT_PAY, HOMELESS_AT, mortInfo, mortBy };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { homeless: { mood: -10, opinion: 0, days: 2, label: t('無家可歸') } });

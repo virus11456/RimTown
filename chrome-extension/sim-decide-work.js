@@ -148,6 +148,17 @@
         facts(w, a, ctx) { const B = BS(); return B ? B.facts(w, a, ctx) : ''; },
         options(w, a, ctx) { const B = BS(); return B ? B.options(w, a, ctx) : []; } });
 
+    // ================= v11.6.0 銀行的事由銀行家決定、房東自己定租金與欠租的事 =================
+    // 銀行家（sim-bank.js）：有人來借錢借不借、每週利率、逾期的人怎麼辦、擠兌時押多少自己的錢，四種用 ctx.t 分。
+    // 房東（sim-estate.js）：每 28 天定一次自己房子的租金檔位、房客欠租到三倍時趕不趕。都由那邊在該問的時候送進來（不是每天掃），額度跟東家看帳同一組 work
+    const BK = () => (typeof BANK !== 'undefined' ? BANK : null), ES = () => (typeof ESTATE !== 'undefined' ? ESTATE : null);
+    DECIDE.kind('bankDesk', { title: '銀行家坐櫃台', scan: false, cool: 0, pri: 2.5, aiGroup: 'work', aiKind: 3,
+        facts(w, a, ctx) { const B = BK(); return B ? B.deskFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const B = BK(); return B ? B.deskOptions(w, a, ctx) : []; } });
+    DECIDE.kind('landlord', { title: '房東看自己的房子', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 3,
+        facts(w, a, ctx) { const E = ES(); return E && E.llFacts ? E.llFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const E = ES(); return E && E.llOptions ? E.llOptions(w, a, ctx) : []; } });
+
     // ---------- 合夥的店不賺錢：要不要拆夥 ----------
     const splitInfo = (w, a) => { const B = BZ(); return B && DECIDE.on(w) ? B.splitInfo(w, a) : null; };
     DECIDE.kind('split', {

@@ -252,12 +252,14 @@ const DECIDE = (() => {
         if (OBS.length) emit('decided', { w, a, K, op, why: why || null, res: res || null, src, d, ctx: ctx || null, feel: ex?.feel || '', pub: ex?.pub || '' });
         return e;
     }
+    // v11.6.0 現在是不是正在執行某人選的那一項（選項的 run 裡）：這時候別的系統要問人，只能排進佇列（這一輪處理完就輪到），不能再當場問（會重入佇列）
+    let _run = 0; const inRun = () => _run > 0;
     // 傾向版：算分、挑最高的（NOISE 是當天的心情起伏，不是「幾 % 機率會做」）
     function resolveRule(w, X, o, d, noise = NOISE) {
         const { a, K, ctx } = o; const opts = o.opts || optsOf(w, a, K, ctx); if (!opts.length) return null;
         const Ln = lean(w, a); let best = null, bs = -Infinity;
         for (const op of opts) { const s = score(Ln, op) + (Math.random() - 0.5) * noise; if (s > bs) { bs = s; best = op; } }
-        let res = null; try { res = best.run(w, a, ctx) || null; } catch (e) { console.warn('[Decide] run', K.key, best.id, e); }
+        let res = null; _run++; try { res = best.run(w, a, ctx) || null; } catch (e) { console.warn('[Decide] run', K.key, best.id, e); } finally { _run--; }
         return record(w, X, a, K, best, best.why || null, res, 'rule', d, ctx);
     }
 
@@ -338,7 +340,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         else {
             const low = (o) => String(o.id).toLowerCase(); const head = opts.filter(o => low(o).split(':')[0] === pk); const cs = codes(opts).map(c => c.toLowerCase()); // 代號照抄；只抄了冒號前面那一段、而且只有一個對得上也算；舊的 a、b、c 照樣收
             const op = opts[cs.indexOf(pk)] || opts.find(o => low(o) === pk) || (head.length === 1 ? head[0] : null) || (pk.length === 1 ? opts[pk.charCodeAt(0) - 97] : null); if (!op) return null;
-            let res = null; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); }
+            let res = null; _run++; try { res = op.run(w, a, ctx) || null; } catch (x) { console.warn('[Decide] run', K.key, op.id, x); } finally { _run--; }
             e = record(w, X, a, K, op, why ? { raw: why } : (op.why || null), res, 'ai', d, ctx, ex);
             if (!op.quiet) { log(w, 'social', '🧭 {a}想了想，決定{x}：「{y}」', { a: a.name, x: op.say || op.text, y: why ? { raw: why } : (op.why || '') }, a.name); if (why) mem(w, a, '我想過了，決定{x}：{y}', { x: op.say || op.text, y: { raw: why } }, 5); }
         }
@@ -450,7 +452,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { inRun, S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
@@ -544,7 +546,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (bankOk(w) && a.job && !w.bank.loans[a.agentId] && BANK.lendable(w.bank) >= 25) {
                 const r = Math.round((w.bank.rate || 0) * 100);
                 out.push({ id: 'bankloan', text: { k: '跟銀行借 25 銀幣周轉（利息大約 {r}%，20 天內還清；還不出來會變呆帳、名聲掃地）', p: { r } }, say: '跟銀行借 25 銀幣周轉', why: '跟銀行借，至少不用看人臉色。', base: 1.3, lean: { face: 0.3, safe: -0.3 },
-                    run: (w2, a2) => { const got = BANK.lend(w2, w2.bank, a2, 25, '周轉'); return got ? { k: '銀行借了我 {n} 銀幣', p: { n: got } } : { k: '銀行不肯借' }; } });
+                    run: (w2, a2) => { const got = BANK.lend(w2, w2.bank, a2, 25, '周轉'); return got ? { k: '銀行借了我 {n} 銀幣', p: { n: got } } : BANK.pendingOf?.(w2, a2) ? { k: '去銀行申請了，等銀行家回話' } : { k: '銀行不肯借' }; } }); // v11.6.0 問 AI 時要等銀行家回話
             }
             return out;
         },

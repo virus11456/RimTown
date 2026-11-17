@@ -118,7 +118,7 @@
             else out.push({ id: 'loan', text: { k: '跟銀行借 {n} 銀幣來翻修', p: { n: I.loan } }, say: '跟銀行借錢翻修房子', why: I.envy ? '不能輸給隔壁' : '先住得好一點，錢慢慢還',
                 base: 0.2 + (I.envy ? 0.9 : 0) + (has(a, 'jealous') ? 0.3 : 0) - (asc ? 1.5 : 0) - (thr ? 0.5 : 0), lean: { face: 0.5, safe: -0.5 },
                 run: (w, a) => {
-                    const got = BANK.lend(w, BANK.S(w), a, I.loan, t(I.envy ? '跟鄰居一樣翻修房子' : '翻修房子')); if (!got) return { k: '銀行沒有借' };
+                    const got = BANK.lend(w, BANK.S(w), a, I.loan, t(I.envy ? '跟鄰居一樣翻修房子' : '翻修房子')); if (!got) return BANK.pendingOf?.(w, a) ? { k: '去銀行申請了，等銀行家回話' } : { k: '銀行沒有借' }; // v11.6.0 問 AI 時要等銀行家回話
                     if (I.envy) { try { WAYS.envyBorrowed(w, I.home); } catch (e) {} log(w, 'economy', '🏦 {a}為了把家翻修得跟鄰居一樣，跟銀行借了 {n} 銀幣。', { a: a.name, n: got }, a.name); }
                     return H.renovateBy(w, a) === true ? { k: '借了 {n} 銀幣，家翻修成{s}了', p: { n: got, s: I.style } } : { k: '借到 {n} 銀幣，還沒動工', p: { n: got } };
                 } });

@@ -40,13 +40,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const buyer = all[4]; buyer.personality.traits = [...buyer.personality.traits.filter(x => x !== 'shy'), 'charismatic']; w.wallet.bal[buyer.agentId] = 1000; const G = GOODS.S(w);
       const it = fix(0.5, () => GOODS.buy(w, G, { key: 'painting', from: 'x', lv: 2, price: 100, day: D }, buyer)); out.haggle = !!it && WALLET.get(w, buyer) > 900 && logHas(/殺價|haggled/);
       // 銀行家審核
-      w.tierState.lv = 1; w.bank = null; BANK.daily(w); const Bk = w.bank; Bk.reserve = 1000;
+      w.tierState.lv = 1; w.bank = null; BANK.daily(w); const Bk = w.bank; Bk.reserve = 1000; const fa0 = w.fullAgentMode; w.fullAgentMode = false; /* v11.6.0 借不借改由銀行家決定：這幾項驗照個性（規則）的那一條路，開著智能體時每一筆都要等他回話 */
       const bad = all[5]; DARK.S(w); w.dark.rep[bad.agentId] = { exposed: 3 }; out.refuseRep = BANK.lend(w, Bk, bad, 20, '周轉') === 0 && !Bk.loans[bad.agentId] && logHas(/拒絕|refused/);
       const foe = all[6]; const bk = w.agents[Bk.banker]; bk.relationships.getOrCreate(foe.agentId, foe.name).affinity = -50; out.refuseFoe = BANK.lend(w, Bk, foe, 20, '周轉') === 0;
-      const good = all[7]; out.lendOk = BANK.lend(w, Bk, good, 20, '周轉') > 0;
+      const good = all[7]; out.lendOk = BANK.lend(w, Bk, good, 20, '周轉') > 0; w.fullAgentMode = fa0;
       // AI 決定大筆貸款
-      const big = all[8]; restore = stubAI({ lend: false, why: '他還不起' }); BANK.lend(w, Bk, big, 80, '翻修房子'); await new Promise(r => setTimeout(r, 50)); restore(); out.aiRefuse = !Bk.loans[big.agentId] && logHas(/他還不起/);
-      const big2 = all[9]; restore = stubAI({ lend: true, why: '可以' }); BANK.lend(w, Bk, big2, 80, '翻修房子'); await new Promise(r => setTimeout(r, 50)); restore(); out.aiLend = !!Bk.loans[big2.agentId];
+      const big = all[8]; restore = stubAI([{ n: 1, pick: 'refuse', why: '他還不起' }]); /* v11.6.0 借不借改走決策核心:AI 照選項代號回答 */ BANK.lend(w, Bk, big, 80, '翻修房子'); await DECIDE.flush(); await new Promise(r => setTimeout(r, 50)); restore(); out.aiRefuse = !Bk.loans[big.agentId] && logHas(/他還不起/);
+      const big2 = all[9]; restore = stubAI([{ n: 1, pick: 'lend', why: '可以' }]); BANK.lend(w, Bk, big2, 80, '翻修房子'); await DECIDE.flush(); await new Promise(r => setTimeout(r, 50)); restore(); out.aiLend = !!Bk.loans[big2.agentId];
       w._absDay = _ad;
       app.state = w.getState(); app._showNpcCard(o1.agentId); out.card = document.getElementById('npc-quick-card')?.innerText || ''; app._hideNpcCard();
       const box = document.createElement('div'); document.body.appendChild(box); app.activeTab = 'industry'; app.renderEconomy(box); /* v7.3.0 搬到小鎮 › 產業 */ out.ui = box.querySelector('.pp-biz')?.innerText || ''; box.remove();

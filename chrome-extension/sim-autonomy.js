@@ -193,13 +193,14 @@ class VillagerAutonomy {
             if (r?.success) { const who = this._pick(this._byJob(w, n.who)); buys.push({ who, r: n.r, qty, cost: qty * SI[n.r].buyPrice }); }
         }
         for (const b of buys) this._note(w, b.who, '🛒 鎮上{item}快沒了，{who}去商店補了 {n} 份（{cost} 銀幣）。', { who: b.who?.name || '', item: SI[b.r].name(), n: b.qty, cost: b.cost }, 4, 'economy', 4);
+        if (typeof PROCURE !== 'undefined' && PROCURE.surplusDay && PROCURE.surplusDay(w, this)) return; // v11.6.0 觀察者模式：多出來的貨賣不賣，由出面談生意的人決定（sim-procure.js）
         // 賣：沒人用得上、堆太多的（酒、傢俱、麵包…）留 15 賣掉其餘，一天最多兩樣
         const keepOf = (r, old) => (typeof FLOW !== 'undefined' && FLOW.keepLine) ? FLOW.keepLine(w, r, old) : old; // v11.3.0 以前超過 80 就賣、留 50（城市想備衣物 102、麵包 94，還沒備夠就拿去賣）；城鎮以上要超過目標量的 1.2 倍才賣，村莊照舊
         const sellable = ['beer', 'wine', 'furniture', 'bread', 'clothing'].filter(r => SI[r] && w.stockpile.get(r) > keepOf(r, 80)).sort((a, b) => w.stockpile.get(b) - w.stockpile.get(a)).slice(0, 1); // v6.40.1 一天只賣一樣、存量 80 以上才賣
         for (const r of sellable) {
             const qty = Math.min(6, Math.floor(w.stockpile.get(r) - keepOf(r, 50))); if (qty < 1) continue; // 留 50、一次最多 6 份
             const res = shop.sell(r, qty, w);
-            if (res?.success) { const who = this._pick(this._byJob(w, 'trader')); this._note(w, who, '💰 {who}把倉裡多出來的{item} {n} 份拿去賣了，進帳 {gain} 銀幣。', { who: who?.name || '', item: SI[r].name(), n: qty, gain: qty * SI[r].sellPrice }, 4, 'economy', 3); }
+            if (res?.success) this._note(w, null, '💰 公倉把多出來的{item} {n} 份賣給商店，進帳 {gain} 銀幣。', { who: '', item: SI[r].name(), n: qty, gain: qty * SI[r].sellPrice }, 4, 'economy', 3); // v11.6.0 沒有人拿主意：不再隨機掛一位商人的名字
         }
     }
 
