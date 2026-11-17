@@ -22,6 +22,11 @@ async function run(browser, lang, vp) {
     return { n: ids.length, missing, empty, bedless, ext: merged(tm._bExt), cut: merged(tm._bCut), tmpl: Object.values(tm._inTmpl || {}).filter((v, i, a) => a.indexOf(v) === i) }; });
   ok(s1.n > 5 && !s1.missing.length && !s1.empty.length, `每棟有門的建築都有屋內位置（${s1.n} 棟）`, s1);
   ok(!s1.bedless.length, '每戶民宅至少兩個床位', s1.bedless);
+  // v11.7.0 畫面建好之後才加蓋的民宅也要有模型與屋內位置（以前要等換季才重畫）
+  const add = await page.evaluate(() => { const tm = window.rimtownApp.tileMap; const ids0 = Object.keys(tm.buildingZones); tm.ensureHouseCapacity(Object.keys(tm._houseSubZones).length + 1); return Object.keys(tm.buildingZones).filter(k => !ids0.includes(k)); });
+  await page.waitForTimeout(1500);
+  const add2 = await page.evaluate((ids) => { const tm = window.rimtownApp.tileMap; return ids.map(k => ({ k, spots: tm._inSpots?.[k]?.sleep?.length || 0, top: !!tm._buildingTops?.[k], win: tm._winIdx?.[k] ?? null })); }, add);
+  ok(add.length === 1 && add2.every(x => x.spots >= 2 && x.top), '加蓋的民宅馬上有房子模型與屋內床位', { add, add2 });
   ok(s1.ext && s1.cut, '外觀與剖面各自合併成少數幾個網格', s1);
   ok(s1.tmpl.includes('house') && s1.tmpl.length >= 4, '民宅與各種公共建築都有各自的擺設', s1.tmpl);
   // 2) 拉遠：有屋頂、看不到剖面
