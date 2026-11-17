@@ -50,7 +50,7 @@ const BIZ = (() => {
     // v8.8.0 創業貸款:銀行有放得出去的存款、這個人沒有欠款,就借;還款期比周轉長(45 天)
     function bizLoan(w, a, n, why) {
         if (typeof BANK === 'undefined' || !w.bank) return 0; const BK = BANK.S(w); if (!BK.open || BK.status === 'run' || BK.loans?.[a.agentId] || BANK.lendable(BK) < n + 20) return 0;
-        const got = BANK.lend(w, BK, a, Math.ceil(n), t(why)); const L = BK.loans?.[a.agentId]; if (got && L) bizTerms(w, BK, L, got); return got;
+        const got = BANK.lend(w, BK, a, Math.ceil(n), t(why), { biz: 1 }); const L = BK.loans?.[a.agentId]; if (got && L && L.kind !== 'biz') bizTerms(w, BK, L, got); return got; // v11.6.0 銀行家撥款時已經照四十五天、記進創業貸款（kind 是 biz），不再記兩次
     }
     const bizTerms = (w, BK, L, got) => { L.due = Math.max(L.due || 0, day(w) + 45); L.kind = 'biz'; BK.bizLent = Math.round((BK.bizLent || 0) + got); };
     // v9.30.0 這筆創業貸款現在借得到嗎。條件跟 bizLoan、BANK.lend 會當場拒絕的完全一樣:沒有銀行、銀行沒開、擠兌中、這個人已經有欠款、
@@ -58,10 +58,12 @@ const BIZ = (() => {
     function loanOk(w, a, n) {
         if (typeof BANK === 'undefined' || !w.bank || !a) return false; const BK = w.bank;
         if (!BK.open || BK.status === 'run' || BK.loans?.[a.agentId] || Math.ceil(n) < 5 || BANK.lendable(BK) < n + 20) return false;
+        // v11.6.0 銀行家在鎮上、決策核心開著：借不借由他決定，這裡不再先替他判；只擋掉「十天內才被他拒絕過」和「已經有一筆在等他回話」
+        if (BANK.teller && BANK.teller(w, BK, a)) { const d = day(w); return !(BK.refused?.[a.agentId] != null && d - BK.refused[a.agentId] < 10) && !BANK.pendingOf(w, a); }
         return vet(w, BK, a).ok;
     }
     // 這筆貸款是不是要等銀行家(AI)點頭:完整智能體模式下 40 銀幣以上的貸款由銀行家決定(見檔尾 BANK.lend)
-    const loanAsks = (w, n) => { const ce = w.conversationEngine; return Math.ceil(n) >= 40 && !!(w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && w.agents[w.bank?.banker]); };
+    const loanAsks = (w, n) => { if (typeof BANK !== 'undefined' && BANK.teller && BANK.teller(w, w.bank, null)) return typeof DECIDE !== 'undefined' && DECIDE.aiOn(w); /* v11.6.0 銀行家決定：開智能體時每一筆都要等他回話 */ const ce = w.conversationEngine; return Math.ceil(n) >= 40 && !!(w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && w.agents[w.bank?.banker]); };
     const replyOf = (w, a) => { try { return (typeof BANK !== 'undefined' && w.bank && BANK.lendReply) ? BANK.lendReply(w.bank, a) : null; } catch (e) { return null; } };
     // out.why:沒開成(或還沒開成)的原因 → 'noloan' 銀行借不到、'wait' 等銀行家回話、'nocash' 本錢沒湊齊、'full' 等回話期間店位滿了
     async function open(w, B, a, d, out, kind) {
@@ -202,8 +204,9 @@ if (typeof GOODS !== 'undefined') {
 if (typeof BANK !== 'undefined') {
     const _lend = BANK.lend; const asking = new WeakMap(); // 銀行狀態 → 開始等待的世代
     const waits = new WeakMap(); // v9.30.0 銀行狀態 → { id, p }:誰的貸款正在等銀行家回話(放記憶體,不存檔)。開店要等這個回話才知道借不借得到
-    BANK.lendReply = (B, a) => { const x = B ? waits.get(B) : null; return x && a && x.id === a.agentId ? x.p : null; };
-    BANK.lend = function (w, B, a, n, why) {
+    BANK.lendReply = (B, a) => { const r = BANK.deskReply ? BANK.deskReply(B, a) : null; if (r) return r; const x = B ? waits.get(B) : null; return x && a && x.id === a.agentId ? x.p : null; }; // v11.6.0 先看是不是在等銀行家（決策核心）回話
+    BANK.lend = function (w, B, a, n, why, opt) {
+        { const r = BANK.apply ? BANK.apply(w, B, a, n, why, opt) : null; if (r != null) return r; } // v11.6.0 銀行家在鎮上、決策核心開著：借不借由他決定（sim-bank.js 的 bankDesk）；下面是原本的規則
         const v = BIZ.vet(w, B, a);
         if (!v.ok && B.refused?.[a.agentId] != null && (w._absDay?.() ?? 0) - B.refused[a.agentId] < 10) return 0; // v8.8.0 被拒絕過的人十天內不會再去碰釘子(以前同一個人天天被拒、天天記一筆)
         if (!v.ok) { (B.refused = B.refused || {})[a.agentId] = w._absDay?.() ?? 0; try { w.logMessageT?.('trade', '🏦 銀行家拒絕借錢給{a}{r}。', { a: a.name, r: v.why === 'rep' ? '（名聲太差）' : '（兩人處不好）' }, a.name); } catch (e) {} try { a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '銀行不肯借我錢。', {}, 6, []); } catch (e) {} return 0; }

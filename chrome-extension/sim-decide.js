@@ -544,7 +544,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (bankOk(w) && a.job && !w.bank.loans[a.agentId] && BANK.lendable(w.bank) >= 25) {
                 const r = Math.round((w.bank.rate || 0) * 100);
                 out.push({ id: 'bankloan', text: { k: '跟銀行借 25 銀幣周轉（利息大約 {r}%，20 天內還清；還不出來會變呆帳、名聲掃地）', p: { r } }, say: '跟銀行借 25 銀幣周轉', why: '跟銀行借，至少不用看人臉色。', base: 1.3, lean: { face: 0.3, safe: -0.3 },
-                    run: (w2, a2) => { const got = BANK.lend(w2, w2.bank, a2, 25, '周轉'); return got ? { k: '銀行借了我 {n} 銀幣', p: { n: got } } : { k: '銀行不肯借' }; } });
+                    run: (w2, a2) => { const got = BANK.lend(w2, w2.bank, a2, 25, '周轉'); return got ? { k: '銀行借了我 {n} 銀幣', p: { n: got } } : BANK.pendingOf?.(w2, a2) ? { k: '去銀行申請了，等銀行家回話' } : { k: '銀行不肯借' }; } }); // v11.6.0 問 AI 時要等銀行家回話
             }
             return out;
         },

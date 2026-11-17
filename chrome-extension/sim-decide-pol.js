@@ -160,6 +160,13 @@
         facts(w, a, ctx) { const P = PR(); return P ? P.tradeFacts(w, a, ctx) : ''; },
         options(w, a, ctx) { const P = PR(); return P ? P.tradeOptions(w, a, ctx) : []; } });
     DECIDE.source('eco', (w, a) => { const P = PR(); return P ? P.brief(w, a) : ''; });
+    // v11.6.0 公倉多出來的貨賣不賣（出面談生意的人，一週最多問一次，管七天；sim-procure.js）、藥廠這週做多少（醫術最好的醫生，一週一次；sim-bio.js）。都是公家的事，額度跟上面同一組 civic
+    DECIDE.kind('surplus', { title: '公倉多出來的貨', scan: false, cool: 0, pri: 1.5, aiGroup: 'civic', aiKind: 2,
+        facts(w, a, ctx) { const P = PR(); return P && P.surFacts ? P.surFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { const P = PR(); return P && P.surOptions ? P.surOptions(w, a, ctx) : []; } });
+    DECIDE.kind('pharmaWeek', { title: '藥廠這週做多少藥', scan: false, cool: 0, pri: 1.5, aiGroup: 'civic', aiKind: 2,
+        facts(w, a, ctx) { return typeof BIO !== 'undefined' && BIO.pharmaFacts ? BIO.pharmaFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { return typeof BIO !== 'undefined' && BIO.pharmaOptions ? BIO.pharmaOptions(w, a, ctx) : []; } });
     DECIDE.kind('donate', {
         title: '手上寬裕，政治人物用得上', cool: 7, pri: 1,
         when(w, a) {

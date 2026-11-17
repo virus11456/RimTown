@@ -38,6 +38,7 @@ const BIO = (function () {
         { id: 'pharma_waste', path: 'bio', lv: 'minor', icon: '🧪', need: (w) => TECH.built(w, 'pharma_works'), run(w) {
             const f = pick(w, x => ['farmer', 'fisher'].includes(x.job?.key)); const o = pick(w, x => owner(w, x) && x !== f); if (!f) return null;
             f.moodModifier = (f.moodModifier || 0) - 4; if (o) { aff(f, o, -10); aff(o, f, -3); } mem(w, f, '藥廠的廢水流進河裡，魚都翻肚了。', {}, 6);
+            { const B = S(w); B.waste = (B.waste || []).filter(x => day(w) - x.d < 30); B.waste.push({ d: day(w), f: f.name }); } // v11.6.0 記下來：醫生每週決定藥廠做多少時看得到最近有誰來吵
             return { k: o ? '🧪 藥廠排出的廢水把下游的河染成了綠色，{a}跑去找{b}理論。' : '🧪 藥廠排出的廢水把下游的河染成了綠色，{a}氣得直跺腳。', p: { a: f.name, b: o?.name || '' }, who: o ? [f, o] : [f] }; } },
         { id: 'lab_escape', path: 'bio', lv: 'minor', icon: '🐑', need: (w) => done(w, 'selective_breeding') && (lab(w) || TECH.built(w, 'breeding_farm')), run(w) {
             const f = pick(w, x => x.job?.key === 'farmer'); const r = pick(w, x => x.job?.key === 'researcher' && x !== f); if (!f) return null;
@@ -146,12 +147,54 @@ const BIO = (function () {
     // ---------- 每天:法律、藥廠做藥 ----------
     function daily(w) {
         if (!w?.research) return; const B = S(w); lawDaily(w);
-        if (TECH.built(w, 'pharma_works') && (w.stockpile?.get?.('herbs') || 0) >= 2) { if (w.stockpile.consume('herbs', 2, w.tickCount, t('藥廠'), 'production')) w.stockpile.add('medicine', 1, w.tickCount, t('藥廠')); } // v11.5.0 拿不到料（剩下的是保留的）就不出貨
+        if (TECH.built(w, 'pharma_works')) { const n = pharmaRounds(w); for (let i = 0; i < n && (w.stockpile?.get?.('herbs') || 0) >= 2; i++) { if (w.stockpile.consume('herbs', 2, w.tickCount, t('藥廠'), 'production')) w.stockpile.add('medicine', 1, w.tickCount, t('藥廠')); else break; } } // v11.5.0 拿不到料（剩下的是保留的）就不出貨；v11.6.0 一天做幾輪由醫生每週決定
         // 騙子被拆穿(過了幾天,受害者發現沒效)
         const q = B.quack; if (q && day(w) - q.d >= 4) { B.quack = null; const v = w.agents[q.v], k = w.agents[q.q]; if (v && k && !v.isDead && !k.isDead && Math.random() < 0.6) { aff(v, k, -25); mem(w, v, '{q}賣的延壽藥根本是糖水，我被騙了。', { q: k.name }, 8); for (const x of ad(w)) if (x !== v && x !== k && Math.random() < 0.3) aff(x, k, -6); TECH.log(w, '🧴 {v}發現{q}賣的延壽藥是染色的糖水，氣得到處跟人說。', { v: v.name, q: k.name }, v.name); } }
     }
     function brief(w, a) { const m = TECH.S(w).mk?.[a.agentId]; if (m === 'leak0') return t('研究院外洩那天，第一個發病的是我'); return ''; }
-    return { S, EVENTS, leak, LAW, setLaw, vote, daily, brief };
+
+    // ---------- v11.6.0 藥廠做不做藥由醫生決定（選擇點 pharmaWeek，登記在 sim-decide-pol.js） ----------
+    // 以前蓋了藥廠就每天自動拿兩份藥草換一份藥，沒有人決定。現在鎮上醫術最好的醫生每週看一次：照常做（一天一輪）／全力做（一天兩輪，藥草夠才列）／這週先停。
+    // 沒有醫生、醫生不在鎮上、決策核心沒開、還在等他回話：照原本每天一輪。藥草和藥都是公倉的，沒有人的錢會動
+    const RUNS = { normal: 1, full: 2, stop: 0 }, PH_NAME = { normal: '照常做', full: '全力做', stop: '先停下來' };
+    const herbs = (w) => w.stockpile?.get?.('herbs') || 0, meds = (w) => w.stockpile?.get?.('medicine') || 0;
+    const medWant = (w) => { try { return typeof FLOW !== 'undefined' ? Math.round(FLOW.want(w, 'medicine')) : 10; } catch (e) { return 10; } };
+    const sickN = (w) => ad(w).filter(a => a.isSick || (a.health ?? 100) < 50).length;
+    const medSk = (a) => { try { return a.skills?.get?.('醫療')?.level || 0; } catch (e) { return 0; } };
+    const phOn = (w) => !!(w?.observerMode && w.wallet && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.pharmaWeek);
+    const inTown = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) && !(w.civic?.jail?.[a.agentId] > day(w));
+    function doctorOf(w) { return ad(w).filter(a => a.job?.key === 'doctor' && inTown(w, a)).sort((x, y) => medSk(y) - medSk(x) || (y.age || 0) - (x.age || 0))[0] || null; }
+    function askNow(w, a, ctx) { const X = DECIDE.S(w); const keep = X.q.splice(0, X.q.length); try { DECIDE.enqueue(w, a, 'pharmaWeek', ctx); DECIDE.drain(w, X, day(w)); } finally { if (keep.length) X.q.unshift(...keep); } }
+    // 今天做幾輪：醫生定的、而且還是他在鎮上管事才算數；一週到了就再問他一次（等回話的那一天照常做）
+    function pharmaRounds(w) {
+        const B = S(w); const d = day(w); const doc = phOn(w) ? doctorOf(w) : null; if (!doc) return 1;
+        const P = B.pharma; if (!P || d - (P.d ?? -99) >= 7) { if (!(B.phAsk != null && d - B.phAsk < 7)) { B.phAsk = d; askNow(w, doc, { d }); } }
+        const Q = B.pharma; return Q && Q.by === doc.agentId && d - (Q.d ?? -99) < 8 && RUNS[Q.mode] != null ? RUNS[Q.mode] : 1;
+    }
+    function wasteOf(w) { const B = S(w); return (B.waste || []).filter(x => day(w) - x.d < 14); }
+    function pharmaFacts(w, a, ctx) {
+        if (!pharmaLive(w, a, ctx)) return ''; const ws = wasteOf(w); const P = S(w).pharma; const use = (() => { try { return typeof PROCURE !== 'undefined' ? PROCURE.useOf(w, 'herbs') : 0; } catch (e) { return 0; } })();
+        return fill('又過了一週，鎮上的藥廠這週要怎麼做？平常一天拿兩份藥草做一份藥。倉裡的藥有 {m} 份，鎮上該備 {want} 份；藥草有 {h} 份{use}。現在有 {s} 個人生病。{waste}上週的做法：{last}。藥廠是公家的：藥草和藥都是倉裡的，跟你自己的錢沒有關係。',
+            { m: Math.round(meds(w)), want: medWant(w), h: Math.round(herbs(w)), use: use > 0.05 ? { k: '（醫生看病一天另外用掉大約 {n} 份）', p: { n: use } } : '', s: sickN(w), waste: ws.length ? { k: '這兩週有 {n} 次有人為了藥廠排的廢水來吵（{who}）。', p: { n: ws.length, who: { raw: [...new Set(ws.map(x => x.f))].slice(0, 3).join(t('、')) } } } : '', last: P && P.mode ? PH_NAME[P.mode] : '照常做' });
+    }
+    const pharmaLive = (w, a, ctx) => !!ctx && phOn(w) && TECH.built(w, 'pharma_works') && doctorOf(w) === a && day(w) - (ctx.d ?? 0) <= 1;
+    function setPharma(w, a, mode) {
+        const B = S(w); const old = B.pharma?.mode || 'normal'; B.pharma = { mode, d: day(w), by: a.agentId };
+        if (old !== mode) TECH.log(w, mode === 'full' ? '💊 {a}交代藥廠這週全力做藥，一天做兩輪。' : mode === 'stop' ? '💊 {a}交代藥廠這週先停工。' : '💊 {a}交代藥廠照常做藥。', { a: a.name }, a.name);
+        return { k: '藥廠這週{x}', p: { x: PH_NAME[mode] } };
+    }
+    function pharmaOptions(w, a, ctx) {
+        if (!pharmaLive(w, a, ctx)) return []; const m = meds(w), want = medWant(w), h = herbs(w), sk = sickN(w), ws = wasteOf(w).length; const out = [];
+        const go = (mode) => (w2, a2) => (pharmaLive(w2, a2, ctx) ? setPharma(w2, a2, mode) : null);
+        out.push({ id: 'normal', text: '照常做：一天兩份藥草換一份藥', say: '藥廠照常做藥', why: '照平常的量做，藥夠用就好。', base: 1.6, lean: { safe: 0.3 }, run: go('normal') });
+        if (h >= 8) out.push({ id: 'full', text: '全力做：一天做兩輪（一天用掉四份藥草）', say: '藥廠這週全力做藥', why: '病人多，藥要多備一點。', base: 0.2 + (m < want * 0.6 ? 1.2 : 0) + (sk >= 3 ? 0.6 : 0) + (hasT(a, 'hardworking') ? 0.3 : 0) - (ws ? 0.4 : 0), lean: { bond: 0.3, gain: 0.1 }, run: go('full') });
+        out.push({ id: 'stop', text: '這週先停下來', say: '藥廠這週先停工', why: ws ? '廢水的事得先處理，大家都在抱怨。' : '藥已經夠了，藥草先留著。', base: -0.2 + (m > want * 1.5 ? 1.3 : 0) + (ws ? 0.8 : 0) + (h < 6 ? 0.4 : 0) - (sk >= 3 ? 0.8 : 0), lean: { safe: 0.2 }, run: go('stop') });
+        return out;
+    }
+    const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : x));
+    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(tx(b)); return s; };
+    const pharmaView = (w) => { const B = S(w); const doc = doctorOf(w); const P = B.pharma; return { mode: P && doc && P.by === doc.agentId && day(w) - P.d < 8 ? P.mode : 'normal', by: P?.by || null, d: P?.d ?? null, ask: B.phAsk ?? null, waste: wasteOf(w).length }; };
+    return { S, EVENTS, leak, LAW, setLaw, vote, daily, brief, pharmaRounds, pharmaFacts, pharmaOptions, doctorOf, pharmaView, RUNS };
 })();
 
 // ---------- 科技樹 ----------
