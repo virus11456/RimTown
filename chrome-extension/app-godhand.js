@@ -362,7 +362,7 @@ Object.assign(RimTownApp.prototype, {
             <button class="gh-play" data-gh="wish-go" ${can.ok ? '' : 'disabled aria-disabled="true"'}>✍️ ${W.busy ? t('命運正在寫…') : t('寫下（{n} 神力）').replace('{n}', WISH.COST)}</button>
             <div class="gh-d-note" aria-live="polite">${esc(this._wishMsg || why)}</div>
             <div class="gh-wish-ex" role="group" aria-label="${t('範例')}">${[0, 1, 2].map(i => WISH.EXAMPLES[(i + (w._absDay?.() || 0)) % WISH.EXAMPLES.length]).map(x => `<button class="gh-chip" data-gh="wish-ex" data-v="${esc(t(x))}">${esc(t(x))}</button>`).join('')}</div>
-            ${L ? `<div class="gh-wish-last"><div class="gh-d-meta">${t('上一次寫的')}${t('：')}「${esc(L.text)}」</div><div class="gh-wish-res"><b>${L.icon} ${esc(L.title)}</b> ${esc(L.story)}</div>${L.lines?.length ? `<div class="gh-d-fx">⚡ ${esc(L.lines.join(t('；')))}</div>` : ''}${(L.reactions || []).map(r => `<div class="gh-react"><b>${esc(t(r.name))}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : ''}
+            ${L ? `<div class="gh-wish-last"><div class="gh-d-meta">${t('上一次寫的')}${t('：')}${t('「')}${esc(L.text)}${t('」')}</div><div class="gh-wish-res"><b>${L.icon} ${esc(L.title)}</b> ${esc(L.story)}</div>${L.lines?.length ? `<div class="gh-d-fx">⚡ ${esc(L.lines.join(t('；')))}</div>` : ''}${(L.reactions || []).map(r => `<div class="gh-react"><b>${esc(t(r.name))}</b>${t('：')}${esc(r.text)}</div>`).join('')}</div>` : ''}
         </div>`;
     },
     _wishCount() { const el = document.getElementById('gh-wish-in'), n = document.querySelector('#gh-tray .gh-wish-n'); if (el && n) n.textContent = `${el.value.length}/${WISH.MAXLEN}`; },

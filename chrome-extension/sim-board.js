@@ -86,16 +86,17 @@ const BOARD = (() => {
     }
     // 照個性與處境套樣板（AI 關著時，或 AI 沒回話時）
     function ruleWrite(w, a) {
+        // text／why 一律給 {k}（樣板）：直接給字串會被當成 AI 寫的原文存起來，英文介面再也翻不回來，還會原樣進到題目裡
         const others = npcs(w).filter(x => x !== a && ok(w, x)); if (!others.length) return null; const c = cash(w, a); const r = Math.random(); const n = 3 + Math.floor(Math.random() * 6);
         const foe = others.filter(x => aff(a, x) < -25).sort((x, y) => aff(a, x) - aff(a, y))[0]; const pal = others.filter(x => aff(a, x) > 30).sort((x, y) => aff(a, y) - aff(a, x))[0];
         const sore = others.filter(x => aff(a, x) < -5 && aff(a, x) >= -25 && aff(x, a) < 0)[0]; const pl = places(w); const p = pl.includes('tavern') ? 'tavern' : (pl[0] || 'town_square');
-        if (foe && r < 0.18 + mal(a) * 0.25) return has(a, 'shy') || mal(a) > 0.6 ? { kind: 'letter', want: 'warn', to: foe, text: '離我的事遠一點，別怪我沒先說。', why: '當面講不出口，寫下來比較敢' } : { kind: 'gripe', about: foe, text: { k: '{b}做人太不厚道，請大家評評理。', p: { b: foe.name } }, why: '想讓大家知道他是什麼樣的人' };
-        if (sore && r < 0.35 && hon(a) > 0.45) return { kind: 'letter', want: 'sorry', to: sore, text: '上次是我不對，想跟你說聲對不起。', why: '一直擱在心上' };
-        if (c < 10 && r < 0.6) return { kind: 'sell', price: n, text: { k: '家裡多了{x}，{n} 銀幣讓出。', p: { x: { k: pick(['一張舊椅子', '一口鍋子', '一件厚外套', '一把鋤頭']) }, n } }, why: '手頭緊，能換一點是一點' };
-        if (c > 50 && r < 0.6) return { kind: 'hire', price: n + 3, text: { k: '找人幫忙{x}，酬勞 {n} 銀幣。', p: { x: { k: pick(['修屋頂', '搬貨', '整理後院', '挑水']) }, n: n + 3 } }, why: '自己忙不過來' };
-        if (pal && r < 0.75) return r < 0.68 ? { kind: 'letter', want: 'thanks', to: pal, text: '那次多虧有你，一直想跟你說謝謝。', why: '有些話當面說不出口' } : { kind: 'letter', want: 'meet', to: pal, place: p, hour: 18, text: { k: '有些話想當面跟你說，明天 {h} 點在{p}等你。', p: { h: 18, p: placeName(w, p) } }, why: '想找個人說說話' };
-        if (r < 0.88) return { kind: 'invite', place: p, hour: 18, price: 4, text: { k: '明天傍晚在{p}，想找人喝一杯聊聊，我請客。', p: { p: placeName(w, p) } }, why: '一個人悶得慌' };
-        return { kind: 'lost', price: 3, text: { k: '我的{x}不見了，撿到的人請還我，酬謝 {n} 銀幣。', p: { x: { k: pick(['錢袋', '帽子', '菸斗', '鑰匙']) }, n: 3 } }, why: '找了半天找不到' };
+        if (foe && r < 0.18 + mal(a) * 0.25) return has(a, 'shy') || mal(a) > 0.6 ? { kind: 'letter', want: 'warn', to: foe, text: { k: '離我的事遠一點，別怪我沒先說。' }, why: { k: '當面講不出口，寫下來比較敢' } } : { kind: 'gripe', about: foe, text: { k: '{b}做人太不厚道，請大家評評理。', p: { b: foe.name } }, why: { k: '想讓大家知道他是什麼樣的人' } };
+        if (sore && r < 0.35 && hon(a) > 0.45) return { kind: 'letter', want: 'sorry', to: sore, text: { k: '上次是我不對，想跟你說聲對不起。' }, why: { k: '一直擱在心上' } };
+        if (c < 10 && r < 0.6) return { kind: 'sell', price: n, text: { k: '家裡多了{x}，{n} 銀幣讓出。', p: { x: { k: pick(['一張舊椅子', '一口鍋子', '一件厚外套', '一把鋤頭']) }, n } }, why: { k: '手頭緊，能換一點是一點' } };
+        if (c > 50 && r < 0.6) return { kind: 'hire', price: n + 3, text: { k: '找人幫忙{x}，酬勞 {n} 銀幣。', p: { x: { k: pick(['修屋頂', '搬貨', '整理後院', '挑水']) }, n: n + 3 } }, why: { k: '自己忙不過來' } };
+        if (pal && r < 0.75) return r < 0.68 ? { kind: 'letter', want: 'thanks', to: pal, text: { k: '那次多虧有你，一直想跟你說謝謝。' }, why: { k: '有些話當面說不出口' } } : { kind: 'letter', want: 'meet', to: pal, place: p, hour: 18, text: { k: '有些話想當面跟你說，明天 {h} 點在{p}等你。', p: { h: 18, p: placeName(w, p) } }, why: { k: '想找個人說說話' } };
+        if (r < 0.88) return { kind: 'invite', place: p, hour: 18, price: 4, text: { k: '明天傍晚在{p}，想找人喝一杯聊聊，我請客。', p: { p: placeName(w, p) } }, why: { k: '一個人悶得慌' } };
+        return { kind: 'lost', price: 3, text: { k: '我的{x}不見了，撿到的人請還我，酬謝 {n} 銀幣。', p: { x: { k: pick(['錢袋', '帽子', '菸斗', '鑰匙']) }, n: 3 } }, why: { k: '找了半天找不到' } };
     }
     // 問 AI：讓他自己寫一張告示或一封信
     async function aiWrite(w, a) {
@@ -227,7 +228,7 @@ ${t('照你的個性和你跟當事人的交情，你會怎麼講？可以照實
             const G = w2.gossipNetwork; const g = G?.activeGossip?.find(e => e.rid === R.id); const v0 = aff(x, who); if (g && G._reachOrig) { try { G._reachOrig(g, w2); } catch (e) {} } if (aff(x, who) === v0) { bump(x, who, -12); bump(who, x, -8); mem(w2, x, '我為了那些閒話去找{s}對質。', { s: who.name }, 7); mem(w2, who, '{b}為了閒話找上門來跟我對質。', { b: x.name }, 7); } return { k: '兩人撕破臉' }; }) });
         else if (first && ok(w, first) && first !== x) o.push({ id: 'trace', text: '去問是誰先說的', say: '追查閒話是從誰嘴裡出來的', why: '總要知道是誰', base: 0.35 + m * 0.3 - (has(x, 'shy') ? 0.3 : 0), lean: { face: 0.4 }, run: done('trace', (w2) => { R.re.who = first.agentId; bump(x, first, -8); bump(first, x, -3); mem(w2, x, '我查到那些閒話最早是{s}在講。', { s: first.name }, 7); mem(w2, first, '{b}跑來質問我是不是在傳他的閒話。', { b: x.name }, 6); return { k: '問到是{s}在講', p: { s: first.name } }; }) });
         o.push({ id: 'clear', text: '在公告欄貼一張澄清', say: '貼公告澄清閒話', why: '不講清楚，大家會當真', base: 0.25 + (R.fake ? 0.35 : -0.15) + (has(x, 'charismatic') ? 0.3 : 0) - (has(x, 'shy') ? 0.3 : 0), lean: { face: 0.4 }, run: done('clear', (w2) => {
-            const heard = [...new Set(R.hops.map(h => h.t))].map(id => w2.agents[id]).filter(y => y && y !== x && ok(w2, y)).slice(0, 4); const B = create(w2, x, { kind: 'clear', text: '最近有人在傳我的閒話，那不是真的。', about: who, rid: R.id, readers: heard });
+            const heard = [...new Set(R.hops.map(h => h.t))].map(id => w2.agents[id]).filter(y => y && y !== x && ok(w2, y)).slice(0, 4); const B = create(w2, x, { kind: 'clear', text: { k: '最近有人在傳我的閒話，那不是真的。' }, about: who, rid: R.id, readers: heard });
             if (B) R.re.bid = B.id; return { k: '貼了澄清' }; }) });
         if (who) o.push({ id: 'back', text: { k: '也去講{s}的閒話', p: { s: who.name } }, say: { k: '反過來傳{s}的閒話', p: { s: who.name } }, why: '他怎麼對我，我就怎麼對他', base: -0.1 + m * 0.9 - hon(x) * 0.3, lean: { face: 0.3 }, run: done('back', (w2) => { gossip(w2, who, x, '說真的,{who}私底下跟表面不太一樣喔...', { who: who.name }, false); bump(x, who, -6); return { k: '閒話又多了一則' }; }) });
         o.push({ id: 'swallow', text: '忍下來，不出聲', say: '聽到自己的閒話，忍下來了', why: '越解釋越像真的', base: 0.4 + (has(x, 'shy') ? 0.4 : 0) - m * 0.2, lean: { safe: 0.6 }, run: done('swallow', (w2) => { mood(x, -4); if (who) bump(x, who, -5); mem(w2, x, '那些閒話我沒有回應，但我記著。', {}, 6); return { k: '悶在心裡' }; }) });

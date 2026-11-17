@@ -79,7 +79,7 @@ const ECON = (() => {
         if (!a.job || a.job.key !== 'farmer') return;
         a.foodRole = role;
         const def = (typeof JOB_DEFINITIONS !== 'undefined') ? JOB_DEFINITIONS.farmer : null;
-        a.job.title = ROLE_TITLE[role] || def?.title || a.job.title;
+        a.job.title = (ROLE_TITLE[role] ? t(ROLE_TITLE[role]) : null) || def?.title || a.job.title; // 其他職稱在載入時就照介面語言翻好了，這兩個也要，不然英文版會一路帶著中文進到題目和日報
         a.job.workplace = workplaceFor(w, role);
     }
     function assignRoles(w) {

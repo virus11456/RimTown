@@ -273,7 +273,7 @@ class ConversationEngine {
             const thought = npc.memory.getThoughts(1)[0]?.content || '';
             const prevCurrently = npc.currently || npc.getPersonaStatus(world);
             return `=== ${t('居民')} ${i + 1}${t('：')}${p.name} ===
-${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
+${this._ageJob(p)}${t('，性格')}${p.traits}${t('。')}${p.status}
 ${t('【作息】')}${npc.getLifestyleText(world)}
 ${t('【目前近況】')}${prevCurrently}
 ${memos ? `${t('【昨天的約定/待辦】')}\n${memos}` : ''}
@@ -341,9 +341,9 @@ ${LLM_LANG.rule(t('【規則】繁體中文(台灣用語)。只輸出 JSON,不�
             const past = blocks.filter(b => { const s = toMin(b.time); return s != null && s <= nowMin; });
             const p = this._buildCharacterProfile(npc);
             const planText = blocks.length ? blocks.map(b => `${b.time} ${b.text}`).join(t('；')) : (npc.dailyPlan?.goals || []).join(t('；'));
-            const shortReason = String(reason || '').slice(0, 80);
+            const shortReason = this._namesFirst(reason).slice(0, 80);
             const prompt = `${t('你在為模擬小鎮「{town}」的居民「即時調整」今天的行程——他剛遇到一件事,接下來的安排要跟著變。').replace('{town}', t(world.townName || '邊境鎮'))}
-${t('【居民】')}${p.name}${t('，')}${p.age}${t('歲')}${p.job}${t('，性格')}${p.traits}${t('。')}${p.status}
+${t('【居民】')}${p.name}${t('，')}${this._ageJob(p)}${t('，性格')}${p.traits}${t('。')}${p.status}
 ${t('【現在時刻】')}${nowStr}
 ${planText ? `${t('【今天原本的安排】')}${planText}` : ''}
 ${t('【剛剛發生的事】')}${shortReason}
@@ -480,7 +480,7 @@ ${LLM_LANG.rule(t('【規則】繁體中文（台灣用語），只寫一句話�
             try {
                 const pN = this._buildCharacterProfile(npc);
                 const prompt = `${t('你在為模擬遊戲處理「耳語植入」：玩家在村民耳邊低語,這句話會化成村民自己的內心念頭。')}
-${t('村民：')}${pN.name}${t('，')}${pN.age}${t('歲')}${pN.job}${t('，性格')}${pN.traits}${t('。')}
+${t('村民：')}${pN.name}${t('，')}${this._ageJob(pN)}${t('，性格')}${pN.traits}${t('。')}
 ${t('玩家的耳語：「')}${text}${t('」')}
 
 ${t('【任務】把耳語轉寫成這位村民會相信的「第一人稱內心念頭」——像是他自己冒出的想法,符合他的性格與口吻。')}
@@ -757,8 +757,8 @@ ${LLM_LANG.rule(t('繁體中文(台灣用語),不要有其他任何文字。'), 
                     const prompt = `${t('你是一位才華橫溢的小說家，正在為奇幻小鎮「{town}」寫一場關鍵感情戲。').replace('{town}', t(world.townName || '邊境鎮'))}
 ${t('場面：')}${sceneDesc}${t('。')}
 
-${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}
-${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}
+${t('【')}${pA.name}${t('】')}${this._ageJob(pA)}${t('，性格')}${pA.traits}
+${t('【')}${pB.name}${t('】')}${this._ageJob(pB)}${t('，性格')}${pB.traits}
 
 ${t('【規則】')}
 ${LLM_LANG.rule(t('- 必須使用繁體中文（台灣用語），不可使用簡體中文'), '- Write only in natural English; do not use Chinese')}
@@ -1064,7 +1064,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
         const prompt = this._fit((lv) => { const lines = bs.map((b, i) => { const mem = this._memAt(b, lv); return `${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${t('；')}${t('性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）')}${mem.length ? ` ${t('最近記得')}${t('：')}${mem.join('／')}` : ''}`; }).join('\n');
         return `${t('你是模擬小鎮的村民決策引擎。鎮上有人提了一個提案，請替下面每位村民決定投贊成或反對，並用他自己的口吻給一句理由（20 字內）。要依每個人的性格、在乎的價值、跟提案人的交情、最近的記憶與鎮況判斷，不要全部一致。')}
 ${t('【鎮況】')}${this._townBrief(world)}
-${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
+${t('【提案】')}${p.id}${t('「')}${ps.title(p)}${t('」')}${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(proposer?.name || p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
 ${t('【村民】')}
 ${lines}
 ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","why":"理由"}，不要其他文字。')}`; });
@@ -1082,7 +1082,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":序號,"vote":"for"或"against","
         const whyFor = (tally.forWhy || []).join('／'), whyAg = (tally.againstWhy || []).join('／');
         const prompt = `${t('你正在扮演鎮長「')}${b.name}${t('」（')}${b.age}${t('歲；性格')}${t('：')}${b.traits}${t('；')}${t('在乎')}${t('：')}${b.values}${t('；')}${t('心情')} ${b.mood}/100${b.rel ? `${t('；')}${b.rel}` : ''}${t('）。全鎮對一個提案投完票了，現在由你裁決。')}
 ${t('【鎮況】')}${this._townBrief(world)}
-${t('【提案】')}${p.id}「${ps.title(p)}」${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
+${t('【提案】')}${p.id}${t('「')}${ps.title(p)}${t('」')}${t('——')}${ps.desc(p)}${t('（')}${t('提案人')}${t('：')}${t(p.proposerName)}${t('；')}${t('花費')}${t('：')}${this._costText(p.cost)}${(() => { try { const f = typeof WALLET !== 'undefined' && WALLET.fundText(world, p); return f ? `${t('；')}${t('出錢')}${t('：')}${f}` : ''; } catch (e) { return ''; } })()}${t('）')}
 ${t('【票數】')}${t('贊成')} ${tally.f}${whyFor ? `${t('（')}${whyFor}${t('）')}` : ''}${t('；')}${t('反對')} ${tally.a}${whyAg ? `${t('（')}${whyAg}${t('）')}` : ''}
 ${b.mem.length ? `${t('【你最近記得的事】')}${b.mem.join('／')}\n` : ''}${t('依你的性格、價值觀、跟提案人的交情、公庫狀況與票數決定：approve（批准）、reject（否決）或 shelve（先擱置幾天）。只輸出 JSON：{"action":"approve|reject|shelve","why":"一句話理由（25 字內，第一人稱）"}')}`;
         this._countNpcLlmUse(world);
@@ -1158,13 +1158,19 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
         return Object.keys(out).length ? out : null;
     }
 
+    // 存檔裡固定存中文的資料（職稱、簡介…）放進題目時：英文介面查字典，中文介面原樣（不經 t()，免得半形標點被改成全形）
+    _enT(s) { return (typeof I18N !== 'undefined' && I18N.getLang() === 'en' && typeof s === 'string') ? t(s) : s; }
+    // 英文介面：要截字的句子先把人名換成英文再截（先截的話中文名會被切一半，剩下那半個換不掉）。中文介面原樣
+    _namesFirst(s) { s = String(s || ''); try { return (typeof I18N !== 'undefined' && I18N.getLang() === 'en') ? I18N.localizeNames(s, true) : s; } catch (e) { return s; } }
+    // 「32歲醫生」：英文照字典拼會黏成「32 yrsDoctor」，英文另外排；中文照舊
+    _ageJob(p) { return (typeof I18N !== 'undefined' && I18N.getLang() === 'en') ? `${p.age}-year-old ${p.job}` : `${p.age}${t('歲')}${p.job}`; }
     _buildCharacterProfile(agent) {
         const traitLabels = agent.personality.traits.map(t => TRAIT_POOL[t]?.label || t);
         const partner = agent.relationships.getPartner();
         let statusStr = t('單身');
         if (partner) {
-            if (partner.status === 'married') statusStr = `${t('已與')}${partner.targetName}${t('結婚')}`;
-            else if (partner.status === 'dating') statusStr = `${t('正在與')}${partner.targetName}${t('交往')}`;
+            if (partner.status === 'married') statusStr = t('已與{n}結婚').replace('{n}', partner.targetName); // 整句一個鍵：拆成前後兩段時英文會變成「Married to Max結婚」
+            else if (partner.status === 'dating') statusStr = t('正在與{n}交往').replace('{n}', partner.targetName);
         }
         const needsStr = [];
         if (agent.needs.hunger < 30) needsStr.push(t('肚子很餓'));
@@ -1173,10 +1179,10 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
         if (agent.needs.recreation < 20) needsStr.push(t('需要娛樂'));
         return {
             name: agent.name, age: agent.age,
-            job: agent.job?.title || t('無業'),
+            job: agent.job?.title ? this._enT(agent.job.title) : t('無業'), // 漁夫／獵人這類後來才換上的職稱存的是中文，英文版要翻
             traits: traitLabels.join(t('、')),
-            background: agent.personality.background || t('普通居民'),
-            values: agent.personality.values.join(t('、')),
+            background: agent.personality.background ? this._enT(agent.personality.background) : t('普通居民'),
+            values: agent.personality.values.map(v => this._enT(v)).join(t('、')),
             mood: agent.moodLabel,
             status: statusStr,
             needs: needsStr.join(t('、')) || t('狀態良好'),
@@ -1331,13 +1337,13 @@ ${festCtx}${t('場景：')}${scenario}
 ${t('時間：')}${world.clock.timeStr}
 ${t('地點：')}${t(locName(world, agentA.currentLocation))}
 
-${t('【')}${pA.name}${t('】')}${pA.age}${t('歲')}${pA.job}${t('，性格')}${pA.traits}${t('，')}${pA.status}
+${t('【')}${pA.name}${t('】')}${this._ageJob(pA)}${t('，性格')}${pA.traits}${t('，')}${pA.status}
 ${pA.thought ? `${t('最近在想：')}${pA.thought}` : ''}${pA.needs !== t('狀態良好') ? `${t('（有點')}${pA.needs}${t('）')}` : ''}
 ${this._buildRelContext(relA, agentB.name)}
 ${memA.length ? `${t('記得：')}${memA.map(m=>`[${m.timeStr}] ${m.content}`).join(t('；'))}` : ''}
 ${thoughtsA.length ? `${t('心裡的體悟：')}${thoughtsA.map(m=>m.content).join(t('；'))}` : ''}
 
-${t('【')}${pB.name}${t('】')}${pB.age}${t('歲')}${pB.job}${t('，性格')}${pB.traits}${t('，')}${pB.status}
+${t('【')}${pB.name}${t('】')}${this._ageJob(pB)}${t('，性格')}${pB.traits}${t('，')}${pB.status}
 ${pB.thought ? `${t('最近在想：')}${pB.thought}` : ''}${pB.needs !== t('狀態良好') ? `${t('（有點')}${pB.needs}${t('）')}` : ''}
 ${this._buildRelContext(relB, agentA.name)}
 ${memB.length ? `${t('記得：')}${memB.map(m=>`[${m.timeStr}] ${m.content}`).join(t('；'))}` : ''}
@@ -1886,7 +1892,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
                 const last = hist[hist.length - 1]; const histPrev = (last && last.speaker === player.name && last.text === playerMessage) ? hist.slice(0, -1) : hist;
                 const recentChat = histPrev.slice(-10).map(c => `${c.speaker}: ${c.text}`).join('\n');
                 // v9.8.1 自己最近說過的話:明講不要換句話再說一次(以前只擋一字不差的重複,換個說法講同一件事擋不到)
-                const myLast = histPrev.filter(c => c.speaker === npc.name).slice(-2).map(c => String(c.text || '').replace(/^[💭🤫]\s*\([^)]*\)\s*/u, '').slice(0, 80));
+                const myLast = histPrev.filter(c => c.speaker === npc.name).slice(-2).map(c => this._namesFirst(String(c.text || '').replace(/^[💭🤫]\s*\([^)]*\)\s*/u, '')).slice(0, 80));
                 // v5.29.0 記憶流檢索:以玩家這句話為焦點,撈出最相關的記憶(而非只看最近 5 則)
                 const memNpc = npc.memory.retrieve(`${player.name} ${playerMessage}`, [player.name], 5, world.tickCount);
                 const npcThoughts = npc.memory.getThoughts(2);

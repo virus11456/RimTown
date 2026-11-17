@@ -78,15 +78,16 @@ const SCHEME = (() => {
     }
     // 照個性套樣板（AI 關著時）：有仇人的想算計或捉弄、有心上人的想約、其餘想熱鬧或結伴
     function ruleInvent(w, a) {
+        // title／why 一律給 {k}（樣板）：直接給字串會被當成 AI 寫的原文存起來，英文介面再也翻不回來，還會原樣進到題目裡
         const others = npcs(w).filter(x => x !== a && inTown(w, x) && adult(x)); if (!others.length) return null;
         const foe = others.filter(x => aff(a, x) < -25).sort((x, y) => aff(a, x) - aff(a, y))[0]; const mal = safe(() => DARK.malice(a), 0.3);
         let crush = safe(() => { const c = w.confessCands?.(a); const x = Array.isArray(c) ? c[0] : c; return x?.agentId ? x : (x?.b || x?.target || null); });
         if (crush && !inTown(w, crush)) crush = null;
         const r = Math.random(); const pl = places(w); const p = pl.length ? pl[Math.floor(Math.random() * pl.length)] : 'town_square';
-        if (foe && r < 0.25 + mal * 0.5) return mal > 0.55 ? { tone: 'spite', target: foe, title: { k: '設個局讓{b}出醜', p: { b: foe.name } }, why: '這口氣嚥不下去' } : r < 0.2 ? { tone: 'prank', target: foe, title: { k: '捉弄{b}一下', p: { b: foe.name } }, why: '看他不順眼，鬧他一下' } : { tone: 'show', target: foe, title: { k: '當眾露一手，讓{b}看看', p: { b: foe.name } }, why: '不想被比下去' };
-        if (crush && r < 0.7) return { tone: 'court', target: crush, title: { k: '約{b}出來走走', p: { b: crush.name } }, why: '心裡放不下他' };
-        if (r < 0.6) return { tone: 'fun', place: p, cost: 4, title: { k: '在{p}辦一場小比賽', p: { p: placeName(w, p) } }, why: '日子太悶了' };
-        return { tone: 'bond', title: '找幾個信得過的人結伴互相照應', why: '多個朋友多條路' };
+        if (foe && r < 0.25 + mal * 0.5) return mal > 0.55 ? { tone: 'spite', target: foe, title: { k: '設個局讓{b}出醜', p: { b: foe.name } }, why: { k: '這口氣嚥不下去' } } : r < 0.2 ? { tone: 'prank', target: foe, title: { k: '捉弄{b}一下', p: { b: foe.name } }, why: { k: '看他不順眼，鬧他一下' } } : { tone: 'show', target: foe, title: { k: '當眾露一手，讓{b}看看', p: { b: foe.name } }, why: { k: '不想被比下去' } };
+        if (crush && r < 0.7) return { tone: 'court', target: crush, title: { k: '約{b}出來走走', p: { b: crush.name } }, why: { k: '心裡放不下他' } };
+        if (r < 0.6) return { tone: 'fun', place: p, cost: 4, title: { k: '在{p}辦一場小比賽', p: { p: placeName(w, p) } }, why: { k: '日子太悶了' } };
+        return { tone: 'bond', title: { k: '找幾個信得過的人結伴互相照應' }, why: { k: '多個朋友多條路' } };
     }
     // 問 AI：讓他自己想一件私事
     async function aiInvent(w, a) {

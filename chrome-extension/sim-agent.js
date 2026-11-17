@@ -495,6 +495,7 @@ const ACTIVITIES = ['sleeping','eating','working','socializing','wandering','rec
 class Agent {
     constructor(agentId, name, age = 25, personality = null, job = null, homeLocation = 'residential_north', gender = null) {
         this.agentId = agentId; this.name = name; this.age = age;
+        try { if (typeof I18N !== 'undefined' && I18N.noteName) I18N.noteName(name); } catch (e) {} // 全名以固定卡司名字開頭的隨機村民（周明哲 ⊃ 周明），英文名要整個登記，見 i18n.js noteName
         this.gender = gender || Agent.guessGender(name);
         this.personality = personality || Personality.random();
         this.job = job; this.homeLocation = homeLocation;

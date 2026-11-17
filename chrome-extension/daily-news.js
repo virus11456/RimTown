@@ -87,17 +87,22 @@ class DailyNewsEngine {
     }
 
     async _generateWithLLM(reporter, events, world) {
-        const traits = reporter.personality?.traits?.join('、') || t('普通');
-        const bg = reporter.personality?.background || '';
-        const gossip = world.gossipNetwork?.activeGossip?.slice(-3)?.map(g => g.content)?.join('；') || t('沒什麼特別的');
+        // 英文介面：這份題目以前整份是中文（只有語言規則那一行會換）。固定句子改走 t()，
+        // 存檔裡存中文的資料（簡介、職稱、季節、產業名）英文時查字典，分隔符號跟著換；中文介面送出去的字一個都不變。
+        const EN = typeof I18N !== 'undefined' && I18N.getLang() === 'en';
+        const tr = (x) => (EN && typeof x === 'string') ? t(x) : x;
+        const C = EN ? ': ' : '：', LS = EN ? ', ' : '、', SS = EN ? '; ' : '；', QL = EN ? '"' : '「', QR = EN ? '"' : '」';
+        const traits = (EN ? (reporter.personality?.traits || []).map(x => t((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(LS) : reporter.personality?.traits?.join('、')) || t('普通');
+        const bg = tr(reporter.personality?.background || '');
+        const gossip = world.gossipNetwork?.activeGossip?.slice(-3)?.map(g => g.content)?.join(SS) || t('沒什麼特別的');
         const townLevel = world.industry?.townLevelName || t('荒村');
         const industries = world.industry?.industries
-            ? Object.keys(world.industry.industries).map(k => INDUSTRIES[k]?.name).join('、')
+            ? Object.keys(world.industry.industries).map(k => tr(INDUSTRIES[k]?.name)).join(LS)
             : t('無');
 
         // Get previous newspaper summary for continuity
         const prevPaper = this.newspapers.length > 0 ? this.newspapers[this.newspapers.length - 1] : null;
-        const prevRef = prevPaper ? `${t('上一期日報')}${t('（')}${t('記者')}${t('：')}${prevPaper.reporter}${t('）')}${t('的摘要')}${t('：')}${(prevPaper.content || '').substring(0, 100)}...` : '';
+        const prevRef = prevPaper ? `${t('上一期日報')}${t('（')}${t('記者')}${t('：')}${prevPaper.reporter}${t('）')}${t('的摘要')}${t('：')}${EN ? I18N.localizeNames(prevPaper.content || '', true).substring(0, 240) : (prevPaper.content || '').substring(0, 100)}...` : ''; // 英文先換人名再截：先截的話中文名被切一半就換不掉了（「阿潮」剩一個「阿」）；英文 100 個字元也只有十幾個字，放寬
 
         // Build richer NPC interaction context
         const agentList = Object.values(world.agents).filter(a => !a.isPlayer);
@@ -114,12 +119,12 @@ class DailyNewsEngine {
                 }
             }
         }
-        const relContext = relationshipSnippets.length ? `\n${t('居民關係動態')}：\n${relationshipSnippets.slice(0, 8).join('\n')}` : '';
+        const relContext = relationshipSnippets.length ? `\n${t('居民關係動態')}${C}\n${relationshipSnippets.slice(0, 8).join('\n')}` : '';
 
         // Get recent NPC conversations for richer material
         const recentConvos = world.conversationEngine?.npcConversationLog?.slice(-5) || [];
         const convoContext = recentConvos.length
-            ? `\n${t('最近的居民對話精華')}：\n${recentConvos.map(c => `- ${c.agentA}${t('對')}${c.agentB}：「${c.summary}」`).join('\n')}`
+            ? `\n${t('最近的居民對話精華')}${C}\n${recentConvos.map(c => `- ${c.agentA}${t('對')}${c.agentB}${C}${QL}${c.summary}${QR}`).join('\n')}`
             : '';
 
         // Town resource snapshot
@@ -127,66 +132,69 @@ class DailyNewsEngine {
         const keyRes = sp ? ['food','wood','stone','silver','meals','tools'].filter(r => (sp[r] || 0) > 0).map(r => {
             const labels = {food:t('食物'),wood:t('木材'),stone:t('石材'),silver:t('銀幣'),meals:t('餐食'),tools:t('工具')};
             return `${labels[r]||r}:${Math.round(sp[r])}`;
-        }).join('、') : '';
-        const resContext = keyRes ? `\n${t('鎮上資源概況')}：${keyRes}` : '';
+        }).join(LS) : '';
+        const resContext = keyRes ? `\n${t('鎮上資源概況')}${C}${keyRes}` : '';
 
         // Election context
         const electionCtx = world.election?.active
-            ? `\n${t('選舉動態')}：${world.election.phase === 'campaign' ? t('競選期間') : world.election.phase === 'voting' ? t('投票進行中') : t('已結束')}${world.election.candidates ? t('，候選人：') + world.election.candidates.map(c => `${c.name}(${c.policyLabel})`).join('、') : ''}`
-            : (world.election?.mayor ? `\n${t('現任鎮長')}：${world.agents[world.election.mayor]?.name || t('未知')}` : '');
+            ? `\n${t('選舉動態')}${C}${world.election.phase === 'campaign' ? t('競選期間') : world.election.phase === 'voting' ? t('投票進行中') : t('已結束')}${world.election.candidates ? t('，候選人：') + world.election.candidates.map(c => `${c.name}(${tr(c.policyLabel)})`).join(LS) : ''}`
+            : (world.election?.mayor ? `\n${t('現任鎮長')}${C}${world.agents[world.election.mayor]?.name || t('未知')}` : '');
 
         // Weather / season mood
         const weather = world.news?.bulletins?.find(b => b.category === 'weather');
-        const weatherCtx = weather ? `\n${t('天氣狀況')}：${weather.headline}` : '';
+        const weatherCtx = weather ? `\n${t('天氣狀況')}${C}${weather.headline}` : '';
 
         // NPC daily activities snapshot
-        const activitySnap = agentList.slice(0, 6).map(a => `${a.name}(${a.job?.title||t('無業')})${t('正在')}${a.activity||a.currentAction||t('閒逛')}`).join('；');
+        const activitySnap = EN
+            ? agentList.slice(0, 6).map(a => `${a.name} (${a.job?.title ? t(a.job.title) : t('無業')}): ${a.activityLabel || a.activity || a.currentAction || t('閒逛')}`).join('; ')
+            : agentList.slice(0, 6).map(a => `${a.name}(${a.job?.title||t('無業')})${t('正在')}${a.activity||a.currentAction||t('閒逛')}`).join('；');
+        const fill = (k, o) => { let x = t(k); for (const [a, b] of Object.entries(o || {})) x = x.split('{' + a + '}').join(String(b)); return x; };
 
-        const prompt = `你是「${reporter.name}」，${bg}
-你的性格特徵：${traits}
-你的職業：${reporter.job?.title || t('居民')}
-你的年齡：${reporter.age}歲
-你正在為邊境鎮寫今天的日報——這是小鎮裡人人都愛看的報紙！
+        const prompt = `${fill('你是「{name}」，{bg}', { name: reporter.name, bg })}
+${t('你的性格特徵：')}${traits}
+${t('你的職業：')}${reporter.job?.title ? tr(reporter.job.title) : t('居民')}
+${fill('你的年齡：{n}歲', { n: reporter.age })}
+${EN ? fill('你正在為{town}寫今天的日報——這是小鎮裡人人都愛看的報紙！', { town: t(world.townName || '邊境鎮') }) : '你正在為邊境鎮寫今天的日報——這是小鎮裡人人都愛看的報紙！'}
 
-═══ 今日重要事件 ═══
+${t('═══ 今日重要事件 ═══')}
 ${events.map(e => `- [${e.category}] ${e.content}`).join('\n')}
 
-═══ 鎮上情報 ═══
-季節時間：${world.clock.season} 第${world.clock.day}天（第${world.clock.year}年）
-小鎮等級：${townLevel}
-產業：${industries}
-人口：${Object.keys(world.agents).length}人
-八卦消息：${gossip}${resContext}${weatherCtx}${electionCtx}
+${t('═══ 鎮上情報 ═══')}
+${fill('季節時間：{s} 第{d}天（第{y}年）', { s: tr(world.clock.season), d: world.clock.day, y: world.clock.year })}
+${t('小鎮等級：')}${townLevel}
+${t('產業：')}${industries}
+${fill('人口：{n}人', { n: Object.keys(world.agents).length })}
+${t('八卦消息：')}${gossip}${resContext}${weatherCtx}${electionCtx}
 ${relContext}
 ${convoContext}
 
-═══ 居民動態速寫 ═══
+${t('═══ 居民動態速寫 ═══')}
 ${activitySnap}
 
 ${prevRef}
 
-請用「${reporter.name}」的第一人稱視角寫一篇精彩日報（400-600字），結構如下：
+${fill('請用「{name}」的第一人稱視角寫一篇精彩日報（400-600字），結構如下：', { name: reporter.name })}
 
-📰 【頭條標題】（一句話，像小說章節名，有畫面感）
+${t('📰 【頭條標題】（一句話，像小說章節名，有畫面感）')}
 
-🔥 頭條報導
-用最重要的事件寫一段深度報導。要有場景描寫、人物動作表情、你的現場觀察。像是你親眼看到的一樣。
+${t('🔥 頭條報導')}
+${t('用最重要的事件寫一段深度報導。要有場景描寫、人物動作表情、你的現場觀察。像是你親眼看到的一樣。')}
 
-📋 鎮務簡報
-2-3 則簡短新聞（每則1-2句），涵蓋經濟/建設/天氣/日常等不同面向。
+${t('📋 鎮務簡報')}
+${t('2-3 則簡短新聞（每則1-2句），涵蓋經濟/建設/天氣/日常等不同面向。')}
 
-💬 街頭巷尾
-選一個有趣的居民互動或八卦，用對話或場景還原的方式呈現。
+${t('💬 街頭巷尾')}
+${t('選一個有趣的居民互動或八卦，用對話或場景還原的方式呈現。')}
 
-✍️ ${reporter.name}手記
-用你的個性寫一段私人感想（溫馨、毒舌、浪漫、或哲學思考都行），像在跟老朋友聊天。
+${fill('✍️ {name}手記', { name: reporter.name })}
+${t('用你的個性寫一段私人感想（溫馨、毒舌、浪漫、或哲學思考都行），像在跟老朋友聊天。')}
 
-風格要求：
-- 每個段落用上述 emoji 標題開頭
-- 要有「記者人設」：根據你的性格決定語氣（毒舌就嘲諷、浪漫就抒情、務實就分析）
-- 用具體細節（「她翻了個白眼」比「她不開心」好十倍）
-${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口語風格）', '- Natural, colloquial English') : '- 繁體中文（台灣口語風格）'}
-- 不要用「本報記者」這種官腔`;
+${t('風格要求：')}
+${t('- 每個段落用上述 emoji 標題開頭')}
+${t('- 要有「記者人設」：根據你的性格決定語氣（毒舌就嘲諷、浪漫就抒情、務實就分析）')}
+${t('- 用具體細節（「她翻了個白眼」比「她不開心」好十倍）')}
+${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule(t('- 繁體中文（台灣口語風格）'), '- Natural, colloquial English') : '- 繁體中文（台灣口語風格）'}
+${t('- 不要用「本報記者」這種官腔')}`;
 
         const response = await world.conversationEngine.llm.chat([
             { role: 'user', content: prompt }
@@ -215,7 +223,7 @@ ${(typeof LLM_LANG !== 'undefined') ? LLM_LANG.rule('- 繁體中文（台灣口�
             building:'🏗️', factory:'🏭', exploration:'🗺️', lifecycle:'👶', incident:'⚠️',
             drama:'🎭', social:'💬', town:'🏘️', industry:'⚒️' };
         const lines = [];
-        lines.push(`📰 【${events[0]?.content || t('邊境小鎮的平凡日常')}】`);
+        lines.push(`📰 ${t('【')}${events[0]?.content || t('邊境小鎮的平凡日常')}${t('】').trim()}`);
         lines.push('');
         lines.push(t('🔥 頭條報導'));
         lines.push(events[0]?.content || t('今天是平靜的一天，鎮上一切如常。'));

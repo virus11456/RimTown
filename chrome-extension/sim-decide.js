@@ -150,10 +150,12 @@ const DECIDE = (() => {
     }
     // v10.0.0 跟這件事有關的往事：題目裡提到誰，就把他跟那個人之間記得的事、上次跟他有關的決定和後果找出來；再加上「同樣的事上次怎麼選」。
     // 以前只看最近幾筆記憶裡最重要的，不管跟眼前這件事有沒有關係，所以他常常像不認識對方。
+    // 英文介面：句子裡的人名到送出前才換成英文。先截字會把中文名切一半（「羅蕎」剩「羅…」），剩下那半個換不掉，就原樣進了題目；截之前先把人名換好。中文介面不動。
+    const nameEn = (s) => { try { return (typeof I18N !== 'undefined' && I18N.getLang() === 'en') ? I18N.localizeNames(String(s), true) : s; } catch (e) { return s; } };
     const memText = (e) => { try { return e.content || (e.k ? Memory.render(e.k, e.p || {}) : ''); } catch (x) { return e.content || ''; } };
     function involved(w, a, facts) { const f = String(facts || ''); return npcs(w).filter(o => o !== a && o.name && f.includes(o.name)).slice(0, 2); }
     function pastLines(w, a, K, facts, cutN, perWho = 2) {
-        const out = []; const d0 = day(w); const cutS = (x) => (x.length > cutN ? x.slice(0, cutN) + '…' : x); const myLog = w.decide?.log?.[a.agentId] || [];
+        const out = []; const d0 = day(w); const cutS = (x) => { x = nameEn(x); return x.length > cutN ? x.slice(0, cutN) + '…' : x; }; const myLog = w.decide?.log?.[a.agentId] || [];
         const ago = (d) => (d0 - d <= 0 ? t('今天') : fill('{n} 天前', { n: d0 - d }));
         for (const o of involved(w, a, facts)) {
             const v = a.relationships?.relationships?.[o.agentId]?.affinity || 0; const rel = t(v >= 60 ? '很要好' : v >= 25 ? '有交情' : v <= -40 ? '結過怨' : v <= -15 ? '不太對盤' : '交情普通');
@@ -182,7 +184,7 @@ const DECIDE = (() => {
     // o.cap 可以把某幾個領域收得更短；o.cut 是「近況」「鎮上」每一句最多幾個字（聊天摘要、傳聞很長，拿主意時不必整段看）
     function lines(L, o) {
         const out = []; const cp = Object.assign({}, CAP, o?.cap || {}); const cut = o?.cut || 0;
-        const trim = (dom, s) => (cut && (dom === 'self' || dom === 'world') && s.length > cut) ? s.slice(0, cut) + '…' : s;
+        const trim = (dom, s) => { if (!(cut && (dom === 'self' || dom === 'world'))) return s; s = nameEn(s); return s.length > cut ? s.slice(0, cut) + '…' : s; };
         for (const dom of ['now', 'eco', 'pol', 'soc', 'self', 'world', 'did']) if (L[dom]?.length) out.push(`${t(HEAD[dom])}${L[dom].slice(0, cp[dom]).map(s => trim(dom, s)).join(t('；'))}`);
         if (L.plan) out.push(`${t(HEAD.plan)}${L.plan}`);
         return out;
