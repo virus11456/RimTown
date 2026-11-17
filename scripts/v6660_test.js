@@ -34,7 +34,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const m0 = w.news.getModifier('merchant_chance', 0); DIPLO.effects(w, D); out.allyEffect = w.news.getModifier('merchant_chance', 0) > m0;
       // 聯姻
       const n0 = npcs().length; const bride = npcs().find(a => a.age >= 18 && a.age <= 40 && !a.relationships.getPartner()); const L = w.election.currentMayor(w); if (bride && L && bride !== L) { bride._parentNames = [L.name, 'x']; bride.personality.traits = []; bride.personality.values = ['社群']; } /* v11.9.0 被嫁的人自己決定答不答應：這裡讓他是願意為小鎮嫁過去的人 */
-      DIPLO.act(w, D, 'wed', nb.id); out.wed = !!D.wed[nb.id] && logHas(/結為親家|married into/) && npcs().length === n0 - 1;
+      { const r0 = Math.random; Math.random = () => 0.5; try { DIPLO.act(w, D, 'wed', nb.id); } finally { Math.random = r0; } } /* 當天的心情起伏固定在中間：願意嫁的人就一定答應（不然大約十次有一次會因為心情拒絕，這一項就偶爾沒過） */ out.wed = !!D.wed[nb.id] && logHas(/結為親家|married into/) && npcs().length === n0 - 1;
       // 盟友送糧
       const food0 = w.stockpile.get('food'); w.stockpile.consume('food', food0, w.tickCount, 't'); D.lastAct = D0; D.lastDay = null; fix(0.99, () => DIPLO.daily(w)); out.aid = w.stockpile.get('food') >= 60 && logHas(/送來了|sent 60/);
       // 貿易戰與禁運
