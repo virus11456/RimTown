@@ -474,14 +474,24 @@ const WORLDCAL = (function () {
                 for (const f of famOf(w, z)) if (!f.isDead && !isZ(w, f)) { aff(f, h, -20); f.addThought?.('wc_grief', w); mem(w, f, '{h}殺了{z}。我知道那已經不是{z}了，可是我沒辦法原諒。', { h: h.name, z: z.name }, 9); } }
         }
     }
-    // v11.7.0 同住的人：同一個家，加上配偶
-    const houseOf = (w, a) => here(w).filter(o => o !== a && !isZ(w, o) && ((o.homeLocation && o.homeLocation === a.homeLocation) || o.relationships?.relationships?.[a.agentId]?.status === 'married' || a.relationships?.relationships?.[o.agentId]?.status === 'married'));
+    // v11.7.0 同住的人：真的同一棟房子（sim-housing.js 那張「誰住哪一棟」的表，w.housing.map；地圖在的話照地圖分好的房子）。homeLocation 是整個住宅區，不能拿來算。
+    // 還沒分好房子時，退回配偶、未成年的孩子，和（自己未成年時）爸媽
+    const hidOf = (w, o) => { const M = w?.housing?.map; if (M && M[o.agentId]) return M[o.agentId]; try { const h = typeof HOUSING !== 'undefined' ? HOUSING.houseOf(w, o) : null; return h && h !== o.homeLocation ? h : null; } catch (e) { return null; } };
+    const houseOf = (w, a) => {
+        const hid = a ? hidOf(w, a) : null; const H = here(w).filter(o => o !== a && !isZ(w, o));
+        if (hid) return H.filter(o => hidOf(w, o) === hid);
+        const wed = (o) => o.relationships?.relationships?.[a.agentId]?.status === 'married' || a.relationships?.relationships?.[o.agentId]?.status === 'married';
+        return H.filter(o => wed(o) || ((o._parentNames || []).includes(a.name) && (o.age ?? 30) < 18) || ((a.age ?? 30) < 18 && (a._parentNames || []).includes(o.name)));
+    };
     // v11.7.0 給題目用的喪屍危機實況：鎮上幾個喪屍、這三天和昨晚被咬幾個、某個喪屍咬過誰、之前放過的喪屍後來又咬了幾個、之前瞞著的那幾家後來怎樣
     function zFacts(w, z) {
         const c = S(w).cur; const zb = c?.zb; if (!zb) return null; const d = day(w); const L = Array.isArray(zb.log) ? zb.log : [];
         const out = { n: zb.ids.filter(id => w.agents[id] && !w.agents[id].isDead).length, bit3: L.filter(x => x[0] >= d - 2).length, last: L.filter(x => x[0] === d).length, prog: Math.round(c.prog || 0) };
         if (z) out.victims = L.filter(x => x[1] === z.agentId).map(x => w.agents[x[2]]).filter(Boolean);
         const sp = Object.entries(zb.spared || {}); out.spared = sp.length; out.sparedBit = sp.reduce((s2, [id, sd]) => s2 + L.filter(x => x[1] === id && x[0] > sd).length, 0);
+        // v11.7.0 真正的輸贏：喪屍加上被咬的最多到鎮上大人的四成（cap）；這場危機撐到頭（災後那一段結束）時解藥還沒好，剩下的喪屍和被咬的人會被圍起來燒掉，救不回來
+        const ppl = adults(w).filter(a => !zb.bit[a.agentId]); out.pending = Object.keys(zb.bit).length; out.cap = Math.round((ppl.length + zb.ids.length) * 0.4);
+        out.left = c.ph === 'after' ? Math.max(0, c.len.after - (d - c.pd)) : c.ph === 'arrive' ? Math.max(0, c.len.arrive - (d - c.pd)) + c.len.after : null; out.rate = Math.round(out.bit3 / 3 * 10) / 10;
         out.fates = Object.entries(zb.first || {}).filter(([, F]) => F.how === 'hide' && F.out).map(([id, F]) => ({ z: w.agents[id], ago: d - F.d, bit: F.bit ? w.agents[F.bit] : null })).filter(x => x.z).slice(-3);
         return out;
     }
