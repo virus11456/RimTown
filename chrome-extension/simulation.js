@@ -2665,6 +2665,7 @@ class World {
             this.dramaArchive = Array.isArray(data.dramaArchive) ? data.dramaArchive : [];
             // v11.10.0 導演：還沒碰上的那一場重新約好（人身上的「等一下要去哪」不在存檔裡）
             this.director = data.director && typeof data.director === 'object' && Array.isArray(data.director.log) ? data.director : null; this._directorLastDay = typeof data.director?.last === 'number' ? data.director.last : undefined;
+            if (this.director?.cur) { const c = this.director.log.find(x => x.id === this.director.cur.id); if (c) this.director.cur = c; } // 存檔裡 cur 跟紀錄裡的那一場是兩份：接回同一份，碰上了紀錄才看得到
             this._dirLoadPending = !!(this.director?.cur && this.director.cur.stage === 'set');
             this.npcEvents = new NPCEventSystem();
             if (data.npcEvents) this.npcEvents.loadFrom(data.npcEvents);

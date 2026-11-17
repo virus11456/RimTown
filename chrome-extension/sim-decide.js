@@ -183,7 +183,9 @@ const DECIDE = (() => {
     // o.cap 可以把某幾個領域收得更短；o.cut 是「近況」「鎮上」每一句最多幾個字（聊天摘要、傳聞很長，拿主意時不必整段看）
     function lines(L, o) {
         const out = []; const cp = Object.assign({}, CAP, o?.cap || {}); const cut = o?.cut || 0;
-        const trim = (dom, s) => (cut && (dom === 'self' || dom === 'world') && s.length > cut) ? s.slice(0, cut) + '…' : s;
+        // v11.10.0 英文模式先把人名換成英文再截短：以前截在中文人名中間（「Duncan & 楊…」），之後整段換名字時對不上，題目裡留下半個中文名字
+        const loc = (x) => { if (!cut) return x; try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames ? I18N.localizeNames(x, true) : x; } catch (e) { return x; } };
+        const trim = (dom, s) => { if (!(cut && (dom === 'self' || dom === 'world'))) return s; s = loc(s); return s.length > cut ? s.slice(0, cut) + '…' : s; };
         for (const dom of ['now', 'eco', 'pol', 'soc', 'self', 'world', 'did']) if (L[dom]?.length) out.push(`${t(HEAD[dom])}${L[dom].slice(0, cp[dom]).map(s => trim(dom, s)).join(t('；'))}`);
         if (L.plan) out.push(`${t(HEAD.plan)}${L.plan}`);
         return out;

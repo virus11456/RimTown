@@ -162,7 +162,7 @@ const DEALASK = (() => {
             return fill('{s}的{g}比原本貴了 {p}%，是東家{o}自己漲的。{alt}{ill}你身上有 {c} 銀幣。', { ill: (() => { try { return LW()?.illegal(w, c.key).hike ? '鎮上規定不得比原價貴超過 12%，這已經超過了。' : { raw: '' }; } catch (e) { return { raw: '' }; } })(), s: sn(c.key), g: gname(c.key), p: pct(st.up), o: o?.name || '', c: Math.floor(cash(w, a)),
                 alt: alt ? { k: '對面{o}的店{x}。', p: { o: DEAL.owner(w, alt)?.name || '', x: as.up ? { k: '也比原價貴 {p}%', p: { p: pct(as.up) } } : '照原價賣' } } : '鎮上賣這個的只有這一家。' }); },
         options(w, a, c) {
-            const st = DEAL.F(w, c.key); const o = DEAL.owner(w, c.key); const f = DEAL.factOf(w, c.fid); if (!o || !f || f.end != null || st.up <= 0) return []; const alt = DEAL.other(w, c.key); const cheaper = alt && DEAL.F(w, alt).up < st.up; const poor = cash(w, a) < 30;
+            const st = DEAL.F(w, c.key); const o = DEAL.owner(w, c.key); const f = DEAL.factOf(w, c.fid); if (!o || !f || f.end != null || st.up <= 0) return []; const alt = DEAL.other(w, c.key); const cheaper = alt && DEAL.owner(w, alt) && DEAL.F(w, alt).up < st.up; /* v11.10.0 對面那家沒有東家（還沒人接手）時不能叫人改去那裡買（以前這裡讀不到東家的名字就出錯，整題沒有選項） */ const poor = cash(w, a) < 30;
             const out = [{ id: 'pay', quiet: true, mute: true, text: '照舊去買，貴就貴', say: '東西貴了還是照買', why: '日子總要過', base: REF, lean: { safe: 0.2 }, run: () => null }];
             if (cheaper) out.push({ id: 'switch', quiet: true, text: { k: '以後改去{o}的店買', p: { o: DEAL.owner(w, alt).name } }, say: { k: '改去{o}的店買東西', p: { o: DEAL.owner(w, alt).name } }, why: '同樣的東西，哪裡便宜去哪裡',
                 base: REF + tilt(clampN(0.35 + st.up + (poor ? 0.2 : 0) - (aff(a, o) >= 40 ? 0.3 : 0), 0.05, 0.95)), lean: { gain: 0.3 }, run: (w2, a2) => (switchTo(w2, a2, c.key) ? { k: '換了一家買' } : null) });

@@ -235,7 +235,7 @@
     const mem = (w, a, k, p, imp = 5, who = []) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'relationship', k, p || {}, imp, who); } catch (e) {} };
     const bumpA = (a, b, n) => { try { a.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(n); } catch (e) {} };
     const sparkOf = (w, a, c) => {
-        if (!on(w) || !c) return null; const b = w.agents[c.b]; if (!b || b.isDead || b === a) return null; const r = rel(a, b);
+        if (!on(w) || !c) return null; const b = w.agents[c.b]; if (!b || b.isDead || b === a) return null; const r = safe(() => a.relationships.getOrCreate(b.agentId, b.name)); // 對方可能還沒正眼看過他（沒有這一筆關係）：碰上了就有
         if (!r || r.status === 'dating' || r.status === 'married') return null; const via = c.via ? w.agents[c.via] : null;
         return { b, r, ri: Math.round(r.romanticInterest || 0), aff: Math.round(r.affinity || 0), via: via && !via.isDead ? via : null, self: c.src === 'self', single: !a.relationships.getPartner() && !b.relationships.getPartner() };
     };
@@ -257,8 +257,8 @@
                 return true; };
             const out = [
                 { id: 'warm', quiet: true, text: { k: '覺得{b}人不錯，想多認識他', p: B }, say: { k: '覺得{b}人不錯，想多認識他', p: B }, why: '跟他在一起的時候很自在',
-                    // 以前導演每次一定替一個人加心動；現在兩個人各自決定，一個人大約四成多會覺得對方不錯（兩個人加起來跟以前差不多）。心動加深的那一刻以前一定加，這裡大約七成
-                    base: REF + tilt(S0 ? 0.72 : 0.42) + (has(a, 'romantic') ? 0.25 : 0) + (has(a, 'charismatic') ? 0.1 : 0) - (has(a, 'abrasive') ? 0.15 : 0) + clampN((I.aff - 30) / 100, -0.2, 0.25) + (I.single ? 0 : -0.3), lean: { joy: 0.3, bond: 0.2 },
+                    // 以前導演每次一定替一個人加心動；現在兩個人各自決定，照個性推估時一個人大約一半會覺得對方不錯（兩個人加起來跟以前差不多）。心動加深的那一刻以前一定加，這裡大約九成（全鎮量過）
+                    base: REF + tilt(S0 ? 0.72 : 0.3) + (has(a, 'romantic') ? 0.25 : 0) + (has(a, 'charismatic') ? 0.1 : 0) - (has(a, 'abrasive') ? 0.15 : 0) + clampN((I.aff - 30) / 100, -0.2, 0.25) + (I.single ? 0 : -0.3), lean: { joy: 0.3, bond: 0.2 },
                     run: (w2, a2) => (warm(w2, a2) ? { k: '對{b}多了一份心動', p: B } : null) },
                 { id: 'friend', quiet: true, mute: S0, text: '只是普通朋友，聊得還可以', say: { k: '覺得跟{b}只是普通朋友', p: B }, why: '聊得來，但也就這樣', base: REF, lean: { safe: 0.1 },
                     run: (w2, a2) => { const b = w2.agents[c.b]; if (b && !S0) bumpA(a2, b, 2); return { k: '跟{b}還是普通朋友', p: B }; } },
@@ -282,7 +282,7 @@
     // 以前：戲劇導演直接把單戀有主之人者的心動加 8、對情敵的好感扣 5～9；平常單戀的人每天 13% 機率對情敵扣 6～16、心情變差。
     // 現在：導演只讓他傍晚看見那兩個人在一起（同一個地方）；平常什麼時候撞見照舊看天。看見了之後怎麼辦由他自己決定。
     const hurtOf = (w, a, c) => {
-        if (!on(w) || !c) return null; const b = w.agents[c.b], r = w.agents[c.r]; if (!b || !r || b.isDead || r.isDead || b === a || r === a) return null; const R = rel(a, b); if (!R || R.status) return null;
+        if (!on(w) || !c) return null; const b = w.agents[c.b], r = w.agents[c.r]; if (!b || !r || b.isDead || r.isDead || b === a || r === a) return null; const R = safe(() => a.relationships.getOrCreate(b.agentId, b.name)); if (!R || R.status) return null;
         const st = rel(b, r)?.status; return { b, r, R, ri: Math.round(R.romanticInterest || 0), fr: Math.round(rel(a, r)?.affinity || 0), married: st === 'married', self: c.src === 'self' };
     };
     const malice = (a) => safe(() => (typeof DARK !== 'undefined' ? DARK.malice(a) : 0)) || 0;
@@ -300,9 +300,9 @@
                 { id: 'bless', quiet: true, text: '默默祝福他們，慢慢放下', say: { k: '默默祝福{b}和{r}', p: P }, why: '他過得好就好',
                     base: REF + (has(a, 'kind') ? 0.4 : 0) + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'optimist') ? 0.2 : 0) - (has(a, 'jealous') ? 0.4 : 0) - clampN((I.ri - 45) / 100, 0, 0.3) + (I.married ? 0.15 : 0), lean: { safe: 0.2, bond: 0.2 },
                     run: (w2, a2) => { const b = w2.agents[c.b]; const R = b && rel(a2, b); if (!R) return null; R.modifyRomantic(-rnd(8, 12)); a2.moodModifier = (a2.moodModifier || 0) + 2; mem(w2, a2, '看到{b}和{r}那麼好，我決定把這份心意放下。', P, 6, [I.b.name]); return { k: '慢慢放下對{b}的心意', p: P }; } },
-                // 以前一定照這一項（導演：心動 +8、對情敵 -5～9；平常撞見：對情敵 -6～16、心情 -6、心動慢慢冷下來），這裡大約六成
+                // 以前一定照這一項（導演：心動 +8、對情敵 -5～9；平常撞見：對情敵 -6～16、心情 -6、心動慢慢冷下來），照個性推估時這裡大約八成五（全鎮量過；「祝福放下」的傾向分數本來就高，起跑要多給一些）
                 { id: 'pine', quiet: true, text: { k: S0 ? '心裡很不是滋味，看{r}越來越不順眼' : '心裡更放不下了，看{r}也越來越不順眼', p: P }, say: { k: S0 ? '看{r}越來越不順眼' : '對{b}更放不下了', p: P }, why: '憑什麼是他',
-                    base: REF + tilt(0.62) + (has(a, 'jealous') ? 0.4 : 0) + (has(a, 'neurotic') ? 0.2 : 0) + (has(a, 'romantic') ? 0.15 : 0) - (has(a, 'kind') ? 0.3 : 0) - (has(a, 'stoic') ? 0.2 : 0) + clampN((I.ri - 45) / 100, 0, 0.3) - clampN(I.fr / 100, -0.1, 0.3), lean: { face: 0.2, joy: -0.1 },
+                    base: REF + 1.1 + (has(a, 'jealous') ? 0.4 : 0) + (has(a, 'neurotic') ? 0.2 : 0) + (has(a, 'romantic') ? 0.15 : 0) - (has(a, 'kind') ? 0.3 : 0) - (has(a, 'stoic') ? 0.2 : 0) + clampN((I.ri - 45) / 100, 0, 0.3) - clampN(I.fr / 100, -0.1, 0.3), lean: { face: 0.2, joy: -0.1 },
                     run: (w2, a2) => { const b = w2.agents[c.b], r = w2.agents[c.r]; const R = b && rel(a2, b); if (!R || !r) return null; const jr = a2.relationships.getOrCreate(r.agentId, r.name);
                         if (S0) { const bite = jr.affinity < 0 ? rnd(8, 16) : rnd(6, 12); jr.modifyAffinity(-bite); safe(() => a2.addThought('jealous', w2, r.agentId, r.name)); a2.moodModifier = (a2.moodModifier || 0) - 6; R.modifyRomantic(-rnd(2, 5));
                             const dd = w2._absDay(), J = a2._jealLog || (a2._jealLog = {}); if (!(J[b.agentId] > dd - 10) && !(w2._jealLogDay > dd - 2)) { J[b.agentId] = dd; w2._jealLogDay = dd; safe(() => w2.logMessageT('relationship', '💔 {agent}看著{other}和{luckyOne}，心裡很不是滋味……', { agent: a2.name, other: b.name, luckyOne: r.name }, a2.name, r.name)); }

@@ -198,7 +198,7 @@
     //   情敵那一種多一項：不爭了，放下那個人。
     // grudge 要有一件「誰對不起誰」的事、feud 要兩邊都恨到 -35 以下，導演挑的人兩樣都不一定有，所以另開這一個選擇點。
     const rnd = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
-    const REF = 1; const tilt = (P) => { P = clampN(P, 0.004, 0.996); return P <= 0.5 ? Math.sqrt(6.48 * P) - 1.8 : 1.8 - Math.sqrt(6.48 * (1 - P)); }; // 跟 sim-decide-love.js 同一個算法：以前大概多常發生 → 起跑分數
+    const REF = 1; // 起跑分數：照個性推估時「以前一定發生的那一項」大概多常被選，全鎮量過再定
     const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
     const rel = (a, b) => { try { return a.relationships.getOrCreate(b.agentId, b.name); } catch (e) { return null; } };
     const where = (w, c) => { try { return c?.place && typeof locName === 'function' ? locName(w, c.place) : ''; } catch (e) { return ''; } };
@@ -221,9 +221,9 @@
             const out = [
                 { id: 'hold', quiet: true, mute: true, text: rv ? '不放在心上，各憑本事' : '忍下來，什麼都不提', say: rv ? { k: '沒有跟{b}較勁', p: B } : { k: '忍下來沒跟{b}提那件事', p: B }, why: rv ? '感情的事勉強不來' : '現在不想把事情鬧大',
                     base: REF + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'kind') ? 0.2 : 0) + (has(a, 'shy') ? 0.1 : 0), lean: { safe: 0.2 }, run: () => null },
-                // 以前一定照這一項（導演：兩邊各 -6～10；情敵：兩邊各 -8～20）。導演那一種兩邊各自決定，一個人大約四成五；情敵那一種大約七成
+                // 以前一定照這一項（導演：兩邊各 -6～10；情敵：兩邊各 -8～20）。照個性推估時（全鎮量過）：導演那一種兩邊各自決定，一個人大約六成；情敵那一種大約八成五
                 { id: 'fight', quiet: true, text: rv ? { k: '暗自跟{b}較勁，看他越來越不順眼', p: B } : { k: '當面跟{b}再吵一次', p: B }, say: rv ? { k: '暗自跟{b}較勁', p: B } : { k: '當面跟{b}吵了起來', p: B }, why: rv ? '我不會讓給他' : '這口氣我嚥不下去',
-                    base: REF + tilt(rv ? 0.7 : 0.45) + (has(a, 'abrasive') ? 0.4 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.15 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0) - (rv ? 0 : (has(a, 'shy') ? 0.3 : 0)) + clampN((-I.f - 25) / 100, -0.1, 0.2), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
+                    base: REF + (rv ? 1.45 : 0.7) + (has(a, 'abrasive') ? 0.4 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.15 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0) - (rv ? 0 : (has(a, 'shy') ? 0.3 : 0)) + clampN((-I.f - 25) / 100, -0.1, 0.2), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
                     run: (w2, a2) => { const b2 = w2.agents[b.agentId]; const R = b2 && rel(a2, b2); if (!R) return null;
                         if (rv) { // 情敵：心裡較勁，只有自己這一邊變冷（對方怎麼想由他自己的那一題決定）
                             R.modifyAffinity(-(R.affinity < -10 ? rnd(10, 20) : rnd(8, 15))); R.modifyTrust?.(-5);

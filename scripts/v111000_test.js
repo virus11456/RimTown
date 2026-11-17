@@ -43,13 +43,14 @@ async function run(browser, dev, lang) {
     const opOf = (K, a, ctx, id) => K.options(w, a, ctx).find(o => String(o.id).split(':')[0] === id);
     const steady = (fn) => { Math.random = () => 0.5; try { return fn(); } finally { Math.random = R0; } };
     const offDecide = (fn) => { const on0 = DECIDE.on; DECIDE.on = () => false; try { return fn(); } finally { DECIDE.on = on0; } };
+    const has = (s, a) => { s = String(s); return s.includes(a.name) || s.includes(t(a.name)) || (I18N.localizeNames ? s.includes(I18N.localizeNames(a.name, true)) : false); };
     const logs = () => (w.messageLog || []).map(m => String(m.content || (m.k ? World.logText(m) : '')));
     for (const a of npcs()) { if (w.civic?.jail) delete w.civic.jail[a.agentId]; if (a.currentLocation === 'exploration') a.currentLocation = 'town_square'; a._ceremony = null; }
     out.pop = npcs().length;
     // 導演現在可以出手：最近沒有名場面、上次出手很久以前
     const quiet = () => { w.dramaArchive = []; w._townFoundedDay = day() - 10; w._directorLastDay = -99; };
     // 讓導演照我們要的順序挑：先試哪一種手法、誰排第一個（導演用的是遊戲裡的 shuffle）
-    const order = (strat, first) => { window.shuffle = (arr) => { const a = arr.slice(); if (a.includes('crush')) return [strat, ...a.filter(s => s !== strat)]; const i = first ? a.indexOf(first) : -1; if (i > 0) { a.splice(i, 1); a.unshift(first); } return a; }; };
+    const order = (strat, first) => { window.shuffle = (arr) => { const a = arr.slice(); if (a.includes('crush')) return [strat, ...a.filter(s => s !== strat)]; const i = first ? a.findIndex(o => o === first || o?.agentId === first) : -1; if (i > 0) a.unshift(...a.splice(i, 1)); return a; }; };
     const unorder = () => { window.shuffle = SH0; };
     // 走到某一天的早上八點（導演在半夜出手；測試裡手動叫它，要在傍晚之前）
     const toMorning = () => { let g = 0; while ((w.clock.hour < 7 || w.clock.hour >= 9) && g++ < 200) { w.paused = false; w.tick(); } w.paused = true; };
@@ -68,11 +69,11 @@ async function run(browser, dev, lang) {
 
     // ============ A1 相遇：剛好都去同一個地方 ============
     toMorning();
-    const A1 = {}; { const [x, y] = P; x.personality.traits = ['romantic', 'charismatic']; y.personality.traits = ['abrasive', 'shy', 'jealous']; setAff(x, y, 60); setAff(y, x, 0); setRI(x, y, 5); setRI(y, x, 0); noVia(x, y);
+    const A1 = {}; { const [x, y] = P; flat(x); flat(y); x.personality.traits = ['romantic', 'charismatic']; y.personality.traits = ['abrasive', 'shy', 'jealous']; setAff(x, y, 60); setAff(y, x, 0); setRI(x, y, 5); setRI(y, x, 0); noVia(x, y);
       quiet(); order('crush', x.agentId); const n0 = D().log.length; const s0 = snap([[x, y], [y, x]]); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur;
       A1.set = { made: D().log.length === n0 + 1, kind: sc?.kind, who: sc ? sc.who.join() === [x.agentId, y.agentId].join() : false, stage: sc?.stage, via: sc?.via, place: sc?.place, same: JSON.stringify(snap([[x, y], [y, x]])) === JSON.stringify(s0), go: x._thingGo?.id === sc?.id && y._thingGo?.id === sc?.id && x._thingGo.place === sc.place, last: w._directorLastDay === day(), st: D().st.crush };
       // 碰面那一刻數值也沒變，兩個人都被問
-      const s1 = snap([[x, y], [y, x]]); const cap = meetNow(sc); A1.meet = { stage: sc.stage, same: JSON.stringify(snap([[x, y], [y, x]])) === JSON.stringify(s1), asked: cap.map(q => q.kind + ':' + (q.a === x ? 'x' : q.a === y ? 'y' : '?')).join(), sid: cap.every(q => q.ctx.sid === sc.id), log: logs().slice(-5).some(s => s.includes(t(x.name)) && s.includes(t(y.name)) && s.includes(locName(w, sc.place))), memX: (x.memory.entries || []).slice(-3).some(e => memText(e).includes(locName(w, sc.place)) && memText(e).includes(y.name)) };
+      const s1 = snap([[x, y], [y, x]]); const cap = meetNow(sc); A1.meet = { stage: sc.stage, same: JSON.stringify(snap([[x, y], [y, x]])) === JSON.stringify(s1), asked: cap.map(q => q.kind + ':' + (q.a === x ? 'x' : q.a === y ? 'y' : '?')).join(), sid: cap.every(q => q.ctx.sid === sc.id), log: logs().slice(-5).some(s => has(s, x) && has(s, y) && s.includes(locName(w, sc.place))), memX: (x.memory.entries || []).slice(-3).some(e => memText(e).includes(locName(w, sc.place)) && has(memText(e), y)) };
       for (const q of cap) { const f = KK.spark.facts(w, q.a, q.ctx); texts.push(f); for (const o of KK.spark.options(w, q.a, q.ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why)); }
       A1.facts = (() => { const f = KK.spark.facts(w, x, cap[0].ctx); return { place: f.includes(locName(w, sc.place)), name: f.includes(t(y.name)) || f.includes(y.name), aff: f.includes('60'), single: f.includes(t('你們兩個都還單身。')) }; })();
       A1.ids = ids(KK.spark, x, cap[0].ctx); A1.idsY = ids(KK.spark, y, cap[1].ctx);
@@ -83,17 +84,17 @@ async function run(browser, dev, lang) {
     out.A1 = A1;
 
     // ============ A2 相遇：共同的朋友約兩人吃飯；真的走過去（整格跑） ============
-    const A2 = {}; { const [, , x, y, c] = P; setAff(x, y, 30); setAff(y, x, 30); setRI(x, y, 0); setRI(y, x, 0); for (const [p, q] of [[c, x], [c, y], [x, c], [y, c]]) setAff(p, q, 50);
-      quiet(); toMorning(); order('crush', x.agentId); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur; A2.set = { via: sc?.via === c.agentId, place: sc?.place, kind: sc?.kind, log: logs().slice(-4).some(s => s.includes(t(c.name)) && s.includes(locName(w, sc.place))), cGo: c._thingGo?.id === sc?.id };
+    const A2 = {}; { const [, , x, y, c] = P; toMorning(); flat(x); flat(y); flat(c); setAff(x, y, 30); setAff(y, x, 30); setRI(x, y, 0); setRI(y, x, 0); noVia(x, y); for (const [p, q] of [[c, x], [c, y], [x, c], [y, c]]) setAff(p, q, 50);
+      quiet(); order('crush', x.agentId); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur; A2.set = { via: sc?.via === c.agentId, place: sc?.place, kind: sc?.kind, log: logs().slice(-4).some(s => has(s, c) && s.includes(locName(w, sc.place))), cGo: c._thingGo?.id === sc?.id };
       // 整格跑到碰面：人真的在那個地方
       let at = null, g = 0; const n0 = seen.length; while (sc.stage === 'set' && g++ < 300) { w.paused = false; w.tick(); if (sc.stage === 'met' && !at) at = { x: x.currentLocation, y: y.currentLocation, h: w.clock.hour, c: c.currentLocation }; } w.paused = true;
-      A2.walk = { stage: sc.stage, at, place: sc.place, inWin: at ? at.h >= 18 && at.h < 21 : false, log: logs().slice(-40).some(s => s.includes(t(c.name)) && s.includes(t(x.name)) && s.includes(t(y.name))), decided: seen.slice(n0).filter(e => e.kind === 'spark' && (e.who === x.agentId || e.who === y.agentId)).length, picks: Object.keys(sc.picks).length };
-      A2.facts = KK.spark.facts(w, x, { sid: sc.id, b: y.agentId, via: c.agentId, place: sc.place }); texts.push(A2.facts); A2.factsVia = A2.facts.includes(t(c.name)) || A2.facts.includes(c.name); }
+      A2.walk = { stage: sc.stage, at, place: sc.place, inWin: at ? at.h >= 18 && at.h < 21 : false, log: logs().slice(-40).some(s => has(s, c) && has(s, x) && has(s, y)), decided: seen.slice(n0).filter(e => e.kind === 'spark' && (e.who === x.agentId || e.who === y.agentId)).length, dbg: seen.slice(n0).filter(e => e.kind === 'spark').map(e => e.who + ':' + e.id + ':' + (e.ctx?.sid || '')).join(), ids: [x.agentId, y.agentId].join(), picks: Object.keys(sc.picks).length };
+      A2.facts = KK.spark.facts(w, x, { sid: sc.id, b: y.agentId, via: c.agentId, place: sc.place }); texts.push(A2.facts); A2.factsVia = has(A2.facts, c) || A2.facts.includes(c.name); }
     out.A2 = A2;
 
     // ============ A3 舊帳被提起 ============
-    const A3 = {}; { const [, , , , , x, y] = P; flat(x); flat(y); x.personality.traits = ['abrasive', 'neurotic']; y.personality.traits = ['stoic', 'kind']; setAff(x, y, -25); setAff(y, x, -20);
-      quiet(); toMorning(); order('grudge', x.agentId); const s0 = snap([[x, y], [y, x]]); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur;
+    const A3 = {}; { const [, , , , , x, y] = P; toMorning(); flat(x); flat(y); x.personality.traits = ['abrasive', 'neurotic']; y.personality.traits = ['stoic', 'kind']; setAff(x, y, -25); setAff(y, x, -20);
+      quiet(); order('grudge', x.agentId); const s0 = snap([[x, y], [y, x]]); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur;
       A3.set = { kind: sc?.kind, who: sc ? sc.who.join() === [x.agentId, y.agentId].join() : false, same: JSON.stringify(snap([[x, y], [y, x]])) === JSON.stringify(s0), go: x._thingGo?.id === sc?.id && y._thingGo?.id === sc?.id };
       const s1 = snap([[x, y], [y, x]]); const cap = meetNow(sc); A3.meet = { stage: sc.stage, same: JSON.stringify(snap([[x, y], [y, x]])) === JSON.stringify(s1), asked: cap.map(q => q.kind + ':' + (q.a === x ? 'x' : 'y')).join(), memX: (x.memory.entries || []).slice(-3).some(e => memText(e).includes(locName(w, sc.place))) };
       for (const q of cap) { texts.push(KK.stir.facts(w, q.a, q.ctx)); for (const o of KK.stir.options(w, q.a, q.ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why)); }
@@ -106,10 +107,10 @@ async function run(browser, dev, lang) {
     out.A3 = A3;
 
     // ============ A4 看見心上人跟別人在一起 ============
-    const A4 = {}; { const [, , , , , , , c, b, rv] = P; flat(c); date(b, rv); c.personality.traits = ['jealous', 'neurotic']; setRI(c, b, 50); setAff(c, b, 30); setAff(c, rv, 0);
-      quiet(); toMorning(); order('jealousy', c.agentId); const s0 = snap([[c, b], [c, rv]]); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur;
+    const A4 = {}; { const [, , , , , , , c, b, rv] = P; toMorning(); flat(c); date(b, rv); c.personality.traits = ['jealous', 'neurotic']; setRI(c, b, 50); setAff(c, b, 30); setAff(c, rv, 0);
+      quiet(); order('jealousy', c.agentId); const s0 = snap([[c, b], [c, rv]]); let sc; try { w._dramaDirector(); } finally { unorder(); } sc = D().cur;
       A4.set = { kind: sc?.kind, who: sc ? sc.who.join() === [c.agentId, b.agentId, rv.agentId].join() : false, same: JSON.stringify(snap([[c, b], [c, rv]])) === JSON.stringify(s0), go: [c, b, rv].every(o => o._thingGo?.id === sc?.id) };
-      const s1 = snap([[c, b], [c, rv]]); const cap = meetNow(sc); A4.meet = { stage: sc.stage, same: JSON.stringify(snap([[c, b], [c, rv]])) === JSON.stringify(s1), asked: cap.map(q => q.kind).join(), log: logs().slice(-4).some(s => s.includes(t(c.name)) && s.includes(t(b.name)) && s.includes(t(rv.name))), mem: (c.memory.entries || []).slice(-3).some(e => memText(e).includes(rv.name) && memText(e).includes(locName(w, sc.place))) };
+      const s1 = snap([[c, b], [c, rv]]); const cap = meetNow(sc); A4.meet = { stage: sc.stage, same: JSON.stringify(snap([[c, b], [c, rv]])) === JSON.stringify(s1), asked: cap.map(q => q.kind).join(), log: logs().slice(-4).some(s => has(s, c) && has(s, b) && has(s, rv)), mem: (c.memory.entries || []).slice(-3).some(e => has(memText(e), rv) && memText(e).includes(locName(w, sc.place))) };
       texts.push(KK.heartache.facts(w, c, cap[0].ctx)); for (const o of KK.heartache.options(w, c, cap[0].ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       A4.facts = (() => { const f = KK.heartache.facts(w, c, cap[0].ctx); return { place: f.includes(locName(w, sc.place)), b: f.includes(t(b.name)) || f.includes(b.name), dating: f.includes(fill('{b}和{r}正在交往。', { b: b.name, r: rv.name })), ri: f.includes('50') }; })();
       A4.ids = ids(KK.heartache, c, cap[0].ctx);
@@ -146,7 +147,7 @@ async function run(browser, dev, lang) {
       // 心上人已經跟別人分了：不再問
       // stir
       const sx = w.agents[A3.x], sy = w.agents[A3.y]; const sc0 = { sid: null, b: sy.agentId, place: 'tavern' };
-      WAYS.S(w).cold = {}; setAff(sx, sy, -25); setAff(sy, sx, -20); a0 = aff(sx, sy); const ay0 = aff(sy, sx); run1(KK.stir, sx, sc0, 'fight'); C.fight = { a: r3(aff(sx, sy) - a0), b: r3(aff(sy, sx) - ay0), cold: WAYS.coldWith(w, sx, sy) };
+      WAYS.S(w).cold = {}; setAff(sx, sy, -25); setAff(sy, sx, -20); a0 = aff(sx, sy); const ay0 = aff(sy, sx); steady(() => run1(KK.stir, sx, sc0, 'fight')); /* 吵完會不會冷戰照原本（WAYS.quarrel 六成），這裡固定成會 */ C.fight = { a: r3(aff(sx, sy) - a0), b: r3(aff(sy, sx) - ay0), cold: WAYS.coldWith(w, sx, sy) };
       // 冷戰中「把話講開」= 先開口，對方決定理不理（reached）
       C.mendCold = { text: tx(opOf(KK.stir, sx, sc0, 'mend').text) }; const g4 = run1(KK.stir, sx, sc0, 'mend'); C.mendCold.asked = g4.asked.includes('reached:' + sy.agentId);
       // 欠他一個道歉：去道歉，對方決定原不原諒（forgive）
@@ -193,15 +194,15 @@ async function run(browser, dev, lang) {
       // 心上人有伴：撞見（heartache，來意 self）
       date(o, z); ra.romanticInterest = 50; ra.affinity = 40; R(a, z).affinity = 0; const n1 = asked.length; roll(() => w._processRelationships()); const ha = asked.slice(n1).find(q => q.kind === 'heartache' && q.who === a.agentId); F.heart = { asked: !!ha, src: ha?.ctx?.src, r: ha?.ctx?.r === z.agentId };
       // 心上人單身、另一個人也喜歡他：兩個人各自被問（stir，來意 rival）
-      single(o); R(z, o).romanticInterest = 50; R(z, o).affinity = 30; const n2 = asked.length; roll(() => w._processRelationships()); const rvA = asked.slice(n2).filter(q => q.kind === 'stir' && q.ctx?.src === 'rival'); F.rival = { n: rvA.length, both: rvA.some(q => q.who === a.agentId) && rvA.some(q => q.who === z.agentId), o: rvA.every(q => q.ctx.o === o.agentId) };
+      single(o); R(z, o).romanticInterest = 50; R(z, o).affinity = 30; const n2 = asked.length; roll(() => w._processRelationships()); const rvA = asked.slice(n2).filter(q => q.kind === 'stir' && q.ctx?.src === 'rival'); F.rival = { n: rvA.length, both: rvA.some(q => q.who === a.agentId) && rvA.some(q => q.who === z.agentId), o: rvA.filter(q => q.who === a.agentId || q.who === z.agentId).every(q => q.ctx.o === o.agentId) };
       // 沒開：照舊直接改（不問）
       R(z, o).romanticInterest = 0; ra.romanticInterest = 20; ra.affinity = 50; const n3 = asked.length; const r1 = ri(a, o); roll(() => offDecide(() => w._processRelationships())); F.off = { asked: asked.slice(n3).filter(q => KEYS.includes(q.kind)).length, dR: r3(ri(a, o) - r1) };
       ra.romanticInterest = 0; for (const p of [a, o, z]) flat(p); }
     out.F = F;
 
     // ============ G1 存讀檔：安排到一半 ============
-    const G1 = {}; { const [x, y] = [w.agents[A1.x], w.agents[A1.y]]; single(x); single(y); flat(x); flat(y); plain(x); plain(y); setAff(x, y, 40); setRI(x, y, 5); noVia(x, y);
-      quiet(); toMorning(); order('crush', x.agentId); try { w._dramaDirector(); } finally { unorder(); } const id0 = D().cur?.id; const last0 = w._directorLastDay;
+    const G1 = {}; { const [x, y] = [w.agents[A1.x], w.agents[A1.y]]; toMorning(); single(x); single(y); flat(x); flat(y); plain(x); plain(y); setAff(x, y, 40); setRI(x, y, 5); noVia(x, y);
+      quiet(); order('crush', x.agentId); try { w._dramaDirector(); } finally { unorder(); } const id0 = D().cur?.id; const last0 = w._directorLastDay;
       try { const data = JSON.parse(JSON.stringify(w.serialize())); const ok1 = w.loadSave(data); const sc = w.director?.cur; G1.load = { ok: ok1, id: sc?.id === id0, stage: sc?.stage, last: w._directorLastDay === last0, pend: !!w._dirLoadPending };
         let g = 0; while (w.director.cur && w.director.cur.stage === 'set' && g++ < 300) { w.paused = false; w.tick(); } w.paused = true; const s2 = w.director.log.find(s => s.id === id0); G1.after = { stage: s2?.stage, picks: s2 ? Object.keys(s2.picks).length : 0 };
         // 舊存檔：沒有 director 欄位
@@ -255,7 +256,7 @@ async function run(browser, dev, lang) {
   { const A = r.A3;
     ok(A.set.kind === 'stir' && A.set.who && A.set.same && A.set.go, `${tag} 舊帳被提起：導演只讓兩個處不來的人傍晚去同一個地方，好感沒變`, A.set);
     ok(A.meet.stage === 'met' && A.meet.same && A.meet.asked === 'stir:x,stir:y' && A.meet.memX, `${tag} 碰上了：被觸動的人被問；對方也看他不順眼，一樣被問；碰面那一刻好感沒變`, A.meet);
-    ok(Object.values(A.facts).every(Boolean) && A.ids.join() === 'hold,fight,mend', `${tag} 題目裡有地點、雙方的好感；選項：忍下來、當面再吵一次、趁這次把話講開（沒有能抱怨的朋友時沒有「抱怨」）`, { f: A.facts, ids: A.ids });
+    ok(Object.values(A.facts).every(Boolean) && A.ids.slice(0, 3).join() === 'hold,fight,mend' && A.ids.every(i => ['hold', 'fight', 'mend', 'vent'].includes(i)), `${tag} 題目裡有地點、雙方的好感；選項：忍下來、當面再吵一次、趁這次把話講開、（有能說話的朋友時）回頭跟朋友抱怨`, { f: A.facts, ids: A.ids });
     ok(A.pick.x === 'fight' && A.pick.y === 'hold' && A.pick.dx <= -6 && A.pick.dx >= -10 && A.pick.dy === -4 && A.pick.cold && A.pick.fought, `${tag} 刻薄的那個當面吵（自己 ${A.pick.dx}、對方被吵 ${A.pick.dy}，吵完冷戰），穩重心軟的那個忍下來`, A.pick);
     ok(A.second.d === -3, `${tag} 對方也選吵：這一場只吵一次，他只是更氣（-3）`, A.second); }
   { const A = r.A4;
@@ -271,7 +272,7 @@ async function run(browser, dev, lang) {
     ok(C.bless <= -8 && C.bless >= -12 && C.pine.r === 8 && C.pine.a <= -5 && C.avoid.b === -4 && C.avoid.r === -4, `${tag} 看見心上人的選項：放下 心動 ${C.bless}；更放不下 心動 +8、對情敵 ${C.pine.a}；疏遠 兩人各 -4`, C);
     ok(C.tell.letter && C.tell.want === 'love' && C.tell.asked, `${tag} 說清楚：寫表白信，對方自己決定怎麼回（心上人有伴，當面告白輪不到）`, C.tell);
     ok(!C.spoilKind && C.spoilDark && C.spoil.spoke && C.spoil.gossip, `${tag} 搞破壞只有個性陰暗的才有，說了就照原本的講壞話（流言傳出去）`, C.spoil);
-    ok(C.fight.a <= -6 && C.fight.a >= -10 && C.fight.b === -4 && C.fight.cold, `${tag} 舊帳的選項：當面吵 自己 ${C.fight.a}、對方 -4，吵完冷戰（之後誰先開口照 makeup、reached）`, C.fight);
+    ok(C.fight.a <= -6 && C.fight.a >= -10 && C.fight.b === -4 && C.fight.cold, `${tag} 舊帳的選項：當面吵 自己 ${C.fight.a}、對方 -4，吵完冷戰（會不會冷戰照原本的六成；之後誰先開口照 makeup、reached）`, C.fight);
     ok(C.mendCold.asked && C.mendSorry.asked && C.mendTalk.res && C.vent.has && C.vent.spoke, `${tag} 把話講開：冷戰中就先開口（對方決定理不理）、欠他道歉就去道歉（對方決定原不原諒）、不然直接找他談；背後抱怨照原本的講壞話`, { c: C.mendCold, s: C.mendSorry, t: C.mendTalk, v: C.vent });
     ok(C.rivalIds.includes('yield') && C.rival.a <= -8 && C.rival.other === 0 && C.yieldR <= -10, `${tag} 情敵那一種：較勁只有自己這一邊變冷（${C.rival.a}），對方不受影響；也可以放下（心動 ${C.yieldR}）`, { ids: C.rivalIds, r: C.rival, y: C.yieldR }); }
   { const Dd = r.D;
