@@ -104,7 +104,7 @@ const AFTERMATH = (() => {
             if (!shop) { // 沒有私人商店:先搶公有糧倉,糧倉也空了就闖有錢人家
                 const food = w.stockpile?.get?.('food') || 0;
                 if (food >= 10) { const n = Math.min(12, Math.round(food * 0.08)); w.stockpile.consume('food', n, w.tickCount, t('糧倉被搶'), 'event'); a.moodModifier = (a.moodModifier || 0) + 2; mem(w, a, '{c}那時候大家都慌了，我也跟著去糧倉扛了一袋糧食。', { c: cr.cause }, 7);
-                    const guards = ad.filter(x => x.job?.key === 'guard').length; if (Math.random() < Math.min(0.6, (0.15 + guards * 0.2) * 0.6) && w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 2; log(w, '🛒 {c}的混亂中，{a}衝進公有糧倉扛走糧食，被衛兵當場抓住。{say}', { c: cr.cause, a: a.name, say }, a.name); }
+                    const guards = ad.filter(x => x.job?.key === 'guard').length; if (Math.random() < Math.min(0.6, (0.15 + guards * 0.2) * 0.6) && w.civic) { /* v11.8.0 抓到之後怎麼辦由那位守衛決定（sim-decide-order.js caught） */ if (!(typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'grain', th: a.agentId, vic: null, n, days: 2, d, cause: cr.cause }))) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 2; log(w, '🛒 {c}的混亂中，{a}衝進公有糧倉扛走糧食，被衛兵當場抓住。{say}', { c: cr.cause, a: a.name, say }, a.name); } }
                     else if ((cr.n.loot || 0) < 2) log(w, '🛒 {c}的混亂中，有人衝進公有糧倉，扛走了 {n} 份糧食。{say}', { c: cr.cause, n, say });
                     cr.n.loot = (cr.n.loot || 0) + 1; S(w).st.loot = (S(w).st.loot || 0) + 1; S(w).did[a.agentId] = [d, 'loot', cr.id]; return true; }
                 shop = ad.filter(x => x !== a && cash(w, x) >= 40 && !fam.includes(x)).sort((x, y) => cash(w, y) - cash(w, x))[0];
@@ -112,7 +112,8 @@ const AFTERMATH = (() => {
             if (!shop || typeof WALLET === 'undefined') return false;
             const n = Math.min(25, Math.max(4, Math.floor(cash(w, shop) * 0.2))); if (!WALLET.take(w, shop, n)) return false; WALLET.add(w, a, n);
             const guards = ad.filter(x => x.job?.key === 'guard').length; const caught = Math.random() < Math.min(0.7, (0.15 + guards * 0.2) * (cr.sev >= 3 ? 0.4 : 0.6)); // 一片混亂,衛兵顧不過來(大災之後更顧不過來)
-            if (caught) { const back = Math.min(n, cash(w, a)); if (back > 0 && WALLET.take(w, a, back)) WALLET.add(w, shop, back); if (w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 3; } aff(shop, a, -25); try { DARK.bump(w, a, 'exposed'); } catch (e) {}
+            if (caught && typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'loot', th: a.agentId, vic: shop.agentId, n, days: 3, d, cause: cr.cause })) { /* v11.8.0 抓到之後怎麼辦由那位守衛決定（sim-decide-order.js caught） */ }
+            else if (caught) { const back = Math.min(n, cash(w, a)); if (back > 0 && WALLET.take(w, a, back)) WALLET.add(w, shop, back); if (w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 3; } aff(shop, a, -25); try { DARK.bump(w, a, 'exposed'); } catch (e) {}
                 log(w, '🛒 {c}的混亂中，{a}衝進{s}的店裡搶錢，當場被衛兵抓住，關進牢裡。{say}', { c: cr.cause, a: a.name, s: shop.name, say }, a.name); mem(w, a, '{c}那時候我昏了頭，去搶了{s}的店，被抓了。', { c: cr.cause, s: shop.name }, 8); }
             else { aff(shop, a, -5); mem(w, shop, '{c}那幾天，店裡的錢櫃被搶了 {n} 銀幣。', { c: cr.cause, n }, 8); mem(w, a, '{c}那時候大家都在搶，我也拿了{s}店裡的 {n} 銀幣。', { c: cr.cause, s: shop.name, n }, 8);
                 try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: shop.agentId, k: '{a}趁{c}搶了{s}店裡的 {n} 銀幣', p: { a: a.name, c: cr.cause, s: shop.name, n } }); } catch (e) {}

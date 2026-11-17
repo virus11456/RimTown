@@ -97,10 +97,44 @@ const PRESS = (() => {
         const n = freePapers(R).length; return n ? { n, cost: BRIBE } : null;
     }
     function bribeBy(w, a) {
-        if (!bribeInfo(w, a)) return null; const r = bribePaper(w, S(w), a); if (!r) return null;
+        if (!bribeInfo(w, a)) return null;
+        // v11.8.0 決策核心開著：找哪一家照舊看運氣，收不收由那家的主筆自己決定（sim-decide-order.js pressBuy）
+        if (typeof ORDER !== 'undefined' && ORDER.on(w)) { const R = S(w); const P = freePapers(R).sort(() => Math.random() - 0.5)[0]; const ed = P && editorOf(w, P); if (ed && ed !== a) { R.elec.bribes[a.agentId] = P.id; ORDER.buyAsk(w, P, a, ed, BRIBE); return { P, ed, asked: true }; } }
+        const r = bribePaper(w, S(w), a); if (!r) return null;
         if (r.refused) { mem(w, a, '我想塞錢給{paper}，被擋了回來。', { paper: r.P.name[0] }, 5); if (r.ed) mem(w, r.ed, '{a}想塞錢要我替他說好話，我沒收。', { a: a.name }, 6); }
         else { mem(w, a, '我花了 {n} 銀幣，讓{paper}替我說話。', { n: BRIBE, paper: r.P.name[0] }, 6); mem(w, r.ed, '{a}塞了 {n} 銀幣，要報上替他說好話。我收了。', { a: a.name, n: BRIBE }, 6); }
         return r;
+    }
+    // v11.8.0 拿主意的人：報社有東家就是東家，不然是主筆（記者）
+    const live = (w, id) => { const a = id && w.agents[id]; return a && !a.isDead && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) ? a : null; };
+    const editorOf = (w, P) => live(w, P.owner) || live(w, P.journo) || null;
+    // v11.8.0 收買報社成交（原本 bribePaper 收下的那一段；給「主筆自己決定收下」那條路用）
+    function buyDo(w, P, a, ed, n) {
+        const R = S(w); if (!WALLET.pay(w, a, ed, n)) return false;
+        P.bribedBy = a.agentId; if (R.elec) R.elec.bribes[a.agentId] = P.id;
+        try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: ed.agentId, k: '{a}花錢收買了{paper}', p: { a: a.name, paper: P.name[0] } }); } catch (e) {}
+        mem(w, a, '我花了 {n} 銀幣，讓{paper}替我說話。', { n, paper: P.name[0] }, 6); mem(w, ed, '{a}塞了 {n} 銀幣，要報上替他說好話。我收了。', { a: a.name, n }, 6);
+        return true;
+    }
+    // v11.8.0 揭弊見報（原本 electionDay 裡的那一段；extra 是先查證過多加的信譽）
+    function exposeDo(w, P, sec, ed, extra) {
+        const R = S(w); sec.found = true; const c = w.agents[sec.culprit]; if (!c) return null; P.fame = (P.fame || 0) + 1; P.cred = Math.min(95, P.cred + 5 + (extra || 0));
+        try { DARK.bump(w, c, 'exposed'); } catch (e) {}
+        const s = story(w, P, 'expose', '揭弊！{c}被爆：{what}', { c: c.name, what: { k: sec.k, p: sec.p } }, c.agentId);
+        if (ed) { mem(w, ed, '我在{paper}揭了{c}的底，大家都在談。', { paper: P.name[0], c: c.name }, 8); c.relationships.getOrCreate(ed.agentId, ed.name).modifyAffinity(-30); mem(w, c, '{e}在報上揭我的底，這筆帳我記住了。', { e: ed.name }, 8); }
+        try { const O = (R.ord || (R.ord = {})); (O.hit || (O.hit = {}))[c.agentId] = { d: day(w), by: ed?.agentId || null, paper: P.id }; } catch (e) {}
+        return s;
+    }
+    // v11.8.0 抹黑的假消息見報（原本 electionDay 裡的那一段：內容三選一照舊看天）
+    const LIES = ['{c}私下收了商人的好處', '{c}在酒館說鎮民的壞話', '{c}偷偷挪用了公款'];
+    function smearDo(w, P, victim, by, k) { const lie = k || LIES[Math.floor(Math.random() * 3)]; return story(w, P, 'smear', lie, { c: victim.name }, victim.agentId, { fake: true, by: by || null }); }
+    // v11.8.0 假消息的更正（原本 electionDay 裡的那一段）
+    function correctDo(w, P, s) {
+        const R = S(w); s.corrected = true; P.cred = Math.max(5, P.cred - 20);
+        const st = story(w, P, 'correct', '更正：先前關於{c}的報導並非事實', { c: w.agents[s.cand]?.name || '' }, s.cand);
+        const v = w.agents[s.cand]; if (v) mem(w, v, '{paper}造謠抹黑我，還好被拆穿了。', { paper: P.name[0] }, 7);
+        if (s.by && w.agents[s.by]) for (const a of npcs(w)) if (R.reads[a.agentId] === P.id) a.relationships.getOrCreate(s.by, w.agents[s.by].name).modifyAffinity(-6);
+        return st;
     }
     function electionDay(w, R, E, d) {
         const cands = elecOf(w, R, E, d); if (!cands) return;
@@ -110,20 +144,22 @@ const PRESS = (() => {
             const ed = w.agents[P.journo];
             // 揭弊:記者挖出候選人的祕密
             if (ed && typeof DARK !== 'undefined') {
-                const D = DARK.S(w); const sec = (D.secrets || []).find(s => !s.found && cands.some(c => c.agentId === s.culprit) && s.kind !== 'white');
+                // v11.8.0 這家報社已經挖到、交給主筆決定過的那一件，不會再挖到一次（壓下來的、拿去談條件的都算）
+                const D = DARK.S(w); const sec = (D.secrets || []).find(s => !s.found && !(s.pseen || []).includes(P.id) && cands.some(c => c.agentId === s.culprit) && s.kind !== 'white');
                 let ins = 1; try { ins = DARK.insight(ed); } catch (e) {}
                 if (sec && P.bribedBy !== sec.culprit && Math.random() < 0.15 + ins * 0.1) {
-                    sec.found = true; const c = w.agents[sec.culprit]; P.fame = (P.fame || 0) + 1; P.cred = Math.min(95, P.cred + 5);
-                    try { DARK.bump(w, c, 'exposed'); } catch (e) {}
-                    story(w, P, 'expose', '揭弊！{c}被爆：{what}', { c: c.name, what: { k: sec.k, p: sec.p } }, c.agentId);
-                    mem(w, ed, '我在{paper}揭了{c}的底，大家都在談。', { paper: P.name[0], c: c.name }, 8); c.relationships.getOrCreate(ed.agentId, ed.name).modifyAffinity(-30); mem(w, c, '{e}在報上揭我的底，這筆帳我記住了。', { e: ed.name }, 8);
+                    // v11.8.0 挖不挖得到照舊看天；挖到之後登不登，由這家報社的主筆（或東家）自己決定（sim-decide-order.js pressScoop）
+                    if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.scoop(w, P, sec)) continue;
+                    exposeDo(w, P, sec, ed, 0);
                     continue;
                 }
             }
             // 抹黑:八卦報或被收買的報社捏造對手醜聞
-            if ((P.st === 'gossip' || P.bribedBy) && Math.random() < 0.25) {
+            // v11.8.0 決策核心開著：登不登、登誰由主筆自己決定（兩天問一次）；這一天真的登了才不做別的事
+            if ((P.st === 'gossip' || P.bribedBy) && typeof ORDER !== 'undefined' && ORDER.on(w)) { const n0 = P.stories.length, l0 = P.stories[n0 - 1]; ORDER.smearAsk(w, P, cands); if (P.stories.length !== n0 || P.stories[P.stories.length - 1] !== l0) continue; }
+            else if ((P.st === 'gossip' || P.bribedBy) && Math.random() < 0.25) {
                 const friend = P.bribedBy ? cands.find(c => c.agentId === P.bribedBy) : null; const victim = cands.filter(c => c !== friend).sort(() => Math.random() - 0.5)[0];
-                if (victim) { const lie = ['{c}私下收了商人的好處', '{c}在酒館說鎮民的壞話', '{c}偷偷挪用了公款'][Math.floor(Math.random() * 3)]; story(w, P, 'smear', lie, { c: victim.name }, victim.agentId, { fake: true, by: P.bribedBy || null }); continue; }
+                if (victim) { smearDo(w, P, victim, P.bribedBy); continue; }
             }
             // 表態支持
             if (!R.elec.endorsed[P.id]) { const c = P.bribedBy ? cands.find(x => x.agentId === P.bribedBy) || leanOf(w, P, cands) : leanOf(w, P, cands); R.elec.endorsed[P.id] = c.agentId; story(w, P, 'endorse', '本報支持{c}', { c: c.name }, c.agentId); continue; }
@@ -131,11 +167,10 @@ const PRESS = (() => {
             if (Math.random() < 0.5) { const pl = poll(w, cands); story(w, P, 'poll', '民調：{a}領先（{n} 票），{b}緊追在後', { a: pl[0].c.name, n: pl[0].n, b: pl[1].c.name }, pl[0].c.agentId); }
         }
         // 假新聞被拆穿 → 更正、反噬
-        for (const P of R.papers) for (const s of P.stories) if (s.fake && !s.corrected && d - s.day >= 1 && Math.random() < 0.3) {
-            s.corrected = true; P.cred = Math.max(5, P.cred - 20);
-            story(w, P, 'correct', '更正：先前關於{c}的報導並非事實', { c: w.agents[s.cand]?.name || '' }, s.cand);
-            const v = w.agents[s.cand]; if (v) mem(w, v, '{paper}造謠抹黑我，還好被拆穿了。', { paper: P.name[0] }, 7);
-            if (s.by && w.agents[s.by]) for (const a of npcs(w)) if (R.reads[a.agentId] === P.id) a.relationships.getOrCreate(s.by, w.agents[s.by].name).modifyAffinity(-6);
+        // v11.8.0 被不被拆穿照舊看天（每天 30%）；拆穿之後更不更正，決策核心開著時由主筆自己決定（pressFix），s.fixed 表示已經交給他決定過
+        for (const P of R.papers) for (const s of P.stories.slice()) if (s.fake && !s.corrected && !s.fixed && d - s.day >= 1 && Math.random() < 0.3) {
+            if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.fixAsk(w, P, s)) continue;
+            correctDo(w, P, s);
         }
     }
     // 規則投票的報紙影響(讀者對各候選人的加減分)
@@ -157,12 +192,18 @@ const PRESS = (() => {
         const k = typeof CROWN !== 'undefined' ? CROWN.king(w) : null;
         if (k && w.crown && w.crown.legit < 40) for (const P of R.papers) {
             if (P.banned || !['prog', 'gossip'].includes(P.st) || Math.random() > 0.3) continue;
+            if (P.tame != null && d - P.tame < 30) continue; // v11.8.0 低頭改口換回解禁的報社，一個月內不再批評國王
             story(w, P, 'critic', '民怨沸騰，國王{k}該聽聽百姓的聲音', { k: k.name }, k.agentId);
-            if (Math.random() < 0.35) { P.banned = true; w.crown.legit = Math.max(0, w.crown.legit - 5); log(w, '🚫 國王{k}查禁了{paper}。', { k: k.name, paper: P.name[0] }, k.name); for (const a of npcs(w)) if (R.reads[a.agentId] === P.id) mem(w, a, '{paper}被國王查禁了，太過分了。', { paper: P.name[0] }, 6); }
+            // v11.8.0 查不查禁由國王自己決定（pressBan）；國王不在鎮上、決策核心沒開時照舊 35%
+            if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.banAsk(w, P, k)) continue;
+            if (Math.random() < 0.35) banDo(w, P, k);
         }
-        // 被查禁的報社轉成地下報紙(過幾天)
-        for (const P of R.papers) if (P.banned && !P.underground && Math.random() < 0.2) { P.underground = true; P.cred = Math.min(95, P.cred + 10); log(w, '🕯️ {paper}轉入地下，私下流傳得更廣了。', { paper: P.name[0] }); }
+        // 被查禁的報社轉成地下報紙(過幾天)；v11.8.0 決策核心開著時由主筆自己決定轉入地下、停刊、低頭改口或再等等（pressUnder，幾天問一次）
+        for (const P of R.papers) if (P.banned && !P.underground && !P.closed) { if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.underAsk(w, P)) continue; if (Math.random() < 0.2) underDo(w, P); }
     }
+    // v11.8.0 查禁、轉入地下（原本 weekday 裡的兩段）
+    function banDo(w, P, k) { const R = S(w); P.banned = true; P.bannedDay = day(w); if (w.crown) w.crown.legit = Math.max(0, w.crown.legit - 5); log(w, '🚫 國王{k}查禁了{paper}。', { k: k.name, paper: P.name[0] }, k.name); for (const a of npcs(w)) if (R.reads[a.agentId] === P.id) mem(w, a, '{paper}被國王查禁了，太過分了。', { paper: P.name[0] }, 6); }
+    function underDo(w, P) { P.underground = true; P.cred = Math.min(95, P.cred + 10); log(w, '🕯️ {paper}轉入地下，私下流傳得更廣了。', { paper: P.name[0] }); }
     function daily(w) {
         const R = S(w), d = day(w); if (R.lastDay === d) return; R.lastDay = d;
         if (w.econ?.paperShort && Math.random() < 0.5) return; // v6.77.0 缺紙:約一半的日子停刊
@@ -174,7 +215,7 @@ const PRESS = (() => {
         const R = S(w);
         return R.papers.map(P => ({ id: P.id, icon: STANCE[P.st].icon, name: t(P.name[0]), stance: t(STANCE[P.st].zh), cred: Math.round(P.cred), readers: Object.values(R.reads).filter(x => x === P.id).length, journo: w.agents[P.journo] ? t(w.agents[P.journo].name) : null, banned: P.banned, underground: P.underground, last: P.stories.length ? Memory.render(P.stories[P.stories.length - 1].k, P.stories[P.stories.length - 1].p) : '', fame: P.fame || 0 }));
     }
-    return { S, STANCE, daily, bias, trust, paperOf, brief, view, poll, electionDay, weekday, story, bribeInfo, bribeBy };
+    return { S, STANCE, daily, bias, trust, paperOf, brief, view, poll, electionDay, weekday, story, bribeInfo, bribeBy, editorOf, buyDo, exposeDo, smearDo, correctDo, banDo, underDo, LIES };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
