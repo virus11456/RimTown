@@ -25,7 +25,7 @@ const ESTATE = (() => {
     const HOMELESS_AT = 'town_square';
     function S(w) {
         if (!w.estate || typeof w.estate.units !== 'object') w.estate = { units: {}, home: {}, orig: {}, homeless: {}, arrears: {}, servants: {}, lodge: {}, n: 0, lastDay: null, stats: { built: 0, evicted: 0, foreclosed: 0, sold: 0, rent: 0, ptax: 0 } };
-        const E = w.estate; for (const k of ['units', 'home', 'orig', 'homeless', 'arrears', 'servants', 'lodge', 'll', 'llAsk', 'late', 'grace', 'cut']) E[k] = E[k] || {}; // v11.6.0 ll 房東定的檔位、llAsk 上次問他的日子、late 欠租等房東回話、grace 寬限到哪天、cut 欠租期間打八折（舊存檔沒有這幾格，就是照行情、沒人在等） E.stats = E.stats || {};
+        const E = w.estate; for (const k of ['units', 'home', 'orig', 'homeless', 'arrears', 'servants', 'lodge', 'll', 'llAsk', 'late', 'grace', 'cut']) E[k] = E[k] || {}; E.stats = E.stats || {}; // v11.6.0 ll 房東定的檔位、llAsk 上次問他的日子、late 欠租等房東回話、grace 寬限到哪天、cut 欠租期間打八折（舊存檔沒有這幾格，就是照行情、沒人在等）
         return E;
     }
     // ---------- 一戶 ----------
@@ -297,7 +297,7 @@ const ESTATE = (() => {
             base: (greedy ? 1.3 : 0) + (hasV(o, '財富') ? 0.5 : 0) + (sc >= 1.3 ? 0.5 : 0) - (vacOwn ? 0.6 : 0) - (famT ? 0.4 : 0) + (cur === 'hi' ? 0.3 : 0), lean: { gain: 0.4 }, run: go('hi', kin) });
         out.push({ id: 'lo', text: { k: '比行情便宜一點（一週合計 {n} 銀幣）{now}', p: { n: weekSum(w, ts, { tier: 'lo', kin }), now: { raw: cur === 'lo' ? t('（跟現在一樣）') : '' } } }, say: '房租收得比行情便宜一點', why: vacOwn ? '房子空著也是空著，便宜一點才租得出去。' : '大家日子都不好過，少收一點。', quiet: cur === 'lo',
             base: (kind ? 0.8 : 0) + (gen ? 0.8 : 0) + (vacOwn ? 0.7 : 0) + (arrT ? 0.3 : 0) - (greedy ? 0.8 : 0) + (cur === 'lo' ? 0.3 : 0), lean: { bond: 0.3 }, run: go('lo', kin) });
-        if (!kin && kinTs.length) out.push({ id: 'kin', text: { k: '房客是自己人的那幾戶再打八五折（{names}）', p: { names: { raw: kinTs.slice(0, 3).map(x => w.agents[x.hid]?.name || '').join(t('、')) } } }, say: '給租房子的自己人打八五折', why: '自己人，不好意思收那麼多。',
+        if (!kin && kinTs.length) out.push({ id: 'kin', text: { k: '房客是自己人的那幾戶再打八五折（{names}）', p: { names: { raw: kinTs.slice(0, 3).map(x => t(w.agents[x.hid]?.name || '')).join(t('、')) } } }, say: '給租房子的自己人打八五折', why: '自己人，不好意思收那麼多。',
             base: 0.2 + (famT ? 0.6 : 0) + (hasV(o, '家庭') ? 0.5 : 0) + (kind ? 0.4 : 0) + (gen ? 0.3 : 0) - (greedy ? 0.5 : 0), lean: { bond: 0.4 }, run: go(cur, 1) });
         if (kin) out.push({ id: 'nokin', text: '自己人也照一樣的價錢收', say: '自己人的房租也照一樣收', why: '親兄弟明算帳。', base: 0.3 + (greedy ? 0.6 : 0) + (has(o, 'thrifty') ? 0.3 : 0), lean: { gain: 0.3 }, run: go(cur, 0) });
         return out;

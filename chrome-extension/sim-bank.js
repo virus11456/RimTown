@@ -162,7 +162,7 @@ const BANK = (() => {
     }
     // 擠兌中、銀行有開門、他在銀行有存款
     function runInfo(w, a) {
-        const B = w.bank; if (!B || !B.open || B.status !== 'run' || !a || B.run?.asked === 'pending' || B.run?.inj) return null; // v11.6.0 銀行家還在想要不要押錢：銀行先關門 const dep = Math.floor(B.dep[a.agentId] || 0); if (dep < 1) return null;
+        const B = w.bank; if (!B || !B.open || B.status !== 'run' || !a || B.run?.asked === 'pending' || B.run?.inj) return null; /* v11.6.0 銀行家還在想要不要押錢：銀行先關門 */ const dep = Math.floor(B.dep[a.agentId] || 0); if (dep < 1) return null;
         const banker = w.agents[B.banker]; return { dep, day: Math.max(0, day(w) - (B.runDay ?? day(w))), banker: banker && banker !== a ? banker : null, injected: (B.run?.injected || 0) > 0 };
     }
     // 領出存款的幾成(銀行剩多少準備金就只領得到多少)
@@ -354,8 +354,8 @@ const BANK = (() => {
         if (X.apply[id]) return 0; // 已經有一筆在等回話
         const ap = X.apply[id] = { n, why: why || '', d, tok: ++X.n, coll: opt?.coll || null, biz: opt?.biz ? 1 : 0 }; X.st.asks++;
         const ctx = { t: 'loan', id, tok: ap.tok, d };
-        if (DECIDE.aiOn(w)) { makeWait(B, id); DECIDE.enqueue(w, b, 'bankDesk', ctx); return 0; } // 排進決策核心的佇列，這一輪處理完就送去問；回話來了才撥款
-        ruleNow(w, b, ctx); if (X.apply[id]?.tok === ap.tok) ruleLoan(w, B, ap, id);
+        if (DECIDE.aiOn(w)) { makeWait(B, id); if (DECIDE.inRun?.()) DECIDE.enqueue(w, b, 'bankDesk', ctx); else askNow(w, b, ctx); } // 要問 AI：別人選的那一項正在執行時排進佇列（這一輪處理完就送去問），不然當場送出；回話來了才撥款（今天的額度用完了就當場照個性）
+        else { ruleNow(w, b, ctx); if (X.apply[id]?.tok === ap.tok) ruleLoan(w, B, ap, id); }
         const L = B.loans[id]; return L && L.tok === ap.tok ? L.principal : 0;
     }
     function grant(w, B, ap, id, frac, coll, b) {
@@ -368,7 +368,7 @@ const BANK = (() => {
     function refuse(w, B, ap, id, b, old) {
         const X = D(B); if (X.apply[id] === ap) delete X.apply[id]; (B.refused = B.refused || {})[id] = day(w); X.st.refused++; endWait(B, id); const a = w.agents[id]; if (!a) return;
         if (!b) { log(w, '🏦 銀行家拒絕借錢給{a}{r}。', { a: a.name, r: old === 'rep' ? '（名聲太差）' : old === 'dislike' ? '（兩人處不好）' : '' }, a.name); mem(w, a, '銀行不肯借我錢。', {}, 6); return; } // 原本的規則（一字不改）
-        log(w, '🏦 銀行家{b}沒有借錢給{a}。', { b: b.name, a: a.name }, b.name); mem(w, a, '銀行家{b}不肯借我錢。', { b: b.name }, 6); bumpA(a, b, -4);
+        log(w, '🏦 銀行家{b}拒絕借錢給{a}。', { b: b.name, a: a.name }, b.name); mem(w, a, '銀行家{b}不肯借我錢。', { b: b.name }, 6); bumpA(a, b, -4);
     }
     // 原本的規則：名聲太差（被揭過兩次底）或銀行家跟他處不好（好感低於 -20）就不借，其餘照借
     function ruleLoan(w, B, ap, id) { const a = w.agents[id]; D(B).st.rule++; if (!a) { const X = D(B); if (X.apply[id] === ap) delete X.apply[id]; endWait(B, id); return 0; } const v = (typeof BIZ !== 'undefined' && BIZ.vet) ? BIZ.vet(w, B, a) : { ok: true }; if (!v.ok) { refuse(w, B, ap, id, null, v.why); return 0; } return grant(w, B, ap, id, 1, null, null); }
@@ -468,14 +468,14 @@ const BANK = (() => {
         const X = liveRun(w, b, ctx); if (!X) return ''; const { B } = X; const savers = Object.keys(B.dep).map(id => w.agents[id]).filter(o => o && o !== b);
         const kin = savers.filter(o => famOf(w, b).includes(o) || aff(b, o) >= 40); const m = leader(w); const own = Math.round(B.dep[b.agentId] || 0);
         return fill('銀行正在擠兌（第 {k} 天）：存款 {dep} 銀幣，準備金只剩 {res}，還差 {gap} 銀幣才付得出所有存款。存錢的有 {sv} 個人{kin}。你身上有 {c} 銀幣{own}。你可以拿自己的錢補進銀行：全押是 {n} 銀幣（手上的七成）。補進去的錢就是銀行的了，銀行撐過去慢慢賺回來；銀行倒了，就跟存款一起沒了。之後還不夠，會先發債券，再請{m}決定要不要用鎮公所的名義紓困。',
-            { k: Math.max(1, day(w) - (B.runDay ?? day(w)) + 1), dep: Math.round(totalDep(B)), res: Math.round(B.reserve), gap: Math.ceil(totalDep(B) - B.reserve), sv: savers.length, kin: { raw: kin.length ? fill('，其中有你的家人朋友{x}', { x: { raw: kin.slice(0, 3).map(o => o.name).join(t('、')) } }) : '' }, c: Math.floor(cash(w, b)), own: { raw: own ? fill('，自己在銀行也存了 {n}', { n: own }) : '' }, n: injN(w, B, b, 0.7), m: m ? m.name : t('鎮長') });
+            { k: Math.max(1, day(w) - (B.runDay ?? day(w)) + 1), dep: Math.round(totalDep(B)), res: Math.round(B.reserve), gap: Math.ceil(totalDep(B) - B.reserve), sv: savers.length, kin: { raw: kin.length ? fill('，其中有你的家人朋友{x}', { x: { raw: kin.slice(0, 3).map(o => t(o.name)).join(t('、')) } }) : '' }, c: Math.floor(cash(w, b)), own: { raw: own ? fill('，自己在銀行也存了 {n}', { n: own }) : '' }, n: injN(w, B, b, 0.7), m: m ? m.name : t('鎮長') });
     }
     function runOptions(w, b, ctx) {
         const X = liveRun(w, b, ctx); if (!X) return []; const { B } = X; const n = injN(w, B, b, 0.7), h = injN(w, B, b, 0.35); const out = [];
         const kin = Object.keys(B.dep).map(id => w.agents[id]).filter(o => o && o !== b && (famOf(w, b).includes(o) || aff(b, o) >= 40)).length;
         const go = (frac) => (w2, b2) => { const X2 = liveRun(w2, b2, ctx); if (!X2) return null; X2.R.inj = null; const got = inject(w2, X2.B, b2, X2.R, frac); return got > 0 ? { k: '補了 {n} 銀幣進銀行', p: { n: got } } : { k: '沒補成' }; };
-        if (n >= 1) out.push({ id: 'all', text: { k: '全押：拿出 {n} 銀幣補進銀行', p: { n } }, say: '把自己的錢全押進銀行', why: '銀行倒了，我什麼都沒了，不能讓它倒。', base: 1.6 + (B.dep[b.agentId] ? 0.3 : 0) + Math.min(0.6, kin * 0.3), lean: { bond: 0.3, face: 0.3 }, run: go(0.7) });
-        if (h >= 1 && h < n) out.push({ id: 'half', text: { k: '押一半：拿出 {n} 銀幣', p: { n: h } }, say: '拿一半的錢補進銀行', why: '補一點撐場面，自己也要留條後路。', base: 0.4 + (has(b, 'thrifty') ? 0.3 : 0), lean: { safe: 0.4 }, run: go(0.35) });
+        if (n >= 1) out.push({ id: 'all', text: { k: '全押：拿出 {n} 銀幣補進銀行', p: { n } }, say: '把自己的錢全押進銀行', why: '銀行倒了，我什麼都沒了，不能讓它倒。', base: 1.6 + (B.dep[b.agentId] ? 0.3 : 0) + Math.min(0.6, kin * 0.3) - (has(b, 'greedy') ? 0.6 : 0) - (has(b, 'thrifty') ? 0.3 : 0), lean: { bond: 0.3, face: 0.3 }, run: go(0.7) });
+        if (h >= 1 && h < n) out.push({ id: 'half', text: { k: '押一半：拿出 {n} 銀幣', p: { n: h } }, say: '拿一半的錢補進銀行', why: '補一點撐場面，自己也要留條後路。', base: 0.4 + (has(b, 'thrifty') ? 0.4 : 0) + (has(b, 'greedy') ? 0.3 : 0), lean: { safe: 0.4 }, run: go(0.35) });
         out.push({ id: 'none', text: '不押，自己的錢留著', say: '沒有拿自己的錢補銀行', why: '銀行的事歸銀行，我的錢要留給自己。', base: -0.3 + (has(b, 'greedy') ? 0.6 : 0) + (has(b, 'thrifty') ? 0.3 : 0), lean: { safe: 0.5, bond: -0.3 },
             run: (w2, b2) => { const X2 = liveRun(w2, b2, ctx); if (!X2) return null; X2.R.inj = null; X2.R.injected = -1; logF(w2, '🏦 銀行家{a}沒有拿自己的錢補銀行。', { a: b2.name }, b2.name); mem(w2, b2, '擠兌的時候，我沒有把自己的錢押進銀行。', {}, 7);
                 for (const id of Object.keys(X2.B.dep)) { const o = w2.agents[id]; if (o && o !== b2) bumpA(o, b2, -4); } return { k: '一毛都沒押' }; } });
@@ -496,7 +496,7 @@ const BANK = (() => {
     function brief(w, a) { const B = w.bank; if (!B || !B.open) return ''; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; const bs = bondsOf(B, a); if (bs.length && !dv && !L) return `${t('銀行')}${t('：')}${t('持有債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; if (!dv && !L) return a.agentId === B.banker ? t('你經營鎮上的銀行') : ''; return `${t('銀行')}${t('：')}${dv ? t('存款 {n} 銀幣').replace('{n}', dv) : ''}${dv && L ? t('，') : ''}${L ? t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed)) : ''}`; }
     function chip(w, a) { const B = w.bank; if (!B || !B.open) return ''; if (a.agentId === B.banker) return `🏦 ${t('銀行家')}`; const dv = Math.round(B.dep[a.agentId] || 0), L = B.loans[a.agentId]; if (L) return `🏦 ${t('欠銀行 {n} 銀幣').replace('{n}', Math.round(L.owed))}`; if (dv) return `🏦 ${t('存款 {n} 銀幣').replace('{n}', dv)}`; const bs = bondsOf(B, a); if (bs.length) return `📜 ${t('債券 {n} 銀幣').replace('{n}', bs.reduce((s, x) => s + x.n, 0))}`; return ''; }
     function view(w) { const B = S(w); return { open: B.open, status: B.status, banker: w.agents[B.banker] ? t(w.agents[B.banker].name) : null, dep: Math.round(totalDep(B)), loan: Math.round(totalLoan(B)), reserve: Math.round(B.reserve), rate: Math.round(B.rate * 100), bad: Math.round(B.bad), savers: Object.keys(B.dep).length, borrowers: Object.keys(B.loans).length, biz: Object.values(B.loans).filter(L => L.kind === 'biz').length, bizLent: Math.round(B.bizLent || 0), why: B.rateWhy ? tx(B.rateWhy) : '', rateBy: B.rateBy && w.agents[B.rateBy] ? t(w.agents[B.rateBy].name) : '', desk: B.desk ? Object.assign({ pending: Object.keys(B.desk.apply || {}).length }, B.desk.st || {}) : null, failed: B.history.slice(-1)[0] || null, pending: B.run?.asked === 'pending', debt: B.debt ? { owed: Math.round(B.debt.owed), paid: Math.round(B.debt.paid), late: B.debt.late || 0 } : null, bail: B.lastBail ? { by: t(B.lastBail.by), yes: B.lastBail.yes, n: B.lastBail.n, why: t(B.lastBail.why || ''), day: B.lastBail.day } : null, debtDone: (B.debtHist || []).slice(-1)[0] || null, bonds: (B.bonds || []).reduce((s, x) => s + x.n, 0), bondHolders: new Set((B.bonds || []).map(x => x.holder)).size, bondRate: B.bonds?.length ? Math.round(B.bonds[B.bonds.length - 1].rate * 100) : 0, defaults: B.defaults || 0 }; }
-    return { rawLend: lend, apply, deskReply, pendingOf, teller, deskFacts, deskOptions, rateTarget, lateRule, ruleLoan, D, S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, badLine, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, closeOffer, bondInfo, bondBy, runInfo, runBy };
+    return { rawLend: lend, lateAsk, injAsk, deskDaily, tieOf, apply, deskReply, pendingOf, teller, deskFacts, deskOptions, rateTarget, lateRule, ruleLoan, D, S, daily, deposit, withdraw, lend, startRun, bankRun, fail, setRate, brief, chip, view, totalDep, badLine, totalLoan, lendable, inject, ruleBailout, askBailout, decide, repayDebt, townBrief, leader, INTEREST, issueBonds, matureBonds, bondsOf, closeOffer, bondInfo, bondBy, runInfo, runBy };
 })();
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;

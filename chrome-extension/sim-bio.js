@@ -175,7 +175,7 @@ const BIO = (function () {
     function pharmaFacts(w, a, ctx) {
         if (!pharmaLive(w, a, ctx)) return ''; const ws = wasteOf(w); const P = S(w).pharma; const use = (() => { try { return typeof PROCURE !== 'undefined' ? PROCURE.useOf(w, 'herbs') : 0; } catch (e) { return 0; } })();
         return fill('又過了一週，鎮上的藥廠這週要怎麼做？平常一天拿兩份藥草做一份藥。倉裡的藥有 {m} 份，鎮上該備 {want} 份；藥草有 {h} 份{use}。現在有 {s} 個人生病。{waste}上週的做法：{last}。藥廠是公家的：藥草和藥都是倉裡的，跟你自己的錢沒有關係。',
-            { m: Math.round(meds(w)), want: medWant(w), h: Math.round(herbs(w)), use: use > 0.05 ? { k: '（醫生看病一天另外用掉大約 {n} 份）', p: { n: use } } : '', s: sickN(w), waste: ws.length ? { k: '這兩週有 {n} 次有人為了藥廠排的廢水來吵（{who}）。', p: { n: ws.length, who: { raw: [...new Set(ws.map(x => x.f))].slice(0, 3).join(t('、')) } } } : '', last: P && P.mode ? PH_NAME[P.mode] : '照常做' });
+            { m: Math.round(meds(w)), want: medWant(w), h: Math.round(herbs(w)), use: use > 0.05 ? { k: '（醫生看病一天另外用掉大約 {n} 份）', p: { n: use } } : '', s: sickN(w), waste: ws.length ? { k: '這兩週有 {n} 次有人為了藥廠排的廢水來吵（{who}）。', p: { n: ws.length, who: { raw: [...new Set(ws.map(x => t(x.f)))].slice(0, 3).join(t('、')) } } } : '', last: P && P.mode ? PH_NAME[P.mode] : '照常做' });
     }
     const pharmaLive = (w, a, ctx) => !!ctx && phOn(w) && TECH.built(w, 'pharma_works') && doctorOf(w) === a && day(w) - (ctx.d ?? 0) <= 1;
     function setPharma(w, a, mode) {

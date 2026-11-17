@@ -16915,7 +16915,7 @@
         '他以前跟銀行借錢沒還，打成呆帳過 {n} 次。': 'They once failed to repay the bank, and it was written off as bad debt {n} times.',
         '他{job}，身上有 {c} 銀幣{debt}。{rep}': 'Work: {job}. They have {c} silver on hand{debt}. {rep}',
         '，沒有別的欠債': ', and no other debts',
-        '🏦 銀行家{b}沒有借錢給{a}。': '🏦 Banker {b} turned down {a}\'s loan.',
+        '🏦 銀行家{b}拒絕借錢給{a}。': '🏦 Banker {b} refused to lend to {a}.',
         '銀行家{b}不肯借我錢。': 'Banker {b} would not lend me any money.',
         '他拿自己的房子來抵押（大約值 {v} 銀幣），還不出來房子歸銀行。': 'They are putting up their own house as collateral (worth about {v} silver); if they cannot repay, the house goes to the bank.',
         '他名下有一棟房子（大約值 {v} 銀幣），這筆沒有抵押。': 'They own a house (worth about {v} silver), but this loan has no collateral.',
