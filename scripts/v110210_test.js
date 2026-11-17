@@ -4,10 +4,11 @@
 //   C) 卡住時排隊的點擊：第一下生效，擠在後面的丟掉；平常的連點不受影響
 //   D) 手機聊天抽屜：底部狀態帶不再蓋住「歷史對話」「立即存檔」的下半截
 //   E) 正按著的角落通知不會被新通知擠掉，按鈕照樣有用，新通知放開後才出來
+//   G) 手機：手指按住面板標題列上下拖，面板拉成滿版、再拉回半高（以前第一下移動就被瀏覽器搶去當成捲頁面，拖曳被取消）
 //   F) 換日的計算只是不重複算：同一個種子跑 5 天，世界狀態跟關掉最佳化（window.RIMTOWN_NO_TICK_OPT）時一模一樣
 // 用法：BASE=http://localhost:8126/ node scripts/v110210_test.js [mobile|desktop]     需要本機服務 chrome-extension/
 const { chromium } = require('playwright'); const crypto = require('crypto');
-const BASE = process.env.BASE || 'http://localhost:8126/'; const ONLY = process.argv[2] || ''; const PARTS = (process.env.PARTS || 'ABCDEF').toUpperCase(); // PARTS=CE 只跑其中幾段（除錯用）
+const BASE = process.env.BASE || 'http://localhost:8126/'; const ONLY = process.argv[2] || ''; const PARTS = (process.env.PARTS || 'ABCDEFG').toUpperCase(); // PARTS=CE 只跑其中幾段（除錯用）
 let pass = 0, fail = 0; const ok = (c, name, extra) => { if (c) { pass++; console.log('PASS ' + name); } else { fail++; console.log('FAIL ' + name + (extra !== undefined ? '  ' + JSON.stringify(extra).slice(0, 700) : '')); } };
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64').replace(/=/g, '');
 const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.floor(Date.now() / 1000) + 86400 }) + '.sig';
@@ -160,6 +161,21 @@ async function run(browser, mobile) {
     await page.waitForTimeout(600); await page.evaluate(() => { window.__n = 0; window.__waits = []; });
     if (mobile) { await page.touchscreen.tap(pt.x, pt.y); await page.waitForTimeout(120); await page.touchscreen.tap(pt.x, pt.y); } else { await page.mouse.click(pt.x, pt.y); await page.waitForTimeout(120); await page.mouse.click(pt.x, pt.y); }
     await page.waitForTimeout(500); const C4 = await page.evaluate(() => ({ n: window.__n, waits: window.__waits })); ok(C4.n === 2, `${dev}：平常快速連點兩下（${mobile ? '手指' : '滑鼠'}），兩下都生效（各等了 ${C4.waits.join('、')} 毫秒）`, C4);
+  }
+  if (mobile && PARTS.includes('G')) {
+    await page.evaluate(() => { const app = window.rimtownApp; app._dismissKairoPanels?.(); document.querySelectorAll('#season-recap,.rt-modal-overlay').forEach(x => x.remove()); document.getElementById('kairo-card')?.classList.remove('tall'); app._openKairoTab('economy'); }); await page.waitForTimeout(500);
+    const card = () => page.evaluate(() => { const c = document.getElementById('kairo-card'), h = document.getElementById('kairo-card-header'); const r = c.getBoundingClientRect(), hr = h.getBoundingClientRect(); return { tall: c.classList.contains('tall'), top: Math.round(r.top), h: Math.round(r.height), vh: innerHeight, y: Math.round(hr.top + hr.height / 2), ta: getComputedStyle(h).touchAction }; });
+    const drag = async (dy) => { const c0 = await card(); const x = 150; await page.evaluate(() => { window.__pc = 0; const h = document.getElementById('kairo-card-header'); if (!h.__pcWired) { h.__pcWired = 1; h.addEventListener('pointercancel', () => { window.__pc++; }, true); } });
+      await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y: c0.y }] });
+      for (let i = 1; i <= 10; i++) { await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x, y: Math.round(c0.y + dy * i / 10) }] }); await page.waitForTimeout(16); }
+      const mid = await card(); await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] }); await page.waitForTimeout(350); return { c0, mid, end: await card(), cancels: await page.evaluate(() => window.__pc) }; };
+    const up1 = await drag(-300);
+    ok(up1.c0.ta === 'none' && up1.cancels === 0, '手機：面板標題列的手勢交給程式處理，拖到一半不會被瀏覽器取消', { ta: up1.c0.ta, cancels: up1.cancels });
+    ok(!up1.c0.tall && up1.mid.h > up1.c0.h + 150 && up1.end.tall && up1.end.h > up1.end.vh * 0.75, '手機：手指按住標題列往上拖，面板跟著長高，放開後停在滿版', { before: up1.c0.h, mid: up1.mid.h, after: up1.end.h, tall: up1.end.tall, vh: up1.end.vh });
+    const dn = await drag(360);
+    ok(dn.c0.tall && !dn.end.tall && dn.end.h < dn.end.vh * 0.6, '手機：滿版時往下拖，回到半高', { before: dn.c0.h, after: dn.end.h, tall: dn.end.tall });
+    await page.evaluate(() => { const b = document.getElementById('kairo-card-back'); window.__back = 0; b.addEventListener('click', () => { window.__back++; }, { once: true }); }); { const pt = await page.evaluate(() => { const r = document.getElementById('kairo-card-back').getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }); await page.touchscreen.tap(pt.x, pt.y); await page.waitForTimeout(300); }
+    ok(await page.evaluate(() => window.__back === 1 && document.getElementById('kairo-card').classList.contains('hidden')), '手機：標題列上的「返回」照樣點得到');
   }
   ok(errs.length === 0, `${dev}：沒有程式錯誤`, errs.slice(0, 3)); await page.close();
 
