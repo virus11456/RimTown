@@ -894,7 +894,7 @@ ${t('- 不要加任何前綴、名字標籤、引號')}`;
             }
             if (!text) {
                 // v5.47.0 BUG-03:備援真心話擴充+依性格/職業輕量填充,跨村民不再一字不差
-                const jobName = npc.job?.title || t('日子');
+                const jobName = jobTitleText(npc.job) || t('日子');
                 const traits = npc.personality?.traits || [];
                 const fb = ev.romance ? [
                     t('那個...我最近發現,只要看到你走過來,我就會不自覺地笑。你...應該懂我的意思吧?'),
@@ -1179,7 +1179,7 @@ ${t('只輸出 JSON 陣列，每個元素 {"n":村民序號,"vote":候選人序�
         if (agent.needs.recreation < 20) needsStr.push(t('需要娛樂'));
         return {
             name: agent.name, age: agent.age,
-            job: agent.job?.title ? this._enT(agent.job.title) : t('無業'), // 漁夫／獵人這類後來才換上的職稱存的是中文，英文版要翻
+            job: jobTitleText(agent.job) || t('無業'), // 漁夫／獵人這類後來才換上的職稱存的是中文，英文版要翻
             traits: traitLabels.join(t('、')),
             background: agent.personality.background ? this._enT(agent.personality.background) : t('普通居民'),
             values: agent.personality.values.map(v => this._enT(v)).join(t('、')),
@@ -1474,8 +1474,8 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
     _generatePersonalityDialogue(agentA, agentB, world, relA, relB) {
         const tA = agentA.personality.traits;
         const tB = agentB.personality.traits;
-        const jobA = agentA.job?.title || t('無業');
-        const jobB = agentB.job?.title || t('無業');
+        const jobA = jobTitleText(agentA.job) || t('無業');
+        const jobB = jobTitleText(agentB.job) || t('無業');
         const locZh = locName(world, agentA.currentLocation); const loc = t(locZh); // v6.19.0 地點用顯示名(之前是 id 去底線,中文句子裡會出現「在chapel」)
         const timeOfDay = world.clock.timeOfDay;
         const season = world.clock.season;
@@ -1825,7 +1825,7 @@ ${t('提示：romantic_change 代表心動程度的變化。只有明確的曖�
             // Bad joke that offends
             () => {
                 const jokes = [
-                    `${t('哈哈，你知道嗎，你做的')}${agentB.job?.title||t('事')}${t('讓我想到一個笑話——')}`,
+                    `${t('哈哈，你知道嗎，你做的')}${jobTitleText(agentB.job)||t('事')}${t('讓我想到一個笑話——')}`,
                     t('說真的，你那個表情也太好笑了吧？'),
                     `${t('你是不是又')}${pickRandom([t('偷懶'),t('搞砸'),t('遲到')])}${t('了？我開玩笑的啦。')}`,
                 ];
@@ -2075,7 +2075,7 @@ ${t('- 整個回覆只有對話內容和EFFECTS行，不要有其他任何東西
         const aff = relNpc.affinity;
         const isCouple = relNpc.status === 'dating' || relNpc.status === 'married';
         const msg = playerMessage.toLowerCase();
-        const jobTitle = npc.job?.title || t('居民');
+        const jobTitle = jobTitleText(npc.job) || t('居民');
         const jobKey = npc.job?.key || '';
         const loc = npc.currentLocation.replace(/_/g,' ');
         const season = world.clock.season;

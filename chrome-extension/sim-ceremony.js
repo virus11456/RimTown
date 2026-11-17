@@ -135,7 +135,7 @@ const CEREMONY = (() => {
             const kin = new Set([...(c.family || []), ...(c.close || [])]); // 主辦人出遠門或不在,就由到場的家屬好友致詞
             const sp = (w.agents[c.host] && !away(w, w.agents[c.host]) ? w.agents[c.host] : null) || g.find(a => kin.has(a.agentId)) || (c.scale >= 3 ? npcs(w).find(a => a.job?.key === 'mayor') : null) || g[0] || null;
             c.speaker = sp?.name || ''; c.speakerId = sp?.agentId || null;
-            if (sp) askAI(w, c, `${t('你是')}${sp.name}${t('，在')}${c.name}${t('的葬禮上說一兩句悼詞（30 字內，口語、真誠，不要客套）。')}${c.name}${t('生前是')}${c.job || t('鎮民')}${c.leader ? t('，當過首長') : ''}${t('。只輸出悼詞本身。')}`);
+            if (sp) askAI(w, c, `${t('你是')}${sp.name}${t('，在')}${c.name}${t('的葬禮上說一兩句悼詞（30 字內，口語、真誠，不要客套）。')}${c.name}${t('生前是')}${c.job ? jobTitleText({ title: c.job }) : t('鎮民')}${c.leader ? t('，當過首長') : ''}${t('。只輸出悼詞本身。')}`);
             log(w, 'death', c.memorial ? '🕯️ {name}的追思會開始了，{n} 人聚在{loc}。' : '🕯️ {name}的葬禮開始了，{n} 人聚在{loc}送他最後一程。', { name: c.name, n: g.length, loc: locName(w, c.loc) }, c.name);
         } else {
             const A = w.agents[c.a], B = w.agents[c.b];

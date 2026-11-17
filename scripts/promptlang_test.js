@@ -58,7 +58,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     const npcs = Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18); const a = npcs[0], b = npcs[1];
     // 職稱：食物分工把農夫換成漁夫／獵人
     const farmer = npcs.find(x => x.job?.key === 'farmer');
-    if (farmer && typeof ECON !== 'undefined' && ECON.applyRole) { ECON.applyRole(w, farmer, 'fish'); o.roleTitle = farmer.job.title; }
+    if (farmer && typeof ECON !== 'undefined' && ECON.applyRole) { ECON.applyRole(w, farmer, 'fish'); o.roleTitle = farmer.job.title; o.roleProf = ce._buildCharacterProfile(farmer).job; o.roleDoing = (() => { const k = farmer.activity; farmer.activity = 'working'; try { return String(farmer.activityReason()); } catch (e) { return 'ERR ' + e.message; } finally { farmer.activity = k; } })(); }
     a.job = a.job || new Job('farmer'); const keep = a.job.title; a.job.title = '漁夫'; o.profJob = ce._buildCharacterProfile(a).job; o.epitaph = (() => { try { return LifecycleSystem.prototype._generateEpitaph.call(w.lifecycle || {}, a); } catch (e) { return 'ERR ' + e.message; } })(); a.job.title = keep;
     // 婚姻狀態、在意的事、簡介
     const p0 = a.relationships.getPartner; a.relationships.getPartner = () => ({ status: 'married', targetName: b.name }); o.married = ce._buildCharacterProfile(a).status.split(/[;；]/)[0]; a.relationships.getPartner = () => ({ status: 'dating', targetName: b.name }); o.dating = ce._buildCharacterProfile(a).status.split(/[;；]/)[0]; a.relationships.getPartner = p0;
@@ -80,7 +80,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     return o;
   };
   { const { ctx, page, errs } = await open('en'); const o = await page.evaluate(probe);
-    ok(o.roleTitle === 'Fisher', '農夫改去捕魚，職稱存的是英文（Fisher）', o.roleTitle);
+    ok(o.roleTitle === '漁夫' && o.roleProf === 'Fisher' && /Fisher/.test(o.roleDoing) && !HAN.test(o.roleDoing), '農夫改去捕魚：存檔裡的職稱照舊是中文（漁夫），放進題目與句子時是英文（Fisher）', [o.roleTitle, o.roleProf, o.roleDoing]);
     ok(o.profJob === 'Fisher', '舊存檔裡存成中文的職稱（漁夫），放進題目時翻成英文', o.profJob);
     ok(typeof o.epitaph === 'string' && /Fisher/.test(o.epitaph) && !HAN.test(o.epitaph), '墓誌銘裡的職稱是英文', o.epitaph);
     ok(/^Married to \S+$/.test(o.married) && /^Dating \S+$/.test(o.dating) && !/結婚|交往|dating$/.test(o.married + o.dating), '婚姻狀態：Married to X／Dating X，後面沒有多餘的字（名字送出前才換成英文）', [o.married, o.dating]);
@@ -94,7 +94,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(o.buzzKey === '{x}: {y}', '「我聽說了某某：想法」這條記憶樣板有英文', o.buzzKey);
     ok(errs.length === 0, '英文頁面沒有程式錯誤', errs.slice(0, 3)); await ctx.close(); }
   { const { ctx, page, errs } = await open('zh'); const o = await page.evaluate(probe);
-    ok(o.roleTitle === '漁夫' && o.profJob === '漁夫', '中文：職稱照舊是漁夫', [o.roleTitle, o.profJob]);
+    ok(o.roleTitle === '漁夫' && o.profJob === '漁夫' && /漁夫/.test(o.roleDoing), '中文：職稱照舊是漁夫', [o.roleTitle, o.profJob, o.roleDoing]);
     ok(/^已與.+結婚$/.test(o.married) && /^正在與.+交往$/.test(o.dating), '中文：已與某某結婚／正在與某某交往', [o.married, o.dating]);
     ok(o.values === '知識、社群', '中文：在意的事照舊', o.values);
     ok(/^32歲/.test(o.ageJob || ''), '中文：32歲農夫', o.ageJob);

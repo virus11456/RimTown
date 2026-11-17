@@ -109,6 +109,8 @@ class Needs {
 // --- Memory ---
 // v6.19.0 模板物件:{k, p},給 Memory.addT／logMessageT 當巢狀參數用;建立當下的文字用 Memory.render 算
 function tpl(k, p = {}) { return { k, p }; }
+// 職稱放進句子時用：漁夫／獵人是後來才換上的職稱，存的是中文原文（其他職稱載入時就照介面語言翻好了），英文介面要翻；中文介面原樣
+function jobTitleText(job) { const x = job && job.title; return (x && typeof I18N !== 'undefined' && I18N.getLang() === 'en') ? t(x) : (x || ''); }
 // v9.18.0 地點代碼沒有自訂名稱時的中文名（介面與作息共用）
 const LOC_FALLBACK = { town_hall: '鎮公所', clinic: '診所', workshop: '工坊', farm: '農場', tavern: '酒館', guardpost: '哨站', chapel: '教堂', library: '圖書館', general_store: '雜貨店', quarry: '礦場', town_square: '廣場', park: '公園', well: '水井', residential_north: '北區住宅', residential_south: '南區住宅', residential_east: '東區住宅', exploration: '探險中', graveyard: '墓園', forest: '森林', river: '河邊', hill: '山丘', cave: '洞穴', lake: '湖邊', meadow: '草原', market: '市集', school: '學堂', bank: '銀行' };
 // v6.19.0 地點顯示名(中文原文,顯示時再 t()):主題鎮專屬名 → 通用對照表 → id 去底線
@@ -608,7 +610,7 @@ class Agent {
         switch (this.activity) {
             case 'sleeping': return n.rest < 30 ? t('累壞了,需要補眠') : t('照著作息就寢');
             case 'eating': return n.hunger < 30 ? t('肚子餓得受不了') : t('到了用餐時間');
-            case 'working': return this.job ? `${t('正在')}${this.job.title || t('工作')}${t('崗位上')}` : t('工作時間');
+            case 'working': return this.job ? `${t('正在')}${jobTitleText(this.job) || t('工作')}${t('崗位上')}` : t('工作時間');
             case 'socializing': return n.social < 30 ? t('太久沒跟人說話了') : t('想跟大家聚聚');
             case 'recreation': return n.recreation < 30 ? t('壓力太大,需要放鬆') : t('享受閒暇時光');
             case 'wandering': return t('沒什麼事,四處走走');
