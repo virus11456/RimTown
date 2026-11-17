@@ -168,6 +168,7 @@ const WALLET = (() => {
     const loanSize = (w, l) => Math.min(30, Math.max(10, Math.round(get(w, l) * 0.15 / 5) * 5));
     // 朋友之間借錢:真的給錢;一週後到期,還不還接上恩怨系統
     function lendTo(w, l, r) {
+        if (!l || !r || r.isDead || w.agents[r.agentId] !== r) return 0; // v11.7.0 開口的人在等回話的這段時間走了（搬走、逃難、過世）：不借，錢不會付出去（以前會付進公庫再出錯）
         const n = loanSize(w, l); if (!pay(w, l, r, n)) return 0; const today = day(w);
         r.addThought?.('helped_out', w, l.agentId, l.name);
         try { const D = DARK.S(w); D.debts = D.debts || []; D.debts.push({ l: l.agentId, r: r.agentId, n, day: today, due: today + 7, cash: true }); } catch (e) {}
