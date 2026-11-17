@@ -27,17 +27,14 @@ const CIVIC = (() => {
             if (Math.random() > p) continue;
             const vic = all.filter(a => a !== th && cash(w, a) >= 60).sort(() => Math.random() - 0.5)[0]; if (!vic) continue;
             const n = Math.min(Math.floor(cash(w, vic) * 0.2), 30); if (n < 5 || !WALLET.take(w, vic, n)) continue; WALLET.add(w, th, n); C.thefts++;
+            (C.tlog || (C.tlog = [])).push(d); C.tlog = C.tlog.filter(x => d - x < 14); // v11.8.0 最近兩週的竊案（給抓到人的守衛看）
             const catchP = Math.min(0.85, 0.15 + guards * 0.2);
             if (Math.random() < catchP) {
-                { const back = Math.min(n, cash(w, th)); if (back > 0 && WALLET.take(w, th, back)) WALLET.add(w, vic, back); } C.caught++; /* v7.6.0 只還得回小偷身上還有的錢 */
-                const days = 3 + (C.thefts > 5 ? 2 : 0); C.jail[th.agentId] = d + days;
-                log(w, 'event', '👮 衛兵抓到{a}偷了{v}的 {n} 銀幣，關進牢裡 {d} 天。', { a: th.name, v: vic.name, n, d: days }, th.name);
-                mem(w, th, '我偷錢被抓了，要在牢裡待 {d} 天。', { d: days }, 8); mem(w, vic, '{a}偷了我的錢，還好衛兵抓到了。', { a: th.name }, 7);
-                vic.relationships.getOrCreate(th.agentId, th.name).modifyAffinity(-25); try { DARK.bump(w, th, 'exposed'); } catch (e) {}
-            } else {
-                mem(w, vic, '我的錢包少了 {n} 銀幣，不知道是誰偷的。', { n }, 6);
-                try { DARK.secret(w, { kind: 'scheme', culprit: th.agentId, victim: vic.agentId, k: '{a}偷了{v}的 {n} 銀幣', p: { a: th.name, v: vic.name, n } }); } catch (e) {}
-            }
+                C.caught++; const days = 3 + (C.thefts > 5 ? 2 : 0);
+                // v11.8.0 抓不抓得到照舊看天；抓到之後關不關、放不放、收不收錢，由抓到人的那位守衛自己決定（sim-decide-order.js caught）
+                if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'theft', th: th.agentId, vic: vic.agentId, n, days, d, c0: Math.round(cash(w, th) - n) })) continue;
+                jailDo(w, C, th, vic, n, days, d);
+            } else unseen(w, th, vic, n);
         }
         // 牢裡的人
         for (const [id, until] of Object.entries(C.jail)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; if (!a || a.isDead) { delete C.jail[id]; continue; } if (until <= d) { delete C.jail[id]; log(w, 'event', '🔓 {a}出獄了。', { a: a.name }, a.name); mem(w, a, '終於出來了，我得重新做人。', {}, 6); } else a.moodModifier = (a.moodModifier || 0) - 2; }
@@ -46,6 +43,19 @@ const CIVIC = (() => {
         if (!C.slum && C.poorDays >= 10) { C.slum = true; log(w, 'event', '🏚️ 窮人越來越多，鎮邊形成了貧民區，治安變差了。', {}); }
         if (C.slum && C.poorDays === 0) { C.slum = false; log(w, 'event', '🏘️ 大家的日子好轉，貧民區慢慢消失了。', {}); }
         if (C.slum) for (const a of all) if (cash(w, a) < 10) a.moodModifier = (a.moodModifier || 0) - 1;
+    }
+    // v11.8.0 抓到小偷：還錢、關幾天（原本 crime 裡的那一段，給「守衛自己決定關他」那條路共用；效果一模一樣）
+    function jailDo(w, C, th, vic, n, days, d) {
+        { const back = Math.min(n, cash(w, th)); if (back > 0 && WALLET.take(w, th, back)) WALLET.add(w, vic, back); } /* v7.6.0 只還得回小偷身上還有的錢 */
+        C.jail[th.agentId] = d + days;
+        log(w, 'event', '👮 衛兵抓到{a}偷了{v}的 {n} 銀幣，關進牢裡 {d} 天。', { a: th.name, v: vic.name, n, d: days }, th.name);
+        mem(w, th, '我偷錢被抓了，要在牢裡待 {d} 天。', { d: days }, 8); mem(w, vic, '{a}偷了我的錢，還好衛兵抓到了。', { a: th.name }, 7);
+        vic.relationships.getOrCreate(th.agentId, th.name).modifyAffinity(-25); try { DARK.bump(w, th, 'exposed'); } catch (e) {}
+    }
+    // 沒被抓到（或被放走）：失主不知道是誰，成了真相頁的祕密
+    function unseen(w, th, vic, n) {
+        mem(w, vic, '我的錢包少了 {n} 銀幣，不知道是誰偷的。', { n }, 6);
+        try { return DARK.secret(w, { kind: 'scheme', culprit: th.agentId, victim: vic.agentId, k: '{a}偷了{v}的 {n} 銀幣', p: { a: th.name, v: vic.name, n } }); } catch (e) { return null; }
     }
     // ---------- 稅率提案 ----------
     function taxProposal(w, C, d) {
@@ -135,7 +145,7 @@ const CIVIC = (() => {
     }
     function view(w) { const C = S(w); return { slum: C.slum, thefts: C.thefts, caught: C.caught, jailed: Object.entries(C.jail).filter(([id, u]) => u > day(w) && w.agents[id]).map(([id]) => t(w.agents[id].name)), guards: npcs(w).filter(a => a.job?.key === 'guard').length, land: landPrice(w), rent: C.lastRent || 0, tax: Math.round((w.wallet?.tax ?? 0.1) * 100) }; }
     const chip = (w, a) => (jailed(w, a) ? `⛓️ ${t('坐牢中')}` : '');
-    return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, migration, landPrice, jailed, view, chip };
+    return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, migration, landPrice, jailed, view, chip, jailDo, unseen };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tax = { icon: '💰', label: '稅率' };
 if (typeof ProposalSystem !== 'undefined') {

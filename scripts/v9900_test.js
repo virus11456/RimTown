@@ -62,7 +62,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const FS = w.factions; const fa = new Faction('f_t1', 'scholars', haters[0].name), fb = new Faction('f_t2', 'drinking_pals', fans[0].name);
       haters.slice(0, 3).forEach(a => fa.addMember(a.agentId)); fans.slice(0, 3).forEach(a => fb.addMember(a.agentId)); FS.factions = { f_t1: fa, f_t2: fb };
       const iss = THINGS.splitIssue(w, fa.members, fb.members); out.split = iss ? iss.name : null;
-      Math.random = () => 0.1; try { FS._tryFactionEvents(w); } finally { Math.random = rnd; }
+      // v11.8.0 兩派碰上之後，怎麼對另一派由帶頭的人決定（sim-decide-order.js）；這支測試的 evaluate 不等 AI 回話，所以這一步不送 AI、照個性決定（有爭議的事一樣讓他想槓上）
+      const fam0 = w.fullAgentMode; w.fullAgentMode = false;
+      Math.random = () => 0.1; try { FS._tryFactionEvents(w); } finally { Math.random = rnd; w.fullAgentMode = fam0; }
       out.factionLog = /吵起來|argue|quarrel/i.test(logs());
       X.att[T.id][haters[0].agentId] = -100; X.att[T.id][haters[1].agentId] = -20; X.att[T.id][haters[2].agentId] = -60; const before = X.att[T.id][haters[1].agentId];
       X.lastDay = null; Math.random = () => 0.99; try { THINGS.daily(w); } finally { Math.random = rnd; }

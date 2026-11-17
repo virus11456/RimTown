@@ -120,7 +120,7 @@
                 run: (w2, a2) => { const got = WL().voteBuyBy(w2, a2); return got && got.length ? { k: '塞了錢給{v}', p: { v: { raw: names(got) } } } : { k: '沒有塞成' }; } });
             if (I.press) out.push({ id: 'press', quiet: true, text: { k: '花 {c} 銀幣收買一家報社', p: { c: I.press.cost } }, say: '花錢收買報社', why: '報上怎麼寫，大家就怎麼想',
                 base: REF + tilt(0.35) + clampN((2 - h) * 0.15, -0.15, 0.3), lean: { face: 0.3, safe: -0.3 },
-                run: (w2, a2) => { const r = PR().bribeBy(w2, a2); return !r ? { k: '沒有談成' } : r.refused ? { k: '{p}的記者沒有收', p: { p: r.P.name[0] } } : { k: '{p}收了錢', p: { p: r.P.name[0] } }; } });
+                run: (w2, a2) => { const r = PR().bribeBy(w2, a2); return !r ? { k: '沒有談成' } : r.asked ? { k: '去找{p}談了', p: { p: r.P.name[0] } } /* v11.8.0 收不收由那家的主筆決定 */ : r.refused ? { k: '{p}的記者沒有收', p: { p: r.P.name[0] } } : { k: '{p}收了錢', p: { p: r.P.name[0] } }; } });
             return out;
         },
     });

@@ -462,34 +462,63 @@ class EventSystem {
         const event = {name:rd.name,description:rd.description,severity:rd.severity,effects:rd.effects||{},event_type:'raid'};
         this.eventLog.push([world.clock.timeStr, event]);
         this._applyEffects(event, world);
+        // v11.8.0 決策核心開著：首長（沒有首長就資歷最深的守衛）決定怎麼應對：出去打、守在牆內、花錢消災、帶大家躲起來（sim-decide-order.js raidCall）。打不打得贏照舊看天
+        if (typeof ORDER !== 'undefined' && ORDER.on(world) && ORDER.raid(world, this, RAID_POOL.indexOf(rd))) return event;
+        this._raidOutcome(world, rd, 'fight');
+        return event;
+    }
+    // v11.8.0 襲擊的結算（原本 _triggerRaid 的後半段；mode 'fight' 就是原本的算法）
+    //   wall 守在牆內：守衛只算八成，城牆工事多算一半；守不住時躲在牆內的人多，搶走的少三成，也沒人逃走
+    //   pay  花錢消災：錢從公庫付出去（記到「事件」，跟被搶走的錢同一個帳），付了就不打
+    //   hide 帶大家躲起來：不打，糧食多被搶三成，但沒有人逃走、守衛不會覺得丟臉
+    raidStrength(world, rd) {
         const guards = Object.values(world.agents).filter(a => a.job?.key==='guard' && !a.isPlayer);
         const buildingDefense = (world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0) + (world.news ? (world.news.getModifier('defense_bonus',0)||0) : 0); // v6.87.0 政令防衛
-        const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
         // v11.3.0 來襲的強度跟著城鎮等級：以前固定 2～4，一個守衛就有 2 點防禦，城市隨便幾個守衛永遠贏；現在村莊照舊、城鎮 2 倍、城市 4 倍、王都 6 倍（城市 8～16：七個守衛沒有城牆會輸給掠奪者，有城牆兵營加十個守衛 35 點以上穩贏）
         let tierLv = 0; try { tierLv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(world).lv || 0) : 0; } catch (e) { tierLv = 0; }
-        const threat = rd.threat_level * (RAID_TIER_MULT[tierLv] || 1);
-        if (defense >= threat) {
+        return { guards, buildingDefense, threat: rd.threat_level * (RAID_TIER_MULT[tierLv] || 1) };
+    }
+    raidTribute(world, rd) { const { threat } = this.raidStrength(world, rd); return Math.max(10, Math.round(threat * 4)); }
+    _raidOutcome(world, rd, mode = 'fight', leader = null) {
+        const { guards, buildingDefense, threat } = this.raidStrength(world, rd);
+        if (mode === 'pay') {
+            const cost = this.raidTribute(world, rd);
+            if (world.stockpile && world.stockpile.get('silver') >= cost && world.stockpile.consume('silver', cost, world.tickCount, `${t('付給')}${rd.attacker}${t('打發他們走')}`)) {
+                try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'event', -cost); } catch (e) {} // 跟被搶走的錢一樣記到「事件」
+                world.logMessageT('raid', '💰 {who}從公庫拿出 {n} 銀幣打發{attacker}，對方收了錢就走了。', { who: leader?.name || t('鎮上'), n: cost, attacker: rd.attacker }, leader?.name || '');
+                guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) - 3; });
+                return { mode, paid: cost, held: false };
+            }
+            mode = 'fight'; // 公庫付不出來，只好打
+        }
+        const wall = mode === 'wall', hide = mode === 'hide';
+        const defense = hide ? -1 : (wall ? guards.length * 1.6 : guards.length * 2) + randInt(1,3) + (wall ? buildingDefense * 1.5 : buildingDefense);
+        if (!hide && defense >= threat) {
             world.logMessageT('raid', '小鎮成功抵禦了{attacker}！', { attacker: rd.attacker });
             if (world.questSystem) world.questSystem.onRaidSurvived();
-            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
-        } else {
-            world.logMessageT('raid', '{attacker}突破了我們的防線！', { attacker: rd.attacker });
-            if (world.stockpile) {
-                // v11.3.0 被搶的糧食跟著人數：以前不管幾個人都是 10～30 份（村莊一天多的口糧，城市不到半天）；三十人以內照舊，之後照人數加
-                const raidPop = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead).length; const lootBase = randInt(10,30);
-                const stolenFood = Math.min(world.stockpile.get('food'), Math.max(lootBase, Math.round(lootBase * raidPop / 30)));
-                const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
-                if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
-                if(stolenSilver>0 && world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`)) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'event', -stolenSilver); } catch (e) {} } /* v8.8.0 被搶走的錢記到「事件」 */
-                world.logMessageT('raid', '{attacker}搶走了{stolenFood}食物和{stolenSilver}銀幣！', { attacker: rd.attacker, stolenFood, stolenSilver });
-            }
+            guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + (wall ? 5 : 10); g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
+            return { mode, held: true, defense, threat };
+        }
+        if (hide) world.logMessageT('raid', '🫣 大家躲了起來，{attacker}在鎮上搜刮了一輪。', { attacker: rd.attacker });
+        else world.logMessageT('raid', '{attacker}突破了我們的防線！', { attacker: rd.attacker });
+        if (world.stockpile) {
+            // v11.3.0 被搶的糧食跟著人數：以前不管幾個人都是 10～30 份（村莊一天多的口糧，城市不到半天）；三十人以內照舊，之後照人數加
+            const raidPop = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead).length; const lootBase = randInt(10,30);
+            const k = wall ? 0.7 : hide ? 1.3 : 1;
+            const stolenFood = Math.min(world.stockpile.get('food'), Math.round(Math.max(lootBase, Math.round(lootBase * raidPop / 30)) * k));
+            const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
+            if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
+            if(stolenSilver>0 && world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`)) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'event', -stolenSilver); } catch (e) {} } /* v8.8.0 被搶走的錢記到「事件」 */
+            world.logMessageT('raid', '{attacker}搶走了{stolenFood}食物和{stolenSilver}銀幣！', { attacker: rd.attacker, stolenFood, stolenSilver });
+        }
+        if (!wall && !hide) {
             const npcs = Object.values(world.agents).filter(a => !a.isPlayer && a.job?.key !== 'guard');
             if (npcs.length && Math.random() < 0.4) {
                 const fleeing = pickRandom(npcs);
                 this._sendAgentTravelling(world, fleeing, tpl('在{attacker}襲擊後逃離', { attacker: rd.attacker }), 3);
             }
         }
-        return event;
+        return { mode, held: false, defense, threat };
     }
     _startEventChain(world, forceChainId = null) {
         let chainId, stages;
