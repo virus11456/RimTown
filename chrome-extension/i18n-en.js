@@ -16817,6 +16817,7 @@
         '公庫現在的採購是首長 {n} 天前定的：{plan}': 'The leader set the current treasury purchasing {n} days ago: {plan}',
         '公庫這週的採購': 'This week\'s treasury purchasing',
         '定的': 'set it',
+        '{a}定的': 'set by {a}',
         '首長為升格保留，平常不能動用': 'Set aside by the leader for the upgrade, not for ordinary use',
         '已批准的提案保留，平常不能動用': 'Set aside for approved proposals, not for ordinary use',
     });
