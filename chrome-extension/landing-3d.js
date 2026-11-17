@@ -341,6 +341,7 @@ const LANDING3D = (() => {
         resize();
         const tick = (now) => {
             st.raf = 0; if (!st.alive) return;
+            if (!st.visible) return; // 已經排好的那一格在捲出畫面後才輪到:不畫(回到畫面時 IntersectionObserver 會再排)
             if (now - st.last < (mobile ? 30 : 14)) { schedule(); return; }
             const dt = Math.min(0.06, (now - (st.last || now)) / 1000); st.last = now; st.frame++;
             impl.frame((now - st.t0) / 1000, dt);
