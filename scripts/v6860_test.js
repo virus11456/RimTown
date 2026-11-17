@@ -62,11 +62,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       for (const g of guests) { g.relationships.getOrCreate(A.agentId, A.name).affinity = 60; if (typeof WALLET !== 'undefined') WALLET.add(w, g, 50); }
       const foe = alive()[9]; const rf = foe.relationships.getOrCreate(A.agentId, A.name); rf.status = 'ex'; rf.affinity = -50;
       const wbefore = typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0; const _dt = typeof DAY !== 'undefined' ? DAY.tick : null; if (_dt) DAY.tick = () => {}; /* v11.2.0 新人當晚可能去酒館花錢，這裡只看禮金有沒有進帳 */
+      /* 新人在婚期前離開鎮上的話婚禮照規矩取消（實測抓到的是被鄰鎮高薪挖角走了，9.16.0 的機制），那不是這裡要看的事：這幾天不讓這兩位被挖角、也不考慮搬走 */
+      let _po = null; try { if (typeof DECIDE !== 'undefined') { for (const x of [A, B]) DECIDE.S(w).cool[x.agentId + '|leave'] = w._absDay() + 30; const K = DECIDE.KINDS.poach; if (K) { _po = K.options; K.options = function (w2, a2, c2) { return (a2 === A || a2 === B) ? [] : _po.call(this, w2, a2, c2); }; } } } catch (e) {}
       const wc = CEREMONY.planWedding(w, A, B); out.wedPlan = { inDays: wc ? wc.day - w._absDay() : null, log: logs().filter(l => /💍/.test(l)).slice(-1)[0] || '' };
-      const orig = Math.random; let atSquare = 0;
-      for (let i = 0; i < 96 * 7 && wc.status !== 'held'; i++) { if (wc.status === 'ongoing' && w.clock.hour >= CEREMONY.WED_END - 1) Math.random = () => 0.01; step(1); Math.random = orig; if (wc.status === 'ongoing') atSquare = Math.max(atSquare, Object.values(w.agents).filter(a => a._ceremony?.id === wc.id && a.targetLocation === wc.loc).length); }
+      const orig = Math.random; let atSquare = 0, giftIn = null; /* 禮金在婚禮結束那一格進新人的帳，同一格新人付喜宴的錢（依規模 10／30／60）：量那一格前後，淨進帳＝禮金－喜宴。以前拿訂婚期那天的錢比（容許少 40），新人這三五天自己花得多一點就誤判 */
+      for (let i = 0; i < 96 * 7 && wc.status !== 'held'; i++) { if (wc.status === 'ongoing' && w.clock.hour >= CEREMONY.WED_END - 1) Math.random = () => 0.01; const pre = typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0; step(1); Math.random = orig; if (wc.status === 'held' && typeof WALLET !== 'undefined') giftIn = WALLET.get(w, A) + WALLET.get(w, B) - pre; if (wc.status === 'ongoing') atSquare = Math.max(atSquare, Object.values(w.agents).filter(a => a._ceremony?.id === wc.id && a.targetLocation === wc.loc).length); }
       Math.random = orig;
-      out.wed = { status: wc.status, guests: (wc.guests || []).length, atSquare, gifts: wc.gifts, speaker: wc.speaker, scene: wc.scene || '', moneyUp: (typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0) > wbefore - 40, log: logs().filter(l => /💒/.test(l)).slice(-1)[0] || '' }; if (_dt) DAY.tick = _dt;
+      out.wed = { status: wc.status, guests: (wc.guests || []).length, atSquare, gifts: wc.gifts, speaker: wc.speaker, scene: wc.scene || '', moneyUp: giftIn != null ? giftIn >= (wc.gifts || 0) - ([0, 10, 30, 60][wc.scale] || 10) - 1 : (typeof WALLET !== 'undefined' ? WALLET.get(w, A) + WALLET.get(w, B) : 0) > wbefore - 40, giftIn, log: logs().filter(l => /💒/.test(l)).slice(-1)[0] || '' }; if (_dt) DAY.tick = _dt; if (_po) DECIDE.KINDS.poach.options = _po;
       // 結婚不再一次辦完(原始碼)
       out.noInstant = /CEREMONY\.planWedding/.test(World.prototype.tick.toString() + Object.getOwnPropertyNames(World.prototype).map(k => { try { return String(World.prototype[k]); } catch (e) { return ''; } }).join('\n'));
       // 地點卡

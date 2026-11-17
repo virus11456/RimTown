@@ -22,7 +22,9 @@ const DAY = (() => {
     const bump = (a, b, n) => { try { a.relationships?.getOrCreate?.(b.agentId, b.name)?.modifyAffinity?.(n); } catch (e) {} };
     const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
     const inTown = (w, a) => !!a && !a.isDead && w.agents[a.agentId] === a && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId);
-    const adults = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && inTown(w, a));
+    // 喪屍沒有「一天怎麼過」：不被問今晚做什麼、不去酒館、不赴約（以前喪屍照樣去喝酒、跟朋友吃飯、留下來加班）
+    const zombie = (w, a) => { try { return !!(w?.worldcal?.cur?.zb && typeof WORLDCAL !== 'undefined' && WORLDCAL.isZombie(w, a)); } catch (e) { return false; } };
+    const adults = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && inTown(w, a) && !zombie(w, a));
     const cash = (w, a) => (typeof WALLET !== 'undefined' && w.wallet ? WALLET.get(w, a) : 0);
     const wage = (a) => { try { return typeof WALLET !== 'undefined' ? (WALLET.wageOf(a) || 4) : 4; } catch (e) { return 4; } };
     const P = (w) => { try { return typeof INFL !== 'undefined' ? INFL.p(w) : 1; } catch (e) { return 1; } };
@@ -262,7 +264,7 @@ const DAY = (() => {
 
     // 人真的去哪裡：照今天的安排蓋過鐘點規則（餓壞、累垮時不管）
     function steer(w, a) {
-        a._dayLoc = null; a._dayWhy = null; if (!on(w) || a.isPlayer || a.isDead || !a.needs) return;
+        a._dayLoc = null; a._dayWhy = null; if (!on(w) || a.isPlayer || a.isDead || !a.needs) return; if (zombie(w, a)) { a._hangHold = null; a._pendingHangout = null; return; }
         if (a.status === 'hospitalized' && a.needs.hunger >= 15) { a.activity = 'sleeping'; a._dayLoc = w.townMap?.locations?.clinic ? 'clinic' : a.homeLocation; a._dayWhy = '受了傷，躺在診所'; return; }
         if (a.needs.hunger < 15 || a.needs.rest < 10) return; if (a._ceremony || a._thingAt || (a._thingGo && w.tickCount >= a._thingGo.from && w.tickCount < a._thingGo.until)) return; /* 正在參加婚喪典禮、或這個時間已經約好去某個地方（賭場、寫信約的見面、告示上的聚會、門口抗議）的人照原本的安排 */ const X = S(w), id = a.agentId, h = w.clock.hour;
         const set = (act, loc, why) => { a.activity = act; a._dayLoc = loc === 'home' ? a.homeLocation : loc; a._dayWhy = why; };
