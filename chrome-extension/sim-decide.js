@@ -376,7 +376,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
     // 把一批選擇點交出去：AI 開著就照先後問（每天有上限），其餘用傾向版
     function dispatch(w, X, offers, d) {
         // v11.6.0 東家看帳是在發薪、記完帳之後問的（sim-market.js），比每天掃一輪早：今天的額度先歸零，掃一輪時就不會再歸零一次，問過的照樣算在今天
-        if (X._cDay !== d && X.lastDay !== d) { X._cDay = d; X._asked = 0; X._kAsked = {}; X._gAsked = {}; }
+        if (X._cDay !== d && X.lastDay !== d) { X._cDay = d; X._cEarly = 1; X._asked = 0; X._kAsked = {}; X._gAsked = {}; }
         const ai = aiOn(w); const P0 = pend(X); const groups = {};
         for (const o of offers) {
             // 別人找上門的事(來借錢、來道歉、先開口)不能等：他若正在等 AI 想一件「自己的事」，這一件也照樣送去問，兩件各自等回答（v10.2.1；以前是把自己那件擱下，結果那件沒有下文）。
@@ -406,7 +406,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // ================= 4. 每天 =================
     function daily(w) {
-        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; if (X._cDay !== d) { X._cDay = d; X._asked = 0; X._kAsked = {}; X._gAsked = {}; }
+        if (!w.observerMode || !W() || !w.wallet) return; const X = S(w), d = day(w); if (X.lastDay === d) return; X.lastDay = d; if (X._cDay === d && X._cEarly) X._cEarly = 0; /* v11.6.0 今天稍早（東家看帳）已經歸零過：問過的照樣算在今天，這一次不再歸零 */ else { X._cDay = d; X._asked = 0; X._kAsked = {}; X._gAsked = {}; }
         const all = npcs(w);
         // 昨天問 AI 的還沒回話（太慢、沒額度、遊戲開很快）：不讓人卡著，先照個性決定；晚到的回話就不算了
         { const P1 = pend(X); for (const [key, q] of [...P1]) { if (q.d >= d) continue; P1.delete(key); const id = q.id; const a = w.agents[id]; const gone = () => { if (OBS.length) emit('dropped', { w, a: a || { agentId: id }, K: q.K }); }; /* v11.2.0 事情已經過去（人不在了、時機過了、已經沒有選項）也要說一聲，不然觀察工具會以為這件事還在等 */ if (!a || !inTown(w, a)) { gone(); continue; } const ctx = q.K.scan ? whenOf(w, a, q.K) : q.ctx; if (!ctx) { gone(); continue; } X.st.aiMiss++; if (!resolveRule(w, X, { a, K: q.K, ctx }, d)) gone(); } }
@@ -589,7 +589,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.decide = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, _kAsked, _gAsked, _cDay, ...rest } = this.decide; d.decide = rest; } return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.decide) { const { _asked, _kAsked, _gAsked, _cDay, _cEarly, ...rest } = this.decide; d.decide = rest; } return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.decide = (data?.decide && typeof data.decide === 'object') ? data.decide : null; } catch (e) {} return r; };
 }
