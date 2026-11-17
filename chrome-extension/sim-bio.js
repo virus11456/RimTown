@@ -146,7 +146,7 @@ const BIO = (function () {
     // ---------- 每天:法律、藥廠做藥 ----------
     function daily(w) {
         if (!w?.research) return; const B = S(w); lawDaily(w);
-        if (TECH.built(w, 'pharma_works') && (w.stockpile?.get?.('herbs') || 0) >= 2) { w.stockpile.consume('herbs', 2, w.tickCount, t('藥廠'), 'production'); w.stockpile.add('medicine', 1, w.tickCount, t('藥廠')); }
+        if (TECH.built(w, 'pharma_works') && (w.stockpile?.get?.('herbs') || 0) >= 2) { if (w.stockpile.consume('herbs', 2, w.tickCount, t('藥廠'), 'production')) w.stockpile.add('medicine', 1, w.tickCount, t('藥廠')); } // v11.5.0 拿不到料（剩下的是保留的）就不出貨
         // 騙子被拆穿(過了幾天,受害者發現沒效)
         const q = B.quack; if (q && day(w) - q.d >= 4) { B.quack = null; const v = w.agents[q.v], k = w.agents[q.q]; if (v && k && !v.isDead && !k.isDead && Math.random() < 0.6) { aff(v, k, -25); mem(w, v, '{q}賣的延壽藥根本是糖水，我被騙了。', { q: k.name }, 8); for (const x of ad(w)) if (x !== v && x !== k && Math.random() < 0.3) aff(x, k, -6); TECH.log(w, '🧴 {v}發現{q}賣的延壽藥是染色的糖水，氣得到處跟人說。', { v: v.name, q: k.name }, v.name); } }
     }

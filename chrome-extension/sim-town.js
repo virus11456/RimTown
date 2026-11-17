@@ -263,6 +263,7 @@ const EVENT_CHAINS = {
         {name:t('社區重建'),description:t('大家齊心協力重建。'),severity:'minor',effects:{mood_all:10,conversation_topic:t('重建工作')},delay_days:3,duration_days:2},
     ],
 };
+const RAID_TIER_MULT = [1, 2, 4, 6]; // v11.3.0 來襲強度倍率：村莊／城鎮／城市／王都
 const RAID_POOL = [
     {name:t('盜匪來襲'),description:t('一群盜匪正在逼近！'),severity:'major',threat_level:3,attacker:t('盜匪'),effects:{mood_all:-15,conversation_topic:t('盜匪襲擊')}},
     {name:t('野獸攻擊'),description:t('一群狼從山上下來了！'),severity:'moderate',threat_level:2,attacker:t('狼群'),effects:{mood_all:-10,conversation_topic:t('狼群攻擊')}},
@@ -464,14 +465,19 @@ class EventSystem {
         const guards = Object.values(world.agents).filter(a => a.job?.key==='guard' && !a.isPlayer);
         const buildingDefense = (world.buildings ? (world.buildings.getEffect('defense_bonus',0)||0) : 0) + (world.news ? (world.news.getModifier('defense_bonus',0)||0) : 0); // v6.87.0 政令防衛
         const defense = guards.length * 2 + randInt(1,3) + buildingDefense;
-        if (defense >= rd.threat_level) {
+        // v11.3.0 來襲的強度跟著城鎮等級：以前固定 2～4，一個守衛就有 2 點防禦，城市隨便幾個守衛永遠贏；現在村莊照舊、城鎮 2 倍、城市 4 倍、王都 6 倍（城市 8～16：七個守衛沒有城牆會輸給掠奪者，有城牆兵營加十個守衛 35 點以上穩贏）
+        let tierLv = 0; try { tierLv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(world).lv || 0) : 0; } catch (e) { tierLv = 0; }
+        const threat = rd.threat_level * (RAID_TIER_MULT[tierLv] || 1);
+        if (defense >= threat) {
             world.logMessageT('raid', '小鎮成功抵禦了{attacker}！', { attacker: rd.attacker });
             if (world.questSystem) world.questSystem.onRaidSurvived();
             guards.forEach(g => { g.moodModifier = (g.moodModifier || 0) + 10; g.memory.addT(world.tickCount, world.clock.timeStr, 'raid', '協助抵禦了{attacker}！', { attacker: rd.attacker }, 8); });
         } else {
             world.logMessageT('raid', '{attacker}突破了我們的防線！', { attacker: rd.attacker });
             if (world.stockpile) {
-                const stolenFood = Math.min(world.stockpile.get('food'), randInt(10,30));
+                // v11.3.0 被搶的糧食跟著人數：以前不管幾個人都是 10～30 份（村莊一天多的口糧，城市不到半天）；三十人以內照舊，之後照人數加
+                const raidPop = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead).length; const lootBase = randInt(10,30);
+                const stolenFood = Math.min(world.stockpile.get('food'), Math.max(lootBase, Math.round(lootBase * raidPop / 30)));
                 const stolenSilver = Math.min(world.stockpile.get('silver'), randInt(5,20));
                 if(stolenFood>0) world.stockpile.consume('food',stolenFood,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`);
                 if(stolenSilver>0 && world.stockpile.consume('silver',stolenSilver,world.tickCount,`${t('被')}${rd.attacker}${t('搶走')}`)) { try { if (typeof MONEY !== 'undefined') MONEY.flow(world, 'event', -stolenSilver); } catch (e) {} } /* v8.8.0 被搶走的錢記到「事件」 */
@@ -1004,9 +1010,14 @@ class ElectionSystem {
 
     _processVotes(world) {
         const voters = this._residents(world).filter(a => !this.votes[a.agentId] && !this._llmPending?.[a.agentId]); // v6.42.0 正在問 AI 的人先不用規則投
+        // v11.4.0 以前每個選民每天六成機率去投。現在：心裡已經有人選的、熱心公眾事務的人第一天就投；
+        // 還在猶豫的人拖到最後一天；懶得管又沒有特別屬意誰、或心情壞到谷底的人不去投
+        const last = (this.votingDaysLeft || 0) <= 0; const T = (a, k) => (a.personality?.traits || []).includes(k);
         for (const voter of voters) {
-            if (Math.random() > 0.6) continue;
-            const chosen = this._calculateVote(voter, world);
+            const chosen = this._calculateVote(voter, world); const gap = this._lastGap || 0;
+            const keen = gap >= 8 || T(voter, 'hardworking') || T(voter, 'charismatic') || this.candidates.some(c => c.agentId === voter.agentId);
+            const apathetic = (T(voter, 'lazy') && gap < 4) || ((voter.mood ?? 50) < 20 && gap < 8);
+            if (!(keen || (last && !apathetic))) continue;
             if (chosen) { this.votes[voter.agentId] = chosen.agentId; chosen.votes++; }
         }
     }
@@ -1048,6 +1059,7 @@ class ElectionSystem {
             return { candidate: c, score };
         });
         scores.sort((a, b) => b.score - a.score);
+        this._lastGap = scores.length >= 2 ? scores[0].score - scores[1].score : 99; // v11.4.0 心裡最屬意的人贏第二名多少：差得多的人早早去投
         return scores[0]?.candidate || null;
     }
 

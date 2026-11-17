@@ -65,7 +65,7 @@ const TRAVELER = (() => {
         // 點化:聽了你的話的人,有機會據此向全鎮提案(只在完整智能體模式、AI 可用時)
         try {
             if (!P || !w.fullAgentMode || typeof FREEPROP === 'undefined' || !P._inventLLM || !w.conversationEngine?.fullAgentOk?.(w)) return;
-            if (P.open().length >= ProposalSystem.MAX_OPEN) return;
+            if (P.open().length >= P._maxOpen(w)) return; // v11.3.0 上限跟著城鎮等級（以前固定 4）
             const cands = []; for (const [id, arr] of Object.entries(T.said)) for (const x of arr) if (!x.used && d - x.d <= 2 && w.agents[id] && !w.agents[id].isDead) cands.push([w.agents[id], x]);
             if (!cands.length || Math.random() > 0.3) return; const [a, x] = cands[Math.floor(Math.random() * cands.length)]; x.used = true;
             P._inventLLM(w, P._abs(w), a, () => {}, [{ title: t('路過的旅人跟你說過的話'), desc: x.m }]);

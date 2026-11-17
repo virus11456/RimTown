@@ -36,6 +36,10 @@ const TIERS = (() => {
     // 降級看寬鬆一點的門檻(人口八五折、繁榮度少 8),避免在門檻邊緣忽上忽下
     function metLoose(w) { const p = npcs(w).length / 0.85, pr = pros(w) + 8, e = era(w); let lv = 0; for (let i = 1; i < LV.length; i++) { const L = LV[i]; if (p >= L.pop && pr >= L.pros && e >= L.era) lv = i; else break; } return lv; }
     const GRACE = 60; // 剛升格的 60 天內不會降級
+    // v11.5.0 首長為升格保留的料（sim-procure.js）是留給鎮公所擴建用的：算升格夠不夠料、付料的時候把它當成可以用的
+    const ownMat = (w, fn) => { const sp = w.stockpile, h = sp ? sp.hold : null; if (sp) sp.hold = null; try { return fn(); } finally { if (sp) sp.hold = h; } };
+    // 升格卡在科技：人口、繁榮都夠下一級了，科技還差幾項。回傳 { era 要補的時代, need 要幾項, done 已經幾項 }，沒卡住回 null
+    function techBlock(w) { const T = S(w); const want = (typeof TIERS !== 'undefined' ? TIERS.met : met)(w); if (!(want > T.lv)) return null; const cap = techCap(w); if (cap >= want || Math.max(T.lv, cap) > T.lv) return null; const e = cap < 2 ? 4 : 5; return { era: e, need: TECH_NEED[e], done: techDone(w, e) }; }
     const level = (w) => (w && w.tierState ? w.tierState.lv : 0);
     const info = (w) => LV[level(w)];
     const leaderTitle = (w, lv) => { const L = LV[lv ?? level(w)]; return en() ? L.leaderEn : L.leader; };
@@ -168,9 +172,9 @@ const TIERS = (() => {
             T.up = UP_DAYS;
             // v6.77.0 升格要擴建鎮公所:木材、石材(城市以上加金屬)不夠就先等,連續達標的天數留著
             const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
-            const canMat = !mat || (typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat));
+            const canMat = !mat || ownMat(w, () => (typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat)));
             if (T.readySince == null) T.readySince = d;
-            if (!canMat) { if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ECON.lack(w, mat)) }); } catch (e) {} } }
+            if (!canMat) { if (!T.waitMat || d - T.waitMat >= 5) { T.waitMat = d; try { w.logMessageT?.('event', '🏗️ 已經夠格升格為{n}，但擴建鎮公所的{m}還不夠，得先備料。', { n: LV[T.lv + 1].zh, m: ECON.matText(ownMat(w, () => ECON.lack(w, mat))) }); } catch (e) {} } }
             // v6.81.0 升格要村民提案、投票、首長批准(觀察者模式);太久都沒升(60 天)才直接升,免得卡死
             else if (!needsVote(w) || d - T.readySince >= 60) { if (needsVote(w)) { try { w.logMessageT?.('event', '🏛️ 升格案拖了好久，鎮公所決定直接擴建、正式升格。', {}); } catch (e) {} } promote(w); }
         } }
@@ -185,8 +189,8 @@ const TIERS = (() => {
     function promote(w) {
         const T = S(w); if (!(metNow(w) > T.lv)) return { ok: false, error: '現在不夠格了' };
         const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null;
-        if (mat && !(typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat))) return { ok: false, error: '擴建鎮公所的建材不夠' };
-        if (mat) { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); }
+        if (mat && !ownMat(w, () => (typeof FLOW !== 'undefined' ? FLOW.canPay(w, mat) : w.stockpile?.canAfford?.(mat)))) return { ok: false, error: '擴建鎮公所的建材不夠' };
+        if (mat) ownMat(w, () => { if (typeof FLOW !== 'undefined') FLOW.pay(w, mat, t('擴建鎮公所')); else w.stockpile.pay(mat, w.tickCount, t('擴建鎮公所')); });
         T.waitMat = null; T.readySince = null; change(w, T, T.lv + 1); return { ok: true };
     }
     function change(w, T, nl) {
@@ -210,7 +214,7 @@ const TIERS = (() => {
     function progress(w) {
         const T = S(w); const nx = LV[T.lv + 1]; if (!nx) return null;
         const mat = (typeof ECON !== 'undefined') ? ECON.tierMat(T.lv + 1) : null; // v6.77.0 擴建鎮公所的建材
-        return { next: nx, pop: [npcs(w).length, nx.pop], pros: [Math.round(pros(w)), nx.pros], era: [era(w), nx.era], streak: T.up, need: UP_DAYS, mat, matLack: mat ? ECON.lack(w, mat) : {} };
+        return { next: nx, pop: [npcs(w).length, nx.pop], pros: [Math.round(pros(w)), nx.pros], era: [era(w), nx.era], streak: T.up, need: UP_DAYS, mat, matLack: mat ? ownMat(w, () => ECON.lack(w, mat)) : {} };
     }
     // ---------- 稱號換字(介面、紀錄、記憶、AI 提示詞都走 t()) ----------
     const RE_EN = /(?<![Ll]ord |\{)\b(Acting )?([Mm])ayor\b(?!\})/g; // v9.18.0 不換 {mayor} 這種範本占位符(以前日報變成「新村長(village chief)」) // 「Lord Mayor」本身不再換(避免換兩次)
@@ -237,7 +241,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), hint, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote };
+    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), hint, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote, techBlock };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)

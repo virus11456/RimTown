@@ -20,7 +20,7 @@ const FLOW = (() => {
         const all = npcs(w), pop = Math.max(1, all.length), workers = all.filter(a => a.job?.key).length;
         switch (r) {
             case 'meals': return pop * 3;
-            case 'food': return (400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
+            case 'food': return (typeof foodCapOf === 'function' ? foodCapOf(w, true) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
             case 'tools': return Math.max(12, workers * 0.5);
             case 'clothing': return pop * 0.8 + 8;
             case 'furniture': return pop * 0.4 + 8;
@@ -54,10 +54,14 @@ const FLOW = (() => {
     function demandMult(w, r) {
         const T = want(w, r); const lo = r === 'food' ? 0.35 : 0.15; if (T <= 0) return lo; // 糧食最少留三成五(季節與災害的緩衝)
         const s = get(w, r);
+        if (r === 'food' && s >= T * 3) return 0.1; // v11.3.0 存糧已經是目標的三倍：種田打魚的再放慢（以前爆倉也照做三成五，一百多人的城市堆到三萬多）
+        if (r !== 'food' && s >= T * 3) return 0.05; // v11.3.0 其他東西堆到目標的三倍：只做半成（以前堆再多也照做一成五，城市的石材想備 890、實際堆到一萬四還在挖）
         if (s <= T * 0.6) return 1;
         if (s >= T) return lo;
         return lo + (1 - lo) * (T - s) / (T * 0.4);
     }
+    // v11.3.0 「多出來才賣」的那條線：以前各處寫死（提案 250、行商留 20～40、出口留幾十），城鎮以上比自己想備的量還低，一邊趕工補貨一邊往外賣；城鎮以上至少留到目標量的 1.2 倍，村莊照舊（糧食另外看糧倉容量，不走這裡）
+    function keepLine(w, r, old) { let lv = 0; try { lv = typeof TIERS !== 'undefined' && TIERS.S ? (TIERS.S(w).lv || 0) : 0; } catch (e) { lv = 0; } return lv > 0 ? Math.max(old, Math.ceil(want(w, r) * 1.2)) : old; }
     const JOB_GOOD = { farmer: ['food'], cook: ['meals'], blacksmith: ['tools'], carpenter: ['furniture'], tailor: ['clothing'], doctor: ['medicine'], miner: ['stone', 'metal'], researcher: ['research_points'] };
     function jobDemand(w, jobKey) { const goods = JOB_GOOD[jobKey]; if (!goods) return 1; return Math.max(...goods.map(r => demandMult(w, r))); }
     const multiOut = (jobKey) => (JOB_GOOD[jobKey] || []).length > 1;
@@ -67,7 +71,7 @@ const FLOW = (() => {
     const KEEP = { hardwood: 0, plank: 15, marble: 0, brick: 20, steel: 10, luxury_furniture: 0 };
     const spare = (w, r) => Math.max(0, get(w, r) - (KEEP[r] || 0));
     function effective(w, r) { let v = get(w, r); for (const [s, k] of (SUB[r] || [])) v += spare(w, s) * k; return v; }
-    function lack(w, mat) { const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = effective(w, r) - (w.stockpile?.reserved?.[r] || 0); if (h < n) out[r] = Math.ceil(n - h); } return out; }
+    function lack(w, mat) { const out = {}; if (!mat) return out; for (const [r, n] of Object.entries(mat)) { const h = effective(w, r) - (w.stockpile?.reserved?.[r] || 0) - (w.stockpile?.hold?.[r] || 0); if (h < n) out[r] = Math.ceil(n - h); } return out; } // v11.5.0 首長為升格保留的料也不能動（升格自己用的時候先放開，sim-tiers.js）
     function canPay(w, mat) { return !Object.keys(lack(w, mat)).length; }
     function pay(w, mat, reason) {
         if (!mat || !canPay(w, mat)) return false;
@@ -247,7 +251,7 @@ const FLOW = (() => {
         if (r === 'cotton' && need(w, 'cloth') > 0.5) n = Math.max(n, 10);
         return n;
     }
-    return { want, need, demandMult, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, fine, addFine, wear, wearRate, FINE_FROM, FINE_WEAR, diet, mealFactor, dietScore, daily, CROP_FOOD, SUB, KEEP };
+    return { want, need, demandMult, keepLine, jobDemand, multiOut, inputNeed: reserveFor, buyLow, effective, lack, canPay, pay, cropScore, pickRecipe, factoryFit, eatSnacks, fine, addFine, wear, wearRate, FINE_FROM, FINE_WEAR, diet, mealFactor, dietScore, daily, CROP_FOOD, SUB, KEEP };
 })();
 if (typeof window !== 'undefined') window.FLOW = FLOW;
 
@@ -257,7 +261,7 @@ if (typeof ConversationEngine !== 'undefined' && !ConversationEngine.prototype._
     CE._townBrief = function (world) {
         const s = _tb.call(this, world);
         try {
-            const food = Math.round(world.stockpile?.get?.('food') || 0), cap = 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
+            const food = Math.round(world.stockpile?.get?.('food') || 0), cap = typeof foodCapOf === 'function' ? foodCapOf(world) : 400 + (world.buildings?.getEffect?.('food_capacity', 0) || 0);
             const pop = Math.max(1, Object.values(world.agents || {}).filter(a => !a.isPlayer && !a.isDead).length);
             const st = food >= cap ? t('糧倉滿了') : food >= pop * 15 ? t('存糧充足') : food >= pop * 4 ? t('存糧還夠') : t('存糧快見底');
             return `${s}${t('；')}${t('糧倉')} ${food}/${cap}${t('（')}${st}${t('）')}${t('；')}${t('作物收成會直接存進糧倉，小麥等作物存量少是正常的')}`;

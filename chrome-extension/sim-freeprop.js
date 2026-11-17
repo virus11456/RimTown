@@ -125,7 +125,7 @@ if (typeof ProposalSystem !== 'undefined') {
     ProposalSystem.prototype._inventLLM = async function (w, day, a, fallback, hints, avoid) {
         let j = null;
         try { j = await w.conversationEngine.inventProposal(w, a, hints, avoid); } catch (e) { console.warn('[Proposals] invent', e); }
-        if (this.open().length >= ProposalSystem.MAX_OPEN) return;
+        if (this.open().length >= this._maxOpen(w)) return; // v11.3.0 上限跟著城鎮等級（以前固定 4）
         if (!j || j.skip) { if (j?.skip) { w.logMessageT?.('council', '🤔 {who}想了想，今天沒什麼要跟大家提的。', { who: a.name }, a.name); return; } return fallback(); }
         // v10.4.0 他想提的是「廢除／恢復某條規定」：開成正式的廢除案或恢復案（立場照各人處境算，通過後真的改規定）
         try { const rp = (typeof REPEAL !== 'undefined') ? REPEAL.fromAI(w, a, j) : null; if (rp) { rp.llm = true; if (j.pitch) rp.pitch = LLMClient.clip(j.pitch, 160, 320); try { w.onProposalEvent?.('vote', this.toItem(w, rp)); } catch (e) {} return; } } catch (e) { console.warn('[Proposals] repeal', e); }

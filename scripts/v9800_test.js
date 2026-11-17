@@ -68,7 +68,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     out.inherit = inh;
     // 7. 老闆過世沒有家人:股份最多的合夥人接手(以前直接關門)
     let take = null; if (M.rival.forge && M.rival.forge.sh) { const R2 = M.rival.forge; const others = Object.keys(R2.sh).filter(id => id !== lead.agentId); for (const a of all()) { const rr = a.relationships.relationships[lead.agentId]; if (rr && rr.status === 'married') rr.status = 'friend'; if ((a._parentNames || []).includes(lead.name)) a._parentNames = []; }
-      w.lifecycle._killNpc(w, lead, 'test'); take = { open: !!M.rival.forge, owner: M.rival.forge && others.includes(M.rival.forge.owner) }; }
+      for (const tr of (w.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d) continue; for (const x of (d.relationships || [])) if ((x.target_id || x.targetId) === lead.agentId && x.status === 'married') x.status = 'friend'; if ((d._parentNames || []).includes(lead.name)) d._parentNames = []; } // 出遠門的配偶、子女也算繼承人（v9.9.6）：這一段要測的是「沒有家人」，所以一起清掉（偶發失敗的原因：老闆的家人剛好出遠門，店就由他繼承）
+      w.lifecycle._killNpc(w, lead, 'test'); const o2 = M.rival.forge && w.agents[M.rival.forge.owner]; take = { open: !!M.rival.forge, owner: M.rival.forge && others.includes(M.rival.forge.owner), who: o2 ? { name: o2.name, age: o2.age, parents: o2._parentNames || [], rel: o2.relationships?.relationships?.[lead.agentId]?.status || '' } : (M.rival.forge?.owner || null), lead: lead.name, others: others.length }; }
     out.takeover = take;
     // 8. 併購原本那家:合夥人變成合併後那家的股東
     const Rm = { owner: rest[10].agentId, sh: { [rest[10].agentId]: 60, [rest[11].agentId]: 40 } }; M.owners.cloth = rest[12].agentId; M.rival.cloth = Rm;

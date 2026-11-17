@@ -57,7 +57,8 @@ const init = ({ lang, jwt, enter }) => {
       const g = await page.evaluate(() => ({ path: location.pathname, loading: !!document.getElementById('town-loading'), landingShown: !!document.querySelector('#landing:not(.hidden)') }));
       ok(/town(\.html)?$/.test(g.path) && !g.loading && !g.landingShown, '登入後進到遊戲頁，載入畫面收起、不再出現首頁', g);
       // 遊戲裡登出 → 回首頁
-      await page.evaluate(() => window.rimtownApp._doLogout()); await page.waitForFunction(() => !window.rimtownApp && document.querySelector('#landing:not(.hidden) .lp-hero'), null, { timeout: 30000 }).catch(() => {});
+      // 登出會換頁：換頁的瞬間讀頁面會失敗，所以每半秒看一次，最多等 30 秒（連到線上、或機器忙的時候換頁比較慢）
+      await page.evaluate(() => window.rimtownApp._doLogout()).catch(() => {}); for (let i = 0; i < 60; i++) { const back = await page.evaluate(() => !window.rimtownApp && !!document.querySelector('#landing:not(.hidden) .lp-hero')).catch(() => false); if (back) break; await page.waitForTimeout(500); }
       const lo = await page.evaluate(() => ({ path: location.pathname, landing: !!document.querySelector('#landing:not(.hidden)'), world: !!window.rimtownApp }));
       ok(/\/(index\.html)?$/.test(lo.path) && lo.landing && !lo.world, '遊戲裡登出回到首頁', lo);
       ok(!errs.length, '沒有頁面錯誤（首頁→登入→遊戲→登出）', errs.slice(0, 3));

@@ -241,7 +241,7 @@ const STEAM = (function () {
         if (!w?.research) return; const X = S(w); const d = day(w); if (X.lastDay === d) return; X.lastDay = d;
         smogDaily(w, X, d); lawDaily(w, X, d);
         const sp = w.stockpile; const stone = () => sp?.get?.('stone') || 0;
-        if (built(w, 'refinery') && stone() >= 3) { sp.consume('stone', 3, w.tickCount, t('提煉廠'), 'production'); sp.add('metal', 1, w.tickCount, t('提煉廠')); }
+        if (built(w, 'refinery') && stone() >= 3) { if (sp.consume('stone', 3, w.tickCount, t('提煉廠'), 'production')) sp.add('metal', 1, w.tickCount, t('提煉廠')); } // v11.5.0 拿不到石材（剩下的是保留的）就不出貨
         // v8.7.0 賢者之石改成凝聚以太(療癒、驅動造物、讓一個人長生),見 sim-longevity.js
         // 點金騙局:一個月後該翻倍的銀子沒出現
         const q = X.scam; if (q && d - q.d >= 30) { X.scam = null; const k = w.agents[q.q]; if (k && !k.isDead) {
