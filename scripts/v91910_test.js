@@ -32,7 +32,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(r.steps === 5, '五個步驟', r.steps);
       ok(r.picks === 0, '9.30.1 拿掉「同一筆閒錢三種選擇」那一段', r.picks);
       ok(lang === 'zh' ? /在遊戲裡哪裡看得到他們的決定/.test(r.faq) && /最近的決定/.test(r.faq) && /自己拿了主意/.test(r.faq) : /Where can I see their decisions/.test(r.faq) && /Recent decisions/.test(r.faq) && /made up their own mind/.test(r.faq), '在遊戲裡哪裡看得到（9.30.1 起寫在常見問題）', r.points);
-      ok(r.prog === 14 && r.done.length === 14 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships') && r.done[2] === (lang === 'zh' ? '政治' : 'Politics') && r.done[3] === (lang === 'zh' ? '自己的事' : 'Personal matters') && r.done[4] === (lang === 'zh' ? '生計與去留' : 'Livelihood'), '自己決定的事：十三類（v11.0.0 加三類），前五類是「錢的事」「人際」「政治」「自己的事」「生計與去留」', { prog: r.prog, done: r.done });
+      ok(r.prog === 15 && r.done.length === 15 && r.done[0] === (lang === 'zh' ? '錢的事' : 'Money') && r.done[1] === (lang === 'zh' ? '人際' : 'Relationships') && r.done[2] === (lang === 'zh' ? '政治' : 'Politics') && r.done[3] === (lang === 'zh' ? '自己的事' : 'Personal matters') && r.done[4] === (lang === 'zh' ? '生計與去留' : 'Livelihood'), '自己決定的事：十五類（v11.7.0 加「災難裡的人」），前五類是「錢的事」「人際」「政治」「自己的事」「生計與去留」', { prog: r.prog, done: r.done });
       ok(lang === 'zh' ? /每天最多把 10 件事交給 AI/.test(r.ai) && /每天最多 10 件事交給 AI/.test(r.ai) : /at most 10 matters a day/.test(r.ai) && /At most 10 matters a day/.test(r.ai), '寫出 AI 每天最多決定 10 件（跟 sim-decide.js 的 AI_MAX 一致）', null);
       ok(!/憑空變多|守恆/.test(r.txt), '不說錢「守恆」（旅遊、外地讀書的錢會流到鎮外）', null);
       if (lang === 'en') ok(r.cjk.length === 0, '英文版沒有殘留中文', r.cjk.slice(0, 5));
