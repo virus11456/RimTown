@@ -225,7 +225,7 @@ async function run(browser, dev, lang) {
         const s0 = Q.stories.length; runOp(KK.pressBuy, e, bc, 'expose'); B6.expose = Q.stories.length === s0 + 1 && Q.stories[Q.stories.length - 1].kind === 'expose';
         plain(e); const mPlain = marg(KK.pressBuy, e, bc, 'take'); e.personality.traits = ['perfectionist']; const pPerf = pick(KK.pressBuy, e, bc); plain(e); B6.lean = { plain: mPlain, perf: pPerf }; ed4.push(e); }
       // 沒開：照舊直接收
-      for (const Q of R.papers) { Q.bribedBy = null; if (w.agents[Q.journo]) plain(w.agents[Q.journo]); } R.elec.bribes = {}; const pc2 = cash(c2); const n1 = asked.length; const rb2 = withR(0.3, () => offDecide(() => PRESS.bribeBy(w, c2))); B6.off = { asked: since(n1).length, paid: rb2 && !rb2.refused ? r3(pc2 - cash(c2)) : 'refused' };
+      for (const Q of R.papers) { Q.bribedBy = null; if (w.agents[Q.journo]) plain(w.agents[Q.journo]); } R.elec.bribes = {}; R.elec.ask = {}; const pc2 = cash(c2); const n1 = asked.length; const rb2 = withR(0.3, () => offDecide(() => PRESS.bribeBy(w, c2))); B6.off = { asked: since(n1).length, paid: rb2 && !rb2.refused ? r3(pc2 - cash(c2)) : 'refused' };
       B.B6 = B6; }
     E.active = E0.active; E.phase = E0.phase; E.candidates = E0.candidates;
     out.B = B;

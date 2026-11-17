@@ -109,9 +109,11 @@ async function run(browser, lang) {
       let r3 = null; const c3 = conserved(() => { r3 = go(A, 'dirty', 'buy'); }); out.dirty.buy = { res: !!r3, paid: 200 - Bal[A.agentId], got: all().filter(v => v !== A && Bal[v.agentId] === 40).length, sec: sec(A, /買票/), cons: c3 };
       Bal[A.agentId] = 50; out.dirty.buyPoor = ids(A, 'dirty').includes('buy'); Bal[A.agentId] = 200; for (const a of all()) if (a !== A) Bal[a.agentId] = 30;
       // 收買報社：記者有原則就不收
+      // v11.8.0 收不收由報社的主筆自己決定（sim-decide-order.js pressBuy，v110800_test 測）；這裡測的是候選人自己決定收買，報社那一頭照原本的規則
+      const _ordOn = typeof ORDER !== 'undefined' ? ORDER.on : null; if (_ordOn) ORDER.on = () => false;
       traits(G, ['perfectionist']); let r4 = null; const c4 = conserved(() => { r4 = go(A, 'dirty', 'press'); }); out.dirty.refuse = { res: !!r4, paid: 200 - Bal[A.agentId], by: P?.bribedBy || null, cons: c4, still: ids(A, 'dirty').includes('press') };
       traits(G, ['hardworking']); let r5 = null; const c5 = conserved(() => { r5 = go(A, 'dirty', 'press'); });
-      out.dirty.press = { res: !!r5, paid: 200 - Bal[A.agentId], ed: Bal[G.agentId] - 30, by: P?.bribedBy === A.agentId, sec: sec(A, /收買/), cons: c5, again: ids(A, 'dirty').includes('press') };
+      out.dirty.press = { res: !!r5, paid: 200 - Bal[A.agentId], ed: Bal[G.agentId] - 30, by: P?.bribedBy === A.agentId, sec: sec(A, /收買/), cons: c5, again: ids(A, 'dirty').includes('press') }; if (_ordOn) ORDER.on = _ordOn;
       econ.paperShort = ps;
       // 競選結束就不問了
       El.phase = 'voting'; out.dirty.over = K.dirty.when(w, A); }

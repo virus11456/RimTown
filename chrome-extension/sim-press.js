@@ -92,14 +92,14 @@ const PRESS = (() => {
     // v9.26.0 給決策核心:這個候選人現在能不能收買報社(跟以前擲骰的是同一批人:手上有 150 銀幣、不是特別老實、還有報社沒被買走、這次選舉還沒買過)
     function bribeInfo(w, a) {
         const E = w.election; if (!a || !E || !E.active || E.phase !== 'campaign' || typeof WALLET === 'undefined' || !w.wallet) return null;
-        const R = S(w); const cands = elecOf(w, R, E, day(w)); if (!cands || !cands.some(c => c.agentId === a.agentId) || R.elec.bribes[a.agentId] || money(w, a) < 150) return null;
+        const R = S(w); const cands = elecOf(w, R, E, day(w)); if (!cands || !cands.some(c => c.agentId === a.agentId) || R.elec.bribes[a.agentId] || R.elec.ask?.[a.agentId] === day(w) || money(w, a) < 150) return null;
         let honest = 3; try { honest = DARK.honesty(a); } catch (e) {} if (honest >= 3) return null;
         const n = freePapers(R).length; return n ? { n, cost: BRIBE } : null;
     }
     function bribeBy(w, a) {
         if (!bribeInfo(w, a)) return null;
         // v11.8.0 決策核心開著：找哪一家照舊看運氣，收不收由那家的主筆自己決定（sim-decide-order.js pressBuy）
-        if (typeof ORDER !== 'undefined' && ORDER.on(w)) { const R = S(w); const P = freePapers(R).sort(() => Math.random() - 0.5)[0]; const ed = P && editorOf(w, P); if (ed && ed !== a) { R.elec.bribes[a.agentId] = P.id; ORDER.buyAsk(w, P, a, ed, BRIBE); return { P, ed, asked: true }; } }
+        if (typeof ORDER !== 'undefined' && ORDER.on(w)) { const R = S(w); const P = freePapers(R).sort(() => Math.random() - 0.5)[0]; const ed = P && editorOf(w, P); if (ed && ed !== a) { (R.elec.ask || (R.elec.ask = {}))[a.agentId] = day(w); ORDER.buyAsk(w, P, a, ed, BRIBE); return { P, ed, asked: true }; } } // 跟以前一樣：被拒絕的還可以再試，收下了才算買過；同一天只找一次
         const r = bribePaper(w, S(w), a); if (!r) return null;
         if (r.refused) { mem(w, a, '我想塞錢給{paper}，被擋了回來。', { paper: r.P.name[0] }, 5); if (r.ed) mem(w, r.ed, '{a}想塞錢要我替他說好話，我沒收。', { a: a.name }, 6); }
         else { mem(w, a, '我花了 {n} 銀幣，讓{paper}替我說話。', { n: BRIBE, paper: r.P.name[0] }, 6); mem(w, r.ed, '{a}塞了 {n} 銀幣，要報上替他說好話。我收了。', { a: a.name, n: BRIBE }, 6); }
