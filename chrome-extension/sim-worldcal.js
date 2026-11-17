@@ -428,7 +428,10 @@ const WORLDCAL = (function () {
         const zb = c.zb; if (!zb || !a || zb.ids.includes(a.agentId)) return; zb.ids.push(a.agentId); delete zb.bit[a.agentId]; zb.st.turned++;
         a.activity = 'wandering'; a.moodModifier = (a.moodModifier || 0) - 20; a._zbFrom = day(w);
         const how = zb.how?.[a.agentId]; if (zb.how) delete zb.how[a.agentId]; // v11.7.0 被咬之後選了什麼：瞞著（在家裡變）、綁在家裡、去診所
-        if (!first) { log(w, how === 'hide' ? '🧟 {a}的燒一直沒退。第二天早上，{a}在自己家裡睜開眼睛，眼睛已經變成了混濁的白色。家人瞞了兩天，再也瞞不住了。' : how === 'tie' ? '🧟 {a}的燒一直沒退。被綁在床上的{a}第二天早上掙斷了繩子，眼睛變成了混濁的白色。' : '🧟 {a}的燒一直沒退。第二天早上，{a}的眼睛變成了混濁的白色。', { a: a.name }, a.name); news(w, '🧟 {a}變成了喪屍', { a: a.name }, 8, [a.name]);
+        const by = zb.howBy?.[a.agentId] ? w.agents[zb.howBy[a.agentId]] : null; if (zb.howBy) delete zb.howBy[a.agentId];
+        if (!first && how) (zb.first = zb.first || {})[a.agentId] = { how, d: day(w), f: by?.agentId || null, bit: null }; // v11.7.0 變了的頭一晚：瞞著的先咬同住的人；綁著、關在診所的那一晚咬不到人
+        if (!first && (how === 'tie' || how === 'iso')) { log(w, how === 'tie' ? '🧟 被綁在床上的{a}燒一直沒退，眼睛變成了混濁的白色，整晚在床上掙扎。{f}守在門口，一夜沒睡。' : '🧟 {a}在診所裡變了，眼睛變成了混濁的白色。門鎖著，整晚只聽得到抓門的聲音。', { a: a.name, f: by?.name || t('家人') }, a.name); news(w, '🧟 {a}變成了喪屍', { a: a.name }, 8, [a.name]); if (how === 'tie' && by && !by.isDead) mem(w, by, '{a}變了。我守在門口一整晚，聽著繩子一直響。', { a: a.name }, 9); }
+        else if (!first) { log(w, how === 'hide' ? '🧟 {a}的燒一直沒退。第二天早上，{a}在自己家裡睜開眼睛，眼睛已經變成了混濁的白色。家人瞞了兩天，再也瞞不住了。' : how === 'tie' ? '🧟 {a}的燒一直沒退。被綁在床上的{a}第二天早上掙斷了繩子，眼睛變成了混濁的白色。' : '🧟 {a}的燒一直沒退。第二天早上，{a}的眼睛變成了混濁的白色。', { a: a.name }, a.name); news(w, '🧟 {a}變成了喪屍', { a: a.name }, 8, [a.name]);
             if (how === 'hide') { zb.st.hidTurn = (zb.st.hidTurn || 0) + 1; for (const f of kin(w, a)) for (const o of here(w).filter(x => x !== f && !kin(w, a).includes(x) && Math.random() < 0.15)) aff(o, f, -3); } } // 鄰居知道家人瞞著不說
     }
     function zCureAll(w, c) {
@@ -445,10 +448,16 @@ const WORLDCAL = (function () {
         if (c.prog < 100) { const res = adults(w).filter(a => a.job?.key === 'researcher').length; c.prog = Math.min(100, Math.round((c.prog + (0.8 + 0.4 * Math.min(6, res)) * c.fast * (c.fix ? 1.5 : 1)) * 10) / 10); if (c.prog >= 100) { c.used.fixDone = 1; log(w, '✅ {f}做出來了！', { f: KINDS.zombie.fix.name }); zCureAll(w, c); return; } }
         // 被咬兩天的人變成喪屍
         for (const [id, bd] of Object.entries(zb.bit)) { const a = w.agents[id]; if (!a || a.isDead) { delete zb.bit[id]; continue; } if (d - bd >= 2) zTurn(w, c, a, false); }
+        // v11.7.0 綁著的、關在診所的：變了的頭一晚過去，隔天才掙斷繩子、撞開門跑出去
+        for (const [id, F] of Object.entries(zb.first || {})) { if (F.out || F.d >= d || !zb.ids.includes(id)) continue; F.out = 1; const z = w.agents[id]; if (!z || F.how === 'hide') continue; log(w, F.how === 'tie' ? '🪢 {a}掙斷了繩子，從家裡跑了出去。' : '🚪 {a}撞開了診所的門，跑了出去。', { a: z.name }, z.name); }
         // 夜裡咬人(築了牆少一半);喪屍上限:大人的四成,最少留 5 個人
-        const ppl = adults(w).filter(a => !zb.bit[a.agentId]); const cap = Math.round((ppl.length + zb.ids.length) * 0.4);
-        for (const id of zb.ids.slice()) { if (zb.ids.length + Object.keys(zb.bit).length >= cap || ppl.length <= 5) break; if (Math.random() > 0.3 * (c.prep ? 0.5 : 1)) continue;
-            const z = w.agents[id]; const v = rnd(ppl.filter(a => !zb.bit[a.agentId])); if (!v) break; zb.bit[v.agentId] = d; zb.st.bitten++; ppl.splice(ppl.indexOf(v), 1);
+        const ppl = adults(w).filter(a => !zb.bit[a.agentId]); const cap = Math.round((ppl.length + zb.ids.length) * 0.4); const L = zb.log = Array.isArray(zb.log) ? zb.log : [];
+        for (const id of zb.ids.slice()) { if (zb.ids.length + Object.keys(zb.bit).length >= cap || ppl.length <= 5) break; const F = zb.first?.[id]; const night1 = F && F.d === d;
+            if (night1 && (F.how === 'tie' || F.how === 'iso')) continue; // 綁著、關著：這一晚咬不到人
+            if (Math.random() > 0.3 * (c.prep ? 0.5 : 1)) continue;
+            const z = w.agents[id]; const home = night1 && F.how === 'hide' ? houseOf(w, z).filter(a => ppl.includes(a) && !zb.bit[a.agentId]) : []; // 瞞著的：在家裡變了，頭一晚先咬同住的人（咬不咬得到照原本的機率）
+            const v = home.length ? rnd(home) : rnd(ppl.filter(a => !zb.bit[a.agentId])); if (!v) break; zb.bit[v.agentId] = d; zb.st.bitten++; ppl.splice(ppl.indexOf(v), 1);
+            L.push([d, id, v.agentId]); if (L.length > 150) L.splice(0, L.length - 150); if (night1) F.bit = v.agentId; // 記下是哪一個喪屍咬的（存檔帶著走）
             const fam = famOf(w, v).filter(f => !f.isDead && !isZ(w, f));
             if (deciding(w, 'zbBit') && famHere(w, v).length) { ask(w, [{ a: v, kind: 'zbBit', ctx: { z: z?.agentId || null, d } }]); continue; } // v11.7.0 被咬的人自己先決定要不要去診所；回家的話由最親的家人決定瞞不瞞
             if (fam.length && Math.random() < 0.4) { zb.st.hid++; const f = rnd(fam); mem(w, f, '{a}被咬了。我把傷口包起來，誰也沒說——說了，守衛會把人帶走。', { a: v.name }, 8); mem(w, v, '我被咬了，家人幫我瞞著。', {}, 9); log(w, '🤫 半夜{z}撞開了{a}家的窗。天亮以後，{a}的手臂纏著繃帶，家人說是被狗咬的。', { z: z?.name || t('喪屍'), a: v.name }, v.name); }
@@ -465,16 +474,37 @@ const WORLDCAL = (function () {
                 for (const f of famOf(w, z)) if (!f.isDead && !isZ(w, f)) { aff(f, h, -20); f.addThought?.('wc_grief', w); mem(w, f, '{h}殺了{z}。我知道那已經不是{z}了，可是我沒辦法原諒。', { h: h.name, z: z.name }, 9); } }
         }
     }
+    // v11.7.0 同住的人：真的同一棟房子（sim-housing.js 那張「誰住哪一棟」的表，w.housing.map；地圖在的話照地圖分好的房子）。homeLocation 是整個住宅區，不能拿來算。
+    // 還沒分好房子時，退回配偶、未成年的孩子，和（自己未成年時）爸媽
+    const hidOf = (w, o) => { const M = w?.housing?.map; if (M && M[o.agentId]) return M[o.agentId]; try { const h = typeof HOUSING !== 'undefined' ? HOUSING.houseOf(w, o) : null; return h && h !== o.homeLocation ? h : null; } catch (e) { return null; } };
+    const houseOf = (w, a) => {
+        const hid = a ? hidOf(w, a) : null; const H = here(w).filter(o => o !== a && !isZ(w, o));
+        if (hid) return H.filter(o => hidOf(w, o) === hid);
+        const wed = (o) => o.relationships?.relationships?.[a.agentId]?.status === 'married' || a.relationships?.relationships?.[o.agentId]?.status === 'married';
+        return H.filter(o => wed(o) || ((o._parentNames || []).includes(a.name) && (o.age ?? 30) < 18) || ((a.age ?? 30) < 18 && (a._parentNames || []).includes(o.name)));
+    };
+    // v11.7.0 給題目用的喪屍危機實況：鎮上幾個喪屍、這三天和昨晚被咬幾個、某個喪屍咬過誰、之前放過的喪屍後來又咬了幾個、之前瞞著的那幾家後來怎樣
+    function zFacts(w, z) {
+        const c = S(w).cur; const zb = c?.zb; if (!zb) return null; const d = day(w); const L = Array.isArray(zb.log) ? zb.log : [];
+        const out = { n: zb.ids.filter(id => w.agents[id] && !w.agents[id].isDead).length, bit3: L.filter(x => x[0] >= d - 2).length, last: L.filter(x => x[0] === d).length, prog: Math.round(c.prog || 0) };
+        if (z) out.victims = L.filter(x => x[1] === z.agentId).map(x => w.agents[x[2]]).filter(Boolean);
+        const sp = Object.entries(zb.spared || {}); out.spared = sp.length; out.sparedBit = sp.reduce((s2, [id, sd]) => s2 + L.filter(x => x[1] === id && x[0] > sd).length, 0);
+        // v11.7.0 真正的輸贏：喪屍加上被咬的最多到鎮上大人的四成（cap）；這場危機撐到頭（災後那一段結束）時解藥還沒好，剩下的喪屍和被咬的人會被圍起來燒掉，救不回來
+        const ppl = adults(w).filter(a => !zb.bit[a.agentId]); out.pending = Object.keys(zb.bit).length; out.cap = Math.round((ppl.length + zb.ids.length) * 0.4);
+        out.left = c.ph === 'after' ? Math.max(0, c.len.after - (d - c.pd)) : c.ph === 'arrive' ? Math.max(0, c.len.arrive - (d - c.pd)) + c.len.after : null; out.rate = Math.round(out.bit3 / 3 * 10) / 10;
+        out.fates = Object.entries(zb.first || {}).filter(([, F]) => F.how === 'hide' && F.out).map(([id, F]) => ({ z: w.agents[id], ago: d - F.d, bit: F.bit ? w.agents[F.bit] : null })).filter(x => x.z).slice(-3);
+        return out;
+    }
     // v11.7.0 被咬之後、獵人出手之後，各自選了什麼，結算照原本
     const zbOf = (w) => w?.worldcal?.cur?.zb || null;
     function zHid(w, f, v, how) { // 家人瞞著（hide）或綁在家裡（tie）
-        const zb = zbOf(w); if (!zb || !zb.bit[v.agentId]) return null; (zb.how = zb.how || {})[v.agentId] = how;
+        const zb = zbOf(w); if (!zb || zb.bit[v.agentId] == null) return null; /* 第 0 天被咬的也算（以前用真假值判斷會被當成沒被咬） */ (zb.how = zb.how || {})[v.agentId] = how; (zb.howBy = zb.howBy || {})[v.agentId] = f.agentId;
         if (how === 'hide') { zb.st.hid++; mem(w, f, '{a}被咬了。我把傷口包起來，誰也沒說——說了，守衛會把人帶走。', { a: v.name }, 8); mem(w, v, '我被咬了，家人幫我瞞著。', {}, 9); log(w, '🤫 天亮以後，{a}的手臂纏著繃帶，{f}說是被狗咬的。', { a: v.name, f: f.name }, v.name); }
         else { zb.st.tie = (zb.st.tie || 0) + 1; mem(w, f, '{a}被咬了。我親手把{a}綁在床上，門從外面鎖起來。', { a: v.name }, 9); mem(w, v, '我被咬了，家人把我綁在床上。我知道為什麼。', {}, 9); log(w, '🪢 {f}把被咬的{a}綁在床上，門從外面上了鎖，一整晚都坐在門口沒睡。', { a: v.name, f: f.name }, f.name); }
         return how;
     }
     function zIso(w, v, by) { // 去診所隔離（自己去，或家人帶去）
-        const zb = zbOf(w); if (!zb || !zb.bit[v.agentId]) return null; (zb.how = zb.how || {})[v.agentId] = 'iso'; zb.st.iso = (zb.st.iso || 0) + 1;
+        const zb = zbOf(w); if (!zb || zb.bit[v.agentId] == null) return null; /* 第 0 天被咬的也算（以前用真假值判斷會被當成沒被咬） */ (zb.how = zb.how || {})[v.agentId] = 'iso'; zb.st.iso = (zb.st.iso || 0) + 1;
         log(w, by ? '🩸 {a}被咬了。{f}一早就把{a}帶到診所隔離，大家只能等。' : '🩸 {a}被咬了，自己走到診所說：「把我關起來吧。」大家只能等。', { a: v.name, f: by?.name || '' }, v.name); mem(w, v, '我被咬了，再兩天我就會變成那個樣子。', {}, 9); v.addThought?.('wc_fear', w);
         if (by) mem(w, by, '我把被咬的{a}帶去診所了。這是對的，可是我一直在發抖。', { a: v.name }, 8); return 'iso';
     }
@@ -486,7 +516,7 @@ const WORLDCAL = (function () {
         return 'kill';
     }
     function zSpare(w, h, z, drive) { // 下不了手、或只把他趕到墓園那邊
-        const zb = zbOf(w); if (!zb || !zb.ids.includes(z.agentId)) return null; if (drive) zb.st.drive = (zb.st.drive || 0) + 1; else zb.st.spare = (zb.st.spare || 0) + 1;
+        const zb = zbOf(w); if (!zb || !zb.ids.includes(z.agentId)) return null; if (drive) zb.st.drive = (zb.st.drive || 0) + 1; else zb.st.spare = (zb.st.spare || 0) + 1; (zb.spared = zb.spared || {})[z.agentId] = day(w);
         if (drive) { log(w, '🔥 {h}舉著火把把{z}趕回墓園那邊，沒有動斧頭。', { h: h.name, z: z.name }, h.name); mem(w, h, '我把{z}趕回墓園就走了。也許解藥做得出來。', { z: z.name }, 7); }
         else { log(w, '🪓 {h}舉起斧頭，看見{z}脖子上還掛著那條項鍊，手放下來了。', { h: h.name, z: z.name }, h.name); mem(w, h, '我下不了手。那是{z}啊。', { z: z.name }, 8); }
         for (const f of kinZ(w, z)) aff(f, h, 3); return drive ? 'drive' : 'spare';
@@ -641,7 +671,7 @@ const WORLDCAL = (function () {
         const K = KINDS[c.kind]; if (c.deny.includes(a.agentId)) return fill('我覺得{name}只是危言聳聽', { name: K.name }); if (c.warn.includes(a.agentId)) return fill('我很怕{name}，覺得要趕快準備', { name: K.name });
         return '';
     }
-    return { isZombie: isZ, zIds, FRONTS, SEVEN, allSeven, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, kin, kinZ, famHere, goBy, bunkBy, bunkCost, zHid, zIso, zKill, zSpare, zBlock, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll, goAsk, kill } };
+    return { isZombie: isZ, zIds, FRONTS, SEVEN, allSeven, KINDS, PHASES, PH, LEN, FAST, OUT, LAB_COST, S, unlocked, active, weights, pickKind, eligible, era6, begin, leftDays, daily, enact, vote, canLab, release, view, townBrief, brief, kin, kinZ, famHere, houseOf, zFacts, goBy, bunkBy, bunkCost, zHid, zIso, zKill, zSpare, zBlock, _t: { progDaily, onEnter, arrive, finish, flavor, zombieDaily, zTurn, zCureAll, goAsk, kill } };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {

@@ -256,18 +256,82 @@
     const pctOf = (c) => Math.round(c.prog || 0);
     function etaOf(w, c) { const res = Object.values(w.agents).filter(a => !a.isDead && a.job?.key === 'researcher').length; const v = (0.8 + 0.4 * Math.min(6, res)) * (c.fast || 1) * (c.fix ? 1.5 : 1); return Math.max(1, Math.ceil((100 - (c.prog || 0)) / Math.max(0.1, v))); }
     const etaTxt = (w, c) => (c.prog >= 100 ? { raw: '' } : { k: '，照現在的速度大概還要 {n} 天', p: { n: etaOf(w, c) } });
+    // v11.7.0 第三輪：題目只寫交情的話，模型一面倒（都下不了手、都瞞著）。把兩邊的事實都照實擺出來：鎮上的狀況、這個喪屍咬過誰、
+    // 獵人自己家裡有誰、是不是他的差事、之前放過的喪屍後來又咬了幾個；瞞著、綁著、送診所各自的後果，和之前瞞著的那幾家後來怎樣
+    const isZb = (w, o) => !!WC()?.isZombie?.(w, o);
+    const famAll = (w, a) => Object.values(w.agents).filter(o => o !== a && !o.isDead && !o.isPlayer && (o.relationships?.relationships?.[a.agentId]?.status === 'married' || a.relationships?.relationships?.[o.agentId]?.status === 'married' || (a._parentNames || []).includes(o.name) || (o._parentNames || []).includes(a.name)));
+    const roleOf = (a, o) => (o.relationships?.relationships?.[a.agentId]?.status === 'married' || a.relationships?.relationships?.[o.agentId]?.status === 'married') ? { k: '{x}（配偶）', p: { x: o.name } } : (o._parentNames || []).includes(a.name) ? { k: '{x}（孩子，{n} 歲）', p: { x: o.name, n: o.age ?? '?' } } : { k: '{x}（爸媽）', p: { x: o.name } };
+    const listTxt = (arr) => ({ raw: arr.map(tx).join(t('、')) });
+    const ageTxt = (o) => ((o.age ?? 30) < 16 ? { k: '{x}（{n} 歲）', p: { x: o.name, n: o.age ?? '?' } } : o.name);
+    const fem = (o) => o.gender === 'female';
+    // 某人跟「看題目的人」是什麼關係：你的妻子小芳、你 6 歲的女兒小滿、你的母親…；不是家人的寫名字（小孩加年紀）
+    function relWord(me, o) {
+        const wed = o.relationships?.relationships?.[me.agentId]?.status === 'married' || me.relationships?.relationships?.[o.agentId]?.status === 'married';
+        if (wed) return fem(o) ? '你的妻子' : '你的丈夫';
+        if ((o._parentNames || []).includes(me.name)) return { k: fem(o) ? '你 {n} 歲的女兒' : '你 {n} 歲的兒子', p: { n: o.age ?? '?' } };
+        if ((me._parentNames || []).includes(o.name)) return fem(o) ? '你的母親' : '你的父親';
+        return null;
+    }
+    function relTo(me, o) { const r = relWord(me, o); return r ? { k: '{r}{x}', p: { r, x: o.name } } : ageTxt(o); }
+    function townTxt(w, F) { return { k: '鎮上現在有 {n} 個喪屍，這三天有 {k} 個人被咬，昨晚 {y} 個。', p: { n: F.n, k: F.bit3, y: F.last } }; }
+    function cureTxt(w, c) { return { k: '解藥做了 {p}%{eta}。解藥做出來以後，喪屍打了針就會變回原來的人。', p: { p: pctOf(c), eta: etaTxt(w, c) } }; }
+    // 真正的輸贏（照 sim-worldcal.js 的規則與這幾天的速度算）：解藥做出來之前鎮上大概會有幾個喪屍、危機再幾天撐到頭、趕不趕得上
+    function stakesTxt(w, c, F) {
+        if (F.left == null || c.prog >= 100) return { raw: '' }; const eta = etaOf(w, c); const span = Math.min(eta, F.left);
+        const proj = Math.min(F.cap, F.n + F.pending + Math.round(F.rate * span));
+        return { k: '照這幾天每晚被咬 {r} 個的速度，{when}鎮上大概會有 {p} 個喪屍（最多會到 {cap} 個，是鎮上大人的四成）。這場危機再 {left} 天就撐到頭：到那時解藥還沒做出來，剩下的喪屍和被咬的人會被圍在墓園燒掉，一個也救不回來。{ok}',
+            p: { r: F.rate, when: eta <= F.left ? { k: '到解藥做出來（{n} 天後），', p: { n: eta } } : { k: '到危機撐到頭（{n} 天後），', p: { n: F.left } }, p: proj, cap: F.cap, left: F.left, ok: eta <= F.left ? '照現在的速度，解藥趕得上。' : '照現在的速度，解藥趕不上。' } };
+    }
+    function victimsTxt(w, z, F, me) {
+        const vs = F.victims || []; if (!vs.length) return { k: '{z}還沒咬過人。', p: { z: z.name } };
+        const mine = me ? vs.filter(v => famAll(w, me).includes(v)) : []; const pals = me ? vs.filter(v => !mine.includes(v) && aff(me, v) >= 40) : [];
+        return { k: '{z}變成喪屍以後咬過：{x}。{m}{f}', p: { z: z.name, x: { raw: names(vs) }, m: mine.length ? { k: '其中{y}是你的家人。', p: { y: { raw: names(mine) } } } : { raw: '' }, f: pals.length ? { k: '其中{y}跟你很要好。', p: { y: { raw: names(pals) } } } : { raw: '' } } };
+    }
+    function hunterHomeTxt(w, h) {
+        const fam = famAll(w, h); const parts = [fam.length ? { k: '你家裡有：{x}。', p: { x: listTxt(fam.map(o => roleOf(h, o))) } } : '你沒有家人在鎮上。'];
+        const zb = curWc(w)?.zb; const bit = fam.filter(o => zb?.bit?.[o.agentId] != null && !isZb(w, o)), turned = fam.filter(o => isZb(w, o));
+        if (bit.length) parts.push({ k: '你的家人{x}已經被咬了。', p: { x: { raw: names(bit) } } }); if (turned.length) parts.push({ k: '你的家人{x}已經變成喪屍了。', p: { x: { raw: names(turned) } } });
+        return { raw: parts.map(tx).join('') };
+    }
+    const sparedTxt = (F) => (F.spared ? { k: '之前有人下不了手、只把他趕回墓園的喪屍有 {n} 個，那之後牠們又咬了 {m} 個人。', p: { n: F.spared, m: F.sparedBit } } : { raw: '' });
+    function fatesTxt(w, F) {
+        if (!F.fates?.length) return { raw: '' };
+        return { k: '之前鎮上瞞著的那幾家：{x}。', p: { x: listTxt(F.fates.map(x => x.bit ? { k: '{z}（{n} 天前在家裡變了，頭一晚咬了{y}）', p: { z: x.z.name, n: x.ago, y: x.bit.name } } : { k: '{z}（{n} 天前在家裡變了，頭一晚沒有咬到人）', p: { z: x.z.name, n: x.ago } })) } };
+    }
+    // 同住的人（同一棟房子），從看題目的人的角度寫關係；被咬的是家人時，看題目的人自己也算在同住的人裡，寫「還有你」
+    const houseTxt = (w, v, me) => { const hs = WC().houseOf(w, v).filter(o => o !== me); const withMe = me !== v && WC().houseOf(w, v).includes(me);
+        if (!hs.length && !withMe) return me === v ? '你一個人住。' : { k: '{v}一個人住。', p: { v: v.name } };
+        return { k: me === v ? '跟你住在一起的有：{x}。' : withMe ? '跟{v}住在一起的有：你{x}。' : '跟{v}住在一起的有：{x}。', p: { v: v.name, x: hs.length ? { raw: (withMe ? t('、') : '') + hs.map(o => tx(relTo(me, o))).join(t('、')) } : { raw: '' } } }; };
+    const CONSEQ = '瞞著的話，不用分開，可是兩天後會在家裡變，變了的頭一晚會先咬同住的人。送去診所的話，會被關著，變了的頭一晚咬不到人，這兩天見不到面。綁在家裡的話，頭一晚掙不開、不會咬人，家人要守一整晚，隔天還是會掙斷繩子跑出去。不管哪一種，解藥及時做出來都救得回來，來不及就救不回來。';
+    // v11.7.0 這個人碰到這種事的脾氣：用起跑分數已經在用的那些因素（個性、在乎的事、交情、家裡的小孩），寫成他對自己的認識；兩個方向都有，沒有對應的就不寫
+    const tl = (arr) => ({ raw: arr.filter(Boolean).map(tx).join('') });
+    const distrustOf = (w, f) => hasV(f, '自由') || Object.values(w.agents).some(o => !o.isDead && o.job?.key === 'guard' && o !== f && aff(f, o) <= -10);
+    const rulesOf = (f) => hasV(f, '傳統') || has(f, 'perfectionist') || has(f, 'stoic');
+    function huntTemper(w, h, z, mine) { return tl([
+        has(h, 'stoic') ? '你一向公事公辦。' : '', has(h, 'perfectionist') ? '你做事一板一眼。' : '', has(h, 'abrasive') ? '你說話做事向來很直、很硬。' : '',
+        has(h, 'kind') ? '你一向心軟。' : '', has(h, 'romantic') ? '你很重感情。' : '', has(h, 'shy') || has(h, 'neurotic') ? '你膽子小。' : '', has(h, 'brave') ? '你一向不怕事。' : '',
+        mine ? { k: '{z}是你的家人。', p: { z: z.name } } : '' ]); }
+    function hideTemper(w, me, v, self) { const ks = kids(w, me, WC().kin(w, me)).filter(k => k !== v); return tl([
+        rulesOf(me) ? '你一向守規矩。' : '', distrustOf(w, me) ? '你信不過守衛和診所。' : '',
+        ks.length ? { k: self ? '你最怕的是咬到自己的孩子{x}。' : '你最怕的是孩子{x}被咬。', p: { x: { raw: names(ks) } } } : '',
+        !self && aff(me, v) >= 80 ? { k: '你跟{v}感情很深，一天都不想分開。', p: { v: v.name } } : '', self && WC().famHere(w, me).some(o => aff(me, o) >= 80) ? '你捨不得離開家人。' : '',
+        self && has(me, 'brave') ? '你一向不怕事。' : '', self && has(me, 'neurotic') ? '你很怕，腦子一片空白。' : '' ]); }
+    function guardTemper(w, f, h) { return tl([
+        has(f, 'brave') ? '你一向膽子大。' : '', has(f, 'shy') || has(f, 'neurotic') ? '你膽子小。' : '',
+        aff(f, h) >= 25 ? { k: '你跟{h}有交情。', p: { h: h.name } } : aff(f, h) <= -15 ? { k: '你跟{h}有過節。', p: { h: h.name } } : '' ]); }
     const bitOk = (w, v, ctx) => { const c = zc(w); return c && v && !v.isDead && c.zb.bit[v.agentId] != null && !(c.zb.how || {})[v.agentId] && day(w) - (ctx?.d ?? 0) <= 1 ? c : null; };
     DECIDE.kind('zbBit', Object.assign({}, base, {
         title: '被喪屍咬了', pri: 2, aiKind: 2,
         facts(w, a, ctx) { const c = bitOk(w, a, ctx); if (!c) return ''; const z = ctx.z ? w.agents[ctx.z] : null; const fam = WC().famHere(w, a);
-            return fill('昨晚{z}撞開了你家的窗，咬傷了你的手臂。被咬的人兩天內就會變成喪屍。解藥做了 {p}%{eta}。守衛知道的話會把你帶去診所關起來。你的家人：{x}。', { z: z?.name || '喪屍', p: pctOf(c), eta: etaTxt(w, c), x: { raw: names(fam) } }); },
+            const F = WC().zFacts(w, null) || {};
+            return fill('昨晚{z}撞開了你家的窗，咬傷了你的手臂。被咬的人兩天內就會變成喪屍。{cure}{town}{stakes}守衛知道的話會把你帶去診所關起來。你的家人：{x}。{house}{cq}{fates}{me}', { z: z?.name || '喪屍', cure: cureTxt(w, c), town: townTxt(w, F), stakes: stakesTxt(w, c, F), x: { raw: names(fam) }, house: houseTxt(w, a, a), cq: '回家讓家人瞞著的話，不用離開家，可是你兩天後會在家裡變，變了的頭一晚會先咬同住的人。去診所的話會被關著，變了的頭一晚咬不到人，這兩天見不到家人。不管哪一種，解藥及時做出來都救得回來，來不及就救不回來。', fates: fatesTxt(w, F), me: hideTemper(w, a, a, true) }); },
         options(w, a, ctx) {
             const c = bitOk(w, a, ctx); if (!c) return []; const fam = WC().famHere(w, a); if (!fam.length) return [];
             const f = fam.slice().sort((x, y) => (y.relationships?.relationships?.[a.agentId]?.status === 'married' ? 100 : 0) + aff(y, a) - (x.relationships?.relationships?.[a.agentId]?.status === 'married' ? 100 : 0) - aff(x, a))[0];
             return [
-                { id: 'clinic', text: '自己走去診所，叫他們把我關起來', say: '被咬之後自己去診所隔離', why: '我不想變成那樣以後咬到家人。', lean: { bond: 0.2, safe: -0.2 },
+                { id: 'clinic', text: '自己走去診所，叫他們把我關起來（變了的頭一晚咬不到人；這兩天見不到家人）', say: '被咬之後自己去診所隔離', why: '我不想變成那樣以後咬到家人。', lean: { bond: 0.2, safe: -0.2 },
                     base: REF + tilt(0.15) + (has(a, 'brave') ? 0.4 : 0) + (has(a, 'kind') ? 0.3 : 0) + (kids(w, a, fam).length ? 0.3 : 0) + (honesty(a) >= 3 ? 0.2 : 0) - (has(a, 'neurotic') ? 0.3 : 0), run: (w2, a2) => (WC().zIso(w2, a2, null) ? { k: '自己去診所隔離了' } : null) },
-                { id: 'home', text: { k: '回家跟{f}說', p: { f: f.name } }, say: { k: '回家跟{f}說被咬了', p: { f: f.name } }, why: '我好怕，想先回家。', base: REF, lean: { safe: 0.2 },
+                { id: 'home', text: { k: '回家跟{f}說（由{f}決定瞞著、綁著還是送診所）', p: { f: f.name } }, say: { k: '回家跟{f}說被咬了', p: { f: f.name } }, why: '我好怕，想先回家。', base: REF, lean: { safe: 0.2 },
                     run: (w2, a2) => { DECIDE.askNow(w2, [{ a: w2.agents[f.agentId], kind: 'zbHide', ctx: { v: a2.agentId, d: day(w2) } }]); return { k: '回家跟{f}說了', p: { f: f.name } }; } },
             ];
         },
@@ -275,17 +339,18 @@
     DECIDE.kind('zbHide', Object.assign({}, base, {
         title: '家人被喪屍咬了', pri: 2.2, aiKind: 2,
         facts(w, f, ctx) { const v = ctx ? w.agents[ctx.v] : null; const c = bitOk(w, v, ctx); if (!c) return ''; const ks = kids(w, f, WC().kin(w, f)).filter(k => k !== v);
-            return fill('{v}昨晚被喪屍咬了，手臂上的傷口還在流血，兩天內就會變成喪屍。解藥做了 {p}%{eta}。守衛知道的話會把人帶去診所隔離；要是被人發現你瞞著，鄰居也會怪你。你跟{v}{tie}。{k}', { v: v.name, p: pctOf(c), eta: etaTxt(w, c), tie: tieTxt(PW()?.tie?.(w, f, v) || '家人'), k: ks.length ? { k: '家裡還有{x}，萬一出了事，全家都危險。', p: { x: { raw: names(ks) } } } : { raw: '' } }); },
+            const F = WC().zFacts(w, null) || {};
+            return fill('{v}昨晚被喪屍咬了，手臂上的傷口還在流血，兩天內就會變成喪屍。{cure}{town}{stakes}守衛知道的話會把人帶去診所隔離；要是被人發現你瞞著，鄰居也會怪你。{rel}{house}{cq}{fates}{me}', { v: v.name, cure: cureTxt(w, c), town: townTxt(w, F), stakes: stakesTxt(w, c, F), rel: relWord(f, v) ? { k: '{v}是{r}。', p: { v: v.name, r: relWord(f, v) } } : { k: '你跟{v}{tie}。', p: { v: v.name, tie: tieTxt(PW()?.tie?.(w, f, v) || '家人') } }, house: houseTxt(w, v, f), cq: CONSEQ, fates: fatesTxt(w, F), me: hideTemper(w, f, v, false) }); },
         // 瞞不瞞、擋不擋：家人之間的好感多半在 70 上下，以這裡為中心算交情的加減，沒開 AI 時整體大約四成瞞、五成擋或求（跟以前一樣）
         options(w, f, ctx) {
             const v = ctx ? w.agents[ctx.v] : null; const c = bitOk(w, v, ctx); if (!c || v === f) return []; const ks = kids(w, f, WC().kin(w, f)).filter(k => k !== v);
             const guards = Object.values(w.agents).filter(o => !o.isDead && o.job?.key === 'guard' && o !== f); const distrust = hasV(f, '自由') || guards.some(g => aff(f, g) <= -10);
             const rules = hasV(f, '傳統') || has(f, 'perfectionist') || has(f, 'stoic');
             return [
-                { id: 'hide', text: '幫他瞞著，說是被狗咬的', say: { k: '幫被咬的{v}瞞著', p: { v: v.name } }, why: '說了他們會把人帶走，我捨不得。', lean: { bond: 0.4, safe: -0.3 },
+                { id: 'hide', text: '幫他瞞著，說是被狗咬的（不用分開；兩天後在家裡變，頭一晚會先咬同住的人）', say: { k: '幫被咬的{v}瞞著', p: { v: v.name } }, why: '說了他們會把人帶走，我捨不得。', lean: { bond: 0.4, safe: -0.3 },
                     base: REF - 0.1 + clampN((aff(f, v) - 70) / 60, -0.5, 0.4) + (distrust ? 0.4 : 0) - (rules ? 0.4 : 0) - (ks.length ? 0.4 : 0) + (has(f, 'kind') ? 0.2 : 0) + (c.prog >= 60 ? 0.2 : 0), run: (w2, f2) => (WC().zHid(w2, f2, v, 'hide') ? { k: '幫{v}瞞了下來', p: { v: v.name } } : null) },
-                { id: 'clinic', text: '帶他去診所隔離', say: { k: '把被咬的{v}帶去診所', p: { v: v.name } }, why: '瞞著只會害更多人。', base: REF, lean: { safe: 0.2 }, run: (w2, f2) => (WC().zIso(w2, v, f2) ? { k: '把{v}帶去診所了', p: { v: v.name } } : null) },
-                { id: 'tie', text: '自己動手把他綁在家裡', say: { k: '把被咬的{v}綁在家裡', p: { v: v.name } }, why: '不送走他，也不能讓他傷人。', lean: { bond: 0.2 },
+                { id: 'clinic', text: '帶他去診所隔離（關著，變了的頭一晚咬不到人；這兩天見不到他）', say: { k: '把被咬的{v}帶去診所', p: { v: v.name } }, why: '瞞著只會害更多人。', base: REF, lean: { safe: 0.2 }, run: (w2, f2) => (WC().zIso(w2, v, f2) ? { k: '把{v}帶去診所了', p: { v: v.name } } : null) },
+                { id: 'tie', text: '自己動手把他綁在家裡（頭一晚咬不到人；家人要守一整晚，隔天他還是會跑出去）', say: { k: '把被咬的{v}綁在家裡', p: { v: v.name } }, why: '不送走他，也不能讓他傷人。', lean: { bond: 0.2 },
                     base: REF + tilt(0.12) + (has(f, 'brave') ? 0.3 : 0) + (has(f, 'stoic') ? 0.3 : 0), run: (w2, f2) => (WC().zHid(w2, f2, v, 'tie') ? { k: '把{v}綁在家裡', p: { v: v.name } } : null) },
             ];
         },
@@ -295,33 +360,36 @@
     DECIDE.kind('zbHunt', Object.assign({}, base, {
         title: '輪到你去清剿喪屍', pri: 2, aiKind: 1,
         facts(w, h, ctx) { const Z = zOk(w, ctx); if (!Z) return ''; const fam = zFam(w, Z.z, h);
-            return fill('今天輪到你帶著守衛去清剿。墓園邊那個喪屍是{z}，生前你跟{z}{tie}。{fam}解藥做了 {p}%{eta}。', { z: Z.z.name, tie: tieTxt(PW()?.tie?.(w, h, Z.z) || '交情普通'), fam: fam.length ? { k: '{z}的家人{x}還在鎮上。', p: { z: Z.z.name, x: { raw: names(fam) } } } : { raw: '' }, p: pctOf(Z.c), eta: etaTxt(w, Z.c) }); },
+            const F = WC().zFacts(w, Z.z) || {};
+            return fill('今天輪到你去清剿。{role}墓園邊那個喪屍是{z}，生前你跟{z}{tie}。{fam}{vic}{town}{sp}{home}{cure}{stakes}{me}', { stakes: stakesTxt(w, Z.c, F), me: huntTemper(w, h, Z.z, WC().kinZ(w, Z.z).includes(h)), role: h.job?.key === 'guard' ? '清剿是你的差事，你是鎮上的守衛。' : '你不是守衛，是自願跟著去的。', z: Z.z.name, tie: tieTxt(PW()?.tie?.(w, h, Z.z) || '交情普通'), fam: fam.length ? { k: '{z}的家人{x}還在鎮上。', p: { z: Z.z.name, x: { raw: names(fam) } } } : { raw: '' },
+                vic: victimsTxt(w, Z.z, F, h), town: townTxt(w, F), sp: sparedTxt(F), home: hunterHomeTxt(w, h), cure: cureTxt(w, Z.c) }); },
         options(w, h, ctx) {
             const Z = zOk(w, ctx); if (!Z || h === Z.z) return []; const z = Z.z; const a0 = aff(h, z); const mine = WC().kinZ(w, z).includes(h); const soon = etaOf(w, Z.c) <= 3;
             return [
-                { id: 'kill', text: '動手', say: { k: '對{z}動了手', p: { z: z.name } }, why: '那已經不是他了，再拖下去會有更多人被咬。', lean: { safe: 0.3, bond: -0.2 },
+                { id: 'kill', text: '動手（他不會再咬人；他也等不到解藥了）', say: { k: '對{z}動了手', p: { z: z.name } }, why: '那已經不是他了，再拖下去會有更多人被咬。', lean: { safe: 0.3, bond: -0.2 },
                     base: REF + tilt(0.95) - clampN((a0 - 15) / 30, 0, 1.5) - (mine ? 1.8 : 0) - (has(h, 'kind') ? (a0 > 15 ? 0.4 : 0.15) : 0) + (h.job?.key === 'guard' ? 0.2 : 0) - (soon ? 0.2 : 0), // 不熟的、不是家人的幾乎都動手（以前輪到的一定出手）；下不了手集中在生前有交情、家人、心軟的人
                     run: (w2, h2) => { const Z2 = zOk(w2, ctx); if (!Z2) return null; const f = zFam(w2, Z2.z, h2)[0];
                         if (f) { DECIDE.askNow(w2, [{ a: f, kind: 'zbGuard', ctx: { z: Z2.z.agentId, h: h2.agentId, d: day(w2) } }]); return { k: '舉起了斧頭' }; }
                         return WC().zKill(w2, h2, Z2.z) ? { k: '結束了{z}', p: { z: Z2.z.name } } : null; } },
-                { id: 'cant', text: '下不了手', say: { k: '對{z}下不了手', p: { z: z.name } }, why: '那是我認識的人，我做不到。', base: REF, lean: { bond: 0.3 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, false) ? { k: '放下了斧頭' } : null; } },
-                { id: 'drive', text: '只把他趕到墓園那邊', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: '先別讓他靠近大家，等解藥。', base: REF - 0.4 + (soon ? 0.15 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
+                { id: 'cant', text: '下不了手（他還有救；他今晚可能再咬人）', say: { k: '對{z}下不了手', p: { z: z.name } }, why: '那是我認識的人，我做不到。', base: REF, lean: { bond: 0.3 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, false) ? { k: '放下了斧頭' } : null; } },
+                { id: 'drive', text: '只把他趕到墓園那邊（他還有救；他還會再出來咬人）', say: { k: '把{z}趕回墓園', p: { z: z.name } }, why: '先別讓他靠近大家，等解藥。', base: REF - 0.4 + (soon ? 0.15 : 0), lean: { bond: 0.2, safe: 0.1 }, run: (w2, h2) => { const Z2 = zOk(w2, ctx); return Z2 && WC().zSpare(w2, h2, Z2.z, true) ? { k: '把{z}趕回墓園', p: { z: Z2.z.name } } : null; } },
             ];
         },
     }));
     DECIDE.kind('zbGuard', Object.assign({}, base, {
         title: '有人要對變成喪屍的家人下手', pri: 2.5, aiKind: 1,
         facts(w, f, ctx) { const Z = zOk(w, ctx); const h = Z && w.agents[ctx.h]; if (!Z || !h) return '';
-            return fill('{h}舉起斧頭，要對{z}下手。{z}已經變成喪屍了，可是你還認得那件衣服。解藥做了 {p}%{eta}。你跟{h}{tie}。', { h: h.name, z: Z.z.name, p: pctOf(Z.c), eta: etaTxt(w, Z.c), tie: tieTxt(PW()?.tie?.(w, f, h) || '交情普通') }); },
+            const F = WC().zFacts(w, Z.z) || {};
+            return fill('{h}舉起斧頭，要對{z}下手。{role}{z}已經變成喪屍了，可是你還認得那件衣服。{vic}{town}{cure}{stakes}你跟{h}{tie}。{me}', { stakes: stakesTxt(w, Z.c, F), me: guardTemper(w, f, h), h: h.name, z: Z.z.name, role: h.job?.key === 'guard' ? { k: '{h}是鎮上的守衛，清剿是他的差事。', p: { h: h.name } } : { k: '{h}不是守衛，是自願去清剿的。', p: { h: h.name } }, vic: victimsTxt(w, Z.z, F, f), town: townTxt(w, F), cure: cureTxt(w, Z.c), tie: tieTxt(PW()?.tie?.(w, f, h) || '交情普通') }); },
         options(w, f, ctx) {
             const Z = zOk(w, ctx); const h = Z && w.agents[ctx.h]; if (!Z || !h || h.isDead || f === h || f === Z.z) return []; const z = Z.z; const soon = etaOf(w, Z.c) <= 5;
             return [
-                { id: 'block', text: { k: '衝出去擋在{z}前面', p: { z: z.name } }, say: { k: '擋在變成喪屍的{z}前面', p: { z: z.name } }, why: '解藥就快好了，他還有救。', lean: { bond: 0.4, safe: -0.3 },
+                { id: 'block', text: { k: '衝出去擋在{z}前面（他今天不會死；他今晚可能再咬人）', p: { z: z.name } }, say: { k: '擋在變成喪屍的{z}前面', p: { z: z.name } }, why: '解藥就快好了，他還有救。', lean: { bond: 0.4, safe: -0.3 },
                     base: REF + tilt(0.4) + clampN((aff(f, z) - 70) / 60, -0.4, 0.4) + (has(f, 'brave') ? 0.4 : 0) + (soon ? 0.2 : 0) - (has(f, 'neurotic') || has(f, 'shy') ? 0.2 : 0), // 擋＋求合計大約五成（以前家人 50% 擋）
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, false) ? { k: '擋住了{h}', p: { h: h2.name } } : null; } },
-                { id: 'away', text: '轉過頭不看', say: '轉過頭，讓他動手', why: '那已經不是他了，讓他走吧。', base: REF, lean: { safe: 0.2 },
+                { id: 'away', text: '轉過頭不看（他不會再咬人；他也等不到解藥了）', say: '轉過頭，讓他動手', why: '那已經不是他了，讓他走吧。', base: REF, lean: { safe: 0.2 },
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && !h2.isDead && WC().zKill(w2, h2, Z2.z) ? { k: '轉過頭，{h}動了手', p: { h: h2.name } } : null; } },
-                { id: 'beg', text: '跪下來求他再等幾天', say: { k: '求{h}再等幾天', p: { h: h.name } }, why: '求求你，再等幾天就好。', lean: { bond: 0.3 },
+                { id: 'beg', text: '跪下來求他再等幾天（他今天不會死；他今晚可能再咬人）', say: { k: '求{h}再等幾天', p: { h: h.name } }, why: '求求你，再等幾天就好。', lean: { bond: 0.3 },
                     base: REF + tilt(0.15) + (aff(f, h) >= 25 ? 0.3 : 0) + (has(f, 'kind') ? 0.2 : 0),
                     run: (w2, f2) => { const Z2 = zOk(w2, ctx); const h2 = w2.agents[ctx.h]; return Z2 && h2 && WC().zBlock(w2, f2, h2, Z2.z, true) ? { k: '{h}答應再等幾天', p: { h: h2.name } } : null; } },
             ];
