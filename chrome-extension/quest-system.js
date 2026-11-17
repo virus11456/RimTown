@@ -1188,7 +1188,7 @@ class RequestBoard {
         world.logMessage?.('quest', `📖 ${t(npc.name)}${t('欲言又止，好像還有件事想拜託你——明天再來看看委託板')}`);
         world.onChainEvent?.('start', npc.name, t(REQUEST_CHAINS[key].title));
     }
-    chainScript(c, world) { const tpl = REQUEST_CHAINS[c?.key]; if (!tpl) return null; const locName = (loc) => (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world?.townTheme || 'frontier']?.locationNames?.[loc]) || REQUEST_LOC_FALLBACK[loc] || loc || ''; const fill = (x, st) => Object.entries({ npc: t(c.npcName), target: t(c.targetName || ''), loc: st?.loc ? locName(st.loc) : '', n: st?.amount || '' }).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), t(x)); return { title: t(tpl.title), steps: tpl.steps.map(st => fill(st.text, st)), finale: fill(tpl.finale) }; } // v6.8.0 給 AI 改寫口吻用
+    chainScript(c, world) { const tpl = REQUEST_CHAINS[c?.key]; if (!tpl) return null; const locName = (loc) => (typeof TOWN_THEMES !== 'undefined' && TOWN_THEMES[world?.townTheme || 'frontier']?.locationNames?.[loc]) || REQUEST_LOC_FALLBACK[loc] || loc || ''; const fill = (x, st) => Object.entries({ npc: t(c.npcName), target: t(c.targetName || ''), loc: st?.loc ? t(locName(st.loc)) : '', n: st?.amount || '' }).reduce((acc, [k, v]) => acc.split('{' + k + '}').join(v), t(x)); return { title: t(tpl.title), steps: tpl.steps.map(st => fill(st.text, st)), finale: fill(tpl.finale) }; } // v6.8.0 給 AI 改寫口吻用
     _pushChainStep(world, today, used) {
         const c = this.chain; if (!c) return;
         const tpl = REQUEST_CHAINS[c.key]; const st = tpl?.steps?.[c.step]; if (!st) { this.chain = null; return; }

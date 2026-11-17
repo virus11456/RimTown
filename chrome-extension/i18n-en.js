@@ -17446,5 +17446,9 @@
         '（{i}）{x}（{src}{more}）{hurt}{rel}': ' ({i}) {x} ({src}{more}){hurt}{rel}',
         '{o}（{p}）': '{o} ({p})',
     });
+    // 三天請託的地點（沒有主題地名時的預設名）：這一個沒有英文，英文介面的請託說明和給 AI 的題目會留中文
+    Object.assign(en, {
+        '鎮中心廣場': 'Town Square',
+    });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

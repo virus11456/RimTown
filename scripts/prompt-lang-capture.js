@@ -93,7 +93,7 @@ function llmLines() { try { const L = fs.readFileSync(path.join(__dirname, '..',
       for (const kind of ['confession', 'wedding', 'busted', 'breakup', 'divorce', 'feud', 'severance', 'reconcile']) await step('drama:' + kind, () => ce.generateDramaScene(w, kind, {}, npcs[0], npcs[1], npcs[2].name));
       // 聊天意圖的 AI 判定、三天請託的台詞、提案人的說明（都在畫面那一層）
       for (const key of ['comfort', 'persuade', 'flirt', 'threaten']) await step('judge:' + key, async () => { app._judgeN = 0; app._judgeDay = null; await app._judgeIntent(npcs[0], key, SAY.chat); });
-      await step('chainQuotes', async () => { const rb = w.requests; if (!rb) return; if (!rb.chain && typeof rb.startChain === 'function') rb.startChain(w, npcs[0]); if (rb.chain) { rb.chain.quotes = null; await app._aiChainQuotes(w); } });
+      await step('chainQuotes', async () => { const rb = w.requests; if (!rb || typeof REQUEST_CHAINS === 'undefined') return; const keep = rb.chain; try { for (const key of Object.keys(REQUEST_CHAINS)) { rb.chain = { key, npcId: npcs[0].agentId, npcName: npcs[0].name, targetName: npcs[1].name, step: 0 }; await app._aiChainQuotes(w); await drain(); } } finally { rb.chain = keep; } });
       await step('pitch', async () => { const ps = w.proposals; const list = (ps?.list || ps?.active || ps?.all?.() || []); const p = (Array.isArray(list) ? list : Object.values(list)).find(x => x && x.proposerId && w.agents[x.proposerId]); if (!p) return; p.pitch = null; app._pitchN = 0; await app._aiProposalPitch(w, p.id); });
       // 上帝之手：託夢、許願
       w.observerMode = true; w.fullAgentMode = true;
