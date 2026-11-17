@@ -356,15 +356,16 @@ const HOME = (() => {
                 last: I.last ? { k: '上一道王令是{n}（{d} 天前）。', p: { n: { raw: dn(I.last.key) || '' }, d: Math.max(0, day(w) - I.last.day) } } : '你還沒有頒過王令。',
                 foe: I.foes.length ? { k: '{x}在背後罵你（一共有 {n} 個人對你很不滿）。', p: { x: { raw: names(I.foes.slice(0, 3)) }, n: I.foes.length } } : '最近沒聽到有人罵你。' }); },
         options(w, k, ctx) {
+            // 原本會挑的那一道起跑分數多 2（沒開 AI 時各種王令的次數跟以前差不多），個性只在邊際上改變；各選項的傾向（lean）壓小，不然愛享受的國王一直辦慶典
             const I = decreeInfo(w, k); if (!I) return []; const r = ctx?.r; const out = []; const lowL = I.legit < 40; const tax = I.tax;
-            const add = (key, ok, adj, lean, p) => { if (!ok) return; out.push({ id: key, text: { k: DTXT[key], p: p || {} }, say: { k: '頒布了{n}', p: { n: CROWN.DECREES[key].zh } }, why: DWHY[key], base: REF + (key === r ? 1.5 : 0) + adj, lean,
+            const add = (key, ok, adj, lean, p) => { if (!ok) return; out.push({ id: key, text: { k: DTXT[key], p: p || {} }, say: { k: '頒布了{n}', p: { n: CROWN.DECREES[key].zh } }, why: DWHY[key], base: REF + (key === r ? 2.0 : 0) + adj, lean,
                 run: (w2) => { const rec = CROWN.issue(w2, key, ''); if (!rec) return null; stat(w2, 'decree_' + key); return { k: '頒布了{n}', p: { n: CROWN.DECREES[key].zh } }; } }); };
-            add('relief', I.poor > 0 && I.tr > 0, (has(k, 'kind') ? 0.4 : 0) + (hasV(k, '社群') ? 0.3 : 0) - (has(k, 'greedy') ? 0.3 : 0), { bond: 0.3 });
-            add('tax_up', tax < 0.3, (has(k, 'greedy') || hasV(k, '權力') ? 0.4 : 0) - (lowL ? 0.6 : 0) - (has(k, 'kind') ? 0.3 : 0), { gain: 0.3, face: -0.2 }, { n: Math.round(Math.min(0.3, tax + 0.05) * 100) });
-            add('tax_down', tax > 0.03, (has(k, 'kind') ? 0.2 : 0) + (lowL ? 0.3 : 0) - (has(k, 'greedy') ? 0.3 : 0), { bond: 0.2, face: 0.2 }, { n: Math.round(Math.max(0.03, tax - 0.05) * 100) });
-            add('festival', true, (has(k, 'charismatic') ? 0.3 : 0) + (has(k, 'optimist') ? 0.2 : 0) - (has(k, 'thrifty') ? 0.3 : 0), { joy: 0.3, face: 0.2 });
-            add('amnesty', true, (has(k, 'kind') ? 0.3 : 0), { bond: 0.2 });
-            add('curfew', true, (has(k, 'abrasive') ? 0.3 : 0) + (hasV(k, '權力') ? 0.2 : 0) - (lowL ? 0.4 : 0), { safe: 0.3, bond: -0.2 });
+            add('relief', I.poor > 0 && I.tr > 0, (has(k, 'kind') ? 0.4 : 0) + (hasV(k, '社群') ? 0.3 : 0) - (has(k, 'greedy') ? 0.3 : 0), { bond: 0.1 });
+            add('tax_up', tax < 0.3, (has(k, 'greedy') || hasV(k, '權力') ? 0.4 : 0) - (lowL ? 0.6 : 0) - (has(k, 'kind') ? 0.3 : 0), { gain: 0.1 }, { n: Math.round(Math.min(0.3, tax + 0.05) * 100) });
+            add('tax_down', tax > 0.03, (has(k, 'kind') ? 0.2 : 0) + (lowL ? 0.3 : 0) - (has(k, 'greedy') ? 0.3 : 0), { bond: 0.1 }, { n: Math.round(Math.max(0.03, tax - 0.05) * 100) });
+            add('festival', true, (has(k, 'charismatic') ? 0.3 : 0) + (has(k, 'optimist') ? 0.2 : 0) - (has(k, 'thrifty') ? 0.3 : 0), { joy: 0.1 });
+            add('amnesty', true, (has(k, 'kind') ? 0.3 : 0), { bond: 0.1 });
+            add('curfew', true, (has(k, 'abrasive') ? 0.3 : 0) + (hasV(k, '權力') ? 0.2 : 0) - (lowL ? 0.4 : 0), { safe: 0.1 });
             out.push({ id: 'none', quiet: true, text: '這次不頒', say: '這次沒有頒王令', why: '現在這樣就好，不必多事。', base: REF - 0.9 + (has(k, 'lazy') ? 0.4 : 0) + (I.legit >= 70 && !I.hungry ? 0.3 : 0), lean: { safe: 0.2 },
                 run: (w2, k2) => { stat(w2, 'decree_none'); log(w2, 'event', '📜 國王{k}這次沒有頒布王令。', { k: k2.name }, k2.name); return null; } });
             return out;
