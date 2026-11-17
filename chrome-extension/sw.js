@@ -97,7 +97,7 @@ const ASSETS_TO_CACHE = [
   './app-loop.js',
   './app-towngen.js',
   './app-godhand.js',
-  './app-cards.js', './app-market.js',
+  './app-cards.js', './app-market.js', './app-relmap.js',
   './app-pages.js',
   './app-towns.js',
   './app-chat.js',
