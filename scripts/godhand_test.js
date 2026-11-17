@@ -40,6 +40,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     if (process.env.SHOT) await page.screenshot({ path: `${process.env.SHOT}/gh_${dev}_${lang}.png` });
     // 選另一張卡
     const second = await page.evaluate(() => [...document.querySelectorAll('#gh-tray .gh-card:not(.blocked)')][3]?.dataset.v);
+    if (!second) { // 偶爾會找不到第四張能打的卡（原因還沒查到）：把當下的手牌狀態印出來，不要直接當掉
+      const dump = await page.evaluate(() => { const st = window.rimtownApp.state?.eventCards || {}; return { cards: [...document.querySelectorAll('#gh-tray .gh-card')].map(c => c.dataset.v + (c.classList.contains('blocked') ? '!' : '')), power: st.power, hand: (st.hand || []).map(c => [c.id, c.left, c.dailyFull ? 'D' : '', c.noPower ? 'P' : '', c.noCtx ? 'C' : ''].join('')) }; });
+      ok(false, '找得到第四張能打的卡', dump); await ctx.close(); continue; }
     await page.click(`#gh-tray .gh-card[data-v="${second}"]`); await page.waitForTimeout(200);
     const sel2 = await page.evaluate(() => ({ sel: document.querySelector('#gh-tray .gh-card.sel')?.dataset.v, name: document.querySelector('#gh-tray .gh-d-nm')?.innerText }));
     ok(sel2.sel === second && sel2.name, '點卡會換到那張的說明', sel2);
