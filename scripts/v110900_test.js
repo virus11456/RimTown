@@ -51,7 +51,7 @@ async function run(browser, dev, lang) {
     const setJob = (a, k) => { try { a.job = new Job(k); } catch (e) {} };
     for (const a of npcs()) { if (w.civic?.jail) delete w.civic.jail[a.agentId]; if (a.currentLocation === 'exploration') a.currentLocation = 'town_square'; }
     try { WAYS.S(w).shame = {}; } catch (e) {}
-    const used = new Set(); const take = (f) => { const a = adults().find(x => !used.has(x.agentId) && x.job?.key !== 'mayor' && w.crown?.king !== x.agentId && (!f || f(x))); if (a) used.add(a.agentId); return a; };
+    const used = new Set(); const free = (x) => !used.has(x.agentId) && x.job?.key !== 'mayor' && w.crown?.king !== x.agentId; const take = (f) => { const a = adults().find(x => free(x) && (!f || f(x))) || adults().find(free); if (a) used.add(a.agentId); return a; }; // 條件合的人用完了就隨便找一位（年紀之類的條件之後各自設好）
     if (!CROWN.king(w)) { const k = adults().filter(a => a.age >= 30 && a.job?.key !== 'mayor').sort((x, y) => CROWN.prestige(w, y) - CROWN.prestige(w, x))[0]; CROWN.crown(w, k, 'first'); }
     const king = CROWN.king(w); used.add(king.agentId); const mayorA = adults().find(a => a.job?.key === 'mayor'); if (mayorA) used.add(mayorA.agentId);
     out.pop = npcs().length; out.lv = TIERS.level(w);
@@ -61,7 +61,7 @@ async function run(browser, dev, lang) {
     out.civic = DECIDE.AI_GROUP.civic;
 
     // ============ A1 生孩子 ============
-    const A1 = {}; { const a = take(x => x.age >= 22 && x.age <= 30), b = take(x => x.age >= 22 && x.age <= 30 && x.gender !== a.gender); plain(a); plain(b); orphan(a); orphan(b); wed(a, b); setAff(a, b, 50); setAff(b, a, 50); setCash(a, 60); setCash(b, 40); b.personality.values = ['家庭'];
+    const A1 = {}; { const a = take(x => x.age >= 22 && x.age <= 30), b = take(x => x.age >= 22 && x.age <= 30 && x.gender !== a.gender); a.age = 26; b.age = 27; plain(a); plain(b); orphan(a); orphan(b); wed(a, b); setAff(a, b, 50); setAff(b, a, 50); setCash(a, 60); setCash(b, 40); b.personality.values = ['家庭'];
       const I = HOME.couple(w, a); const k = I.k; delete H.bp[k]; (H.asked.bp || (H.asked.bp = {}));
       const ctx = { k, d: day() }; const K = KK.birthPlan; const f = K.facts(w, a, ctx); collect(K, a, ctx);
       A1.facts = { name: f.includes(t(b.name)) || f.includes(b.name), days: f.includes('30'), cash: f.includes(String(Math.floor(cash(a)))) && f.includes(String(Math.floor(cash(b)))), noKid: f.includes(t('你們還沒有孩子。')), wish: f.includes(fill('{b}很想要孩子。', { b: b.name })), tie: f.includes(t('只是普通交情')) || f.includes(t('是一家人')) };
@@ -82,7 +82,7 @@ async function run(browser, dev, lang) {
       const kid = take(x => (x.age ?? 30) >= 16); kid._parentNames = [a.name, b.name]; delete H.asked.bp[k]; const n2 = asked.length; steady(() => HOME.birthMult(w, a, b)); A1.changed = asked.slice(n2).filter(e => e.kind === 'birthPlan').length; kid._parentNames = []; used.delete(kid.agentId);
       A1.alt = asked.slice(n2).find(e => e.kind === 'birthPlan')?.who === b.agentId; // 輪流：上次問 a，這次問 b
       // 傾向：重視家庭、另一半也想要的想生；崇尚自由、年紀大、孩子多的不想
-      const c1 = take(x => x.age >= 22 && x.age <= 32), c2 = take(x => x.age >= 22 && x.age <= 32 && x.gender !== c1.gender); plain(c1); plain(c2); orphan(c1); orphan(c2); wed(c1, c2); setAff(c1, c2, 60); setCash(c1, 80); setCash(c2, 80); setJob(c1, 'farmer'); setJob(c2, 'farmer');
+      const c1 = take(x => x.age >= 22 && x.age <= 32), c2 = take(x => x.age >= 22 && x.age <= 32 && x.gender !== c1.gender); c1.age = 28; c2.age = 29; plain(c1); plain(c2); orphan(c1); orphan(c2); wed(c1, c2); setAff(c1, c2, 60); setCash(c1, 80); setCash(c2, 80); setJob(c1, 'farmer'); setJob(c2, 'farmer');
       const kc = { k: HOME.couple(w, c1).k, d: day() }; c1.personality.values = ['家庭']; c2.personality.values = ['家庭']; const mWant = marg(K, c1, kc, 'want'); const pWant = pick(K, c1, kc);
       c1.personality.values = ['自由']; c2.personality.values = ['自由']; c1.age = 41; const ks = adults().filter(x => !used.has(x.agentId)).slice(0, 3); for (const x of ks) x._parentNames = [c1.name, c2.name]; const mFree = marg(K, c1, kc, 'want'); const pFree = pick(K, c1, kc); for (const x of ks) x._parentNames = []; c1.age = 30;
       A1.lean = { mWant, mFree, pWant, pFree };
@@ -191,7 +191,7 @@ async function run(browser, dev, lang) {
 
     // ============ A6 聯姻 ============
     const A6 = {}; { const D = DIPLO.S(w); const ps = DIPLO.places(w); A6.places = ps.length; const p = ps[0]; const L = DIPLO.leader(w);
-      const mk = () => { const a = take(x => x.age >= 18 && x.age <= 40); plain(a); unpair(a); orphan(a); a._parentNames = [L.name]; return a; };
+      const mk = () => { const a = take(x => x.age >= 18 && x.age <= 40); a.age = Math.min(40, Math.max(18, a.age)); plain(a); unpair(a); orphan(a); a._parentNames = [L.name]; return a; };
       const prep = () => { D.status[p.id] = 'ally'; D.rel[p.id] = 60; delete D.wed[p.id]; };
       // 答應：嫁過去、關係大升、永遠離開
       prep(); for (const o of npcs()) if ((o._parentNames || []).includes(L.name)) o._parentNames = o._parentNames.filter(n => n !== L.name); const a1 = mk(); a1.personality.values = ['社群']; const r0 = D.rel[p.id]; const n0 = asked.length; steady(() => DIPLO.act(w, D, 'wed', p.id));
@@ -253,7 +253,7 @@ async function run(browser, dev, lang) {
       // 送禮：珍品送出去、關係變好
       const tg = D.rel[ps[ps.length - 1].id]; const worst = ps.slice().sort((a, b) => (D.rel[a.id] || 0) - (D.rel[b.id] || 0))[0]; const rw = D.rel[worst.id]; runOp(K, L, ctxS, 'gift'); B8.gift = { rel: r3(D.rel[worst.id] - rw), gone: !(w.goods.town || []).some(x => x.id === 'tg1') };
       // 提聯姻：問被嫁的人
-      const kid = take(x => x.age >= 18 && x.age <= 40); plain(kid); unpair(kid); orphan(kid); kid._parentNames = [L.name]; const n1 = asked.length; runOp(K, L, ctxS, 'wed'); B8.wed = asked.slice(n1).some(e => e.kind === 'wedAway' && e.who === kid.agentId);
+      const kid = take(x => x.age >= 18 && x.age <= 40); kid.age = Math.min(40, Math.max(18, kid.age)); plain(kid); unpair(kid); orphan(kid); kid._parentNames = [L.name]; const n1 = asked.length; runOp(K, L, ctxS, 'wed'); B8.wed = asked.slice(n1).some(e => e.kind === 'wedAway' && e.who === kid.agentId);
       // 這次不理
       const lg0 = D.log.length; runOp(K, L, ctxS, 'none'); B8.skip = D.log.length === lg0;
       // 每十天由首長決定；沒開照原本
@@ -360,7 +360,7 @@ async function run(browser, dev, lang) {
       w.fullAgentMode = true; app._fullAgentOn = () => true; o.aiOn = DECIDE.aiOn(w);
       if (o.aiOn) {
         // 家裡的事：生孩子（預設額度）
-        const a = take(x => x.age >= 22 && x.age <= 32), b = take(x => x.age >= 22 && x.age <= 32 && x.gender !== a.gender); plain(a); plain(b); orphan(a); orphan(b); wed(a, b); const k = HOME.couple(w, a).k; delete H.bp[k];
+        const a = take(x => x.age >= 22 && x.age <= 32), b = take(x => x.age >= 22 && x.age <= 32 && x.gender !== a.gender); a.age = 27; b.age = 28; plain(a); plain(b); orphan(a); orphan(b); wed(a, b); const k = HOME.couple(w, a).k; delete H.bp[k];
         X0._asked = 0; X0._kAsked = {}; X0._gAsked = {}; X0._cDay = day(); X0.lastDay = day(); reply = [{ n: 1, pick: 'no', why: 'model reason 52', feel: 'tired' }];
         const n0 = seen.length; DECIDE.askNow(w, [{ a, kind: 'birthPlan', ctx: { k, d: day() } }]); const pending = seen.length === n0; await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
         const e = seen.slice(n0).find(x => x.kind === 'birthPlan'); o.home = { pending, id: e?.id, src: e?.src, reason: e?.reason, rec: H.bp[k]?.k, glob: X0._asked };
@@ -372,8 +372,8 @@ async function run(browser, dev, lang) {
         // 家人沒錢吃飯從來不送去問 AI
         prompts.length = 0; const x = take(), y = take(); plain(x); plain(y); orphan(x); orphan(y); wed(x, y); setCash(x, 0); setCash(y, 100); H.hd = null; MARKET.feed(w, x, 3); await DECIDE.flush(); o.feedNoAi = !prompts.some(p => p.includes('pay＝'));
         // 額度：同一種一天最多 aiKind 件，其餘照個性
-        X0._gAsked = {}; X0._kAsked = {}; prompts.length = 0; reply = []; const many = adults().filter(z => !used.has(z.agentId) && z.age >= 25).slice(0, 4); const n2 = seen.length; DECIDE.askNow(w, many.map(z => ({ a: z, kind: 'postOffer', ctx: { post: 'seat', d: day(), mode: 'pick' } }))); const ruled = seen.slice(n2).filter(z => z.kind === 'postOffer' && z.src === 'rule').length; await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
-        o.quota = { kind: KK.postOffer.aiKind, ai: X0._kAsked.postOffer, ruled };
+        X0._gAsked = {}; X0._kAsked = {}; prompts.length = 0; reply = []; const many = adults().filter(z => !used.has(z.agentId) && !(w.council?.members || []).includes(z.agentId)).slice(0, 4); const n2 = seen.length; DECIDE.askNow(w, many.map(z => ({ a: z, kind: 'postOffer', ctx: { post: 'seat', d: day(), mode: 'pick' } }))); const ruled = seen.slice(n2).filter(z => z.kind === 'postOffer' && z.src === 'rule').length; await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
+        o.quota = { kind: KK.postOffer.aiKind, ai: X0._kAsked.postOffer, ruled, n: many.length };
       }
       w.fullAgentMode = false; ce._askJson = a0; app._fullAgentOn = () => false; out.mind = o; }
 
@@ -487,7 +487,7 @@ async function run(browser, dev, lang) {
     ok(M.aiOn && M.home && M.home.pending && M.home.id === 'no' && M.home.src === 'ai' && M.home.reason === 'model reason 52' && M.home.rec === 'no' && M.home.glob >= 1, `${tag} 開 AI：家裡的事（生孩子）題目當場送出、等回話，採用它的答案與理由，用預設額度`, M.home);
     ok(M.p1 && M.p1.codes && M.p1.facts && M.civic && M.civic.src === 'ai' && M.civic.issued === 1 && M.civic.key === 'festival' && M.civic.text === 'edict 33' && M.civic.group === 1 && M.p2.codes, `${tag} 王令用 civic 那一組：AI 選的慶典真的頒了，理由當作詔書`, { p1: M.p1, c: M.civic, p2: M.p2 });
     ok(zh || (!M.p1.cjk && !M.p2.cjk), `${tag} 英文題目裡沒有中文`, zh ? null : { p1: M.p1.sample, p2: M.p2.sample });
-    ok(M.feedNoAi && M.quota && M.quota.ai === M.quota.kind && M.quota.ruled === 4 - M.quota.kind, `${tag} 家人沒錢吃飯不問 AI；同一種一天最多 ${M.quota?.kind} 件問 AI，其餘當場照個性決定`, { f: M.feedNoAi, q: M.quota }); }
+    ok(M.feedNoAi && M.quota && M.quota.ai === M.quota.kind && M.quota.n >= 3 && M.quota.ruled === M.quota.n - M.quota.kind, `${tag} 家人沒錢吃飯不問 AI；同一種一天最多 ${M.quota?.kind} 件問 AI，其餘當場照個性決定`, { f: M.feedNoAi, q: M.quota }); }
   ok(r.lits.n > 200 && (zh || r.lits.nbad === 0), `${tag} sim-decide-home.js 裡 ${r.lits.n} 句中文逐句查過，英文模式都有英文`, zh ? null : r.lits);
   { const Ru = r.run;
     ok(Ru.errs.length === 0 && Ru.days === LONG && Ru.other === 0, `${tag} 王都放著跑 ${Ru.days} 天：沒有錯誤、帳上沒有對不上的錢`, Ru); console.log('   ', JSON.stringify(Ru)); }

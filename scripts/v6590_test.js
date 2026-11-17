@@ -53,7 +53,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.crown.legit = 10; w.crown.plot = { leader: L2.agentId, members: [L2.agentId, others[3].agentId, others[4].agentId], start: w._absDay(), ready: w._absDay() };
       fix(0.01, () => CROWN.daily(w)); const k2 = CROWN.king(w); out.coup = k2 === L2 && w.crown.history.slice(-1)[0].how === 'coup' && CLASS.level(w, k1) !== 5;
       // 世襲
-      const kid = others[5]; kid._parentNames = [k2.name, 'x']; kid.age = 20; k2.isDead = true;
+      const kid = others[5]; kid._parentNames = [k2.name, 'x']; kid.age = 20; kid.personality.traits = ['ambitious']; kid.personality.values = ['權力']; for (const o of npcs()) if (o !== kid && (o._parentNames || []).includes(k2.name)) o._parentNames = o._parentNames.filter(n => n !== k2.name); k2.isDead = true; /* v11.9.0 接不接王位由繼承人自己決定：這裡讓他是想接的人，也讓他是唯一的繼承人（不然不接的話換弟妹繼承，後面「沒有子嗣」那一步就不成立） */
       fix(0.5, () => CROWN.daily(w)); out.heir = CROWN.king(w) === kid && w.crown.history.slice(-1)[0].how === 'heir';
       // 無子嗣 → 繼承危機 → 議會推舉
       /* v6.90 開局有家族:先讓這位國王沒有其他子嗣、配偶,才會出現繼承危機 */ for (const o of Object.values(w.agents)) { if (o === kid) continue; if ((o._parentNames || []).includes(kid.name)) o._parentNames = o._parentNames.filter(n => n !== kid.name); const rr = o.relationships?.relationships?.[kid.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; }
