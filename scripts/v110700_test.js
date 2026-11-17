@@ -103,7 +103,7 @@ async function run(browser, dev, lang) {
       // 傾向：心腸好又很親的送；悲觀、跟他不熟的不敢
       b.personality.traits = ['kind']; b.personality.values = ['社群']; setAff(b, s, 80); X.ms.quar = day(); const pKind = pick(KK.calFood, b, ctx); const mKind = marg(KK.calFood, b, ctx, 'give'); plain(b); b.personality.traits = ['pessimist', 'neurotic']; setAff(b, s, 25); const pScared = pick(KK.calFood, b, ctx); const mScared = marg(KK.calFood, b, ctx, 'give'); delete X.ms.quar; A2.lean = { kind: pKind, scared: pScared, mKind, mScared };
       // 沒開：照舊
-      for (const k of Object.keys(P0.ask)) delete P0.ask[k]; plain(b); setAff(b, s, 70); const n2 = asked.length; const f2 = P0.food; Math.random = () => 0.01; try { offDecide(() => PW._t.foodDaily(w, X, day())); } finally { Math.random = R0; } A2.off = { asked: asked.length - n2, fed: P0.food - f2 };
+      for (const k of Object.keys(P0.ask)) delete P0.ask[k]; plain(b); setAff(b, s, 70); heal(b); delete P0.home[b.agentId]; /* 送飯的人不能自己也病著或關在家裡 */ const n2 = asked.length; const f2 = P0.food; Math.random = () => 0.01; try { offDecide(() => PW._t.foodDaily(w, X, day())); } finally { Math.random = R0; } A2.off = { asked: asked.length - n2, fed: P0.food - f2 };
       P0.feed = {}; heal(s); }
     out.A2 = A2;
 
