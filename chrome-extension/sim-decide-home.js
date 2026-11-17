@@ -373,6 +373,8 @@ const HOME = (() => {
         },
     }));
     // AI 寫的理由當作詔書（只改紀錄上的那一句，結算不變）
+    // 外交頁上顯示的「首長的理由」（以前 AI 直接決定時寫進 D.why）：AI 替首長選的那一項，理由照樣寫上去
+    try { D_()?.observe((ev, o) => { if (ev === 'decided' && o.K?.key === 'diploSeason' && o.src === 'ai' && o.why && o.w?.diplo) o.w.diplo.why = String(tx(o.why)).slice(0, 60); }); } catch (e) {}
     try { D_()?.observe((ev, o) => { if (ev !== 'decided' || o.K?.key !== 'decree' || o.src !== 'ai' || !o.why) return; const C = o.w?.crown; const rec = C?.decrees?.slice(-1)[0]; if (rec && rec.day === day(o.w) && !rec.text && rec.key === String(o.op?.id)) rec.text = String(tx(o.why)).slice(0, 60); }); } catch (e) {}
 
     // ================= 這一季的外交 =================
