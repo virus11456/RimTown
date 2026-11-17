@@ -240,6 +240,37 @@ async function run(browser, dev, lang) {
       const sv = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); let err = null; try { w2.loadSave(sv); w2.observerMode = true; WC._t.zombieDaily(w2, w2.worldcal.cur); } catch (e) { err = String(e.message); } const c2 = w2.worldcal?.cur;
       out.B3 = { err, how: c2?.zb?.how?.[vv.agentId] === 'hide' || (c2?.zb?.ids || []).includes(vv.agentId), bunk: !!c2?.bunk?.[vv.agentId] };
       const sv0 = JSON.parse(JSON.stringify(sv)); delete sv0.worldcal.cur.zb.how; delete sv0.worldcal.cur.bunk; delete sv0.worldcal.cur.asked; delete sv0.worldcal.cur.zb.st.iso; const w3 = new World(); let e3 = null; try { w3.loadSave(sv0); w3.observerMode = true; WC._t.zombieDaily(w3, w3.worldcal.cur); } catch (e) { e3 = String(e.message); } out.B3.old = e3; w2.reset?.(); w3.reset?.(); }
+    // B4 第三輪：咬人記下是誰咬的；三種處置變了的頭一晚不一樣；題目裡的事實（造一個確定的情境）
+    { const B4 = {}; const zb2 = c.zb = { ids: [], bit: {}, st: { turned: 0, bitten: 0, killed: 0, hid: 0, cured: 0 } }; c.prog = 95; c.fast = 0; const d = day(); const R1 = Math.random;
+      const pool4 = adults().filter(x => !WC.isZombie(w, x)).slice(12, 40); for (const x of pool4) { plain(x); unmarry(x); }
+      const [v1, h1, v2, f2, v3, f3, z0] = pool4; const mate = h1; mate.homeLocation = v1.homeLocation = 'house_t1x'; // 只有他們兩個住這一家
+      for (const v of [v1, v2, v3]) zb2.bit[v.agentId] = d - 2; WC.zHid(w, mate, v1, 'hide'); WC.zHid(w, f2, v2, 'tie'); WC.zIso(w, v3, f3);
+      const lg0 = logs().length; Math.random = () => 0.01; try { WC._t.zombieDaily(w, c); } finally { Math.random = R1; }
+      const L = zb2.log || []; const firstN = L.filter(x => x[0] === d);
+      B4.night1 = { turned: [v1, v2, v3].every(v => zb2.ids.includes(v.agentId)), hideBitMate: firstN.some(x => x[1] === v1.agentId && x[2] === mate.agentId), tieNone: !firstN.some(x => x[1] === v2.agentId), isoNone: !firstN.some(x => x[1] === v3.agentId), logged: firstN.every(x => zb2.bit[x[2]] === d), tieLog: logs().slice(lg0).some(x => /整晚在床上掙扎|thrashed all night/.test(x)), isoLog: logs().slice(lg0).some(x => /在診所裡變了|turned inside the clinic/.test(x)) };
+      // 隔天：綁著、關著的跑出去
+      w._absDay0 = w._absDay; const dd = d + 1; w._absDay = () => dd; const lg1 = logs().length; Math.random = () => 0.99; try { WC._t.zombieDaily(w, c); } finally { Math.random = R1; w._absDay = w._absDay0; delete w._absDay0; }
+      B4.next = { tieOut: logs().slice(lg1).some(x => /掙斷了繩子|snapped the ropes/.test(x)), isoOut: logs().slice(lg1).some(x => /撞開了診所的門|broke down the clinic door/.test(x)) };
+      // 存讀檔：誰咬了誰還在
+      { const sv = JSON.parse(JSON.stringify(w.serialize())); const w2 = new World(); let err = null; try { w2.loadSave(sv); } catch (e) { err = String(e.message); } const L2 = w2.worldcal?.cur?.zb?.log || []; B4.save = { err, same: JSON.stringify(L2) === JSON.stringify(L) && L.length > 0, first: !!w2.worldcal?.cur?.zb?.first?.[v1.agentId] }; w2.reset?.(); }
+      // 題目：造一個確定的情境
+      const z = z0; WC._t.zTurn(w, c, z, true); const g = pool4[7], sp = pool4[8], kid = pool4[9], pal = pool4[10]; setJob(g, 'guard'); marry(g, sp); kid._parentNames = [g.name]; kid.age = 9; setAff(g, pal, 60); setAff(g, z, 0);
+      zb2.log = [[d, z.agentId, sp.agentId], [d - 1, z.agentId, pal.agentId], [d - 5, v1.agentId, mate.agentId]]; zb2.spared = { [v2.agentId]: d - 4 }; zb2.log.push([d - 2, v2.agentId, pool4[11].agentId]); zb2.bit[sp.agentId] = d;
+      c.prog = 40; c.fast = 1; const nZ = zb2.ids.length; const hctx = { z: z.agentId, d: day() }; const fh = KK.zbHunt.facts(w, g, hctx); texts.push(fh); for (const o of KK.zbHunt.options(w, g, hctx)) texts.push(tx(o.text));
+      const has = (s2, x) => s2.includes(t(x)) || s2.includes(x); const sub = (k, p2) => fill(k, p2);
+      B4.hunt = { n: fh.includes(sub('鎮上現在有 {n} 個喪屍，這三天有 {k} 個人被咬，昨晚 {y} 個。', { n: nZ, k: 3, y: 1 })), vic: has(fh, sp.name) && has(fh, pal.name), fam: fh.includes(sub('其中{y}是你的家人。', { y: sp.name })), pal: fh.includes(sub('其中{y}跟你很要好。', { y: pal.name })), role: fh.includes(t('清剿是你的差事，你是鎮上的守衛。')),
+        home: fh.includes(sub('{x}（配偶）', { x: sp.name })) && fh.includes(sub('{x}（孩子，{n} 歲）', { x: kid.name, n: 9 })), bitFam: fh.includes(sub('你的家人{x}已經被咬了。', { x: sp.name })), spared: fh.includes(sub('之前有人下不了手、只把他趕回墓園的喪屍有 {n} 個，那之後牠們又咬了 {m} 個人。', { n: 1, m: 1 })), cure: fh.includes(t('解藥做了 {p}%{eta}。解藥做出來以後，喪屍打了針就會變回原來的人。').split('{p}')[0]), text: fh.slice(0, 400) };
+      const g2 = pool4[12]; plain(g2); setJob(g2, 'farmer'); B4.vol = KK.zbHunt.facts(w, g2, hctx).includes(t('你不是守衛，是自願跟著去的。'));
+      const z2 = pool4[13]; WC._t.zTurn(w, c, z2, true); B4.none = KK.zbHunt.facts(w, g, { z: z2.agentId, d: day() }).includes(sub('{z}還沒咬過人。', { z: z2.name }));
+      // 家人那一邊
+      const zf = pool4[14]; marry(z, zf); const gf = KK.zbGuard.facts(w, zf, { z: z.agentId, h: g.agentId, d: day() }); texts.push(gf); B4.guard = { vic: has(gf, sp.name), role: gf.includes(sub('{h}是鎮上的守衛，清剿是他的差事。', { h: g.name })), town: gf.includes(sub('鎮上現在有 {n} 個喪屍，這三天有 {k} 個人被咬，昨晚 {y} 個。', { n: zb2.ids.length, k: 3, y: 1 })) };
+      // 瞞不瞞：同住的人、孩子幾歲、三種後果、之前瞞著的那幾家
+      const vv = pool4[15], fam = pool4[16], kid2 = pool4[17]; marry(vv, fam); kid2._parentNames = [fam.name, vv.name]; kid2.age = 7; vv.homeLocation = fam.homeLocation = kid2.homeLocation = 'house_t7'; zb2.bit[vv.agentId] = day(); delete (zb2.how || {})[vv.agentId];
+      const hctx2 = { v: vv.agentId, d: day() }; const fz = KK.zbHide.facts(w, fam, hctx2); texts.push(fz); for (const o of KK.zbHide.options(w, fam, hctx2)) texts.push(tx(o.text));
+      B4.hide = { house: fz.includes(sub('{x}（{n} 歲）', { x: kid2.name, n: 7 })), conseq: fz.includes(t('瞞著的話，兩天後會在家裡變，變了的頭一晚會先咬同住的人。送去診所不是送死：診所會關著，變了的頭一晚咬不到人，解藥做出來就救得回來，只是這兩天見不到面。綁在家裡是折衷：頭一晚掙不開、不會咬人，可是家人要守一整晚，隔天還是會掙斷繩子跑出去。')), fates: fz.includes(sub('{z}（{n} 天前在家裡變了，頭一晚咬了{y}）', { z: v1.name, n: 0, y: mate.name })), text: fz.slice(0, 500) };
+      const fb = KK.zbBit.facts(w, vv, { z: z.agentId, d: day() }); texts.push(fb); for (const o of KK.zbBit.options(w, vv, { z: z.agentId, d: day() })) texts.push(tx(o.text));
+      B4.bit = { conseq: fb.includes(t('回家讓家人瞞著的話，你兩天後會在家裡變，變了的頭一晚會先咬同住的人。去診所會被關著，變了的頭一晚咬不到人，解藥做出來就救得回來，只是這兩天見不到家人。')), house: fb.includes(sub('{x}（{n} 歲）', { x: kid2.name, n: 7 })), fates: fb.includes(sub('{z}（{n} 天前在家裡變了，頭一晚咬了{y}）', { z: v1.name, n: 0, y: mate.name })) };
+      out.B4 = B4; }
     w.worldcal.cur = null;
 
     // ============ C) 末日災厄：去留與自保 ============
@@ -377,6 +408,13 @@ async function run(browser, dev, lang) {
     ok(B.guardLean.brave > 0 && B.guardLean.timid < 0, `${tag} 照個性：勇敢又很親的擋，膽小又不親的轉過頭`, B.guardLean);
     ok(B.spare.alive && B.spare.killed === 0 && B.spare.spare >= 1 && B.spare.drive >= 1, `${tag} 下不了手、趕到墓園：喪屍沒有被殺`, B.spare);
     ok(B.off.asked === 0, `${tag} 決策核心沒開：不問，照舊 40% 瞞、50% 擋`, B.off); }
+  { const B = r.B4;
+    ok(B.night1.turned && B.night1.hideBitMate && B.night1.tieNone && B.night1.isoNone && B.night1.logged && B.night1.tieLog && B.night1.isoLog, `${tag} 變了的頭一晚：瞞著的先咬同住的人；綁著的、關在診所的不咬人（家人守一整晚、只聽得到抓門聲）`, B.night1);
+    ok(B.next.tieOut && B.next.isoOut, `${tag} 隔天：綁著的掙斷繩子、診所裡的撞開門跑出去`, B.next);
+    ok(!B.save.err && B.save.same && B.save.first, `${tag} 誰咬了誰有記下來，存讀檔還在`, B.save);
+    ok(B.hunt.n && B.hunt.vic && B.hunt.fam && B.hunt.pal && B.hunt.role && B.hunt.home && B.hunt.bitFam && B.hunt.spared && B.hunt.cure && B.vol && B.none, `${tag} 獵人的題目：鎮上幾個喪屍、這三天和昨晚被咬幾個、這個喪屍咬過誰（其中誰是你的家人、朋友）、你的差事、你家裡有誰（孩子幾歲、誰被咬了）、之前放過的喪屍又咬了幾個、解藥救得回來；不是守衛的寫自願；沒咬過人的寫還沒咬過`, B.hunt);
+    ok(B.guard.vic && B.guard.role && B.guard.town, `${tag} 家人那一邊：這個喪屍咬過誰、鎮上的狀況、獵人是誰`, B.guard);
+    ok(B.hide.house && B.hide.conseq && B.hide.fates && B.bit.conseq && B.bit.house && B.bit.fates, `${tag} 瞞不瞞的題目（家人和被咬的本人）：同住的有誰、孩子幾歲、瞞著／綁著／送診所各自的後果、之前瞞著的那幾家後來怎樣`, { hide: B.hide, bit: B.bit }); }
   ok(!r.B3.err && r.B3.how && r.B3.bunk && !r.B3.old, `${tag} 存讀檔：喪屍危機進行到一半（被咬、瞞著、買了避難位子）讀回來照常跑；舊存檔也可以`, r.B3);
   // C
   { const Cc = r.C1;
