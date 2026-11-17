@@ -37,6 +37,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const L = w.townMap?.locations || {};
       for (const id of Z.ids) { const a = w.agents[id]; if (!a || a.isDead) continue; stat.obs++;
         if (a.activity === 'wandering') stat.wander++;
+        if (a._dayLoc || a._hangHold) stat.planned = (stat.planned || 0) + 1; // v11.3.0 喪屍沒有「一天怎麼過」的安排
         const h = hour(); const night = h >= 21 || h < 5; const mid = h >= 10 && h <= 16;
         if (night) { stat.night++; if (a.targetLocation === 'town_square' || !L.town_square) stat.nightSq++; } else if (mid) { stat.day++; if (a.targetLocation === 'graveyard' || !L.graveyard) stat.dayGrave++; }
         if (a.currentLocation && w.getAgentsAtLocation(a.currentLocation).includes(a)) stat.inCrowd++; }
@@ -58,6 +59,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   ok(Z.began && Z.ph === 'after' && Z.everTurned >= 1, '喪屍（遊戲迴圈）：一路走到災後，真的有人變成喪屍', Z);
   ok(s.obs > 0 && s.wander / s.obs > 0.9, '喪屍的活動幾乎都是遊蕩', s);
   ok(s.night > 0 && s.nightSq / s.night > 0.9 && (s.day === 0 || s.dayGrave / s.day > 0.9), '喪屍晚上往廣場、白天往墓園', s);
+  ok(!s.planned, '喪屍不照「一天怎麼過」行動：不去酒館、不赴約、不加班（以前約兩成的時間被帶去別的地方）', s);
   ok(s.inCrowd === 0 && s.voters === 0, '喪屍不會出現在別人看到的人群裡、不會被算進投票的人', s);
   ok(Z.ended && Z.hist === 'zombie' && Z.still === 0, '喪屍結束：寫進歷史、沒有人還是喪屍', Z);
   ok(r.b.began && r.b.ended && r.b.hist === 'blacksun' && ['averted', 'eased', 'hit'].includes(r.b.out), `黑日（遊戲迴圈）：完整跑完（結果：${r.b.out}）`, r.b);

@@ -159,6 +159,7 @@ async function run(browser, lang) {
     clean(); { for (const a of TEST) for (const b of TEST) if (a !== b) set(a, b, { affinity: ((a.name.charCodeAt(0) * 7 + b.name.length * 13) % 160) - 80, romanticInterest: (a.name.charCodeAt(0) * 3 + b.name.charCodeAt(0)) % 90, interactionCount: 9 });
       couple(C, D, 'married', 900); couple(E2, F, 'dating', 300);
       let err = null; try { for (let d = 0; d < 8; d++) for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } } catch (e) { err = String(e.stack || e); }
+      try { DECIDE.drain(w, X, w._absDay()); } catch (e) { err = err || String(e.stack || e); } // v10.1.0 起流言傳到本人耳裡是在聊天當下排進去、等下一輪才問（最慢隔天早上）。量「排著的事清得掉」，不量快照那一刻剛好是空的
       out.days = { err, q: X.q.length, picks: Object.fromEntries(Object.entries(X.pick).filter(([k]) => NEW.some(n => k.startsWith(n + '.')))) }; }
     // 每個選擇點的標題、事實、選項文字在英文版都有翻譯
     out.txt = (() => { const bad = []; const cjk = (s) => /[一-鿿]/.test(String(s || '')); const en = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en'; if (!en) return bad;
