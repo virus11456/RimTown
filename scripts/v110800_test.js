@@ -181,6 +181,21 @@ async function run(browser, dev, lang) {
       const sec7 = DARK.secret(w, { kind: 'scheme', culprit: c1.agentId, victim: x1.agentId, k: '{a}偷了{v}的 {n} 銀幣', p: { a: c1.name, v: x1.name, n: 47 } }); for (const s of DARK.S(w).secrets) if (s !== sec7 && s.culprit === c1.agentId) s.found = true;
       const n3 = asked.length; withR(0.01, () => offDecide(() => PRESS.electionDay(w, R, E, day()))); B1.off = { asked: since(n3).length, found: sec7.found };
       B.B1 = B1; }
+    // B1b v11.8.0 先查證的那一件，選舉在這兩天內結束了：兩天後照樣再問（沒有「先查證」），事實照實寫選舉已經結束；登了就真的見報。被別人揭穿的才作廢，作廢時主筆記得
+    { const V = {}; const mk = (n) => DARK.secret(w, { kind: 'scheme', culprit: c1.agentId, victim: x1.agentId, k: '{a}偷了{v}的 {n} 銀幣', p: { a: c1.name, v: x1.name, n } });
+      const sec8 = mk(53); runOp(KK.pressScoop, ed, { pid: P.id, sid: sec8.id, d: day() }, 'verify'); const v8 = O.ver.find(x => x.sid === sec8.id); V.queued = !!v8;
+      E.active = false; E.phase = 'none'; if (v8) v8.at = day();
+      const n0 = asked.length; hold(() => ORDER.verDaily(w)); const g = since(n0, 'pressScoop').find(e => e.ctx.sid === sec8.id);
+      V.asked = !!g && g.ctx.ver === 1; V.ids = g ? ids(KK.pressScoop, ed, g.ctx) : []; const f = g ? KK.pressScoop.facts(w, ed, g.ctx) : ''; if (g) { allTexts(KK.pressScoop, ed, g.ctx); mkPrompt('pressScoop', ed, g.ctx); }
+      V.facts = { over: f.includes(t('沒有當選')) || f.includes(t('當選了')), noCampaign: !f.includes(fill('登出來，{c}的選情會受重傷，也會記恨你。', { c: c1.name })), checked: f.includes(t('你已經查證過了，證據確實。')) };
+      const last0 = P.stories[P.stories.length - 1]; if (g) runOp(KK.pressScoop, ed, g.ctx, 'print'); const st = P.stories[P.stories.length - 1]; V.print = sec8.found && st !== last0 && st.kind === 'expose' && st.cand === c1.agentId;
+      // 被別人揭穿了：不再問，主筆的記憶裡留一句
+      const sec9 = mk(59); runOp(KK.pressScoop, ed, { pid: P.id, sid: sec9.id, d: day() }, 'verify'); const v9 = O.ver.find(x => x.sid === sec9.id); if (v9) v9.at = day(); sec9.found = true;
+      const n1 = asked.length; hold(() => ORDER.verDaily(w)); V.void = { noAsk: !since(n1, 'pressScoop').some(e => e.ctx.sid === sec9.id), mem: (ed.memory.entries || []).slice(-5).some(e => String(e.content || '').includes(t('我查證到一半，事情已經被別人登出來了。'))), gone: !O.ver.some(x => x.sid === sec9.id) };
+      // 談條件開出去之後選舉結束了：當事人照樣被問，事實寫著選舉已經結束
+      const sec10 = mk(61); setCash(c1, 120); const hc = { pid: P.id, sid: sec10.id, by: ed.agentId, n: 20, d: day() }; V.hushIds = ids(KK.pressHush, c1, hc); const fh = KK.pressHush.facts(w, c1, hc); allTexts(KK.pressHush, c1, hc); V.hushFacts = fh.includes(t('沒有當選')) || fh.includes(t('當選了'));
+      const c0 = cash(c1), e0 = cash(ed); runOp(KK.pressHush, c1, hc, 'pay'); V.hushPay = r3(c0 - cash(c1)) === 20 && r3(cash(ed) - e0) === 20 && !sec10.found;
+      E.active = true; E.phase = 'campaign'; B.B1b = V; }
     // B2 抹黑
     if (Pg) { const B2 = {}; delete O.cool['sm|' + Pg.id]; Pg.bribedBy = null; Pg.stories = []; setAff(ed2, c1, 0); setAff(ed2, c2, -60);
       const n0 = asked.length; hold(() => ORDER.smearAsk(w, Pg, E.candidates)); B2.ask = since(n0, 'pressSmear')[0]?.who === ed2.agentId; const n1 = asked.length; hold(() => ORDER.smearAsk(w, Pg, E.candidates)); B2.cool = since(n1, 'pressSmear').length;
@@ -271,7 +286,11 @@ async function run(browser, dev, lang) {
     const C2 = {}; { const ES = w.events; const L = pool[38]; plain(L); const cm0 = w.election.currentMayor; w.election.currentMayor = () => L; const sp = w.stockpile; if (sp.get('silver') < 2000) sp.add('silver', 2000 - sp.get('silver'), w.tickCount, 'test');
       const n0 = asked.length; const asked1 = hold(() => ORDER.raid(w, ES, 0)); const g0 = since(n0, 'raidCall')[0]; C2.ask = { asked: asked1, who: g0?.who === L.agentId };
       const ctx = { ri: 0, d: day() + 0 }; delete ORDER.S(w).raid; const rd = RAID_POOL[0]; const RS = ES.raidStrength(w, rd); const cost = ES.raidTribute(w, rd);
-      const f = KK.raidCall.facts(w, L, ctx); allTexts(KK.raidCall, L, ctx); mkPrompt('raidCall', L, ctx); C2.facts = { g: f.includes(String(RS.guards.length)), thr: f.includes(String(RS.threat)), cost: f.includes(String(cost)), tr: f.includes(String(Math.floor(sp.get('silver')))) }; C2.ids = ids(KK.raidCall, L, ctx);
+      const f = KK.raidCall.facts(w, L, ctx); allTexts(KK.raidCall, L, ctx); mkPrompt('raidCall', L, ctx); C2.facts = { g: f.includes(String(RS.guards.length)), thr: f.includes(String(RS.threat)), cost: f.includes(String(cost)), tr: f.includes(String(Math.floor(sp.get('silver')))) }; C2.ids = ids(KK.raidCall, L, ctx); { const best = Math.max(RS.guards.length * 2 + 2 + Math.round(RS.buildingDefense), Math.round(RS.guards.length * 1.6 + 2 + RS.buildingDefense * 1.5)); const want = best >= RS.threat * 1.3 ? '照這些數字，我們明顯比對方強。' : best * 1.3 <= RS.threat ? '照這些數字，對方明顯比我們強。' : '照這些數字，兩邊差不多。'; C2.judge = f.includes(t(want)) && ['照這些數字，我們明顯比對方強。', '照這些數字，對方明顯比我們強。', '照這些數字，兩邊差不多。'].filter(k => f.includes(t(k))).length === 1;
+        // 打得贏、打不贏兩種情境各看一次強弱那一句
+        const S1 = ES.raidStrength; ES.raidStrength = () => ({ guards: [], buildingDefense: 0, threat: 999 }); const fw = KK.raidCall.facts(w, L, ctx); ES.raidStrength = () => ({ guards: new Array(30).fill(L), buildingDefense: 20, threat: 5 }); const fs = KK.raidCall.facts(w, L, ctx); ES.raidStrength = S1; C2.judge2 = fw.includes(t('照這些數字，對方明顯比我們強。')) && fs.includes(t('照這些數字，我們明顯比對方強。'));
+        // 公庫不夠付：那一句改說不夠付，選項裡也沒有花錢消災
+        const T1 = ES.raidTribute; const trn = Math.floor(sp.get('silver')); ES.raidTribute = () => trn + 100; const fp = KK.raidCall.facts(w, L, ctx); C2.poor = { line: fp.includes(fill('公庫只有 {s} 銀幣，不夠付 {cost} 銀幣打發他們走。', { s: trn, cost: trn + 100 })), noLine: !fp.includes(fill('公庫有 {s} 銀幣，花 {cost} 銀幣可以打發他們走。', { s: trn, cost: trn + 100 })), noPay: !ids(KK.raidCall, L, ctx).includes('pay') }; texts.push(fp, fw, fs); ES.raidTribute = T1; }
       // 花錢消災：公庫少了那一筆，記到「事件」，帳上沒有對不上的錢
       const MM = MONEY.S(w); const day0 = String(day()); const oth0 = Math.abs(w.money?.days?.[day0]?.other || 0); const tr0 = sp.get('silver'); delete ORDER.S(w).raid; runOp(KK.raidCall, L, ctx, 'pay'); C2.pay = { paid: r3(tr0 - sp.get('silver')), cost, other: r3(Math.abs(w.money?.days?.[day0]?.other || 0) - oth0) };
       // 出去打：照原本的公式（守衛 ×2 ＋ 1～3 ＋ 工事）
@@ -305,7 +324,7 @@ async function run(browser, dev, lang) {
         const ctx = { src: 'theft', th: th.agentId, vic: vic.agentId, n: 20, days: 3, d: day(), c0: 2, g: g.agentId }; const n0 = seen.length; const v0 = cash(vic);
         DECIDE.askNow(w, [{ a: g, kind: 'caught', ctx }]); const pending = seen.length === n0; await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
         const e = seen.slice(n0).find(x => x.kind === 'caught'); o.ai = { pending, id: e?.id, src: e?.src, reason: e?.reason, back: r3(cash(vic) - v0), jail: !!Cv.jail[th.agentId], group: X0._gAsked.order };
-        const p = ps.find(x => /repay＝/.test(x)) || ''; o.prompt = { n: ps.length, codes: /jail＝/.test(p) && /repay＝/.test(p) && /spare＝/.test(p), facts: p.includes('20') };
+        const p = ps.find(x => /repay＝/.test(x)) || ''; const gn = (() => { try { return LLM_LANG.get() === 'en' && I18N.localizeNames ? I18N.localizeNames(g.name, true) : g.name; } catch (e) { return g.name; } })(); /* 只數問這位守衛的題目：等回話的那幾毫秒裡，鎮上別的事也可能送題目出去 */ o.prompt = { n: ps.filter(x => /repay＝/.test(x) && x.includes(gn)).length, all: ps.length, codes: /jail＝/.test(p) && /repay＝/.test(p) && /spare＝/.test(p), facts: p.includes('20') };
         // 額度：同一種一天最多 aiKind 件，超過的當場照個性決定（不會沒下文）
         X0._gAsked = { order: 0 }; X0._kAsked = {}; ps.length = 0; const here = pool.filter(x => !w.isAway?.(x.agentId) && x.currentLocation !== 'exploration' && !(CIVIC.S(w).jail[x.agentId] > day()) && ![th, vic, g].includes(x)); const many = here.slice(0, 5); const gs = here.slice(5, 10); const n1 = seen.length; DECIDE.askNow(w, many.map((x, i) => { setCash(x, 25); return { a: gs[i], kind: 'caught', ctx: { src: 'theft', th: x.agentId, vic: vic.agentId, n: 5, days: 3, d: day(), g: gs[i].agentId } }; }));
         const ruled = seen.slice(n1).filter(x => x.kind === 'caught' && x.src === 'rule').length; await DECIDE.flush(); await new Promise(r2 => setTimeout(r2, 20)); await DECIDE.flush();
@@ -361,6 +380,10 @@ async function run(browser, dev, lang) {
     ok(B1.verify.queued && B1.verify.again && B1.verify.noVer && B1.verify.facts, `${tag} 先查證：兩天後再問一次，這次沒有「先查證」，事實裡寫著查證過了`, B1.verify);
     ok(B1.lean.plain === 'print' && B1.lean.fam && B1.lean.greedy, `${tag} 照個性：一般主筆照實登；當事人是家人的偏壓下來；貪心的想談條件`, B1.lean);
     ok(B1.off.asked === 0 && B1.off.found, `${tag} 決策核心沒開：照舊直接登`, B1.off); }
+  { const V = r.B.B1b;
+    ok(V.queued && V.asked && V.ids.join() === 'bury,print,deal' && Object.values(V.facts).every(Boolean) && V.print, `${tag} 先查證之後選舉結束了：兩天後照樣再問（沒有「先查證」），事實寫著選舉已經結束、不再說會傷選情；選了照實登就真的見報`, V);
+    ok(V.void.noAsk && V.void.mem && V.void.gone, `${tag} 查證到一半事情被別人揭穿：這一件作廢，主筆記得「查證到一半，被別人登出來了」`, V.void);
+    ok(V.hushIds.join() === 'refuse,pay' && V.hushFacts && V.hushPay, `${tag} 談條件開出去之後選舉結束了：當事人照樣被問，事實寫著選舉已經結束；付了 20 銀幣照樣從他到主筆`, { ids: V.hushIds, f: V.hushFacts, pay: V.hushPay }); }
   { const B2 = r.B.B2, B3 = r.B.B3;
     ok(B2 && B2.ask && B2.cool === 0 && B2.facts && B2.ids[0] === 'no' && B2.ids.length === 3, `${tag} 假消息：八卦報的主筆被問（兩天內不再問）；事實裡有候選人和交情；選項：不登、登某位候選人`, B2);
     ok(B2.lean.hate && B2.lean.honest && B2.smear.story, `${tag} 照個性：跟主筆有過節的候選人比較會被抹黑；老實又完美主義的不登；登了就是一則假消息`, B2);
@@ -388,6 +411,8 @@ async function run(browser, dev, lang) {
     ok(C.noGuard && C.off.asked === 0 && C.off.jailed > 0, `${tag} 鎮上沒有守衛：問不到人，照舊；決策核心沒開：照舊一定關`, { ng: C.noGuard, off: C.off }); }
   { const C = r.C2;
     ok(C.ask.asked && C.ask.who && Object.values(C.facts).every(Boolean) && C.ids.join() === 'fight,wall,pay,hide', `${tag} 襲擊：首長被問；事實裡有守衛人數、對方強度、打發要多少、公庫多少；選項：出去打、守在牆內、花錢消災、躲起來`, { a: C.ask, f: C.facts, ids: C.ids });
+    ok(C.judge && C.judge2, `${tag} 襲擊：數字後面有一句照數字算出來的強弱（明顯比對方強、差不多、對方明顯比較強，只有一句）`, { j: C.judge, j2: C.judge2 });
+    ok(C.poor.line && C.poor.noLine && C.poor.noPay, `${tag} 襲擊：公庫不夠付時，題目說不夠付，選項裡也沒有花錢消災`, C.poor);
     ok(C.pay.paid === C.pay.cost && C.pay.other === 0 && C.fight.held === C.fight.want, `${tag} 花錢消災：公庫付出 ${C.pay.cost} 銀幣、帳上沒有對不上的錢；出去打：照原本的公式`, { p: C.pay, f: C.fight });
     ok(!C.loss.fight.held && !C.loss.wall.held && !C.loss.hide.held && C.loss.wall.food < C.loss.fight.food && C.loss.hide.food > C.loss.fight.food && C.loss.wall.fled === 0 && C.loss.hide.fled === 0, `${tag} 打不贏時：守在牆內被搶的少、躲起來被搶的多，這兩種都沒人逃走`, C.loss);
     ok(C.lean.strong === 'fight' && C.lean.weak !== 'fight' && C.lean.less, `${tag} 照個性：打得贏的時候出去打；打不贏又膽小的不打`, C.lean);
