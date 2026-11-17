@@ -194,7 +194,7 @@ const COMPETE = (() => {
                 const key = fkey(f); keep.add(key); let m = w.agents[M.mgr[key]];
                 const staff = firmStaff(w, f, all).filter(a => a.agentId !== id);
                 if (!m || m.isDead || !staff.includes(m)) {
-                    if (typeof BOSS !== 'undefined' && BOSS.selfRun(w, id)) { delete M.mgr[key]; continue; } // v11.6.0 掌櫃的事這週東家自己拿過主意（請了誰、或自己硬撐），不替他自動請
+                    if (typeof BOSS !== 'undefined' && BOSS.took(w, key, 'mgr')) { delete M.mgr[key]; continue; } // v11.6.0 這一家的掌櫃這週被問過東家（請了誰、或自己硬撐）：不替他自動請；名下其他沒被問到的家照原本自動請
                     m = staff.sort((x, y) => (y.skills?.get?.('社交')?.level || 0) - (x.skills?.get?.('社交')?.level || 0))[0]; if (!m) { delete M.mgr[key]; continue; }
                     M.mgr[key] = m.agentId; M.cst.mgr++;
                     log(w, '👔 {o}名下店太多顧不過來，請{m}當{s}的掌櫃。', { o: o.name, m: m.name, s: Mk.name(f.k) }, o.name); mem(w, m, '{o}請我當{s}的掌櫃，多一份薪水。', { o: o.name, s: Mk.name(f.k) }, 6);

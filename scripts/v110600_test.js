@@ -33,7 +33,7 @@ async function run(browser, dev, lang) {
     const MM = MONEY.S(w); const leak = (fn) => { const T0 = MONEY.total(w), P0 = MM.pend; const ret = fn(); return { leak: r3((MONEY.total(w) - T0) - (MM.pend - P0)), moved: r3(MONEY.total(w) - T0), ret }; };
     const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : String(x))); const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(tx(b)); return s; };
     const K = DECIDE.KINDS.bossWeek; const X = DECIDE.S(w); const M = MARKET.S(w); const C = COMPETE.S(w);
-    const seen = []; DECIDE.observe((ev, o) => { if (ev === 'decided' && o.K && o.K.key === 'bossWeek') seen.push({ who: o.a.agentId, d: o.d, k: o.ctx?.k, rival: !!o.ctx?.rival, id: String(o.op.id), src: o.src, reason: tx(o.why), res: tx(o.res) }); });
+    const seen = []; DECIDE.observe((ev, o) => { if (ev === 'decided' && o.K && o.K.key === 'bossWeek') seen.push({ who: o.a.agentId, d: o.d, k: o.ctx?.k, rival: !!o.ctx?.rival, second: !!o.ctx?.second, other: !!o.ctx?.other, id: String(o.op.id), src: o.src, reason: tx(o.why), res: tx(o.res) }); });
     const plain = (a) => { a._p0 = a._p0 || JSON.stringify(a.personality); a.personality.traits = []; a.personality.values = []; }; const restore = (a) => { if (a._p0) { a.personality = JSON.parse(a._p0); delete a._p0; } };
     const steady = (fn) => { Math.random = () => 0.5; try { return fn(); } finally { Math.random = R0; } };
     const texts = []; const ids = (a, c) => { const os = K.options(w, a, c); for (const o of os) texts.push(tx(o.text), tx(o.say || ''), tx(o.why || '')); return os.map(o => String(o.id).split(':')[0]); };
@@ -134,7 +134,7 @@ async function run(browser, dev, lang) {
       const emp = {}; tailors().slice(0, 1).forEach(a => { emp[a.agentId] = d0; }); M.rival[k] = { fid: 'Ft', owner: riv.agentId, since: d0, price: 1, pay: 1, emp, rev: 0, cost: 0, hist: hist(120, 70), loss: 0 };
       o.slots = { boss: BOSS.slotOf(w, boss.agentId), third: BOSS.slotOf(w, third.agentId), riv: BOSS.slotOf(w, riv.agentId) }; o.focus = BOSS.focusOf(w, third)?.k;
       const n0 = seen.length; const got = []; try { for (let i = 0; i < 14; i++) { w._absDay = () => d0 + i; B.day = null; BOSS.daily(w); } } finally { w._absDay = ab0; }
-      for (const e of seen.slice(n0)) got.push([e.who === boss.agentId ? 'boss' : e.who === third.agentId ? 'third' : e.who === riv.agentId ? 'riv' : 'other', e.d - d0, e.k]);
+      o.all = seen.slice(n0).length; o.seconds = seen.slice(n0).filter(e => e.second).length; for (const e of seen.slice(n0).filter(e => !e.second)) got.push([e.who === boss.agentId ? 'boss' : e.who === third.agentId ? 'third' : e.who === riv.agentId ? 'riv' : 'other', e.d - d0, e.k]);
       o.got = got; o.public = got.filter(x => x[0] === 'other').length; o.per = { boss: got.filter(x => x[0] === 'boss').length, third: got.filter(x => x[0] === 'third').length, riv: got.filter(x => x[0] === 'riv').length };
       o.gaps = ['boss', 'third', 'riv'].map(nm => { const ds = got.filter(x => x[0] === nm).map(x => x[1]); return ds.length === 2 ? ds[1] - ds[0] : -1; }); o.days = [...new Set(got.map(x => (x[1] + d0) % 7))].length;
       o.thirdK = got.filter(x => x[0] === 'third').map(x => x[2]);
@@ -162,10 +162,10 @@ async function run(browser, dev, lang) {
       const hires = K.options(w, boss, cc).filter(x => String(x.id).startsWith('hire:')); const best = hires[0]; const mid = best ? String(best.id).split(':').slice(1).join(':') : null;
       if (best) { const L = leak(() => best.run(w, boss, cc)); o.hired = { mgr: C.mgr[k], want: mid, leak: L.leak }; COMPETE.manage(w, npcs(), day()); o.hired.after = C.mgr[k]; }
       // 自己硬撐：問過之後這週 manage 不替他自動請，那一家的客人少一些（對面有店時看得出來）
-      C.mgr = {}; BOSS.S(w).self = {}; const qa = MARKET.quality(w, k, boss.agentId, 3); BOSS.ask(w, boss); const tk = BOSS.S(w).took[k] || {}; const selfOp = K.options(w, boss, cc).find(x => x.id === 'self'); if (selfOp) selfOp.run(w, boss, cc); C.mgr = {};
-      COMPETE.manage(w, npcs(), day()); o.self = { took: tk.mgr, selfRun: BOSS.selfRun(w, boss.agentId), mgr: C.mgr[k] || null, q0: qa, q1: MARKET.quality(w, k, boss.agentId, 3) };
+      C.mgr = {}; BOSS.S(w).took = {}; const qa = MARKET.quality(w, k, boss.agentId, 3); const selfOp = K.options(w, boss, cc).find(x => x.id === 'self'); BOSS.S(w).took[k] = { d: day(), by: boss.agentId, mgr: 1 }; if (selfOp) selfOp.run(w, boss, cc); C.mgr = {};
+      COMPETE.manage(w, npcs(), day()); o.self = { took: BOSS.S(w).took[k]?.mgr, selfRun: BOSS.selfRun(w, k), mgr: C.mgr[k] || null, q0: qa, q1: MARKET.quality(w, k, boss.agentId, 3) };
       // 對照：沒問過就照原本自動請社交最好的夥計
-      BOSS.S(w).self = {}; C.mgr = {}; COMPETE.manage(w, npcs(), day()); o.rule = C.mgr[k] || null;
+      BOSS.S(w).took = {}; C.mgr = {}; COMPETE.manage(w, npcs(), day()); o.rule = C.mgr[k] || null;
       // 名下不到三家：沒有掌櫃的選項
       M.owners.mine = null; C.mgr = {}; o.two = ids(boss, cc).some(x => x === 'hire' || x === 'self');
       out.mgr = o; reset(); }
@@ -182,8 +182,8 @@ async function run(browser, dev, lang) {
       delete B.stock[k]; setStock(r, Math.round(T)); out.stock = o; reset(); }
 
     // 11a) 存讀檔
-    { const o = {}; reset(); const B = BOSS.S(w); B.stock[k] = { v: 'less', by: boss.agentId, d: day() }; B.took[k] = { d: day(), by: boss.agentId, pay: 1 }; B.last[boss.agentId] = day(); B.self[boss.agentId] = day();
-      const sv = JSON.parse(JSON.stringify(w.serialize())); const wB = new World(); wB.loadSave(sv); o.round = { stock: wB.market?.boss?.stock?.[k]?.v, took: wB.market?.boss?.took?.[k]?.pay, last: wB.market?.boss?.last?.[boss.agentId] === day() };
+    { const o = {}; reset(); const B = BOSS.S(w); B.stock[k] = { v: 'less', by: boss.agentId, d: day() }; B.took[k] = { d: day(), by: boss.agentId, pay: 1 }; B.last[boss.agentId] = day(); B.next[boss.agentId] = { at: day(), ctx: { k, rival: false, by: boss.agentId, second: 1, skip: [], d0: day() } };
+      const sv = JSON.parse(JSON.stringify(w.serialize())); const wB = new World(); wB.loadSave(sv); o.round = { stock: wB.market?.boss?.stock?.[k]?.v, took: wB.market?.boss?.took?.[k]?.pay, last: wB.market?.boss?.last?.[boss.agentId] === day(), next: !!wB.market?.boss?.next?.[boss.agentId] };
       const sv0 = JSON.parse(JSON.stringify(w.serialize())); delete sv0.market.boss; const wA = new World(); wA.loadSave(sv0); let err = null; try { o.old = { boss: typeof wA.market?.boss, view: !!BOSS.view(wA), f: BOSS.stockF(wA, 'clothing') }; } catch (e) { err = String(e.message); } o.oldErr = err;
       wA.reset?.(); wB.reset?.(); out.save = o; reset(); }
 
@@ -201,13 +201,62 @@ async function run(browser, dev, lang) {
         w.fullAgentMode = false; app._fullAgentOn = () => false; DECIDE.daily(w); o.afterDaily = X._gAsked.work; }
       w.fullAgentMode = false; ce._askJson = a0; app._fullAgentOn = () => false; out.mind = o; reset(); }
 
+    // 13) 一週最多兩件事、掌櫃一家一家算、交情、罷工、舊存檔的 self
+    { const o = {}; const B = () => BOSS.S(w);
+      // a) 同一家有兩件事（虧錢又被搶走客人）：做完第一件當場追問第二件，兩件都生效；不會再問第三次
+      reset(); M.hist[k] = hist(145, 140); setStock('clothing', Math.round(FLOW.want(w, 'clothing'))); const emp = {}; tailors().slice(0, 2).forEach(a => { emp[a.agentId] = day(); }); M.rival[k] = { fid: 'Ft', owner: riv.agentId, since: day(), price: 1, pay: 1, emp, rev: 0, cost: 0, hist: hist(120, 70), loss: 0 };
+      { const F = BOSS.firm(w, k, false); o.issues = BOSS.issues(w, F); const n0 = seen.length; steady(() => { plain(boss); try { B().last = {}; BOSS.ask(w, boss); } finally { restore(boss); } }); const got = seen.slice(n0).filter(e => e.who === boss.agentId);
+        o.two = { n: got.length, first: got[0]?.id, second: got[1]?.id, sec: got[1]?.second, pay: M.pay[k], price: M.price[k], took: Object.assign({}, B().took[k] || {}), next: !!B().next[boss.agentId] };
+        // 追問的題目、事實：拿掉剛剛那一件，開頭講剛剛決定了什麼
+        const c2 = { k, rival: false, d: day(), by: boss.agentId, second: 1, skip: ['pay'], first: { k: '工資砍到行情的 {p}%', p: { p: 90 } } }; const f2 = K.facts(w, boss, c2); texts.push(f2); o.two.ids2 = ids(boss, c2); o.two.f2 = f2.startsWith(fill('你剛剛決定了：{x}。還有別的事要一起處理嗎？', { x: { k: '工資砍到行情的 {p}%', p: { p: 90 } } }).trim().slice(0, 6)) && f2.includes('90%'); }
+      // b) 第一件選了照舊：不追問；沒有別的狀況：也不追問
+      reset(); M.hist[k] = hist(150, 140); setStock('clothing', Math.round(FLOW.want(w, 'clothing'))); { const n0 = seen.length; steady(() => { plain(boss); try { B().last = {}; BOSS.ask(w, boss); } finally { restore(boss); } }); o.keepOnly = seen.slice(n0).filter(e => e.who === boss.agentId).map(e => e.id); }
+      reset(); M.hist[k] = hist(100, 140); setStock('clothing', Math.round(FLOW.want(w, 'clothing'))); { const n0 = seen.length; steady(() => { plain(boss); try { B().last = {}; BOSS.ask(w, boss); } finally { restore(boss); } }); o.oneIssue = seen.slice(n0).filter(e => e.who === boss.agentId).map(e => e.id); }
+      // c) 同一家沒有別的狀況、名下另一家虧錢（trouble ≥ 3）：第二次改問那一家，那一家也標上 took
+      reset(); M.owners.timber = boss.agentId; M.hist[k] = hist(100, 160); M.hist.timber = hist(100, 140); M.pay.timber = 1; setStock('clothing', Math.round(FLOW.want(w, 'clothing'))); setStock('furniture', Math.round(FLOW.want(w, 'furniture')));
+      { const n0 = seen.length; steady(() => { plain(boss); try { B().last = {}; BOSS.ask(w, boss); } finally { restore(boss); } }); const got = seen.slice(n0).filter(e => e.who === boss.agentId); o.other = { ks: got.map(e => e.k + ':' + e.id), sec: got[1]?.other, payT: M.pay.timber, payK: M.pay[k], tookT: B().took.timber?.pay }; M.owners.timber = null; }
+      // d) 開智能體時的追問留到隔天：daily 一開始先送出（一週最多兩次，過期的丟掉）
+      reset(); M.hist[k] = hist(100, 140); { const ab0 = w._absDay; const d0 = day(); B().took[k] = { d: d0, by: boss.agentId, pay: 1 }; B().last[boss.agentId] = d0; B().next[boss.agentId] = { at: d0, ctx: { k, rival: false, by: boss.agentId, second: 1, skip: ['stock'], first: null, d0 } }; const n0 = seen.length;
+        try { w._absDay = () => d0 + 1; B().day = null; steady(() => BOSS.daily(w)); } finally { w._absDay = ab0; } const got = seen.slice(n0).filter(e => e.who === boss.agentId); o.nextDay = { n: got.length, sec: got[0]?.second, id: got[0]?.id, left: !!B().next[boss.agentId] };
+        B().next[boss.agentId] = { at: d0 - 5, ctx: { k, rival: false, by: boss.agentId, second: 1, skip: [], d0: d0 - 9 } }; const n1 = seen.length; B().day = null; BOSS.daily(w); o.nextDay.stale = seen.slice(n1).filter(e => e.who === boss.agentId).length; }
+      // e) 掌櫃一家一家算：名下四家、兩家要掌櫃；只被問到其中一家，另一家照原本自動請、不扣
+      reset(); M.owners.timber = boss.agentId; M.owners.mine = boss.agentId; M.owners.forge = boss.agentId; M.hist[k] = hist(40, 60); M.hist.timber = hist(50, 30); M.hist.mine = hist(300, 100); M.hist.forge = hist(280, 100); C.mgr = {}; B().took = {};
+      { const need = BOSS.needMgr(w, boss.agentId).map(f => f.k); o.mgr = { need }; const other = need.find(x => x !== k); B().took[k] = { d: day(), by: boss.agentId, mgr: 1 }; COMPETE.manage(w, npcs(), day());
+        const hasStaff = other ? BOSS.firm(w, other, false).staff.length > 0 : false; o.mgr.asked = C.mgr[k] || null; o.mgr.other = other ? (C.mgr[other] || null) : null; o.mgr.otherStaff = hasStaff;
+        o.mgr.selfK = BOSS.selfRun(w, k); o.mgr.selfOther = other ? BOSS.selfRun(w, other) : false; const q = (kk) => MARKET.quality(w, kk, boss.agentId, 3); o.mgr.qK = q(k); o.mgr.qOther = other ? q(other) : null;
+        // 他這週選了別的事（砍薪）：那一家還沒有掌櫃，追問時會再問一次掌櫃
+        B().took = {}; C.mgr = {}; const n0 = seen.length; steady(() => { plain(boss); try { B().last = {}; BOSS.ask(w, boss); } finally { restore(boss); } }); o.mgr.seq = seen.slice(n0).filter(e => e.who === boss.agentId).map(e => e.id.split(':')[0]); o.mgr.after = C.mgr[k] || null;
+        for (const kk of ['timber', 'mine', 'forge']) M.owners[kk] = null; C.mgr = {}; }
+      // f) 交情：有過節的夥計加進裁員名單、比較容易被請走；家人、好朋友比較不會；掌櫃優先找自己人
+      reset(); M.hist[k] = hist(210, 140); { const sl = slots(); setTailors(sl + 5); const F = BOSS.firm(w, k, false); const L0 = BOSS.firable(w, F); const pool = F.staff.filter(x => !L0.includes(x));
+        const setAff = (x, v) => { const rr = boss.relationships.getOrCreate(x.agentId, x.name); rr.affinity = v; };
+        const foe = pool.find(x => BOSS.relOf(w, boss, x) !== 'fam'), kin = L0[0]; if (L0[1] && BOSS.relOf(w, boss, L0[1]) !== 'fam') setAff(L0[1], 0); o.rel = { base: L0.length };
+        if (foe && kin) { setAff(foe, -50); kin._parentNames0 = kin._parentNames; kin._parentNames = [boss.name, 'x']; const L1 = BOSS.firable(w, F); o.rel.withFoe = L1.map(x => x.agentId).includes(foe.agentId) && L1.length === 3; o.rel.kin = BOSS.relOf(w, boss, kin); o.rel.foe = BOSS.relOf(w, boss, foe);
+          const os = K.options(w, boss, c0()).filter(x => String(x.id).startsWith('fire:')); const tF = os.find(x => x.id === 'fire:' + foe.agentId), tK = os.find(x => x.id === 'fire:' + kin.agentId); o.rel.text = !!tF && tx(tF.text).includes(t('結過怨')) && !!tK && tx(tK.text).includes(t('家人')); texts.push(...os.map(x => tx(x.text)));
+          plain(boss); o.rel.pick = steady(() => ask(boss, c0())?.id); restore(boss); o.rel.pickFoe = o.rel.pick === 'fire:' + foe.agentId;
+          kin._parentNames = kin._parentNames0; setAff(foe, 0); }
+        setTailors(sl); }
+      reset(); M.owners.timber = boss.agentId; M.owners.mine = boss.agentId; M.hist[k] = hist(60, 40); M.hist.timber = hist(300, 100); M.hist.mine = hist(250, 100); C.mgr = {}; B().took = {};
+      { const sl = slots(); setTailors(sl + 3); const F = BOSS.firm(w, k, false); const soc = (x) => x.skills?.get?.('社交')?.level || 0; const top = F.staff.slice().sort((x, y) => soc(y) - soc(x)); const rest = top.slice(2); const fam = rest.find(x => BOSS.relOf(w, boss, x) === 'fam'); const friend = fam || rest.filter(x => BOSS.relOf(w, boss, x) !== 'fam').pop(); const word = fam ? t('家人') : t('很要好'); const setAff = (x, v) => { const rr = boss.relationships.getOrCreate(x.agentId, x.name); rr.affinity = v; };
+        BOSS.S(w).cut = { wk: Math.floor(day() / 7), n: 2 }; // 這一題只看掌櫃：這週已經裁滿兩人，不列裁員
+        if (top.length >= 3 && friend && BOSS.relOf(w, boss, top[0]) !== 'fam' && BOSS.relOf(w, boss, top[1]) !== 'fam') { if (!fam) setAff(friend, 70); setAff(top[0], -50); setAff(top[1], 0); for (const x of rest) if (x !== friend && BOSS.relOf(w, boss, x) !== 'fam') setAff(x, 0); const picks = BOSS.mgrPicks(w, F); o.mgrRel = { incl: picks.includes(friend) && picks.length === 3 };
+          const os = K.options(w, boss, { k, rival: false, d: day(), by: boss.agentId }).filter(x => String(x.id).startsWith('hire:')); o.mgrRel.text = os.some(x => x.id === 'hire:' + friend.agentId && tx(x.text).includes(word)); texts.push(...os.map(x => tx(x.text)));
+          plain(boss); const e = steady(() => ask(boss, { k, rival: false, d: day(), by: boss.agentId })); restore(boss); o.mgrRel.pick = e?.id === 'hire:' + friend.agentId; o.mgrRel.got = e?.id; o.mgrRel.friend = friend.agentId; o.mgrRel.opts = K.options(w, boss, { k, rival: false, d: day(), by: boss.agentId }).map(x => x.id + '=' + (Math.round(x.base * 100) / 100)); setAff(friend, 0); setAff(top[0], 0); } else o.mgrRel = { skip: top.length };
+        setTailors(sl); M.owners.timber = null; M.owners.mine = null; C.mgr = {}; }
+      // g) 罷工、工會的頭頭：事實裡講一句
+      reset(); M.hist[k] = hist(210, 140); { M.strike = M.strike || {}; M.strike[k] = day() + 1; const U = w.union; const u0 = U ? { on: U.on, leader: U.leader } : null; const x = tailors().find(a => a !== boss); if (U && x) { U.on = true; U.leader = x.agentId; }
+        const f = K.facts(w, boss, c0()); texts.push(f); o.lab = { strike: f.includes(t('這一行的工人正在罷工。').trim()), union: !U || !x || f.includes(fill('夥計裡的{x}是工會的頭頭。', { x: x.name }).trim()) }; delete M.strike[k]; if (U && u0) { U.on = u0.on; U.leader = u0.leader; } }
+      // h) 舊存檔裡以東家 id 記的 self：讀進來不出錯，也不會讓哪一家被扣
+      reset(); { M.boss = { took: {}, last: {}, stock: {}, self: { [boss.agentId]: day() } }; const sv = JSON.parse(JSON.stringify(w.serialize())); const wA = new World(); let err = null; try { wA.loadSave(sv); BOSS.S(wA); o.oldSelf = { self: wA.market?.boss?.self, run: BOSS.selfRun(wA, k) }; } catch (e) { err = String(e.message); } o.oldSelfErr = err; wA.reset?.(); }
+      out.more = o; reset(); }
+
     // 12) 放著跑 20 天（東家照原本的樣子恢復）
     { for (const [kk, v] of Object.entries(own0)) M.owners[kk] = v; M.rival = rv0; M.boss = null; const errs0 = []; const n0 = seen.length; const d0 = day();
       MM.lastT = MONEY.total(w) - MM.pend; delete (MM.days[d0] || {}).other; // 前面為了測試直接改過帳：從這裡重新起算
       for (let i = 0; i < 20; i++) { const dd = w._absDay(); try { for (let j = 0; j < 400 && w._absDay() === dd; j++) { w.paused = false; w.tick(); } } catch (e) { errs0.push(String(e.message)); } w.paused = true; await new Promise(r2 => setTimeout(r2, 0)); }
       const got = seen.slice(n0); let other = 0; for (const [kk, D] of Object.entries(w.money?.days || {})) if (+kk >= d0) other += Math.abs(D.other || 0);
-      const per = {}; for (const e of got) (per[e.who] = per[e.who] || []).push(e.d);
-      out.run = { errs: errs0.slice(0, 3), n: got.length, bosses: BOSS.bosses(w).length, picks: got.reduce((m, x) => { m[x.id.split(':')[0]] = (m[x.id.split(':')[0]] || 0) + 1; return m; }, {}), maxPer: Math.max(0, ...Object.values(per).map(v => v.length)), minGap: Math.min(99, ...Object.values(per).map(v => v.slice(1).reduce((m, x, i) => Math.min(m, x - v[i]), 99))), other: Math.round(other * 100) / 100, asks: BOSS.view(w).asks }; }
+      const per = {}; for (const e of got.filter(e => !e.second)) (per[e.who] = per[e.who] || []).push(e.d); const sec = got.filter(e => e.second); const secOk = sec.every(e => (per[e.who] || []).some(d1 => e.d - d1 >= 0 && e.d - d1 <= 2));
+      out.run = { errs: errs0.slice(0, 3), n: got.length, bosses: BOSS.bosses(w).length, picks: got.reduce((m, x) => { m[x.id.split(':')[0]] = (m[x.id.split(':')[0]] || 0) + 1; return m; }, {}), maxPer: Math.max(0, ...Object.values(per).map(v => v.length)), minGap: Math.min(99, ...Object.values(per).map(v => v.slice(1).reduce((m, x, i) => Math.min(m, x - v[i]), 99))), other: Math.round(other * 100) / 100, asks: BOSS.view(w).asks, seconds: sec.length, secOk }; }
     out.seenTexts = seen.map(x => x.reason + ' ' + x.res).filter(Boolean).slice(0, 80);
     out.texts = texts.filter(Boolean).map(s => { try { return I18N.localizeNames ? I18N.localizeNames(s, true) : s; } catch (e) { return s; } });
     out.keys = [t('東家這週看帳'), t('照平常的量做'), t('多做一點備貨'), t('少做一點'), t('💰 {o}的{s}把工資調到原本的 {p}%。'), t('🏷️ {o}的{s}降價到原價的 {p}%，想把客人搶回來。'), t('🏷️ {o}的{s}把價錢調回原價的 {p}%。'), t('📦 {o}交代{s}這陣子多做一點，倉裡多備些貨。'), t('📦 {o}交代{s}這陣子少做一點，貨夠用就好。'), t('📦 {o}交代{s}照平常的量做。'), t('👔 {o}名下店太多，還是決定自己顧{s}，不請掌櫃。')];
@@ -215,7 +264,7 @@ async function run(browser, dev, lang) {
   const tag = `[${dev} ${lang}]`; const cjk = (s) => /[一-鿿]/.test(String(s));
   ok(r.on, `${tag} 決策核心與產業都開著`, { on: r.on });
   // 1
-  ok(r.reg.title && r.reg.scan === false && r.reg.group === 'work' && r.reg.kind === 3, `${tag} 登記了「東家這週看帳」：由輪到的那一天送進來、不是每天掃，歸在 work 那一組，同一類一天最多問 AI 3 件`, r.reg);
+  ok(r.reg.title && r.reg.scan === false && r.reg.group === 'work' && r.reg.kind === 4, `${tag} 登記了「東家這週看帳」：由輪到的那一天送進來、不是每天掃，歸在 work 那一組，同一類一天最多問 AI 4 件`, r.reg);
   ok(r.reg.work === 6 && r.reg.civic === 6 && r.reg.deal === 20 && r.reg.max === 10, `${tag} work 一天 6 件，全鎮的 10 件、市場的 20 件、公家的 6 件不變`, r.reg);
   // 2
   { const F = r.facts; ok(F.profOk && Object.values(F.has).every(Boolean) && F.noRival, `${tag} 事實跟帳目對得上：進帳、工資、扣稅後賺多少、工資幾成、夥計、名額、欠薪、倉裡的貨（不太夠）、身上的錢；沒有對手時不提客人`, F);
@@ -259,7 +308,7 @@ async function run(browser, dev, lang) {
   // 7
   { const Wk = r.week;
     ok(Wk.public === 0 && Wk.publicSectors.length >= 3, `${tag} 公營的產業沒有東家，不問任何人`, { pub: Wk.public, sectors: Wk.publicSectors });
-    ok(Wk.per.boss === 2 && Wk.per.third === 2 && Wk.per.riv === 2 && Wk.gaps.every(g => g === 7), `${tag} 兩週裡每位東家各問兩次、剛好隔七天（名下兩家的也只問一次）`, Wk);
+    ok(Wk.per.boss === 2 && Wk.per.third === 2 && Wk.per.riv === 2 && Wk.gaps.every(g => g === 7) && Wk.all - Wk.seconds === 6 && Wk.seconds <= 6, `${tag} 兩週裡每位東家各問兩次、剛好隔七天（名下兩家的也只問一次）`, Wk);
     ok(Wk.slots.boss === 2 && Wk.slots.third === 3 && Wk.slots.riv === 5 && Wk.days === 3, `${tag} 錯開在不同天：照產業順序（布莊第 3 天、木作坊第 4 天），對面那家晚三天`, Wk.slots);
     ok(Wk.focus === 'mine' && Wk.thirdK.every(x => x === 'mine'), `${tag} 名下好幾家的問最有狀況的那一家（賠錢的礦場）`, { focus: Wk.focus, k: Wk.thirdK }); }
   // 8
@@ -283,16 +332,29 @@ async function run(browser, dev, lang) {
     ok(St.chose.stance === 'more' && St.chose.log, `${tag} 選了「多做一點」：記下來、日誌有寫`, St.chose); }
   // 11
   { const Sv = r.save;
-    ok(Sv.round.stock === 'less' && Sv.round.took === 1 && Sv.round.last, `${tag} 存讀檔帶著東家定的檔位、這週拿過的主意、上次問的日子`, Sv.round);
+    ok(Sv.round.stock === 'less' && Sv.round.took === 1 && Sv.round.last && Sv.round.next, `${tag} 存讀檔帶著東家定的檔位、這週拿過的主意、上次問的日子`, Sv.round);
     ok(!Sv.oldErr && Sv.old && Sv.old.f === 1, `${tag} 讀沒有這一格的舊存檔：不出錯，檔位照常`, { old: Sv.old, err: Sv.oldErr });
     const Mi = r.mind;
     ok(Mi.aiOn && Mi.ai && Mi.ai.ctx && Mi.ai.pending && Mi.ai.e && Mi.ai.e.id === 'cutpay' && Mi.ai.e.src === 'ai' && Mi.ai.e.reason === 'model reason 77' && Mi.ai.pay === 0.9 && Mi.ai.lg && Mi.ai.lg.ai === 1 && Mi.ai.lg.why === 'model reason 77', `${tag} 開智能體：題目送出、等 AI 回話，採用它選的「砍薪」和理由，工資照規則砍一成`, Mi.ai);
     ok(Mi.ai && Mi.ai.work === 1 && Mi.ai.town === 0 && Mi.afterDaily === 1, `${tag} 用的是 work 那一組的額度：昨天用完的額度先歸零，全鎮的 10 件沒動，之後每天掃一輪時也不會再歸零`, { ai: Mi.ai, after: Mi.afterDaily });
     ok(Mi.prompt && Mi.prompt.n === 1 && Mi.prompt.facts && Mi.prompt.codes, `${tag} 題目裡有帳目和選項代號`, Mi.prompt);
     ok(zh || (Mi.prompt && !Mi.prompt.cjkAll), `${tag} 英文題目裡沒有中文`, zh ? null : Mi.prompt); }
+  // 13
+  { const O = r.more;
+    ok(O.issues.includes('pay') && O.issues.includes('price') && O.two.n === 2 && O.two.sec && O.two.first !== O.two.second && ['cutpay', 'down'].includes(O.two.first) && ['cutpay', 'down'].includes(O.two.second) && O.two.pay === 0.9 && O.two.price === 0.95 && !O.two.next, `${tag} 同一家虧錢又被搶走客人：做完第一件當場追問，砍薪和降價同一週都生效，沒有第三次`, O.two);
+    ok(!O.two.ids2.includes('cutpay') && !O.two.ids2.includes('raise') && O.two.ids2.includes('down') && O.two.f2, `${tag} 追問時拿掉剛剛那一件，開頭講剛剛決定了什麼`, { ids: O.two.ids2, f: O.two.f2 });
+    ok(O.keepOnly.length === 1 && O.keepOnly[0] === 'keep' && O.oneIssue.length === 1 && O.oneIssue[0] === 'cutpay', `${tag} 選了照舊、或只有一件事：不追問`, { keep: O.keepOnly, one: O.oneIssue });
+    ok(O.other.ks.length === 2 && O.other.ks[1].startsWith('timber') && O.other.sec && O.other.payT === 0.9 && O.other.payK === 0.9 && O.other.tookT === 1, `${tag} 同一家沒別的事、名下另一家也在虧：第二次改問那一家，兩家都砍了，那一家也標上這週問過`, O.other);
+    ok(O.nextDay.n === 1 && O.nextDay.sec && !O.nextDay.left && O.nextDay.stale === 0, `${tag} 開智能體時回話晚：追問留到隔天一開始送出；過期的追問丟掉`, O.nextDay);
+    ok(O.mgr.need.length === 2 && O.mgr.asked === null && O.mgr.selfK && !O.mgr.selfOther && (!O.mgr.otherStaff || O.mgr.other) && O.mgr.qOther !== null && O.mgr.qK < O.mgr.qOther, `${tag} 掌櫃一家一家算：被問過的那一家不自動請、還沒掌櫃就扣；沒被問到的那一家照原本自動請、不扣`, O.mgr);
+    ok(O.mgr.seq.length === 2 && O.mgr.seq.slice().sort().join() === 'cutpay,hire' && !!O.mgr.after, `${tag} 虧錢又要請掌櫃：兩件同一週都做了（先做哪一件看他跟夥計的交情），請了人`, O.mgr);
+    ok(O.rel.withFoe && O.rel.kin === 'fam' && O.rel.foe === 'feud' && O.rel.text && O.rel.pickFoe, `${tag} 交情：跟東家結過怨的夥計加進裁員名單（最多三位）、被請走；最不擅長的那位是家人就留下；文字註明關係`, O.rel);
+    ok(O.mgrRel.skip !== undefined ? true : (O.mgrRel.incl && O.mgrRel.text && O.mgrRel.pick), `${tag} 掌櫃：東家很要好的夥計也在名單上、會被優先請（用人唯親），文字註明關係`, O.mgrRel);
+    ok(O.lab.strike && O.lab.union, `${tag} 正在罷工、夥計裡有工會的頭頭：事實裡講一句`, O.lab);
+    ok(!O.oldSelfErr && O.oldSelf && O.oldSelf.self === undefined && O.oldSelf.run === false, `${tag} 舊存檔裡以東家記的 self：讀進來丟掉、不出錯、不扣任何一家`, { o: O.oldSelf, e: O.oldSelfErr }); }
   // 12
   { const Ru = r.run;
-    ok(Ru.errs.length === 0 && Ru.n >= Math.min(3, Ru.bosses) && Ru.maxPer <= 3 && Ru.minGap >= 7 && Ru.other === 0, `${tag} 放著跑 20 天：東家每週拿主意（同一個人兩次之間至少隔七天）、沒有錯誤、帳上沒有對不上的錢`, Ru); }
+    ok(Ru.errs.length === 0 && Ru.n >= Math.min(3, Ru.bosses) && Ru.maxPer <= 3 && Ru.minGap >= 7 && Ru.secOk && Ru.other === 0, `${tag} 放著跑 20 天：東家每週拿主意（同一個人兩次之間至少隔七天）、沒有錯誤、帳上沒有對不上的錢`, Ru); }
   ok(zh || (!r.keys.some(cjk) && !r.texts.some(cjk) && !r.seenTexts.some(cjk)), `${tag} 新句子、給東家看的事實、選項、理由與結果都有英文`, zh ? null : { keys: r.keys.filter(cjk), texts: r.texts.filter(cjk).slice(0, 4), seen: r.seenTexts.filter(cjk).slice(0, 4) });
   console.log('   ', JSON.stringify(r.run));
   ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));

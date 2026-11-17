@@ -142,7 +142,9 @@
     // 以前調薪、調價、被挖角就加薪、裁員、請掌櫃是五條自動規則，東家沒被問過。現在每位東家一週看一次帳，自己決定這週做哪一件事。
     // 由 sim-boss.js 在輪到他的那一天送進來（不是每天掃）；選項照當下的帳列，結算也在那邊。另有自己的每日額度（DECIDE.AI_GROUP.work，一天 6 件）
     const BS = () => (typeof BOSS !== 'undefined' ? BOSS : null);
-    DECIDE.kind('bossWeek', { title: '東家這週看帳', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 3,
+    // 額度：一天最多兩位東家輪到（原本那家一位、對面那家晚三天的一位），開智能體時前一天的追問最多再兩件，平常最多 4 件；work 一組 6 件夠用。
+    // 同一類一天最多 4 件（aiKind），超過的（錯過補問的人剛好擠在同一天）照個性決定，不會沒人問
+    DECIDE.kind('bossWeek', { title: '東家這週看帳', scan: false, cool: 0, pri: 2, aiGroup: 'work', aiKind: 4,
         facts(w, a, ctx) { const B = BS(); return B ? B.facts(w, a, ctx) : ''; },
         options(w, a, ctx) { const B = BS(); return B ? B.options(w, a, ctx) : []; } });
 

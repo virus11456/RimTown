@@ -16856,7 +16856,7 @@
         '你名下有 {n} 家店，{s}顧不過來，要請掌櫃（一天 {f} 銀幣）；不請的話那家的客人會少一些。': 'You own {n} shops and cannot look after the {s} yourself. A manager costs {f} silver a day; without one that shop will lose some customers.',
         '你名下還有{list}，這週由夥計照老樣子打理。': 'You also own the {list}. The workers will run those as usual this week.',
         '人比名額多了不少，這一行有人會被裁。': 'There are a lot more people than openings, so someone in this trade will be let go.',
-        '又過了一週，該看看{h}的帳了。{book}工資開行情的 {pay}%{price}。你僱了 {n} 個夥計；鎮上{j}的名額 {sl} 位，現在有 {fl} 位在做。{cut}{riv}{lost}{unpaid}{st}{mgr}{oth}你自己身上有 {c} 銀幣。': 'Another week has gone by and it is time to go over the books of {h}. {book} Wages are at {pay}% of the going rate{price}. You employ {n} workers. The town has openings for {sl} in the {j} trade and {fl} are working in it now. {cut}{riv}{lost}{unpaid}{st}{mgr}{oth}You have {c} silver on you.',
+        '又過了一週，該看看{h}的帳了。{book}工資開行情的 {pay}%{price}。你僱了 {n} 個夥計；鎮上{j}的名額 {sl} 位，現在有 {fl} 位在做。{cut}{riv}{lost}{unpaid}{st}{mgr}{oth}你自己身上有 {c} 銀幣。{lab}': 'Another week has gone by and it is time to go over the books of {h}. {book} Wages are at {pay}% of the going rate{price}. You employ {n} workers. The town has openings for {sl} in the {j} trade and {fl} are working in it now. {cut}{riv}{lost}{unpaid}{st}{mgr}{oth}You have {c} silver on you.{lab}',
         '把工資砍到行情的 {p}%': 'Cut wages to {p}% of the going rate',
         '把{s}的工資砍到 {p}%': 'Cut wages at the {s} to {p}%',
         '店在賠錢，工資得先省下來。': 'The shop is losing money, so wages have to be trimmed first.',
@@ -16875,7 +16875,7 @@
         '把價錢調回原價的 {p}%': 'Bring prices back up to {p}% of list',
         '把{s}的價錢調回 {p}%': 'Brought prices at the {s} back up to {p}%',
         '客人回來了，不用再賠本賣。': 'The customers are back, so there is no need to sell at a loss.',
-        '請{x}走路（{j}的人太多了）': 'Let {x} go (there are too many in the {j} trade)',
+        '請{x}走路（{j}的人太多了；{x}：{r}）': 'Let {x} go (there are too many in the {j} trade; {x}: {r})',
         '請{x}走路': 'Let {x} go',
         '人手太多，養不起這麼多人。': 'Too many hands. I cannot keep paying them all.',
         '請{m}當{s}的掌櫃': 'Hire {m} as manager of the {s}',
@@ -16897,6 +16897,14 @@
         '{s}這週照舊': 'Kept the {s} as it was this week',
         '生意就是這樣，不用動。': 'Business is what it is. No need to change anything.',
         '這週照舊': 'Kept things as they were this week',
+        '這一行的工人正在罷工。': ' The workers in this trade are on strike right now.',
+        '夥計裡的{x}是工會的頭頭。': ' {x}, one of your workers, leads the union.',
+        '你剛剛決定了：{x}。你名下的{s}也有狀況，要一起處理嗎？': 'You have just decided: {x}. Your {s} needs attention too. Do you want to deal with it as well? ',
+        '你剛剛決定了：{x}。還有別的事要一起處理嗎？': 'You have just decided: {x}. Is there anything else you want to deal with at the same time? ',
+        '人手太多，{x}又跟我處不來。': 'Too many hands, and {x} and I do not get along anyway.',
+        '請{m}當{s}的掌櫃（{m}：{r}）': 'Hire {m} as manager of the {s} ({m}: {r})',
+        '{m}是自己人，交給他放心。': '{m} is one of my own. I can trust him with it.',
+        '不用了，這週就這樣': 'No, that is enough for this week',
     });
     if (window.I18N && typeof window.I18N._onDictLoaded === 'function') window.I18N._onDictLoaded();
 })();

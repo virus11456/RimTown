@@ -61,8 +61,8 @@ const MARKET = (() => {
     // ---------- 收錢 ----------
     // v9.7.0 兩家搶客人:人手多、服務好、價錢便宜的那家分到比較多;老闆名下店太多、自己顧不到的,服務會變差
     function quality(w, k, id, nWorkers) { const extra = Math.max(0, firmsOf(w, id).length - 2);
-        // v11.6.0 東家這週決定不請掌櫃、自己硬撐：沒有掌櫃的那幾家顧得更不周到，再打一次八五折（請了掌櫃的照舊）
-        let self = 1; try { if (extra && typeof BOSS !== 'undefined' && BOSS.selfRun(w, id) && !S(w).mgr?.[S(w).owners[k] === id ? k : k + ':R']) self = 0.85; } catch (e) {}
+        // v11.6.0 這一家這週被問過掌櫃的事、到現在還沒有掌櫃（自己硬撐）：顧得更不周到，再打一次八五折。一家一家算，沒被問到的家照原本自動請、不扣
+        let self = 1; try { if (extra && typeof BOSS !== 'undefined' && BOSS.selfRun(w, S(w).owners[k] === id ? k : k + ':R')) self = 0.85; } catch (e) {}
         return (1 + nWorkers) * Math.pow(0.85, extra) * self; }
     function shareOf(w, k) {
         const R = rivalOf(w, k); if (!R) return 0; const M = S(w); const ws = workersOf(w, k);
