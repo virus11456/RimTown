@@ -17283,6 +17283,12 @@
     });
     Object.assign(en, {
         // v11.7.0 災難裡的人（sim-decide-calam.js、sim-plague-ways.js、sim-worldcal.js、sim-aftermath.js）
+        '你上次說要再等等看。': 'Last time you said you would wait and see. ',
+        '已經有 {k} 個人買了。': '{k} people have already bought some. ',
+        '{n}過去了。那時候鎮上傳說是{x}帶來的，你也怪過他，現在你對他的好感是 {f}。{x}這陣子出門都低著頭。': '{n} is over. Back then the town said {x} brought it, and you blamed them too. Your feeling toward them is now {f}. These days {x} walks around with their head down.',
+        '你的家人：{x}。': 'Your family: {x}. ',
+        '你在鎮上沒有家人。': 'You have no family in town. ',
+        '，照現在的速度大概還要 {n} 天': ', and at this rate it needs about {n} more days',
         '怕被傳染，待不待在家': 'Afraid of catching it: stay home or not',
         '你家裡才剛有人病死。': 'Someone in your family just died of it. ',
         '{n}在鎮上傳開了：現在有 {i} 個人病著，已經死了 {d} 個。{p}{fam}{why}{money}': '{n} is spreading through town: {i} people are sick right now and {d} have died. {p}{fam}{why}{money}',
@@ -17456,7 +17462,7 @@
         '不送走他，也不能讓他傷人。': 'I won\'t send them away, but I can\'t let them hurt anyone.',
         '把{v}綁在家裡': 'tied {v} up at home',
         '輪到你去清剿喪屍': 'Your turn to clear out the zombies',
-        '今天輪到你帶著守衛去清剿。墓園邊那個喪屍是{z}，生前你跟{z}{tie}。{fam}解藥做了 {p}%{eta}。': 'Today it is your turn to lead the guards out. The zombie by the graveyard is {z}. Before, you and {z} {tie}. {fam}The cure is {p}% done{eta}.',
+        '今天輪到你帶著守衛去清剿。墓園邊那個喪屍是{z}，生前你跟{z}{tie}。{fam}解藥做了 {p}%{eta}。': 'Today it is your turn to lead the guards out. The zombie by the graveyard is {z}. In life, you and {z} {tie}. {fam}The cure is {p}% done{eta}.',
         '{z}的家人{x}還在鎮上。': '{z}\'s family, {x}, are still in town. ',
         '動手': 'Do it',
         '對{z}動了手': 'go after {z}',
