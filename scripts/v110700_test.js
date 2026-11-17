@@ -181,7 +181,7 @@ async function run(browser, dev, lang) {
     // A6 有錢人走不走（恐慌期）
     const A6 = {}; { const rich = adults().slice(20, 26); for (const x of rich) { setCash(x, 500); plain(x); heal(x); } for (const k of Object.keys(P0.ask)) delete P0.ask[k]; const n0 = asked.length; PW._t.fleeAsk(w, X, day(), rich); const fa = asked.slice(n0).filter(e => e.kind === 'calFlee');
       A6.ask = { n: fa.length, max3: fa.length <= 3, rich: fa.every(e => rich.some(x => x.agentId === e.who)) }; const n1 = asked.length; PW._t.fleeAsk(w, X, day(), rich); A6.ask.again = asked.slice(n1).filter(e => e.kind === 'calFlee' && fa.some(g => g.who === e.who)).length;
-      const left = rich.filter(x => w.agents[x.agentId] && !fa.some(e => e.who === x.agentId)); const ctx = { src: 'plague', t: 'plague', d: day(), q: 0.3 }; const a = left.find(x => KK.calFlee.options(w, x, ctx).some(o => o.id === 'go')) || left[0]; // 當天剛好病倒、走不了的人不拿來試 const f = KK.calFlee.facts(w, a, ctx); texts.push(f); A6.facts = f.includes(String(Math.floor(cash(a)))); A6.f = f.slice(0, 160); A6.ids = ids(KK.calFlee, a, ctx); for (const o of KK.calFlee.options(w, a, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
+      const left = rich.filter(x => w.agents[x.agentId] && !fa.some(e => e.who === x.agentId)); const ctx = { src: 'plague', t: 'plague', d: day(), q: 0.3 }; const a = left.find(x => KK.calFlee.options(w, x, ctx).some(o => o.id === 'go')) || left[0]; /* 當天剛好病倒、走不了的人不拿來試 */ const f = KK.calFlee.facts(w, a, ctx); texts.push(f); A6.facts = f.includes(String(Math.floor(cash(a)))); A6.f = f.slice(0, 160); A6.ids = ids(KK.calFlee, a, ctx); for (const o of KK.calFlee.options(w, a, ctx)) texts.push(tx(o.text), tx(o.say), tx(o.why));
       const fl0 = X.fled; const L = leak(() => opOf(KK.calFlee, a, ctx, 'go').run(w, a, ctx)); A6.go = { gone: !w.agents[a.agentId], fled: X.fled - fl0 };
       const b = left.find(x => x !== a && w.agents[x.agentId]) || adults().find(x => x !== a && !X.st[x.agentId]); setCash(b, 500); b.personality.traits = ['pessimist', 'neurotic']; A6.lean = { scared: marg(KK.calFlee, b, ctx, 'stay') }; b.personality.traits = ['brave']; b.personality.values = ['傳統']; A6.lean.brave = marg(KK.calFlee, b, ctx, 'stay'); plain(b); }
     out.A6 = A6;
@@ -290,13 +290,15 @@ async function run(browser, dev, lang) {
         // 自己的性子：公事公辦的人跟心軟的人看到的不一樣（沒有對應的個性就不寫）
         const hs1 = pool4[23], hs2 = pool4[24]; for (const x of [hs1, hs2]) { plain(x); setJob(x, 'guard'); setAff(x, z, 0); } hs1.personality.traits = ['stoic', 'perfectionist']; hs2.personality.traits = ['kind', 'romantic'];
         const T1 = KK.zbHunt.facts(w, hs1, hctx), T2 = KK.zbHunt.facts(w, hs2, hctx), T0 = KK.zbHunt.facts(w, g2, hctx); texts.push(T1, T2);
-        const S1 = t('你一向公事公辦，差事就是差事。'), S2 = t('你一向心軟，見不得熟人受苦。');
+        const S1 = t('你一向公事公辦。'), S2 = t('你一向心軟。');
         B5.huntT = { stoic: T1.includes(S1) && !T1.includes(S2), kind: T2.includes(S2) && !T2.includes(S1), plain: !T0.includes(S1) && !T0.includes(S2) };
         const vv2 = pool4[25], m1 = pool4[26], m2 = pool4[27]; for (const x of [vv2, m1, m2]) plain(x); zb2.bit[vv2.agentId] = day(); m1.personality.values = ['傳統']; setAff(m1, vv2, 20); setAff(m2, vv2, 90); m2.personality.traits = ['kind']; const hc3 = { v: vv2.agentId, d: day() };
-        const H1 = KK.zbHide.facts(w, m1, hc3), H2 = KK.zbHide.facts(w, m2, hc3); texts.push(H1, H2); const R1s = t('你一向守規矩，覺得出了事瞞著是害了全鎮。'), R2s = sub('你離不開{v}，寧可一起扛。', { v: vv2.name });
+        const H1 = KK.zbHide.facts(w, m1, hc3), H2 = KK.zbHide.facts(w, m2, hc3); texts.push(H1, H2); const R1s = t('你一向守規矩。'), R2s = sub('你跟{v}感情很深，一天都不想分開。', { v: vv2.name });
         B5.hideT = { rules: H1.includes(R1s) && !H1.includes(R2s), close: H2.includes(R2s) && !H2.includes(R1s) };
         const gA = pool4[23], gB = pool4[24]; gA.personality.traits = ['brave']; gB.personality.traits = ['shy']; setAff(gA, g, 40); setAff(gB, g, -30); const G1 = KK.zbGuard.facts(w, gA, { z: z.agentId, h: g.agentId, d: day() }), G2 = KK.zbGuard.facts(w, gB, { z: z.agentId, h: g.agentId, d: day() }); texts.push(G1, G2);
-        B5.guardT = { brave: G1.includes(t('你一向敢衝。')) && G1.includes(sub('你跟{h}有交情，開口求他也許有用。', { h: g.name })) && !G1.includes(t('你膽子小，不太敢跟拿著斧頭的人爭。')), shy: G2.includes(t('你膽子小，不太敢跟拿著斧頭的人爭。')) && G2.includes(sub('你跟{h}有過節，求他大概沒用。', { h: g.name })) && !G2.includes(t('你一向敢衝。')) };
+        B5.guardT = { brave: G1.includes(t('你一向膽子大。')) && G1.includes(sub('你跟{h}有交情。', { h: g.name })) && !G1.includes(t('你膽子小。')), shy: G2.includes(t('你膽子小。')) && G2.includes(sub('你跟{h}有過節。', { h: g.name })) && !G2.includes(t('你一向膽子大。')) };
+        const TS = ['也許有用', '大概沒用', '寧可', '害了全鎮', '不會因為交情', '差事就是差事', '當成怪物', '不太敢', 'might work', 'probably will not work', 'would rather', 'endanger', 'as a monster'];
+        B5.noAdvice = ![T1, T2, H1, H2, G1, G2].some(x => TS.some(k => x.includes(k)));
         B5.sample = { stoic: T1, kind: T2, rules: H1, close: H2 }; out.B5 = B5; }
       out.B4 = B4; }
     w.worldcal.cur = null;
@@ -450,6 +452,7 @@ async function run(browser, dev, lang) {
     ok(B.opts.kill && B.opts.cant && B.opts.drive && B.opts.noVerdict, `${tag} 選項兩面都寫（動手：不會再咬人／等不到解藥；下不了手：還有救／今晚可能再咬人），沒有替人下結論的句子`, B.opts);
     ok(B.huntT.stoic && B.huntT.kind && B.huntT.plain, `${tag} 獵人自己的性子：公事公辦的跟心軟的看到不一樣的句子，沒有這些個性的不寫`, B.huntT);
     ok(B.hideT.rules && B.hideT.close, `${tag} 瞞不瞞自己的性子：守規矩的跟離不開這個人的看到不一樣的句子`, B.hideT);
+    ok(B.noAdvice, `${tag} 性子那幾句只寫這個人（感情、脾氣、怕什麼），不寫他會怎麼做、不評價選項`, B.sample);
     ok(B.guardT.brave && B.guardT.shy, `${tag} 家人自己的性子：敢衝又跟獵人有交情的、膽小又跟獵人有過節的看到不一樣的句子`, B.guardT);
     if (zh) console.log('    sample:', JSON.stringify(B.sample).slice(0, 1600)); }
   ok(!r.B3.err && r.B3.how && r.B3.bunk && !r.B3.old, `${tag} 存讀檔：喪屍危機進行到一半（被咬、瞞著、買了避難位子）讀回來照常跑；舊存檔也可以`, r.B3);

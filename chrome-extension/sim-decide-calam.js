@@ -308,17 +308,17 @@
     const distrustOf = (w, f) => hasV(f, '自由') || Object.values(w.agents).some(o => !o.isDead && o.job?.key === 'guard' && o !== f && aff(f, o) <= -10);
     const rulesOf = (f) => hasV(f, '傳統') || has(f, 'perfectionist') || has(f, 'stoic');
     function huntTemper(w, h, z, mine) { return tl([
-        has(h, 'stoic') ? '你一向公事公辦，差事就是差事。' : '', has(h, 'perfectionist') ? '你做事一板一眼，該做的事不會因為交情就不做。' : '', has(h, 'abrasive') ? '你做事向來不留情面。' : '',
-        has(h, 'kind') ? '你一向心軟，見不得熟人受苦。' : '', has(h, 'romantic') ? '你重感情，很難把認識的人當成怪物。' : '', has(h, 'shy') || has(h, 'neurotic') ? '你膽子小，不太敢靠近。' : '', has(h, 'brave') ? '你一向不怕事。' : '',
+        has(h, 'stoic') ? '你一向公事公辦。' : '', has(h, 'perfectionist') ? '你做事一板一眼。' : '', has(h, 'abrasive') ? '你說話做事向來很直、很硬。' : '',
+        has(h, 'kind') ? '你一向心軟。' : '', has(h, 'romantic') ? '你很重感情。' : '', has(h, 'shy') || has(h, 'neurotic') ? '你膽子小。' : '', has(h, 'brave') ? '你一向不怕事。' : '',
         mine ? { k: '{z}是你的家人。', p: { z: z.name } } : '' ]); }
     function hideTemper(w, me, v, self) { const ks = kids(w, me, WC().kin(w, me)).filter(k => k !== v); return tl([
-        rulesOf(me) ? '你一向守規矩，覺得出了事瞞著是害了全鎮。' : '', distrustOf(w, me) ? '你信不過守衛和診所。' : '',
+        rulesOf(me) ? '你一向守規矩。' : '', distrustOf(w, me) ? '你信不過守衛和診所。' : '',
         ks.length ? { k: self ? '你最怕的是咬到自己的孩子{x}。' : '你最怕的是孩子{x}被咬。', p: { x: { raw: names(ks) } } } : '',
-        !self && aff(me, v) >= 80 ? { k: '你離不開{v}，寧可一起扛。', p: { v: v.name } } : '', self && WC().famHere(w, me).some(o => aff(me, o) >= 80) ? '你捨不得離開家人。' : '',
+        !self && aff(me, v) >= 80 ? { k: '你跟{v}感情很深，一天都不想分開。', p: { v: v.name } } : '', self && WC().famHere(w, me).some(o => aff(me, o) >= 80) ? '你捨不得離開家人。' : '',
         self && has(me, 'brave') ? '你一向不怕事。' : '', self && has(me, 'neurotic') ? '你很怕，腦子一片空白。' : '' ]); }
     function guardTemper(w, f, h) { return tl([
-        has(f, 'brave') ? '你一向敢衝。' : '', has(f, 'shy') || has(f, 'neurotic') ? '你膽子小，不太敢跟拿著斧頭的人爭。' : '',
-        aff(f, h) >= 25 ? { k: '你跟{h}有交情，開口求他也許有用。', p: { h: h.name } } : aff(f, h) <= -15 ? { k: '你跟{h}有過節，求他大概沒用。', p: { h: h.name } } : '' ]); }
+        has(f, 'brave') ? '你一向膽子大。' : '', has(f, 'shy') || has(f, 'neurotic') ? '你膽子小。' : '',
+        aff(f, h) >= 25 ? { k: '你跟{h}有交情。', p: { h: h.name } } : aff(f, h) <= -15 ? { k: '你跟{h}有過節。', p: { h: h.name } } : '' ]); }
     const bitOk = (w, v, ctx) => { const c = zc(w); return c && v && !v.isDead && c.zb.bit[v.agentId] != null && !(c.zb.how || {})[v.agentId] && day(w) - (ctx?.d ?? 0) <= 1 ? c : null; };
     DECIDE.kind('zbBit', Object.assign({}, base, {
         title: '被喪屍咬了', pri: 2, aiKind: 2,
