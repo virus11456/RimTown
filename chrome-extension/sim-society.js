@@ -1021,6 +1021,8 @@ class LifecycleSystem {
                 if (currentPop >= tp) birthChance *= 0.5;
                 const kids = Object.values(world.agents).filter(c => !c.isDead && (c._parentNames || []).includes(agent.name)).length;
                 if (kids >= 3) birthChance *= 0.3;
+                // v11.9.0 想不想生由夫妻自己商量（sim-decide-home.js）：答案只改機率，懷不懷得上照舊看天；沒商量過照原本的機率
+                try { if (typeof HOME !== 'undefined' && HOME.birthMult) birthChance *= HOME.birthMult(world, agent, otherAgent); } catch (e) { console.warn('[Society] birth plan', e); }
             }
 
             if (Math.random() < birthChance) {

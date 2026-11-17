@@ -29,7 +29,7 @@ async function run(browser, lang) {
       // B. 爸媽一個走、一個留:小孩留下
       { const [P, Q] = take(2); rel(P, Q, 'married'); const c = kidOf(8, P, Q); w.leaveTown(P.agentId, 'test'); out.stay = { kidStay: !!w.agents[c.agentId], qStay: !!w.agents[Q.agentId] }; }
       // C. 犯罪被逐出:爺爺奶奶在鎮上 → 收養
-      { const [G, P] = take(2); P._parentNames = [G.name]; const c = kidOf(9, P); EXILE.order(w, P, { crime: true, reason: 'test' }); ff(P.agentId);
+      { const [G, P] = take(2); P._parentNames = [G.name]; const c = kidOf(9, P); /* v11.9.0 接不接孩子由爺爺奶奶自己決定：這裡讓他是疼孫子的人，照個性當場決定（不等 AI） */ G.personality.traits = ['kind']; G.personality.values = ['家庭']; const fa9 = w.fullAgentMode; w.fullAgentMode = false; EXILE.order(w, P, { crime: true, reason: 'test' }); ff(P.agentId); w.fullAgentMode = fa9;
         out.adopt = { pGone: !w.agents[P.agentId], kidStay: !!w.agents[c.agentId], adopted: (c._parentNames || []).includes(G.name) && c._guardian === G.agentId, gMem: (G.memory?.entries || []).slice(-10).some(m => /接來家裡養|took .* into my home/.test(m.content || '')), log: logs().slice(-10).some(s => /收養|taken in by/.test(s)) }; }
       // D. 犯罪被逐出但鎮上沒有親戚 → 跟著走;不是犯罪(自己搬走)就算有爺爺奶奶也跟著走
       { const [P] = take(1); const c = kidOf(7, P); EXILE.order(w, P, { crime: true, reason: 'test' }); ff(P.agentId); out.noRel = { kidGone: !w.agents[c.agentId] }; }

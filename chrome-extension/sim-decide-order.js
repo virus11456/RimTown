@@ -452,15 +452,16 @@ const ORDER = (() => {
         title: '抓到小偷了', pri: 2, aiKind: 2,
         facts(w, a, c) { const I = caughtInfo(w, a, c); if (!I) return '';
             const head = fill(HEAD[c.src] || HEAD.theft, { a: I.th.name, v: I.vic?.name || '', n: c.n, cause: c.cause || '災難' });
-            return fill('{h}{poor}{kids}你跟{a}{tie}{tv}。最近兩週鎮上有 {k} 起偷竊。照規矩要{back}，再關他 {d} 天。', { h: { raw: head }, a: I.th.name, poor: c.c0 != null ? { k: '他偷之前身上只剩 {c} 銀幣。', p: { c: Math.max(0, c.c0) } } : { raw: '' }, kids: I.kids.length ? { k: '他家裡有 {n} 個小孩。', p: { n: I.kids.length } } : { raw: '' },
+            const fine = c.src === 'theft' && !(c.days > 0); /* v11.9.0 全鎮把偷竊罰則改成從輕：不關，罰錢 */ return fill(fine ? '{h}{poor}{kids}你跟{a}{tie}{tv}。最近兩週鎮上有 {k} 起偷竊。照鎮上現在的規定要{back}，再罰他最多 10 銀幣給公庫，不關。' : '{h}{poor}{kids}你跟{a}{tie}{tv}。最近兩週鎮上有 {k} 起偷竊。照規矩要{back}，再關他 {d} 天。', { h: { raw: head }, a: I.th.name, poor: c.c0 != null ? { k: '他偷之前身上只剩 {c} 銀幣。', p: { c: Math.max(0, c.c0) } } : { raw: '' }, kids: I.kids.length ? { k: '他家裡有 {n} 個小孩。', p: { n: I.kids.length } } : { raw: '' },
                 tie: tieTxt(I.tth), tv: I.vic ? { k: '，跟{v}{tie}', p: { v: I.vic.name, tie: tieTxt(I.tv) } } : { raw: '' }, k: I.recent, back: c.src === 'grain' ? '把糧食扛回糧倉' : { k: '把錢還給{v}', p: { v: I.vic?.name || '' } }, d: c.days }); },
         options(w, a, c) { const I = caughtInfo(w, a, c); if (!I) return []; const th = I.th.name; const hon = honesty(a);
             const close = I.tth === '家人' ? 1.6 : I.tth === '很要好' ? 0.8 : I.tth === '有交情' ? 0.3 : 0; const foe = I.tth === '有過節' ? 0.5 : 0; const vclose = I.tv === '家人' ? 0.6 : I.tv === '很要好' ? 0.4 : 0;
             const strict = (hon >= 4 ? 0.3 : 0) + (has(a, 'perfectionist') ? 0.3 : 0) + (hasV(a, '傳統') ? 0.2 : 0) + (I.recent >= 5 ? 0.3 : 0) + foe + vclose; const soft = (has(a, 'kind') ? 0.4 : 0) + (I.kids.length ? 0.2 : 0) + (c.c0 != null && c.c0 <= 1 ? 0.15 : 0);
+            const fine = c.src === 'theft' && !(c.days > 0);
             const out = [
-                { id: 'jail', quiet: true, text: { k: '照規矩辦：關起來 {d} 天', p: { d: c.days } }, say: { k: '把{a}關了起來', p: { a: th } }, why: '偷就是偷，不能壞了規矩。', lean: { safe: 0.1 }, adj: strict,
-                    run: (w2, a2) => { const I2 = caughtInfo(w2, a2, c); if (!I2) return null; doJail(w2, a2, c, I2); st(w2, 'jail'); return { k: '把{a}關了 {d} 天', p: { a: th, d: c.days } }; } },
-                { id: 'repay', quiet: true, text: c.src === 'grain' ? '叫他把糧食扛回去，這次不關' : '只叫他當場把東西還回去，這次不關', say: { k: '叫{a}還回去，沒有關他', p: { a: th } }, why: '東西還了就好，關起來他一家吃什麼。', lean: { bond: 0.1 }, adj: close * 0.5 + soft - strict * 0.5,
+                { id: 'jail', quiet: true, text: fine ? '照規矩辦：罰錢，不關' : { k: '照規矩辦：關起來 {d} 天', p: { d: c.days } }, say: fine ? { k: '照規矩罰了{a}的錢', p: { a: th } } : { k: '把{a}關了起來', p: { a: th } }, why: '偷就是偷，不能壞了規矩。', lean: { safe: 0.1 }, adj: strict,
+                    run: (w2, a2) => { const I2 = caughtInfo(w2, a2, c); if (!I2) return null; doJail(w2, a2, c, I2); st(w2, 'jail'); return fine ? { k: '罰了{a}的錢', p: { a: th } } : { k: '把{a}關了 {d} 天', p: { a: th, d: c.days } }; } },
+                { id: 'repay', quiet: true, text: c.src === 'grain' ? '叫他把糧食扛回去，這次不關' : fine ? '只叫他當場把東西還回去，不罰錢' : '只叫他當場把東西還回去，這次不關', say: fine ? { k: '叫{a}還回去，沒有罰他', p: { a: th } } : { k: '叫{a}還回去，沒有關他', p: { a: th } }, why: fine ? '東西還了就好，他已經夠窮了。' : '東西還了就好，關起來他一家吃什麼。', lean: { bond: 0.1 }, adj: close * 0.5 + soft - strict * 0.5,
                     run: (w2, a2) => { const I2 = caughtInfo(w2, a2, c); if (!I2) return null; doRepay(w2, a2, c, I2); st(w2, 'repay'); return { k: '叫{a}還回去了', p: { a: th } }; } },
                 { id: 'spare', quiet: true, mute: true, text: '放他一馬，當作沒看到', say: { k: '放了{a}一馬', p: { a: th } }, why: I.tth === '家人' || I.tth === '很要好' ? { k: '{a}是我的人，我下不了手。', p: { a: th } } : '他也是走投無路。', lean: { bond: 0.1 }, adj: close + soft * 0.7 - strict,
                     run: (w2, a2) => { const I2 = caughtInfo(w2, a2, c); if (!I2) return null; doSpare(w2, a2, c, I2); st(w2, 'spare'); return { k: '放了{a}', p: { a: th } }; } },
@@ -473,7 +474,7 @@ const ORDER = (() => {
     const C = (w) => (typeof CIVIC !== 'undefined' ? CIVIC.S(w) : (w.civic || { jail: {} }));
     function doJail(w, g, c, I) {
         const Cv = C(w); const th = I.th, vic = I.vic; const d = day(w);
-        if (c.src === 'theft' && typeof CIVIC !== 'undefined') { CIVIC.jailDo(w, Cv, th, vic, c.n, c.days, d); mem(w, g, '我抓到{a}偷錢，照規矩把他關了起來。', { a: th.name }, 5); return; }
+        if (c.src === 'theft' && typeof CIVIC !== 'undefined') { CIVIC.jailDo(w, Cv, th, vic, c.n, c.days, d); mem(w, g, c.days > 0 ? '我抓到{a}偷錢，照規矩把他關了起來。' : '我抓到{a}偷錢，照規矩罰了他的錢。', { a: th.name }, 5); return; }
         (Cv.jail || (Cv.jail = {}))[th.agentId] = d + c.days;
         if (c.src === 'loot') { const back = Math.min(c.n, cash(w, th)); if (back > 0) WALLET.pay(w, th, vic, back); bump(vic, th, -25); try { DARK.bump(w, th, 'exposed'); } catch (e) {} log(w, 'event', '🛒 {c}的混亂中，{a}衝進{s}的店裡搶錢，當場被衛兵抓住，關進牢裡。{say}', { c: c.cause || '', a: th.name, s: vic.name, say: '' }, th.name); mem(w, th, '{c}那時候我昏了頭，去搶了{s}的店，被抓了。', { c: c.cause || '', s: vic.name }, 8); }
         else log(w, 'event', '🛒 {c}的混亂中，{a}衝進公有糧倉扛走糧食，被衛兵當場抓住。{say}', { c: c.cause || '', a: th.name, say: '' }, th.name);

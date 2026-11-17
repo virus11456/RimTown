@@ -49,9 +49,10 @@ const DIPLO = (() => {
         w.news._rebuildModifiers?.(nd);
     }
     // 首長的外交行動
-    function envoy(w, D, p, L) {
-        const cand = npcs(w).filter(a => a !== L && a.age >= 20 && !w.events?.getTravellingAgents?.().some(x => x.agentId === a.agentId));
-        const e = cand.sort((x, y) => (has(y, 'charismatic') ? 2 : 0) + (has(y, 'kind') ? 1 : 0) - (has(x, 'charismatic') ? 2 : 0) - (has(x, 'kind') ? 1 : 0))[0]; if (!e) return false;
+    // 使節人選：有魅力、心腸好的排前面（v11.9.0 拆出來：首長從前幾位裡挑，被挑上的人可以推辭）
+    const envoys = (w, L) => npcs(w).filter(a => a !== L && a.age >= 20 && !w.events?.getTravellingAgents?.().some(x => x.agentId === a.agentId)).sort((x, y) => (has(y, 'charismatic') ? 2 : 0) + (has(y, 'kind') ? 1 : 0) - (has(x, 'charismatic') ? 2 : 0) - (has(x, 'kind') ? 1 : 0));
+    function envoy(w, D, p, L, e0) {
+        const e = e0 || envoys(w, L)[0]; if (!e) return false;
         const gain = 5 + (has(e, 'charismatic') ? 6 : 0) + (has(e, 'abrasive') ? -6 : 0) + Math.floor(Math.random() * 5);
         try { w.events._sendAgentTravelling(w, e, tpl('出使{town}', { town: pname(p) }), Math.min(6, p.dist || 3)); } catch (x) {}
         bump(w, p.id, gain); note(w, D, '🕊️ {a}派{e}出使{p}，兩地關係{d}。', { a: L?.name || '', e: e.name, p: pname(p), d: gain >= 0 ? '變好了' : '更僵了' });
@@ -64,7 +65,12 @@ const DIPLO = (() => {
     }
     function wed(w, D, p, L) {
         if (D.wed[p.id]) return false; const singles = npcs(w).filter(a => a.age >= 18 && a.age <= 40 && !a.relationships?.getPartner?.() && a !== L);
-        const fam = singles.filter(a => L && ((a._parentNames || []).includes(L.name))); const pick = (fam.length ? fam : singles.filter(a => { try { return CLASS.level(w, a) >= 3; } catch (e) { return false; } }))[0]; if (!pick) return false;
+        const fam = singles.filter(a => L && ((a._parentNames || []).includes(L.name))); const pick = (fam.length ? fam : singles.filter(a => { try { return CLASS.level(w, a) >= 3; } catch (e) { return false; } })).find(a => !(typeof HOME !== 'undefined' && HOME.wedSkip?.(w, a))); if (!pick) return false;
+        // v11.9.0 被嫁出去的人自己決定：答應／拒絕／逃婚（sim-decide-home.js）。問不到本人時照原本直接嫁過去
+        try { if (typeof HOME !== 'undefined' && HOME.wedAsk && HOME.wedAsk(w, D, p, L, pick)) return true; } catch (e) { console.warn('[Diplo] wed ask', e); }
+        return wedDo(w, D, p, pick);
+    }
+    function wedDo(w, D, p, pick) {
         D.wed[p.id] = { name: pick.name, day: day(w) }; bump(w, p.id, 25);
         note(w, D, '💍 {a}遠嫁{p}，兩地結為親家。', { a: pick.name, p: pname(p) });
         for (const o of npcs(w)) if ((o._parentNames || []).includes(pick.name) || (pick._parentNames || []).includes(o.name)) mem(w, o, '{a}嫁到{p}去了，以後很難見面。', { a: pick.name, p: pname(p) }, 8);
@@ -87,6 +93,8 @@ const DIPLO = (() => {
     }
     async function decide(w, D) {
         const ce = w.conversationEngine; const L = leader(w);
+        // v11.9.0 這一季的外交由首長自己決定（選擇點 diploSeason，sim-decide-home.js；開了 AI 也走決策核心）。問不到首長時照下面原本的做法
+        try { if (L && typeof HOME !== 'undefined' && HOME.diploAsk && HOME.diploAsk(w, D, L, ruleChoice(w, D))) return true; } catch (e) { console.warn('[Diplo] ask', e); }
         if (w.fullAgentMode && ce?.fullAgentOk?.(w) && ce._askJson && L) {
             try {
                 const b = ce._agentBrief(w, L, null); const list = places(w).map(p => `${p.id}=${t(pname(p))}(${Math.round(D.rel[p.id] || 0)}, ${t(ST[statusOf(D.rel[p.id] || 0, D, p.id)][1])})`).join(t('、'));
@@ -115,7 +123,8 @@ const DIPLO = (() => {
     function brief(w) { const D = w.diplo; if (!D) return ''; const ps = places(w); const al = ps.filter(p => D.status[p.id] === 'ally').map(p => t(pname(p))); const foe = ps.filter(p => (D.rel[p.id] || 0) <= -30).map(p => t(pname(p)));
         return [al.length ? `${t('盟友')}${t('：')}${al.join(t('、'))}` : '', foe.length ? `${t('對頭')}${t('：')}${foe.join(t('、'))}` : ''].filter(Boolean).join(t('；')); }
     function view(w) { const D = S(w); return { places: places(w).map(p => { const r = Math.round(D.rel[p.id] || 0); const st = statusOf(r, D, p.id); return { id: p.id, name: t(pname(p)), rel: r, icon: ST[st][0], status: t(ST[st][1]), wed: D.wed[p.id] ? t(D.wed[p.id].name) : null }; }), log: D.log.slice(-5).reverse().map(x => Memory.render(x.k, x.p)), why: D.why || '' }; }
-    return { S, daily, act, bump, settle, decide, ruleChoice, onTiding, brief, view, statusOf, effects, ST };
+    const noteOf = (w, k, p) => note(w, S(w), k, p);
+    return { S, daily, act, bump, settle, decide, ruleChoice, onTiding, brief, view, statusOf, effects, ST, envoys, envoy, wedDo, places, pname, leader, note: noteOf };
 })();
 if (typeof TIDINGS !== 'undefined') {
     const _dl = TIDINGS.deliver;

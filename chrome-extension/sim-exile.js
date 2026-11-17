@@ -211,7 +211,9 @@ const EXILE = (() => {
                     (a._parentNames || []).includes(o.name) // 爺爺奶奶
                     || (o._parentNames || []).some(n => (c._parentNames || []).includes(n)) // 成年的哥哥姊姊
                     || (o._parentNames || []).some(n => (a._parentNames || []).includes(n)))); // 叔叔阿姨
-                const r = pool.sort((x, y) => (y.relationships?.relationships?.[c.agentId]?.affinity || 0) - (x.relationships?.relationships?.[c.agentId]?.affinity || 0) || (y.age || 0) - (x.age || 0))[0];
+                pool.sort((x, y) => (y.relationships?.relationships?.[c.agentId]?.affinity || 0) - (x.relationships?.relationships?.[c.agentId]?.affinity || 0) || (y.age || 0) - (x.age || 0)); const r = pool[0];
+                // v11.9.0 被想到的親戚自己決定接不接（sim-decide-home.js）：不接就問下一位，都不接才跟著走。問不到時照原本由最親的那位收養
+                try { if (r && typeof HOME !== 'undefined' && HOME.adoptAsk && HOME.adoptAsk(w, c, a, pool)) { out.adopted.push(c.name); continue; } } catch (e) { console.warn('[Exile] adopt ask', e); }
                 if (r) { c._parentNames = [...(c._parentNames || []), r.name]; c._guardian = r.agentId; out.adopted.push(c.name);
                     log(w, '👪 {p}被逐出小鎮，{c}留了下來，由{r}收養。', { p: a.name, c: c.name, r: r.name }, r.name);
                     mem(w, r, '{p}被趕出小鎮，我把{c}接來家裡養。', { p: a.name, c: c.name }, 8); mem(w, c, '{p}被趕出小鎮了，我留下來跟{r}一起住。', { p: a.name, r: r.name }, 9); c.moodModifier = (c.moodModifier || 0) - 10; X.st.adopted = (X.st.adopted || 0) + 1; continue; }

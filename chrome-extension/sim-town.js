@@ -655,6 +655,7 @@ class EventSystem {
         const total = npcCount + this._travellingAgents.length;
         const repImmigration = world.reputationSystem ? world.reputationSystem.getModifier('immigration_bonus') : 0;
         const immigrationBoost = (world.news ? world.news.getModifier('immigration_chance', 0) : 0) + repImmigration;
+        try { if (npcCount >= 6 && typeof HOME !== 'undefined' && HOME.immigPaused && HOME.immigPaused(world)) return; } catch (e) {} // v11.9.0 全鎮表決暫停收新移民（有天數上限、人口太少自動失效，sim-decide-home.js）
         if (total < this.TARGET_POPULATION) {
             // v6.81.0 一天最多來一兩個人(以前差多少就一次補滿);糧食不夠、大家心情差時比較少人想搬來
             const gap = this.TARGET_POPULATION - total;
@@ -818,7 +819,7 @@ class ElectionSystem {
         const reason = tr ? 'travel' : ex ? (this._jailed(world, ex) ? 'jail' : 'explore') : 'gone';
         const actingHere = this.acting && this._residents(world).some(a => a.agentId === this.acting.agentId); // v6.43.3 代理人自己離鎮或去探險 → 換人
         if (!this.acting || !actingHere || this.acting.reason !== reason) {
-            const pick = this._pickActing(world);
+            const pick = (typeof HOME !== 'undefined' && HOME.actingPick) ? HOME.actingPick(world, this) : this._pickActing(world); // v11.9.0 被想到的人接不接代理由本人決定，不接就往下找（sim-decide-home.js）
             if (pick) {
                 this.acting = { agentId: pick.agentId, name: pick.name, since: world._absDay?.() || 0, reason, mayorId: tr?.agentData?.agentId || ex?.agentId || '', mayorName: tr?.agentData?.name || ex?.name || '' };
                 if (ex && reason === 'jail') { world.logMessageT('council', '🔒 鎮長{mayor}還關在牢裡，不能拍板，這幾天由{acting}代理鎮長。', { mayor: ex.name, acting: pick.name }); try { world.dailyNews?.collectEvent?.('politics', t('{a}坐牢期間停權，由{b}代理').replace('{a}', t(ex.name)).replace('{b}', t(pick.name)), 8, [ex.name]); } catch (e) {} }
@@ -838,11 +839,12 @@ class ElectionSystem {
         try { a.job = (typeof Job !== 'undefined' && typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null; } catch (e) { a.job = null; }
         if (this.acting?.mayorId === a.agentId) this.acting = null; // 不再等他回來(坐牢、出遠門也一樣)
         try { this._checkMayor(world); } catch (e) { console.warn('[Election] stepDown', e); }
+        try { if (typeof HOME !== 'undefined' && HOME.afterOffice) HOME.afterOffice(world, a, why); } catch (e) { console.warn('[Election] after office', e); } // v11.9.0 下台之後做什麼由本人決定（先照原本改當商人）
         return true;
     }
     // 代理人選:上一屆的第二名(還在鎮上的話),不然挑社交能力最好、最有魅力的人
-    _pickActing(world) {
-        const res = this._residents(world).filter(a => this._canServe(world, a) && a.job?.key !== 'mayor'); if (!res.length) return null; // v9.4.0 國王、坐牢的、被停權的鎮長本人不代理
+    _pickActing(world, skip) {
+        const res = this._residents(world).filter(a => this._canServe(world, a) && a.job?.key !== 'mayor' && !(skip && skip.has(a.agentId))); if (!res.length) return null; // v11.9.0 skip：不肯接的人 // v9.4.0 國王、坐牢的、被停權的鎮長本人不代理
         const last = this.electionHistory[this.electionHistory.length - 1];
         const second = last?.candidates?.slice().sort((a, b) => b.votes - a.votes).find(c => c.agentId !== last.winner?.agentId && res.some(a => a.agentId === c.agentId));
         if (second) return world.agents[second.agentId];

@@ -29,8 +29,10 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.crown.lastDecree = -99; const nd0 = w.crown.decrees.length; const fa0 = w.fullAgentMode; w.fullAgentMode = false; fix(0.5, () => CROWN.daily(w)); w.fullAgentMode = fa0; /* 規則版王令:先關掉完整智能體模式(預設開著,AI 冷卻狀態會讓它時走 AI、時走規則) */ await new Promise(r => setTimeout(r, 300)); out.ruleDecree = w.crown.decrees.length === nd0 + 1;
       // 王令(AI)
       const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; let asked = '';
-      CE._askJson = async (p) => { asked = p; return { key: 'tax_down', text: '減輕百姓負擔' }; }; const tax0 = w.wallet.tax;
-      w.crown.lastDecree = -99; fix(0.5, () => CROWN.daily(w)); await new Promise(r => setTimeout(r, 50));
+      /* v11.9.0 王令改走決策核心（選擇點「這一道王令」）：AI 回的是選項代號與理由，理由當作詔書 */
+      CE._askJson = async (p) => { asked = p; return /tax_down＝/.test(p) ? [{ n: 1, pick: 'tax_down', why: '減輕百姓負擔' }] : { key: 'tax_down', text: '減輕百姓負擔' }; }; const tax0 = w.wallet.tax;
+      { const X0 = DECIDE.S(w); X0._gAsked = {}; X0._kAsked = {}; X0._cDay = w._absDay(); X0.lastDay = w._absDay(); }
+      w.crown.lastDecree = -99; fix(0.5, () => CROWN.daily(w)); await new Promise(r => setTimeout(r, 50)); await DECIDE.flush(); await new Promise(r => setTimeout(r, 30)); await DECIDE.flush();
       w.fullAgentMode = _fa; CE.fullAgentOk = _ok; CE._askJson = _aj;
       const last = w.crown.decrees[w.crown.decrees.length - 1]; out.aiDecree = last?.key === 'tax_down' && last.text === '減輕百姓負擔' && w.wallet.tax < tax0 && /王令|decree/i.test(asked);
       // UI
@@ -53,8 +55,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       w.crown.legit = 10; w.crown.plot = { leader: L2.agentId, members: [L2.agentId, others[3].agentId, others[4].agentId], start: w._absDay(), ready: w._absDay() };
       fix(0.01, () => CROWN.daily(w)); const k2 = CROWN.king(w); out.coup = k2 === L2 && w.crown.history.slice(-1)[0].how === 'coup' && CLASS.level(w, k1) !== 5;
       // 世襲
-      const kid = others[5]; kid._parentNames = [k2.name, 'x']; kid.age = 20; k2.isDead = true;
-      fix(0.5, () => CROWN.daily(w)); out.heir = CROWN.king(w) === kid && w.crown.history.slice(-1)[0].how === 'heir';
+      const kid = others[5]; kid._parentNames = [k2.name, 'x']; kid.age = 20; kid.personality.traits = ['ambitious']; kid.personality.values = ['權力']; for (const o of npcs()) if (o !== kid && (o._parentNames || []).includes(k2.name)) o._parentNames = o._parentNames.filter(n => n !== k2.name); k2.isDead = true; const fa2 = w.fullAgentMode; w.fullAgentMode = false; /* 接不接王位照個性當場決定（完整智能體開著時會去問 AI、等回話） */ /* v11.9.0 接不接王位由繼承人自己決定：這裡讓他是想接的人，也讓他是唯一的繼承人（不然不接的話換弟妹繼承，後面「沒有子嗣」那一步就不成立） */
+      fix(0.5, () => CROWN.daily(w)); w.fullAgentMode = fa2; out.heir = CROWN.king(w) === kid && w.crown.history.slice(-1)[0].how === 'heir';
       // 無子嗣 → 繼承危機 → 議會推舉
       /* v6.90 開局有家族:先讓這位國王沒有其他子嗣、配偶,才會出現繼承危機 */ for (const o of Object.values(w.agents)) { if (o === kid) continue; if ((o._parentNames || []).includes(kid.name)) o._parentNames = o._parentNames.filter(n => n !== kid.name); const rr = o.relationships?.relationships?.[kid.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; }
       kid.isDead = true; fix(0.5, () => CROWN.daily(w)); out.crisis = !!w.crown.crisis && !CROWN.king(w) && w.crown.crisis.claimants.length >= 1;

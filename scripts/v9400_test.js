@@ -91,12 +91,15 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     {
       const c = P[13], v = P[14]; setMayor(c); TIERS.track(w); E.electionHistory.push({ day: d(), winner: { agentId: c.agentId, name: c.name }, candidates: [] });
       const s = DARK.secret(w, { kind: 'scheme', culprit: c.agentId, victim: v.agentId, k: '{c}私下塞錢給{v}買票', p: { c: c.name, v: v.name } }); s.found = true;
-      ASSEMBLY.scanSecrets(w);
+      /* v11.9.0 被揭穿的人自己決定辭不辭：這裡讓他是心腸好、會認錯的人，照個性當場決定（不開 AI、不加當天的心情起伏） */
+      const steadyRule = (f) => { const r0 = Math.random, fa = w.fullAgentMode; Math.random = () => 0.5; w.fullAgentMode = false; try { return f(); } finally { Math.random = r0; w.fullAgentMode = fa; } };
+      for (const x of [c, P[3]]) { x.personality.traits = ['kind']; x.personality.values = []; }
+      steadyRule(() => ASSEMBLY.scanSecrets(w));
       out.buy = { mayor: c.job?.key === 'mayor', holder: mayorOf()?.agentId || null, byElection: !!E.active || !!E.acting };
       TIERS.track(w); out.buy.end = (TIERS.S(w).career?.[c.agentId] || []).filter(x => x.role === 'leader').slice(-1)[0]?.e || null;
       // 議員買票
       const m = P[3]; w.council.members = [m.agentId, P[4].agentId]; const s2 = DARK.secret(w, { kind: 'kickback', culprit: m.agentId, victim: null, asm: 'buy', k: '{c}在{m}選舉時私下塞錢買票', p: { c: m.name, m: '議員' } }); s2.found = true;
-      ASSEMBLY.scanSecrets(w); out.buy.seat = w.council.members.includes(m.agentId);
+      steadyRule(() => ASSEMBLY.scanSecrets(w)); out.buy.seat = w.council.members.includes(m.agentId);
       E.active = false; E.acting = null;
     }
     // ---------- 15. 紓困債 ----------

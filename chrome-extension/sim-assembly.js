@@ -127,28 +127,52 @@ const ASSEMBLY = (() => {
             if (s.asm === 'bribe') {
                 log(w, 'council', '📰 {c}在{council}收錢投票的事傳開了，大家議論紛紛。', { c: c.name, council: Lw.council }, c.name);
                 const inC = (w.council?.members || []).includes(c.agentId);
-                if (inC && (r.exposed >= 2 || Math.random() < 0.5)) {
-                    w.council.members = w.council.members.filter(id => id !== c.agentId);
-                    log(w, 'council', '🙇 {c}收錢的事被揭穿，辭去了{member}。', { c: c.name, member: Lw.member }, c.name);
-                    mem(w, c, '收錢的事被揭穿，我只好辭去{member}，丟臉丟到家了。', { member: Lw.member }, 8);
-                    c.moodModifier = (c.moodModifier || 0) - 8;
-                    try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('收錢的事被揭穿，辭去了')}${t(Lw.member)}`, 8, [c.name]); } catch (e) {}
-                }
+                // v11.9.0 被揭穿的人自己決定：辭職／否認／道歉但不辭／反咬一口（sim-decide-home.js）。問不到本人時照原本：被揭穿兩次以上、或一半的機會辭職
+                if (inC && typeof HOME !== 'undefined' && HOME.scandalAsk && HOME.scandalAsk(w, c, 'bribe', s, r.exposed >= 2 ? 0.95 : 0.5)) continue;
+                if (inC && (r.exposed >= 2 || Math.random() < 0.5)) scandalOut(w, c, 'bribe');
             } else if (s.asm === 'buy') {
                 log(w, 'council', '📰 {c}在{member}選舉時買票的事傳開了。', { c: c.name, member: Lw.member }, c.name);
                 // v9.4.0 買票當上的議員:被揭穿就當選無效,席位由落選者遞補
                 if ((w.council?.members || []).includes(c.agentId)) {
-                    try { if (typeof TIERS !== 'undefined') TIERS.hint(w, c.agentId, 'scandal'); } catch (e) {}
-                    w.council.members = w.council.members.filter(id => id !== c.agentId);
-                    log(w, 'council', '⚖️ {c}的{member}當選無效——票是買來的。空出的席位由上次落選的人遞補。', { c: c.name, member: Lw.member }, c.name);
-                    mem(w, c, '買票的事被揭穿，我的{member}當選無效。走在街上大家都在看我。', { member: Lw.member }, 9);
-                    c.moodModifier = (c.moodModifier || 0) - 10;
-                    try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票被揭穿，議員當選無效')}`, 9, [c.name]); } catch (e) {}
+                    if (typeof HOME !== 'undefined' && HOME.scandalAsk && HOME.scandalAsk(w, c, 'buy', s, 0.9)) continue;
+                    scandalOut(w, c, 'buy');
                 }
             }
         }
     }
 
+    // 醜事被揭穿、下台的那一步（結算照原本）。v11.9.0 拆出來：本人選了辭職、或否認之後證據確鑿，都走這裡
+    function scandalOut(w, c, type, s) {
+        const Lw = L(w);
+        if (type === 'bribe') {
+            if (!(w.council?.members || []).includes(c.agentId)) return false;
+            w.council.members = w.council.members.filter(id => id !== c.agentId);
+            log(w, 'council', '🙇 {c}收錢的事被揭穿，辭去了{member}。', { c: c.name, member: Lw.member }, c.name);
+            mem(w, c, '收錢的事被揭穿，我只好辭去{member}，丟臉丟到家了。', { member: Lw.member }, 8);
+            c.moodModifier = (c.moodModifier || 0) - 8;
+            try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('收錢的事被揭穿，辭去了')}${t(Lw.member)}`, 8, [c.name]); } catch (e) {}
+            return true;
+        }
+        if (type === 'buy') {
+            if (!(w.council?.members || []).includes(c.agentId)) return false;
+            try { if (typeof TIERS !== 'undefined') TIERS.hint(w, c.agentId, 'scandal'); } catch (e) {}
+            w.council.members = w.council.members.filter(id => id !== c.agentId);
+            log(w, 'council', '⚖️ {c}的{member}當選無效——票是買來的。空出的席位由上次落選的人遞補。', { c: c.name, member: Lw.member }, c.name);
+            mem(w, c, '買票的事被揭穿，我的{member}當選無效。走在街上大家都在看我。', { member: Lw.member }, 9);
+            c.moodModifier = (c.moodModifier || 0) - 10;
+            try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票被揭穿，議員當選無效')}`, 9, [c.name]); } catch (e) {}
+            return true;
+        }
+        const E = w.election; const lead = (typeof TIERS !== 'undefined' ? TIERS.LV[TIERS.level(w)]?.leader : '') || '鎮長';
+        if (!(E?._officeHolder?.(w)?.agentId === c.agentId && E.stepDown?.(w, c, 'scandal'))) return false;
+        log(w, 'council', '⚖️ {c}當年選{t}時私下塞錢買票，證據傳遍全鎮。{c}只好辭職下台，鎮上要辦補選。', { c: c.name, t: lead }, c.name);
+        mem(w, c, '買票的事被揭穿了，我只能辭去{t}。我怎麼會走到這一步？', { t: lead }, 10);
+        c.moodModifier = (c.moodModifier || 0) - 12;
+        const v = s && w.agents[s.victim]; if (v) mem(w, v, '{c}當年塞錢給我買票，現在全鎮都知道了，我也很難做人。', { c: c.name }, 7);
+        try { if (typeof WAYS !== 'undefined') WAYS.loseFace?.(w, c, 10); } catch (e) {}
+        try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票醜聞下台')}`, 10, [c.name]); } catch (e) {}
+        return true;
+    }
     // v9.4.0 首長選舉買票被揭穿:還在位的話被迫下台、辦補選;買來的票要是沒讓他當選,只丟臉
     function mayorBought(w, s) {
         const c = w.agents[s.culprit]; if (!c || c.isDead) return;
@@ -156,13 +180,8 @@ const ASSEMBLY = (() => {
         const lead = (typeof TIERS !== 'undefined' ? TIERS.LV[TIERS.level(w)]?.leader : '') || '鎮長';
         const last = (E?.electionHistory || []).slice(-1)[0];
         const won = holder && holder.agentId === c.agentId && (!last || last.winner?.agentId === c.agentId) && (day(w) - (s.day || 0)) < 120;
-        if (won && E.stepDown?.(w, c, 'scandal')) {
-            log(w, 'council', '⚖️ {c}當年選{t}時私下塞錢買票，證據傳遍全鎮。{c}只好辭職下台，鎮上要辦補選。', { c: c.name, t: lead }, c.name);
-            mem(w, c, '買票的事被揭穿了，我只能辭去{t}。我怎麼會走到這一步？', { t: lead }, 10);
-            c.moodModifier = (c.moodModifier || 0) - 12;
-            const v = w.agents[s.victim]; if (v) mem(w, v, '{c}當年塞錢給我買票，現在全鎮都知道了，我也很難做人。', { c: c.name }, 7);
-            try { if (typeof WAYS !== 'undefined') WAYS.loseFace?.(w, c, 10); } catch (e) {}
-            try { w.dailyNews?.collectEvent?.('politics', `${t(c.name)}${t('買票醜聞下台')}`, 10, [c.name]); } catch (e) {}
+        if (won && typeof HOME !== 'undefined' && HOME.scandalAsk && HOME.scandalAsk(w, c, 'mayor', s, 0.9)) return; // v11.9.0 本人決定辭不辭（sim-decide-home.js）
+        if (won && scandalOut(w, c, 'mayor', s)) {
         } else if (E?.active && (E.candidates || []).some(x => x.agentId === c.agentId)) {
             log(w, 'council', '📰 投票前夕爆出{c}私下塞錢買票！拿過錢的人心虛，沒拿的人很火大。', { c: c.name }, c.name);
             for (const o of Object.values(w.agents)) { const r = o && o !== c && !o.isDead && !o.isPlayer ? o.relationships?.relationships?.[c.agentId] : null; if (r) { try { r.modifyAffinity(-6); } catch (e) {} } } // 只影響本來就認識他的人(不替全鎮新建關係)
@@ -306,6 +325,9 @@ const ASSEMBLY = (() => {
         while (present.length + keep.length < want && A.runners.length) {
             const id = A.runners.shift(); const a = world.agents[id];
             if (!a || a.isDead || present.includes(id) || id === lid || a.currentLocation === 'exploration') continue;
+            // v11.9.0 遞補的人接不接由本人決定（sim-decide-home.js）：不接就換下一位落選者，等他回話的時候先空著
+            let ans = 'yes'; try { if (typeof HOME !== 'undefined' && HOME.seatOk) ans = HOME.seatOk(world, a, 'runner'); } catch (e) { ans = 'yes'; }
+            if (ans === 'no') continue; if (ans === 'wait') { A.runners.unshift(id); break; }
             present.push(id); n++; const r = R(world, id); r.since = day(world); r.terms++;
             log(world, 'council', '🏛️ {name}是上次{council}改選票數最高的落選者，遞補空出來的席次。', { name: a.name, council: Lw.council }, a.name);
             mem(world, a, '有人出缺，我以上次落選第一高票遞補進{council}。', { council: Lw.council }, 7);
@@ -337,7 +359,7 @@ const ASSEMBLY = (() => {
         return out.join(t('、'));
     }
     const WHY = { own: '自己的看法', public: '順著民意', pact: '私下交換條件 🕵️', bribe: '收了好處 🕵️', donor: '金主的意思 🕵️' };
-    return { S, R, isMajor, needs, seated, councilVote, onOutcome, scanSecrets, daily, start, tally, campaign, fillFromRunners, view, recordText, truthText, wantSeats, WHY };
+    return { S, R, isMajor, needs, seated, councilVote, onOutcome, scanSecrets, scandalOut, daily, start, tally, campaign, fillFromRunners, view, recordText, truthText, wantSeats, WHY };
 })();
 
 // ---- 掛進提案流程

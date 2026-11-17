@@ -313,6 +313,7 @@ if (typeof LifecycleSystem !== 'undefined') {
                 try { const W0 = world.wallet; for (const tr of (world.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d?.agentId || world.agents[d.agentId]) continue; const st = (d.relationships || []).find(x => (x.target_id || x.targetId) === id)?.status; if (st === 'married' || (d._parentNames || []).includes(npc.name)) { if (typeof W0.bal[d.agentId] !== 'number') W0.bal[d.agentId] = 0; heirs.push({ agentId: d.agentId, name: d.name, age: d.age, _travel: true, _wed: st === 'married', isDead: false }); } } } catch (e) {}
                 const wedOf = (a) => a._travel ? !!a._wed : wed(a);
                 heirs.sort((x, y) => wedOf(y) - wedOf(x) || (y.age || 0) - (x.age || 0));
+                try { if (typeof HOME !== 'undefined' && HOME.heirOrder) heirs = HOME.heirOrder(world, npc, heirs); } catch (e) {} // v11.9.0 遺囑指定多給的那一位排第一（產業、房子、補繳的遺產稅都歸他）
                 // v9.7.4 遺產稅要算進產業和房子的價值(這時還沒轉給繼承人)
                 try { if (typeof MARKET !== 'undefined' && MARKET.firmsOf) for (const f of MARKET.firmsOf(world, id)) assets += (MARKET.value(world, f.k) || 0) * (f.rival ? 0.6 : 1); } catch (e) {}
                 try { if (typeof ESTATE !== 'undefined' && world.estate) for (const u of ESTATE.ownsOf(world, id)) assets += ESTATE.valueOf(world, u) || 0; } catch (e) {}
@@ -340,7 +341,9 @@ if (typeof LifecycleSystem !== 'undefined') {
                     }
                 }
             }
-            if (estate > 0) {
+            // v11.9.0 立過遺囑的照遺囑分（sim-decide-home.js）：錢只在人與人、人與公庫之間移動；沒立過的照下面原本的規矩
+            let willed = false; try { if (estate > 0 && typeof HOME !== 'undefined' && HOME.estateSplit) willed = HOME.estateSplit(world, npc, heirs, estate); } catch (e) { console.warn('[Wallet] will', e); willed = false; }
+            if (estate > 0 && !willed) {
                 if (heirs.length) { const base = Math.floor(estate / heirs.length * 100 + 1e-6) / 100; const first = Math.round((estate - base * (heirs.length - 1)) * 100) / 100; /* 平分捨入的零頭給第一個繼承人,一分不少 */ for (const h of heirs) { const each = h === heirs[0] ? first : base; WALLET.add(world, h, each); h.memory?.addT?.(world.tickCount, world.clock.timeStr, 'economy', '繼承了{name}留下的 {n} 銀幣。', { name: npc.name, n: each }, 6, [npc.name]); } }
                 else world.stockpile?.add?.('silver', Math.round(estate * 100) / 100, world.tickCount, t('無人繼承的遺產'));
             }
