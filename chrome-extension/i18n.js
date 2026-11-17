@@ -102,10 +102,22 @@ const I18N = (() => {
         const sn = Object.keys(_revSurname).sort((a, b) => b.length - a.length).map(esc).join('|');
         _revRe = new RegExp('\\b(?:(' + gv + ') (' + sn + ')|(' + fixed + '))\\b', 'g');
     }
+    // 隨機卡司的全名剛好以固定卡司的名字開頭（周明哲 ⊃ 周明）：整句替換先比固定名，只換掉前兩個字，變成「Milo哲」，
+    // 畫面上和送給 AI 的題目裡都會留一個中文字。村民建立時來報到一次：這種名字整個登記成固定名（長的先比）。
+    function noteName(name) {
+        if (!name || typeof name !== 'string' || name.length < 3 || NAME_FIXED[name]) return;
+        let hit = false; for (let i = 2; i < name.length && !hit; i++) hit = !!NAME_FIXED[name.slice(0, i)];
+        if (!hit) return;
+        const sn = NAME_SURNAMES[name[0]], gv = NAME_GIVEN[name.slice(1)] || NAME_FIXED[name.slice(1)];
+        if (sn && gv) registerName(name, gv + ' ' + sn);
+    }
     // v5.81.0 玩家自訂村民可登記英文名:進固定名對照表,正反向對照都重建
     function registerName(zh, en) {
         if (!zh || !en || typeof zh !== 'string' || typeof en !== 'string') return;
         zh = zh.trim(); en = en.trim();
+        // AI 取的名字（店名、作品名、教義）回來時，裡面的英文人名已經換回中文名（Felix's Quiet Brew → 楊鋒's Quiet Brew），再登記成「中文＝中文」。
+        // 整句替換會先比到這一整條、原樣換回去，裡面的人名就永遠是中文。英文那一邊還有中文字的話，先把裡面的人名換好再登記。
+        if (/[\u4e00-\u9fff]/.test(en)) { try { en = localizeNames(en, true) || en; } catch (e) {} }
         if (!zh || !en || NAME_FIXED[zh] === en) return;
         NAME_FIXED[zh] = en;
         _nameRe = null; _revRe = null; _bump();
@@ -226,8 +238,8 @@ const I18N = (() => {
 
     // Expose globally
     window.t = t;
-    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, ensureDict, dictReady, _ver, _onDictLoaded: () => { _bump(); try { _buildNameRe?.(); } catch (e) {} } };
+    window.I18N = { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, noteName, ensureDict, dictReady, _ver, _onDictLoaded: () => { _bump(); try { _buildNameRe?.(); } catch (e) {} } };
     if (typeof document !== 'undefined') { if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _syncNameObserver); else _syncNameObserver(); }
 
-    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, ensureDict, dictReady };
+    return { t, setLang, getLang, toggleLang, translations: en, localizeName, localizeNames, localizeTree, delocalizeNames, registerName, noteName, ensureDict, dictReady };
 })();

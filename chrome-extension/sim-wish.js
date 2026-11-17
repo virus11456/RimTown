@@ -113,7 +113,7 @@ const WISH = (() => {
         const prompt = `${t('你是這個小鎮的命運。天上的神寫下了一句話，請把它變成鎮上今天真的發生的一件事（神不會出現，村民不知道是神做的）。')}
 ${t('鎮況')}${t('：')}${String(tb).slice(0, 400)}
 ${t('村民')}${t('：')}${ppl}
-${t('神寫的話')}${t('：')}「${text}」
+${t('神寫的話')}${t('：')}${t('「')}${text}${t('」')}
 ${t('只能用下面這些效果（最多 5 個），數值要合理，人名只能用上面的村民')}${t('：')}
 {"type":"resource","res":"food|wood|stone|metal|cloth|herbs|tools|medicine","amount":-150~150}
 {"type":"daily","res":"food|wood|stone|herbs","amount":-8~8,"days":3~20}

@@ -150,7 +150,7 @@ function processDailyProduction(world) {
             for (const [r,a] of Object.entries(recipe.inputs)) sp.consume(r,Math.round(a*dm*100)/100,world.tickCount,`${agent.name}${t('的生產')}`,agent.name);
         }
         for (const [r,a] of Object.entries(recipe.outputs)) sp.add(r,Math.round(a*eff*((typeof FLOW !== 'undefined' && FLOW.multiOut(agent.job.key) && dm > 0) ? FLOW.demandMult(world, r) / dm : 1)*10)/10, // v6.79.0 礦工的石材、金屬各自看夠不夠
-            world.tickCount,`${agent.name}${t('（')}${agent.job.title}${t('）')}`,agent.name);
+            world.tickCount,`${agent.name}${t('（')}${jobTitleText(agent.job)}${t('）')}`,agent.name);
         if (agent.job.key === 'farmer' && typeof ECON !== 'undefined') ECON.noteFood(world, agent, Math.round((recipe.outputs.food || 0) * eff * 10) / 10); // v6.77.0 記下是穀物、魚還是肉
         if (agent.job.key === 'priest') Object.values(world.agents).forEach(o => { if(o.agentId!==agent.agentId) o.moodModifier=(o.moodModifier||0)+1; });
     });

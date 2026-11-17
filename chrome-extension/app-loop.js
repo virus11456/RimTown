@@ -708,7 +708,7 @@ Object.assign(RimTownApp.prototype, {
         const lang = (typeof LLM_LANG !== 'undefined') ? LLM_LANG.get() : 'zh';
         const traits = (npc.personality?.traits || []).map(x => lang === 'en' ? x : ((typeof TRAIT_POOL !== 'undefined' && TRAIT_POOL[x]?.label) || x)).join(lang === 'en' ? ', ' : '、');
         const name = lang === 'en' ? (typeof I18N !== 'undefined' ? I18N.localizeNames(npc.name, true) : npc.name) : npc.name;
-        const job = npc.job?.title || '';
+        const job = lang === 'en' && npc.job?.title ? t(npc.job.title) : (npc.job?.title || ''); // 漁夫／獵人的職稱存的是中文，英文題目要翻
         const title = ps.title(p), desc = ps.desc(p);
         const prompt = lang === 'en'
             ? `You write dialogue for a village sim. Villager "${name}" (${job}; traits: ${traits}; mood ${Math.round(npc.mood || 50)}/100) is pitching a proposal to the town: "${title}" — ${desc}. Write the pitch in their own voice, first person, 1-2 sentences, under 50 words, no quotes. Reply with JSON only: {"p":"..."}`
