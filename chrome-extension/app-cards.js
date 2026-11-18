@@ -121,6 +121,7 @@ Object.assign(RimTownApp.prototype, {
                     [t('離境稅（搬走的人留下 {r}%）').replace('{r}', Math.round(f.exitRate * 100)), f.exit ? t('已開徵，至今收了 {n}').replace('{n}', N(f.st.exit || 0)) : t('還沒有')],
                     [t('財產稅（超過 {f} 的部分每週 {r}%）').replace('{f}', N(f.wealthFree)).replace('{r}', Math.round(f.wealthRate * 100)), f.wealth ? t('已開徵，至今收了 {n}').replace('{n}', N(f.st.wealth || 0)) : t('還沒有，現在有 {n} 人超過').replace('{n}', f.over)],
                     [t('公債'), f.bond ? t('還欠銀行 {n}').replace('{n}', N(f.bond.owed)) : t('沒有欠'), f.bond ? 'y' : ''],
+                    f.bond || f.burden?.n1y ? [t('公債負擔'), (f.bond ? t('相當於 {d} 天的收入，{lv}').replace('{d}', f.burden.days >= 999 ? '∞' : Math.round(f.burden.days)).replace('{lv}', t(f.burden.name)) : t(f.burden.name)) + (f.burden.lv >= 1 && f.uneasy ? t('；{n} 人不放心首長管錢').replace('{n}', f.uneasy) : ''), f.burden.lv >= 2 ? 'r' : f.burden.lv >= 1 ? 'y' : ''] : null, // v11.12.0
                     [t('公職薪水倍率（跟著民間行情）'), '×' + f.rate.toFixed(2)],
                     f.payShare != null ? [t('公職薪水占公庫收入（超過 {c}% 不再設新職位）').replace('{c}', Math.round(f.CAP * 100)), Math.round(f.payShare * 100) + '%', f.payShare >= f.CAP ? 'y' : ''] : null])); })();
         return this._ic({ id: 'treasury', icon: '🏦', title: t('公庫'), chip, sum: `${N(v.silver)}`, defOpen: !!alert, alert,

@@ -99,7 +99,7 @@ const FISCAL = (() => {
         if (kind === 'fisc_exit') p = TECH.propose(w, kind, kind, who, '開徵離境稅', '{who}提議開徵離境稅。{why}搬離小鎮的人，帶走的現金與存款超過 {f} 銀幣的部分，留下 {r}% 給公庫。留在鎮上的人不受影響。', { why: why || '', f: exitFree(), r: Math.round(EXIT_RATE * 100) }, 'economy', {});
         else if (kind === 'fisc_wealth') p = TECH.propose(w, kind, kind, who, '開徵財產稅', '{who}提議開徵財產稅。{why}現金加存款超過 {f} 銀幣的人，超過的部分每週繳 {r}% 給公庫。現在全鎮有 {n} 人超過這個數。', { why: why || '', f: wealthFree(), r: Math.round(WEALTH_RATE * 100), n: adults(w).filter(a => wealth(w, a) > wealthFree()).length }, 'economy', {});
         else { const n = Math.floor(amt > 0 ? Math.min(amt, bondOffer(w)) : bondOffer(w)); if (!(n > 0)) return null; const at = burdenAt(w, n, 1); // v11.12.0 投票的人看得到借了之後的負擔、這一年借過幾次、有沒有付不出利息、有多少人不放心
-            p = TECH.propose(w, kind, kind, who, '公庫向銀行借 {n} 銀幣', '{who}提議公庫向鎮上的銀行借 {n} 銀幣。{why}公庫現在只夠付 {d} 天的薪水與維護。借來的錢每天付利息，公庫緩過來以後分期還；還清之前，每天的固定支出會多一筆。借了之後，公庫欠的錢相當於 {di} 天的收入，負擔{lv}；這一年已經借過 {k} 次，{x} 次付不出利息；鎮上有 {u} 個人不放心首長管錢。', { why: why || '', n, d, di: at.days, lv: at.name, k: at.n1y - 1, x: at.m60, u: uneasy(w) }, 'economy', { n }); if (p) p.amt = n; }
+            p = TECH.propose(w, kind, kind, who, '公庫向銀行借 {n} 銀幣', '{who}提議公庫向鎮上的銀行借 {n} 銀幣。{why}公庫現在只夠付 {d} 天的薪水與維護。借來的錢每天付利息，公庫緩過來以後分期還；還清之前，每天的固定支出會多一筆。借了之後，公庫欠的錢相當於 {di} 天的收入，負擔{lv}。{past}{un}', { why: why || '', n, d, di: Math.round(at.days), lv: at.name, past: at.n1y > 1 ? { k: '這一年已經借過 {k} 次，{x}。', p: { k: at.n1y - 1, x: at.m60 ? { k: '最近 60 天有 {m} 次付不出利息', p: { m: at.m60 } } : '利息都按時付' } } : { raw: '' }, un: uneasy(w) ? { k: '鎮上有 {u} 個人不放心首長管錢。', p: { u: uneasy(w) } } : { raw: '' } }, 'economy', { n }); if (p) p.amt = n; }
         if (p) F.last[kind] = day(w);
         return p;
     }
@@ -115,8 +115,8 @@ const FISCAL = (() => {
         try { trustDaily(w); } catch (e) { console.warn('[Fiscal] trust', e); }
         try { tightDaily(w); } catch (e) { console.warn('[Fiscal] tight', e); }
         if (w.fullAgentMode || busy(w) || !w.wallet) return; const A = adults(w); if (A.length < 8) return; const T = TR(w); const short = (w.wallet.shortDay ?? -99) >= d - 3;
-        // 公債：發不出薪水，或公庫只剩不到三天而且還在掉（緊急情況照舊自動有人提；v11.12.0 借不借先問銀行家）
-        if (okNow(w, 'fisc_bond', false) && T && (short || (T.days(w) < 3 && (T.trend(w) ?? 1) <= 0))) { const who = A.find(a => a.job?.key === 'mayor') || A.find(a => isPub(w, a)); if (who && askBond(w, who, tr(short ? '這幾天公庫發不出全薪。' : '公庫快見底了。'), short ? 'short' : 'low')) return; }
+        // 公債：發不出薪水，或公庫只剩不到三天而且還在掉（緊急情況照舊直接提案、照樣全鎮表決；v11.12.0 首長自己想借的時候才先問銀行家，緊急的保底不變）
+        if (okNow(w, 'fisc_bond', false) && T && (short || (T.days(w) < 3 && (T.trend(w) ?? 1) <= 0))) { const who = A.find(a => a.job?.key === 'mayor') || A.find(a => isPub(w, a)); if (who && propose(w, 'fisc_bond', who, tr(short ? '這幾天公庫發不出全薪。' : '公庫快見底了。'))) return; }
         // 離境稅：最近 30 天有人帶著大筆錢搬走
         if (okNow(w, 'fisc_exit', false)) { let out = 0; try { for (const [k, D] of Object.entries(w.money?.days || {})) if (+k > d - 30) out += Math.max(0, -(D.emigrant || 0)); } catch (e) {}
             let total = 0; try { total = MONEY.total(w); } catch (e) {}
@@ -167,7 +167,7 @@ const FISCAL = (() => {
         try { if (busy(w) || !w.wallet) return { ctx: '', fx: '' }; const L = [];
             if (okNow(w, 'fisc_exit', true)) L.push(`fisc_exit${tr('＝')}${tr('離境稅（搬走的人帶走的錢，超過 {f} 銀幣的部分留 {r}% 給公庫）').replace('{f}', exitFree()).replace('{r}', Math.round(EXIT_RATE * 100))}`);
             if (okNow(w, 'fisc_wealth', true)) L.push(`fisc_wealth${tr('＝')}${tr('財產稅（現金加存款超過 {f} 銀幣的部分每週繳 {r}%，現在有 {n} 人超過）').replace('{f}', wealthFree()).replace('{r}', Math.round(WEALTH_RATE * 100)).replace('{n}', adults(w).filter(a => wealth(w, a) > wealthFree()).length)}`);
-            if (okNow(w, 'fisc_bond', true) && tight(w)) L.push(`fisc_bond${tr('＝')}${tr('公庫向銀行借 {n} 銀幣（每天付利息，之後分期還）').replace('{n}', bondOffer(w))}`);
+            if (okNow(w, 'fisc_bond', true) && tight(w)) L.push(`fisc_bond${tr('＝')}${tr('公庫向銀行借 {n} 銀幣（每天付利息，之後分期還）').replace('{n}', bondOffer(w))}${tr('（')}${burdenLine(w)}${tr('）')}`); // v11.12.0 想提的人看得到現在欠多少
             if (!L.length) return { ctx: '', fx: '' };
             return { ctx: `${tr('【鎮上還沒有、可以提案開辦的公庫財源】')}${L.join(tr('、'))}\n`, fx: `{"type":"fiscal","key":"${tr('上面「公庫財源」的代碼')}"}${tr('（替公庫開一項新的財源。要繳的人會反對，要有說得過去的理由）')}\n` };
         } catch (e) { return { ctx: '', fx: '' }; }
@@ -204,8 +204,8 @@ const FISCAL = (() => {
         return fillK('公庫還欠銀行 {n} 銀幣，相當於 {d} 天的公庫收入；每天的利息與還本約占收入 {p}%；這一年借了 {k} 次，{m}。負擔{lv}。', { n: Math.round(B.owed), d: B.days >= 999 ? '∞' : Math.round(B.days), p: Math.round(B.svc * 100), k: B.n1y, m: B.m60 ? { k: '最近 60 天有 {x} 次付不出利息、滾進本金', p: { x: B.m60 } } : '利息都按時付', lv: B.name });
     }
     function missed(w) { const F = S(w), d = day(w); F.miss = (Array.isArray(F.miss) ? F.miss : []).filter(x => d - x < 90); if (!F.miss.includes(d)) { F.miss.push(d); F.st.miss = (F.st.miss || 0) + 1; try { feel(w, 'miss'); } catch (e) { console.warn('[Fiscal] feel', e); } } }
-    // 誰是管錢的人：在鎮上的正式首長（坐牢、出遠門、探險的不算）
-    function headOf(w) { let m = null; try { const E = w.election; m = E?._realMayor ? E._realMayor(w) : (npcs(w).find(a => a.job?.key === 'mayor') || null); } catch (e) { m = null; } return m && !m.isDead && w.agents[m.agentId] === m && m.currentLocation !== 'exploration' && !w.isAway?.(m.agentId) ? m : null; }
+    // 誰是管錢的人：在鎮上的正式首長（坐牢、出遠門、探險的不算）；沒有首長、國王當政時是國王（跟銀行紓困找人的慣例一樣）
+    function headOf(w) { let m = null; try { const E = w.election; m = E?._realMayor ? E._realMayor(w) : (npcs(w).find(a => a.job?.key === 'mayor') || null); if (!m) m = kingOf(w); } catch (e) { m = null; } return m && !m.isDead && w.agents[m.agentId] === m && m.currentLocation !== 'exploration' && !w.isAway?.(m.agentId) ? m : null; }
     const holderOf = (w) => { try { return w.election?._officeHolder?.(w) || headOf(w); } catch (e) { return headOf(w); } }; // 大家怪的是掛著這個位子的人（出遠門也一樣）
     const kingOf = (w) => { try { return typeof CROWN !== 'undefined' && w.crown && !w.crown.republic ? CROWN.king(w) : null; } catch (e) { return null; } };
     const affTo = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
@@ -246,6 +246,11 @@ const FISCAL = (() => {
         else { if (M) for (const id of Object.keys(X.by)) { const a = w.agents[id]; if (!a || a.isDead) { delete X.by[id]; continue; } nudge(w, a, M, 2); } legitBy(w, 1.5); } // 債還下來了：看法慢慢回來
     }
 
+    // 存戶（擠兌時要不要領，sim-decide-share.js 的 bankrun）：公債占銀行存款的比例高、最近又付不出利息，就是一件他會擔心的事
+    function depNote(w) {
+        const F = S(w); const B = w.bank; if (!F.bond?.owed || !B) return null; const dep = typeof BANK !== 'undefined' ? BANK.totalDep(B) : 0; if (!(dep > 0)) return null; const share = F.bond.owed / dep; const BU = burden(w);
+        if (share < 0.15 || !BU.m30) return null; return { share: Math.round(share * 100), m: BU.m30, owed: Math.round(F.bond.owed) };
+    }
     // ================= v11.12.0 銀行家也有話語權：公庫來借錢，借不借由他決定（選擇點 bankDesk 的 ctx.t = 'bond'） =================
     const BANKNO_GAP = 15;
     const liveBankAsk = (w) => { const A = w?.fiscal?.bankAsk; return A && day(w) - A.d < 2 ? A : null; };
@@ -309,7 +314,7 @@ const FISCAL = (() => {
     // 首長決定先補稅務員：這段時間（30 天）只放行稅務員這一個職位（sim-office.js 補人時看）
     const taxmanOk = (w) => { const X = w?.fiscal?.tight; return !!(X && X.tax && day(w) <= X.tax.until); };
     function tightInfo(w) {
-        const T = TR(w); const v = T.view(w); const L = v.ledger; const net = r2(L.inSum - L.outSum); const lo = v.LOW_DAYS * v.fixed; const need = Math.max(0, lo - v.silver);
+        const T = TR(w); const v = T.view(w); const L = v.ledger; const net = r2(L.inSum - (L.in.bond || 0) - L.outSum); /* 借來的錢不算結餘 */ const lo = v.LOW_DAYS * v.fixed; const need = Math.max(0, lo - v.silver);
         return { v, L, net, lo, back: !v.low ? 0 : net > 0 ? Math.ceil(need / net) : null };
     }
     function bondWhyNot(w) {
@@ -379,8 +384,8 @@ const FISCAL = (() => {
             base: 0.7 + (has(a, 'hardworking') ? 0.6 : 0) + (has(a, 'perfectionist') ? 0.4 : 0) - (has(a, 'shy') ? 0.2 : 0) + (Y.week > Y.pay * 7 ? 0.5 : -0.5), lean: { gain: 0.3, face: 0.1 },
             run: (w2, a2) => { if (!liveTight(w2, a2, ctx)) return null; const dc = setDec(w2, a2, 'taxman'); const d2 = day(w2); TT(w2).tax = { d: d2, until: d2 + TAXMAN_DAYS, by: a2.agentId }; try { const OS = OFFICE.S(w2); OS.lastNom.tax = d2; DECIDE.enqueue(w2, a2, 'officeNominate', { post: 'tax' }); } catch (e) {} dc.post = 'tax';
                 log(w2, '🧾 {m}決定公庫再緊也要先補一位稅務員，其他職位照樣空著。', { m: a2.name }, a2.name); mem(w2, a2, '公庫吃緊，我決定先補一位稅務員，查帳追回來的錢比津貼多。', {}, 6); return { k: '先補稅務員，開始找人' }; } }); }
-        if (!bondWhyNot(w)) { const n = bondOffer(w); out.push({ id: 'bond', text: { k: '向鎮上的銀行借 {n} 銀幣（銀行家要點頭，還要全鎮表決）', p: { n } }, say: '想向銀行借錢', why: BU.n1y ? '先借錢撐過去，緩過來再還。' : '公庫從來沒借過錢，借一筆撐過去，緩過來再還。',
-            base: 0.4 + (has(a, 'ambitious') ? 0.3 : 0) + (has(a, 'optimist') ? 0.3 : 0) + (net <= 0 ? 0.6 : 0) - (has(a, 'thrifty') ? 0.6 : 0) - Math.max(0, BU.lv) * 0.8 - (BU.lv >= 2 ? 4 : 0) - (u / pop) * 2, lean: { gain: 0.2, safe: -0.3 },
+        if (!bondWhyNot(w)) { const n = bondOffer(w); const at = burdenAt(w, n, 1); /* 借了之後的負擔 */ out.push({ id: 'bond', text: { k: '向鎮上的銀行借 {n} 銀幣（銀行家要點頭，還要全鎮表決）', p: { n } }, say: '想向銀行借錢', why: BU.n1y ? '先借錢撐過去，緩過來再還。' : '公庫從來沒借過錢，借一筆撐過去，緩過來再還。',
+            base: 0.4 + (has(a, 'ambitious') ? 0.3 : 0) + (has(a, 'optimist') ? 0.3 : 0) + (net <= 0 ? 0.6 : 0) - (has(a, 'thrifty') ? 0.6 : 0) - Math.max(0, at.lv) * 0.8 - (at.lv >= 2 ? 4 : 0) - (u / pop) * 2, lean: { gain: 0.2, safe: -0.3 },
             run: (w2, a2) => { if (!liveTight(w2, a2, ctx)) return null; const dc = setDec(w2, a2, 'bond'); const r = askBond(w2, a2, tr('公庫吃緊。'), 'tight'); if (r?.p && !dc.pid) dc.pid = r.p.id; if (!r) dc.res = { k: '借錢的案提不出來' };
                 log(w2, '🏦 {m}想替公庫向銀行借錢。', { m: a2.name }, a2.name); return r?.p ? { k: '提了借錢的案，等大家表決' } : r?.asked ? (dc.res ? dc.res : { k: '請銀行家{b}考慮', p: { b: r.b.name } }) : { k: '這個案現在提不了' }; } }); }
         if (!taxWhyNot(w)) { const th = taxHist(w); out.push({ id: 'tax', text: { k: '提案把所得稅從 {t}% 加到 {n}%（要全鎮表決）', p: { t: Math.round((w.wallet.tax ?? 0.1) * 100), n: Math.round((w.wallet.tax ?? 0.1) * 100) + 5 } }, say: '提案加稅', why: '公庫的錢要靠稅收，稅率太低了。',
@@ -412,7 +417,7 @@ const FISCAL = (() => {
         const dc = X?.dec; if (dc && dc.pick === 'wait' && d - dc.d <= 30) return { k: 'wait', t: dc.why ? fillK('首長{m}決定先撐著：「{why}」', { m: dc.name, why: dc.why }) : fillK('首長{m}決定先撐著', { m: dc.name }) };
         return { k: 'none', t: tr('空缺，公庫吃緊，還沒有人決定怎麼辦') };
     }
-    function tightView(w) { const X = w.fiscal?.tight; if (!X) return null; const dc = X.dec; return { last: X.last, run: X.run || 0, pend: !!X.pend, taxman: taxmanOk(w), st: Object.assign({}, X.st), dec: dc ? { pick: dc.pick, name: dc.name, d: dc.d, ago: day(w) - dc.d, why: dc.why ? tx(dc.why) : '', res: dc.res ? tx(dc.res) : '', bank: dc.bank || null } : null }; }
+    function tightView(w) { const X = w.fiscal?.tight; if (!X) return null; const dc = X.dec; return { last: X.last, run: X.run || 0, pend: !!X.pend, taxman: taxmanOk(w), st: Object.assign({}, X.st), dec: dc ? { pick: dc.pick, name: dc.name, d: dc.d, ago: day(w) - dc.d, why: dc.why ? tx(dc.why) : '', res: dc.res ? tx(dc.res) : '', bank: dc.bank || null, pid: dc.pid || null } : null }; }
 
     function view(w) {
         const F = S(w); const A = adults(w); const ws = A.map(a => wealth(w, a)).sort((a, b) => b - a); const tot = ws.reduce((s, x) => s + x, 0); const k = Math.max(1, Math.round(ws.length / 10));
@@ -421,14 +426,14 @@ const FISCAL = (() => {
             burden: burden(w), burdenText: burdenLine(w), uneasy: uneasy(w), adults: A.length, bankAsk: !!liveBankAsk(w), bankNo: F.bankNo ?? null, tight: tightView(w) };
     }
     return { S, levy, weekly, privateRate, pubRate, payShare, canHire, bondOffer, debtDaily, bondDaily, on, okNow, propose, daily, vote, setLaw, enact, promptParts, fromAI, view, wealth, exitFree, wealthFree, NAME, KINDS, EXIT_RATE, WEALTH_RATE, CAP,
-        burden, burdenAt, burdenLine, concern, uneasy, trustDaily, feel, TS, headOf, askBond, bankFacts, bankOptions, tightDaily, tightFacts, tightOptions, tightInfo, taxmanOk, vacancy, blocked, bondWhyNot, taxWhyNot, taxmanWhyNot, taxHist, TT, LV_NAME, PICK,
+        depNote, burden, burdenAt, burdenLine, concern, uneasy, trustDaily, feel, TS, headOf, askBond, bankFacts, bankOptions, tightDaily, tightFacts, tightOptions, tightInfo, taxmanOk, vacancy, blocked, bondWhyNot, taxWhyNot, taxmanWhyNot, taxHist, TT, LV_NAME, PICK,
         TH: { HEAVY_DAYS, BAD_DAYS, HEAVY_N, BAD_N, BAD_MISS, CAPDROP, UNEASY, TIGHT_RUN, TIGHT_GAP, TAXMAN_DAYS, BANKNO_GAP } };
 })();
 if (typeof globalThis !== 'undefined') globalThis.FISCAL = FISCAL;
 
 // ---- 掛勾 ----
 if (typeof PROPOSAL_KINDS !== 'undefined') Object.assign(PROPOSAL_KINDS, { fisc_exit: { icon: '🧳', label: '離境稅' }, fisc_wealth: { icon: '💰', label: '財產稅' }, fisc_bond: { icon: '🏦', label: '公債' } });
-if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { fisc_mine: '這是我提的', fisc_rich: '這筆錢要從我身上出', fisc_boss: '怕做生意的人待不住', fisc_pay: '公庫沒錢，我的薪水就發不出來', fisc_fair: '有錢的人該多出一點', fisc_town: '公庫需要這筆錢', fisc_free: '自己的錢該由自己作主', fisc_next: '怕哪天輪到自己', fisc_bank: '怕銀行的錢被借走，自己的存款領不出來', fisc_debt: '借了總是要還' });
+if (typeof VOTE_WHY !== 'undefined') Object.assign(VOTE_WHY, { fisc_mine: '這是我提的', fisc_rich: '這筆錢要從我身上出', fisc_boss: '怕做生意的人待不住', fisc_pay: '公庫沒錢，我的薪水就發不出來', fisc_fair: '有錢的人該多出一點', fisc_town: '公庫需要這筆錢', fisc_free: '自己的錢該由自己作主', fisc_next: '怕哪天輪到自己', fisc_bank: '怕銀行的錢被借走，自己的存款領不出來', fisc_debt: '借了總是要還', fisc_burden: '公庫已經欠太多了，不能再借' });
 if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype;
     const _daily = PS.daily;

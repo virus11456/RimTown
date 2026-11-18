@@ -1,6 +1,6 @@
 // v9.29.0 官網首頁重新設計(主軸:完全智能體)
 // 1) 首屏:標題、3D 小鎮、決定卡會輪播;沒有 WebGL 時改放實際畫面;偏好減少動態時只畫一格、內容全部看得到
-// 2) 寫的數字跟程式一致:170 個選擇點(十七類;v11.9.0 加家庭與王令十一個;v11.10.0 加跟某人相處了一陣子、看見心上人跟別人在一起、舊帳被提起;v11.8.0 加派系、報社與治安十五個;v11.7.0 加災難裡的人十四個;v11.0.0 加店家、報社與官員、民怨與人命;v11.2.0 加一天怎麼過;v11.5.0 加公庫這週怎麼用、這趟買賣什麼;v11.6.0 加東家這週看帳、銀行家坐櫃台、房東看自己的房子、公倉多出來的貨、藥廠這週做多少藥)、AI 一天 10 件／一次 5 件／同類 2 件／留 2 件
+// 2) 寫的數字跟程式一致:171 個選擇點(十七類;v11.12.0 加公庫吃緊時首長怎麼辦;v11.9.0 加家庭與王令十一個;v11.10.0 加跟某人相處了一陣子、看見心上人跟別人在一起、舊帳被提起;v11.8.0 加派系、報社與治安十五個;v11.7.0 加災難裡的人十四個;v11.0.0 加店家、報社與官員、民怨與人命;v11.2.0 加一天怎麼過;v11.5.0 加公庫這週怎麼用、這趟買賣什麼;v11.6.0 加東家這週看帳、銀行家坐櫃台、房東看自己的房子、公倉多出來的貨、藥廠這週做多少藥)、AI 一天 10 件／一次 5 件／同類 2 件／留 2 件
 // 3) 「從一個人到整個世界」:捲動帶動鏡頭,七個點可以跳
 // 4) 原本的內容都還在(七章、20 個主題、城鎮四級、常見問題、路線圖、村民的大腦),並補上新功能
 // 5) 文字乾淨(沒有表情符號當圖示、沒有破折號);手機不會橫向捲動;中英文都沒有頁面錯誤
@@ -39,7 +39,7 @@ const open = async (browser, o = {}) => {
     const titles = fs.readdirSync(ROOT).filter(KF).flatMap(f => [...rd(f).matchAll(/title: *'([^']*)'/g)].map(m => m[1]));
     const sd = rd('sim-decide.js'); const num = (k) => +(sd.match(new RegExp('\\b' + k + ' = (\\d+)')) || [])[1];
     global.FACT = { kinds, titles, max: num('AI_MAX'), batch: num('BATCH'), kind: num('AI_KIND'), reserve: num('AI_RESERVE') };
-    ok(kinds === 170 && titles.length === 170, '程式裡登記了 170 個選擇點', { kinds, titles: titles.length });
+    ok(kinds === 171 && titles.length === 171, '程式裡登記了 171 個選擇點', { kinds, titles: titles.length });
   }
 
   // ---------- 桌機・中文 ----------
@@ -96,7 +96,7 @@ const open = async (browser, o = {}) => {
     await page.waitForFunction(() => /makes up their own mind/.test(document.querySelector('.lp-title')?.textContent || ''), null, { timeout: 30000 }); // 換語言要載入並解析 1.6MB 的字典，機器忙時量到 6 到 8 秒
     await page.waitForSelector('#lp-stage.lp-stage-live .lp-stage-canvas', { timeout: 30000 });
     const en = await page.evaluate(() => { const c = document.querySelector('.lp').cloneNode(true); c.querySelector('#landing-updates')?.remove(); c.querySelector('.landing-lang')?.remove(); c.querySelectorAll('.lp-badges, #landing-brain').forEach(x => x.remove()); const zh = (c.textContent.match(/[一-鿿]{2,}/g) || []).filter(x => x !== '中文') /* 常見問題裡提到右上角的「中文／English」切換 */; return { zh: zh.slice(0, 6), tags: document.querySelectorAll('.lp-kind-tags li').length, canv: document.querySelectorAll('.lp-stage-canvas').length }; });
-    ok(en.zh.length === 0 && en.tags === 170 && en.canv === 1, '切到英文：整頁換成英文，3D 重新掛上（只有一個畫布）', en);
+    ok(en.zh.length === 0 && en.tags === 171 && en.canv === 1, '切到英文：整頁換成英文，3D 重新掛上（只有一個畫布）', en);
     ok(errs.length === 0, '沒有頁面錯誤', errs.slice(0, 3));
     await ctx.close();
   }

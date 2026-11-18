@@ -291,7 +291,7 @@ const PROCURE = (() => {
             const sv = sellSize(w); if (sv >= 30) out.push({ id: 'sell', text: { k: '把倉裡多出來的貨賣到外地，換大約 {n} 銀幣', p: { n: sv } }, say: '把倉裡多出來的貨賣到外地換現金', why: '貨堆著不會生錢，先換成現金救急。', base: 1.6, lean: { gain: 0.4, safe: 0.2 },
                 run: (w2) => { S(w2).pend = null; const got = MONEY.sellSurplus(w2, sellSize(w2), t('賣出多餘的貨')); return got > 0 ? { k: '賣了 {n} 銀幣的貨', p: { n: Math.round(got) } } : { k: '沒賣成' }; } });
             const bn = bondSize(w); if (bn > 0) out.push({ id: 'bond', text: { k: '提案向鎮上的銀行借 {n} 銀幣（要大家表決，之後每天付利息）', p: { n: bn } }, say: '提案向銀行借錢', why: '先借錢撐過去，緩過來再還。', base: 0.8, lean: { gain: 0.3, safe: -0.3 },
-                run: (w2, a2) => { S(w2).pend = null; const p = FISCAL.propose(w2, 'fisc_bond', a2, ''); return p ? { k: '提了借錢的案，等大家表決' } : { k: '這個案現在提不了' }; } });
+                run: (w2, a2) => { S(w2).pend = null; const r = FISCAL.askBond ? FISCAL.askBond(w2, a2, '', 'week') : null; const p = r ? r.p : null; return p ? { k: '提了借錢的案，等大家表決' } : r?.asked ? { k: '銀行家沒有答應借' } : { k: '這個案現在提不了' }; /* v11.12.0 借不借先問銀行家 */ } });
             if (P.mode !== 'save') out.push({ id: 'stop', text: '這週先不買料，錢留著發薪水', say: '這週不買料，錢留著發薪水', why: '人的薪水比倉裡的料要緊。', base: 0.9 - (anyOut ? 1.5 : 0), lean: { safe: 0.4 }, run: (w2, a2) => setPlan(w2, a2, 'save') });
             return out;
         }

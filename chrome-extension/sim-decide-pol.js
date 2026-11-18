@@ -160,6 +160,10 @@
         facts(w, a, ctx) { const P = PR(); return P ? P.tradeFacts(w, a, ctx) : ''; },
         options(w, a, ctx) { const P = PR(); return P ? P.tradeOptions(w, a, ctx) : []; } });
     DECIDE.source('eco', (w, a) => { const P = PR(); return P ? P.brief(w, a) : ''; });
+    // v11.12.0 公庫吃緊，首長怎麼辦（sim-fiscal.js 在公庫連續 5 天不到 10 天、或監管職位因為公庫吃緊空著時送進來，最多十天一次）：先撐著／先補稅務員／向銀行借／提案加稅
+    DECIDE.kind('fiscTight', { title: '公庫吃緊，首長怎麼辦', scan: false, cool: 0, pri: 2.5, aiGroup: 'civic', aiKind: 2,
+        facts(w, a, ctx) { return typeof FISCAL !== 'undefined' && FISCAL.tightFacts ? FISCAL.tightFacts(w, a, ctx) : ''; },
+        options(w, a, ctx) { return typeof FISCAL !== 'undefined' && FISCAL.tightOptions ? FISCAL.tightOptions(w, a, ctx) : []; } });
     // v11.6.0 公倉多出來的貨賣不賣（出面談生意的人，一週最多問一次，管七天；sim-procure.js）、藥廠這週做多少（醫術最好的醫生，一週一次；sim-bio.js）。都是公家的事，額度跟上面同一組 civic
     DECIDE.kind('surplus', { title: '公倉多出來的貨', scan: false, cool: 0, pri: 1.5, aiGroup: 'civic', aiKind: 2,
         facts(w, a, ctx) { const P = PR(); return P && P.surFacts ? P.surFacts(w, a, ctx) : ''; },
