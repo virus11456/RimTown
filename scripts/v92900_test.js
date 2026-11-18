@@ -84,7 +84,7 @@ const open = async (browser, o = {}) => {
     ok(c.pts >= 60 + 11 && c.logs >= 50 && c.peopleOpen && c.svg === 20, '每個主題點開有重點與「遊戲裡你會看到」的紀錄；圖示是線條圖', { pts: c.pts, logs: c.logs, svg: c.svg });
     ok(c.added.length === 0, '補上了原本沒寫的功能（寵物、流行、傳說、話題、階層流動、技能、通膨、新東西、對手鎮、世界史詩、寫一句話）', c.added);
     ok(c.tiers === 4 && c.reqs >= 9 && c.pillars === 3 && c.chain === 6 && c.chainTags === 6 && c.stats === 7, '城鎮四級、三個重點、「一件事怎麼牽動整個鎮」、規模數字都在', c);
-    ok(c.faq >= 11 && /v9\.28/.test(c.rmDone) && !/擲骰繼續交給本人/.test(c.rmNext) && c.brain === 8 && c.cards >= 4 && c.tech && c.final, '常見問題、路線圖（已更新）、村民的大腦、技術細節、結尾按鈕都在', { faq: c.faq, brain: c.brain, cards: c.cards });
+    ok(c.faq >= 11 && /v11\.10/.test(c.rmDone) && !/擲骰繼續交給本人/.test(c.rmNext) && c.brain === 8 && c.cards >= 4 && c.tech && c.final, '常見問題、路線圖（已更新）、村民的大腦、技術細節、結尾按鈕都在', { faq: c.faq, brain: c.brain, cards: c.cards });
     // 捲到底:每一段都會顯示(不會留白)、更新紀錄會載入
     const end = await page.evaluate(async () => { const el = document.getElementById('landing'); for (let y = 0; y < el.scrollHeight; y += 600) { el.scrollTop = y; await new Promise(r => setTimeout(r, 40)); } el.scrollTop = el.scrollHeight; await new Promise(r => setTimeout(r, 1500)); return { hidden: [...document.querySelectorAll('.lp-rv:not(.in)')].length, rv: document.querySelectorAll('.lp-rv').length, log: document.querySelectorAll('.landing-log-item').length, solid: document.querySelector('.lp-top').classList.contains('solid') }; });
     ok(end.rv > 20 && end.hidden === 0 && end.log >= 3 && end.solid, '一路捲到底，每一段都顯示出來，更新紀錄載入', end);
