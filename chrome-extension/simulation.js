@@ -566,6 +566,7 @@ class World {
     }
     // v5.93.0 村民因為日子過不下去離開(季度考驗失敗):移除、記在 movedOut、全鎮記得
     leaveTown(agentId, reason = '') {
+        if (reason && typeof reason === 'object') reason = Memory.piece(reason); // v11.12.1 原因可以是 { k, p } 或 { raw }：先變成文字再記（以前會寫成 [object Object]）
         const agent = this.agents[agentId];
         if (!agent || agent.isPlayer) return false;
         delete this.agents[agentId];

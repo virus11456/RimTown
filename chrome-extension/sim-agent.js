@@ -142,9 +142,12 @@ class MemoryEntry {
 
 class Memory {
     constructor(capacity = 120) { this.entries = []; this.capacity = capacity; } // v5.99.0 500→120(B12 存檔體積;讀取端最多只取最近 10–20 筆)
+    // v11.12.1 參數的三種寫法：字串（會翻譯）、{ k, p }（一段要再填字的句子）、{ raw }（不翻譯的原文，例如地名、AI 寫的話）。以前 { raw } 會被直接轉成文字，記憶與動態裡就出現 [object Object]
+    static piece(v) { if (v == null) return ''; if (typeof v === 'string') return v.includes('[object Object]') ? t(v.replace(/[（(]\s*\[object Object\]\s*[)）]/g, '').replace(/\[object Object\]/g, '')) : t(v); // 舊存檔裡已經寫壞的句子：把那一小段拿掉
+        if (typeof v === 'object') { if (typeof v.k === 'string') return Memory.render(v.k, v.p); if ('raw' in v) return String(v.raw ?? ''); return Array.isArray(v) ? String(v) : ''; } return String(v); }
     static render(k, p) {
         let s = t(k);
-        for (const [name, v] of Object.entries(p || {})) s = s.split('{' + name + '}').join(v && typeof v === 'object' && v.k ? Memory.render(v.k, v.p) : (typeof v === 'string' ? t(v) : String(v ?? '')));
+        for (const [name, v] of Object.entries(p || {})) s = s.split('{' + name + '}').join(Memory.piece(v));
         return s; // v6.19.0 參數可以是巢狀模板 {k,p}(規則式對話摘要塞進「與X交談：{summary}」)
     }
     add(tick, timeStr, category, content, importance = 5, relatedAgents = [], k = null, p = null) {
