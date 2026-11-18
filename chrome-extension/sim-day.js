@@ -39,10 +39,17 @@ const DAY = (() => {
     const CUP = 1.5; // 一杯酒的價錢（照物價調整）
     const ST0 = { asked: 0, go: 0, late: 0, leave: 0, sick: 0, skip: 0, overslept: 0, drink: 0, more: 0, close: 0, hang1: 0, hang2: 0, meal: 0, pact: 0, pactKept: 0, pactBroken: 0, caught: 0, scold: 0, dock: 0, fire: 0, let: 0, brawl: 0, hosp: 0, free: 0, planLed: 0, invite: 0, inviteNo: 0, chat: 0, sour: 0, spark: 0 };
 
+    // 統計表 X.st 補齊過一次就記下來，之後同一份不再整份複製。
+    // 以前每次呼叫 S 都把三十個欄位複製成一份新的（每人每一格都會呼叫好幾次，是全場最花時間的一行）。
+    // 補齊過的那一份，各欄位已經照 ST0 的順序排在最前面，再複製一次得到的內容、欄位順序都跟原本一樣；
+    // 所有地方都是透過 X.st 讀寫，沒有人把舊的那一份留在手上，所以不換成新的一份也不影響任何數字。
+    // 讀檔或別處換掉 w.dayx.st 時，新的那一份不在記號裡，會照舊補齊一次。
+    const ST_OK = new WeakSet();
     function S(w) {
         if (!w.dayx || typeof w.dayx !== 'object') w.dayx = {};
         const X = w.dayx; for (const k of ['t', 'y', 'hang', 'pact', 'rec', 'warn', 'inv']) X[k] = X[k] && typeof X[k] === 'object' ? X[k] : {};
-        X.st = Object.assign({}, ST0, X.st || {}); if (X.d == null) X.d = day(w); return X;
+        if (!(X.st && ST_OK.has(X.st))) { X.st = Object.assign({}, ST0, X.st || {}); ST_OK.add(X.st); }
+        if (X.d == null) X.d = day(w); return X;
     }
     const rec = (w, a) => { const X = S(w); return X.t[a.agentId] || (X.t[a.agentId] = {}); };
     const bedOf = (a) => (has(a, 'night_owl') ? 26 : has(a, 'early_bird') ? 20 : 22);
