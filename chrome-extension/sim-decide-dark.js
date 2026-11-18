@@ -13,6 +13,11 @@
 //   教團的奉獻箱(embezzle)              一枚都不動／拿一部分
 //   自己贊成的規定(twoface)             照規定做／私下照自己的方便來        ← 由規定通過那一刻引發
 //   疫情的規定(sneak)                   照規定來／找機會溜
+// v11.11.0 塞錢與收錢（以前塞錢的人照機率塞、收錢的人一定收）：
+//   提案要送進議會了(bribeVote)          不塞／塞給某位議員／兩個都塞（civic 那一組，一天 6 件）
+//   有人提案要拆你的產業(trustFight)     不理／私下塞錢給兩個手頭緊的人／公開反駁（civic 那一組）
+//   有人私下塞錢來(bribeTake)            議員：收下改投／退回／當眾說出來；選民（議員和首長選舉都一樣）：收了照投／收了不照投／不收；反壟斷：收下／不收
+//   議員改選的買票併進「選戰怎麼打」(dirty)：正正當當／私下塞錢
 // 會不會被發現仍然是運氣；結算全部在原本的系統裡（sim-dark.js、sim-wallet.js、sim-press.js、sim-faith.js、sim-compete.js、sim-ways.js、sim-plague-ways.js），這裡不動任何數字。
 // AI 開著由 AI 依帳本選（也可以選「其他」）；AI 不在時算每個選項的傾向分數。這一批的事以前各有各的機率，
 // 所以傾向分數用 tilt() 把「以前大概多常發生」換成起跑分數，再加上個性與處境；整體頻率跟以前差不多，但誰會做、誰不會做看的是人。
@@ -89,8 +94,11 @@
     });
 
     // ================= 選戰怎麼打 =================
+    // v11.11.0 議員改選時的買票也走這裡（以前不老實又有 40 銀幣的候選人每天 40% 機率自動買票）
+    const AS = () => (typeof ASSEMBLY !== 'undefined' ? ASSEMBLY : null);
     const campInfo = (w, a) => {
-        if (!on(w)) return null; const I = DK().campInfo(w, a); if (!I) return null;
+        if (!on(w)) return null; const I = DK().campInfo(w, a);
+        if (!I) { let cb = null; try { cb = AS()?.buyInfo?.(w, a) || null; } catch (e) {} return cb ? { council: cb, opp: cb.opp, left: cb.left } : null; }
         let buy = null, press = null; try { buy = WL()?.voteBuyInfo?.(w, a) || null; } catch (e) {} try { press = PR()?.bribeInfo?.(w, a) || null; } catch (e) {}
         return (I.smear || I.hollow || buy || press) ? Object.assign({ buy, press }, I) : null;
     };
@@ -99,16 +107,21 @@
         when(w, a) { const I = campInfo(w, a); return I ? { left: I.left } : null; },
         facts(w, a) {
             const I = campInfo(w, a); if (!I) return '';
+            if (I.council) { const B = I.council; return fill('{member}改選還剩 {n} 天{opp}。除了正正當當拉票，你也想過私下塞錢：你身上有 {c} 銀幣，鎮上有 {k} 個手頭緊的人，每人塞 {e} 銀幣（收不收、收了投不投你，看他們自己）。這種事被揭穿的話，當選也會被取消。',
+                { member: B.member, n: Math.max(1, B.left), opp: I.opp.length ? { k: '，對手是{o}', p: { o: { raw: names(I.opp.slice(0, 4)) } } } : { raw: '' }, c: B.bal, k: B.n, e: B.each }); }
             const L = [fill('競選還剩 {n} 天{opp}。除了正正當當拉票，你也想過別的辦法：', { n: I.left, opp: I.opp.length ? { k: '，對手是{o}', p: { o: { raw: names(I.opp) } } } : { raw: '' } })];
             if (I.smear) L.push(t('跟選民說對手的壞話（編的，聽的人會對他印象變差；之後可能被拆穿）。'));
             if (I.hollow) L.push(t('開一張做不到的支票（聽的人會對你印象變好；之後可能被拆穿）。'));
-            if (I.buy) L.push(fill('你身上有 {c} 銀幣。私下塞錢給 {n} 個手頭緊的人，每人 {e} 銀幣，他們會記得你的好處。', { c: I.buy.bal, n: I.buy.n, e: I.buy.each }));
+            if (I.buy) L.push(fill('你身上有 {c} 銀幣。可以私下塞錢給 {n} 個手頭緊的人，每人 {e} 銀幣（收不收、收了投不投你，看他們自己）。', { c: I.buy.bal, n: I.buy.n, e: I.buy.each }));
             if (I.press) L.push(fill('鎮上有 {n} 家報社還沒被人買走。花 {c} 銀幣可以讓其中一家替你說話（記者不一定肯收；一次選舉只買得了一家）。', { n: I.press.n, c: I.press.cost }));
             return L.join('');
         },
         options(w, a) {
             const D = DK(); const I = campInfo(w, a); if (!I) return []; const h = honesty(a), m = malice(a);
             const out = [{ id: 'clean', quiet: true, mute: true, text: '正正當當拉票', say: '決定正正當當拉票', why: '贏要贏得乾淨，不然當選了也坐不穩', base: REF, lean: { safe: 0.1 }, run: () => null }];
+            if (I.council) { const B = I.council; out.push({ id: 'cbuy', quiet: true, text: { k: '私下塞錢給手頭緊的人（每人 {e} 銀幣）', p: { e: B.each } }, say: { k: '{member}選舉時私下塞錢買票', p: { member: B.member } }, why: '手頭緊的人，一點錢就記得你',
+                base: REF + tilt(0.4) + clampN((1.8 - h) * 0.2, 0, 0.4), lean: { face: 0.3, safe: -0.3 },
+                run: (w2, a2) => { const got = AS()?.buyBy?.(w2, a2); return got && got.length ? { k: '私下找了{v}塞錢', p: { v: { raw: got.map(o => t(o.name)).join(t('、')) } } } : { k: '沒有塞成' }; } }); return out; }
             if (I.smear) for (const o of I.opp.slice().sort((x, y) => aff(a, x) - aff(a, y)).slice(0, 2)) out.push({ id: 'smear:' + o.agentId, quiet: true, text: { k: '跟選民說{o}的壞話（編的）', p: { o: o.name } }, say: { k: '拉票時抹黑了{o}', p: { o: o.name } }, why: { k: '把{o}拉下來，票才會到我這邊', p: { o: o.name } },
                 base: REF + tilt(0.18) + clampN((m - 1) * 0.06, 0, 0.25) + clampN(-aff(a, o) / 100, -0.3, 0.3), lean: { face: 0.3, bond: -0.3 },
                 run: (w2, a2) => { const r = D.smearBy(w2, a2, o.agentId); return r ? { k: '跟幾個選民說了{o}的壞話', p: { o: o.name } } : { k: '沒有說出口' }; } });
@@ -117,7 +130,7 @@
                 run: (w2, a2) => { const r = D.hollowBy(w2, a2); return r ? { k: '答應選民：「{x}」', p: { x: r.x } } : { k: '沒有說出口' }; } });
             if (I.buy) out.push({ id: 'buy', quiet: true, text: { k: '私下塞錢給 {n} 個手頭緊的人（每人 {e} 銀幣）', p: { n: I.buy.n, e: I.buy.each } }, say: '私下塞錢買票', why: '手頭緊的人，一點錢就記得你',
                 base: REF + tilt(0.5) + clampN((1.8 - h) * 0.2, 0, 0.4), lean: { face: 0.3, safe: -0.3 },
-                run: (w2, a2) => { const got = WL().voteBuyBy(w2, a2); return got && got.length ? { k: '塞了錢給{v}', p: { v: { raw: names(got) } } } : { k: '沒有塞成' }; } });
+                run: (w2, a2) => { const got = WL().voteBuyBy(w2, a2); return got && got.length ? { k: '私下找了{v}塞錢', p: { v: { raw: got.map(o => t(o.name)).join(t('、')) } } } : { k: '沒有塞成' }; } }); // v11.11.0 收不收由被找上的人決定（bribeTake）
             if (I.press) out.push({ id: 'press', quiet: true, text: { k: '花 {c} 銀幣收買一家報社', p: { c: I.press.cost } }, say: '花錢收買報社', why: '報上怎麼寫，大家就怎麼想',
                 base: REF + tilt(0.35) + clampN((2 - h) * 0.15, -0.15, 0.3), lean: { face: 0.3, safe: -0.3 },
                 run: (w2, a2) => { const r = PR().bribeBy(w2, a2); return !r ? { k: '沒有談成' } : r.asked ? { k: '去找{p}談了', p: { p: r.P.name[0] } } /* v11.8.0 收不收由那家的主筆決定 */ : r.refused ? { k: '{p}的記者沒有收', p: { p: r.P.name[0] } } : { k: '{p}收了錢', p: { p: r.P.name[0] } }; } });
@@ -246,6 +259,131 @@
                     base: REF + tilt(within(I.p, 5)) - (I.voted ? 0.1 : 0), lean: { joy: 0.3, safe: -0.3 },
                     run: (w2, a2) => (PW().sneakBy(w2, a2) ? { k: '打算找機會溜出去' } : { k: '沒有溜成' }) },
             ];
+        },
+    });
+
+    // ================= 議會的票、反壟斷的票、選舉的票：塞錢與收錢（v11.11.0） =================
+    // 以前：不老實或貪心、有 60 銀幣的提案人 50% 塞錢給會投反對的議員，議員一定收；議員改選時被塞錢的窮人一定收；
+    //       被反壟斷案盯上的老闆貪心就一定、其他人一半塞錢給兩個窮人，窮人一定收。
+    // 現在：塞的人自己決定塞不塞、塞給誰（老闆也可以公開反駁）；被塞的人用同一種決定（bribeTake），照是誰塞的、為了什麼、塞多少、自己多缺錢、交情、被發現會怎樣來選。
+    // 錢只在收下的那一刻才付；收的人還在想的時候，事情（表決、開票）照常進行，晚到的答案就作廢，不會憑空付錢。
+    const day = (w) => (w?._absDay ? w._absDay() : 0);
+    const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
+    const AL = (w) => { try { return TIERS.LV[TIERS.level(w)] || { council: '鎮議會', member: '鎮議員' }; } catch (e) { return { council: '鎮議會', member: '鎮議員' }; } };
+    const live = (w, id) => { const a = id && w.agents[id]; return a && !a.isDead && !a.isPlayer && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) ? a : null; };
+    const prop = (w, id) => (w.proposals?.items || []).find(p => p.id === id) || null;
+    const ptitle = (w, p) => { try { return w.proposals.title(p); } catch (e) { return p?.id || ''; } };
+    const isFam = (w, a, b) => { try { const f = (x) => (typeof MONEY !== 'undefined' ? MONEY.familyOf(w, x) : []); return f(a).includes(b) || f(b).includes(a); } catch (e) { return false; } };
+    const tieK = (w, a, b) => (isFam(w, a, b) ? '是一家人' : aff(a, b) >= 60 ? '感情很好' : aff(a, b) >= 25 ? '還算有交情' : aff(a, b) <= -15 ? '之間有過節' : '只是普通交情');
+    const tiltN = (ps) => { try { return ORDER.tiltN(ps); } catch (e) { return ps.map(() => REF); } };
+    const leanSum = (l) => Object.values(l || {}).reduce((x, y) => x + y, 0);
+    const cal = (opts, ps) => { const b = tiltN(ps); opts.forEach((op, i) => { op.base = b[i] - leanSum(op.lean) + (op.adj || 0); delete op.adj; }); return opts; };
+    const nmT = (list) => list.map(o => t(o.name)).join(t('、')); // 名字先換成目前的語言（{raw} 不會再翻）
+    const memo = (w, a, k, p, imp = 6) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
+    const logx = (w, cat, k, p, who) => { try { w.logMessageT?.(cat, k, p || {}, who || ''); } catch (e) {} };
+    const bumpx = (a, b, n) => { try { if (a && b && a !== b) a.relationships.getOrCreate(b.agentId, b.name).modifyAffinity(n); } catch (e) {} };
+
+    // ---------- 提案要送進議會了：要不要私下塞錢給議員（提案人） ----------
+    function voteInfo(w, a, c) {
+        const p = c && prop(w, c.pid); const A = AS(); if (!p || !A || p.proposerId !== a.agentId || p.council || !['open', 'shelved'].includes(p.status) || day(w) - (c.d ?? 0) > 1) return null;
+        const ts = A.lobbyTargets(w, p, a).filter(m => c.n?.[m.agentId] > 0 && live(w, m.agentId)); if (!ts.length) return null;
+        const seats = A.seated(w); const yes = seats.filter(m => p.votes?.[m.agentId] === 'for').length;
+        return { p, ts, seats: seats.length, yes, c0: Math.floor(cash(w, a)) };
+    }
+    DECIDE.kind('bribeVote', {
+        title: '提案要送進議會了', scan: false, cool: 0, pri: 1.5, aiGroup: 'civic', aiKind: 1, when: () => null,
+        facts(w, a, c) { const I = voteInfo(w, a, c); if (!I) return '';
+            const list = I.ts.map(m => fill('{m}（你們{tie}，身上有 {c} 銀幣）', { m: m.name, tie: tieK(w, a, m), c: Math.floor(cash(w, m)) })).join(t('、'));
+            return fill('你提的「{title}」要送進{council}表決了。{council}有 {n} 席，看起來只有 {y} 位會投贊成。你身上有 {c} 銀幣。還沒表態、可能被說動的議員有：{list}。私下塞錢給他們，收了的人會投贊成；可是有人不收，甚至當眾說出來，這件事被揭穿的話全鎮都會知道。', { title: ptitle(w, I.p), council: AL(w).council, n: I.seats, y: I.yes, c: I.c0, list: { raw: list } }); },
+        options(w, a, c) { const I = voteInfo(w, a, c); if (!I) return []; const hn = honesty(a); const A = AS();
+            const give = (ms) => (w2, a2) => { const I2 = voteInfo(w2, a2, c); if (!I2) return null; const got = ms.map(m => I2.ts.find(x => x.agentId === m.agentId)).filter(Boolean); let n = 0, sum = 0; const d0 = day(w2);
+                for (const m of got) { const x = c.n[m.agentId]; if (cash(w2, a2) < sum + x) break; sum += x; n++; I2.p._lob && (I2.p._lob.wait = (I2.p._lob.wait || 0) + 1); DECIDE.enqueue(w2, m, 'bribeTake', { src: 'council', by: a2.agentId, pid: I2.p.id, n: x, d: d0 }); }
+                A.lobbyDone(I2.p, 'pp'); if (!n) return { k: '沒有塞成' }; memo(w2, a2, '我私下找了{m}，想塞錢要他在議會挺我的提案。', { m: { raw: nmT(got.slice(0, n)) } }, 6); return { k: '私下找了{m}', p: { m: { raw: nmT(got.slice(0, n)) } } }; };
+            const out = [{ id: 'no', quiet: true, mute: true, text: '不塞錢，讓議會自己決定', say: '沒有塞錢給議員', why: '提案好不好，議員自己會看。', lean: { safe: 0.1 }, adj: (hn >= 2 ? 0.3 : 0) - (has(a, 'greedy') ? 0.2 : 0) - (has(a, 'ambitious') ? 0.2 : 0),
+                run: (w2, a2) => { const p = prop(w2, c.pid); if (p) A.lobbyDone(p, 'pp'); return null; } }];
+            for (const m of I.ts) out.push({ id: 'give:' + m.agentId, quiet: true, mute: true, text: { k: '私下塞 {n} 銀幣給{m}', p: { n: c.n[m.agentId], m: m.name } }, say: { k: '私下塞錢給議員{m}', p: { m: m.name } }, why: '多一票是一票。', lean: { gain: 0.1 }, adj: clampN(aff(a, m) / 100, -0.3, 0.3), m: I.ts.length > 1 ? 'one' : 'all', run: give([m]) });
+            if (I.ts.length > 1) out.push({ id: 'both', quiet: true, mute: true, text: { k: '兩個都塞（一共 {n} 銀幣）', p: { n: I.ts.reduce((s2, m) => s2 + c.n[m.agentId], 0) } }, say: { k: '私下塞錢給議員{m}', p: { m: { raw: nmT(I.ts) } } }, why: '要做就做到底，票才夠。', lean: { gain: 0.1 }, adj: (has(a, 'greedy') ? 0.2 : 0) + (cash(w, a) >= 150 ? 0.2 : 0), m: 'all', run: give(I.ts) });
+            const P = { no: 0.5, one: 0.05, all: I.ts.length > 1 ? 0.4 : 0.5 };
+            return cal(out, out.map(o => P[o.m || o.id]));
+        },
+    });
+
+    // ---------- 被反壟斷案盯上：塞錢、不塞，還是公開反駁（老闆） ----------
+    function fightInfo(w, a, c) {
+        const C = CP(); const p = c && C?.trustP?.(w, c.pid); if (!p || p.status !== 'open' || p.refKey !== a.agentId || day(w) - (c.d ?? 0) > 1 || cash(w, a) < 20) return null;
+        const ts = (c.t || []).map(id => live(w, id)).filter(Boolean); const sum = ts.reduce((s2, x) => s2 + (c.n[(c.t || []).indexOf(x.agentId)] || 0), 0);
+        let firms = 0; try { firms = MARKET.ownedBy(w, a.agentId).length; } catch (e) {}
+        return { p, ts, sum, firms, rebut: !p._rebut, f: p.votes ? Object.values(p.votes).filter(v => v === 'for').length : 0, g: p.votes ? Object.values(p.votes).filter(v => v === 'against').length : 0 };
+    }
+    DECIDE.kind('trustFight', {
+        title: '有人提案要拆你的產業', scan: false, cool: 0, pri: 1.5, aiGroup: 'civic', aiKind: 1, when: () => null,
+        facts(w, a, c) { const I = fightInfo(w, a, c); if (!I) return '';
+            return fill('鎮上有人提案「{title}」，衝著你來（你名下有 {k} 家產業）。目前投贊成 {f} 票、反對 {g} 票。你身上有 {c} 銀幣。{who}{pub}私下塞錢被報社查到的話，全鎮都會知道。', { title: ptitle(w, I.p), k: I.firms, f: I.f, g: I.g, c: Math.floor(cash(w, a)),
+                who: I.ts.length ? { k: '你打聽到{x}手頭很緊，私下塞一點錢（一共 {n} 銀幣），他們多半會投反對。', p: { x: { raw: nmT(I.ts) }, n: I.sum } } : { raw: '' }, pub: I.rebut ? '你也可以公開出來替自己說話：本來就挺你的人會更挺你，本來就討厭你的人會更反感。' : { raw: '' } }); },
+        options(w, a, c) { const I = fightInfo(w, a, c); if (!I) return []; const C = CP();
+            const out = [{ id: 'no', quiet: true, mute: true, text: '什麼都不做，讓大家投', say: { k: '沒有為{id}去打點', p: { id: I.p.id } }, why: '該是我的就是我的，不必搞那些。', lean: { safe: 0.1 }, adj: (has(a, 'kind') ? 0.6 : 0) + (honesty(a) >= 3 ? 0.3 : 0), run: () => null }];
+            if (I.ts.length && cash(w, a) >= I.sum) out.push({ id: 'pay', quiet: true, mute: true, text: { k: '私下塞錢給{x}（一共 {n} 銀幣），請他們投反對', p: { x: { raw: nmT(I.ts) }, n: I.sum } }, say: { k: '為了{id}私下塞錢給村民', p: { id: I.p.id } }, why: '花一點小錢，保住我的店。', lean: { gain: 0.1 },
+                adj: (has(a, 'greedy') ? 0.8 : 0) + (hasV(a, '財富') ? 0.6 : 0) - (has(a, 'kind') ? 0.8 : 0) - (honesty(a) >= 3.5 ? 0.4 : 0),
+                run: (w2, a2) => { const I2 = fightInfo(w2, a2, c); if (!I2 || !I2.ts.length) return null; const n = C.lobbyPay(w2, I2.p, a2, I2.ts.map(x => x.agentId), I2.ts.map(x => c.n[(c.t || []).indexOf(x.agentId)])); return n ? { k: '私下找了{x}', p: { x: { raw: nmT(I2.ts) } } } : { k: '沒有塞成' }; } });
+            if (I.rebut) out.push({ id: 'rebut', quiet: true, text: '公開出來反駁', say: { k: '公開反駁{id}', p: { id: I.p.id } }, why: '我沒做錯事，要說就攤開來說。', lean: { face: 0.2 },
+                adj: (has(a, 'charismatic') ? 0.5 : 0) + (has(a, 'abrasive') ? 0.2 : 0) + (honesty(a) >= 3 ? 0.3 : 0) - (has(a, 'shy') ? 0.5 : 0),
+                run: (w2, a2) => { const I2 = fightInfo(w2, a2, c); if (!I2 || !I2.rebut) return null; C.rebut(w2, I2.p, a2); return { k: '在大家面前反駁了{id}', p: { id: I2.p.id } }; } });
+            const P = { no: 0.35, pay: 0.55, rebut: 0.1 };
+            return cal(out, out.map(o => P[o.id]));
+        },
+    });
+
+    // ---------- 有人私下塞錢來（議員、選民、反壟斷案的投票人共用） ----------
+    const BWHY = { council: '要你在議會投贊成', cvote: '要你在選舉投他', mvote: '要你在選舉投他', trust: '要你投反對' };
+    function takeInfo(w, a, c) {
+        const b = c && live(w, c.by); if (!b || b === a || !BWHY[c.src] || day(w) - (c.d ?? 0) > 1 || cash(w, b) < c.n || !(c.n > 0)) return null; // 塞錢的人走了、錢不夠了、事情過了：這一題作廢
+        const A = AS();
+        if (c.src === 'council') { const p = prop(w, c.pid); if (!p || !A || p.council || !['open', 'shelved'].includes(p.status) || p.proposerId !== b.agentId || !A.seated(w).includes(a)) return null; return { b, p, title: ptitle(w, p), mine: p.votes?.[a.agentId] || null }; }
+        if (c.src === 'cvote') { const E = w.assembly?.elec; if (!E || E.start !== c.e || !['campaign', 'voting'].includes(E.phase) || !E.cands.some(x => x.id === b.agentId) || E.cands.some(x => x.id === a.agentId)) return null; return { b, E, left: E.left }; }
+        if (c.src === 'mvote') { const E = w.election; if (!E?.active || !['campaign', 'voting'].includes(E.phase) || !(E.candidates || []).some(x => x.agentId === b.agentId) || (E.candidates || []).some(x => x.agentId === a.agentId)) return null; return { b, E, left: E.campaignDaysLeft || 0 }; }
+        if (c.src === 'trust') { const p = CP()?.trustP?.(w, c.pid); if (!p || p.status !== 'open' || p.refKey !== b.agentId) return null; return { b, p, title: ptitle(w, p), mine: p.votes?.[a.agentId] || null }; }
+        return null;
+    }
+    const doneC = (w, c) => { if (c.src === 'council') { const p = prop(w, c.pid); if (p) AS()?.lobbyDone?.(p, 'wait'); } }; // 議員想完了（收不收都一樣）：議會不必再等他
+    DECIDE.kind('bribeTake', {
+        title: '有人私下塞錢來', scan: false, cool: 0, pri: 1.6, when: () => null,
+        facts(w, a, c) { const I = takeInfo(w, a, c); if (!I) return ''; const n = c.n; const m = Math.floor(cash(w, a)); const tie = tieK(w, a, I.b);
+            const poor = m < 10 ? '，快連飯都吃不起了' : m < 30 ? '，手頭很緊' : '';
+            if (c.src === 'council') return fill('{b}私下拿 {n} 銀幣給你，要你在{council}投他提的「{title}」贊成{mine}。你身上有 {m} 銀幣{poor}，你們{tie}。收了就得投贊成，這件事被揭穿的話，你的議員多半做不下去；你也可以退回，或當眾說出他想收買你（全鎮都會知道）。',
+                { b: I.b.name, n, council: AL(w).council, title: I.title, mine: I.mine === 'against' ? '（你原本打算投反對）' : { raw: '' }, m, poor: { raw: t(poor) }, tie });
+            if (c.src === 'mvote') return fill('{lead}選舉的候選人{b}私下塞 {n} 銀幣給你，要你投他一票。你身上有 {m} 銀幣{poor}，你們{tie}。收了錢投不投他，沒有人看得到；可是這種事被揭穿的話，大家會知道你收過錢。', { lead: (() => { try { return TIERS.LV[TIERS.level(w)]?.leader || '鎮長'; } catch (e) { return '鎮長'; } })(), b: I.b.name, n, m, poor: { raw: t(poor) }, tie });
+            if (c.src === 'cvote') return fill('{member}改選的候選人{b}私下塞 {n} 銀幣給你，要你投他一票（還有 {d} 天開票）。你身上有 {m} 銀幣{poor}，你們{tie}。收了錢投不投他，沒有人看得到；可是這種事被揭穿的話，大家會知道你收過錢。', { member: AL(w).member, b: I.b.name, n, d: Math.max(1, I.left), m, poor: { raw: t(poor) }, tie });
+            return fill('{b}私下塞 {n} 銀幣給你，要你在「{title}」投反對，保住他的店。你身上有 {m} 銀幣{poor}，你們{tie}。收了的事被報社查到的話，全鎮都會知道。', { b: I.b.name, n, title: I.title, m, poor: { raw: t(poor) }, tie }); },
+        options(w, a, c) { const I = takeInfo(w, a, c); if (!I) return []; const b = I.b.name; const hn = honesty(a); const m = cash(w, a); const v = aff(a, I.b);
+            const need = m < 10 ? 0.5 : m < 30 ? 0.25 : m >= 150 ? -0.3 : 0; const clean = (hn >= 4 ? 0.8 : hn >= 3 ? 0.4 : 0) + (has(a, 'perfectionist') ? 0.4 : 0) + (hasV(a, '傳統') ? 0.1 : 0) - (has(a, 'greedy') ? 0.5 : 0) - (hasV(a, '財富') ? 0.3 : 0);
+            const near = isFam(w, a, I.b) ? 0.5 : v >= 30 ? 0.3 : v <= -15 ? -0.4 : 0; const A = AS();
+            if (c.src === 'council') return cal([
+                { id: 'take', quiet: true, mute: true, text: { k: '收下 {n} 銀幣，改投贊成', p: { n: c.n } }, say: { k: '收了{b}的錢，在議會投贊成', p: { b } }, why: '大家都這樣，不差我一個。', lean: { gain: 0.1 }, adj: need - clean + near,
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); if (!I2) { doneC(w2, c); return null; } const ok = A.lobbyTake(w2, I2.p, I2.b, a2, c.n); A.lobbyDone(I2.p, 'wait'); return ok ? { k: '收了 {n} 銀幣', p: { n: c.n } } : null; } },
+                { id: 'back', quiet: true, text: '退回去，票照自己的意思投', say: { k: '把{b}的錢退了回去', p: { b } }, why: '這錢我不能收。', lean: { safe: 0.1 }, adj: clean * 0.6 - need * 0.5 + (near > 0 ? 0.2 : 0),
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); doneC(w2, c); if (!I2) return null; memo(w2, a2, '{b}私下想塞錢給我，要我在議會挺他，我退回去了。', { b }, 6); memo(w2, I2.b, '我想塞錢給{a}，他退了回來。', { a: a2.name }, 5); bumpx(I2.b, a2, -3); return { k: '退回去了' }; } },
+                { id: 'report', quiet: true, text: '當眾說出他想收買我', say: { k: '當眾揭穿{b}想收買議員', p: { b } }, why: '想用錢買議會，就該讓大家知道。', lean: { face: 0.1 }, adj: clean - need + (v <= -15 ? 0.5 : 0) - (near > 0 ? 0.6 : 0) + (has(a, 'abrasive') ? 0.2 : 0) - (has(a, 'shy') ? 0.3 : 0),
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); doneC(w2, c); if (!I2) return null; const s = DK().secret(w2, { kind: 'lobby', culprit: I2.b.agentId, victim: null, k: '{a}私下想塞 {n} 銀幣給議員{m}，要他在議會挺「{x}」', p: { a: I2.b.name, n: c.n, m: a2.name, x: I2.title } });
+                        if (s) DK().reveal(w2, s, a2); try { WY()?.loseFace?.(w2, I2.b, 8); } catch (e) {} bumpx(I2.b, a2, -20); logx(w2, 'council', '📣 {m}在{council}當眾說出：{a}私下拿錢想收買他，要他挺「{x}」。', { m: a2.name, council: AL(w2).council, a: I2.b.name, x: I2.title }, a2.name);
+                        memo(w2, I2.b, '我想塞錢給{a}，他竟然當眾說出來，丟臉丟到家了。', { a: a2.name }, 8); return { k: '當眾揭穿了{b}', p: { b } }; } },
+            ], [0.8, 0.13, 0.07]);
+            const WLx = () => (typeof WALLET !== 'undefined' ? WALLET : null);
+            const vtake = (vote) => (w2, a2) => { const I2 = takeInfo(w2, a2, c); const ok = !!I2 && (c.src === 'mvote' ? WLx().voteTake(w2, I2.b, a2, c.n, vote) : A.buyTake(w2, I2.b, a2, c.n, vote)); if (!ok) { vdrop(w2, a2); return null; } return vote ? { k: '收了 {n} 銀幣', p: { n: c.n } } : { k: '收了 {n} 銀幣，沒有答應投他', p: { n: c.n } }; };
+            const vdrop = (w2, a2) => { if (c.src === 'mvote') WLx()?.voteDrop?.(w2, a2); else A?.buyDrop?.(w2, a2); };
+            if (c.src === 'cvote' || c.src === 'mvote') return cal([
+                { id: 'take', quiet: true, mute: true, text: { k: '收下 {n} 銀幣，投他一票', p: { n: c.n } }, say: { k: '收了{b}的錢，答應投他', p: { b } }, why: '有錢拿，投誰不都一樣。', lean: { gain: 0.1 }, adj: need - clean + near,
+                    run: vtake(true) },
+                { id: 'keep', quiet: true, mute: true, text: { k: '錢收下，票照自己的意思投', p: { n: c.n } }, say: { k: '收了{b}的錢，票照自己的意思投', p: { b } }, why: '錢我收了，票投給誰是我的事。', lean: { gain: 0.1 }, adj: need * 0.6 - clean * 0.4 - near + (has(a, 'greedy') ? 0.3 : 0) + (v <= -10 ? 0.3 : 0),
+                    run: vtake(false) },
+                { id: 'refuse', quiet: true, text: '不收', say: { k: '沒收{b}的錢', p: { b } }, why: '我的票不賣。', lean: { safe: 0.1 }, adj: clean - need,
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); vdrop(w2, a2); if (!I2) return null; memo(w2, a2, '{b}私下想塞錢買我的票，我沒收。', { b }, 5); memo(w2, I2.b, '我想塞錢給{a}買票，他沒收。', { a: a2.name }, 4); bumpx(I2.b, a2, -2); return { k: '沒收' }; } },
+            ], [0.75, 0.12, 0.13]);
+            return cal([
+                { id: 'take', quiet: true, mute: true, text: { k: '收下 {n} 銀幣，投反對', p: { n: c.n } }, say: { k: '收了{b}的錢，答應投反對', p: { b } }, why: '他給錢，我就幫他這一次。', lean: { gain: 0.1 }, adj: need - clean + near,
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); if (!I2 || !CP().trustTake(w2, I2.p, I2.b, a2, c.n, c.r)) return null; return { k: '收了 {n} 銀幣', p: { n: c.n } }; } },
+                { id: 'refuse', quiet: true, text: '不收', say: { k: '沒收{b}的錢', p: { b } }, why: '我的票不賣。', lean: { safe: 0.1 }, adj: clean - need + (v <= -15 ? 0.3 : 0),
+                    run: (w2, a2) => { const I2 = takeInfo(w2, a2, c); if (!I2) return null; memo(w2, a2, '{b}私下想塞錢要我在{id}投反對，我沒收。', { b, id: I2.p.id }, 5); memo(w2, I2.b, '我想塞錢給{a}，他沒收。', { a: a2.name }, 4); bumpx(I2.b, a2, -2); return { k: '沒收' }; } },
+            ], [0.8, 0.2]);
         },
     });
 })();

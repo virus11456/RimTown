@@ -180,13 +180,24 @@ const POWER = (() => {
         }
     }
     // 有錢人買下報社(媒體被收編)
+    // v11.11.0 每週 25% 是「剛好有一家報社可以買」的時機（看天）；買不買由前三有錢、符合條件的人各自決定，第一個說要的買到（sim-decide-order.js buyPaper）。
+    // 決策核心沒開（新鎮的第一天）就沒有人買
+    const PAPER_PRICE = 120;
+    const paperFree = (Pp) => !!Pp && !Pp.owner && !Pp.banned && !['board', 'crown'].includes(Pp.st);
+    const paperBuyers = (w) => npcs(w).filter(a => !String(a.agentId).startsWith('visit_') && cash(w, a) >= 220 && (isOwner(w, a) || owed(w, a) === 0) && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)).sort((x, y) => cash(w, y) - cash(w, x)).slice(0, 3);
     function buyPapers(w, d) {
-        const R = w.press; if (!R?.papers?.length || tierLv(w) < 1) return; const P = S(w); const Wl = WL(); if (!Wl) return;
-        const free = R.papers.filter(Pp => !Pp.owner && !Pp.banned && !['board', 'crown'].includes(Pp.st)); if (!free.length || Math.random() > 0.25) return;
-        const buyer = npcs(w).filter(a => cash(w, a) >= 220 && (isOwner(w, a) || owed(w, a) === 0)).sort((x, y) => cash(w, y) - cash(w, x))[0]; if (!buyer) return;
-        const Pp = free[0]; const price = 120; if (!Wl.take(w, buyer, price)) return;
-        w.stockpile?.add?.('silver', price, w.tickCount, t('報社轉手')); Pp.owner = buyer.agentId; Pp.cred = Math.max(20, Pp.cred - 5); P.stats.bought++;
-        log(w, 'news', '📰 {o}花 {n} 銀幣買下了{paper}。', { o: buyer.name, n: price, paper: Pp.name[0] }, buyer.name); mem(w, buyer, '我買下了{paper}，以後說話更有份量了。', { paper: Pp.name[0] }, 7);
+        const R = w.press; if (!R?.papers?.length || tierLv(w) < 1) return; const Wl = WL(); if (!Wl) return;
+        if (!(typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.paperAsk)) return;
+        const free = R.papers.filter(paperFree); if (!free.length || Math.random() > 0.25) return;
+        const q = paperBuyers(w); if (!q.length) return;
+        try { ORDER.paperAsk(w, free[0], q); } catch (e) { console.warn('[Power] paper ask', e); }
+    }
+    // 真的買下：錢從買家付給公庫（報社轉手），買家成了老闆
+    function paperBuy(w, buyer, Pp) {
+        const P = S(w); const Wl = WL(); if (!Wl || !buyer || !paperFree(Pp) || cash(w, buyer) < PAPER_PRICE || !Wl.take(w, buyer, PAPER_PRICE)) return false;
+        w.stockpile?.add?.('silver', PAPER_PRICE, w.tickCount, t('報社轉手')); Pp.owner = buyer.agentId; Pp.cred = Math.max(20, Pp.cred - 5); P.stats.bought++;
+        log(w, 'news', '📰 {o}花 {n} 銀幣買下了{paper}。', { o: buyer.name, n: PAPER_PRICE, paper: Pp.name[0] }, buyer.name); mem(w, buyer, '我買下了{paper}，以後說話更有份量了。', { paper: Pp.name[0] }, 7);
+        return true;
     }
     // 醜聞累積、民怨夠高 → 連署罷免、提前改選
     function recall(w, d) {
@@ -201,9 +212,10 @@ const POWER = (() => {
         try { if (typeof TIERS !== 'undefined') TIERS.hint(w, L.agentId, 'recall'); } catch (e) {} // v11.10.1 從政履歷記下是被罷免的
         try { E.triggerElection(w); } catch (e) { console.warn('[Power] recall', e); }
         if (!E.active && L.job?.key === 'mayor') { // 沒有足夠的人出來選:直接下台,職位出缺走補選
-            L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null;
             log(w, 'event', '📢 {m}被罷免下台，等待補選。', { m: L.name }, L.name);
-            try { if (typeof HOME !== 'undefined' && HOME.afterOffice) HOME.afterOffice(w, L, 'recall'); } catch (e) {} // v11.9.0 下台之後做什麼由本人決定
+            // v11.11.0 跟選輸、被迫下台同一套：先照慣例改當商人，再由本人決定之後做什麼（sim-decide-home.js）
+            if (typeof HOME !== 'undefined' && HOME.outOfOffice) { try { HOME.outOfOffice(w, L, 'recall'); } catch (e) { console.warn('[Power] after office', e); } }
+            else L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null;
         }
     }
     function daily(w) {
@@ -242,7 +254,7 @@ const POWER = (() => {
         return { gifts: P.stats.gifts || 0, donated: Math.round(P.stats.donated || 0), refused: P.stats.refused || 0, exposed: P.stats.exposed || 0, spiked: P.stats.spiked || 0, fired: P.stats.fired || 0, bought: P.stats.bought || 0, recalls: P.stats.recalls || 0, sued: P.stats.sued || 0, raised: P.stats.raised || 0, withdrawn: P.stats.withdrawn || 0,
             owned: (R?.papers || []).filter(Pp => Pp.owner).map(Pp => { const id = Pp.owner; const a = w.agents[id]; const nm = (a && !a.isDead && a.name) || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || ''; const gone = !nm; const nm2 = nm || a?.name || w.departedNames?.[id] || w._nameCache?.[id] || ''; return [t(Pp.name[0]), nm2 ? t(nm2) + (gone ? t('（已不在鎮上）') : '') : t('已不在鎮上的人')]; }) }; // v9.18.1 老闆過世或搬走時,以前名字會變成空的「（）」
     }
-    return { S, daily, watchdog, publish, buyPapers, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
+    return { S, daily, watchdog, publish, buyPapers, paperBuy, paperFree, paperBuyers, PAPER_PRICE, isOwner, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
         targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
 })();
 

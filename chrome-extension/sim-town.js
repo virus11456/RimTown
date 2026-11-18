@@ -1120,10 +1120,10 @@ class ElectionSystem {
         const oldMayor = Object.values(world.agents).find(a => a.job?.key === 'mayor' && a.agentId !== winner.agentId);
         const newMayorAgent = world.agents[winner.agentId];
         if (newMayorAgent && oldMayor && oldMayor.agentId !== winner.agentId) { // v6.43.3 新鎮長確定在鎮上才撤換舊的
-            const fallbackJobs = ['farmer','guard','trader','researcher'];
-            const newJobKey = fallbackJobs[Math.floor(Math.random() * fallbackJobs.length)];
-            oldMayor.job = JOB_DEFINITIONS[newJobKey] ? new Job(newJobKey) : null;
             const ran = this.candidates.some(c => c.agentId === oldMayor.agentId); // v9.4.0 沒參選的(卸任、坐牢、當了國王)不是「落敗」
+            // v11.11.0 下台以後做什麼由本人決定（sim-decide-home.js afterOffice）：先照慣例改當商人，再問他。以前隨機改當農夫、守衛、商人或研究員
+            if (typeof HOME !== 'undefined' && HOME.outOfOffice) { try { HOME.outOfOffice(world, oldMayor, ran ? 'lost' : 'term'); } catch (e) { console.warn('[Election] after office', e); } }
+            else oldMayor.job = JOB_DEFINITIONS.trader ? new Job('trader') : null;
             oldMayor.memory?.add(world.tickCount, world.clock.timeStr, 'election', ran ? `${t('我在選舉中落敗，不再擔任鎮長')}` : `${t('我的鎮長任期結束，交棒給')}${t(winner.name)}`, ran ? 9 : 7, [winner.name]);
         }
         if (newMayorAgent) {

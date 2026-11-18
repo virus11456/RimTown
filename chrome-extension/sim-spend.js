@@ -378,14 +378,21 @@ const CASINO = (() => {
         for (const [id, D] of Object.entries(C.debt)) {
             const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; /* v9.9.4 出遠門不算賴掉 */ if (!a || a.isDead) { delete C.debt[id]; continue; } if (d - D.day < 7) continue;
             let got = Math.min(cash(w, a), D.n); if (got > 0 && WALLET.take(w, a, got)) { WALLET.add(w, own, got); D.n = r2(D.n - got); }
-            // 家人代還（錢直接從家人付給賭場老闆）
-            if (D.n > 0.5) { const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []).filter(o => o !== own && cash(w, o) >= D.n + 20 && Math.random() < 0.4)[0];
-                if (fam && WALLET.take(w, fam, D.n)) { WALLET.add(w, own, D.n); log(w, '💸 {f}咬著牙替{a}還了 {n} 銀幣賭債。', { f: fam.name, a: a.name, n: Math.round(D.n) }, fam.name); mem(w, fam, '我替{a}還了賭債，心裡很不是滋味。', { a: a.name }, 7); try { if (C.thing && typeof THINGS !== 'undefined') THINGS.feel(w, C.thing, fam, -20); } catch (e) {} D.n = 0; } }
+            // 家人代不代還由家人自己決定（v11.11.0 sim-decide-home.js kinPay；以前每天每位家人 40% 機率代還）：一次問一位，不肯就問下一位；都不肯，七天後再問
+            if (D.n > 0.5 && typeof HOME !== 'undefined' && HOME.kinAsk && (D.kd == null || d - D.kd >= 7)) { D.kd = d; try { HOME.kinAsk(w, a, 'gamble', D.n, [own.agentId]); } catch (e) { console.warn('[Casino] kin', e); } }
             if (D.n <= 0.5) { delete C.debt[id]; C.st.collect++; log(w, '🧾 {a}把欠{o}的賭債還清了。', { a: a.name, o: own.name }, a.name); continue; }
             if (!D.warned || d - D.warned >= 4) { D.warned = d; a.moodModifier = (a.moodModifier || 0) - 8; bump(a, own, -8); log(w, '👊 {o}找人堵在{a}家門口討賭債：「還欠 {n} 銀幣，別想躲。」', { o: own.name, a: a.name, n: Math.round(D.n) }, a.name); mem(w, a, '{o}的人天天堵在我家門口討債，我怕得不敢出門。', { o: own.name }, 8); }
             // 拖太久的賭債:偷不偷、跑不跑由他自己決定(stealBy／fleeBy)
         }
     }
+    // v11.11.0 家人替他還賭債（錢從家人直接付給賭場老闆）；回傳實際還了多少
+    function kinRepay(w, a, fam, n) {
+        const C = S(w); const D = C.debt?.[a?.agentId]; const own = w.agents[C.owner]; if (!D || !own || own.isDead || !fam || fam === own || fam === a) return 0;
+        const x = r2(Math.min(n, D.n, cash(w, fam))); if (!(x > 0.5) || !WALLET.take(w, fam, x)) return 0; WALLET.add(w, own, x); D.n = r2(D.n - x);
+        try { if (C.thing && typeof THINGS !== 'undefined') THINGS.feel(w, C.thing, fam, -20); } catch (e) {}
+        return x; // 還清了的話，討債那一段（collect）看到欠款歸零就銷帳、上日誌
+    }
+    const debtOf = (w, a) => r2(w.casino?.debt?.[a?.agentId]?.n || 0);
     // 輸到家破人亡:配偶受不了離開、欠債的人連夜跑路
     function ruin(w, C, a, tot) {
         C.st.ruin++; C.streak[a.agentId] = 0; C.lost[a.agentId] = []; a.moodModifier = (a.moodModifier || 0) - 20;
@@ -411,7 +418,7 @@ const CASINO = (() => {
         const C = w.casino; if (!C) return ''; if (a.agentId === C.owner && C.open) return t('你在鎮上開賭場，莊家長期下來總是贏。');
         const st = C.streak?.[a.agentId] || 0; if (st >= 2) return t('你最近在賭場一直輸，滿腦子只想把錢贏回來。'); if ((C.v?.[a.agentId] || 0) >= 5) return t('你常去賭場碰碰運氣。'); return '';
     }
-    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy };
+    return { S, daily, vote, enact, view, brief, EDGE, JACK, JACKX, urge, goInfo, goBy, openInfo, openBy, debtInfo, stealBy, fleeBy, kinRepay, debtOf };
 })();
 
 // ---------- 接上其他系統 ----------

@@ -110,29 +110,23 @@ const MONEY = (() => {
         for (const o of npcs(w)) if (o !== a && (a._parentNames || []).includes(o.name) && !out.includes(o)) out.push(o);
         return out;
     }
-    function familyPays(w, a, amount, why) {
-        const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null; if (!Wl || !(amount > 0.5)) return 0;
-        const can = familyOf(w, a).filter(o => Wl.get(w, o) >= amount + 20).sort((x, y) => Wl.get(w, y) - Wl.get(w, x));
-        for (const o of can) {
-            const aff = o.relationships?.relationships?.[a.agentId]?.affinity ?? 0; const p = Math.max(0.1, Math.min(0.9, 0.45 + aff / 200));
-            if (Math.random() < p) { if (!Wl.take(w, o, amount)) continue; toTown(w, amount, (why || t('罰款')) + t('（家人代繳）'));
-                mem(w, a, '{o}幫我付了 {n} 銀幣罰款。', { o: o.name, n: Math.round(amount) }, 7); mem(w, o, '替{a}付了 {n} 銀幣罰款，家人總不能不管。', { a: a.name, n: Math.round(amount) }, 6);
-                try { a.relationships?.getOrCreate?.(o.agentId, o.name)?.modifyAffinity?.(6); } catch (e) {}
-                log(w, '💸 {o}替{a}付了 {n} 銀幣罰款。', { o: o.name, a: a.name, n: Math.round(amount) }, a.name); S(w).st.famPaid = r2((S(w).st.famPaid || 0) + amount); return amount; }
-            // 不肯幫:兩邊都不好受
-            try { a.relationships?.getOrCreate?.(o.agentId, o.name)?.modifyAffinity?.(-8); o.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(-4); } catch (e) {}
-            mem(w, a, '{o}明明有錢，卻不肯幫我付罰款。', { o: o.name }, 7); mem(w, o, '{a}自己闖的禍，這筆罰款我不想出。', { a: a.name }, 5); S(w).st.famRefused = (S(w).st.famRefused || 0) + 1;
-        }
-        return 0;
+    // v11.11.0 家人替他付罰款：付不付、付多少由被問到的家人自己決定（sim-decide-home.js kinPay；以前照好感 10～90% 機率代繳）。
+    // 這裡只管結算：錢從家人到公庫，欠款跟著減少；回傳實際付了多少
+    function kinFine(w, a, o, n) {
+        const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null; const f = fines(w)[a?.agentId]; if (!Wl || !f || f.labor || !o || o === a) return 0;
+        const x = r2(Math.min(n, f.owed, Wl.get(w, o))); if (!(x > 0.5) || !Wl.take(w, o, x)) return 0; toTown(w, x, (f.why || t('罰款')) + t('（家人代繳）'));
+        f.owed = r2(f.owed - x); S(w).st.famPaid = r2((S(w).st.famPaid || 0) + x); if (f.owed <= 0.01) delete fines(w)[a.agentId];
+        log(w, '💸 {o}替{a}付了 {n} 銀幣罰款。', { o: o.name, a: a.name, n: Math.round(x) }, a.name);
+        return x;
     }
-    // 開罰:身上有多少先付多少,不夠的先問家人,還是付不出的記成欠款(同一個人再被罰就累加)
+    const famAsk = (w, a, n) => { try { if (typeof HOME !== 'undefined' && HOME.kinAsk) HOME.kinAsk(w, a, 'fine', n); } catch (e) { console.warn('[Money] kin', e); } };
+    // 開罰:身上有多少先付多少,付不出的記成欠款(同一個人再被罰就累加),再問家人要不要替他付
     function fine(w, a, n, why) {
         if (!a || !(n > 0)) return { paid: 0, owed: 0 }; const Wl = typeof WALLET !== 'undefined' && w.wallet ? WALLET : null;
         const pay = Wl ? Math.min(n, Math.max(0, Wl.get(w, a))) : 0; if (pay > 0 && Wl.take(w, a, pay)) toTown(w, pay, why || t('罰款'));
-        const fam = familyPays(w, a, r2(n - pay), why);
-        const rest = r2(n - pay - fam); if (rest > 0.01) { const F = fines(w); const f = F[a.agentId] = F[a.agentId] || { owed: 0, since: day(w), why: why || t('罰款'), paid: 0 }; f.owed = r2(f.owed + rest); f.why = why || f.why;
-            mem(w, a, '罰款 {n} 銀幣只付得出 {p}，剩下的 {r} 要從之後的工資慢慢扣。', { n: Math.round(n), p: Math.round(pay), r: Math.round(rest) }, 7); }
-        return { paid: r2(pay), family: r2(fam), owed: r2(rest) };
+        const rest = r2(n - pay); if (rest > 0.01) { const F = fines(w); const f = F[a.agentId] = F[a.agentId] || { owed: 0, since: day(w), why: why || t('罰款'), paid: 0 }; f.owed = r2(f.owed + rest); f.why = why || f.why;
+            mem(w, a, '罰款 {n} 銀幣只付得出 {p}，剩下的 {r} 要從之後的工資慢慢扣。', { n: Math.round(n), p: Math.round(pay), r: Math.round(rest) }, 7); famAsk(w, a, rest); }
+        return { paid: r2(pay), family: 0, owed: r2(rest) };
     }
     const owedOf = (w, a) => r2(fines(w)[a?.agentId || a]?.owed || 0);
     // 每天:有工作的人從工資扣三成(手頭寬裕就多扣,留 30 銀幣過日子);服勞役的人做工抵債;欠兩週還不完改服勞役
@@ -149,7 +143,7 @@ const MONEY = (() => {
             const pay = r2(Math.min(f.owed, bal, Math.max(wage * FINE.garnish, bal - FINE.keep)));
             if (pay > 0.01 && Wl.take(w, a, pay)) { toTown(w, pay, t('罰款分期')); f.owed = r2(f.owed - pay); f.paid = r2((f.paid || 0) + pay); }
             if (f.owed <= 0.01) { mem(w, a, '欠公庫的罰款終於還清了。', {}, 5); delete F[id]; continue; }
-            if (d - f.since >= FINE.laborAfter && !f.askedFamily) { f.askedFamily = true; const fp = familyPays(w, a, f.owed, f.why); if (fp > 0) { delete F[id]; continue; } } // 要服勞役前,家人還有最後一次機會幫忙
+            if (d - f.since >= FINE.laborAfter - 1 && !f.askedFamily) { f.askedFamily = true; famAsk(w, a, f.owed); if (!F[id]) continue; } // 要服勞役的前一天,再問一次家人要不要幫忙（v11.11.0 提早一天問，等 AI 回話的家人才來得及；照個性決定的當場就付）
             if (d - f.since >= FINE.laborAfter) {
                 const days = Math.min(FINE.laborMax, Math.ceil(f.owed / FINE.laborValue)); f.labor = true;
                 try { const D = typeof DARK !== 'undefined' ? DARK.S(w) : (w.dark = w.dark || {}); D.labor = (D.labor || []).concat([{ id, until: d + days, fine: true }]); } catch (e) {}
@@ -177,7 +171,7 @@ const MONEY = (() => {
         return { days: Math.min(n, M.hist.length), ins, outs, other: sum.other || 0, net, total: T, pop, per: pop ? Math.round(T / pop) : 0, perOld: old && old[2] ? Math.round(old[1] / old[2]) : null, label: (c) => CAT[c] || c, st: M.st };
     }
     function townBrief(w) { if (!w.money) return ''; const v = view(w); if (v.days < 7) return ''; return t('近 {n} 天鎮上的錢{dir} {m} 銀幣').replace('{n}', v.days).replace('{dir}', v.net >= 0 ? t('多了') : t('少了')).replace('{m}', Math.abs(Math.round(v.net))); }
-    return { RES2S, payGoods, S, total, flow, track, close, sellSurplus, surplusList, floors, floorsKept, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, familyPays, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
+    return { RES2S, payGoods, S, total, flow, track, close, sellSurplus, surplusList, floors, floorsKept, exportDaily, prefixed, baseOf, short, originTown, reRegister, daily, view, townBrief, tradeRoles, ROLE, MGR_PAY, fine, owedOf, finesDaily, familyOf, kinFine, fines, fineChip, fineBrief, laborSet, inLabor, FINE, CAT, IN, OUT, MARKUP, BUDGET };
 })();
 
 // ---------- 接上其他系統 ----------

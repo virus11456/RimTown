@@ -15,6 +15,8 @@
 //   有人要你接這個位子(postOffer)      接／不接／讓給弟妹（王位、議員遞補、代理首長、出使）
 //   醜事被揭穿了(scandal)             辭職／否認／道歉但不辭／反咬一口（否認與硬撐照現有的醜聞分數、罷免、議會壓力結算）
 //   下台以後做什麼(afterOffice)        去做買賣／回去做原本的工作／去種田
+// v11.11.0 家人闖了禍要錢(kinPay)     替他付清／付一半／這次不付（罰款付不出來、賭債到期；不付就問下一位家人）
+//         選輸、任期結束、被罷免的首長也走「下台以後做什麼」（outOfOffice：先照慣例當商人，再問本人）
 // 家裡的事用預設的 AI 額度；王令、外交、接不接位子、醜事被揭穿用 civic 那一組；輪不到 AI 的照個性決定。
 // 另外三條寫死的制度改成可以提案（HOMEPROP）：偷竊罰則（從輕／照舊／從重）、暫停或重新開放收新移民、公職薪水整體調高或調低一級。
 // 決策核心沒開、當事人問不到時，照原本的規則跑。必須在 sim-decide.js 之後載入。
@@ -54,7 +56,7 @@ const HOME = (() => {
 
     function S(w) {
         if (!w.home || typeof w.home !== 'object') w.home = {};
-        const H = w.home; for (const k of ['bp', 'will', 'hc', 'decl', 'acc', 'pend', 'prev', 'wedNo', 'royalNo', 'asked', 'law', 'st', 'vic', 'thief', 'adopt', 'offer']) if (!H[k] || typeof H[k] !== 'object' || Array.isArray(H[k])) H[k] = {};
+        const H = w.home; for (const k of ['bp', 'will', 'hc', 'kp', 'decl', 'acc', 'pend', 'prev', 'wedNo', 'royalNo', 'asked', 'law', 'st', 'vic', 'thief', 'adopt', 'offer']) if (!H[k] || typeof H[k] !== 'object' || Array.isArray(H[k])) H[k] = {};
         if (!Array.isArray(H.scan)) H.scan = [];
         for (const k of ['throne', 'seat', 'acting', 'envoy']) { if (!H.decl[k] || typeof H.decl[k] !== 'object') H.decl[k] = {}; if (!H.pend[k] || typeof H.pend[k] !== 'object') H.pend[k] = {}; }
         if (!H.acc.acting || typeof H.acc.acting !== 'object') H.acc.acting = {};
@@ -227,6 +229,57 @@ const HOME = (() => {
         const key = h.agentId + '|' + a.agentId; if (key in H.hd.m) return H.hd.m[key];
         const id = ruleNow(w, h, 'feedHelp', { to: a.agentId, n: r2(cost) }); const ok = id !== 'no'; H.hd.m[key] = ok; return ok;
     }
+
+    // ================= 家人闖了禍要錢：罰款付不出來、賭債到期（v11.11.0） =================
+    // 以前：罰款付不出來，配偶或爸媽照好感 10～90% 機率代繳；賭債到期，每位家人每天 40% 機率代還。
+    // 現在：一次問一位家人（手頭最寬裕的先），他自己決定替他付、付一半、這次不付；不付就問下一位。錢只在家人、公庫（罰款）與賭場老闆（賭債）之間移動
+    const KSRC = { fine: '罰款', gamble: '賭債' };
+    const owedNow = (w, a, src) => { try { return src === 'fine' ? (typeof MONEY !== 'undefined' && !w.money?.fines?.[a.agentId]?.labor ? MONEY.owedOf(w, a) : 0) : (typeof CASINO !== 'undefined' ? CASINO.debtOf(w, a) : 0); } catch (e) { return 0; } };
+    const kinOf = (w, a, skip) => { try { return (typeof MONEY !== 'undefined' ? MONEY.familyOf(w, a) : []).filter(o => o !== a && inTown(w, o) && (o.age ?? 30) >= 16 && !(skip || []).includes(o.agentId)); } catch (e) { return []; } };
+    function kinAsk(w, a, src, n, skip) {
+        if (!on(w) || !a || !KSRC[src] || !(n > 0.5)) return false; const q = kinOf(w, a, skip).filter(o => cash(w, o) >= n * 0.5 + 20).sort((x, y) => cash(w, y) - cash(w, x)).map(o => o.agentId);
+        return kinNext(w, { of: a.agentId, src, n: r2(n), q, d: day(w), skip: skip || [] });
+    }
+    function kinNext(w, c) { while (c.q.length) { const o = w.agents[c.q.shift()]; if (o && ask(w, o, 'kinPay', Object.assign({}, c, { q: c.q.slice() }))) return true; } return false; }
+    const kinFam = (w, a, h) => { try { return (typeof MONEY !== 'undefined' ? MONEY.familyOf(w, a) : []).includes(h); } catch (e) { return false; } };
+    // 三個以上的選項照「以前大概多常這樣」算起跑分數（跟 sim-decide-order.js 同一個算法），再加上交情、個性與處境
+    const leanSum = (l) => Object.values(l || {}).reduce((x, y) => x + y, 0);
+    const calH = (opts, ps) => { const b = (typeof ORDER !== 'undefined' && ORDER.tiltN) ? ORDER.tiltN(ps) : ps.map(() => REF); opts.forEach((op, i) => { op.base = b[i] - leanSum(op.lean) + (op.adj || 0); delete op.adj; }); return opts; };
+    function kinInfo(w, h, c) {
+        const a = c && w.agents[c.of]; if (!a || a.isDead || a === h || !KSRC[c.src] || day(w) - (c.d ?? 0) > 2 || !kinFam(w, a, h)) return null;
+        const owe = owedNow(w, a, c.src); const n = r2(Math.min(c.n, owe)); if (!(n > 0.5)) return null; const m = cash(w, h); if (m < n * 0.5 + 20) return null; // 已經付清了、自己也沒那麼多錢了：這一題作廢
+        let past = 0; try { past = (S(w).kp[h.agentId + '|' + a.agentId] || []).filter(x => x > day(w) - 60).length; } catch (e) {}
+        let lost = 0; try { lost = c.src === 'gamble' ? (w.casino?.lost?.[a.agentId] || []).length : 0; } catch (e) {}
+        return { a, n, m, full: m >= n + 20, past, lost };
+    }
+    DECIDE.kind('kinPay', Object.assign({}, kindBase, {
+        title: '家人闖了禍要錢', pri: 1.3,
+        facts(w, h, c) { const I = kinInfo(w, h, c); if (!I) return '';
+            return fill(c.src === 'fine' ? '{a}被罰了錢，還欠公庫 {n} 銀幣付不出來，之後每天從工資扣，拖到兩週要去服公共勞役。他來問你能不能幫他付。{lost}你們{tie}。你身上有 {m} 銀幣。{past}' : '{a}在賭場欠了 {n} 銀幣，賭場老闆天天派人堵在他家門口討債。他來問你能不能替他還。{lost}你們{tie}。你身上有 {m} 銀幣。{past}', { a: I.a.name, n: Math.ceil(I.n), m: Math.floor(I.m), tie: tieOf(h, I.a),
+                lost: c.src === 'gamble' && I.lost >= 2 ? { k: '他最近在賭場輸了 {k} 次。', p: { k: I.lost } } : { raw: '' }, past: I.past ? { k: '這兩個月你已經替他出過 {k} 次錢。', p: { k: I.past } } : { raw: '' } }); },
+        options(w, h, c) { const I = kinInfo(w, h, c); if (!I) return []; const a = I.a; const f = aff(h, a); const half = r2(Math.ceil(I.n * 50) / 100); const what = t(KSRC[c.src]);
+            const pay = (part) => (w2, h2) => { const I2 = kinInfo(w2, h2, c); if (!I2) return null; const amt = part ? r2(Math.min(half, I2.n)) : I2.n;
+                const got = c.src === 'fine' ? MONEY.kinFine(w2, I2.a, h2, amt) : CASINO.kinRepay(w2, I2.a, h2, amt); if (!(got > 0)) return null;
+                const L = S(w2).kp[h2.agentId + '|' + I2.a.agentId] || (S(w2).kp[h2.agentId + '|' + I2.a.agentId] = []); L.push(day(w2)); stat(w2, 'kin_' + (part ? 'half' : 'all'));
+                bump(I2.a, h2, part ? 3 : 6); mem(w2, I2.a, part ? '{h}幫我付了一半的{x}（{n} 銀幣），剩下的要我自己想辦法。' : '{h}替我付了 {n} 銀幣的{x}。', { h: h2.name, x: what, n: Math.round(got) }, 7);
+                mem(w2, h2, c.src === 'gamble' ? '我替{a}還了 {n} 銀幣賭債，心裡很不是滋味。' : '替{a}付了 {n} 銀幣罰款，家人總不能不管。', { a: I2.a.name, n: Math.round(got) }, 6);
+                if (c.src === 'gamble') log(w2, 'social', '💸 {f}咬著牙替{a}還了 {n} 銀幣賭債。', { f: h2.name, a: I2.a.name, n: Math.round(got) }, h2.name);
+                return { k: '替{a}付了 {n} 銀幣', p: { a: I2.a.name, n: Math.round(got) } }; };
+            const tight = I.m < I.n * 2 + 30; const wasted = (c.src === 'gamble' && I.lost >= 3) || I.past >= 2;
+            const out = [];
+            if (I.full) out.push({ id: 'all', quiet: true, text: { k: '替他付清（{n} 銀幣）', p: { n: Math.ceil(I.n) } }, say: { k: '替{a}付了{x}', p: { a: a.name, x: what } }, why: '一家人，總不能看他被逼死。', lean: { bond: 0.2 },
+                adj: clampN(f / 80, -0.6, 0.6) + (has(h, 'kind') ? 0.3 : 0) + (has(h, 'generous') ? 0.3 : 0) + (hasV(h, '家庭') ? 0.3 : 0) + (wedTo(h, a) ? 0.2 : 0) - (tight ? 0.4 : 0) - (wasted ? 0.4 : 0) - (has(h, 'greedy') ? 0.4 : 0) - (has(h, 'thrifty') ? 0.3 : 0), run: pay(false) });
+            out.push({ id: 'half', quiet: true, text: { k: '只付一半（{n} 銀幣），剩下的要他自己想辦法', p: { n: Math.ceil(half) } }, say: { k: '替{a}付了一半的{x}', p: { a: a.name, x: what } }, why: '幫一半，剩下的他自己扛，才會記得教訓。', lean: { safe: 0.1 },
+                adj: (has(h, 'thrifty') ? 0.3 : 0) + (wasted ? 0.3 : 0) + (tight ? 0.3 : 0) + (hasV(h, '傳統') ? 0.1 : 0), run: pay(true) });
+            out.push({ id: 'no', quiet: true, text: '這次不付', say: { k: '這次不肯替{a}付{x}', p: { a: a.name, x: what } }, why: f <= -10 ? '他平常那樣對我，自己闖的禍自己扛。' : c.src === 'gamble' ? '賭輸了要家人還，這種事不能開頭。' : '自己闖的禍，這筆錢我不想出。', lean: { gain: 0.1, safe: 0.1 },
+                adj: clampN(-f / 60, -0.5, 1.2) + (has(h, 'greedy') ? 0.4 : 0) + (wasted ? 0.4 : 0) + (tight ? 0.2 : 0) - (has(h, 'kind') ? 0.3 : 0) - (hasV(h, '家庭') ? 0.3 : 0),
+                run: (w2, h2) => { const I2 = kinInfo(w2, h2, c); const x = I2?.a || w2.agents[c.of]; if (!x) return null; stat(w2, 'kin_no'); bump(x, h2, -8); bump(h2, x, -4); try { MONEY.S(w2).st.famRefused = (MONEY.S(w2).st.famRefused || 0) + 1; } catch (e) {}
+                    mem(w2, x, '{o}明明有錢，卻不肯幫我付{x}。', { o: h2.name, x: what }, 7); mem(w2, h2, '{a}自己闖的禍，這筆{x}我不想出。', { a: x.name, x: what }, 5);
+                    kinNext(w2, c); return { k: '沒有替{a}付', p: { a: x.name } }; } });
+            const P = c.src === 'fine' ? { all: 0.62, half: 0.13, no: 0.25 } : { all: 0.5, half: 0.2, no: 0.3 };
+            return calH(out, out.map(o => P[o.id]));
+        },
+    }));
 
     // ================= 親戚的孩子沒人照顧：接不接 =================
     function adoptAsk(w, c, p, pool) {
@@ -569,8 +622,10 @@ const HOME = (() => {
     }
 
     // ================= 下台以後做什麼 =================
-    const AWHY = { scandal: '買票的事被揭穿', recall: '被罷免', coup: '政變失敗', crowned: '登基當了國王' };
+    const AWHY = { scandal: '買票的事被揭穿', recall: '被罷免', coup: '政變失敗', crowned: '登基當了國王', lost: '選舉落敗', term: '任期結束，交棒給新的人' };
     function afterOffice(w, a, why) { if (!on(w) || !inTown(w, a) || why === 'crowned') return; ask(w, a, 'afterOffice', { why: why || '', d: day(w), prev: S(w).prev[a.agentId] || null }); }
+    // v11.11.0 首長下台（選輸、任期結束、被罷免）都走這裡：先照慣例改當商人（他想好之前總要有份工作），再問他之後要做什麼。以前選輸的首長隨機改當農夫、守衛、商人或研究員
+    function outOfOffice(w, a, why) { if (!a) return; if (a.job?.key === 'mayor') { try { a.job = (typeof Job !== 'undefined' && typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null; } catch (e) { a.job = null; } } afterOffice(w, a, why); }
     DECIDE.kind('afterOffice', Object.assign({}, kindBase, {
         title: '下台以後做什麼', pri: 1.2,
         facts(w, a, ctx) { if (a.job?.key === 'mayor') return ''; return fill('你剛從{l}的位子上下來（{why}）。照慣例你先去做買賣，可是之後要做什麼由你自己決定。{prev}你身上有 {c} 銀幣。', { l: lead(w), why: AWHY[ctx?.why] || '換人做', prev: ctx?.prev && ctx.prev !== 'mayor' ? { k: '當{l}之前你是{j}。', p: { l: lead(w), j: jobT(ctx.prev) } } : { raw: '' }, c: Math.floor(cash(w, a)) }); },
@@ -591,6 +646,7 @@ const HOME = (() => {
         for (const k of Object.keys(H.will)) if (gone(k)) delete H.will[k];
         for (const k of Object.keys(H.bp)) { const [x, y] = k.split('|'); if (gone(x) || gone(y) || !wedTo(w.agents[x], w.agents[y])) { if (d - H.bp[k].d > 60 || gone(x) || gone(y)) delete H.bp[k]; } }
         for (const k of Object.keys(H.hc)) { const L = (H.hc[k] || []).filter(x => x > d - 30); if (L.length) H.hc[k] = L; else delete H.hc[k]; }
+        for (const k of Object.keys(H.kp)) { const L = (H.kp[k] || []).filter(x => x > d - 60); if (L.length) H.kp[k] = L; else delete H.kp[k]; }
         for (const g of ['wedNo', 'royalNo', 'vic', 'thief']) for (const k of Object.keys(H[g])) if (gone(k) || (g === 'vic' || g === 'thief' ? d - H[g][k] > 60 : H[g][k] < d)) delete H[g][k];
         for (const g of Object.keys(H.decl)) for (const k of Object.keys(H.decl[g])) if (H.decl[g][k] < d || gone(k)) delete H.decl[g][k];
         for (const g of Object.keys(H.pend)) for (const k of Object.keys(H.pend[g])) if (d - H.pend[g][k] > 2) delete H.pend[g][k];
@@ -608,7 +664,7 @@ const HOME = (() => {
     }
     function stolen(w, th, vic, n) { const H = S(w); if (vic) H.vic[vic.agentId] = day(w); if (th) H.thief[th.agentId] = day(w); stat(w, 'thefts'); }
 
-    return { S, on, ask, MULT, couple, wish, birthMult, heirOrder, estateSplit, helpOk, ruleNow, adoptAsk, adoptNext, royalAsk, wedAsk, wedSkip, decreeAsk, diploAsk, envoyOffer, throneAsk, seatOk, seatJoin, actingPick, scandalAsk, scandalCheck, afterOffice, daily, stolen, tilt,
+    return { S, on, ask, MULT, couple, wish, birthMult, heirOrder, estateSplit, helpOk, ruleNow, adoptAsk, adoptNext, royalAsk, wedAsk, wedSkip, decreeAsk, diploAsk, envoyOffer, throneAsk, seatOk, seatJoin, actingPick, scandalAsk, scandalCheck, afterOffice, outOfOffice, daily, stolen, tilt, kinAsk, kinNext, kinInfo,
         theftLaw: (w) => (w?.home?.law?.theft || 'normal'), immigPaused: (w) => HOMEPROP_?.paused(w) || false };
 })();
 let HOMEPROP_ = null;

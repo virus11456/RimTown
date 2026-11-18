@@ -46,6 +46,7 @@ async function run(browser, dev, lang) {
     const steady = (fn) => { Math.random = () => 0.5; try { return fn(); } finally { Math.random = R0; } };
     const withR = (v, fn) => { Math.random = () => v; try { return fn(); } finally { Math.random = R0; } };
     // 只記下「誰被問了」，不讓他當場照個性決定：要看的是問了誰、題目長怎樣，結算另外一項一項試
+    const holdOnly = (fn) => { const an = DECIDE.askNow; DECIDE.askNow = (w2, list) => { const mine = (list || []).filter(x => x && x.a && KEYS.includes(x.kind)); for (const x of mine) asked.push({ kind: x.kind, who: x.a.agentId, ctx: x.ctx }); const rest = (list || []).filter(x => !mine.includes(x)); if (rest.length) an(w2, rest); }; try { return fn(); } finally { DECIDE.askNow = an; } };
     const hold = (fn) => { const an = DECIDE.askNow; DECIDE.askNow = (w2, list) => { for (const x of (list || [])) if (x && x.a && KEYS.includes(x.kind)) asked.push({ kind: x.kind, who: x.a.agentId, ctx: x.ctx }); }; try { return fn(); } finally { DECIDE.askNow = an; } };
     const offDecide = (fn) => { const on0 = DECIDE.on; DECIDE.on = () => false; try { return fn(); } finally { DECIDE.on = on0; } };
     const prompts = {}; const mkPrompt = (k, a, ctx) => { try { const K = KK[k]; const opts = K.options(w, a, ctx); if (!opts.length) return; const p = DECIDE.prompt(w, K, [{ a, ctx, opts }]); prompts[k] = p; } catch (e) { prompts[k] = 'ERR ' + e.message; } };
@@ -282,7 +283,7 @@ async function run(browser, dev, lang) {
       delete Cv.jail[th.agentId];
       // 從竊案那一段接進來：抓到了（看天）→ 抓到的守衛被問，每一件都有人問、不重複
       const thieves = pool.slice(32, 36); for (const x of thieves) { plain(x); x.personality.traits = ['lazy']; setCash(x, 1); } const rich = pool.slice(36, 40); for (const x of rich) setCash(x, 300);
-      const n1 = asked.length; const c0 = Cv.caught; hold(() => withR(0.01, () => CIVIC.crime(w, Cv, day()))); const got = since(n1, 'caught'); C1.crime = { caught: Cv.caught - c0, asked: got.length, guards: got.every(e => w.agents[e.who]?.job?.key === 'guard' && e.who !== e.ctx.th), distinct: new Set(got.map(e => e.ctx.th)).size === got.length };
+      const n1 = asked.length; const c0 = Cv.caught; holdOnly(() => withR(0.01, () => CIVIC.crime(w, Cv, day()))); /* v11.11.0 偷不偷由本人決定（steal 照常決定），抓到之後問守衛的那一題攔下來看 */ const got = since(n1, 'caught'); C1.crime = { caught: Cv.caught - c0, asked: got.length, guards: got.every(e => w.agents[e.who]?.job?.key === 'guard' && e.who !== e.ctx.th), distinct: new Set(got.map(e => e.ctx.th)).size === got.length };
       for (const x of npcs()) delete Cv.jail[x.agentId];
       // 鎮上沒有守衛（問不到人）：照舊直接關
       const allG = npcs().filter(x => x.job?.key === 'guard'); const l2 = allG.map(x => [x, x.currentLocation]); for (const x of allG) x.currentLocation = 'exploration'; C1.noGuard = !hold(() => ORDER.caught(w, { src: 'theft', th: th.agentId, vic: vic.agentId, n: 5, days: 3, d: day() })); for (const [x, l] of l2) x.currentLocation = l;
@@ -418,7 +419,7 @@ async function run(browser, dev, lang) {
     ok(C.lean.plain === 'jail' && C.lean.fam !== 'jail' && C.lean.famLess && C.lean.greedy && C.lean.vic, `${tag} 照個性：一般守衛照規矩關；小偷是家人的不關；貪心的偏收錢；失主是自己家人的更要關`, C.lean);
     ok(C.grainIds.join() === 'jail,repay,spare' && C.grain === 9 && C.loot.back === 12 && C.loot.jail === 3, `${tag} 趁亂搶糧倉：叫他扛回去，糧倉加回 9 份；趁亂搶店：關 3 天、錢還給店主`, { g: C.grainIds, n: C.grain, l: C.loot });
     ok(C.crime.caught > 0 && C.crime.asked === C.crime.caught && C.crime.guards && C.crime.distinct, `${tag} 從竊案接進來：抓到 ${C.crime.caught} 個，每一個都由抓到人的守衛決定，不重複`, C.crime);
-    ok(C.noGuard && C.off.asked === 0 && C.off.jailed > 0, `${tag} 鎮上沒有守衛：問不到人，照舊；決策核心沒開：照舊一定關`, { ng: C.noGuard, off: C.off }); }
+    ok(C.noGuard && C.off.asked === 0 && C.off.jailed === 0, `${tag} 鎮上沒有守衛：問不到人，照舊；決策核心沒開：沒有人動偷的念頭，也就沒有人被關（v11.11.0 起偷不偷由本人決定）`, { ng: C.noGuard, off: C.off }); }
   { const C = r.C2;
     ok(C.ask.asked && C.ask.who && Object.values(C.facts).every(Boolean) && C.ids.join() === 'fight,wall,pay,hide', `${tag} 襲擊：首長被問；事實裡有守衛人數、對方強度、打發要多少、公庫多少；選項：出去打、守在牆內、花錢消災、躲起來`, { a: C.ask, f: C.facts, ids: C.ids });
     ok(C.judge && C.judge2, `${tag} 襲擊：數字後面有一句照數字算出來的強弱（明顯比對方強、差不多、對方明顯比較強，只有一句）`, { j: C.judge, j2: C.judge2 });
