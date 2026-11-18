@@ -246,7 +246,7 @@ async function run(browser, lang) {
   ok(r.dirty.sc.smM > r.dirty.sc.smG && r.dirty.sc.byM > r.dirty.sc.byG, L + '選戰：越有惡意越想抹黑、越不老實越想買票', r.dirty.sc);
   ok(r.dirty.untouched, L + '選戰：每天的流程不再擲骰替候選人抹黑、買票、收買報社', r.dirty.untouched);
   ok(r.dirty.smear.res && r.dirty.smear.sec === 1 && r.dirty.smear.drop === -12 && r.dirty.hollow.res && r.dirty.hollow.sec === 1 && r.dirty.hollow.up === 9, L + '選戰：本人決定抹黑（三個選民對對手印象變差）、開支票（三個選民對他印象變好），真相頁都記著', { smear: r.dirty.smear, hollow: r.dirty.hollow });
-  ok(r.dirty.buy.res && r.dirty.buy.paid === 20 && r.dirty.buy.got === 2 && r.dirty.buy.sec === 2 && r.dirty.buy.cons, L + '選戰：本人決定買票，兩個手頭緊的人各拿 10 銀幣、銀幣守恆', r.dirty.buy);
+  ok(r.dirty.buy.res && r.dirty.buy.got <= 2 && r.dirty.buy.paid === 10 * r.dirty.buy.got && r.dirty.buy.sec === r.dirty.buy.got && r.dirty.buy.cons, L + '選戰：本人決定買票，找上兩個手頭緊的人，收下的各拿 10 銀幣（v11.11.0 起收不收由對方決定）、收幾個記幾筆、銀幣守恆', r.dirty.buy);
   ok(r.dirty.refuse.res && r.dirty.refuse.paid === 0 && !r.dirty.refuse.by && r.dirty.refuse.cons && r.dirty.refuse.still, L + '選戰：有原則的記者不收錢（錢沒動，之後還可以再試）', r.dirty.refuse);
   ok(r.dirty.press.res && r.dirty.press.paid === 60 && r.dirty.press.ed === 60 && r.dirty.press.by && r.dirty.press.sec === 1 && r.dirty.press.cons && !r.dirty.press.again, L + '選戰：本人決定收買報社，60 銀幣進記者口袋、銀幣守恆；一次選舉只買得了一家', r.dirty.press);
   ok(!r.dirty.over, L + '選戰：競選期過了就不問', r.dirty.over);

@@ -20,25 +20,13 @@ const CIVIC = (() => {
     // ---------- 治安 ----------
     function crime(w, C, d) {
         const all = npcs(w).filter(a => !jailed(w, a)); if (all.length < 4) return;
-        const guards = all.filter(a => a.job?.key === 'guard').length;
-        const thieves = all.filter(a => cash(w, a) < 5 && (has(a, 'lazy') || has(a, 'jealous') || has(a, 'abrasive') || (() => { try { return DARK.honesty(a) < 2.5; } catch (e) { return false; } })()));
-        const p = (C.slum ? 0.12 : 0.05);
-        for (const th of thieves) {
-            if (Math.random() > p) continue;
-            const vic = all.filter(a => a !== th && cash(w, a) >= 60).sort(() => Math.random() - 0.5)[0]; if (!vic) continue;
-            const n = Math.min(Math.floor(cash(w, vic) * 0.2), 30); if (n < 5 || !WALLET.take(w, vic, n)) continue; WALLET.add(w, th, n); C.thefts++;
-            (C.tlog || (C.tlog = [])).push(d); C.tlog = C.tlog.filter(x => d - x < 14); // v11.8.0 最近兩週的竊案（給抓到人的守衛看）
-            const catchP = Math.min(0.85, 0.15 + guards * 0.2);
-            if (Math.random() < catchP) {
-                C.caught++;
-                try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, th, vic, n); } catch (e) {} // v11.9.0 記下誰被偷過（偷竊罰則的提案由被偷過的人提）
-                // v11.9.0 罰則可以由全鎮提案改：從輕（不關，罰錢給公庫；days 是 0）／照舊（關 3 天）／從重（關 5 天）（sim-decide-home.js）
-                const law = (typeof HOME !== 'undefined' && HOME.theftLaw) ? HOME.theftLaw(w) : 'normal';
-                const days = law === 'light' ? 0 : (law === 'harsh' ? 5 : 3) + ((C.tlog || []).length > 5 ? 2 : 0); // 「偷太多就多關兩天」看最近兩週的竊案；以前看的是開局以來的總數，開局沒多久之後每個小偷都多關兩天
-                // v11.8.0 抓不抓得到照舊看天；抓到之後照不照規矩辦、放不放、收不收錢，由抓到人的那位守衛自己決定（sim-decide-order.js caught）
-                if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'theft', th: th.agentId, vic: vic.agentId, n, days, d, c0: Math.round(cash(w, th) - n) })) continue;
-                jailDo(w, C, th, vic, n, days, d);
-            } else { unseen(w, th, vic, n); try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, null, vic, n); } catch (e) {} }
+        // v11.11.0 偷不偷由本人決定（sim-decide-order.js steal）：下面這個機率只是「動了念頭」的時機，動念之後忍著、偷誰、去借還是去求救濟，他自己選。
+        // 決策核心沒開（新鎮的第一天）就不會有人動念。動念的機率比以前「直接去偷」高一些（0.05→0.08，貧民區 0.12→0.19）：
+        // 動了念頭的人大約六成真的去偷，其餘忍住、去借或去求救濟，整體竊案數跟以前差不多（見 v11.11.0 回報的新舊對照）
+        if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.tempt) {
+            const thieves = all.filter(a => cash(w, a) < 5 && (has(a, 'lazy') || has(a, 'jealous') || has(a, 'abrasive') || (() => { try { return DARK.honesty(a) < 2.5; } catch (e) { return false; } })()));
+            const p = (C.slum ? TEMPT.slum : TEMPT.base);
+            for (const th of thieves) { if (Math.random() > p) continue; try { ORDER.tempt(w, th); } catch (e) { console.warn('[Civic] tempt', e); } }
         }
         // 牢裡的人
         for (const [id, until] of Object.entries(C.jail)) { const a = w.agents[id]; if (!a && w.isAway?.(id)) continue; if (!a || a.isDead) { delete C.jail[id]; continue; } if (until <= d) { delete C.jail[id]; log(w, 'event', '🔓 {a}出獄了。', { a: a.name }, a.name); mem(w, a, '終於出來了，我得重新做人。', {}, 6); } else a.moodModifier = (a.moodModifier || 0) - 2; }
@@ -48,6 +36,27 @@ const CIVIC = (() => {
         if (C.slum && C.poorDays === 0) { C.slum = false; log(w, 'event', '🏘️ 大家的日子好轉，貧民區慢慢消失了。', {}); }
         if (C.slum) for (const a of all) if (cash(w, a) < 10) a.moodModifier = (a.moodModifier || 0) - 1;
     }
+    // v11.11.0 真的下手了：錢從失主到小偷；抓不抓得到照舊看天（守衛越多越容易），抓到之後由抓到人的守衛決定（sim-decide-order.js caught）
+    function stealDo(w, th, vic, n) {
+        const C = S(w); const d = day(w); if (!th || !vic || th === vic || !(n >= 5) || jailed(w, th) || !WALLET.take(w, vic, n)) return null; WALLET.add(w, th, n); C.thefts++;
+        (C.tlog || (C.tlog = [])).push(d); C.tlog = C.tlog.filter(x => d - x < 14); // v11.8.0 最近兩週的竊案（給抓到人的守衛看）
+        const guards = npcs(w).filter(a => !jailed(w, a) && a.job?.key === 'guard').length;
+        const catchP = Math.min(0.85, 0.15 + guards * 0.2);
+        if (Math.random() < catchP) {
+            C.caught++; (C.clog || (C.clog = [])).push(d); C.clog = C.clog.filter(x => d - x < 14);
+            try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, th, vic, n); } catch (e) {} // v11.9.0 記下誰被偷過（偷竊罰則的提案由被偷過的人提）
+            // v11.9.0 罰則可以由全鎮提案改：從輕（不關，罰錢給公庫；days 是 0）／照舊（關 3 天）／從重（關 5 天）（sim-decide-home.js）
+            const law = (typeof HOME !== 'undefined' && HOME.theftLaw) ? HOME.theftLaw(w) : 'normal';
+            const days = law === 'light' ? 0 : (law === 'harsh' ? 5 : 3) + ((C.tlog || []).length > 5 ? 2 : 0); // 「偷太多就多關兩天」看最近兩週的竊案
+            mem(w, th, '我實在沒辦法，偷了{v}的 {n} 銀幣，結果被衛兵逮個正著。', { v: vic.name, n }, 7);
+            if (typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'theft', th: th.agentId, vic: vic.agentId, n, days, d, c0: Math.round(cash(w, th) - n) })) return { caught: true };
+            jailDo(w, C, th, vic, n, days, d); return { caught: true };
+        }
+        unseen(w, th, vic, n); try { if (typeof HOME !== 'undefined' && HOME.stolen) HOME.stolen(w, null, vic, n); } catch (e) {}
+        mem(w, th, '我偷了{v}的 {n} 銀幣，沒有人發現。心裡七上八下的。', { v: vic.name, n }, 7);
+        return { caught: false };
+    }
+    const TEMPT = { base: 0.08, slum: 0.19 };
     // v11.8.0 抓到小偷：還錢、關幾天（原本 crime 裡的那一段，給「守衛自己決定關他」那條路共用；效果一模一樣）
     function jailDo(w, C, th, vic, n, days, d) {
         { const back = Math.min(n, cash(w, th)); if (back > 0 && WALLET.take(w, th, back)) WALLET.add(w, vic, back); } /* v7.6.0 只還得回小偷身上還有的錢 */
@@ -78,11 +87,21 @@ const CIVIC = (() => {
         let dir = null; if (((TR ? TR.needTax(w) : tr < Math.max(60, all.length * 4)) || short) && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04 && (TR ? TR.high(w) : tr >= all.length * 8)) dir = 'down';
         if (!dir) return;
         const who = dir === 'up' ? (all.find(a => a.job?.key === 'mayor') || all.find(a => has(a, 'hardworking'))) : (all.filter(a => cash(w, a) < 10).sort((x, y) => (has(y, 'charismatic') ? 1 : 0) - (has(x, 'charismatic') ? 1 : 0))[0]);
-        if (!who) return; C.lastTax = d;
+        if (!who) return;
+        return taxMake(w, C, d, who, dir, tax, TR);
+    }
+    function taxMake(w, C, d, who, dir, tax, TR) {
+        const P = w.proposals; C.lastTax = d;
         const nt = Math.round((dir === 'up' ? tax + 0.05 : tax - 0.05) * 100) / 100;
         const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir, tk: dir === 'up' ? '加稅到 {n}%' : '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: dir === 'up' ? (TR ? '{who}說公庫只夠付 {d} 天的薪水與維護，提議把稅從 {a}% 調到 {n}%。' : '{who}說公庫快見底了，提議把稅從 {a}% 調到 {n}%。') : '{who}說大家快活不下去了，提議把稅從 {a}% 降到 {n}%。', dp: { who: who.name, a: Math.round(tax * 100), n: Math.round(nt * 100), d: TR ? Math.floor(TR.days(w)) : 0 }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) };
         const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = dir; }
         return p;
+    }
+    // v11.12.0 公庫吃緊時首長自己決定提案加稅（sim-fiscal.js 的 fiscTight）：跟上面同一個提案、同樣全鎮投票；同樣隔 15 天、已經有稅率的案在表決時不提、稅率 25% 以上不再加
+    function taxUp(w, who) {
+        const P = w.proposals; if (!P?._createWith || !w.wallet || !who) return null; const C = S(w), d = day(w); if (d - C.lastTax < 15) return null;
+        if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return null; const tax = w.wallet.tax ?? 0.1; if (tax >= 0.25) return null;
+        const TR = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null; return taxMake(w, C, d, who, 'up', tax, TR) || null;
     }
     function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return t('稅率從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(w.wallet.tax * 100)); } // v9.18.0 以前回傳 tpl 物件，提案卡顯示成 [object Object]
     function taxVote(w, p, a) {
@@ -161,7 +180,7 @@ const CIVIC = (() => {
     }
     function view(w) { const C = S(w); return { slum: C.slum, thefts: C.thefts, caught: C.caught, jailed: Object.entries(C.jail).filter(([id, u]) => u > day(w) && w.agents[id]).map(([id]) => t(w.agents[id].name)), guards: npcs(w).filter(a => a.job?.key === 'guard').length, land: landPrice(w), rent: C.lastRent || 0, tax: Math.round((w.wallet?.tax ?? 0.1) * 100) }; }
     const chip = (w, a) => (jailed(w, a) ? `⛓️ ${t('坐牢中')}` : '');
-    return { S, daily, crime, taxProposal, applyTax, taxVote, rent, grand, brides, royalWed, migration, landPrice, jailed, view, chip, jailDo, unseen };
+    return { S, daily, crime, stealDo, TEMPT, taxProposal, taxUp, applyTax, taxVote, rent, grand, brides, royalWed, migration, landPrice, jailed, view, chip, jailDo, unseen };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tax = { icon: '💰', label: '稅率' };
 if (typeof ProposalSystem !== 'undefined') {

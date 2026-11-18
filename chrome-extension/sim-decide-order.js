@@ -19,6 +19,9 @@
 //   候選人塞錢要報社替他說話(pressBuy)              收下／不收／不收還登出來
 //   抓到小偷或趁亂搶東西的人(caught)                關起來／只叫他還回去／放他一馬／收錢了事
 //   襲擊來了(raidCall)                            出去打／守在牆內／花錢消災／帶大家躲起來
+// v11.11.0 窮與貪：
+//   窮到動了偷的念頭(steal)                         忍著／偷某人（最有錢不熟的、有錢認識的、有錢有過節的）／去跟熟人開口借／到鎮上求救濟
+//   有一家報社可以買(buyPaper)                      不買／買（前三有錢的人各自決定，第一個說要的買到；一次問三位，aiKind 3）
 // 每個選擇點只問跟這件事有關的那一兩個人（篩選與冷卻寫在各自那一段）；用自己的一組 AI 額度（order，一天 8 件），輪不到 AI 的照個性決定。
 // 結算全部在原本的系統裡（sim-society.js、sim-press.js、sim-civic.js、sim-aftermath.js、sim-town.js），原本的效果抽成函式共用，這裡不改任何數字。
 // 傾向分數照「以前大概多常發生」算起跑分數（tiltN），再加上交情、個性與處境：沒開 AI 時整體頻率跟以前差不多，誰會那樣做看的是人。
@@ -532,6 +535,86 @@ const ORDER = (() => {
         },
     }));
 
+    // ================= D. 偷不偷（v11.11.0） =================
+    // 以前：身上不到 5 銀幣又懶、嫉妒、暴躁或不老實的人，每天照機率就去偷，偷誰隨機。
+    // 現在：那個機率是「動了念頭」的時機（看天），動念之後偷不偷、偷誰、還是去借、去求救濟，由本人決定。偷了之後抓不抓得到照舊看天（CIVIC.stealDo）。
+    const LAWS = { light: '抓到了不關，要把錢還回去，再罰最多 10 銀幣給公庫', normal: '抓到了要把錢還回去，關 {d} 天', harsh: '抓到了要把錢還回去，關 {d} 天（鎮上表決過，從重處罰）' };
+    const lawOf = (w) => { try { return typeof HOME !== 'undefined' && HOME.theftLaw ? HOME.theftLaw(w) : 'normal'; } catch (e) { return 'normal'; } };
+    const stealN = (w, v) => Math.min(Math.floor(cash(w, v) * 0.2), 30);
+    const rich = (w, a) => npcs(w).filter(o => o !== a && live(w, o.agentId) && !jailed(w, o) && (o.age ?? 30) >= 16 && cash(w, o) >= 60 && stealN(w, o) >= 5);
+    function marks(w, a) { // 動念時想到的人選：最有錢但不熟的、有錢而且認識的、有錢又跟自己有過節的（最多三位，不重複）
+        const pool = rich(w, a).filter(o => !isFam(w, a, o)).sort((x, y) => cash(w, y) - cash(w, x)); const out = [];
+        const add = (o, why) => { if (o && !out.some(x => x.o === o)) out.push({ o, why }); };
+        add(pool.find(o => Math.abs(aff(a, o)) < 10 && !cold(w, a, o)), 'far'); add(pool.find(o => aff(a, o) >= 10), 'known'); add(pool.find(o => aff(a, o) <= -15 || cold(w, a, o)), 'foe');
+        if (!out.length && pool.length) add(pool[Math.floor(Math.random() * pool.length)], 'far');
+        return out.slice(0, 3);
+    }
+    const lenderOf = (w, a) => { try { const owes1 = (l) => (w.dark?.debts || []).some(x => !x.done && x.cash && x.r === a.agentId && x.l === l.agentId); return npcs(w).filter(o => o !== a && live(w, o.agentId) && !jailed(w, o) && cash(w, o) >= 40 && aff(o, a) >= 10 && !owes1(o)).sort((x, y) => aff(y, a) - aff(x, a))[0] || null; } catch (e) { return null; } };
+    const reliefOk = (w, a) => { const P = w.proposals; if (!P?._createWith || (w.stockpile?.get?.('silver') || 0) < 60) return false; const d = day(w); if (d - (P.cooldown?.['relief:' + a.agentId] ?? -999) < 15 || d - (P.proposerCooldown?.[a.agentId] ?? -999) < 3) return false; return !(P.items || []).some(p => p.kind === 'relief' && p.refKey === a.agentId && ['open', 'shelved', 'approved'].includes(p.status)); };
+    function stealInfo(w, a, c) {
+        if (!c || day(w) - (c.d ?? 0) > 1 || !live(w, a.agentId) || jailed(w, a) || cash(w, a) >= 10 || (a.age ?? 30) < 16) return null; // 等回話的這段時間有了錢、被關、走了：念頭就過去了
+        const ms = marks(w, a); if (!ms.length) return null;
+        const Cv = w.civic || {}; const d = day(w); const recent = (Cv.tlog || []).filter(x => d - x < 14).length; const got = (Cv.clog || []).filter(x => d - x < 14).length;
+        const guards = npcs(w).filter(g => g.job?.key === 'guard' && !jailed(w, g)).length; const law = lawOf(w); const days = law === 'light' ? 0 : (law === 'harsh' ? 5 : 3) + (recent > 5 ? 2 : 0);
+        const kids = npcs(w).filter(k => (k.age ?? 30) < 16 && (k._parentNames || []).includes(a.name)).length;
+        let hungry = 0; try { hungry = typeof MARKET !== 'undefined' && MARKET.isHungry ? MARKET.isHungry(w, a) : 0; } catch (e) {}
+        return { ms, recent, got, guards, law, days, kids, hungry, lender: lenderOf(w, a), relief: reliefOk(w, a), c: Math.floor(cash(w, a)) };
+    }
+    function tempt(w, th) { if (!on(w) || !th || String(th.agentId).startsWith('visit_') || !live(w, th.agentId) || jailed(w, th)) return false; /* 外鎮來的訪客不算 */ const c = { d: day(w) }; if (!stealInfo(w, th, c)) return false; st(w, 'tempt'); ask(w, th, 'steal', c); return true; }
+    const MWHY = { far: '最有錢，跟你不熟', known: '有錢，你們認識', foe: '有錢，跟你有過節' };
+    DECIDE.kind('steal', Object.assign({}, base, {
+        title: '窮到動了偷的念頭', pri: 1.6, aiKind: 2,
+        facts(w, a, c) { const I = stealInfo(w, a, c); if (!I) return '';
+            const list = I.ms.map(m => fill('{v}（{why}；身上大概有 {n} 銀幣，你們{tie}）', { v: m.o.name, why: MWHY[m.why], n: Math.round(cash(w, m.o) / 10) * 10, tie: tieTxt(tie(w, a, m.o)) })).join(t('、'));
+            return fill('你身上只剩 {c} 銀幣{hungry}{kids}你動了偷錢的念頭，想到的人有：{list}。鎮上有 {g} 個守衛，最近兩週鎮上有 {k} 起竊案、抓到 {m} 個。現在的規定是{law}；抓到之後守衛也可能放人或收錢。{lend}{relief}', {
+                c: I.c, hungry: I.hungry >= 1 ? { k: '，已經 {n} 天沒吃飽了。', p: { n: I.hungry } } : { raw: t('。') }, kids: I.kids ? { k: '家裡還有 {n} 個小孩要吃飯。', p: { n: I.kids } } : { raw: '' }, list: { raw: list }, g: I.guards, k: I.recent, m: I.got,
+                law: { k: LAWS[I.law] || LAWS.normal, p: { d: I.days } }, lend: I.lender ? { k: '{l}跟你有交情、手頭寬裕，也可以跟他開口借 {n} 銀幣（一週後要還）。', p: { l: I.lender.name, n: WALLET.loanSize(w, I.lender) } } : { raw: '' },
+                relief: I.relief ? { k: '公庫還有 {s} 銀幣，也可以到鎮上開口求救濟（提案請公庫撥 20 銀幣，要大家投票）。', p: { s: Math.floor(w.stockpile.get('silver')) } } : { raw: '' } }); },
+        options(w, a, c) { const I = stealInfo(w, a, c); if (!I) return []; const hon = honesty(a); const mal = (() => { try { return DARK.malice(a); } catch (e) { return 0; } })();
+            // 處境跟「一般會動這種念頭的人」比：餓得更久、家裡有小孩的更想偷；守衛比平常多、最近抓得比平常勤、罰得重的比較會忍
+            const need = clampN((I.hungry - 1) * 0.1, -0.1, 0.4) + (I.kids ? 0.2 : 0) + (I.c <= 1 ? 0.1 : 0); const risk = clampN((I.guards - 3) * 0.06, -0.2, 0.25) + (I.recent >= 3 ? clampN(I.got / I.recent - 0.65, -0.65, 0.35) * 0.4 : 0) + (I.law === 'harsh' ? 0.25 : I.law === 'light' ? -0.2 : 0);
+            const bad = (has(a, 'greedy') ? 0.3 : 0) + (has(a, 'lazy') ? 0.15 : 0) + (has(a, 'jealous') ? 0.15 : 0) + (hon <= 1.5 ? 0.35 : 0) - (hon >= 3 ? 0.5 : 0) - (has(a, 'kind') ? 0.3 : 0) - (hasV(a, '傳統') ? 0.2 : 0);
+            const out = [{ id: 'hold', quiet: true, mute: true, text: '忍著，不偷', say: '忍住了沒去偷', why: '再窮也不能偷，被抓到就抬不起頭了。', lean: { safe: 0.1 }, adj: risk - need * 0.5 - bad * 0.5, run: () => null }];
+            for (const m of I.ms) { const v = m.o; const n = stealN(w, v); const fv = aff(a, v);
+                out.push({ id: 'take:' + v.agentId, quiet: true, mute: true, text: { k: '偷{v}的錢（大概 {n} 銀幣）', p: { v: v.name, n } }, say: { k: '偷了{v}的錢', p: { v: v.name } }, why: m.why === 'foe' ? { k: '{v}那麼有錢，又那樣對我，拿他一點不算什麼。', p: { v: v.name } } : m.why === 'known' ? '他那麼有錢，少一點也不會怎樣。' : '他不認識我，少這一點不會發現。', lean: { gain: 0.1 },
+                    adj: need + bad * 0.6 - risk * 0.6 + (m.why === 'known' ? -clampN(fv / 50, 0, 1) : m.why === 'foe' ? clampN(mal * 0.1, 0, 0.3) + clampN(-fv / 80, 0, 0.4) : 0), m: m.why,
+                    run: (w2, a2) => { const I2 = stealInfo(w2, a2, c); const v2 = I2 && I2.ms.find(x => x.o.agentId === v.agentId)?.o || (I2 && live(w2, v.agentId) && cash(w2, v) >= 60 ? v : null); if (!I2 || !v2) return null; const n2 = stealN(w2, v2); if (n2 < 5 || typeof CIVIC === 'undefined') return null;
+                        const r = CIVIC.stealDo(w2, a2, v2, n2); if (!r) return null; st(w2, 'steal'); return r.caught ? { k: '偷了{v} {n} 銀幣，被衛兵抓到了', p: { v: v2.name, n: n2 } } : { k: '偷了{v} {n} 銀幣，沒有人發現', p: { v: v2.name, n: n2 } }; } }); }
+            if (I.lender) { const l = I.lender; out.push({ id: 'borrow:' + l.agentId, quiet: true, text: { k: '去跟{l}開口借 {n} 銀幣（一週後要還）', p: { l: l.name, n: WALLET.loanSize(w, l) } }, say: { k: '去跟{l}開口借錢', p: { l: l.name } }, why: { k: '偷東西不行，先跟{l}開口看看。', p: { l: l.name } }, lean: { bond: 0.1 }, adj: clampN(aff(a, l) / 80, 0, 0.6) - (has(a, 'shy') ? 0.3 : 0) - (has(a, 'abrasive') ? 0.2 : 0) + (hon >= 3 ? 0.3 : 0),
+                run: (w2, a2) => { const I2 = stealInfo(w2, a2, c); const l2 = I2 && live(w2, l.agentId); if (!l2) return null; st(w2, 'borrow'); DECIDE.enqueue(w2, l2, 'asked', { from: a2.agentId, n: WALLET.loanSize(w2, l2) }); return { k: '去跟{l}開口了', p: { l: l2.name } }; } }); }
+            if (I.relief) out.push({ id: 'beg', quiet: true, text: '到鎮上開口求救濟（請公庫撥 20 銀幣，要大家投票）', say: '到鎮上開口求救濟', why: '丟臉也沒辦法，總比去偷好。', lean: { face: -0.1 }, adj: (hon >= 3 ? 0.3 : 0) + (hasV(a, '社群') ? 0.2 : 0) - (has(a, 'shy') ? 0.3 : 0) - (hasV(a, '權力') ? 0.2 : 0) + need * 0.3,
+                run: (w2, a2) => { const I2 = stealInfo(w2, a2, c); if (!I2 || !I2.relief) return null; const P = w2.proposals; const d = day(w2); const nm = a2.name;
+                    const cand = { kind: 'relief', key: 'relief:' + a2.agentId, refKey: a2.agentId, jobs: [], make: () => ({ kind: 'relief', key: 'relief:' + a2.agentId, refKey: a2.agentId, tk: '撥一筆救濟金給{name}', tp: { name: nm }, dk: '{name}身上快沒錢了，自己到鎮上開口求救濟，請公庫撥 20 銀幣讓他喘口氣。', dp: { name: nm }, cost: { silver: 20 }, category: 'welfare' }) };
+                    let p = null; try { p = P._createWith(w2, d, cand, a2); } catch (e) { console.warn('[Order] relief', e); } if (!p) return null; p.refKey = a2.agentId; st(w2, 'beg'); mem(w2, a2, '我實在沒辦法，到鎮上開口求救濟，丟臉也只能這樣了。', {}, 6); return { k: '提了救濟的提案，等大家投票' }; } });
+            const P = { hold: 0.22, far: 0.36, known: 0.12, foe: 0.12, borrow: 0.12, beg: 0.06 };
+            return cal(out, out.map(o => P[o.m || String(o.id).split(':')[0]] || 0.1));
+        },
+    }));
+
+    // ================= E. 買不買報社（v11.11.0） =================
+    // 以前：每週 25% 機率，鎮上最有錢的人自動買下一家沒有老闆的報社。現在：那 25% 是「剛好有報社可以買」的時機，前三有錢、符合條件的人各自決定，第一個說要的買到
+    const PW = () => (typeof POWER !== 'undefined' ? POWER : null);
+    function paperAsk(w, P, q) { if (!on(w) || !P || !PW()) return false; const ids = q.map(a => a.agentId); const d = day(w); const list = q.filter(a => live(w, a.agentId) && !jailed(w, a)).map(a => ({ a, kind: 'buyPaper', ctx: { pid: P.id, d, q: ids } })); if (!list.length) return false; st(w, 'paperAsk'); DECIDE.askNow(w, list); return true; }
+    function paperInfo(w, a, c) { const P = c && paper(w, c.pid); if (!P || !PW() || !PW().paperFree(P) || day(w) - (c.d ?? 0) > 1 || !live(w, a.agentId) || jailed(w, a) || cash(w, a) < PW().PAPER_PRICE + 20) return null;
+        const others = (c.q || []).filter(id => id !== a.agentId).map(id => live(w, id)).filter(Boolean); const owned = (w.press?.papers || []).filter(x => x.owner && w.agents[x.owner]).map(x => ({ P: x, o: w.agents[x.owner] }));
+        return { P, others, owned, boss: PW().isOwner(w, a), pol: a.job?.key === 'mayor' || (w.council?.members || []).includes(a.agentId) }; }
+    DECIDE.kind('buyPaper', Object.assign({}, base, {
+        title: '有一家報社可以買', pri: 1.2, aiKind: 3,
+        facts(w, a, c) { const I = paperInfo(w, a, c); if (!I) return ''; const n = PW().PAPER_PRICE;
+            return fill('{paper}現在沒有老闆，花 {n} 銀幣就能買下來。{cred}買下之後你就是東家：報上登什麼你說了算，對你和你的人不利的新聞可以壓下來，讀者也會比較聽你的；可是收買報社的名聲傳出去，報紙的信譽會掉一些。你身上有 {c} 銀幣。{owned}{others}', { paper: I.P.name[0], n, cred: credTxt(I.P), c: Math.floor(cash(w, a)),
+                owned: I.owned.length ? { k: '鎮上已經有報社的東家：{x}。', p: { x: { raw: I.owned.map(x => fill('{o}（{p}）', { o: x.o.name, p: x.P.name[0] })).join(t('、')) } } } : { raw: '' },
+                others: I.others.length ? { k: '{x}也在打這家報社的主意，誰先開口就是誰的。', p: { x: { raw: names(I.others) } } } : { raw: '' } }); },
+        options(w, a, c) { const I = paperInfo(w, a, c); if (!I) return []; const pp = I.P.name[0];
+            return cal([
+                { id: 'pass', quiet: true, mute: true, text: '不買', say: { k: '沒有買下{paper}', p: { paper: pp } }, why: '花這筆錢買報社，不划算。', lean: { safe: 0.1 }, run: () => null },
+                { id: 'buy', quiet: true, text: { k: '花 {n} 銀幣買下{paper}', p: { n: PW().PAPER_PRICE, paper: pp } }, say: { k: '買下了{paper}', p: { paper: pp } }, why: '手上有報紙，說話才有人聽。', lean: { face: 0.2, safe: -0.1 },
+                    adj: (hasV(a, '權力') ? 0.4 : 0) + (has(a, 'ambitious') ? 0.3 : 0) + (I.boss ? 0.25 : 0) + (I.pol ? 0.3 : 0) + (cash(w, a) >= 400 ? 0.2 : 0) - (has(a, 'thrifty') ? 0.4 : 0) - (has(a, 'ascetic') ? 0.3 : 0) - (hasV(a, '自由') ? 0.2 : 0),
+                    run: (w2, a2) => { const P2 = paper(w2, c.pid); if (!P2) return null; if (!PW().paperFree(P2)) { const o = w2.agents[P2.owner]; return o && o !== a2 ? { k: '晚了一步，{paper}已經被{o}買下了', p: { paper: pp, o: o.name } } : null; }
+                        if (!paperInfo(w2, a2, c) || !PW().paperBuy(w2, a2, P2)) return { k: '沒買成' }; st(w2, 'paperBuy'); return { k: '買下了{paper}', p: { paper: pp } }; } },
+            ], [0.45, 0.55]);
+        },
+    }));
+
     // ================= 每天 =================
     if (typeof ProposalSystem !== 'undefined') {
         const PS = ProposalSystem.prototype; const _daily = PS.daily;
@@ -543,6 +626,6 @@ const ORDER = (() => {
         const _load = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.order = (data?.order && typeof data.order === 'object') ? data.order : null; } catch (e) {} return r; };
     }
     DECIDE.order = true; // 其他系統看到這個，就知道小團體、報社、治安裡的這些事交給本人決定
-    return { on, S, found, leaveCheck, rival, row, scoop, smearAsk, fixAsk, banAsk, underAsk, buyAsk, caught, raid, verDaily, tiltN, tie, FZH, leaderOf, settle };
+    return { on, S, found, leaveCheck, rival, row, scoop, smearAsk, fixAsk, banAsk, underAsk, buyAsk, caught, raid, verDaily, tiltN, tie, FZH, leaderOf, settle, tempt, stealInfo, paperAsk };
 })();
 if (typeof globalThis !== 'undefined') globalThis.ORDER = ORDER;

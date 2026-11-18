@@ -315,7 +315,8 @@ const REPEAL = (() => {
         try { L.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', '全鎮投票罷免了我，要提前改選了。', {}, 9, []); L.moodModifier = (L.moodModifier || 0) - 10; } catch (e) {}
         try { if (typeof TIERS !== 'undefined') TIERS.hint(w, L.agentId, 'recall'); } catch (e) {} // v11.10.1 從政履歷記下是被罷免的
         try { E.triggerElection(w); } catch (e) { console.warn('[Repeal] recall', e); }
-        if (!E.active && L.job?.key === 'mayor') { L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader && typeof Job !== 'undefined') ? new Job('trader') : null; try { w.logMessageT?.('event', '📢 {m}被罷免下台，等待補選。', { m: L.name }, L.name); } catch (e) {} try { if (typeof HOME !== 'undefined' && HOME.afterOffice) HOME.afterOffice(w, L, 'recall'); } catch (e) {} } // v11.9.0 下台之後做什麼由本人決定
+        if (!E.active && L.job?.key === 'mayor') { try { w.logMessageT?.('event', '📢 {m}被罷免下台，等待補選。', { m: L.name }, L.name); } catch (e) {} // v11.11.0 跟選輸、被迫下台同一套：先照慣例改當商人，再由本人決定之後做什麼（sim-decide-home.js）
+            if (typeof HOME !== 'undefined' && HOME.outOfOffice) { try { HOME.outOfOffice(w, L, 'recall'); } catch (e) { console.warn('[Repeal] after office', e); } } else L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader && typeof Job !== 'undefined') ? new Job('trader') : null; }
         news(w, `📢 ${t('全鎮表決罷免了')}${t(L.name)}`, 9);
         return t('罷免通過，提前改選');
     }

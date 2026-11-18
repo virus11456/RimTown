@@ -27,12 +27,13 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // v11.8.0 抓到之後關不關由抓到人的守衛自己決定（sim-decide-order.js，v110800_test 測）；這裡測的是原本的治安規則，所以這幾步不問守衛、照原本那條路
       const _ordOn = typeof ORDER !== 'undefined' ? ORDER.on : null; if (_ordOn) ORDER.on = () => false;
       // 抓到
-      seq([0.01, 0.01], () => CIVIC.crime(w, C, D)); out.caught = C.jail[thief.agentId] > D && WALLET.get(w, vic) === 200 && logHas(/衛兵抓到|guards caught/);
+      // v11.11.0 偷不偷由本人決定（sim-decide-order.js steal，v111100_test 測）；這裡測的是下手之後原本的結算（抓不抓得到看天、抓到坐牢、沒抓到成了祕密）
+      seq([0.01], () => CIVIC.stealDo(w, thief, vic, 30)); out.caught = C.jail[thief.agentId] > D && WALLET.get(w, vic) === 200 && logHas(/衛兵抓到|guards caught/);
       // 出獄
       D = C.jail[thief.agentId]; seq([0.99], () => CIVIC.crime(w, C, D)); /* 出獄這天不讓他再偷：不固定的話有 2.75% 機率當天又偷又被抓，這一項和下一項就誤判 */ out.released = !C.jail[thief.agentId] && logHas(/出獄|released/);
       // 沒抓到 → 祕密
       all[2].job.key = 'farmer'; all[3].job.key = 'farmer'; w.wallet.bal[thief.agentId] = 0; D++;
-      const ns = (w.dark?.secrets || []).length; seq([0.01, 0.99], () => CIVIC.crime(w, C, D)); out.secret = (w.dark?.secrets || []).length > ns && WALLET.get(w, vic) < 200;
+      const ns = (w.dark?.secrets || []).length; seq([0.99], () => CIVIC.stealDo(w, thief, vic, 30)); out.secret = (w.dark?.secrets || []).length > ns && WALLET.get(w, vic) < 200;
       // 貧民區
       for (const a of all) w.wallet.bal[a.agentId] = 0; C.poorDays = 9; D++; fix(0.99, () => CIVIC.crime(w, C, D)); out.slum = C.slum && logHas(/貧民區|slum/); if (_ordOn) ORDER.on = _ordOn;
       // 稅率提案
