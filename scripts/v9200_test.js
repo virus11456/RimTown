@@ -87,7 +87,8 @@ async function apiTest() {
       for (const a of people().slice(0, 4)) { a.personality = a.personality || {}; a.personality.traits = [...(a.personality.traits || []), 'brave']; } // 有人敢清剿
       const n0 = C.zb.ids.length; let bitSeen = 0, hidMem = false;
       const R0 = Math.random; let seq = 0; Math.random = () => { seq++; return (seq % 7) / 7; };
-      try { for (let i = 0; i < 6 && w.worldcal.cur; i++) { WORLDCAL._t.zombieDaily(w, C); bitSeen = Math.max(bitSeen, Object.keys(C.zb.bit).length); d++; } } finally { Math.random = R0; }
+      const _on = DECIDE.on; DECIDE.on = () => false; // v11.7.0 瞞不瞞、下不下手改由當事人決定（v110700_test.js）；這裡用固定的亂數測決策核心沒開時原本的機率
+      try { for (let i = 0; i < 6 && w.worldcal.cur; i++) { WORLDCAL._t.zombieDaily(w, C); bitSeen = Math.max(bitSeen, Object.keys(C.zb.bit).length); d++; } } finally { Math.random = R0; DECIDE.on = _on; }
       out.spread = { n0, n1: C.zb.ids.length, bit: C.zb.st.bitten, turned: C.zb.st.turned, killed: C.zb.st.killed, hid: C.zb.st.hid, bitSeen, cap: C.zb.ids.length + Object.keys(C.zb.bit).length <= Math.ceil((people().length + C.zb.ids.length) * 0.4) + 1, left: people().length };
       // 5) 解藥做完 → 全部變回人
       if (!C.zb.ids.length) WORLDCAL._t.zTurn(w, C, people()[0], true); // 守衛可能已經清光,補一個

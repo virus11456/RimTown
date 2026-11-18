@@ -1195,6 +1195,22 @@ Object.assign(RimTownApp.prototype, {
                 S += `<div class="pp-issue-hint">👁️ ${t('眼力好的人（守衛、鎮長、學者…）比較容易看穿；被拆穿的人會失去大家的信任。')}</div></div>`;
             }
         } catch (e) {}
+        // v11.10.0 導演安排的場合：小鎮太平靜時導演只安排誰跟誰碰面（只有你看得到），碰上之後兩個人各自怎麼選
+        try {
+            const DV = this.world?.directorView ? this.world.directorView(6) : [];
+            if (DV.length) {
+                const nmL = (n) => esc(t(n || '')); const STG = { set: ['安排好了，還沒碰上', 'y'], met: ['碰上了', 'g'], miss: ['沒碰上', 'n'], gone: ['有人不在了', 'n'] }; const say = (x) => { try { return x == null ? '' : typeof x === 'string' ? t(x) : x.raw != null ? String(x.raw) : x.k ? Memory.render(x.k, x.p || {}) : ''; } catch (e) { return ''; } };
+                S += `<div class="pp-issues pp-director"><h4 class="pp-h">🎬 ${t('導演安排的場合')} <span class="pp-count">${DV.length}</span></h4>`;
+                for (const v of DV) {
+                    const pl = esc((() => { try { return locName(this.world, v.place); } catch (e) { return v.place; } })()); const [a, b, r] = v.nm;
+                    const txt = v.kind === 'meet' ? (v.viaNm ? t('讓{c}約{a}和{b}去{p}吃飯').replace('{c}', nmL(v.viaNm)) : t('讓{a}和{b}傍晚都去了{p}')) : v.kind === 'stir' ? t('讓{a}在{p}碰上{b}') : t('讓{a}在{p}看見{b}和{r}在一起');
+                    const st = STG[v.stage] || STG.set; const head = `${t('第 {n} 天').replace('{n}', v.d)} · ${txt.replace('{a}', nmL(a)).replace('{b}', nmL(b)).replace('{r}', nmL(r)).replace('{p}', pl)}${v.tries > 1 ? ` ${t('（第二次安排）')}` : ''}`;
+                    const picks = v.stage === 'met' ? (v.picks || []).map(q => `<li class="sk-a">${nmL(q.name)}${t('：')}<span class="sk-ans">${q.wait ? t('還在想') : q.what ? esc(say(q.what)) + (q.ai ? ' ✍️' : '') : t('還沒決定')}</span></li>`).join('') : '';
+                    S += `<div class="pp-issue pg-truth pg-dir"><span class="pg-tr-ic" aria-hidden="true">🎬</span><span class="pg-tr-tx">${head}${picks ? `<ul class="sk-ask">${picks}</ul>` : ''}</span><span class="ic-chip ic-${st[1]}">${t(st[0])}</span></div>`;
+                }
+                S += `<div class="pp-issue-hint">🎬 ${t('小鎮太平靜時，導演只安排誰跟誰碰面；碰上了之後怎麼想、怎麼做，是他們自己決定的。')}</div></div>`;
+            }
+        } catch (e) {}
         const nIss = (d.issues || []).length, hot = (d.issues || []).some(x => x.sev >= 3 || (!x.by && x.idle >= 3));
         let nSec = 0; try { const dv = (typeof DARK !== 'undefined' && this.world) ? DARK.view(this.world) : null; nSec = dv ? dv.secrets.length + dv.mis.length : 0; } catch (e) {}
         if (!T) T = `<div class="ob-empty" style="margin:10px 4px"><span class="ob-empty-icon">🌤️</span>${t('鎮上目前風平浪靜，沒有急事。')}</div>`;

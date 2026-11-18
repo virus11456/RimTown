@@ -119,7 +119,8 @@ const PETS = (() => {
                 continue;
             }
             if (!p.owner) continue;
-            const a = w.agents[p.owner]; p.ownerName = a.name;
+            const a = w.agents[p.owner]; if (!a) continue; // 主人出遠門：人不在鎮上，這幾天沒人陪（以前這裡讀不到主人就出錯，當天後面的寵物全都沒被處理）
+            p.ownerName = a.name;
             a.addThought?.('pet_company', w);
             if (a.needs) a.needs.social = Math.min(100, (a.needs.social || 0) + 8);
             p.bond = Math.min(100, (p.bond || 0) + 2);

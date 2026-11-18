@@ -190,4 +190,69 @@
             ];
         },
     });
+
+    // ---------- v11.10.0 舊帳被提起（導演讓兩個處不來的人碰上；或發現有人跟你喜歡同一個人） ----------
+    // 以前：戲劇導演直接把交惡兩人的好感各扣 6～10；兩個人喜歡同一個單身的人，每天 20% 機率雙方各扣 8～20。
+    // 現在：導演只讓兩人傍晚碰在同一個地方；發現情敵的那一刻照舊看天。碰上之後被觸動的人自己決定，好感只因為他選的那件事而變：
+    //   忍下來／當面再吵一次（吵完冷戰，誰先開口、要不要和好照 makeup、reached）／趁這次把話講開（有冷戰就先開口、欠他一個道歉就去道歉、不然找他談）／回頭跟朋友抱怨（照 vent 的講壞話）
+    //   情敵那一種多一項：不爭了，放下那個人。
+    // grudge 要有一件「誰對不起誰」的事、feud 要兩邊都恨到 -35 以下，導演挑的人兩樣都不一定有，所以另開這一個選擇點。
+    const rnd = (lo, hi) => lo + Math.floor(Math.random() * (hi - lo + 1));
+    const REF = 1; // 起跑分數：照個性推估時「以前一定發生的那一項」大概多常被選，全鎮量過再定
+    const mem = (w, a, k, p, imp = 5) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'social', k, p || {}, imp, []); } catch (e) {} };
+    const rel = (a, b) => { try { return a.relationships.getOrCreate(b.agentId, b.name); } catch (e) { return null; } };
+    const where = (w, c) => { try { return c?.place && typeof locName === 'function' ? locName(w, c.place) : ''; } catch (e) { return ''; } };
+    const stirOf = (w, a, c) => {
+        if (!c || !DECIDE.on(w)) return null; const b = w.agents[c.b]; if (!b || b === a || !ok(w, b)) return null; const o = c.o ? w.agents[c.o] : null; if (c.src === 'rival' && (!o || o.isDead)) return null;
+        let l = null; for (const r of Object.values(a.relationships?.relationships || {})) { const x = w.agents[r.targetId]; if (!x || x === b || x === o || (r.affinity || 0) < 5 || !ok(w, x) || (x.age ?? 30) < 16) continue; if (!l || r.affinity > aff(a, l)) l = x; }
+        return { b, o, l, f: Math.round(aff(a, b)), g: Math.round(aff(b, a)), rv: c.src === 'rival' };
+    };
+    DECIDE.kind('stir', {
+        title: '舊帳被提起', scan: false, pri: 1.1, aiKind: 2,
+        when: () => null,
+        facts(w, a, c) {
+            const I = stirOf(w, a, c); if (!I) return '';
+            if (I.rv) return fill('你發現{b}也喜歡{o}，看{o2}的眼神跟你一樣。你對{b}的好感 {f}。', { b: I.b.name, o: I.o.name, o2: I.o.name, f: I.f });
+            return fill('今天傍晚你在{p}碰到了{b}。你們本來就處不來（你對他 {f}、他對你 {g}），看到他，以前那件事又浮上心頭。', { p: { raw: where(w, c) || t('鎮上某處') }, b: I.b.name, f: I.f, g: I.g });
+        },
+        options(w, a, c) {
+            const I = stirOf(w, a, c); if (!I) return []; const b = I.b, B = { b: b.name }, m = mal(a), Y = WAYS_(); const rv = I.rv;
+            const sc = () => (c.sid && w.director?.log ? w.director.log.find(s => s.id === c.sid) : null);
+            const out = [
+                { id: 'hold', quiet: true, mute: true, text: rv ? '不放在心上，各憑本事' : '忍下來，什麼都不提', say: rv ? { k: '沒有跟{b}較勁', p: B } : { k: '忍下來沒跟{b}提那件事', p: B }, why: rv ? '感情的事勉強不來' : '現在不想把事情鬧大',
+                    base: REF + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'kind') ? 0.2 : 0) + (has(a, 'shy') ? 0.1 : 0), lean: { safe: 0.2 }, run: () => null },
+                // 以前一定照這一項（導演：兩邊各 -6～10；情敵：兩邊各 -8～20）。照個性推估時（全鎮量過）：導演那一種兩邊各自決定，一個人大約六成；情敵那一種大約九成（跑 120 天量過：情敵這一題一個人一年會被問好幾次，選別的那幾成就讓仇結得比以前慢很多）
+                { id: 'fight', quiet: true, text: rv ? { k: '暗自跟{b}較勁，看他越來越不順眼', p: B } : { k: '當面跟{b}再吵一次', p: B }, say: rv ? { k: '暗自跟{b}較勁', p: B } : { k: '當面跟{b}吵了起來', p: B }, why: rv ? '我不會讓給他' : '這口氣我嚥不下去',
+                    base: REF + (rv ? 2.1 : 0.7) + (has(a, 'abrasive') ? 0.4 : 0) + (has(a, 'jealous') ? 0.2 : 0) + (has(a, 'neurotic') ? 0.15 : 0) - (has(a, 'stoic') ? 0.3 : 0) - (has(a, 'kind') ? 0.3 : 0) - (rv ? 0 : (has(a, 'shy') ? 0.3 : 0)) + clampN((-I.f - 25) / 100, -0.1, 0.2), lean: { face: 0.3, safe: -0.2, bond: -0.1 },
+                    run: (w2, a2) => { const b2 = w2.agents[b.agentId]; const R = b2 && rel(a2, b2); if (!R) return null;
+                        if (rv) { // 情敵：心裡較勁，只有自己這一邊變冷（對方怎麼想由他自己的那一題決定）
+                            R.modifyAffinity(-(R.affinity < -10 ? rnd(10, 20) : rnd(8, 15))); R.modifyTrust?.(-5);
+                            if (!R._rivalGossiped && R.affinity <= -25) { R._rivalGossiped = true; try { a2.addThought('rival_formed', w2, b2.agentId, b2.name); } catch (e) {}
+                                try { w2.logMessageT('relationship', '⚡ {agent}和{rival}為了{other}暗自較勁,關係越來越僵...', { agent: a2.name, rival: b2.name, other: I.o.name }, a2.name, b2.name); } catch (e) {} try { w2.gossipNetwork?.createRelGossip(w2, 'rivalry', a2, b2); } catch (e) {} }
+                            return { k: '跟{b}較上勁了', p: B }; }
+                        const S1 = sc(); if (S1?.fought) { R.modifyAffinity(-3); mem(w2, a2, '剛剛跟{b}吵完，心裡還是氣不過。', B, 5); return { k: '心裡還是氣不過', p: B }; } // 對方已經先吵過了：這一場只吵一次
+                        if (S1) S1.fought = a2.agentId;
+                        R.modifyAffinity(-rnd(6, 10)); rel(b2, a2)?.modifyAffinity(-4); a2.moodModifier = (a2.moodModifier || 0) - 3; b2.moodModifier = (b2.moodModifier || 0) - 3;
+                        mem(w2, a2, '我在{p}又跟{b}吵了起來，翻的還是那件舊帳。', { p: { raw: where(w2, c) || t('鎮上某處') }, b: b2.name }, 6); mem(w2, b2, '{a}又跑來翻舊帳，我們吵了一架。', { a: a2.name }, 6);
+                        try { w2.logMessageT('social', '💢 {a}在{p}又跟{b}吵了起來，翻的還是那件舊帳。', { a: a2.name, p: where(w2, c) || t('鎮上某處'), b: b2.name }, a2.name, b2.name); } catch (e) {}
+                        try { if (Y) Y.quarrel(w2, a2, b2); } catch (e) {} // 吵完冷戰：誰先開口、要不要和好由兩個人自己決定（makeup、reached）
+                        return { k: '跟{b}吵了一架', p: B }; } },
+            ];
+            // 趁這次把話講開：正在冷戰就先開口（對方決定理不理）；欠他一個道歉就去道歉（對方決定原不原諒）；不然直接找他談（談不談得攏看兩個人）
+            const cold = !!(Y && w.ways && Y.coldWith(w, a, b)); const wr = (w.dark?.wrongs || []).find(x => !x.done && x.by === a.agentId && x.to === b.agentId) || null;
+            out.push({ id: 'mend', quiet: true, text: cold ? { k: '先開口跟{b}打招呼', p: B } : wr ? { k: '趁這次跟{b}道歉', p: B } : rv ? { k: '找{b}把話攤開', p: B } : { k: '趁這次把話跟{b}講開', p: B }, say: cold ? { k: '先開口跟{b}說話', p: B } : wr ? { k: '去跟{b}道歉', p: B } : { k: '去找{b}把話說開', p: B }, why: '再這樣下去沒意思',
+                base: REF - 0.7 + (has(a, 'kind') ? 0.7 : 0) + (has(a, 'charismatic') ? 0.4 : 0) - (has(a, 'abrasive') ? 0.4 : 0) - (has(a, 'shy') ? 0.5 : 0) + clampN(I.g / 60, -0.3, 0.2) + (wr ? 0.3 : 0) - (rv ? 0.8 : 0), lean: { bond: 0.4, face: -0.1 },
+                run: (w2, a2) => { const b2 = w2.agents[b.agentId]; if (!b2) return null;
+                    if (cold && Y.coldWith(w2, a2, b2)) return Y.reach(w2, a2, b2) ? { k: '先開了口' } : null;
+                    if (wr && !wr.done) return DARK.apologize(w2, wr, 0) ? { k: '話說出口了' } : null;
+                    return DARK.talkOut(w2, a2, b2) ? { k: '心結解開了一些' } : { k: '又吵了一架' }; } });
+            if (I.l) out.push({ id: 'vent', quiet: true, text: { k: '回頭跟{l}抱怨{b}', p: { l: I.l.name, b: b.name } }, say: { k: '跟{l}抱怨{b}', p: { l: I.l.name, b: b.name } }, why: '不說出來憋得難受',
+                base: REF - 0.5 + m * 0.3 + (has(a, 'gossip') ? 0.4 : 0) - (has(a, 'kind') ? 0.7 : 0), lean: { face: 0.2, bond: -0.2 },
+                run: (w2, a2) => { const b2 = w2.agents[b.agentId], l = w2.agents[I.l.agentId]; if (!b2 || !l || !ok(w2, l)) return null; DARK.speak(w2, a2, l, b2, 'dislike', false); return { k: '說完心裡舒服了些' }; } });
+            if (rv) out.push({ id: 'yield', quiet: true, text: { k: '不爭了，把對{o}的心意放下', p: { o: I.o.name } }, say: { k: '不跟{b}爭{o}了', p: { b: b.name, o: I.o.name } }, why: '何必為了這種事結仇',
+                base: REF - 0.7 + (has(a, 'kind') ? 0.3 : 0) + (has(a, 'shy') ? 0.3 : 0) - (has(a, 'jealous') ? 0.3 : 0) - (has(a, 'romantic') ? 0.2 : 0), lean: { safe: 0.2, joy: -0.1 },
+                run: (w2, a2) => { const o = w2.agents[I.o.agentId]; if (!o) return null; rel(a2, o)?.modifyRomantic(-rnd(10, 15)); mem(w2, a2, '我決定不跟{b}爭{o}了。', { b: b.name, o: o.name }, 6); return { k: '放下了對{o}的心意', p: { o: o.name } }; } });
+            return out;
+        },
+    });
 })();

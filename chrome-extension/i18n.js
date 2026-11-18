@@ -64,7 +64,9 @@ const I18N = (() => {
         const fixed = Object.keys(NAME_FIXED).sort((a, b) => b.length - a.length).map(esc).join('|');
         const sn = Object.keys(NAME_SURNAMES).map(esc).join('|');
         const gv = Object.keys(NAME_GIVEN).concat(Object.keys(NAME_FIXED).filter(k => k.length <= 2)).sort((a, b) => b.length - a.length).map(esc).join('|');
-        _nameRe = new RegExp('(?:' + fixed + ')|(?:' + sn + ')(?:' + gv + ')', 'g');
+        // v11.10.0 姓＋兩個字的名字先比：以前先比固定的兩字名，「林美玲」會先對到「林美」，英文變成「Mia玲」；「劉俊宇」變成「Leo宇」
+        const gv2 = Object.keys(NAME_GIVEN).filter(k => k.length >= 2).sort((a, b) => b.length - a.length).map(esc).join('|');
+        _nameRe = new RegExp('(?:' + sn + ')(?:' + gv2 + ')|(?:' + fixed + ')|(?:' + sn + ')(?:' + gv + ')', 'g');
     }
     function localizeName(name) {
         if (!name || typeof name !== 'string') return name;

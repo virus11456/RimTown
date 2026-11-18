@@ -232,7 +232,8 @@ async function run(browser, dev, lang) {
     { const o = {}; const sp = w.stockpile; const P = PROCURE.S(w); const AU = w.autonomy; const SI = SHOP_ITEMS; const r = 'beer'; for (const x of PROCURE.SUR) sp.resources[x] = 0; const line = FLOW.keepLine(w, r, 80), keep = FLOW.keepLine(w, r, 50); const mid = Math.round((line + keep) / 2);
       const D = PROCURE.dealerOf(w); o.dealer = !!D; const dl = D?.a; plain(dl);
       const reset = (n) => { sp.resources[r] = n; P.sur = null; P.surAsk = null; P.surDay = null; };
-      const day1 = () => { const s0 = sp.get('silver'), b0 = sp.get(r), n0 = logs().length; const L = leak(() => AU._shop(w)); return { sold: Math.round(b0 - sp.get(r)), silverD: Math.round((sp.get('silver') - s0) * 100) / 100, leak: L.leak, logs: newLogs(n0).filter(x => x.includes('💰') || x.includes('🧾')) }; };
+      // 量這筆出售本身的進帳（日誌記的金額），不是公庫前後的淨差：同一步驟公庫可能也買了別的東西
+      const day1 = () => { const b0 = sp.get(r), n0 = logs().length; let gain = 0, gainN = 0; const L0 = w.logMessageT; w.logMessageT = function (type, k, p2, ...rest) { if (/多出來的\{item\}/.test(String(k))) { gain += +p2?.gain || 0; gainN++; } return L0.call(this, type, k, p2, ...rest); }; let L; try { L = leak(() => AU._shop(w)); } finally { w.logMessageT = L0; } return { sold: Math.round(b0 - sp.get(r)), silverD: Math.round(gain * 100) / 100, sales: gainN, leak: L.leak, logs: newLogs(n0).filter(x => x.includes('💰') || x.includes('🧾')) }; };
       reset(line + 40); const cS = () => ({ d: day(), by: dl.agentId }); const f = KS.facts(w, dl, cS()); texts.push(f); o.facts = { item: f.includes(SI[r].name()), n: f.includes(String(line + 40)), line: f.includes(String(Math.round(line))), pub: f.includes(t('這是替鎮上做的買賣：付的是公庫的錢、動的是倉裡的貨，跟你自己口袋裡有多少錢沒有關係。')), silver: f.includes(String(Math.round(sp.get('silver')))) };
       o.ids = idsOf(KS, dl, cS()); o.notDealer = KS.options(w, banker === dl ? A : banker, cS()).length; reset(Math.round(line) - 1); o.none = KS.options(w, dl, cS()).length;
       const runMode = (mode) => { reset(line + 40); const op = pick(KS, dl, cS(), mode); op.run(w, dl, cS()); const a = day1(); P.surDay = null; const b = day1(); return { first: a, second: b, plan: P.sur?.mode }; };
@@ -291,10 +292,13 @@ async function run(browser, dev, lang) {
     // ================= 11) 放著跑 30 天 =================
     { restore(banker); for (const a of [A, A2, A3, A4]) restore(a); const errs0 = []; const n0 = seen.length; const d0 = day();
       MM.lastT = MONEY.total(w) - MM.pend; delete (MM.days[d0] || {}).other; // 前面為了測試直接改過帳：從這裡重新起算
-      let rateDays = 0; for (let i = 0; i < 30; i++) { const dd = w._absDay(); if ((dd + 1) % 7 === 0 && w.bank?.open && w.bank.status === 'ok' && w.agents[w.bank.banker] && !w.isAway?.(w.bank.banker)) rateDays++; try { for (let j = 0; j < 400 && w._absDay() === dd; j++) { w.paused = false; w.tick(); } } catch (e) { errs0.push(String(e.message)); } w.paused = true; await new Promise(r2 => setTimeout(r2, 0)); }
+      // 該定利率的日子：那一天銀行照常營業（擠兌的日子不定利率）、銀行家在鎮上。每一個這樣的日子都要有銀行家被問（rateAsk），而且最後都定出來：他自己決定的，或隔天照公式補上的都算
+      let rateDays = 0; const rateMiss = [], asks = []; for (let i = 0; i < 30; i++) { const dd = w._absDay(); const due = (dd + 1) % 7 === 0 && w.bank?.open && !!BANK.teller(w, w.bank); /* 銀行家在、能拿主意（沒被關、決策核心開著）才由他定 */ try { for (let j = 0; j < 400 && w._absDay() === dd; j++) { w.paused = false; w.tick(); } } catch (e) { errs0.push(String(e.message)); } w.paused = true; const RA = w.bank?.rateAsk; if (due && w.bank.status === 'ok' && !(RA && RA.d === dd + 1)) { const rr = w.bank.lastRun; if (!(w.bank.lastRunEnd >= dd + 1 || (rr && rr.d === dd + 1))) rateMiss.push(dd + 1); } if (due && RA && RA.d === dd + 1) { rateDays++; asks.push(RA); } await new Promise(r2 => setTimeout(r2, 0)); }
+      { const dd = w._absDay(); for (let j = 0; j < 400 && w._absDay() === dd; j++) { w.paused = false; w.tick(); } w.paused = true; } // 多跑一天：最後一次的利率如果銀行家沒回，隔天照公式補上
+      const rateDone = asks.filter(x => x.done).length;
       const got = seen.slice(n0); let other = 0; for (const [kk, D] of Object.entries(w.money?.days || {})) if (+kk >= d0) other += Math.abs(D.other || 0);
       const by = {}; for (const e of got) { const k = e.k + '.' + e.t; by[k] = (by[k] || 0) + 1; }
-      out.run = { rateDays, errs: errs0.slice(0, 3), n: got.length, by, other: Math.round(other * 100) / 100, pend: Object.keys(B.desk?.apply || {}).length, bank: BANK.view(w).desk, ll: Object.keys(E.ll).length, landlords: ESTATE.landlords(w).size, rent: ESTATE.view(w).rent, sur: PROCURE.view(w).st.surAsks || 0 }; }
+      out.run = { rateDays, rateDone, rateMiss, errs: errs0.slice(0, 3), n: got.length, by, other: Math.round(other * 100) / 100, pend: Object.keys(B.desk?.apply || {}).length, bank: BANK.view(w).desk, ll: Object.keys(E.ll).length, landlords: ESTATE.landlords(w).size, rent: ESTATE.view(w).rent, sur: PROCURE.view(w).st.surAsks || 0 }; }
     out.seenTexts = seen.map(x => x.reason + ' ' + x.res).filter(Boolean).slice(-120);
     out.texts = texts.filter(Boolean).map(s => { try { return I18N.localizeNames ? I18N.localizeNames(s, true) : s; } catch (e) { return s; } });
     out.views = [BANK.view(w).why, ESTATE.brief(w, A), PROCURE.view(w).sur ? 'x' : ''].filter(Boolean);
@@ -378,7 +382,7 @@ async function run(browser, dev, lang) {
   // 8
   { const S = r.sur; ok(S.dealer && Object.values(S.facts).every(Boolean), `${tag} 公倉：問出面談生意的人；事實有哪樣貨、多少、算多的門檻、錢進公庫跟自己口袋無關、公庫有多少`, S.facts);
     ok(S.ids.join() === 'sell,half,keep' && S.notDealer === 0 && S.none === 0, `${tag} 選項：賣掉、只賣一半、先留著；不是他、沒有多出來的貨：沒有選項`, { ids: S.ids, nd: S.notDealer, none: S.none });
-    ok(S.sell.first.sold === 6 && S.sell.first.silverD === 6 * S.price && S.sell.first.leak === 0 && S.sell.first.logs.length > 0 && S.sell.second.sold === 6, `${tag} 賣掉：照原本的速度一天 6 份，錢（${6 * S.price}）進公庫，日誌有寫`, S.sell);
+    ok(S.sell.first.sold === 6 && S.sell.first.silverD === 6 * S.price && S.sell.first.sales === 1 && S.sell.first.leak === 0 && S.sell.first.logs.length > 0 && S.sell.second.sold === 6, `${tag} 賣掉：照原本的速度一天 6 份，錢（${6 * S.price}）進公庫，日誌有寫`, S.sell);
     ok(S.half.first.sold === 3 && S.halfFloor <= 2, `${tag} 只賣一半：一天 3 份，賣到剩門檻與 50 的中間就停`, { h: S.half, floor: S.halfFloor });
     ok(S.keep.first.sold === 0 && S.keep.second.sold === 0 && S.keep.plan === 'keep', `${tag} 先留著：這一週自動賣真的停了`, S.keep);
     ok(S.plainPick === 'sell' && S.plainLog && S.crowd.sell / S.crowd.n >= 0.7, `${tag} 照個性：多半照原本的規則賣（${S.crowd.sell}/${S.crowd.n}），他拿過主意的日誌掛他的名字`, { p: S.plainPick, log: S.plainLog, c: S.crowd });
@@ -398,7 +402,7 @@ async function run(browser, dev, lang) {
     ok(M.ll && M.ll.tier === 'lo' && M.ll.prompts === 1 && M.p2.codes && M.sur && M.sur.plan === 'keep' && M.sur.by && M.sur.waited && M.sur.civic >= 1, `${tag} 房東定租金、公倉賣不賣：題目送出、回答被採用（便宜一點、先留著），公倉等回話那一天先不賣，用 civic 組`, { ll: M.ll, sur: M.sur });
     ok(zh || (M.p1 && !M.p1.cjk && !M.p2.cjk && !M.p3.cjk), `${tag} 英文題目裡沒有中文`, zh ? null : { p1: M.p1?.sample, p2: M.p2?.sample, p3: M.p3?.sample }); }
   // 11
-  { const R = r.run; ok(R.errs.length === 0 && R.other === 0 && R.n >= 3 && (R.by['bankDesk.rate'] || 0) >= R.rateDays - 1 && R.pend === 0, `${tag} 放著跑 30 天：銀行家每週定利率、各種事有人決定、沒有錯誤、帳上沒有對不上的錢、沒有卡住的申請`, R); }
+  { const R = r.run; ok(R.errs.length === 0 && R.other === 0 && R.n >= 3 && R.rateDays >= 1 && R.rateDone === R.rateDays && R.rateMiss.length === 0 && R.pend === 0, `${tag} 放著跑 30 天：銀行家每週定利率、各種事有人決定、沒有錯誤、帳上沒有對不上的錢、沒有卡住的申請`, R); }
   ok(zh || (!r.texts.some(cjk) && !r.seenTexts.some(cjk) && !r.views.some(cjk)), `${tag} 給當事人看的事實、選項、理由、結果、介面都有英文`, zh ? null : { texts: r.texts.filter(cjk).slice(0, 4), seen: r.seenTexts.filter(cjk).slice(0, 4), views: r.views.filter(cjk) });
   console.log('   ', JSON.stringify(r.run));
   ok(errs.length === 0, `${tag} 沒有頁面錯誤`, errs.slice(0, 3));

@@ -260,7 +260,10 @@ const MARKET = (() => {
     function feed(w, a, cost) {
         const kid = (a.age ?? 30) < 16; // v7.7.0 小孩的飯錢先由家人出
         if (!kid && WALLET.take(w, a, cost)) return a;
-        const helper = family(w, a).filter(o => WALLET.get(w, o) >= cost + 3).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0];
+        // v11.9.0 大人沒錢吃飯時，家人接不接濟由家人自己決定（sim-decide-home.js，照個性與交情、不問 AI）；不肯的換下一位，都不肯就照原本挨餓。小孩的飯錢照舊由家裡出
+        const fam = family(w, a).filter(o => WALLET.get(w, o) >= cost + 3).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x));
+        const H = (!kid && typeof HOME !== 'undefined' && HOME.helpOk) ? HOME : null;
+        const helper = H ? fam.find(o => { try { return H.helpOk(w, o, a, cost); } catch (e) { return true; } }) : fam[0];
         if (helper && WALLET.take(w, helper, cost)) { if (!kid && Math.random() < 0.25) { mem(w, a, '身上沒錢，靠{h}接濟才吃上飯。', { h: helper.name }, 5); mem(w, helper, '{a}手頭緊，我幫忙出了飯錢。', { a: a.name }, 4); } return helper; }
         if (kid && WALLET.take(w, a, cost)) return a;
         return null;
@@ -301,7 +304,8 @@ const MARKET = (() => {
         return { agentId: d.agentId, name: d.name, age: d.age, _travel: true, _wed: wed, isDead: false,
             memory: { addT(tick, time, cat, k, p, imp, rel) { try { (d.memories || (d.memories = [])).push({ tick, time, category: cat, content: Memory.render(k, p || {}), importance: imp || 5, related_agents: rel || [], k, p: p || {} }); } catch (e) {} } } };
     }
-    function heirsAll(w, a) {
+    function heirsAll(w, a) { const L = heirsAll0(w, a); try { return (typeof HOME !== 'undefined' && HOME.heirOrder) ? HOME.heirOrder(w, a, L) : L; } catch (e) { return L; } } // v11.9.0 遺囑指定的那一位排第一（產業、房子、股份歸他）
+    function heirsAll0(w, a) {
         const out = ((typeof MARKET !== 'undefined' && MARKET.heirsOf) || heirsOf)(w, a).slice();
         for (const tr of (w.events?._travellingAgents || [])) { const d = tr?.agentData; if (!d?.agentId || w.agents?.[d.agentId] || !a) continue;
             const st = (d.relationships || []).find(x => (x.target_id || x.targetId) === a.agentId)?.status;

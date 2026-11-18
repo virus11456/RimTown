@@ -360,7 +360,7 @@ const TECH = (function () {
         if (ev.lv !== 'minor') for (const a of (r.who || [])) if (!a.isDead) a.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'event', r.k, r.p, 7, []);
         try { w.onTechIncident?.(ev, r); } catch (e) {}
         // v7.9.0 中事、大災都是衝擊:村民各自反應(sim-aftermath.js)
-        try { if (ev.lv !== 'minor' && typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: ev.id, sev: r.sev || (ev.lv === 'big' ? 3 : ev.id === 'leak' ? 2 : 1), cause: t(AFTERMATH.CAUSE[ev.id] || ''), who: r.who || [], blame: r.blame || null }); } catch (e) {}
+        try { if (ev.lv !== 'minor' && typeof AFTERMATH !== 'undefined') AFTERMATH.shock(w, { kind: ev.id, sev: r.sev || (ev.lv === 'big' ? 3 : ev.id === 'leak' ? 2 : 1), cause: AFTERMATH.CAUSE[ev.id] || '', who: r.who || [], blame: r.blame || null }); } catch (e) {}
         return r;
     }
     function incidents(w) {

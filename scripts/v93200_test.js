@@ -38,6 +38,7 @@ const stageA = () => {
   };
   w.fullAgentMode = true; app._fullAgentOn = () => true; out.aiOn = DECIDE.aiOn(w);
   if (typeof DAY !== 'undefined') DAY.tick = () => {}; // v11.2.0 早上七點會問「今天去不去上工」，那時人醒著、主意當場就冒出來；這支要看的是半夜拿的主意，所以這裡不問白天那幾題
+  w._directorTick = () => {}; // v11.10.0 戲劇導演傍晚把兩個人約到同一個地方，碰面當下就問他們；那時人也醒著，理由同上
   let guard = 0; while (!T.prompts.length && guard++ < 96 * 3) { w.paused = false; w.tick(); }
   out.asked = T.prompts.length; out.hasNudge = /other/.test(T.prompts[0] || '') && /(異想天開|fanciful)/.test(T.prompts[0] || '');
   const TH = app.tileMap._thoughts || {}; out.thinking = Object.entries(TH).filter(([, v]) => v.kind === 'think').map(([id, v]) => ({ id, text: v.text, name: w.agents[id]?.name }));

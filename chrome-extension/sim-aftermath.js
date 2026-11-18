@@ -19,7 +19,8 @@ const AFTERMATH = (() => {
     const hasT = (a, k) => (a?.personality?.traits || []).includes(k);
     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
     const rnd = (arr) => arr[Math.floor(Math.random() * arr.length)];
-    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(typeof b === 'string' ? t(b) : b); return s; };
+    const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(b && typeof b === 'object' && b.k ? fill(b.k, b.p) : typeof b === 'string' ? t(b) : b); return s; }; // v11.7.0 參數可以是 {k,p}（災後反應的原因，例如「某家店的東西害死了人」）
+    const causeTxt = (c) => (c && typeof c === 'object' && c.k ? fill(c.k, c.p) : t(c || '')); // 原因照當下的語言顯示
     const log = (w, k, p, who) => { try { w.logMessageT?.('event', k, p || {}, who); } catch (e) {} };
     const news = (w, k, p, imp, names) => { try { w.dailyNews?.collectEvent?.('event', fill(k, p), imp || 7, names || []); } catch (e) {} };
     const mem = (w, a, k, p, imp) => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'event', k, p || {}, imp || 6, []); } catch (e) {} };
@@ -46,7 +47,7 @@ const AFTERMATH = (() => {
         if (!w || !o) return null; const C = S(w); const d = day(w); const sev = Math.max(1, Math.min(3, o.sev || 1));
         const who = (o.who || []).filter(Boolean); const vic = new Set(who.filter(a => w.agents[a.agentId] && !a.isDead).map(a => a.agentId)); // 死去的人不算,但他的家人算
         for (const a of who) for (const f of family(w, a)) if (w.agents[f.agentId] && !f.isDead) vic.add(f.agentId);
-        const cr = { id: 'K' + ((C.n = (C.n || 0) + 1)), kind: o.kind || 'event', cause: o.cause || t(CAUSE[o.kind] || '災難'), sev, d, until: d + sev * 3, vic: [...vic], blame: o.blame?.agentId || null, n: {} };
+        const cr = { id: 'K' + ((C.n = (C.n || 0) + 1)), kind: o.kind || 'event', cause: o.cause || CAUSE[o.kind] || '災難', /* v11.7.0 存中文原詞，顯示時（日誌、記憶、秘密、新聞）才照當下的語言翻 */ sev, d, until: d + sev * 3, vic: [...vic], blame: o.blame?.agentId || null, n: {} };
         C.cur = C.cur.filter(x => x.until >= d).concat(cr).slice(-4);
         for (const a of here(w)) {
             let s = vic.has(a.agentId) ? 30 * sev : 6 * sev;
@@ -104,7 +105,7 @@ const AFTERMATH = (() => {
             if (!shop) { // 沒有私人商店:先搶公有糧倉,糧倉也空了就闖有錢人家
                 const food = w.stockpile?.get?.('food') || 0;
                 if (food >= 10) { const n = Math.min(12, Math.round(food * 0.08)); w.stockpile.consume('food', n, w.tickCount, t('糧倉被搶'), 'event'); a.moodModifier = (a.moodModifier || 0) + 2; mem(w, a, '{c}那時候大家都慌了，我也跟著去糧倉扛了一袋糧食。', { c: cr.cause }, 7);
-                    const guards = ad.filter(x => x.job?.key === 'guard').length; if (Math.random() < Math.min(0.6, (0.15 + guards * 0.2) * 0.6) && w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 2; log(w, '🛒 {c}的混亂中，{a}衝進公有糧倉扛走糧食，被衛兵當場抓住。{say}', { c: cr.cause, a: a.name, say }, a.name); }
+                    const guards = ad.filter(x => x.job?.key === 'guard').length; if (Math.random() < Math.min(0.6, (0.15 + guards * 0.2) * 0.6) && w.civic) { /* v11.8.0 抓到之後怎麼辦由那位守衛決定（sim-decide-order.js caught） */ if (!(typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'grain', th: a.agentId, vic: null, n, days: 2, d, cause: cr.cause }))) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 2; log(w, '🛒 {c}的混亂中，{a}衝進公有糧倉扛走糧食，被衛兵當場抓住。{say}', { c: cr.cause, a: a.name, say }, a.name); } }
                     else if ((cr.n.loot || 0) < 2) log(w, '🛒 {c}的混亂中，有人衝進公有糧倉，扛走了 {n} 份糧食。{say}', { c: cr.cause, n, say });
                     cr.n.loot = (cr.n.loot || 0) + 1; S(w).st.loot = (S(w).st.loot || 0) + 1; S(w).did[a.agentId] = [d, 'loot', cr.id]; return true; }
                 shop = ad.filter(x => x !== a && cash(w, x) >= 40 && !fam.includes(x)).sort((x, y) => cash(w, y) - cash(w, x))[0];
@@ -112,7 +113,8 @@ const AFTERMATH = (() => {
             if (!shop || typeof WALLET === 'undefined') return false;
             const n = Math.min(25, Math.max(4, Math.floor(cash(w, shop) * 0.2))); if (!WALLET.take(w, shop, n)) return false; WALLET.add(w, a, n);
             const guards = ad.filter(x => x.job?.key === 'guard').length; const caught = Math.random() < Math.min(0.7, (0.15 + guards * 0.2) * (cr.sev >= 3 ? 0.4 : 0.6)); // 一片混亂,衛兵顧不過來(大災之後更顧不過來)
-            if (caught) { const back = Math.min(n, cash(w, a)); if (back > 0 && WALLET.take(w, a, back)) WALLET.add(w, shop, back); if (w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 3; } aff(shop, a, -25); try { DARK.bump(w, a, 'exposed'); } catch (e) {}
+            if (caught && typeof ORDER !== 'undefined' && ORDER.on(w) && ORDER.caught(w, { src: 'loot', th: a.agentId, vic: shop.agentId, n, days: 3, d, cause: cr.cause })) { /* v11.8.0 抓到之後怎麼辦由那位守衛決定（sim-decide-order.js caught） */ }
+            else if (caught) { const back = Math.min(n, cash(w, a)); if (back > 0 && WALLET.take(w, a, back)) WALLET.add(w, shop, back); if (w.civic) { (w.civic.jail || (w.civic.jail = {}))[a.agentId] = d + 3; } aff(shop, a, -25); try { DARK.bump(w, a, 'exposed'); } catch (e) {}
                 log(w, '🛒 {c}的混亂中，{a}衝進{s}的店裡搶錢，當場被衛兵抓住，關進牢裡。{say}', { c: cr.cause, a: a.name, s: shop.name, say }, a.name); mem(w, a, '{c}那時候我昏了頭，去搶了{s}的店，被抓了。', { c: cr.cause, s: shop.name }, 8); }
             else { aff(shop, a, -5); mem(w, shop, '{c}那幾天，店裡的錢櫃被搶了 {n} 銀幣。', { c: cr.cause, n }, 8); mem(w, a, '{c}那時候大家都在搶，我也拿了{s}店裡的 {n} 銀幣。', { c: cr.cause, s: shop.name, n }, 8);
                 try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: shop.agentId, k: '{a}趁{c}搶了{s}店裡的 {n} 銀幣', p: { a: a.name, c: cr.cause, s: shop.name, n } }); } catch (e) {}
@@ -176,7 +178,7 @@ const AFTERMATH = (() => {
         const opts = Object.entries(R).map(([k, v]) => `${k}=${t(v.name)}`).join(', ');
         const rows = pool.map((a, i) => { const friends = Object.entries(C.did).filter(([id, x]) => d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => `${t(w.agents[id].name)}${t('：')}${t(R[x[1]]?.name || '')}`).slice(0, 3).join(t('、')) || t('沒有');
             return `${i + 1}. ${t(a.name)}${t('（')}${t(a.job?.title || '')}${t('，')}${a.age ?? 30}${t('歲')}${t('；性格：')}${(a.personality?.traits || []).map(x => t(x)).join(t('、'))}${t('；身上有')} ${Math.round(cash(w, a))} ${t('銀幣')}${cr.vic.includes(a.agentId) ? t('；家人受害了') : ''}${cr.blame === a.agentId ? t('；大家在怪他') : ''}${t('；身邊的人在做：')}${friends}${t('）')}`; }).join('\n');
-        const prompt = `${t('小鎮剛發生')}${t(cr.cause)}${t('。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：')}${opts}${t('，或 none。')}\n${rows}\n${t('只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]')}`;
+        const prompt = `${t('小鎮剛發生')}${causeTxt(cr.cause)}${t('。下面這些村民各自會怎麼做？照每個人的個性和處境決定，不用每個人都一樣，也可以照常過日子。選項：')}${opts}${t('，或 none。')}\n${rows}\n${t('只回 JSON 陣列：[{"i":編號,"r":"選項","line":"這個人說的一句話（20 字內）"}]')}`;
         const ids = new Set(pool.map(a => a.agentId)); C.aiPend = { d, ids: [...ids] }; C.st.ai = (C.st.ai || 0) + 1;
         ce._askJson(prompt, 80 + pool.length * 60).then(j => {
             const arr = Array.isArray(j) ? j : (Array.isArray(j?.list) ? j.list : []); C.aiPend = null; let n = 0;
@@ -195,6 +197,7 @@ const AFTERMATH = (() => {
         for (const cr of ended) { const top = Object.entries(cr.n).filter(([k, v]) => v > 0 && R[k]).sort((x, y) => y[1] - x[1]).slice(0, 4); C.hist.unshift({ cause: cr.cause, kind: cr.kind, d: cr.d, end: d, sev: cr.sev, n: cr.n }); C.hist = C.hist.slice(0, 10); if (top.length) log(w, '📊 {c}過後，鎮上的人各自怎麼面對：{list}。', { c: cr.cause, list: top.map(([k, v]) => `${R[k].icon}${t(R[k].name)} ${v}`).join(t('、')) }); }
         C.cur = live; if (!live.length) return;
         const cr = live.slice().sort((x, y) => y.sev - x.sev)[0];
+        if (deciding(w)) { askAll(w, C, cr, d); return riotCheck(w, cr); } // v11.7.0 接進決策核心：怎麼反應由本人決定（選擇點 crisis），AI 名額照決策核心的 calam 那一組
         const byAI = batchAI(w, cr, d); // 交給 AI 的人今天不用規則決定
         for (const a of here(w).sort(() => Math.random() - 0.5)) {
             if (byAI.has(a.agentId)) continue;
@@ -203,11 +206,47 @@ const AFTERMATH = (() => {
             if (Math.random() > Math.min(0.85, s / 110)) continue;
             const r = decide(w, a, cr, d); if (r !== 'none') act(w, a, r, cr);
         }
-        const lootN = cr.n.loot || 0; if (lootN >= 3 && !cr.riot) { cr.riot = 1; log(w, '🔥 {c}之後秩序大亂，已經有 {n} 家店被搶，衛兵忙得焦頭爛額。', { c: cr.cause, n: lootN }); news(w, '🔥 {c}之後，鎮上爆發搶劫潮', { c: cr.cause }, 9, []); }
+        riotCheck(w, cr);
     }
-    function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: x.cause, sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5), st: C.st, R }; }
+    function riotCheck(w, cr) { const lootN = cr.n.loot || 0; if (lootN >= 3 && !cr.riot) { cr.riot = 1; log(w, '🔥 {c}之後秩序大亂，已經有 {n} 家店被搶，衛兵忙得焦頭爛額。', { c: cr.cause, n: lootN }); news(w, '🔥 {c}之後，鎮上爆發搶劫潮', { c: cr.cause }, 9, []); } }
+    // ---------- v11.7.0 接進決策核心 ----------
+    // 以前：自己算分、出大事那天壓力最大的 8 個人整批問 AI，結果不進決策核心，「做過的決定」和手記裡看不到。
+    // 現在：誰今天會有反應照舊（壓力越大越可能、兩天內做過的不再問）；有反應的人怎麼做是選擇點 crisis（登記在 sim-decide-calam.js），
+    // 選項就是這十種反應加「照常過日子」，傾向分數就是原本的 scores()（個性、處境、身邊的人怎麼做），結算沿用 act()。
+    // 原本的噪音是 ±0.6，決策核心是 ±0.9：分數乘 1.5，照個性推估時選到每一種的機率跟以前一模一樣。
+    const deciding = (w) => { try { return !!(w?.observerMode && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.crisis); } catch (e) { return false; } };
+    const SCALE = 1.5;
+    function askAll(w, C, cr, d) {
+        C.aiq = (C.aiq && typeof C.aiq === 'object') ? C.aiq : {}; for (const [id, x] of Object.entries(C.aiq)) if (d - x >= 2) delete C.aiq[id];
+        const list = [];
+        for (const a of here(w).sort(() => Math.random() - 0.5)) {
+            if (jailed(w, a) || C.aiq[a.agentId] != null) continue; const s = C.stress[a.agentId] || 0; if (s <= 0) continue;
+            const last = C.did[a.agentId]; if (last && d - last[0] < 2) continue;
+            if (Math.random() > Math.min(0.85, s / 110)) continue; // 今天會不會有反應：壓力越大越可能（看天）
+            list.push(a);
+        }
+        list.sort((x, y) => (C.stress[y.agentId] || 0) - (C.stress[x.agentId] || 0)); // 壓力最大的先問（AI 名額先給他們）
+        for (const a of list) C.aiq[a.agentId] = d; C.st.asked = (C.st.asked || 0) + list.length;
+        try { DECIDE.askNow(w, list.map(a => ({ a, kind: 'crisis', ctx: { cr: cr.id, d } }))); } catch (e) { console.warn('[Aftermath] ask', e); }
+    }
+    const crOf = (w, ctx) => (ctx ? S(w).cur.find(x => x.id === ctx.cr && x.until >= day(w)) : null) || null;
+    // 給選擇點：這個人現在能怎麼反應、各自的傾向（scores 乘 1.5）
+    function choices(w, a, ctx) {
+        const cr = crOf(w, ctx); if (!cr || !a || jailed(w, a) || day(w) - (ctx.d ?? 0) > 1) return null; const d = day(w); const sc = scores(w, a, cr, d);
+        const vic = cr.vic.some(id => w.agents[id] && w.agents[id] !== a && !w.agents[id].isDead); const fam = family(w, a).filter(f => !f.isDead).length > 0;
+        const ok = { flee: cr.sev >= 3, pray: devout(w, a), comfort: fam, volunteer: vic, help: vic || here(w).some(x => x !== a && cash(w, x) < 10) };
+        const list = Object.keys(R).filter(r => ok[r] !== false).map(r => ({ r, s: Math.round(sc[r] * SCALE * 1000) / 1000 }));
+        return { cr, sc, list, none: Math.round(sc.none * SCALE * 1000) / 1000, stress: Math.round(S(w).stress[a.agentId] || 0), fv: cr.vic.includes(a.agentId), friends: Object.entries(S(w).did).filter(([id, x]) => id !== a.agentId && d - x[0] <= 3 && w.agents[id] && (circle(w, a, w.agents[id]) ?? 9) <= 2).map(([id, x]) => [w.agents[id], x[1]]).slice(0, 3) };
+    }
+    // 選了之後：照原本的 act() 結算（走匯出的 AFTERMATH.act，sim-ways.js 加的「受幫助的人欠一份人情」才會算到）
+    function doIt(w, a, ctx, r) {
+        const C = S(w); delete (C.aiq || {})[a.agentId]; const cr = crOf(w, ctx); if (!cr) return null;
+        if (r === 'none') return 'none';
+        return AFTERMATH.act(w, a, r, cr) ? r : false;
+    }
+    function view(w) { const C = S(w); return { cur: C.cur.map(x => ({ cause: causeTxt(x.cause), sev: x.sev, n: x.n, days: day(w) - x.d })), hist: C.hist.slice(0, 5).map(h => ({ ...h, cause: causeTxt(h.cause) })), st: C.st, R }; }
     function brief(w, a) { const x = S(w).did[a.agentId]; if (!x || day(w) - x[0] > 6) return ''; return fill('剛發生大事，我選擇了{r}', { r: R[x[1]]?.name || '' }); }
-    return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief };
+    return { S, R, CAUSE, BATCH, batchAI, shock, scores, decide, act, social, lootThr, daily, view, brief, choices, doIt, askAll, SCALE };
 })();
 
 if (typeof ProposalSystem !== 'undefined') {
@@ -220,7 +259,7 @@ if (typeof ConversationEngine !== 'undefined') {
 }
 if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset; World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.crisis = null; return r; };
-    const _ser = World.prototype.serialize; World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.crisis) { const C = this.crisis; d.crisis = { cur: C.cur || [], did: C.did || {}, stress: C.stress || {}, st: C.st || {}, hist: C.hist || [], n: C.n || 0 }; } return d; };
+    const _ser = World.prototype.serialize; World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.crisis) { const C = this.crisis; d.crisis = { cur: C.cur || [], did: C.did || {}, stress: C.stress || {}, st: C.st || {}, hist: C.hist || [], n: C.n || 0, aiq: C.aiq || {} }; } return d; };
     const _load = World.prototype.loadSave; World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.crisis = (data?.crisis && typeof data.crisis === 'object') ? data.crisis : null; } catch (e) {} return r; };
 }
 if (typeof window !== 'undefined') window.AFTERMATH = AFTERMATH;

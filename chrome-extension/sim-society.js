@@ -112,34 +112,40 @@ class FactionSystem {
                     break;
             }
 
+            // v11.8.0 決策核心開著：湊得到 3 個人時，由其中最有動機的那個人決定要不要出面拉大家成立，被拉的人各自決定加不加入（sim-decide-order.js）
+            if (candidates.length >= 3 && typeof ORDER !== 'undefined' && ORDER.on(world)) { ORDER.found(world, this, type, candidates); continue; }
             if (candidates.length >= 3 && Math.random() < 0.2) { // v9.9.0 2→3 人、0.3→0.2:以前一年成立 39 次、散掉 31 次,大多兩人小團體一下就散
                 // Check members not already in too many factions
                 const filtered = candidates.filter(a => {
                     const factionCount = Object.values(this.factions).filter(f => f.hasMember(a.agentId)).length;
                     return factionCount < 2; // max 2 factions per NPC
                 });
-                if (filtered.length >= 3) {
-                    const faction = new Faction(`faction_${++this._counter}`, type, filtered[0].name);
-                    faction.formedTick = world.tickCount;
-                    filtered.forEach(a => faction.addMember(a.agentId));
-                    this.factions[faction.id] = faction;
-                    const memberNames = filtered.map(a => a.name).join(t('、'));
-                    world.logMessageT('faction', '{icon} {memberNames}組成了「{faction}」！', { icon: faction.icon, memberNames, faction: faction.name }, filtered[0].name);
-                    filtered.forEach(a => {
-                        a.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我加入了「{faction}」，成員有{memberNames}。', { faction: faction.name, memberNames }, 6, filtered.map(x => x.name));
-                        // Boost mutual affinity (scaled by personality compatibility)
-                        filtered.forEach(b => {
-                            if (a.agentId !== b.agentId) {
-                                const factionCompat = Personality.compatibility(a.personality.traits, b.personality.traits);
-                                const rel = a.relationships.getOrCreate(b.agentId, b.name);
-                                rel.modifyAffinity(Math.round(randInt(2, 5) * factionCompat));
-                                rel.modifyTrust(Math.round(randInt(1, 3) * factionCompat));
-                            }
-                        });
-                    });
-                }
+                if (filtered.length >= 3) this._formFaction(world, type, filtered);
             }
         }
+    }
+
+    // v11.8.0 成立一個小團體（原本寫在 _tryFormFactions 裡，抽出來給「本人決定」那條路共用；效果一模一樣）
+    _formFaction(world, type, filtered) {
+        const faction = new Faction(`faction_${++this._counter}`, type, filtered[0].name);
+        faction.formedTick = world.tickCount;
+        filtered.forEach(a => faction.addMember(a.agentId));
+        this.factions[faction.id] = faction;
+        const memberNames = filtered.map(a => a.name).join(t('、'));
+        world.logMessageT('faction', '{icon} {memberNames}組成了「{faction}」！', { icon: faction.icon, memberNames, faction: faction.name }, filtered[0].name);
+        filtered.forEach(a => {
+            a.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我加入了「{faction}」，成員有{memberNames}。', { faction: faction.name, memberNames }, 6, filtered.map(x => x.name));
+            // Boost mutual affinity (scaled by personality compatibility)
+            filtered.forEach(b => {
+                if (a.agentId !== b.agentId) {
+                    const factionCompat = Personality.compatibility(a.personality.traits, b.personality.traits);
+                    const rel = a.relationships.getOrCreate(b.agentId, b.name);
+                    rel.modifyAffinity(Math.round(randInt(2, 5) * factionCompat));
+                    rel.modifyTrust(Math.round(randInt(1, 3) * factionCompat));
+                }
+            });
+        });
+        return faction;
     }
 
     _updateCohesion(world) {
@@ -172,13 +178,21 @@ class FactionSystem {
                     if (!other) return sum;
                     return sum + agent.relationships.getOrCreate(otherId, other.name).affinity;
                 }, 0) / Math.max(1, otherMembers.length);
-                if (avgAff < -30 && Math.random() < 0.2) {
-                    faction.removeMember(memberId);
-                    world.logMessageT('faction', '{agent}退出了「{faction}」。', { agent: agent.name, faction: faction.name }, agent.name);
-                    agent.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我退出了「{faction}」，我受不了他們了。', { faction: faction.name }, 5, []);
-                }
+                // v11.8.0 決策核心開著：待不下去的人（跟裡面的人翻臉、團體跟自己的家人或恩人作對、團體名聲變差）自己決定留下、淡出還是公開退出
+                if (typeof ORDER !== 'undefined' && ORDER.on(world)) { ORDER.leaveCheck(world, this, faction, agent, avgAff); continue; }
+                if (avgAff < -30 && Math.random() < 0.2) this._leaveFaction(world, faction, agent, 'quit');
             }
         }
+    }
+
+    // v11.8.0 退出小團體：quit 是原本的公開退出（日誌＋記憶），fade 是悄悄淡出（只有自己記得，不上日誌）
+    _leaveFaction(world, faction, agent, how) {
+        if (!faction.hasMember(agent.agentId)) return false;
+        faction.removeMember(agent.agentId);
+        if (how === 'fade') { agent.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我慢慢不去「{faction}」的聚會了。', { faction: faction.name }, 4, []); return true; }
+        world.logMessageT('faction', '{agent}退出了「{faction}」。', { agent: agent.name, faction: faction.name }, agent.name);
+        agent.memory.addT(world.tickCount, world.clock.timeStr, 'social', '我退出了「{faction}」，我受不了他們了。', { faction: faction.name }, 5, []);
+        return true;
     }
 
     _tryFactionEvents(world) {
@@ -188,82 +202,102 @@ class FactionSystem {
         // Pick two factions for interaction
         const [fA, fB] = shuffle(factionList).slice(0, 2);
         const roll = Math.random();
+        // v11.8.0 決策核心開著：哪兩派碰上照舊看天；碰上了，帶頭的人自己決定怎麼對另一派（槓上／示好／不理），對方帶頭的人決定怎麼回（sim-decide-order.js）
+        const ord = typeof ORDER !== 'undefined' && ORDER.on(world);
+        if (ord && roll < 0.7) { let iss = null; try { iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null; } catch (e) {} ORDER.rival(world, this, fA, fB, iss); return; }
         // v9.9.0 派系吵架要有理由:兩派對鎮上同一件新東西看法相反,就為那件事吵(民意與派系)
         try { const iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null;
-            if (iss && roll < 0.7) { fA.rivalFactionId = fB.id; fB.rivalFactionId = fA.id; const pro = iss.a > 0 ? fA : fB, con = pro === fA ? fB : fA;
-                world.logMessageT('faction', '⚔️ 「{p}」和「{c}」為了{t}吵起來：一派說好，一派說不行。', { p: pro.name, c: con.name, t: iss.name });
-                for (const aId of fA.members) for (const bId of fB.members) { const a = world.agents[aId], b = world.agents[bId]; if (a && b) { a.relationships.getOrCreate(bId, b.name).modifyAffinity(-3); b.relationships.getOrCreate(aId, a.name).modifyAffinity(-3); } }
-                return; } } catch (e) {}
+            if (!ord && iss && roll < 0.7) { this._clash(world, fA, fB, iss); return; } } catch (e) {}
 
-        if (roll < 0.4) {
+        if (ord) {
+            // v11.8.0 團體裡的摩擦：最受不了某人的那一位自己決定要不要當眾指責
+            const faction = pickRandom([fA, fB]); if (faction.size >= 3) ORDER.row(world, this, faction);
+        } else if (roll < 0.4) {
             // Conflict between factions
-            if (fA.rivalFactionId === fB.id || Math.random() < 0.3) {
-                fA.rivalFactionId = fB.id;
-                fB.rivalFactionId = fA.id;
-                const eventDesc = pickRandom([
-                    `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」在鎮上爆發了爭執！')}`,
-                    `${t('「')}${fA.name}${t('」的成員公開批評「')}${fB.name}${t('」。')}`,
-                    `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」因為意見不合發生衝突。')}`,
-                ]);
-                world.logMessage('faction', eventDesc);
-                world.events.conversationTopics.push(eventDesc);
-                // Damage cross-faction relationships
-                fA.members.forEach(aId => {
-                    fB.members.forEach(bId => {
-                        const a = world.agents[aId], b = world.agents[bId];
-                        if (a && b) {
-                            a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(-5, -2));
-                            b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(-5, -2));
-                        }
-                    });
-                });
-                fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) - 5; });
-                fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) - 5; });
-            }
+            if (fA.rivalFactionId === fB.id || Math.random() < 0.3) this._clash(world, fA, fB, null);
         } else if (roll < 0.7) {
-            // Cooperation between factions
-            fA.allyFactionId = fB.id;
-            fB.allyFactionId = fA.id;
-            if (fA.rivalFactionId === fB.id) { fA.rivalFactionId = null; fB.rivalFactionId = null; }
-            const eventDesc = pickRandom([
-                `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」決定攜手合作！')}`,
-                `${t('「')}${fA.name}${t('」邀請「')}${fB.name}${t('」一起舉辦活動。')}`,
-                `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」化敵為友，達成共識。')}`,
-            ]);
-            world.logMessage('faction', eventDesc);
-            // Boost cross-faction relationships
-            fA.members.forEach(aId => {
-                fB.members.forEach(bId => {
-                    const a = world.agents[aId], b = world.agents[bId];
-                    if (a && b) {
-                        a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(2, 5));
-                        b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(2, 5));
-                    }
-                });
-            });
-            fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) + 3; });
-            fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) + 3; });
+            this._ally(world, fA, fB);
         } else {
             // Internal faction drama
             const faction = pickRandom([fA, fB]);
             if (faction.size >= 3 && Math.random() < 0.4) {
                 const members = faction.members.map(id => world.agents[id]).filter(Boolean);
                 const [instigator, target] = shuffle(members).slice(0, 2);
-                const drama = pickRandom([
-                    `${instigator.name}${t('在「')}${faction.name}${t('」聚會中公開指責')}${target.name}${t('！')}`,
-                    `${instigator.name}${t('和')}${target.name}${t('在「')}${faction.name}${t('」內鬧不愉快。')}`,
-                    `${t('「')}${faction.name}${t('」內部出現分裂，')}${instigator.name}${t('帶頭反對')}${target.name}${t('。')}`,
-                ]);
-                world.logMessage('faction', drama, instigator.name, target.name);
-                instigator.relationships.getOrCreate(target.agentId, target.name).modifyAffinity(randInt(-8, -3));
-                target.relationships.getOrCreate(instigator.agentId, instigator.name).modifyAffinity(randInt(-6, -2));
-                faction.cohesion = Math.max(0, faction.cohesion - 10);
-                world.gossipNetwork.activeGossip.push({
-                    about: instigator.name, content: drama, source: t('鎮民'),
-                    spreadCount: 0, tickCreated: world.tickCount, isTrue: true
-                });
+                this._drama(world, faction, instigator, target);
             }
         }
+    }
+
+    // v11.8.0 下面三段是原本 _tryFactionEvents 裡的結算，抽出來給「本人決定」那條路共用；效果一模一樣
+    // 兩派結怨（iss：兩派對鎮上同一件新東西看法相反，就為那件事吵）
+    _clash(world, fA, fB, iss) {
+        fA.rivalFactionId = fB.id;
+        fB.rivalFactionId = fA.id;
+        if (iss) {
+            const pro = iss.a > 0 ? fA : fB, con = pro === fA ? fB : fA;
+            world.logMessageT('faction', '⚔️ 「{p}」和「{c}」為了{t}吵起來：一派說好，一派說不行。', { p: pro.name, c: con.name, t: iss.name });
+            for (const aId of fA.members) for (const bId of fB.members) { const a = world.agents[aId], b = world.agents[bId]; if (a && b) { a.relationships.getOrCreate(bId, b.name).modifyAffinity(-3); b.relationships.getOrCreate(aId, a.name).modifyAffinity(-3); } }
+            return;
+        }
+        const eventDesc = pickRandom([
+            `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」在鎮上爆發了爭執！')}`,
+            `${t('「')}${fA.name}${t('」的成員公開批評「')}${fB.name}${t('」。')}`,
+            `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」因為意見不合發生衝突。')}`,
+        ]);
+        world.logMessage('faction', eventDesc);
+        world.events.conversationTopics.push(eventDesc);
+        // Damage cross-faction relationships
+        fA.members.forEach(aId => {
+            fB.members.forEach(bId => {
+                const a = world.agents[aId], b = world.agents[bId];
+                if (a && b) {
+                    a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(-5, -2));
+                    b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(-5, -2));
+                }
+            });
+        });
+        fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) - 5; });
+        fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) - 5; });
+    }
+    // 兩派合作
+    _ally(world, fA, fB) {
+        fA.allyFactionId = fB.id;
+        fB.allyFactionId = fA.id;
+        if (fA.rivalFactionId === fB.id) { fA.rivalFactionId = null; fB.rivalFactionId = null; }
+        const eventDesc = pickRandom([
+            `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」決定攜手合作！')}`,
+            `${t('「')}${fA.name}${t('」邀請「')}${fB.name}${t('」一起舉辦活動。')}`,
+            `${t('「')}${fA.name}${t('」和「')}${fB.name}${t('」化敵為友，達成共識。')}`,
+        ]);
+        world.logMessage('faction', eventDesc);
+        // Boost cross-faction relationships
+        fA.members.forEach(aId => {
+            fB.members.forEach(bId => {
+                const a = world.agents[aId], b = world.agents[bId];
+                if (a && b) {
+                    a.relationships.getOrCreate(bId, b.name).modifyAffinity(randInt(2, 5));
+                    b.relationships.getOrCreate(aId, a.name).modifyAffinity(randInt(2, 5));
+                }
+            });
+        });
+        fA.members.forEach(aId => { const a = world.agents[aId]; if (a) a.moodModifier = (a.moodModifier || 0) + 3; });
+        fB.members.forEach(bId => { const b = world.agents[bId]; if (b) b.moodModifier = (b.moodModifier || 0) + 3; });
+    }
+    // 團體內鬨：instigator 當眾指責 target
+    _drama(world, faction, instigator, target) {
+        const drama = pickRandom([
+            `${instigator.name}${t('在「')}${faction.name}${t('」聚會中公開指責')}${target.name}${t('！')}`,
+            `${instigator.name}${t('和')}${target.name}${t('在「')}${faction.name}${t('」內鬧不愉快。')}`,
+            `${t('「')}${faction.name}${t('」內部出現分裂，')}${instigator.name}${t('帶頭反對')}${target.name}${t('。')}`,
+        ]);
+        world.logMessage('faction', drama, instigator.name, target.name);
+        instigator.relationships.getOrCreate(target.agentId, target.name).modifyAffinity(randInt(-8, -3));
+        target.relationships.getOrCreate(instigator.agentId, instigator.name).modifyAffinity(randInt(-6, -2));
+        faction.cohesion = Math.max(0, faction.cohesion - 10);
+        world.gossipNetwork.activeGossip.push({
+            about: instigator.name, content: drama, source: t('鎮民'),
+            spreadCount: 0, tickCreated: world.tickCount, isTrue: true
+        });
     }
 
     _cleanupDeadFactions(world) {
@@ -987,6 +1021,8 @@ class LifecycleSystem {
                 if (currentPop >= tp) birthChance *= 0.5;
                 const kids = Object.values(world.agents).filter(c => !c.isDead && (c._parentNames || []).includes(agent.name)).length;
                 if (kids >= 3) birthChance *= 0.3;
+                // v11.9.0 想不想生由夫妻自己商量（sim-decide-home.js）：答案只改機率，懷不懷得上照舊看天；沒商量過照原本的機率
+                try { if (typeof HOME !== 'undefined' && HOME.birthMult) birthChance *= HOME.birthMult(world, agent, otherAgent); } catch (e) { console.warn('[Society] birth plan', e); }
             }
 
             if (Math.random() < birthChance) {
@@ -1067,7 +1103,7 @@ class LifecycleSystem {
 
     _generateEpitaph(npc) {
         const lines = [];
-        if (npc.job) lines.push(`${t('曾任')}${npc.job.title}`);
+        if (npc.job) lines.push(`${t('曾任')}${t(npc.job.title)}`);
         if (npc.personality.traits.includes('kind')) lines.push(t('以善良著稱'));
         else if (npc.personality.traits.includes('hardworking')) lines.push(t('勤勞一生'));
         else if (npc.personality.traits.includes('creative')) lines.push(t('才華洋溢'));

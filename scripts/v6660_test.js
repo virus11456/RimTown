@@ -33,8 +33,8 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       D.rel[nb.id] = 75; DIPLO.settle(w, D, nb.id); out.ally = D.status[nb.id] === 'ally' && logHas(/結盟|alliance/);
       const m0 = w.news.getModifier('merchant_chance', 0); DIPLO.effects(w, D); out.allyEffect = w.news.getModifier('merchant_chance', 0) > m0;
       // 聯姻
-      const n0 = npcs().length; const bride = npcs().find(a => a.age >= 18 && a.age <= 40 && !a.relationships.getPartner()); const L = w.election.currentMayor(w); if (bride && L && bride !== L) bride._parentNames = [L.name, 'x'];
-      DIPLO.act(w, D, 'wed', nb.id); out.wed = !!D.wed[nb.id] && logHas(/結為親家|married into/) && npcs().length === n0 - 1;
+      const n0 = npcs().length; const bride = npcs().find(a => a.age >= 18 && a.age <= 40 && !a.relationships.getPartner()); const L = w.election.currentMayor(w); if (bride && L && bride !== L) { bride._parentNames = [L.name, 'x']; bride.personality.traits = []; bride.personality.values = ['社群']; } /* v11.9.0 被嫁的人自己決定答不答應：這裡讓他是願意為小鎮嫁過去的人 */
+      { const r0 = Math.random; Math.random = () => 0.5; try { DIPLO.act(w, D, 'wed', nb.id); } finally { Math.random = r0; } } /* 當天的心情起伏固定在中間：願意嫁的人就一定答應（不然大約十次有一次會因為心情拒絕，這一項就偶爾沒過） */ out.wed = !!D.wed[nb.id] && logHas(/結為親家|married into/) && npcs().length === n0 - 1;
       // 盟友送糧
       const food0 = w.stockpile.get('food'); w.stockpile.consume('food', food0, w.tickCount, 't'); D.lastAct = D0; D.lastDay = null; fix(0.99, () => DIPLO.daily(w)); out.aid = w.stockpile.get('food') >= 60 && logHas(/送來了|sent 60/);
       // 貿易戰與禁運
@@ -44,8 +44,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       // 遠方消息:加稅王令讓跟首都的關係變差
       const rc = D.rel[cap.id]; DIPLO.onTiding(w, { pid: cap.id, k: '{p}傳來王令：全國加稅' }); out.tiding = D.rel[cap.id] < rc;
       // AI 決定
-      const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; CE._askJson = async () => ({ pid: cap.id, act: 'envoy', why: '跟王室打好關係' });
-      const rc2 = D.rel[cap.id]; await DIPLO.decide(w, D); out.ai = D.rel[cap.id] > rc2 && D.why === '跟王室打好關係';
+      const _fa = w.fullAgentMode, _ok = CE.fullAgentOk, _aj = CE._askJson; w.fullAgentMode = true; CE.fullAgentOk = () => true; /* v11.9.0 外交改走決策核心：AI 回的是「這一季的外交」的選項代號；被挑上的使節是願意出使的人 */
+      const L2 = DIPLO.leader(w); const opsA = DECIDE.KINDS.diploSeason.options(w, L2, { r: null, d: w._absDay() }); const envA = opsA.find(o => String(o.id).startsWith('envoy:'));
+      for (const o of opsA.filter(x => String(x.id).startsWith('envoy:'))) { const e = w.agents[String(o.id).split(':')[1]]; if (e) { e.personality.traits = ['charismatic', 'ambitious']; e.personality.values = []; } }
+      CE._askJson = async (p) => (/envoy:/.test(p) && /none＝/.test(p) ? [{ n: 1, pick: envA ? String(envA.id) : 'none', why: '跟王室打好關係' }] : null);
+      const relSum = () => DIPLO.places(w).reduce((x, q) => x + (D.rel[q.id] || 0), 0); const rc2 = relSum(); const X0 = DECIDE.S(w); X0._gAsked = {}; X0._kAsked = {}; X0._asked = 0; X0._cDay = w._absDay(); X0.lastDay = w._absDay(); D.why = '';
+      await DIPLO.decide(w, D); await DECIDE.flush(); await new Promise(r => setTimeout(r, 30)); await DECIDE.flush(); out.ai = !!envA && relSum() > rc2 && D.why === '跟王室打好關係';
       w.fullAgentMode = _fa; CE.fullAgentOk = _ok; CE._askJson = _aj; w._absDay = _ad;
       D.rel[nb.id] = 75; D.status[nb.id] = 'ally'; out.brief = CE._townBrief(w);
       app.state = w.getState(); const box = document.createElement('div'); document.body.appendChild(box); app.renderNews(box); /* v7.3.0 搬到日報 › 消息 */ out.ui = box.querySelector('.pp-diplo')?.innerText || ''; box.remove();

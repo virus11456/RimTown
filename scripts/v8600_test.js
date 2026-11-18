@@ -45,6 +45,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       restore('bio');
       const pair = adults().filter(a => (a.age ?? 30) >= 20 && (a.age ?? 30) <= 40).slice(0, 4);
       for (let i = 0; i + 1 < pair.length; i += 2) { const [a, b] = [pair[i], pair[i + 1]]; a.relationships.getOrCreate(b.agentId, b.name).status = 'married'; b.relationships.getOrCreate(a.agentId, a.name).status = 'married'; a.personality.values = [...(a.personality.values || []), '家庭']; }
+      w.fullAgentMode = false; // v11.7.0 走不走由夫妻自己決定：完整智能體模式開著時要等 AI 回話（這裡的假伺服器不回），降臨那一刻就算不到搬走的人；這裡看的是照個性當場決定的結果
       const c = WORLDCAL.begin(w, 'infertile', 'nature');
       while (c.ph === 'omen') step(); const fixProp = (w.proposals.items || []).some(p => p.kind === 'wc_fix');
       while (c.ph === 'debate') step(); const bankP = (w.proposals.items || []).find(p => p.kind === 'wc_bank');

@@ -41,8 +41,10 @@ const DECIDE = (() => {
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
     const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
-    const AI_GROUP = { deal: 20, civic: 6, work: 6 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
+    const AI_GROUP = { deal: 20, civic: 6, work: 6, calam: 12, order: 8 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
     // v11.6.0 東家每週看帳（bossWeek）另外一組 work，一天 6 件
+    // v11.7.0 災難裡的人（疫情、喪屍、末日、災後反應）另外一組 calam，一天 12 件：災難時一天多出很多題，不能把平常的 10 件擠光
+    // v11.8.0 派系、報社與治安（小團體、報社主筆、守衛、襲擊時的首長）另外一組 order，一天 8 件
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
@@ -153,7 +155,7 @@ const DECIDE = (() => {
     const memText = (e) => { try { return e.content || (e.k ? Memory.render(e.k, e.p || {}) : ''); } catch (x) { return e.content || ''; } };
     function involved(w, a, facts) { const f = String(facts || ''); return npcs(w).filter(o => o !== a && o.name && f.includes(o.name)).slice(0, 2); }
     function pastLines(w, a, K, facts, cutN, perWho = 2) {
-        const out = []; const d0 = day(w); const cutS = (x) => (x.length > cutN ? x.slice(0, cutN) + '…' : x); const myLog = w.decide?.log?.[a.agentId] || [];
+        const out = []; const d0 = day(w); const cutS = (x) => { try { if (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) x = I18N.localizeNames(x, true); } catch (e) {} return x.length > cutN ? x.slice(0, cutN) + '…' : x; }; /* v11.8.0 先換人名再截短（理由同 lines） */ const myLog = w.decide?.log?.[a.agentId] || [];
         const ago = (d) => (d0 - d <= 0 ? t('今天') : fill('{n} 天前', { n: d0 - d }));
         for (const o of involved(w, a, facts)) {
             const v = a.relationships?.relationships?.[o.agentId]?.affinity || 0; const rel = t(v >= 60 ? '很要好' : v >= 25 ? '有交情' : v <= -40 ? '結過怨' : v <= -15 ? '不太對盤' : '交情普通');
@@ -182,7 +184,9 @@ const DECIDE = (() => {
     // o.cap 可以把某幾個領域收得更短；o.cut 是「近況」「鎮上」每一句最多幾個字（聊天摘要、傳聞很長，拿主意時不必整段看）
     function lines(L, o) {
         const out = []; const cp = Object.assign({}, CAP, o?.cap || {}); const cut = o?.cut || 0;
-        const trim = (dom, s) => (cut && (dom === 'self' || dom === 'world') && s.length > cut) ? s.slice(0, cut) + '…' : s;
+        // v11.8.0 英文題目：先把人名換成英文再截短。以前先截短，名字剛好被切在中間（「何兆…」）就換不回英文，英文題目裡留下半個中文名字
+        const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
+        const trim = (dom, s) => { if (!(cut && (dom === 'self' || dom === 'world'))) return s; const s2 = en ? I18N.localizeNames(s, true) : s; return s2.length > cut ? s2.slice(0, cut) + '…' : s2; };
         for (const dom of ['now', 'eco', 'pol', 'soc', 'self', 'world', 'did']) if (L[dom]?.length) out.push(`${t(HEAD[dom])}${L[dom].slice(0, cp[dom]).map(s => trim(dom, s)).join(t('；'))}`);
         if (L.plan) out.push(`${t(HEAD.plan)}${L.plan}`);
         return out;
@@ -290,7 +294,7 @@ const DECIDE = (() => {
             // v9.23.2 選項用固定的代號（repay、extend…），不用 a、b、c：一次問好幾個人時每個人的選項不一樣，同一個字母對不同人是不同的事，
             // 真模型會搞混（實測：理由寫「帶點心意去道歉」，選的卻是別人清單裡的 c＝不道歉）
             const cs = codes(o.opts); const opts = o.opts.map((op, i) => `${cs[i]}＝${say(op.text)}`).concat(`other＝${t('其他：做一件上面沒有、但你真的想做的事')}`);
-            const facts = K.facts(w, o.a, o.ctx); let past = []; try { past = lv < 2 ? pastLines(w, o.a, K, facts, cap(lv ? 30 : 46, lv ? 90 : 130), lv ? 1 : 2) : []; } catch (e) {} // v10.0.0 字數不夠時先收短，再不夠才拿掉
+            const facts = K.facts(w, o.a, o.ctx); let past = []; try { past = lv < 2 ? pastLines(w, o.a, K, facts, cap(lv ? 30 : 46, lv ? 90 : 130), lv ? 1 : 2) : []; } catch (e) { console.warn('[Decide] past', e); /* 出錯要看得到：以前安靜地接住，往事整段不見了好幾版都沒人發現 */ } // v10.0.0 字數不夠時先收短，再不夠才拿掉
             return `=== ${i + 1}. ${b.name}${t('（')}${b.age}${t('歲')}${t('，')}${b.job}${sep}${t('性格')}${t('：')}${b.traits}${sep}${t('在乎')}${t('：')}${b.values}${sep}${t('心情')} ${b.mood}/100${t('）')}\n${L.join('\n')}\n${past.length ? `${t('【跟這件事有關的往事】')}${past.join(t('；'))}\n` : ''}${t('【遇到的事】')}${facts}\n${t('【可以選】')}${opts.join(' ／ ')}`;
         }).join('\n\n');
         const en = (() => { try { return typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && !!I18N.localizeNames; } catch (e) { return false; } })();
@@ -404,6 +408,12 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (offers.length) dispatch(w, X, offers, d);
         }
     }
+    // v11.7.0 馬上問（事件當下）：排著還沒輪到的事先拿開，問完原樣放回去。正在執行別人選的那一項時（選項的 run 裡）只能排進佇列，這一輪處理完就輪到，不然會重入佇列
+    function askNow(w, list) {
+        list = (list || []).filter(x => x && x.a && KINDS[x.kind]); if (!list.length) return; const X = S(w);
+        if (inRun()) { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); return; }
+        const keep = X.q.splice(0, X.q.length); try { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); drain(w, X, day(w)); } finally { if (keep.length) X.q.unshift(...keep); }
+    }
     function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
 
     // ================= 4. 每天 =================
@@ -452,7 +462,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
 
     // 決策核心有沒有在運作(其他系統用這個判斷「這件事是不是交給本人決定」)
     const on = (w) => !!(w?.observerMode && W() && w.wallet);
-    return { inRun, S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
+    return { inRun, askNow, S, source, kind, KINDS, ledger, lines, pastLines, involved, lean, score, daily, flush, ruleOnce, enqueue, drain, view, stats, aiOn, on, FX, record, observe, kinLine, debtLines, trendLine, worth, prompt, AI_MAX, AI_GROUP, BATCH, codes, applyAi: (w, a, K, ctx, opts, row) => applyAi(w, S(w), a, K, ctx, opts, row, day(w)) };
 })();
 
 // ================= 階段 1：理財的三個選擇點 =================
@@ -563,9 +573,9 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             const lentOut = (w.dark?.debts || []).filter(x => !x.done && x.cash && x.l === a.agentId).length; const burned = (w.dark?.wrongs || []).some(x => x.by === r.agentId && x.to === a.agentId && !x.forgiven);
             const tell = (res) => setRes(w, r.agentId, 'borrow:' + a.agentId, res);
             if (c >= WALLET.loanSize(w, a) + 10) out.push({ id: 'lend', text: { k: '借給他 {n} 銀幣', p: { n: WALLET.loanSize(w, a) } }, say: { k: '把錢借給{r}', p: { r: r.name } }, why: { k: '{r}有難，能幫就幫。', p: { r: r.name } }, base: 0.7 + clampN(aff(a, r) / 40, -1, 1.5) + (fam ? 0.8 : 0) - lentOut * 0.8 - (burned ? 2 : 0) - (c < 80 ? 0.5 : 0), lean: { bond: 0.9 },
-                run: (w2, a2) => { const got = WALLET.lendTo(w2, a2, w2.agents[r.agentId]); tell(got ? { k: '{l}借了我 {n} 銀幣', p: { l: a2.name, n: got } } : { k: '{l}沒借成', p: { l: a2.name } }); return got ? { k: '借了 {n} 銀幣給{r}', p: { n: got, r: r.name } } : { k: '沒借成' }; } });
+                run: (w2, a2) => { if (!w2.agents[r.agentId]) return { k: '沒借成' }; /* v11.10.0 來借錢的人等回話的時候出了遠門：以前錢照樣付出去、進了公庫 */ const got = WALLET.lendTo(w2, a2, w2.agents[r.agentId]); tell(got ? { k: '{l}借了我 {n} 銀幣', p: { l: a2.name, n: got } } : { k: '{l}沒借成', p: { l: a2.name } }); return got ? { k: '借了 {n} 銀幣給{r}', p: { n: got, r: r.name } } : { k: '沒借成' }; } });
             if (c >= 120) out.push({ id: 'gift', text: '不用還，直接塞 15 銀幣給他', say: { k: '直接塞錢給{r}，不用他還', p: { r: r.name } }, why: '這點錢不用還了，誰沒有困難的時候。', base: -1.2 + clampN(aff(a, r) / 50, 0, 1) + (fam ? 1 : 0), lean: { bond: 0.9, gain: -0.3 },
-                run: (w2, a2) => { const got = WALLET.giveTo(w2, a2, w2.agents[r.agentId], 15); tell(got ? { k: '{l}直接給了我 {n} 銀幣，說不用還', p: { l: a2.name, n: got } } : { k: '{l}沒給成', p: { l: a2.name } }); return got ? { k: '給了{r} {n} 銀幣', p: { r: r.name, n: got } } : { k: '沒給成' }; } });
+                run: (w2, a2) => { if (!w2.agents[r.agentId]) return { k: '沒給成' }; const got = WALLET.giveTo(w2, a2, w2.agents[r.agentId], 15); tell(got ? { k: '{l}直接給了我 {n} 銀幣，說不用還', p: { l: a2.name, n: got } } : { k: '{l}沒給成', p: { l: a2.name } }); return got ? { k: '給了{r} {n} 銀幣', p: { r: r.name, n: got } } : { k: '沒給成' }; } });
             out.push({ id: 'refuse', text: '婉拒，說自己也不寬裕', say: { k: '婉拒了{r}', p: { r: r.name } }, why: '我自己也不寬裕，實在借不出來。', base: 0.9, lean: { safe: 0.5, gain: 0.4 },
                 run: (w2, a2) => { WALLET.refuseLoan(w2, a2, w2.agents[r.agentId]); tell({ k: '{l}拒絕了', p: { l: a2.name } }); return { k: '沒借給{r}', p: { r: r.name } }; } });
             return out;

@@ -100,7 +100,7 @@ async function client(browser, lang) {
     { const you = t('你'); const x1 = { k: '{a}私下拉票，讓{v}的提案{id}被否決', p: { a: '廖岳', v: '馬強', id: 'L079' } }; const x2 = { k: '報復{v}', p: { v: '黃曦' } };
       const l1 = DARK.wrongLine(x1, you, '馬強'), l2 = DARK.wrongLine(x1, '廖岳', you), l3 = DARK.wrongLine(x2, you, '黃曦');
       const a0 = npcs[20], b0 = npcs[21]; DARK.wrong(w, a0, b0, 2, '報復{v}', { v: b0.name }); DARK.wrong(w, a0, b0, 2, '欠{v}錢不還', { v: b0.name });
-      out.dark = { l1, l2, l3, self: !l1.includes('廖岳') && l1.includes(you) && l1.includes('馬強'), other: l2.split('廖岳').length === 2 && l2.includes(you), plain: l3.startsWith(you) && l3.includes('黃曦'),
+      out.dark = { l1, l2, l3, self: !l1.includes(t('廖岳')) && l1.includes(you) && l1.includes(t('馬強')), other: l2.split(t('廖岳')).length === 2 && l2.includes(you), plain: l3.startsWith(you) && l3.includes(t('黃曦')), /* v11.7.0 秘密句子裡的人名也照當下的語言顯示，英文模式比對翻過的名字 */
         owe: DARK.about(w, a0).owe.filter(n => n === b0.name).length, hurt: DARK.about(w, b0).hurt.filter(n => n === a0.name).length, guide: /別扯到不相干的人|unrelated grudge/.test(dp) }; }
     /* v9.23.3 選項代號不帶人名：id 是 borrow:imm_曹峰_552 這種時，題目上寫 borrow:1，AI 照抄回來對得到同一個選項 */
     { const K2 = DECIDE.KINDS.pinch; const A = npcs[30]; let ran = '';

@@ -70,7 +70,10 @@ const CROWN = (() => {
     function startSuccession(w, C, d, first) {
         const prev = C.history[C.history.length - 1];
         // 世襲:先找王室子女
-        if (prev) { const heirs = npcs(w).filter(o => (o._parentNames || []).includes(prev.name) && o.age >= 16).sort((x, y) => y.age - x.age); if (heirs[0]) return crown(w, heirs[0], 'heir'); }
+        if (prev) { const heirs = npcs(w).filter(o => (o._parentNames || []).includes(prev.name) && o.age >= 16).sort((x, y) => y.age - x.age);
+            // v11.9.0 接不接王位由繼承人自己決定（可以讓給弟妹）；都不接才進繼承危機。問不到時照原本由長子女繼承
+            let r = null; try { r = (heirs.length && typeof HOME !== 'undefined' && HOME.throneAsk) ? HOME.throneAsk(w, heirs) : null; } catch (e) { console.warn('[Crown] heir ask', e); r = null; }
+            if (r === 'asked') return; if (r !== 'none' && heirs[0]) return crown(w, heirs[0], 'heir'); }
         const cands = npcs(w).map(a => ({ a, s: prestige(w, a) })).sort((x, y) => y.s - x.s).slice(0, 3).map(x => x.a);
         if (!cands.length) return;
         if (first) {
@@ -129,16 +132,21 @@ const CROWN = (() => {
         if (C.legit < 50 && tr > 120) return 'festival';
         return ['festival', 'amnesty', 'tax_down', 'curfew'][Math.floor(Math.random() * 4)];
     }
+    // 頒布一道王令（結算照原本）。v11.9.0 拆出來給決策核心用：國王自己選了哪一道，就頒那一道
+    function issueDecree(w, C, k, d, key, text) {
+        const D = DECREES[key] || DECREES.festival; try { D.apply(w); } catch (e) {}
+        C.legit = Math.max(0, Math.min(100, C.legit + D.legit));
+        const rec = { key, day: d, king: k.name, text: text || '' }; C.decrees.push(rec); if (C.decrees.length > 12) C.decrees.shift();
+        log(w, 'event', '📜 {k}頒布{n}{q}', { k: k.name, n: D.zh, q: text ? `${t('：')}${t('「')}${text}${t('」')}` : '' }, k.name);
+        news(w, `${t(D.zh)}${text ? `${t('：')}${text}` : ''}`, 9, [k.name]);
+        for (const a of npcs(w)) if (Math.random() < 0.15) mem(w, a, D.legit >= 0 ? '國王頒布了{n}，這下日子好過一點。' : '國王頒布了{n}，大家都在抱怨。', { n: D.zh }, 5);
+        return rec;
+    }
     function decree(w, C, k, d) {
         C.lastDecree = d;
-        const issue = (key, text) => {
-            const D = DECREES[key] || DECREES.festival; try { D.apply(w); } catch (e) {}
-            C.legit = Math.max(0, Math.min(100, C.legit + D.legit));
-            const rec = { key, day: d, king: k.name, text: text || '' }; C.decrees.push(rec); if (C.decrees.length > 12) C.decrees.shift();
-            log(w, 'event', '📜 {k}頒布{n}{q}', { k: k.name, n: D.zh, q: text ? `${t('：')}${t('「')}${text}${t('」')}` : '' }, k.name);
-            news(w, `${t(D.zh)}${text ? `${t('：')}${text}` : ''}`, 9, [k.name]);
-            for (const a of npcs(w)) if (Math.random() < 0.15) mem(w, a, D.legit >= 0 ? '國王頒布了{n}，這下日子好過一點。' : '國王頒布了{n}，大家都在抱怨。', { n: D.zh }, 5);
-        };
+        const issue = (key, text) => issueDecree(w, C, k, d, key, text);
+        // v11.9.0 這一道王令由國王自己決定（選擇點 decree，sim-decide-home.js；開了 AI 也走決策核心）。問不到國王時照下面原本的規則
+        try { if (typeof HOME !== 'undefined' && HOME.decreeAsk && HOME.decreeAsk(w, k, ruleDecree(w, C))) return; } catch (e) { console.warn('[Crown] decree ask', e); }
         const ce = w.conversationEngine;
         if (w.fullAgentMode && ce?.decideDecree && ce.fullAgentOk?.(w)) { ce.decideDecree(w, k, C, Object.keys(DECREES)).then(r => { if (r && DECREES[r.key]) issue(r.key, r.text); else issue(ruleDecree(w, C)); }).catch(() => issue(ruleDecree(w, C))); }
         else issue(ruleDecree(w, C));
@@ -208,7 +216,10 @@ const CROWN = (() => {
     }
     function brief(w) { const C = w.crown; if (!C) return ''; if (C.republic) return t('王都已推翻王室，改為共和'); const k = king(w); if (!k) return C.crisis ? t('王位空懸，繼承危機中') : ''; return `${t('國王')}${t('：')}${t(k.name)}${t('（')}${en() ? C.dynasty?.en || '' : C.dynasty?.zh || ''}${t('，')}${t('民心')} ${Math.round(C.legit)}/100${t('）')}`; }
     function view(w) { const C = w.crown; if (!C) return null; const k = king(w); return { king: k ? t(k.name) : null, dynasty: C.dynasty ? (en() ? C.dynasty.en : C.dynasty.zh) : '', legit: Math.round(C.legit), decrees: (C.decrees || []).slice(-3).reverse(), crisis: C.crisis ? C.crisis.claimants.map(id => w.agents[id]?.name).filter(Boolean).map(n => t(n)) : null, republic: !!C.republic, plot: C.plot ? { leader: w.agents[C.plot.leader]?.name, n: C.plot.members.length } : null, history: C.history.slice(-5) }; }
-    return { S, daily, king, crown, brief, view, DECREES, prestige, legitimacy, foiled, plotInfo, plotBy, joinInfo, joinBy }; // v9.4.0 legitimacy／foiled 給測試用
+    // v11.9.0 王位空著時再找一次繼承人（有人不接、讓位之後馬上往下找，不等隔天）
+    const succession = (w) => { const C = S(w); if (!isCapital(w) || C.republic || king(w) || C.crisis) return false; startSuccession(w, C, day(w), !C.history.length); return true; };
+    const issue = (w, key, text) => { const C = S(w); const k = king(w); if (!k || !DECREES[key]) return null; return issueDecree(w, C, k, day(w), key, text); };
+    return { S, daily, king, crown, brief, view, DECREES, prestige, legitimacy, foiled, plotInfo, plotBy, joinInfo, joinBy, ruleDecree, issue, succession, isCapital }; // v9.4.0 legitimacy／foiled 給測試用
 })();
 
 if (typeof ProposalSystem !== 'undefined') {

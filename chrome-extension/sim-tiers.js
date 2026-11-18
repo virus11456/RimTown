@@ -280,7 +280,11 @@ if (typeof CouncilSystem !== 'undefined') {
         const have = new Set(this.members); const leaderId = world.election?._officeHolder?.(world)?.agentId;
         const cands = all.filter(a => !have.has(a.agentId) && a.agentId !== leaderId && (a.age || 0) >= 18).map(a => [a, seatScore(world, a)]).sort((x, y) => y[1] - x[1]);
         let n = 0; const lv = TIERS.level(world), L = TIERS.LV[lv];
-        while (this.members.length + occupied < want && cands.length) { const [a] = cands.shift(); this.members.push(a.agentId); n++;
+        while (this.members.length + occupied < want && cands.length) { const [a] = cands.shift();
+            // v11.9.0 被推舉的人接不接由本人決定（sim-decide-home.js）：不接就往下找，等他回話的時候先空著
+            let ans = 'yes'; try { if (typeof HOME !== 'undefined' && HOME.seatOk) ans = HOME.seatOk(world, a, 'pick'); } catch (e) { ans = 'yes'; }
+            if (ans === 'no') continue; if (ans === 'wait') break;
+            this.members.push(a.agentId); n++;
             try { world.logMessageT('council', '🏛️ {council}有空位，大家推舉{name}遞補為{member}。', { council: L.council, name: a.name, member: L.member }, a.name); } catch (e) {}
             try { a.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'social', '大家推舉我進{council}，我得好好做。', { council: L.council }, 7, []); } catch (e) {} }
         return n;
@@ -361,7 +365,7 @@ if (typeof LifecycleSystem !== 'undefined') {
             const w = (typeof window !== 'undefined' && window.rimtownApp?.world) || null; const o = w && TIERS.topOffice(w, npc); if (!o) return s;
             const isEn = typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
             const head = isEn ? `Served ${o.n > 1 ? o.n + ' terms ' : ''}as ${o.title}` : `曾任${o.n > 1 ? ` ${o.n} 屆` : ''}${o.title}`;
-            const job = npc.job ? `${t('曾任')}${npc.job.title}` : '';
+            const job = npc.job ? `${t('曾任')}${t(npc.job.title)}` : ''; // v11.7.0 跟墓誌銘同一種寫法（職稱也翻）
             if (job && s.startsWith(job)) return head + s.slice(job.length);
             return head + (isEn ? '. ' : '，') + s;
         } catch (e) { return s; }
