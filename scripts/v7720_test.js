@@ -35,10 +35,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       setBal(B, 200); M_(() => MONEY.finesDaily(w)); out.garnish = { step, expect: Math.round(WALLET.wageOf(B) * 0.3 * 100) / 100, clearedWhenRich: !F()[B.agentId], left: bal(B) };
       // 4) 家人代繳:感情好的配偶有錢就幫忙付
       const sp = B; clearFam(C); C.relationships.getOrCreate(sp.agentId, sp.name).status = 'married'; sp.relationships.getOrCreate(C.agentId, C.name).status = 'married'; sp.relationships.getOrCreate(C.agentId, C.name).affinity = 90;
-      setBal(C, 0); setBal(sp, 500); const spB = bal(sp); M_(() => fix(0.01, () => MONEY.fine(w, C, 30, t('罰款'))));
+      // v11.11.0 家人付不付由家人自己決定（kinPay）：心軟、重視家庭、感情好的配偶付清；貪心又處不來的不付（以前照好感擲骰）
+      const spAs = (kind) => { sp.personality.traits = kind ? ['kind'] : ['greedy']; sp.personality.values = kind ? ['家庭'] : []; sp.relationships.getOrCreate(C.agentId, C.name).affinity = kind ? 60 : -60; };
+      spAs(true); setBal(C, 0); setBal(sp, 500); const spB = bal(sp); M_(() => fix(0.5, () => MONEY.fine(w, C, 30, t('罰款'))));
       out.famPay = { spousePaid: Math.round((spB - bal(sp)) * 100) / 100, noDebt: !F()[C.agentId] };
       // 5) 家人不肯幫:關係變差,欠款照記
-      const aff0 = C.relationships.getOrCreate(sp.agentId, sp.name).affinity; setBal(sp, 500); M_(() => fix(0.99, () => MONEY.fine(w, C, 30, t('罰款'))));
+      const aff0 = C.relationships.getOrCreate(sp.agentId, sp.name).affinity; spAs(false); setBal(sp, 500); M_(() => fix(0.5, () => MONEY.fine(w, C, 30, t('罰款'))));
       out.famNo = { affDrop: Math.round(aff0 - C.relationships.getOrCreate(sp.agentId, sp.name).affinity), debt: MONEY.owedOf(w, C), spouseKept: bal(sp) === 500 };
       // 6) 欠兩週:家人最後一次機會(這次也拒絕) → 改服勞役;服勞役沒工資,每天做工抵 6 銀幣,抵完就結束
       setBal(C, 0); C.job = new Job('guard'); F()[C.agentId].since = w._absDay() - 14; fix(0.99, () => MONEY.finesDaily(w));
