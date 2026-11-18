@@ -40,7 +40,10 @@ const ESTATE = (() => {
     const unitOf = (w, a) => { const E = S(w); const h = headOf(w, a); return E.home[h.agentId] || null; };
     const isHomeless = (w, a) => { const h = headOf(w, a); return S(w).homeless[h.agentId] !== undefined; };
     // ---------- 價格 ----------
-    function scarcity(w) { const E = S(w); const hh = households(w).size; const n = Object.keys(E.units).length || 1; return Math.max(0.8, Math.min(2, hh / n)); }
+    // v11.10.0 每天安置與收租時，「缺不缺房」這個數字會被問上千次（排房租高低時每比一次就問兩次），每問一次都把全鎮重新分一遍戶。
+    // 這段期間戶數不會變，所以記住一次；房子數變了就重算。只在 scarOnce 包住的那一段有效，其他時候照舊每次都算
+    let _scar = null; const scarOnce = (w, fn) => { _scar = { w, n: -1, v: 0 }; try { return fn(); } finally { _scar = null; } };
+    function scarcity(w) { const E = S(w); const n = Object.keys(E.units).length || 1; if (_scar && _scar.w === w && _scar.n === n) return _scar.v; const hh = households(w).size; const v = Math.max(0.8, Math.min(2, hh / n)); if (_scar && _scar.w === w) { _scar.n = n; _scar.v = v; } return v; }
     // 房租跟著鎮上的工資水準走:基本的房子約是一週基本工資的兩成上下,缺房時漲、房子好的貴;公有房舍打八折(公營住宅)
     const WEEK_WAGE = 4.5 * 7;
     // v11.6.0 私人房東自己定檔位（貴一點 ×1.15／照行情／便宜一點 ×0.85，只管他名下出租的房子；公有房舍照舊）。hid：這一週付租的那一戶；
@@ -351,15 +354,17 @@ const ESTATE = (() => {
     // ---------- 每天 ----------
     function daily(w) {
         const E = S(w), d = day(w); if (E.lastDay === d) return; E.lastDay = d;
-        init(w); const hh = households(w); settle(w, hh); payServants(w);
+        init(w); const hh = households(w); scarOnce(w, () => { settle(w, hh); payServants(w); });
         // 露宿:心情差、很冷;冬天有危險
         const winter = w.clock?.season === '冬季';
         for (const hid of Object.keys(E.homeless)) for (const a of hh.get(hid) || []) {
             a.addThought?.('homeless', w); if (a.needs) a.needs.comfort = Math.max(0, (a.needs.comfort ?? 50) - (winter ? 30 : 12));
             if (winter && Math.random() < 0.004 && w.lifecycle?._killNpc) { a._deathCause = t('凍死街頭'); log(w, '❄️ {a}在寒夜裡露宿街頭，沒能撐過去。', { a: a.name }, a.name); try { w.lifecycle._killNpc(w, a); } catch (e) {} }
         }
-        if (d % 7 === 0) weekly(w, households(w));
-        try { llDaily(w, d); } catch (e) { console.warn('[Estate] landlord', e); } // v11.6.0 房東定租金、欠租等回話的退路
+        scarOnce(w, () => { // 上面露宿那一段可能有人過世（戶數會變），所以這裡重新記一次
+            if (d % 7 === 0) weekly(w, households(w));
+            try { llDaily(w, d); } catch (e) { console.warn('[Estate] landlord', e); } // v11.6.0 房東定租金、欠租等回話的退路
+        });
     }
     // ---------- 開局家族:一部分大人是夫妻,小孩與年輕人有爸媽 ----------
     function seedFamilies(w) {
