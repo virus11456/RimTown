@@ -331,7 +331,7 @@ async function run(browser, dev, lang) {
       for (const k of Object.keys(H.vic)) delete H.vic[k]; for (const k of Object.keys(H.thief)) delete H.thief[k]; const vs = [take(), take(), take()]; for (const x of vs) { plain(x); H.vic[x.agentId] = day() - 1; } clear(); w.fullAgentMode = false; Math.random = () => 0; let pT = null; try { HOMEPROP.daily(w); } finally { Math.random = R0; } pT = P.items.slice(-1)[0];
       Cx.theftProp = { kind: pT?.kind, dir: pT?.dir, byVictim: vs.some(x => x.agentId === pT?.proposerId), title: P.title(pT || { tk: '', tp: {} }) };
       // 表決：被偷過的人贊成、家人被關過的人反對；理由看得出立場
-      for (const k of Object.keys(H.thief)) delete H.thief[k]; const th = take(); plain(th); const kin = take(); plain(kin); setAff(kin, th, 80); H.thief[th.agentId] = day() - 2; const vv = vs[0]; const fake = Object.assign({}, pT, { votes: {}, why: {}, proposerId: 'zz' });
+      for (const k of Object.keys(H.thief)) delete H.thief[k]; const th = take(); plain(th); const kin = take(); plain(kin); setAff(kin, th, 80); H.thief[th.agentId] = day() - 2; const vv = vs[0]; orphan(th); setAff(vv, th, 0); /* 被偷過的那位剛好是小偷的家人或好友時會照「家人被關過」投反對：這裡要量的是單純被偷過的人 */ const fake = Object.assign({}, pT, { votes: {}, why: {}, proposerId: 'zz' });
       P._ruleVote(w, fake, vv); P._ruleVote(w, fake, kin); P._ruleVote(w, fake, th); Cx.theftVote = { victim: fake.votes[vv.agentId] + ':' + fake.why[vv.agentId], kin: fake.votes[kin.agentId] + ':' + fake.why[kin.agentId], thief: fake.votes[th.agentId], whyText: typeof VOTE_WHY !== 'undefined' && !!VOTE_WHY.theft_victim };
       // 生效：從重關 5 天
       HOMEPROP.enact(w, pT); Cx.harsh = law().theft;
