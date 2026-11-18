@@ -144,7 +144,7 @@ async function run(browser, dev, lang) {
       // 都不肯：照原本沒錢吃飯
       setAff(z, x, -60); setCash(z, 9); H.hd = null; const z1 = cash(z), y1 = cash(y); const f3 = steady(() => MARKET.feed(w, x, 3)); A3.none = { fed: !!f3, kept: cash(z) === z1 && cash(y) === y1 };
       // 小孩的飯錢照舊由家裡出（不問）
-      const kid = take(); plain(kid); orphan(kid); kid.age = 10; kid._parentNames = [y.name]; setCash(kid, 0); setCash(y, 50); setAff(y, kid, -80); H.hd = null; const nk = seen.length; const L4 = leak(() => steady(() => MARKET.feed(w, kid, 3))); A3.kid = { who: L4.ret?.agentId === y.agentId, asked: seen.slice(nk).filter(e => e.kind === 'feedHelp').length }; kid.age = 20; kid._parentNames = [];
+      const kid = take(); plain(kid); orphan(kid); unpair(kid) /* 他原本要是有伴侶，伴侶也算家人，比較有錢時會變成伴侶出飯錢 */; kid.age = 10; kid._parentNames = [y.name]; setCash(kid, 0); setCash(y, 50); setAff(y, kid, -80); H.hd = null; const nk = seen.length; const L4 = leak(() => steady(() => MARKET.feed(w, kid, 3))); A3.kid = { who: L4.ret?.agentId === y.agentId, asked: seen.slice(nk).filter(e => e.kind === 'feedHelp').length }; kid.age = 20; kid._parentNames = [];
       // 沒開：最有錢的家人照付
       setAff(y, x, -60); setCash(y, 30); H.hd = null; const L5 = offDecide(() => MARKET.feed(w, x, 3)); A3.off = L5?.agentId === y.agentId;
       A3.noAi = !!KK.feedHelp.noAi; }
@@ -172,7 +172,7 @@ async function run(browser, dev, lang) {
       A5.facts = { names: list.every(x => f.includes(t(x.name)) || f.includes(x.name)) };
       A5.ids = ids(K, k, ctxP); A5.ruleTop = pick(K, k, ctxP) === 'pick' && opOf(K, k, ctxP, 'pick:' + list[0].agentId) && (() => { const ops = K.options(w, k, ctxP); const Ln = DECIDE.lean(w, k); return ops.slice().sort((a, b) => DECIDE.score(Ln, b) - DECIDE.score(Ln, a))[0].id === 'pick:' + list[0].agentId; })();
       // 交情改變人選：浪漫又很喜歡第二位的國王挑第二位
-      k.personality.traits = ['romantic']; setAff(k, list[1], 90); const ops2 = K.options(w, k, ctxP); const Ln2 = DECIDE.lean(w, k); A5.love = ops2.slice().sort((a, b) => DECIDE.score(Ln2, b) - DECIDE.score(Ln2, a))[0].id === 'pick:' + list[1].agentId; plain(k); setAff(k, list[1], 0);
+      k.personality.traits = ['romantic']; setAff(k, list[0], 0) /* 國王原本要是剛好也喜歡大臣推薦的第一位，推薦的加分會蓋過去 */; setAff(k, list[1], 90); const ops2 = K.options(w, k, ctxP); const Ln2 = DECIDE.lean(w, k); A5.love = ops2.slice().sort((a, b) => DECIDE.score(Ln2, b) - DECIDE.score(Ln2, a))[0].id === 'pick:' + list[1].agentId; plain(k); setAff(k, list[1], 0);
       // 被挑上的人拒絕：崇尚自由、討厭國王
       const b1 = list[0]; b1.personality.values = ['自由']; setAff(b1, k, -50); const n0 = asked.length; steady(() => HOME.royalAsk(w, k, list)); const q = asked.slice(n0);
       A5.no = { pick: q.some(e => e.kind === 'royalPick' && e.who === k.agentId), prop: q.some(e => e.kind === 'proposed' && e.who === b1.agentId && e.ctx?.royal), single: !k.relationships.getPartner(), blocked: (H.royalNo[b1.agentId] ?? -1) > day(), kmem: memHas(k, '我向{b}求婚，被拒絕了。') };

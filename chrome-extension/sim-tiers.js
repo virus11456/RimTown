@@ -94,7 +94,7 @@ const TIERS = (() => {
     const SEAS = ['春季', '夏季', '秋季', '冬季'], SEAS_EN = ['Spring', 'Summer', 'Autumn', 'Winter'];
     function dateText(d) { const n = Math.max(0, (d || 1) - 1), y = Math.floor(n / 60) + 1, si = Math.floor((n % 60) / 15); return en() ? `Y${y} ${SEAS_EN[si]}` : `第${y}年${SEAS[si]}`; }
     const titleOf = (w, x) => x.role === 'council' ? memberTitle(w, x.lv) : x.role === 'acting' ? (en() ? 'Acting ' : '代理') + leaderTitle(w, x.lv) : leaderTitle(w, x.lv);
-    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], crowned: ['登基為王，讓出職位', 'gave up the office on becoming king'], scandal: ['醜聞曝光，被迫下台', 'forced out by a scandal'], coup: ['政變失敗，被拔除職位', 'stripped of office after a failed coup'], recall: ['被罷免下台', 'recalled from office'], ended: ['卸任', 'left office'] };
+    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], crowned: ['登基為王，讓出職位', 'gave up the office on becoming king'], scandal: ['醜聞曝光，被迫下台', 'forced out by a scandal'], coup: ['政變失敗，被拔除職位', 'stripped of office after a failed coup'], recall: ['被罷免下台', 'recalled from office'], toLeader: ['當上首長，讓出議員席位', 'gave up the council seat on becoming leader'], ended: ['卸任', 'left office'] };
     const endText = (e) => { const z = END[e] || END.ended; return en() ? z[1] : t(z[0]); };
     function leaderNote(x) {
         const w = x.w || 0;
@@ -241,7 +241,7 @@ const TIERS = (() => {
         for (const a of npcs(w).slice(0, 6)) mem(w, a, '這{n}天鎮上{a}。', { n, a: notes[1] }, 3);
         return { days: n, drift: Math.round(drift) };
     }
-    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), hint, badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote, techBlock };
+    return { LV, S, syncTitles, met, techCap, techDone, TECH_NEED, metLoose, GRACE, level, info, name, leaderTitle, memberTitle, seats, qualified, careerText, careerBrief, resume, summary, topOffice, dateText, addWin, onDecide, track: (w) => track(w, S(w)), hint, holderId: (w) => holderOf(w), badge, daily, progress, retitle, catchUp, UP_DAYS, DOWN_DAYS, promote, ready, needsVote, techBlock };
 })();
 
 // ---- 每天跑(跟其他模組一樣掛在提案系統的每日更新)
@@ -260,10 +260,12 @@ if (typeof CouncilSystem !== 'undefined') {
     CS._formCouncil = function (world) {
         _form.call(this, world);
         try {
+            const hid = TIERS.holderId(world); // v11.10.1 首長不兼議員：一開始排席次就不把他排進去
+            if (hid && (this.members || []).includes(hid)) this.members = this.members.filter(id => id !== hid);
             const want = Math.min(TIERS.seats(world), Math.max(3, Math.floor(Object.values(world.agents).filter(a => !a.isPlayer).length / 3)));
             if (this.members.length && this.members.length !== want) {
                 const have = new Set(this.members);
-                const extra = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && !have.has(a.agentId)).sort((x, y) => (y.age || 0) - (x.age || 0) + (Math.random() - 0.5) * 20);
+                const extra = Object.values(world.agents).filter(a => !a.isPlayer && !a.isDead && a.agentId !== hid && !have.has(a.agentId)).sort((x, y) => (y.age || 0) - (x.age || 0) + (Math.random() - 0.5) * 20);
                 this.members = this.members.slice(0, want); while (this.members.length < want && extra.length) this.members.push(extra.shift().agentId);
             }
         } catch (e) {}
@@ -289,12 +291,23 @@ if (typeof CouncilSystem !== 'undefined') {
             try { a.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'social', '大家推舉我進{council}，我得好好做。', { council: L.council }, 7, []); } catch (e) {} }
         return n;
     };
+    // v11.10.1 首長不兼議員。以前當上首長的議員只是不入座、不投票，席位還掛在他名下，履歷上兩個職位同時「任職中」，也佔掉一席沒人遞補。
+    // 現在：正式的首長（出遠門的也算；代理的不算，他只是暫時看家）名字還在議員名單上，就讓出席位，空出來的照原本的流程由落選者或大家推舉的人遞補。
+    const leaderLeaves = function (world) {
+        const hid = TIERS.holderId(world); if (!hid || !(this.members || []).includes(hid)) return false;
+        this.members = this.members.filter(id => id !== hid); TIERS.hint(world, hid, 'toLeader');
+        const a = world.agents[hid]; const L = TIERS.LV[TIERS.level(world)]; const leader = L.leader;
+        try { world.logMessageT('council', '🏛️ {name}當上{leader}，不再兼任{member}，{council}空出一席。', { name: a?.name || (world.events?._travellingAgents || []).find(x => x?.agentData?.agentId === hid)?.agentData?.name || '', leader, member: L.member, council: L.council }, a?.name || ''); } catch (e) {}
+        try { a?.memory?.addT?.(world.tickCount, world.clock?.timeStr || '', 'social', '我當上{leader}，{member}的位子就讓出來了。', { leader, member: L.member }, 6, []); } catch (e) {}
+        return true;
+    };
     CS.dailyUpdate = function (world) {
         let awayMembers = [];
         try {
             if (this._formed) {
                 // 先處理席次再讓原本的流程跑(原本有人離開就只刪不補,剩一人時整個議會解散)
                 const away = new Set((world.events?._travellingAgents || []).map(x => x?.agentData?.agentId).filter(Boolean));
+                leaderLeaves.call(this, world); // v11.10.1 當上首長的議員讓出席位（空出來的照下面的流程遞補）
                 awayMembers = (this.members || []).filter(id => !world.agents[id] && away.has(id)); // 出遠門的人保留席次
                 this.members = (this.members || []).filter(id => world.agents[id]);
                 refillSeats.call(this, world, awayMembers.length);
