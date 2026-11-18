@@ -63,7 +63,7 @@ const OFFICE = (() => {
         // 發津貼：公庫付不出來就欠著（欠久了的人比較容易收錢）
         const n = stipend(w); for (const post of Object.keys(O.posts)) { const a = holder(w, post); const P = O.posts[post]; if (!a) continue; if (w.stockpile?.consume?.('silver', n, w.tickCount, t('公職津貼'))) { WALLET.add(w, a, n); P.owe = 0; } else P.owe = (P.owe || 0) + 1; }
         // 補人
-        if (M) for (const post of wanted(w)) { if (O.posts[post]) continue; if ((w.proposals?.items || []).some(p => p.kind === 'office_appoint' && p.post === post && ['open', 'shelved', 'approved'].includes(p.status))) continue; if (d - (O.lastNom[post] ?? -99) < NOM_GAP) continue; let can = true; try { can = typeof FISCAL === 'undefined' || FISCAL.canHire(w); } catch (e) {} if (!can) continue; O.lastNom[post] = d; DECIDE.enqueue(w, M, 'officeNominate', { post }); }
+        if (M) for (const post of wanted(w)) { if (O.posts[post]) continue; if ((w.proposals?.items || []).some(p => p.kind === 'office_appoint' && p.post === post && ['open', 'shelved', 'approved'].includes(p.status))) continue; if (d - (O.lastNom[post] ?? -99) < NOM_GAP) continue; let can = true; try { can = typeof FISCAL === 'undefined' || FISCAL.canHire(w) || (post === 'tax' && FISCAL.taxmanOk(w)); } catch (e) {} if (!can) continue; // v11.12.0 公庫吃緊時，首長決定先補稅務員的話只放行這一個職位 O.lastNom[post] = d; DECIDE.enqueue(w, M, 'officeNominate', { post }); }
         // 每週各查一輪
         for (const post of Object.keys(O.posts)) { const a = holder(w, post); if (a && (d + post.length * 3) % 7 === 0) DECIDE.enqueue(w, a, 'officeWork', { post, left: full(w) ? 3 : 1 }); }
         // 沒有官員管的告發：落到首長頭上
@@ -135,6 +135,14 @@ const OFFICE = (() => {
         if (!found.length) { mem(w, a, '我去查了{o}，沒查到什麼。', { o: tg.o.name }, 4); return null; }
         if (P) P.found = (P.found || 0) + 1; O.st.found = (O.st.found || 0) + 1;
         const ctx = { post, key: tg.key || null, oid: tg.o.agentId, what: found, n }; DECIDE.enqueue(w, a, 'officeFound', ctx); return ctx;
+    }
+    // v11.12.0 稅務員每週大約追回多少（首長決定要不要先補這個位子時看）：照 inspect 的規則估，東家少報（貪心、看重財富、愛說謊）的話六成查得到，追回他身上現金的 6%（8～80 銀幣）；
+    // 他每週查 left 家（專任 3 家、兼任 1 家），在可以查的東家裡平均挑。查不查、罰不罰是他自己的決定，這裡算的是照規定查、照規定罰
+    function taxYield(w) {
+        const ts = targets(w, null, 'tax'); const left = full(w) ? 3 : 1;
+        const ev = ts.map(x => { const o = x.o; const shady = has(o, 'greedy') || (o.personality?.values || []).includes('財富') || o.dark?.liar; return shady ? 0.6 * clampN(Math.round(cash(w, o) * 0.06), 8, 80) : 0; });
+        const per = ev.length ? ev.reduce((s2, v) => s2 + v, 0) / ev.length : 0;
+        return { firms: ts.length, shady: ev.filter(v => v > 0).length, week: r2(per * Math.min(left, ts.length)), left, pay: stipend(w) };
     }
     const WHAT = { cut: '在貨上偷工減料', hike: '漲價超過上限', pact: '跟同行講好一起漲', tax: '少報了該繳的稅' };
     const whatText = (what) => ({ raw: (what || []).map(x => t(WHAT[x] || x)).join(t('、')) });
@@ -261,8 +269,9 @@ const OFFICE = (() => {
             ];
         },
     });
-    function view(w) { if (!w.office) return null; const O = S(w), d = day(w); let hire = true; try { hire = typeof FISCAL === 'undefined' || FISCAL.canHire(w); } catch (e) {} return { hire, wanted: wanted(w).map(k => ({ post: k, name: t(pname(k)), icon: POSTS[k].icon, duty: t(POSTS[k].duty), holder: holder(w, k)?.name || null, holderId: holder(w, k)?.agentId || null, days: O.posts[k] ? d - O.posts[k].since : 0, n: O.posts[k]?.n || 0, found: O.posts[k]?.found || 0, owe: O.posts[k]?.owe || 0, by: w.agents[O.posts[k]?.by]?.name || null })), pay: stipend(w), full: full(w), recs: O.recs.slice(-10).reverse().map(x => ({ ago: d - x.d, text: fill(x.k, x.p) })), st: Object.assign({}, O.st) }; }
-    return { S, on, POSTS, wanted, full, holder, postOf, officials, dutyOf, stipend, payDaily, seat, vacate, daily, candidates, nominate, vote, sway, enact, targets, inspect, punish, snub, exposed, view, pname };
+    const vacWhy = (w, k) => { try { return typeof FISCAL !== 'undefined' && FISCAL.vacancy ? FISCAL.vacancy(w, k) : null; } catch (e) { return null; } }; // v11.12.0 空著的原因照實說
+    function view(w) { if (!w.office) return null; const O = S(w), d = day(w); let hire = true; try { hire = typeof FISCAL === 'undefined' || FISCAL.canHire(w); } catch (e) {} return { hire, wanted: wanted(w).map(k => ({ post: k, name: t(pname(k)), icon: POSTS[k].icon, duty: t(POSTS[k].duty), holder: holder(w, k)?.name || null, holderId: holder(w, k)?.agentId || null, why: holder(w, k) ? null : vacWhy(w, k), days: O.posts[k] ? d - O.posts[k].since : 0, n: O.posts[k]?.n || 0, found: O.posts[k]?.found || 0, owe: O.posts[k]?.owe || 0, by: w.agents[O.posts[k]?.by]?.name || null })), pay: stipend(w), full: full(w), recs: O.recs.slice(-10).reverse().map(x => ({ ago: d - x.d, text: fill(x.k, x.p) })), st: Object.assign({}, O.st) }; }
+    return { taxYield, S, on, POSTS, wanted, full, holder, postOf, officials, dutyOf, stipend, payDaily, seat, vacate, daily, candidates, nominate, vote, sway, enact, targets, inspect, punish, snub, exposed, view, pname };
 })();
 if (typeof globalThis !== 'undefined') globalThis.OFFICE = OFFICE;
 if (OFFICE) {

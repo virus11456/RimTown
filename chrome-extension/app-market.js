@@ -59,7 +59,7 @@ Object.assign(RimTownApp.prototype, {
         // ---------- ⚖️ 規定與官員 ----------
         if (LV || OV) {
             const laws = (LV?.laws || []).map(x => `<div class="ic-row"><span>${esc(x.name)}</span><b class="${x.on ? 'ic-t-g' : ''}">${esc(x.on ? fl('立了 {n} 天', { n: x.days }) : t('還沒有'))}</b></div>`).join('');
-            const posts = (OV?.wanted || []).map(x => `<div class="ic-row"><span>${x.icon} ${esc(x.name)}</span><b class="${x.holder ? '' : 'ic-t-y'}">${x.holder ? nm(x.holder) + (x.n ? ` · ${esc(fl('查過 {n} 次', { n: x.n }))}` : '') + (x.owe >= 3 ? ` · ${esc(fl('欠津貼 {n} 天', { n: x.owe }))}` : '') : esc(OV.hire ? t('空缺，等首長提名') : t('空缺，公庫吃緊暫不補人'))}</b></div>`).join('');
+            const posts = (OV?.wanted || []).map(x => `<div class="ic-row"><span>${x.icon} ${esc(x.name)}</span><b class="${x.holder ? '' : 'ic-t-y'}">${x.holder ? nm(x.holder) + (x.n ? ` · ${esc(fl('查過 {n} 次', { n: x.n }))}` : '') + (x.owe >= 3 ? ` · ${esc(fl('欠津貼 {n} 天', { n: x.owe }))}` : '') : esc(x.why?.t || (OV.hire ? t('空缺，等首長提名') : t('空缺，公庫吃緊暫不補人')))}</b></div>`).join('');
             const on = (LV?.laws || []).filter(x => x.on).length; const st = OV?.st || {}; const ls = LV?.st || {};
             const nums = this._icGrid([{ v: st.checks || 0, l: t('查過幾次') }, { v: st.found || 0, l: t('查到問題') }, { v: Math.round(ls.fines || 0), l: t('罰款進公庫') }, { v: (st.graft || 0) + (st.sat || 0), l: t('收錢或壓案'), tone: (st.graft || 0) + (st.sat || 0) ? 'r' : '' }, { v: ls.trials || 0, l: t('審判過幾件') }, { v: ls.closures || 0, l: t('勒令歇業幾次') }].filter(x => x.v > 0));
             h += this._ic({ id: 'mk-rules', icon: '⚖️', title: t('規定與官員'), chip: { t: fl('{n} 條規定', { n: on }), tone: on ? 'g' : 'n' }, defOpen: false,
