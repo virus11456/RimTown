@@ -2114,6 +2114,8 @@ class RimTownApp {
             if (!this._staleOff && (old || pile) && now - okAt < 300) { e.stopImmediatePropagation(); e.preventDefault(); this._staleDropped = (this._staleDropped || 0) + 1; return; }
             okAt = now;
         }, true);
+        // v11.10.0 放行的那一下自己就處理很久（超過 0.3 秒）時，排在後面的連點以前會被當成新的一下。處理完再記一次時間，後面排隊的照樣只算第一下
+        window.addEventListener('click', () => { okAt = performance.now(); });
     }
 
     setupTabListeners() {
