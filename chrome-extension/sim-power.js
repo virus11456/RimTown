@@ -198,6 +198,7 @@ const POWER = (() => {
         log(w, 'event', '📢 醜聞延燒，{n}% 的人連署罷免{m}，提前改選！', { n: Math.round(angry * 100), m: L.name }, L.name);
         mem(w, L, '大家連署罷免我，要提前改選了。', {}, 9);
         P.recalled = L.agentId; P.recalledDay = d; // 被罷免的人這次不能再選
+        try { if (typeof TIERS !== 'undefined') TIERS.hint(w, L.agentId, 'recall'); } catch (e) {} // v11.10.1 從政履歷記下是被罷免的
         try { E.triggerElection(w); } catch (e) { console.warn('[Power] recall', e); }
         if (!E.active && L.job?.key === 'mayor') { // 沒有足夠的人出來選:直接下台,職位出缺走補選
             L.job = (typeof JOB_DEFINITIONS !== 'undefined' && JOB_DEFINITIONS.trader) ? new Job('trader') : null;

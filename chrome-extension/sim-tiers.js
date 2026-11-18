@@ -94,7 +94,7 @@ const TIERS = (() => {
     const SEAS = ['春季', '夏季', '秋季', '冬季'], SEAS_EN = ['Spring', 'Summer', 'Autumn', 'Winter'];
     function dateText(d) { const n = Math.max(0, (d || 1) - 1), y = Math.floor(n / 60) + 1, si = Math.floor((n % 60) / 15); return en() ? `Y${y} ${SEAS_EN[si]}` : `第${y}年${SEAS[si]}`; }
     const titleOf = (w, x) => x.role === 'council' ? memberTitle(w, x.lv) : x.role === 'acting' ? (en() ? 'Acting ' : '代理') + leaderTitle(w, x.lv) : leaderTitle(w, x.lv);
-    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], crowned: ['登基為王，讓出職位', 'gave up the office on becoming king'], scandal: ['醜聞曝光，被迫下台', 'forced out by a scandal'], coup: ['政變失敗，被拔除職位', 'stripped of office after a failed coup'], ended: ['卸任', 'left office'] };
+    const END = { lost: ['落選下台', 'lost re-election'], stepdown: ['沒有再參選，交棒', 'stepped down'], died: ['在任內過世', 'died in office'], left: ['離開了小鎮', 'left town'], promo: ['小鎮升降級，改任新職', 'office renamed when the town changed level'], crowned: ['登基為王，讓出職位', 'gave up the office on becoming king'], scandal: ['醜聞曝光，被迫下台', 'forced out by a scandal'], coup: ['政變失敗，被拔除職位', 'stripped of office after a failed coup'], recall: ['被罷免下台', 'recalled from office'], ended: ['卸任', 'left office'] };
     const endText = (e) => { const z = END[e] || END.ended; return en() ? z[1] : t(z[0]); };
     function leaderNote(x) {
         const w = x.w || 0;
@@ -336,7 +336,9 @@ if (typeof ElectionSystem !== 'undefined') {
                 const H = this.electionHistory || [];
                 if (T && H.length > n0) {
                     const wid = H[H.length - 1]?.winner?.agentId || null;
-                    if (before && wid && before !== wid) { T.endHint = T.endHint || {}; T.endHint[before] = cands.has(before) ? 'lost' : 'stepdown'; }
+                    // v11.10.1 被罷免的人不能參選，以前在這裡被記成「沒有再參選，交棒」；罷免那一刻先記下的原因要留著
+                    if (before && wid && before !== wid) { T.endHint = T.endHint || {}; T.endHint[before] = T.endHint[before] === 'recall' ? 'recall' : (cands.has(before) ? 'lost' : 'stepdown'); }
+                    else if (before && wid === before && T.endHint?.[before] === 'recall') delete T.endHint[before]; // 改選結果還是同一個人（理論上不會）：不留著等下次誤用
                     TIERS.track(world); TIERS.addWin(world, wid);
                 }
             } catch (e) { console.warn('[Career] election', e); }
