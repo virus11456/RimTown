@@ -3,7 +3,9 @@
 // - 野心:依個性訂一個長期目標(當首長、發財、當神職、跟某人結婚、報仇、成名、出人頭地);每季檢討,達成就換下一個,太久沒進展可能放棄或轉向
 // - 意見:每人對五個議題(稅、國王、宗教、新科技、外地人)有立場 -2～+2;讀報、跟朋友聊天、親身經歷會改變;選舉與提案投票都會看
 const MIND = (() => {
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('mind.npcs', () => npcs0(w)).slice() : npcs0(w);
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const mem = (w, a, k, p, imp = 6, cat = 'reflection') => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', cat, k, p || {}, imp, []); } catch (e) {} };

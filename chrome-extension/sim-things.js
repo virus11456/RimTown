@@ -5,7 +5,9 @@
 // - 東西自己的規則（例如賭場的輸贏）留在原本的系統；那邊只要回報經歷（feel）和受害者（victim），其他反應全部走這裡
 const THINGS = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
-    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('things.npcs', () => npcs0(w)).slice() : npcs0(w);
     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 14 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);

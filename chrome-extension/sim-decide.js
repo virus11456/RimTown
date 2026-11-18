@@ -229,7 +229,9 @@ const DECIDE = (() => {
         // 處境：欠著錢的人想先安穩；心情差的人想對自己好一點；家裡有小孩的人顧家
         if (w.bank?.loans?.[a.agentId] || (w.dark?.debts || []).some(x => !x.done && x.cash && x.r === a.agentId)) add('safe', 0.5);
         if ((a.mood ?? 50) < 35) add('joy', 0.4);
-        if (npcs(w).some(o => (o.age ?? 30) < 16 && (o._parentNames || []).includes(a.name))) { add('safe', 0.3); add('bond', 0.2); }
+        // 家裡有沒有小孩：直接一個一個看（條件跟 npcs 一樣），不另外建一份全鎮名單；看到一個就停，結果跟 some 相同
+        let kid = false; { const A = w?.agents || {}; for (const id in A) { const o = A[id]; if (o.isPlayer || o.isDead || String(o.agentId).startsWith('visit_')) continue; if ((o.age ?? 30) < 16 && (o._parentNames || []).includes(a.name)) { kid = true; break; } } }
+        if (kid) { add('safe', 0.3); add('bond', 0.2); }
         for (const k of Object.keys(L)) L[k] = Math.max(0.1, r2(L[k]));
         return L;
     }

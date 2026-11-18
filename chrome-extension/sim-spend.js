@@ -10,7 +10,9 @@
 'use strict';
 const INFL = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
-    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('spend1.npcs', () => npcs0(w)).slice() : npcs0(w);
     const adults = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16);
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
@@ -78,7 +80,9 @@ const INFL = (() => {
 
 const SPEND = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
-    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('spend2.npcs', () => npcs0(w)).slice() : npcs0(w);
     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
@@ -177,7 +181,9 @@ const SPEND = (() => {
 
 const WORKS = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
-    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('spend3.npcs', () => npcs0(w)).slice() : npcs0(w);
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
@@ -242,7 +248,9 @@ const WORKS = (() => {
 // v8.9.0 賭場:城鎮以上才有,有野心的有錢人開;十賭九輸,偶爾有人一夕致富,也有人輸到家破人亡;城市以上吸引外地賭客(觀光)
 const CASINO = (() => {
     const day = (w) => (w?._absDay ? w._absDay() : 0);
-    const npcs = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('spend4.npcs', () => npcs0(w)).slice() : npcs0(w);
     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);

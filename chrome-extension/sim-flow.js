@@ -10,6 +10,8 @@
 
 const FLOW = (() => {
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    // 只要人數時直接數，不另外建一份名單（條件跟 npcs 一樣；目標存量一天要問上千次，每次都把全鎮篩成新陣列很花時間）
+    const headcount = (w) => { const A = w.agents || {}; let pop = 0, workers = 0; for (const id in A) { const a = A[id]; if (a.isPlayer || a.isDead) continue; pop++; if (a.job?.key) workers++; } return { pop, workers }; };
     const day = (w) => (typeof w._absDay === 'function' ? w._absDay() : 0);
     const sp = (w) => w.stockpile;
     const get = (w, r) => sp(w)?.get?.(r) || 0;
@@ -17,7 +19,7 @@ const FLOW = (() => {
 
     // ---------- 目標存量 ----------
     function want(w, r) {
-        const all = npcs(w), pop = Math.max(1, all.length), workers = all.filter(a => a.job?.key).length;
+        const hc = headcount(w), pop = Math.max(1, hc.pop), workers = hc.workers;
         switch (r) {
             case 'meals': return pop * 3;
             case 'food': return (typeof foodCapOf === 'function' ? foodCapOf(w, true) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
@@ -244,7 +246,7 @@ const FLOW = (() => {
     // 跟商人買作物：只買工坊要用的、缺糧時的糧食、一點茶葉、缺布時的棉花
     function buyLow(w, r) {
         if (!CROP_LIKE.has(r)) return null;
-        const pop = Math.max(1, npcs(w).length);
+        const pop = Math.max(1, headcount(w).pop);
         let n = reserveFor(w, r);
         if (CROP_FOOD[r] && get(w, 'food') < pop * 12) n = Math.max(n, 10);
         if (r === 'tea') n = Math.max(n, 5);

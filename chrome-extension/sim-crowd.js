@@ -5,7 +5,8 @@
 const CROWD = (() => {
     const TRIM_AT = 40, AI_AT = 100, REL_CAP = 40, MEM_CAP = 60;
     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
-    const pop = (w) => npcs(w).length;
+    // 只數人數，不另外建一份名單（條件跟 npcs 一樣；每天整理關係時每個人都會問一次）
+    const pop = (w) => { const A = w.agents || {}; let n = 0; for (const id in A) { const a = A[id]; if (!a.isPlayer && !a.isDead) n++; } return n; };
     // 一段關係值不值得記:有身分(交往／婚姻／前任)、有過節、交情或信任明顯、有暗戀、互動過兩次以上、有共同回憶
     const relScore = (r) => (r.status ? 1000 : 0) + (r.isFeud ? 500 : 0) + (r.isCheating ? 300 : 0) + Math.abs(r.affinity || 0) + Math.abs(r.trust || 0) * 0.5 + (r.romanticInterest || 0) + Math.min(30, r.interactionCount || 0) + ((r.sharedMemories || []).length ? 5 : 0);
     const trivial = (r) => !r.status && !r.isFeud && !r.isCheating && Math.abs(r.affinity || 0) < 5 && Math.abs(r.trust || 0) < 5 && !(r.romanticInterest > 0) && (r.interactionCount || 0) < 2 && !(r.sharedMemories || []).length;

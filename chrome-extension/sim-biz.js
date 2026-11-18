@@ -14,7 +14,9 @@
 // - 空超過 30 天的店面可以提案拆掉（走 sim-demolish.js 同一套表決），通過後那一格還給空地
 // 決策核心沒開、問不到人時照原本的規則（自動倒閉、老闆不在就收）
 const BIZ = (() => {
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('biz.npcs', () => npcs0(w)).slice() : npcs0(w);
     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
     const en = () => typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
