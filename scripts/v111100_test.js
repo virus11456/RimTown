@@ -110,6 +110,11 @@ async function run(browser, dev, lang) {
       for (const x of npcs()) delete Cv.jail[x.agentId];
       setCash(th, 2); const nb = asked.length; const th1 = Cv.thefts; CIVIC.TEMPT.base = 1; try { offDecide(() => fixR(0, () => CIVIC.crime(w, Cv, day()))); } finally { CIVIC.TEMPT.base = T0; }
       A.off = { asked: asked.slice(nb).filter(e => e.kind === 'steal').length, thefts: Cv.thefts - th1 };
+      // 手頭很緊去跟朋友借（原本的 pinch）：選項列好之後對象搬走或出了遠門，就作罷，不丟錯、不排進佇列、不動錢
+      { setCash(th, 2); setCash(lend, 55); setAff(lend, th, 40); const KP = KK.pinch; const cp = { c: 2 }; const op = KP.options(w, th, cp).find(o => String(o.id) === 'borrow:' + lend.agentId); const q0 = X0.q.length; let err = null, r1 = null, r2 = null;
+        const loc0 = lend.currentLocation; lend.currentLocation = 'exploration'; try { r1 = op ? leak(() => op.run(w, th, cp)) : null; } catch (e) { err = String(e.message); } lend.currentLocation = loc0;
+        const keep = w.agents[lend.agentId]; delete w.agents[lend.agentId]; try { r2 = op ? leak(() => op.run(w, th, cp)) : null; } catch (e) { err = String(e.message); } w.agents[lend.agentId] = keep;
+        A.pinchGone = { op: !!op, err, q: X0.q.length - q0, l1: r1?.leak, l2: r2?.leak, res: tx(r1?.ret), cash: cash(th) }; clearQ(); }
       out.Ath = th.agentId;
       // 有錢人的錢還回去
       for (const [o, n] of back) { const take2 = n - cash(o); if (take2 > 0 && w.stockpile.consume('silver', take2, w.tickCount, 'test unpark')) WALLET.add(w, o, take2); }
@@ -330,6 +335,7 @@ async function run(browser, dev, lang) {
     ok(A.lean.mHungry > A.lean.mHonest + 0.8 && A.lean.pk.loose > A.lean.pk.close + 0.5, `${tag} 照個性：餓得久、家裡有小孩、罰得輕的偏偷；老實、罰得重的偏忍；跟對方越好越下不了手`, A.lean);
     ok(A.void.rich === 0 && A.void.jail === 0 && A.void.old === 0 && A.void.foeGone, `${tag} 作廢：身上有了錢、被關、念頭過了兩天：沒有選項；有錢人的錢少了就不在人選裡`, A.void);
     ok(A.crime.asked >= 1 && A.crime.th, `${tag} 從竊案接進來：動了念頭的人被問（${A.crime.asked} 人）`, A.crime);
+    ok(A.pinchGone.op && !A.pinchGone.err && A.pinchGone.q === 0 && A.pinchGone.l1 === 0 && A.pinchGone.l2 === 0 && A.pinchGone.cash === 2 && /不在鎮上|no longer in town/.test(A.pinchGone.res), `${tag} 手頭很緊去跟朋友借：等的時候對象搬走或出了遠門，就作罷（不丟錯、不排進佇列、不動錢）`, A.pinchGone);
     ok(A.off.asked === 0 && A.off.thefts === 0, `${tag} 決策核心沒開：沒有人動念，也沒有竊案（不再替人擲骰）`, A.off); }
   { const B = r.B;
     ok(B.ask.n && B.ask.first && B.ask.src === 'fine' && B.ask.amt === 40 && B.ask.leak === 0, `${tag} 罰款付不出來：手頭最寬裕的家人先被問`, B.ask);
@@ -384,7 +390,9 @@ async function run(browser, dev, lang) {
     ok(G.off.asked === 0 && G.off.job === 'trader' && Object.values(G.src).every(Boolean), `${tag} 不再隨機改當農夫守衛商人研究員；選輸、任期結束、兩種罷免都走同一條（決策核心沒開就照慣例當商人）`, { off: G.off, src: G.src }); }
   { const R = r.rates; const P3 = (p) => 1 - Math.pow(1 - p, 3);
     console.log('    照個性的比例：' + JSON.stringify(R));
-    ok(R.steal >= 0.4 && R.steal <= 0.85, `${tag} 偷不偷：動了念頭的人有 ${R.steal} 真的去偷（以前動念就是偷；動念的時機調高到 0.08，整體竊案同一量級）`, R);
+    // 動念之後真的去偷的比例：量過是 0.39～0.47（看鎮上的人是什麼個性）。一半左右的人會忍住、去借或去求救濟是這一版要的行為；
+    // 動念的時機從 0.05 調到 0.08，整體竊案跟以前同一量級。下限 0.3、上限 0.65 兩邊都留餘裕：低於 0.3 竊案會掉到原本的一半以下，高於 0.65 就跟以前「動念就偷」差不多了
+    ok(R.steal >= 0.3 && R.steal <= 0.65, `${tag} 偷不偷：動了念頭的人有 ${R.steal} 真的去偷（以前動念就是偷；動念的時機調高到 0.08，整體竊案同一量級）`, R);
     ok(R.kinFine >= 0.45 && R.kinFine <= 0.95, `${tag} 家人付罰款：${R.kinFine} 會付（付清 ${R.kinFineAll}；以前照好感 45%～90% 代繳）`, R);
     ok(R.bribeVote >= 0.3 && R.bribeVote <= 0.7, `${tag} 提案人塞錢：${R.bribeVote}（以前 50%）`, R);
     ok(R.bribeTakeC >= 0.6 && R.bribeTakeV >= 0.6 && R.bribeTakeT >= 0.6, `${tag} 收錢：議員 ${R.bribeTakeC}、選民 ${R.bribeTakeV}、反壟斷 ${R.bribeTakeT}（以前一定收）`, R);

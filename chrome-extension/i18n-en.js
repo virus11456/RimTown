@@ -18404,6 +18404,7 @@
         '東西還了就好，他已經夠窮了。': 'As long as it is returned. They are poor enough already.',
         '我抓到{a}偷錢，照規矩罰了他的錢。': 'I caught {a} stealing and fined them by the rules.',
         // v11.11.0 窮與貪
+        '想找{l}開口，他已經不在鎮上了': 'Meant to ask {l}, but they are no longer in town',
         '你身上有 {c} 銀幣。可以私下塞錢給 {n} 個手頭緊的人，每人 {e} 銀幣（收不收、收了投不投你，看他們自己）。': 'You have {c} silver on hand. You could quietly slip {e} silver each to {n} people who are short of money (whether they take it, and whether they then vote for you, is up to them). ',
         '{lead}選舉的候選人{b}私下塞 {n} 銀幣給你，要你投他一票。你身上有 {m} 銀幣{poor}，你們{tie}。收了錢投不投他，沒有人看得到；可是這種事被揭穿的話，大家會知道你收過錢。': '{b}, a candidate for {lead}, slips you {n} silver for your vote. You have {m} silver{poor}, and you two {tie}. Nobody can see whether you vote for them after taking it; but if this comes out, people will know you took money.',
         '{c}私下塞了 {n} 銀幣給我，要我投他一票。': '{c} slipped me {n} silver on the quiet for my vote.',
