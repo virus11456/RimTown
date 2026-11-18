@@ -416,7 +416,7 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
         if (inRun()) { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); return; }
         const keep = X.q.splice(0, X.q.length); try { for (const x of list) enqueue(w, x.a, x.kind, x.ctx); drain(w, X, day(w)); } finally { if (keep.length) X.q.unshift(...keep); }
     }
-    function enqueue(w, a, kindKey, ctx) { S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
+    function enqueue(w, a, kindKey, ctx) { if (!a || !a.agentId) return; /* v11.11.0 人已經不在了：不排 */ S(w).q.push({ a: a.agentId, kind: kindKey, ctx }); if (OBS.length) emit('asked', { w, a, kind: kindKey, ctx: ctx || null }); }
 
     // ================= 4. 每天 =================
     function daily(w) {
@@ -552,7 +552,8 @@ ${t('如果選 other（其他），再加 "do":"想做的事（30 字內）" 和
             if (typeof WALLET !== 'undefined' && WALLET.lendTo) for (const l of here(w).filter(o => o !== a && cash(w, o) >= 40 && aff(o, a) >= 10 && !owes(w, a, o)).sort((x, y) => aff(y, a) - aff(x, a)).slice(0, 2)) {
                 const n = WALLET.loanSize(w, l);
                 out.push({ id: 'borrow:' + l.agentId, text: { k: '跟{l}開口借 {n} 銀幣（一週後要還）', p: { l: l.name, n } }, say: { k: '跟{l}開口借錢', p: { l: l.name } }, why: { k: '實在撐不下去了，只好跟{l}開口。', p: { l: l.name } }, base: 1.5 + clampN(aff(a, l) / 60, 0, 1), lean: { bond: 0.5, face: -0.4 },
-                    run: (w2, a2) => { DECIDE.enqueue(w2, w2.agents[l.agentId], 'asked', { from: a2.agentId, n }); return { k: '去跟{l}開口了', p: { l: l.name } }; } });
+                    // v11.11.0 同一輪先決定的人可能已經搬走、出遠門（選項是這一輪一開始就列好的）：對象不在鎮上就作罷，不開口、不動錢。以前會把不存在的人排進佇列而出錯
+                    run: (w2, a2) => { const l2 = w2.agents[l.agentId]; if (!l2 || l2.isDead || l2.currentLocation === 'exploration' || w2.isAway?.(l2.agentId)) return { k: '想找{l}開口，他已經不在鎮上了', p: { l: l.name } }; DECIDE.enqueue(w2, l2, 'asked', { from: a2.agentId, n }); return { k: '去跟{l}開口了', p: { l: l.name } }; } });
             }
             // 跟銀行借（有工作、沒有還在還的貸款）
             if (bankOk(w) && a.job && !w.bank.loans[a.agentId] && BANK.lendable(w.bank) >= 25) {

@@ -50,20 +50,25 @@ const ASSEMBLY = (() => {
 
     // ---------- 議員投票 ----------
     // 有錢又不老實的提案人私下塞錢給會投反對的議員(上帝視角看得到,之後可能被揭穿)
-    function lobby(w, p, ms) {
-        const payer = w.agents[p.proposerId]; if (!payer || !w.wallet) return;
-        if (honest(payer) > 2 && !has(payer, 'greedy')) return;
-        if (money(w, payer) < 60 || Math.random() > 0.5) return;
-        const targets = ms.filter(m => m !== payer && p.votes?.[m.agentId] !== 'for' && (honest(m) <= 2 || has(m, 'greedy'))).slice(0, 2);
-        const Lw = L(w);
-        for (const m of targets) {
-            const n = 15 + Math.floor(Math.random() * 11);
-            if (!WALLET.pay(w, payer, m, n)) break;
-            (p._bribe || (p._bribe = {}))[m.agentId] = payer.agentId; R(w, m.agentId).bribes++;
-            log(w, 'council', '💰 {a}私下塞了 {n} 銀幣給{m}，要他在{council}挺「{title}」。🕵️', { a: payer.name, n, m: m.name, council: Lw.council, title: w.proposals.title(p) }, payer.name);
-            mem(w, m, '{a}私下給了我 {n} 銀幣，要我在{council}投他的提案。', { a: payer.name, n, council: Lw.council }, 6);
-            try { DARK.secret(w, { kind: 'kickback', day: day(w) - 10, culprit: m.agentId, victim: null, asm: 'bribe', k: '{c}收了{a}的 {n} 銀幣，在議會投票支持{id}', p: { c: m.name, a: payer.name, n, id: p.id } }); } catch (e) {}
-        }
+    // v11.11.0 塞不塞、塞給誰由提案人自己決定；議員收下改投、退回還是告發，由議員自己決定（sim-decide-dark.js bribeVote／bribeTake）。
+    // 錢只在議員收下的那一刻才從提案人付給他。還有人在想（等 AI 回話）的話，議會的表決延到隔天；隔天不管想完沒有都照常表決
+    const lobbyOn = (w) => { try { return typeof DECIDE !== 'undefined' && DECIDE.on(w) && !!DECIDE.KINDS.bribeVote; } catch (e) { return false; } };
+    function lobbyTargets(w, p, payer) { const ms = seated(w); return ms.filter(m => m !== payer && p.votes?.[m.agentId] !== 'for' && !p._bribe?.[m.agentId] && (honest(m) <= 2 || has(m, 'greedy'))).sort((x, y) => honest(x) - honest(y)).slice(0, 2); }
+    const lobbyable = (w, p, payer) => !!payer && !!w.wallet && (honest(payer) <= 2 || has(payer, 'greedy')) && money(w, payer) >= 60 && lobbyTargets(w, p, payer).length > 0;
+    function lobby(w, p, ms, d0) {
+        const payer = w.agents[p.proposerId]; if (!payer || !w.wallet || !lobbyOn(w)) return false; const d = d0 ?? day(w);
+        if (!p._lob) { if (!lobbyable(w, p, payer)) return false; p._lob = { d, pp: 1, wait: 0 }; try { DECIDE.askNow(w, [{ a: payer, kind: 'bribeVote', ctx: { pid: p.id, d, n: Object.fromEntries(lobbyTargets(w, p, payer).map(m => [m.agentId, 15 + Math.floor(Math.random() * 11)])) } }]); } catch (e) { console.warn('[Assembly] lobby ask', e); p._lob.pp = 0; } }
+        return p._lob.d === d && (p._lob.pp > 0 || p._lob.wait > 0);
+    }
+    const lobbyDone = (p, k) => { if (!p?._lob) return; if (k === 'pp') p._lob.pp = 0; else p._lob.wait = Math.max(0, (p._lob.wait || 0) - 1); };
+    // 議員收下：錢從提案人付給議員，表決時投贊成（秘密，之後可能被揭穿）
+    function lobbyTake(w, p, payer, m, n) {
+        if (!WALLET.pay(w, payer, m, n)) return false; const Lw = L(w);
+        (p._bribe || (p._bribe = {}))[m.agentId] = payer.agentId; R(w, m.agentId).bribes++;
+        log(w, 'council', '💰 {a}私下塞了 {n} 銀幣給{m}，要他在{council}挺「{title}」。🕵️', { a: payer.name, n, m: m.name, council: Lw.council, title: w.proposals.title(p) }, payer.name);
+        mem(w, m, '{a}私下給了我 {n} 銀幣，要我在{council}投他的提案。', { a: payer.name, n, council: Lw.council }, 6);
+        try { DARK.secret(w, { kind: 'kickback', day: day(w) - 10, culprit: m.agentId, victim: null, asm: 'bribe', k: '{c}收了{a}的 {n} 銀幣，在議會投票支持{id}', p: { c: m.name, a: payer.name, n, id: p.id } }); } catch (e) {}
+        return true;
     }
     function memberVote(w, p, a, pub) {
         const ps = w.proposals;
@@ -90,7 +95,7 @@ const ASSEMBLY = (() => {
     function councilVote(w, p, d) {
         const ms = seated(w); if (ms.length < 2) return null;
         const ps = w.proposals; p.votes = p.votes || {};
-        try { lobby(w, p, ms); } catch (e) { console.warn('[Assembly] lobby', e); }
+        try { if (lobby(w, p, ms, d)) return { wait: true }; } catch (e) { console.warn('[Assembly] lobby', e); } // v11.11.0 有人還在想要不要塞錢、收不收：表決延到隔天
         const pub = { f: ps._count(p, 'for'), a: ps._count(p, 'against') };
         const votes = {}, why = {}, names = {}; let f = 0;
         for (const m of ms) { const r = memberVote(w, p, m, pub); votes[m.agentId] = r.v; why[m.agentId] = r.why; names[m.agentId] = m.name; if (r.v === 'for') f++; }
@@ -231,25 +236,34 @@ const ASSEMBLY = (() => {
             log(w, 'council', '📣 {a}拉票：「{s}」', { a: a.name, s: { k: c.pitch, p: { council: Lw.council } } }, a.name);
             for (const v of rnd(all.filter(x => x !== a)).slice(0, 4)) { const same = (v.personality?.values || []).some(x => (a.personality?.values || []).includes(x)); if (same) v.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(3); }
         }
-        // 買票:不老實又有點錢的候選人私下塞錢給窮人
-        if (!w.wallet) return;
-        for (const a of cs) {
-            if (honest(a) > 1.8 || money(w, a) < 40 || Math.random() > 0.4) continue;
-            const voters = rnd(all.filter(v => v !== a && money(w, v) < 30 && aff(v, a) > -30 && !E.cands.some(c => c.id === v.agentId))).slice(0, 1 + Math.floor(Math.random() * 3));
-            let n = 0;
-            for (const v of voters) {
-                if (!WALLET.pay(w, a, v, 6)) break; n++;
-                v.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(12); v.addThought?.('bribed', w, a.agentId, a.name);
-                (E.bought || (E.bought = {}))[v.agentId] = a.agentId;
-                mem(w, v, '{c}私下塞了 6 銀幣給我，要我在{member}選舉投他。', { c: a.name, member: Lw.member }, 5);
-            }
-            if (n) {
-                R(w, a.agentId).bought += n;
-                log(w, 'council', '💰 {a}私下塞錢給 {n} 個窮人，要他們投自己當{member}。🕵️', { a: a.name, n, member: Lw.member }, a.name);
-                try { DARK.secret(w, { kind: 'kickback', day: day(w) - 10, culprit: a.agentId, victim: null, asm: 'buy', k: '{c}在{m}選舉時私下塞錢買票', p: { c: a.name, m: Lw.member } }); } catch (e) {}
-            }
-        }
+        // 買票：v11.11.0 買不買由候選人自己決定（sim-decide-dark.js「選戰怎麼打」dirty），收不收、收了投不投由被找上的人決定（bribeTake）
     }
+    // v11.11.0 給決策核心：這位候選人現在買不買得了票（跟以前擲骰的是同一批人：不夠老實、身上有 40 銀幣、鎮上有手頭緊的人）
+    const BUY_EACH = 6;
+    const buyPool = (w, a, E) => npcs(w).filter(v => v !== a && money(w, v) < 30 && aff(v, a) > -30 && !E.cands.some(c => c.id === v.agentId) && !E.bought?.[v.agentId] && !(E.offer?.[v.agentId]) && v.currentLocation !== 'exploration' && !w.isAway?.(v.agentId));
+    function buyInfo(w, a) {
+        const E = S(w).elec; if (!a || !w.wallet || !E || E.phase !== 'campaign' || !E.cands.some(c => c.id === a.agentId) || honest(a) > 1.8 || money(w, a) < 40) return null;
+        const n = buyPool(w, a, E).length; if (!n) return null; const Lw = L(w);
+        return { n: Math.min(3, n), each: BUY_EACH, bal: Math.round(money(w, a)), left: E.left, member: Lw.member, opp: E.cands.filter(c => c.id !== a.agentId).map(c => w.agents[c.id]).filter(Boolean) };
+    }
+    // 候選人決定買票：找 1～3 個手頭緊的人（找到誰、找幾個看天），一個一個問他們收不收；錢在他們收下的那一刻才付
+    function buyBy(w, a) {
+        const E = S(w).elec; if (!buyInfo(w, a)) return null; const vs = rnd(buyPool(w, a, E)).slice(0, 1 + Math.floor(Math.random() * 3)); const d = day(w);
+        E.offer = E.offer || {}; for (const v of vs) E.offer[v.agentId] = a.agentId;
+        try { DECIDE.askNow(w, vs.map(v => ({ a: v, kind: 'bribeTake', ctx: { src: 'cvote', by: a.agentId, n: BUY_EACH, d, e: E.start } }))); } catch (e) { console.warn('[Assembly] buy ask', e); }
+        return vs;
+    }
+    // 被找上的人收下：錢從候選人付給他。vote＝答應投他（開票時算進去）；不答應的話錢照收、票照自己的意思投
+    function buyTake(w, a, v, n, vote) {
+        const E = S(w).elec; if (!E || !WALLET.pay(w, a, v, n)) return false; const Lw = L(w); if (E.offer) delete E.offer[v.agentId];
+        v.relationships?.getOrCreate?.(a.agentId, a.name)?.modifyAffinity?.(vote ? 12 : 4); if (vote) { v.addThought?.('bribed', w, a.agentId, a.name); (E.bought || (E.bought = {}))[v.agentId] = a.agentId; }
+        mem(w, v, vote ? '{c}私下塞了 {n} 銀幣給我，要我在{member}選舉投他。' : '{c}私下塞了 {n} 銀幣給我要我投他。錢我收了，票我照自己的意思投。', { c: a.name, n, member: Lw.member }, 5);
+        R(w, a.agentId).bought++; const d = day(w); E.sec = E.sec || {};
+        if (E.sec[a.agentId] !== d) { E.sec[a.agentId] = d; log(w, 'council', '💰 {a}私下塞錢給窮人，要他們投自己當{member}。🕵️', { a: a.name, member: Lw.member }, a.name);
+            try { DARK.secret(w, { kind: 'kickback', day: day(w) - 10, culprit: a.agentId, victim: null, asm: 'buy', k: '{c}在{m}選舉時私下塞錢買票', p: { c: a.name, m: Lw.member } }); } catch (e) {} }
+        return true;
+    }
+    const buyDrop = (w, v) => { const E = S(w).elec; if (E?.offer) delete E.offer[v?.agentId || v]; };
     function score(w, v, c, E) {
         if (v === c) return 100;
         let s = aff(v, c) / 25;
@@ -359,7 +373,7 @@ const ASSEMBLY = (() => {
         return out.join(t('、'));
     }
     const WHY = { own: '自己的看法', public: '順著民意', pact: '私下交換條件 🕵️', bribe: '收了好處 🕵️', donor: '金主的意思 🕵️' };
-    return { S, R, isMajor, needs, seated, councilVote, onOutcome, scanSecrets, scandalOut, daily, start, tally, campaign, fillFromRunners, view, recordText, truthText, wantSeats, WHY };
+    return { S, R, isMajor, needs, seated, councilVote, onOutcome, scanSecrets, scandalOut, daily, start, tally, campaign, fillFromRunners, view, recordText, truthText, wantSeats, WHY, lobbyTargets, lobbyTake, lobbyDone, buyInfo, buyBy, buyTake, buyDrop, BUY_EACH };
 })();
 
 // ---- 掛進提案流程
@@ -370,6 +384,7 @@ if (typeof ProposalSystem !== 'undefined') {
         try {
             if (!p.council && (p.status === 'open' || p.status === 'shelved') && ASSEMBLY.needs(w, p)) {
                 const c = ASSEMBLY.councilVote(w, p, day);
+                if (c && c.wait) return; // v11.11.0 有人還在想要不要塞錢、收不收：議會隔天再表決
                 if (c && !c.pass) { p.mayorName = ''; p.mayorWhy = ''; this._decide(w, p, 'reject', 'council'); return; }
             }
         } catch (e) { console.warn('[Assembly] council', e); }

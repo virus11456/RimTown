@@ -244,27 +244,47 @@ const COMPETE = (() => {
         if (w.stockpile.consume('silver', price, w.tickCount, t('公庫收購產業'))) { WALLET.add(w, o, price); M.owners[f.k] = null; try { if (w.market.shares?.[f.k]) delete w.market.shares[f.k]; } catch (e) {} log(w, '⚖️ 依反壟斷法，{o}的{s}沒人買得起，公庫以 {n} 銀幣收購，改為公營。', { o: o.name, s: Mk.name(f.k), n: price }, o.name); }
     }
     // 遊說:被反壟斷案針對的大老闆私下塞錢給手頭緊的村民,請他們投反對票;被報社揭發就破功
+    // v11.11.0 塞不塞、還是公開反駁由老闆自己決定（每天問一次，一案最多三次）；被找上的人收不收由他自己決定（sim-decide-dark.js trustFight／bribeTake）。
+    // 找上誰照舊看天（兩個手頭緊的人）；被不被報社揭發照舊看天（每一輪 20%）。決策核心沒開（新鎮的第一天）就沒有人遊說
+    const TRUST = ['antitrust', 'antitrust_cap'];
+    const PWS = (w) => { const PW = typeof POWER !== 'undefined' && POWER.S ? POWER.S(w) : (w.power = w.power || { inf: {} }); PW.inf = PW.inf || {}; return PW; };
+    const lobbyPool = (w, o) => { const PW = PWS(w); return npcs(w).filter(a => a !== o && bal(w, a) < 50 && (a.age ?? 30) >= 16 && !(w.union?.members?.[a.agentId]) && !(PW.inf[a.agentId] || {})[o.agentId] && !has(a, 'stoic') && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)); };
+    const trustP = (w, id) => (w.proposals?.items || []).find(p => p.id === id && TRUST.includes(p.kind)) || null;
     function lobby(w, d) {
-        const P = w.proposals; if (!P) return; const M = S(w);
+        const P = w.proposals; if (!P) return;
+        if (!(typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS.trustFight)) return;
         for (const p of (P.items || [])) {
-            if (!['antitrust', 'antitrust_cap'].includes(p.kind) || p.status !== 'open') continue;
-            const o = w.agents[p.refKey]; if (!o || (p._lobby || 0) >= 3 || p._lobbyDay === d || bal(w, o) < 40 || has(o, 'kind')) continue;
-            if (!(has(o, 'greedy') || hasV(o, '財富') || Math.random() < 0.5)) continue;
-            p._lobbyDay = d; p._lobby = (p._lobby || 0) + 1;
-            const PW = typeof POWER !== 'undefined' && POWER.S ? POWER.S(w) : (w.power = w.power || { inf: {} }); PW.inf = PW.inf || {};
-            const targets = npcs(w).filter(a => a !== o && bal(w, a) < 50 && !(w.union?.members?.[a.agentId]) && !(PW.inf[a.agentId] || {})[o.agentId] && !has(a, 'stoic')).sort(() => Math.random() - 0.5).slice(0, 2);
-            const got = [];
-            for (const a of targets) { const n = 5 + Math.floor(Math.random() * 4); if (!WALLET.take(w, o, n)) break; WALLET.add(w, a, n); (PW.inf[a.agentId] = PW.inf[a.agentId] || {})[o.agentId] = (PW.inf[a.agentId][o.agentId] || 0) + n; got.push(a); mem(w, a, '{o}私下塞了 {n} 銀幣給我，請我在{id}投反對票。', { o: o.name, n, id: p.id }, 6); }
-            if (!got.length) continue; M.cst.lobby++;
-            mem(w, o, '我私下打點了幾個人，{id}應該過不了。', { id: p.id }, 6);
-            if (Math.random() < 0.2) { // 被報社揭發
-                M.cst.exposed++; for (const a of got) delete PW.inf[a.agentId][o.agentId];
-                for (const a of npcs(w)) if (a !== o && Math.random() < 0.5) bump(a, o, -4);
+            if (!TRUST.includes(p.kind) || p.status !== 'open') continue;
+            const o = w.agents[p.refKey]; if (!o || o.isDead || (p._lobAsk || 0) >= 3 || p._lobbyDay === d || bal(w, o) < 40 || o.currentLocation === 'exploration' || w.isAway?.(o.agentId)) continue;
+            const ts = lobbyPool(w, o).sort(() => Math.random() - 0.5).slice(0, 2); if (!ts.length && p._rebut) continue;
+            p._lobbyDay = d; p._lobAsk = (p._lobAsk || 0) + 1;
+            try { DECIDE.askNow(w, [{ a: o, kind: 'trustFight', ctx: { pid: p.id, d, t: ts.map(a => a.agentId), n: ts.map(() => 5 + Math.floor(Math.random() * 4)) } }]); } catch (e) { console.warn('[Compete] lobby ask', e); }
+        }
+    }
+    // 老闆決定塞錢：一個一個問被找上的人收不收（錢在收下的那一刻才付）
+    function lobbyPay(w, p, o, ids, ns) { const r = (p._lobRn = (p._lobRn || 0) + 1); const d = day(w); const list = ids.map((id, i) => [w.agents[id], ns[i]]).filter(([a]) => a && !a.isDead).map(([a, n]) => ({ a, kind: 'bribeTake', ctx: { src: 'trust', by: o.agentId, pid: p.id, n, d, r } })); if (list.length) DECIDE.askNow(w, list); return list.length; }
+    function trustTake(w, p, o, a, n, r) {
+        if (!WALLET.take(w, o, n)) return false; WALLET.add(w, a, n); const M = S(w); const PW = PWS(w);
+        const R = p._lobR && p._lobR.r === r ? p._lobR : (p._lobR = { r, n: 0, ex: Math.random() < 0.2 }); R.n++;
+        if (!R.ex) (PW.inf[a.agentId] = PW.inf[a.agentId] || {})[o.agentId] = (PW.inf[a.agentId][o.agentId] || 0) + n;
+        mem(w, a, '{o}私下塞了 {n} 銀幣給我，請我在{id}投反對票。', { o: o.name, n, id: p.id }, 6);
+        if (R.n === 1) { M.cst.lobby++; mem(w, o, '我私下打點了幾個人，{id}應該過不了。', { id: p.id }, 6);
+            if (R.ex) { // 被報社揭發（看天）
+                M.cst.exposed++;
+                for (const x of npcs(w)) if (x !== o && Math.random() < 0.5) bump(x, o, -4);
                 log(w, '📰 {o}為了{id}私下塞錢給村民的事被揭發了，鎮上一片譁然。', { o: o.name, id: p.id }, o.name);
                 news(w, '{o}花錢遊說反壟斷案的事被揭發', { o: o.name }, 8, [o.name]);
                 try { if (typeof PRESS !== 'undefined' && w.press?.papers?.length) { const pp = w.press.papers.find(x => !x.banned && x.st !== 'board') || w.press.papers[0]; PRESS.story(w, pp, 'expose', '{o}私下塞錢給村民，想擋下{id}。', { o: o.name, id: p.id }); } } catch (e) {}
-            }
-        }
+            } }
+        return true;
+    }
+    // 老闆公開反駁：在鎮上說明自己的立場。本來就對他有好感的人更站在他那邊，本來就討厭他的人更反感（投票時看的是對他的好感）
+    function rebut(w, p, o) {
+        if (p._rebut) return 0; p._rebut = day(w); let n = 0;
+        for (const x of npcs(w)) { if (x === o || (x.age ?? 30) < 16) continue; const v = x.relationships?.relationships?.[o.agentId]?.affinity; if (v == null) continue; if (v >= 0) { bump(x, o, 3); n++; } else if (v <= -20) bump(x, o, -2); }
+        log(w, '📣 {o}公開反駁{id}：「我的店讓大家有工作、有東西買，拆了對誰都沒好處。」', { o: o.name, id: p.id }, o.name);
+        news(w, '{o}公開反駁拆分自己產業的提案', { o: o.name }, 6, [o.name]); mem(w, o, '我在大家面前替自己說話，反駁{id}。', { id: p.id }, 6);
+        S(w).cst.rebut = (S(w).cst.rebut || 0) + 1; return n;
     }
 
     function daily(w) {
@@ -304,7 +324,7 @@ const COMPETE = (() => {
         for (const [key, id] of Object.entries(w.market?.mgr || {})) if (id === a.agentId) out.push(fill('{s}的掌櫃', { s: Mk.name(key.split(':')[0]) }));
         return out.join(t('；'));
     }
-    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, manage, skimInfo, skimBy, capProposal, enactCap, divest, lobby, row, view, brief, describe, profit };
+    return { S, daily, entry, weekly, openInfo, openBy, hopInfo, hop, manage, skimInfo, skimBy, capProposal, enactCap, divest, lobby, lobbyPay, trustTake, rebut, trustP, lobbyPool, row, view, brief, describe, profit };
 })();
 if (typeof window !== 'undefined') window.COMPETE = COMPETE;
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.antitrust_cap = { icon: '⚖️', label: '反壟斷' };

@@ -206,19 +206,24 @@ const WALLET = (() => {
         }
     }
     // 選舉:不老實又有錢的候選人私下塞錢拉票
+    // v11.11.0 買不買由候選人決定（sim-decide-dark.js dirty），被找上的人收了照投／收了不照投／不收由他自己決定（bribeTake，跟議員選舉同一種）；錢在收下的那一刻才付
     const BUY_VOTE = 10;
-    const buyable = (w, a, all) => all.filter(v => v !== a && get(w, v) < 40 && aff(v, a) > -30);
+    const buyable = (w, a, all) => all.filter(v => v !== a && !String(v.agentId).startsWith('visit_') && get(w, v) < 40 && aff(v, a) > -30 && v.currentLocation !== 'exploration' && !w.isAway?.(v.agentId) && !(w.election?._offer?.[v.agentId]) && !(w.election?.candidates || []).some(c => (c.agentId || c.id) === v.agentId));
     function buyVotes(w, a, all) {
-        const voters = buyable(w, a, all).sort(() => Math.random() - 0.5).slice(0, 2); const got = [];
-        for (const v of voters) {
-            if (!pay(w, a, v, BUY_VOTE)) break;
-            rel(v, a)?.modifyAffinity?.(15); v.addThought?.('bribed', w, a.agentId, a.name);
-            mem(w, v, '{c}私下塞了 10 銀幣給我，要我投他一票。', { c: a.name }, 5);
-            try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: v.agentId, k: '{c}私下塞錢給{v}買票', p: { c: a.name, v: v.name } }); } catch (e) {}
-            got.push(v);
-        }
-        return got;
+        const voters = buyable(w, a, all).sort(() => Math.random() - 0.5).slice(0, 2); if (!voters.length) return [];
+        const E = w.election; E._offer = E._offer || {}; for (const v of voters) E._offer[v.agentId] = a.agentId; const d = w._absDay ? w._absDay() : day(w);
+        try { DECIDE.askNow(w, voters.map(v => ({ a: v, kind: 'bribeTake', ctx: { src: 'mvote', by: a.agentId, n: BUY_VOTE, d } }))); } catch (e) { console.warn('[Wallet] buy ask', e); }
+        return voters;
     }
+    // 被找上的人收下：錢從候選人付給他；vote＝答應投他（好感多加、記著這份好處），不答應的話錢照收、票照自己的意思投
+    function voteTake(w, a, v, n, vote) {
+        if (!pay(w, a, v, n)) return false; const E = w.election; if (E?._offer) delete E._offer[v.agentId];
+        rel(v, a)?.modifyAffinity?.(vote ? 15 : 4); if (vote) v.addThought?.('bribed', w, a.agentId, a.name);
+        mem(w, v, vote ? '{c}私下塞了 {n} 銀幣給我，要我投他一票。' : '{c}私下塞了 {n} 銀幣給我要我投他。錢我收了，票我照自己的意思投。', { c: a.name, n }, 5);
+        try { DARK.secret(w, { kind: 'scheme', culprit: a.agentId, victim: v.agentId, k: '{c}私下塞錢給{v}買票', p: { c: a.name, v: v.name } }); } catch (e) {}
+        S(w).stats.bought = (S(w).stats.bought || 0) + 1; return true;
+    }
+    const voteDrop = (w, v) => { const E = w.election; if (E?._offer) delete E._offer[v?.agentId || v]; };
     // v9.26.0 給決策核心:這個候選人現在買不買得了票(跟以前擲骰的是同一批人:手上有 60 銀幣、不夠老實、鎮上有手頭緊的人)
     function voteBuyInfo(w, a) {
         const el = w.election; if (!a || !w.wallet || !el || el.phase !== 'campaign' || !Array.isArray(el.candidates) || !el.candidates.some(c => (c.agentId || c.id) === a.agentId) || get(w, a) < 60) return null;
@@ -290,7 +295,7 @@ const WALLET = (() => {
         const list = all.map(a => ({ a, n: get(w, a) })).sort((x, y) => y.n - x.n);
         return { total: Math.round(list.reduce((s, x) => s + x.n, 0)), rich: list[0], poor: list[list.length - 1], broke: list.filter(x => x.n < MEAL).length, tax: w.wallet.tax, bizTax: Math.round(w.wallet.stats?.bizTax || 0), bizRate: BIZ_TAX };
     }
-    return { S, get, add, take, pay, payday, costValue, daily, issues, decideFund, voteBuyInfo, voteBuyBy, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
+    return { S, get, add, take, pay, payday, costValue, daily, issues, decideFund, voteBuyInfo, voteBuyBy, voteTake, voteDrop, BUY_VOTE, HABIT, habitOf, habitInfo, habitSet, fundInfo, fundBy, collect, fundText, describe, summary, word, WAGE, wageOf, bizIncome, BIZ_TAX, netOf, FLOOR, setWageIdx, wageIdx, loanSize, lendTo, refuseLoan, giveTo, donateTown, treat };
 })();
 
 // v6.87.0 過世的人的錢(錢包＋銀行存款,先還銀行貸款)由家人繼承(配偶、子女平分;沒有家人就歸公庫),以前直接消失
