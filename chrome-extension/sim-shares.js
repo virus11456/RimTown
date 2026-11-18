@@ -129,7 +129,11 @@ const SHARES = (function () {
         }
         return done;
     }
-    const synInfo = (w, a) => { if (!here(w, a)) return null; const all = npcs(w); for (const k of SEC()) { if (S(w).owners[k]) continue; const P = synPlan(w, all, k); if (P && P.lead === a) return P; } return null; };
+    // 每天掃一輪「誰有事要拿主意」時（SCAN.run 包住的那一段，只看不改），每個人都會問一次這一題，
+    // 但「這一家合股由誰帶頭、找誰出錢」只看全鎮的存款、交情與產業帳，跟問的是誰無關：同一輪裡每家只算一次。
+    // synPlan 只讀不寫、不擲骰；拿到的結果只用來看，沒有人去改它。不在掃描期間照舊每次重算。
+    const synPlanOf = (w, all, k) => SCAN.on() ? SCAN.memo('shares.syn.' + k, () => synPlan(w, all, k)) : synPlan(w, all, k);
+    const synInfo = (w, a) => { if (!here(w, a)) return null; const all = npcs(w); for (const k of SEC()) { if (S(w).owners[k]) continue; const P = synPlanOf(w, all, k); if (P && P.lead === a) return P; } return null; };
     const synBy = (w, a, k) => syndicate(w, npcs(w), day(w), { k, id: a.agentId });
 
     // ---------- 當家欠薪、沒錢:先賣股週轉 ----------
