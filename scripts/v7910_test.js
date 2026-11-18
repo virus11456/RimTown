@@ -80,14 +80,12 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       const vol0 = fix(0.5, () => AF.scores(w, a1, cr, d0)).volunteer; cr.n.volunteer = 6; const vol1 = fix(0.5, () => AF.scores(w, a1, cr, d0)).volunteer; cr.n.volunteer = 0;
       out.group = { base, peer, thrH, vol0, vol1 };
       const T3 = MONEY.total(w); for (let i = 0; i < 9; i++) { next(); AF.daily(w); } out.group.drift = Math.round((MONEY.total(w) - T3) * 100) / 100; out.group.acts = Object.values(C.st).reduce((x, y) => x + y, 0); out.group.hist = C.hist.length;
-      // 完整智能體模式:壓力最大的 8 人整批交給 AI(一天一次);AI 沒回應就照規則
-      // v11.7.0 決策核心開著時，災後反應改走選擇點 crisis（AI 題目由決策核心送，見 v110700_test.js）；這裡測的是決策核心沒開時原本那一批問 AI 的寫法
-      { const ce = w.conversationEngine; const _fa = w.fullAgentMode, _ok = ce.fullAgentOk, _aj = ce._askJson; let asked = '', calls = 0; const _on = DECIDE.on; DECIDE.on = () => false;
-        w.fullAgentMode = true; ce.fullAgentOk = () => true; ce._askJson = async (p) => { asked = p; calls++; return [{ i: 1, r: 'protest', line: '要給個交代' }, { i: 2, r: 'protest', line: '不能再這樣' }, { i: 3, r: 'none' }]; };
-        w.crisis = null; AF.shock(w, { kind: 'meltdown', sev: 3, who: [adults()[9]] }); next(); AF.daily(w); await new Promise(r => setTimeout(r, 80)); const C2 = AF.S(w);
-        const rows = asked.split('\n').filter(l => /^\d+\. /.test(l)).length; const lg = (w.messageLog || []).slice(-40).map(m => m.content || '').join('\n');
-        ce._askJson = async () => { throw new Error('x'); }; w.crisis = null; AF.shock(w, { kind: 'meltdown', sev: 3, who: [adults()[9]] }); next(); AF.daily(w); await new Promise(r => setTimeout(r, 50)); next(); AF.daily(w); const fb = Object.values(AF.S(w).st).reduce((x, y) => x + y, 0);
-        DECIDE.on = _on; w.fullAgentMode = _fa; ce.fullAgentOk = _ok; ce._askJson = _aj; out.ai = { calls, rows, acts: C2.st.aiActs || 0, said: /要給個交代|不能再這樣|demand answers/.test(lg), fallback: fb }; }
+      // 災後反應由本人決定（選擇點 crisis；開 AI 時題目由決策核心送，見 v110700_test.js）。決策核心沒開時：這一天沒有人有反應，也不另外問 AI
+      { const ce = w.conversationEngine; const _fa = w.fullAgentMode, _ok = ce.fullAgentOk, _aj = ce._askJson; let calls = 0, err = null; const _on = DECIDE.on; DECIDE.on = () => false;
+        w.fullAgentMode = true; ce.fullAgentOk = () => true; ce._askJson = async (p) => { calls++; return [{ i: 1, r: 'protest', line: '要給個交代' }]; };
+        try { w.crisis = null; AF.shock(w, { kind: 'meltdown', sev: 3, who: [adults()[9]] }); const st0 = Object.values(AF.S(w).st).reduce((x, y) => x + y, 0); const l0 = (w.messageLog || []).length; next(); AF.daily(w); await new Promise(r => setTimeout(r, 80));
+          out.ai = { calls, acts: Object.values(AF.S(w).st).reduce((x, y) => x + y, 0) - st0, said: /要給個交代|demand answers/.test((w.messageLog || []).slice(l0).map(m => m.content || '').join('\n')) }; } catch (e) { err = String(e.message); }
+        DECIDE.on = _on; w.fullAgentMode = _fa; ce.fullAgentOk = _ok; ce._askJson = _aj; out.ai = Object.assign(out.ai || {}, { err }); }
       w.crisis = null;
       // 抗議三人以上:相關提案提早(核災→廢核)
       w.tech.pendAbandon = null; const cr2 = AF.shock(w, { kind: 'meltdown', sev: 3, who: [] }); for (const b of adults().slice(0, 3)) AF.act(w, b, 'protest', cr2); out.group.pend = w.tech.pendAbandon === w._absDay();
@@ -128,7 +126,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(r.leak.ok && r.leak.natural && r.leak.power && r.leak.shock, '實驗室外洩：自動跑一場疫情、不花神力，村民開始反應', r.leak);
     ok(r.group.peer > r.group.base + 1 && r.group.thrH >= 0.5 && r.group.vol1 < r.group.vol0, '群體動力學：好朋友都去抗議自己也更想去；老實人的搶劫門檻高；已經很多人幫忙時出手意願下降', r.group);
     ok(r.group.drift === 0 && r.group.acts > 3 && r.group.hist >= 1 && r.group.pend, '災後反應金流守恆、會有人反應、結束後有總結；抗議三人以上把廢核提早推上議程', r.group);
-    ok(r.ai.calls === 1 && r.ai.rows >= 3 && r.ai.rows <= 8 && r.ai.acts >= 2 && r.ai.said && r.ai.fallback > 0, '完整智能體模式：出大事那天壓力最大的人整批交給 AI（一次請求、最多 8 人、照 AI 的選擇和台詞反應）；AI 沒回應就照規則', r.ai);
+    ok(r.ai.calls === 0 && r.ai.acts === 0 && !r.ai.said && !r.ai.err, '決策核心沒開（開著完整智能體模式也一樣）：這一天沒有人有反應，也不另外整批問 AI（開著時由本人決定，見 v110700）', r.ai);
     ok(r.tier.lvA === 1 && r.tier.lvB === 2 && r.tier.lvC === 2, '城鎮跟科技軟綁定：科技不夠不能升城市；剛升格的 60 天內不降級', r.tier);
     ok(!r.old.path && r.old.kept === 'electro' && r.old.bio === 5, '舊存檔：v7.8 自動判定的電子機械空出來讓大家辯論；投票選的保留；基因生物的法律存得住', r.old);
     ok(r.ui.paths && r.ui.excl && r.ui.opts >= 1 && r.ui.optRows >= 3 && !r.ui.undef && !r.ui.overflow, '介面：科技分頁兩條路線、專屬標示；提案卡多選一', r.ui);

@@ -3,7 +3,7 @@
 //   B) 導演不再直接改心動與好感：安排的那一刻、碰面的那一刻數值都沒變，只有當事人選了才變
 //   C) 每個選項選了之後數值與後續照做；接到現有選擇點的路（告白、寫信、冷戰後誰先開口、道歉、講壞話）走得通
 //   D) 兩個人可以選得不一樣；交情與個性會改變傾向
-//   E) 決策核心沒開：走舊路徑直接改數值；節奏（連續 4 天沒有名場面、距上次 3 天以上）照舊
+//   E) 決策核心沒開：導演那一天不出手（不改數值、不安排場合）；節奏（連續 4 天沒有名場面、距上次 3 天以上）照舊
 //   F) 心動突然加深、單戀撞見、發現情敵（_processRelationships）：什麼時候遇上照舊看天，怎麼反應由本人決定；沒開照舊
 //   G) 存讀檔（安排到一半）、舊存檔；開 AI 時題目送出、回答被採用、英文題目沒有中文；導演的紀錄在「真相」頁看得到；放著跑 120 天沒有錯誤
 // 用法：BASE=http://localhost:8187/ node scripts/v111000_test.js（需要本機伺服器服務 chrome-extension/）
@@ -174,11 +174,11 @@ async function run(browser, dev, lang) {
       setAff(sy, sx, 40); Dd.mendWarm = marg(KK.stir, sx, sc0, 'mend'); setAff(sy, sx, -20); }
     out.D = Dd;
 
-    // ============ E 沒開決策核心：舊路徑；節奏照舊 ============
+    // ============ E 沒開決策核心：導演這一天不出手；節奏照舊 ============
     const E = {}; { const [, , , , , , , , , , x, y] = P; plain(x); plain(y); single(x); single(y); flat(x); flat(y); setAff(x, y, 30); setRI(x, y, 5); noVia(x, y);
-      quiet(); order('crush', x.agentId); const cur0 = D().cur; const n0 = D().log.length; const r0 = ri(x, y); try { offDecide(() => w._dramaDirector()); } finally { unorder(); }
-      E.old = { dR: r3(ri(x, y) - r0), noScene: D().log.length === n0, mem: (x.memory.entries || []).slice(-2).some(e => e.k === '奇怪...最近看{targetName}的眼神,好像跟以前不一樣了。'), last: w._directorLastDay === day() };
-      setAff(x, y, -25); setAff(y, x, -10); quiet(); order('grudge', x.agentId); const a0 = aff(x, y), b0 = aff(y, x); try { offDecide(() => w._dramaDirector()); } finally { unorder(); } E.oldGrudge = { a: r3(aff(x, y) - a0), b: r3(aff(y, x) - b0) };
+      quiet(); order('crush', x.agentId); const cur0 = D().cur; const n0 = D().log.length; const r0 = ri(x, y); const m0 = (x.memory.entries || []).length; const last0 = w._directorLastDay; let offErr = null; try { offDecide(() => w._dramaDirector()); } catch (e) { offErr = String(e.message); } finally { unorder(); }
+      E.old = { dR: r3(ri(x, y) - r0), noScene: D().log.length === n0 && D().cur === cur0, mem: (x.memory.entries || []).length - m0, last: w._directorLastDay === last0, err: offErr };
+      setAff(x, y, -25); setAff(y, x, -10); quiet(); order('grudge', x.agentId); const a0 = aff(x, y), b0 = aff(y, x); const gn0 = D().log.length; try { offDecide(() => w._dramaDirector()); } catch (e) { E.old.err = E.old.err || String(e.message); } finally { unorder(); } E.oldGrudge = { a: r3(aff(x, y) - a0), b: r3(aff(y, x) - b0), noScene: D().log.length === gn0 };
       // 節奏：最近 3 天內有名場面、或導演 2 天前才出過手 → 不出手；4 天沒有名場面、3 天前出過手 → 出手
       setAff(x, y, 30); setRI(x, y, 5); setAff(y, x, 0);
       const tryOnce = (sceneAgo, lastAgo) => { w.dramaArchive = sceneAgo == null ? [] : [{ year: w.clock.year, season: w.clock.season, day: w.clock.day - sceneAgo, kind: 'feud' }]; w._townFoundedDay = day() - 10; w._directorLastDay = lastAgo == null ? -99 : day() - lastAgo; D().cur = null; const n = D().log.length; order('crush', x.agentId); try { w._dramaDirector(); } finally { unorder(); } const did = D().log.length > n; if (did) { D().cur = null; } return did; };
@@ -280,7 +280,7 @@ async function run(browser, dev, lang) {
     ok(Dd.pineJ > Dd.pineK + 0.5 && Dd.kindPick !== 'pine', `${tag} 照個性：愛吃醋的放不下，心軟穩重的不會`, Dd);
     ok(Dd.fightA > Dd.fightK + 0.5 && Dd.mendWarm > Dd.mendK, `${tag} 照個性與交情：刻薄的想吵，心軟穩重的不會；對方對他還有好感時比較想講開`, Dd); }
   { const E = r.E;
-    ok(E.old.dR >= 12 && E.old.dR <= 17 && E.old.noScene && E.old.mem && E.old.last && E.oldGrudge.a <= -6 && E.oldGrudge.b <= -6, `${tag} 決策核心沒開：走舊路徑，導演直接改心動（+${E.old.dR}）與雙方好感，不安排場合`, E);
+    ok(E.old.dR === 0 && E.old.noScene && E.old.mem === 0 && E.old.last && !E.old.err && E.oldGrudge.a === 0 && E.oldGrudge.b === 0 && E.oldGrudge.noScene, `${tag} 決策核心沒開：導演這一天不出手，不改心動與好感，也不安排場合`, E);
     ok(!E.pace.scene3 && E.pace.scene4 && !E.pace.last2 && E.pace.last3, `${tag} 節奏照舊：連續 4 天沒有名場面、距上次出手 3 天以上才出手`, E.pace); }
   { const F = r.F;
     ok(F.spark.asked && F.spark.src === 'self' && F.spark.decided, `${tag} 心動突然加深的那一刻（照舊看天）：本人決定怎麼看待對方`, F.spark);

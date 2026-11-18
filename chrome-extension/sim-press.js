@@ -125,7 +125,7 @@ const PRESS = (() => {
         try { const O = (R.ord || (R.ord = {})); (O.hit || (O.hit = {}))[c.agentId] = { d: day(w), by: ed?.agentId || null, paper: P.id }; } catch (e) {}
         return s;
     }
-    // v11.8.0 抹黑的假消息見報（原本 electionDay 裡的那一段：內容三選一照舊看天）
+    // v11.8.0 抹黑的假消息見報（主筆選了登才會呼叫；內容三選一看天）
     const LIES = ['{c}私下收了商人的好處', '{c}在酒館說鎮民的壞話', '{c}偷偷挪用了公款'];
     function smearDo(w, P, victim, by, k) { const lie = k || LIES[Math.floor(Math.random() * 3)]; return story(w, P, 'smear', lie, { c: victim.name }, victim.agentId, { fake: true, by: by || null }); }
     // v11.8.0 假消息的更正（原本 electionDay 裡的那一段）
@@ -155,12 +155,8 @@ const PRESS = (() => {
                 }
             }
             // 抹黑:八卦報或被收買的報社捏造對手醜聞
-            // v11.8.0 決策核心開著：登不登、登誰由主筆自己決定（兩天問一次）；這一天真的登了才不做別的事
+            // 登不登、登誰由主筆自己決定（兩天問一次）；這一天真的登了才不做別的事
             if ((P.st === 'gossip' || P.bribedBy) && typeof ORDER !== 'undefined' && ORDER.on(w)) { const n0 = P.stories.length, l0 = P.stories[n0 - 1]; ORDER.smearAsk(w, P, cands); if (P.stories.length !== n0 || P.stories[P.stories.length - 1] !== l0) continue; }
-            else if ((P.st === 'gossip' || P.bribedBy) && Math.random() < 0.25) {
-                const friend = P.bribedBy ? cands.find(c => c.agentId === P.bribedBy) : null; const victim = cands.filter(c => c !== friend).sort(() => Math.random() - 0.5)[0];
-                if (victim) { smearDo(w, P, victim, P.bribedBy); continue; }
-            }
             // 表態支持
             if (!R.elec.endorsed[P.id]) { const c = P.bribedBy ? cands.find(x => x.agentId === P.bribedBy) || leanOf(w, P, cands) : leanOf(w, P, cands); R.elec.endorsed[P.id] = c.agentId; story(w, P, 'endorse', '本報支持{c}', { c: c.name }, c.agentId); continue; }
             // 民調

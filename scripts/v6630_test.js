@@ -41,10 +41,12 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); DARK.honesty = _hon;
       out.bribed = R.papers.some(P => P.bribedBy === B.agentId) && (DARK.S(w).secrets || []).some(s => /收買|paid off/.test(JSON.stringify(s)));
       out.exposed = sec.found && R.papers.some(P => P.stories.some(s => s.kind === 'expose' && s.cand === A.agentId)) && logHas(/揭弊|Exposed/);
-      // 再幾天:表態、民調、抹黑、更正
+      // 再幾天:表態、民調；登不登抹黑由主筆決定（v110800_test 測），沒開時這幾天沒有抹黑
       for (let i = 0; i < 4; i++) { D++; fix(i % 2 ? 0.01 : 0.2, () => { R.lastDay = null; PRESS.daily(w); }); }
       const all = R.papers.flatMap(P => P.stories); out.kinds = [...new Set(all.map(s => s.kind))];
-      out.endorse = all.some(s => s.kind === 'endorse'); out.smear = all.some(s => s.kind === 'smear'); out.correct = all.some(s => s.kind === 'correct');
+      out.endorse = all.some(s => s.kind === 'endorse'); out.noSmear = !all.some(s => s.kind === 'smear');
+      // 假新聞被拆穿：沒開（或沒有主筆可問）時照舊直接登更正
+      { const Pg = R.papers.find(P => P.st !== 'board' && P.st !== 'crown' && !P.banned && !P.closed); if (Pg) { PRESS.smearDo(w, Pg, B, null); D++; fix(0.01, () => { R.lastDay = null; PRESS.daily(w); }); } out.correct = R.papers.some(P => P.stories.some(s => s.kind === 'correct' && s.cand === B.agentId)); }
       out.bribedEndorse = R.papers.filter(P => P.bribedBy === B.agentId).every(P => P.stories.some(s => s.kind === 'endorse' && s.cand === B.agentId) || !P.stories.some(s => s.kind === 'endorse'));
       // 影響投票:讀到揭弊的讀者對 A 扣分
       const Pex = R.papers.find(P => P.stories.some(s => s.kind === 'expose' && s.cand === A.agentId)); const reader = npcs().find(a => a !== A && a !== B && R.reads[a.agentId] === Pex?.id) || npcs().find(a => a !== A && a !== B);
@@ -69,7 +71,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
     ok(r.gossipTrust, '愛八卦的人比較信八卦報', r);
     ok(r.bribed, '有錢又不老實的候選人收買報社（真相頁看得到）', r);
     ok(r.exposed, '記者揭弊，挖出候選人的祕密', r);
-    ok(r.endorse && r.smear && r.correct, '報社表態、抹黑，假新聞會被更正', r.kinds);
+    ok(r.endorse && r.noSmear && r.correct, '報社表態；決策核心沒開時報社不自己抹黑，假新聞被拆穿時會登更正', { kinds: r.kinds, noSmear: r.noSmear, correct: r.correct });
     ok(r.biasA < 0, '讀到揭弊的讀者投票時對該候選人扣分', r.biasA);
     ok(/讀到|read in/.test(r.brief) && r.readerMem, 'AI 投票看得到最近讀到的報導', r.brief.slice(-200));
     ok(r.capital, '王都有皇家官報', r);
