@@ -62,8 +62,8 @@ const OFFICE = (() => {
         for (const post of Object.keys(O.posts)) { if (!wanted(w).includes(post)) vacate(w, post, '鎮變小了，裁掉這個職位'); else if (!holder(w, post) || w.isAway?.(O.posts[post].id)) vacate(w, post, '人不在了'); }
         // 發津貼：公庫付不出來就欠著（欠久了的人比較容易收錢）
         const n = stipend(w); for (const post of Object.keys(O.posts)) { const a = holder(w, post); const P = O.posts[post]; if (!a) continue; if (w.stockpile?.consume?.('silver', n, w.tickCount, t('公職津貼'))) { WALLET.add(w, a, n); P.owe = 0; } else P.owe = (P.owe || 0) + 1; }
-        // 補人
-        if (M) for (const post of wanted(w)) { if (O.posts[post]) continue; if ((w.proposals?.items || []).some(p => p.kind === 'office_appoint' && p.post === post && ['open', 'shelved', 'approved'].includes(p.status))) continue; if (d - (O.lastNom[post] ?? -99) < NOM_GAP) continue; let can = true; try { can = typeof FISCAL === 'undefined' || FISCAL.canHire(w) || (post === 'tax' && FISCAL.taxmanOk(w)); } catch (e) {} if (!can) continue; // v11.12.0 公庫吃緊時，首長決定先補稅務員的話只放行這一個職位 O.lastNom[post] = d; DECIDE.enqueue(w, M, 'officeNominate', { post }); }
+        // 補人（v11.12.0 公庫吃緊時，首長決定先補稅務員的話只放行這一個職位）
+        if (M) for (const post of wanted(w)) { if (O.posts[post]) continue; if ((w.proposals?.items || []).some(p => p.kind === 'office_appoint' && p.post === post && ['open', 'shelved', 'approved'].includes(p.status))) continue; if (d - (O.lastNom[post] ?? -99) < NOM_GAP) continue; let can = true; try { can = typeof FISCAL === 'undefined' || FISCAL.canHire(w) || (post === 'tax' && FISCAL.taxmanOk(w)); } catch (e) {} if (!can) continue; O.lastNom[post] = d; DECIDE.enqueue(w, M, 'officeNominate', { post }); }
         // 每週各查一輪
         for (const post of Object.keys(O.posts)) { const a = holder(w, post); if (a && (d + post.length * 3) % 7 === 0) DECIDE.enqueue(w, a, 'officeWork', { post, left: full(w) ? 3 : 1 }); }
         // 沒有官員管的告發：落到首長頭上
