@@ -394,7 +394,7 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.wallet = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats, habit: this.wallet.habit || {} /* v9.25.0 每個人自己定的花錢習慣 */ }; return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats, habit: this.wallet.habit || {} /* v9.25.0 每個人自己定的花錢習慣 */, minWage: this.wallet.minWage || 0, minWageDay: this.wallet.minWageDay ?? null /* 表決通過的最低工資與通過那天：以前沒存，讀檔後下限就不見了、也無法提廢除。舊存檔沒有這兩欄，讀進來就是「沒通過過」 */ }; return d; };
     const _load = World.prototype.loadSave;
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.wallet = (data?.wallet && typeof data.wallet.bal === 'object') ? Object.assign({ tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } }, data.wallet) : null; } catch (e) {} return r; };
 }
