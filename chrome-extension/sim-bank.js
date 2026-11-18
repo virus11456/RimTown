@@ -485,8 +485,8 @@ const BANK = (() => {
     }
 
     // ---------- 選擇點的入口 ----------
-    function deskFacts(w, b, ctx) { try { return ctx?.t === 'loan' ? loanFacts(w, b, ctx) : ctx?.t === 'rate' ? rateFacts(w, b, ctx) : ctx?.t === 'late' ? lateFacts(w, b, ctx) : ctx?.t === 'run' ? runFacts(w, b, ctx) : ''; } catch (e) { console.warn('[Bank] facts', e); return ''; } }
-    function deskOptions(w, b, ctx) { return ctx?.t === 'loan' ? loanOptions(w, b, ctx) : ctx?.t === 'rate' ? rateOptions(w, b, ctx) : ctx?.t === 'late' ? lateOptions(w, b, ctx) : ctx?.t === 'run' ? runOptions(w, b, ctx) : []; }
+    function deskFacts(w, b, ctx) { try { return ctx?.t === 'loan' ? loanFacts(w, b, ctx) : ctx?.t === 'rate' ? rateFacts(w, b, ctx) : ctx?.t === 'late' ? lateFacts(w, b, ctx) : ctx?.t === 'run' ? runFacts(w, b, ctx) : ctx?.t === 'bond' && typeof FISCAL !== 'undefined' ? FISCAL.bankFacts(w, b, ctx) : ''; } catch (e) { console.warn('[Bank] facts', e); return ''; } }
+    function deskOptions(w, b, ctx) { return ctx?.t === 'loan' ? loanOptions(w, b, ctx) : ctx?.t === 'rate' ? rateOptions(w, b, ctx) : ctx?.t === 'late' ? lateOptions(w, b, ctx) : ctx?.t === 'run' ? runOptions(w, b, ctx) : ctx?.t === 'bond' && typeof FISCAL !== 'undefined' ? FISCAL.bankOptions(w, b, ctx) : []; } // v11.12.0 公庫來借錢（sim-fiscal.js）
     // 每天：掛著的申請隔天還沒回音（問 AI 沒回、讀檔後回話不見了）就照原本的規則；還排在決策核心佇列裡、等它送出去的，多等一天
     function deskDaily(w, B, d) {
         const X = B.desk; if (X?.apply) for (const [id, ap] of Object.entries(X.apply)) {

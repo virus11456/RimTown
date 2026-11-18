@@ -87,11 +87,21 @@ const CIVIC = (() => {
         let dir = null; if (((TR ? TR.needTax(w) : tr < Math.max(60, all.length * 4)) || short) && tax < 0.25) dir = 'up'; else if (poor >= all.length * 0.25 && tax > 0.04 && (TR ? TR.high(w) : tr >= all.length * 8)) dir = 'down';
         if (!dir) return;
         const who = dir === 'up' ? (all.find(a => a.job?.key === 'mayor') || all.find(a => has(a, 'hardworking'))) : (all.filter(a => cash(w, a) < 10).sort((x, y) => (has(y, 'charismatic') ? 1 : 0) - (has(x, 'charismatic') ? 1 : 0))[0]);
-        if (!who) return; C.lastTax = d;
+        if (!who) return;
+        return taxMake(w, C, d, who, dir, tax, TR);
+    }
+    function taxMake(w, C, d, who, dir, tax, TR) {
+        const P = w.proposals; C.lastTax = d;
         const nt = Math.round((dir === 'up' ? tax + 0.05 : tax - 0.05) * 100) / 100;
         const cand = { kind: 'tax', key: 'tax:' + d, jobs: [], make: () => ({ kind: 'tax', key: 'tax:' + d, newTax: nt, dir, tk: dir === 'up' ? '加稅到 {n}%' : '減稅到 {n}%', tp: { n: Math.round(nt * 100) }, dk: dir === 'up' ? (TR ? '{who}說公庫只夠付 {d} 天的薪水與維護，提議把稅從 {a}% 調到 {n}%。' : '{who}說公庫快見底了，提議把稅從 {a}% 調到 {n}%。') : '{who}說大家快活不下去了，提議把稅從 {a}% 降到 {n}%。', dp: { who: who.name, a: Math.round(tax * 100), n: Math.round(nt * 100), d: TR ? Math.floor(TR.days(w)) : 0 }, cost: {}, category: 'economy', jobBias: ['mayor', 'trader'] }) };
         const p = P._createWith(w, d, cand, who); if (p) { p.newTax = nt; p.dir = dir; }
         return p;
+    }
+    // v11.12.0 公庫吃緊時首長自己決定提案加稅（sim-fiscal.js 的 fiscTight）：跟上面同一個提案、同樣全鎮投票；同樣隔 15 天、已經有稅率的案在表決時不提、稅率 25% 以上不再加
+    function taxUp(w, who) {
+        const P = w.proposals; if (!P?._createWith || !w.wallet || !who) return null; const C = S(w), d = day(w); if (d - C.lastTax < 15) return null;
+        if ((P.items || []).some(p => p.kind === 'tax' && ['open', 'shelved', 'approved'].includes(p.status))) return null; const tax = w.wallet.tax ?? 0.1; if (tax >= 0.25) return null;
+        const TR = (typeof TREASURY !== 'undefined' && w.observerMode) ? TREASURY : null; return taxMake(w, C, d, who, 'up', tax, TR) || null;
     }
     function applyTax(w, p) { if (!w.wallet || typeof p.newTax !== 'number') return ''; const old = w.wallet.tax; w.wallet.tax = Math.round(Math.max(0.02, Math.min(0.3, p.newTax)) * 100) / 100; return t('稅率從 {a}% 調成 {n}%').replace('{a}', Math.round(old * 100)).replace('{n}', Math.round(w.wallet.tax * 100)); } // v9.18.0 以前回傳 tpl 物件，提案卡顯示成 [object Object]
     function taxVote(w, p, a) {
@@ -170,7 +180,7 @@ const CIVIC = (() => {
     }
     function view(w) { const C = S(w); return { slum: C.slum, thefts: C.thefts, caught: C.caught, jailed: Object.entries(C.jail).filter(([id, u]) => u > day(w) && w.agents[id]).map(([id]) => t(w.agents[id].name)), guards: npcs(w).filter(a => a.job?.key === 'guard').length, land: landPrice(w), rent: C.lastRent || 0, tax: Math.round((w.wallet?.tax ?? 0.1) * 100) }; }
     const chip = (w, a) => (jailed(w, a) ? `⛓️ ${t('坐牢中')}` : '');
-    return { S, daily, crime, stealDo, TEMPT, taxProposal, applyTax, taxVote, rent, grand, brides, royalWed, migration, landPrice, jailed, view, chip, jailDo, unseen };
+    return { S, daily, crime, stealDo, TEMPT, taxProposal, taxUp, applyTax, taxVote, rent, grand, brides, royalWed, migration, landPrice, jailed, view, chip, jailDo, unseen };
 })();
 if (typeof PROPOSAL_KINDS !== 'undefined') PROPOSAL_KINDS.tax = { icon: '💰', label: '稅率' };
 if (typeof ProposalSystem !== 'undefined') {

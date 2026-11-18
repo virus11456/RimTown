@@ -132,13 +132,15 @@
 
     // ---------- 銀行在擠兌：存款要不要領出來 ----------
     const runInfo = (w, a) => { const B = BK(); return B && w.bank && DECIDE.on(w) ? B.runInfo(w, a) : null; };
+    const gov = (w) => { try { return typeof FISCAL !== 'undefined' && FISCAL.depNote ? FISCAL.depNote(w) : null; } catch (e) { return null; } };
     DECIDE.kind('bankrun', {
         title: '銀行在擠兌，存款要不要領出來', cool: 1, pri: 2.5,
         when(w, a) { const I = runInfo(w, a); return I ? { d: I.day } : null; },
         facts(w, a, ctx) {
             const I = runInfo(w, a); if (!I) return '';
-            return fill('鎮上的銀行在擠兌，已經第 {d} 天，門口擠滿了要領錢的人。你在銀行存了 {n} 銀幣。銀行要是倒了，存款就拿不回來；可是大家都去領，銀行才真的會倒。{inj}{b}',
-                { d: I.day + 1, n: I.dep, inj: I.injected ? '銀行家已經拿自己的錢補進去了。' : { raw: '' }, b: I.banker ? { k: '你跟銀行家{x}{tie}。', p: { x: I.banker.name, tie: tie(a, I.banker) } } : { raw: '' } });
+            const G = gov(w); // v11.12.0 銀行借給公庫的錢占存款的比例高、公庫最近又付不出利息：他會擔心這筆錢收不回來
+            return fill('鎮上的銀行在擠兌，已經第 {d} 天，門口擠滿了要領錢的人。你在銀行存了 {n} 銀幣。銀行要是倒了，存款就拿不回來；可是大家都去領，銀行才真的會倒。{inj}{b}{g}',
+                { d: I.day + 1, n: I.dep, inj: I.injected ? '銀行家已經拿自己的錢補進去了。' : { raw: '' }, b: I.banker ? { k: '你跟銀行家{x}{tie}。', p: { x: I.banker.name, tie: tie(a, I.banker) } } : { raw: '' }, g: G ? { k: '銀行借給公庫 {n} 銀幣，是存款的 {p}%，公庫最近 30 天有 {m} 次連利息都付不出來。', p: { n: G.owed, p: G.share, m: G.m } } : { raw: '' } });
         },
         options(w, a, ctx) {
             const B = BK(); const I = runInfo(w, a); if (!I) return []; const trust = I.banker ? aff(a, I.banker) : 0;
@@ -146,7 +148,7 @@
                 { id: 'stay', quiet: true, mute: true, text: '不領，相信銀行撐得過去', say: '沒有去領存款', why: '大家都去領，銀行才真的會倒', base: 1.0 + clampN(trust / 50, -1, 1) * 0.5 + (has(a, 'stoic') ? 0.3 : 0) + (has(a, 'optimist') ? 0.3 : 0), lean: { bond: 0.3 }, run: () => null },
                 { id: 'half', quiet: true, text: '先領一半出來', say: '把存款領出一半', why: '留一半、領一半，兩邊都不落空', base: 1.0, lean: { safe: 0.3 },
                     run: (w, a) => { const got = B.runBy(w, a, 0.5); return got ? { k: '領到 {n} 銀幣', p: { n: got } } : { k: '銀行已經沒錢可領' }; } },
-                { id: 'all', quiet: true, text: '全部領出來', say: '把存款全部領出來', why: '錢拿在自己手上才是真的', base: 1.3 + (has(a, 'neurotic') ? 0.4 : 0) + (has(a, 'pessimist') ? 0.3 : 0) + (has(a, 'thrifty') ? 0.2 : 0) + (I.dep >= 100 ? 0.2 : 0), lean: { safe: 0.6 },
+                { id: 'all', quiet: true, text: '全部領出來', say: '把存款全部領出來', why: '錢拿在自己手上才是真的', base: 1.3 + (has(a, 'neurotic') ? 0.4 : 0) + (has(a, 'pessimist') ? 0.3 : 0) + (has(a, 'thrifty') ? 0.2 : 0) + (I.dep >= 100 ? 0.2 : 0) + (gov(w) ? 0.3 : 0), lean: { safe: 0.6 },
                     run: (w, a) => { const got = B.runBy(w, a, 1); return got ? { k: '領到 {n} 銀幣', p: { n: got } } : { k: '銀行已經沒錢可領' }; } },
             ];
         },
