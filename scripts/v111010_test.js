@@ -3,6 +3,7 @@
 //   卻因為記號不見了而沒記進「移民帶來」，當天結帳整筆變成「其他」（重現腳本大約八次出現一次，19～34 銀幣）
 //   A) 讀檔前剛出生、還沒有錢包的孩子：讀檔後第一次查錢包，全鎮的錢變化等於記進月報的流量，記在「移民帶來」
 //   B) 跑到下一次每日結帳：那一天的「其他」是 0
+//   D) 投票通過的最低工資跟著存檔（以前沒存，重新整理就不見了）
 //   C) 對照：不存讀檔時同一件事也照樣記帳（行為跟讀檔前一樣）；剛開局（還沒有錢包）的讀檔照舊不記
 // 用法：BASE=http://localhost:8194/ node scripts/v111010_test.js（需要本機伺服器服務 chrome-extension/）
 const { chromium } = require('playwright');
@@ -44,6 +45,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     { const id = birth(); const f = firstLook(); out.C1 = { ...f, bal: w.wallet.bal[id] }; }
     // 剛開局、還沒有錢包時存讀檔：開局那次補錢包是起始的錢，照舊不記進月報
     fresh(); w.wallet = null; out.loadOk2 = saveLoad(); out.noWalletAfterLoad = w.wallet == null; WALLET.get(w, parents()[0]); out.C2 = { started: w.wallet?.started === true, imm: imm() };
+    // D) 投票通過的最低工資跟著存檔（以前沒存，重新整理就不見了，要再提案一次）
+    fresh(); for (let g = 0; g < 96; g++) { w.paused = false; w.tick(); } w.paused = true; WALLET.get(w, parents()[0]);
+    { const d = w._absDay(); w.wallet.minWage = 4.73; w.wallet.minWageDay = d; const okL = saveLoad();
+      out.D = { okL, minWage: w.wallet?.minWage, day: w.wallet?.minWageDay === d };
+      w.wallet.minWage = 0; w.wallet.minWageDay = null; saveLoad(); out.D.off = (w.wallet?.minWage || 0) === 0 && w.wallet?.minWageDay == null; }
     return out;
   });
   console.log('A 讀檔前剛出生、還沒有錢包的孩子');
@@ -59,6 +65,9 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
   console.log('C 對照');
   ok(Math.abs(r.C1.leak) < 0.01 && r.C1.bal > 0 && Math.abs(r.C1.imm - r.C1.bal) < 0.01, '不存讀檔時同樣記在「移民帶來」', r.C1);
   ok(r.loadOk2 && r.noWalletAfterLoad && r.C2.started && Math.abs(r.C2.imm) < 0.01, '還沒有錢包的存檔讀回來：開局補錢包照舊不記進月報', r);
+  console.log('D 最低工資跟著存檔');
+  ok(r.D.okL && r.D.minWage === 4.73 && r.D.day, '投票通過的最低工資與生效日，存讀檔後還在', r.D);
+  ok(r.D.off, '沒有最低工資的鎮，存讀檔後照樣沒有', r.D);
   ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));
   console.log(`\n${pass} 通過，${fail} 失敗`); await browser.close(); process.exit(fail ? 1 : 0);
 })();
