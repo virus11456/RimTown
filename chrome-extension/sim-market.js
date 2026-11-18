@@ -160,6 +160,10 @@ const MARKET = (() => {
         return Math.round(40 + ws.length * 12 + Math.max(0, prof) * 0.5); };
     function assign(w, all, d) {
         const M = S(w);
+        // 這一段比「誰出得起錢」時，每比一個人就叫一次 bal，每次 bal 都會讓錢包把全鎮掃一遍、替還沒有存款的人補上（百人的城一天上萬次）。
+        // 第一次掃過之後，這一段裡沒有人進出鎮上、也沒有人的存款被刪掉（買賣只是把數字加減），再掃也補不到任何人，所以只在第一次真的去掃。
+        // 第一次掃的時間點跟以前一樣（第一次用到 bal 的時候），補存款用到的亂數次數與順序都不變。
+        let Wc = null; const bal = (w, id) => { if (!Wc) Wc = W(w); return Math.max(0, (Wc?.bal?.[id]) || 0); };
         for (const k of Object.keys(SECTORS)) {
             const ws = workersOf(w, k, all); let id = ownerOf(w, k);
             if (M.owners[k] && !id) M.owners[k] = null; // 老闆搬走了
