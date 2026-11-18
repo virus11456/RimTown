@@ -394,9 +394,9 @@ if (typeof World !== 'undefined') {
     const _reset = World.prototype.reset;
     World.prototype.reset = function (...args) { const r = _reset.apply(this, args); this.wallet = null; return r; };
     const _ser = World.prototype.serialize;
-    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats, habit: this.wallet.habit || {} /* v9.25.0 每個人自己定的花錢習慣 */ }; return d; };
+    World.prototype.serialize = function () { const d = _ser.call(this); if (d && this.wallet) d.wallet = { bal: this.wallet.bal, tax: this.wallet.tax, unpaid: this.wallet.unpaid || 0, lastDay: this.wallet.lastDay, stats: this.wallet.stats, habit: this.wallet.habit || {} /* v9.25.0 每個人自己定的花錢習慣 */, minWage: this.wallet.minWage || 0, minWageDay: this.wallet.minWageDay ?? null /* 表決通過的最低工資與哪一天開始的也要存：以前沒存，讀檔後最低工資就不見了，發薪照市價走，廢除規定那邊也當它沒立過 */ }; return d; };
     const _load = World.prototype.loadSave;
-    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.wallet = (data?.wallet && typeof data.wallet.bal === 'object') ? Object.assign({ tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 } }, data.wallet) : null; } catch (e) {} return r; };
+    World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.wallet = (data?.wallet && typeof data.wallet.bal === 'object') ? Object.assign({ tax: 0.1, unpaid: 0, lastDay: null, stats: { wages: 0, taxes: 0, spent: 0 }, minWage: 0, minWageDay: null /* 舊存檔沒有這兩欄：當作還沒立最低工資 */ }, data.wallet) : null; } catch (e) {} return r; };
 }
 if (typeof ConversationEngine !== 'undefined') {
     const CE = ConversationEngine.prototype;
