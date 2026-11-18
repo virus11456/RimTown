@@ -1,0 +1,228 @@
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-biz.js ext/sim-biz.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-biz.js	2026-11-18 04:28:28.489289763 +0000
++++ ext/sim-biz.js	2026-11-18 04:29:30.735046669 +0000
+@@ -16,7 +16,7 @@
+ const BIZ = (() => {
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('biz.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('biz.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.biz', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
+     const en = () => typeof I18N !== 'undefined' && I18N.getLang?.() === 'en';
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-compete.js ext/sim-compete.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-compete.js	2026-11-18 04:28:28.482559246 +0000
++++ ext/sim-compete.js	2026-11-18 04:29:30.732756226 +0000
+@@ -14,7 +14,7 @@
+     const MK = () => MARKET;
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('compete.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('compete.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.compete', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const day = (w) => (w._absDay ? w._absDay() : 0);
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-crowd.js ext/sim-crowd.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-crowd.js	2026-11-18 04:14:16.544962887 +0000
++++ ext/sim-crowd.js	2026-11-18 04:29:30.731824415 +0000
+@@ -6,7 +6,7 @@
+     const TRIM_AT = 40, AI_AT = 100, REL_CAP = 40, MEM_CAP = 60;
+     const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+     // 只數人數，不另外建一份名單（條件跟 npcs 一樣；每天整理關係時每個人都會問一次）
+-    const pop = (w) => { const A = w.agents || {}; let n = 0; for (const id in A) { const a = A[id]; if (!a.isPlayer && !a.isDead) n++; } return n; };
++    const pop = (w) => { const A = w.agents || {}; let n = 0; for (const id in A) { const a = A[id]; if (!a.isPlayer && !a.isDead) n++; } window.__shN('crowd.pop', n === npcs(w).length, { n }); return n; };
+     // 一段關係值不值得記:有身分(交往／婚姻／前任)、有過節、交情或信任明顯、有暗戀、互動過兩次以上、有共同回憶
+     const relScore = (r) => (r.status ? 1000 : 0) + (r.isFeud ? 500 : 0) + (r.isCheating ? 300 : 0) + Math.abs(r.affinity || 0) + Math.abs(r.trust || 0) * 0.5 + (r.romanticInterest || 0) + Math.min(30, r.interactionCount || 0) + ((r.sharedMemories || []).length ? 5 : 0);
+     const trivial = (r) => !r.status && !r.isFeud && !r.isCheating && Math.abs(r.affinity || 0) < 5 && Math.abs(r.trust || 0) < 5 && !(r.romanticInterest > 0) && (r.interactionCount || 0) < 2 && !(r.sharedMemories || []).length;
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-dark.js ext/sim-dark.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-dark.js	2026-11-18 04:28:28.484429691 +0000
++++ ext/sim-dark.js	2026-11-18 04:29:30.733249376 +0000
+@@ -12,7 +12,7 @@
+ const DARK = (() => {
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('dark.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('dark.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.dark', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-day.js ext/sim-day.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-day.js	2026-11-18 04:00:48.911456045 +0000
++++ ext/sim-day.js	2026-11-18 04:29:30.730368850 +0000
+@@ -48,7 +48,9 @@
+     function S(w) {
+         if (!w.dayx || typeof w.dayx !== 'object') w.dayx = {};
+         const X = w.dayx; for (const k of ['t', 'y', 'hang', 'pact', 'rec', 'warn', 'inv']) X[k] = X[k] && typeof X[k] === 'object' ? X[k] : {};
+-        if (!(X.st && ST_OK.has(X.st))) { X.st = Object.assign({}, ST0, X.st || {}); ST_OK.add(X.st); }
++        { const prev = X.st; const raw = Object.assign({}, ST0, X.st || {}); const px = new Proxy(raw, { get(t, k) { if (typeof k === 'string' && w.dayx && w.dayx.st !== px && w.dayx === X) window.__shN('day.S.stale', false, { op: 'get', k }); return t[k]; }, set(t, k, v) { const stale = w.dayx === X && X.st !== px; window.__shN('day.S.stale', !stale, { op: 'set', k, v }); t[k] = v; return true; } });
++          if (prev && ST_OK.has(prev)) window.__shN('day.S.same', JSON.stringify(prev) === JSON.stringify(raw), { a: JSON.stringify(prev).slice(0, 100) });
++          X.st = px; ST_OK.add(px); }
+         if (X.d == null) X.d = day(w); return X;
+     }
+     const rec = (w, a) => { const X = S(w); return X.t[a.agentId] || (X.t[a.agentId] = {}); };
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-decide.js ext/sim-decide.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-decide.js	2026-11-18 04:16:45.686034610 +0000
++++ ext/sim-decide.js	2026-11-18 04:29:30.732163302 +0000
+@@ -231,6 +231,7 @@
+         if ((a.mood ?? 50) < 35) add('joy', 0.4);
+         // 家裡有沒有小孩：直接一個一個看（條件跟 npcs 一樣），不另外建一份全鎮名單；看到一個就停，結果跟 some 相同
+         let kid = false; { const A = w?.agents || {}; for (const id in A) { const o = A[id]; if (o.isPlayer || o.isDead || String(o.agentId).startsWith('visit_')) continue; if ((o.age ?? 30) < 16 && (o._parentNames || []).includes(a.name)) { kid = true; break; } } }
++        window.__shN('decide.lean.kid', kid === npcs(w).some(o => (o.age ?? 30) < 16 && (o._parentNames || []).includes(a.name)), { a: a.agentId });
+         if (kid) { add('safe', 0.3); add('bond', 0.2); }
+         for (const k of Object.keys(L)) L[k] = Math.max(0.1, r2(L[k]));
+         return L;
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-flow.js ext/sim-flow.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-flow.js	2026-11-18 04:14:16.544454254 +0000
++++ ext/sim-flow.js	2026-11-18 04:29:30.731663008 +0000
+@@ -20,6 +20,7 @@
+     // ---------- 目標存量 ----------
+     function want(w, r) {
+         const hc = headcount(w), pop = Math.max(1, hc.pop), workers = hc.workers;
++        { const all = npcs(w); window.__shN('flow.headcount', Math.max(1, all.length) === pop && all.filter(a => a.job?.key).length === workers, { pop, workers }); }
+         switch (r) {
+             case 'meals': return pop * 3;
+             case 'food': return (typeof foodCapOf === 'function' ? foodCapOf(w, true) : 400 + (w.buildings?.getEffect?.('food_capacity', 0) || 0)) * 1.3; // 糧倉容量多三成當冬天的底
+@@ -246,7 +247,7 @@
+     // 跟商人買作物：只買工坊要用的、缺糧時的糧食、一點茶葉、缺布時的棉花
+     function buyLow(w, r) {
+         if (!CROP_LIKE.has(r)) return null;
+-        const pop = Math.max(1, headcount(w).pop);
++        const pop = Math.max(1, headcount(w).pop); window.__shN('flow.headcount', pop === Math.max(1, npcs(w).length), { pop });
+         let n = reserveFor(w, r);
+         if (CROP_FOOD[r] && get(w, 'food') < pop * 12) n = Math.max(n, 10);
+         if (r === 'tea') n = Math.max(n, 5);
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-invest.js ext/sim-invest.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-invest.js	2026-11-18 04:28:41.772683455 +0000
++++ ext/sim-invest.js	2026-11-18 04:29:30.735872679 +0000
+@@ -12,7 +12,7 @@
+ const INVEST = (() => {
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('invest.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('invest.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.invest', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const day = (w) => (w._absDay ? w._absDay() : 0);
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-issues.js ext/sim-issues.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-issues.js	2026-11-18 04:28:28.485316127 +0000
++++ ext/sim-issues.js	2026-11-18 04:29:30.733551935 +0000
+@@ -9,7 +9,7 @@
+     const MAX = 8;
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('issues.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('issues.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.issues', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(String(v)); return s; };
+     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
+     const name = (a) => (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) ? I18N.localizeNames(a.name, true) : a.name;
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-market.js ext/sim-market.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-market.js	2026-11-18 04:11:10.553127918 +0000
++++ ext/sim-market.js	2026-11-18 04:29:30.730690948 +0000
+@@ -163,7 +163,10 @@
+         // 這一段比「誰出得起錢」時，每比一個人就叫一次 bal，每次 bal 都會讓錢包把全鎮掃一遍、替還沒有存款的人補上（百人的城一天上萬次）。
+         // 第一次掃過之後，這一段裡沒有人進出鎮上、也沒有人的存款被刪掉（買賣只是把數字加減），再掃也補不到任何人，所以只在第一次真的去掃。
+         // 第一次掃的時間點跟以前一樣（第一次用到 bal 的時候），補存款用到的亂數次數與順序都不變。
+-        let Wc = null; const bal = (w, id) => { if (!Wc) Wc = W(w); return Math.max(0, (Wc?.bal?.[id]) || 0); };
++        let Wc = null; const bal = (w, id) => { if (!Wc) { Wc = W(w); return Math.max(0, (Wc?.bal?.[id]) || 0); }
++            const need = Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && typeof w.wallet?.bal?.[a.agentId] !== 'number').map(a => a.agentId);
++            const fast = Math.max(0, (Wc?.bal?.[id]) || 0); const W2 = W(w); const slow = Math.max(0, (W2?.bal?.[id]) || 0);
++            window.__shN('market.assign.bal', !need.length && W2 === Wc && fast === slow, { need, same: W2 === Wc, fast, slow }); return slow; };
+         for (const k of Object.keys(SECTORS)) {
+             const ws = workersOf(w, k, all); let id = ownerOf(w, k);
+             if (M.owners[k] && !id) M.owners[k] = null; // 老闆搬走了
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-mind.js ext/sim-mind.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-mind.js	2026-11-18 04:28:28.489993404 +0000
++++ ext/sim-mind.js	2026-11-18 04:29:30.735264825 +0000
+@@ -5,7 +5,7 @@
+ const MIND = (() => {
+     const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('mind.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('mind.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.mind', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const day = (w) => { try { return w._absDay?.() ?? 0; } catch (e) { return 0; } };
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const mem = (w, a, k, p, imp = 6, cat = 'reflection') => { try { a?.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', cat, k, p || {}, imp, []); } catch (e) {} };
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-shares.js ext/sim-shares.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-shares.js	2026-11-18 04:28:28.486384560 +0000
++++ ext/sim-shares.js	2026-11-18 04:29:30.734163667 +0000
+@@ -17,7 +17,7 @@
+     const M_ = () => (typeof MARKET !== 'undefined' ? MARKET : null);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('shares.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('shares.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.shares', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };
+@@ -134,7 +134,8 @@
+     // 每天掃一輪「誰有事要拿主意」時（SCAN.run 包住的那一段，只看不改），每個人都會問一次這一題，
+     // 但「這一家合股由誰帶頭、找誰出錢」只看全鎮的存款、交情與產業帳，跟問的是誰無關：同一輪裡每家只算一次。
+     // synPlan 只讀不寫、不擲骰；拿到的結果只用來看，沒有人去改它。不在掃描期間照舊每次重算。
+-    const synPlanOf = (w, all, k) => SCAN.on() ? SCAN.memo('shares.syn.' + k, () => synPlan(w, all, k)) : synPlan(w, all, k);
++    const synSig = (P) => P ? JSON.stringify({ k: P.k, price: P.price, lead: P.lead.agentId, mine: P.mine, parts: P.parts.map(([a, n]) => [a.agentId, n]) }) : 'null';
++    const synPlanOf = (w, all, k) => { if (!SCAN.on()) return synPlan(w, all, k); const fresh = synPlan(w, all, k); const m = SCAN.memo('shares.syn.' + k, () => fresh); const a = synSig(m), b = synSig(fresh); window.__shN('shares.synPlan', a === b, { k, a, b }); return m; };
+     const synInfo = (w, a) => { if (!here(w, a)) return null; const all = npcs(w); for (const k of SEC()) { if (S(w).owners[k]) continue; const P = synPlanOf(w, all, k); if (P && P.lead === a) return P; } return null; };
+     const synBy = (w, a, k) => syndicate(w, npcs(w), day(w), { k, id: a.agentId });
+ 
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-spend.js ext/sim-spend.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-spend.js	2026-11-18 04:28:41.771754366 +0000
++++ ext/sim-spend.js	2026-11-18 04:29:30.735639142 +0000
+@@ -12,7 +12,7 @@
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('spend1.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('spend1.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.spend1', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const adults = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16);
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
+@@ -82,7 +82,7 @@
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('spend2.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('spend2.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.spend2', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 16 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+@@ -183,7 +183,7 @@
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('spend3.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('spend3.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.spend3', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+     const log = (w, k, p, who) => { try { w.logMessageT?.('economy', k, p || {}, who || ''); } catch (e) {} };
+@@ -250,7 +250,7 @@
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('spend4.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('spend4.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.spend4', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-things.js ext/sim-things.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/sim-things.js	2026-11-18 04:28:28.487937838 +0000
++++ ext/sim-things.js	2026-11-18 04:29:30.734585710 +0000
+@@ -7,7 +7,7 @@
+     const day = (w) => (w?._absDay ? w._absDay() : 0);
+     const npcs0 = (w) => Object.values(w?.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+     // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+-    const npcs = (w) => SCAN.on() ? SCAN.memo('things.npcs', () => npcs0(w)).slice() : npcs0(w);
++    const npcs = (w) => { if (!SCAN.on()) return npcs0(w); const m = SCAN.memo('things.npcs', () => npcs0(w)); const f = npcs0(w); window.__shN('npcs.things', m.length === f.length && m.every((x, i) => x === f[i]), { m: m.length, f: f.length }); return m.slice(); };
+     const here = (w) => npcs(w).filter(a => (a.age ?? 30) >= 14 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId));
+     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
+     const aff = (a, b) => (a && b ? a.relationships?.relationships?.[b.agentId]?.affinity || 0 : 0);
+diff -ru /home/user/RimTown/.claude/worktrees/perf/chrome-extension/simulation.js ext/simulation.js
+--- /home/user/RimTown/.claude/worktrees/perf/chrome-extension/simulation.js	2026-11-18 03:54:17.343432769 +0000
++++ ext/simulation.js	2026-11-18 04:29:30.729561498 +0000
+@@ -9,6 +9,7 @@
+ // SCAN.run(fn)：fn 執行期間，同一個 key 的問題只算第一次，之後直接拿第一次的答案；fn 一結束全部丟掉。
+ // 只能包「不會增減村民、也不會改到被記住的那些資料」的段落（每一處用到的地方都寫了為什麼可以）。算出來的結果跟以前一模一樣，只是不重複算。
+ // 測試對照：window.RIMTOWN_NO_TICK_OPT = true 時完全不記，每次都照舊重算（scripts/v110210_test.js 用同一個種子跑兩邊，比對世界狀態）。
++window.__SH = window.__SH || {}; window.__shN = (name, ok, ex) => { const o = window.__SH[name] || (window.__SH[name] = { hit: 0, bad: 0, ex: [] }); o.hit++; if (!ok) { o.bad++; if (o.ex.length < 5) { try { o.ex.push(JSON.stringify(ex).slice(0, 300)); } catch (e) { o.ex.push(String(ex)); } } } };
+ const SCAN = (() => {
+     let depth = 0, store = null;
+     const off = () => typeof window !== 'undefined' && !!window.RIMTOWN_NO_TICK_OPT;
