@@ -18619,7 +18619,7 @@
         '稅務員的提名已經在表決': 'a tax inspector nomination is already being voted on',
         '稅務員現在本來就補得了人': 'the tax inspector post can already be filled',
         '找不到可以當稅務員的人': 'no one suitable for tax inspector can be found',
-        '公庫現在 {s} 銀幣，每天固定支出約 {f}（公職薪水 {p}、建築維護 {u}{debt}），夠付 {d} 天{low}。最近 {n} 天平均每天收入 {i}、支出 {o}，{net}。': 'The treasury has {s} silver. Fixed costs are about {f} a day (public wages {p}, building upkeep {u}{debt}), enough for {d} days{low}. Over the last {n} days it took in {i} a day on average and spent {o}, {net}.',
+        '公庫現在 {s} 銀幣，每天固定支出約 {f}（近幾天的平均；今天公職薪水 {p}、建築維護 {u}{debt}），夠付 {d} 天{low}。最近 {n} 天平均每天收入 {i}、支出 {o}，{net}。': 'The treasury has {s} silver. Fixed costs are about {f} a day (an average of recent days; today public wages are {p}, building upkeep {u}{debt}), enough for {d} days{low}. Over the last {n} days it took in {i} a day on average and spent {o}, {net}.',
         '、還債 {n}': ', debt payments {n}',
         '，低於 {lo} 天的門檻，已經連續 {k} 天': ', below the {lo}-day line for {k} days in a row',
         '每天還有 {n} 結餘': 'leaving a surplus of {n} a day',
