@@ -199,6 +199,37 @@ const POWER = (() => {
         log(w, 'news', '📰 {o}花 {n} 銀幣買下了{paper}。', { o: buyer.name, n: PAPER_PRICE, paper: Pp.name[0] }, buyer.name); mem(w, buyer, '我買下了{paper}，以後說話更有份量了。', { paper: Pp.name[0] }, 7);
         return true;
     }
+    // v11.10.1 報社老闆過世或搬走了：以前報社永遠掛在他名下，沒有人接手、也沒有人能再買，他生前的人情還照樣壓新聞。
+    // 現在交給還在鎮上的配偶或成年子女（出遠門的家人回來也算）；沒有家人就變回沒有東家，之後有錢人可以再買。老闆只是出遠門時，報社還是他的
+    const awayNow = (w, id) => (w.events?._travellingAgents || []).some(tr => tr?.agentData?.agentId === id);
+    const goneName = (w, id) => w.agents?.[id]?.name || w.departedNames?.[id] || w._nameCache?.[id] || (w.movedOut || []).find(x => x?.id === id)?.name || '';
+    function paperHeir(w, id, name) {
+        const wed = (o) => o.relationships?.relationships?.[id]?.status === 'married';
+        const kid = (o) => !!name && (o._parentNames || []).includes(name) && (o.age || 0) >= 16;
+        return npcs(w).filter(o => o.agentId !== id && (wed(o) || kid(o))).sort((x, y) => wed(y) - wed(x) || (y.age || 0) - (x.age || 0))[0] || null;
+    }
+    function passPapers(w, id, heir, name) {
+        const R = w.press; const mine = (R?.papers || []).filter(Pp => Pp.owner === id); if (!mine.length) return 0; const P = S(w);
+        for (const Pp of mine) {
+            // 老闆的名字查不到（很久以前就不在了的舊存檔）時，換一種說法，不寫出「已不在鎮上的人不在了」這種句子
+            if (heir) { Pp.owner = heir.agentId; P.stats.inherited = (P.stats.inherited || 0) + 1;
+                if (name) log(w, 'news', '📰 {paper}的老闆{o}不在了，報社由{h}接手。', { paper: Pp.name[0], o: name, h: heir.name }, heir.name);
+                else log(w, 'news', '📰 {paper}的老闆早就不在鎮上了，報社由{h}接手。', { paper: Pp.name[0], h: heir.name }, heir.name);
+                try { if (name) heir.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'event', '{o}不在了，{paper}現在是我的。', { o: name, paper: Pp.name[0] }, 7, [name]); else heir.memory?.addT?.(w.tickCount, w.clock?.timeStr || '', 'event', '{paper}的老闆不在了，報社現在是我的。', { paper: Pp.name[0] }, 7, []); } catch (e) {} }
+            else { delete Pp.owner; P.stats.orphaned = (P.stats.orphaned || 0) + 1;
+                if (name) log(w, 'news', '📰 {paper}的老闆{o}不在了，沒有家人接手，報社現在沒有東家。', { paper: Pp.name[0], o: name });
+                else log(w, 'news', '📰 {paper}的老闆早就不在鎮上了，沒有家人接手，報社現在沒有東家。', { paper: Pp.name[0] }); }
+        }
+        if (P.inf[id]) delete P.inf[id]; // 他欠的人情跟著他走；別人欠他的（P.inf[x][id]）照每週淡化的規則慢慢消
+        return mine.length;
+    }
+    function orphanPapers(w) {
+        const R = w.press; if (!R?.papers) return;
+        for (const id of [...new Set(R.papers.map(Pp => Pp.owner).filter(Boolean))]) {
+            const a = w.agents?.[id]; if ((a && !a.isDead) || awayNow(w, id)) continue;
+            const name = goneName(w, id); passPapers(w, id, paperHeir(w, id, name), name);
+        }
+    }
     // 醜聞累積、民怨夠高 → 連署罷免、提前改選
     function recall(w, d) {
         const P = S(w); const L = leaderOf(w); const E = w.election; if (!L || !E || E.active || d - P.recallDay < 40) return;
@@ -226,6 +257,7 @@ const POWER = (() => {
         // 捐不捐由金主自己決定(選擇點 donate)
         if (d % 7 === 1) { if (!(typeof TIPS !== 'undefined' && TIPS && TIPS.on(w))) watchdog(w, d); /* v11.0.0 記者自己選題時，不再由系統每週擲骰挑題目（sim-tips.js） */ buyPapers(w, d); }
         recall(w, d);
+        try { orphanPapers(w); } catch (e) { console.warn('[Power] orphanPapers', e); } // v11.10.1 老闆不在了的報社：交給家人或變回沒有東家
         if (P.log.length > 30) P.log = P.log.slice(-30);
         // 金主人情:每週淡一點(太久以前的錢慢慢不算數)
         if (d % 7 === 0) for (const m of Object.values(P.inf)) for (const k of Object.keys(m)) { m[k] = Math.round(m[k] * 0.9 * 10) / 10; if (m[k] < 2) delete m[k]; }
@@ -254,7 +286,7 @@ const POWER = (() => {
         return { gifts: P.stats.gifts || 0, donated: Math.round(P.stats.donated || 0), refused: P.stats.refused || 0, exposed: P.stats.exposed || 0, spiked: P.stats.spiked || 0, fired: P.stats.fired || 0, bought: P.stats.bought || 0, recalls: P.stats.recalls || 0, sued: P.stats.sued || 0, raised: P.stats.raised || 0, withdrawn: P.stats.withdrawn || 0,
             owned: (R?.papers || []).filter(Pp => Pp.owner).map(Pp => { const id = Pp.owner; const a = w.agents[id]; const nm = (a && !a.isDead && a.name) || (w.events?._travellingAgents || []).find(tr => tr?.agentData?.agentId === id)?.agentData?.name || ''; const gone = !nm; const nm2 = nm || a?.name || w.departedNames?.[id] || w._nameCache?.[id] || ''; return [t(Pp.name[0]), nm2 ? t(nm2) + (gone ? t('（已不在鎮上）') : '') : t('已不在鎮上的人')]; }) }; // v9.18.1 老闆過世或搬走時,以前名字會變成空的「（）」
     }
-    return { S, daily, watchdog, publish, buyPapers, paperBuy, paperFree, paperBuyers, PAPER_PRICE, isOwner, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
+    return { S, daily, watchdog, publish, buyPapers, paperBuy, paperFree, paperBuyers, PAPER_PRICE, isOwner, orphanPapers, passPapers, paperHeir, recall, sway, bias, brief, view, captured, topics, HURTS, owed,
         targetsOf, canDonate, giftSize, give, turnDown, offer, HELPS };
 })();
 
@@ -304,3 +336,15 @@ if (typeof World !== 'undefined') {
     World.prototype.loadSave = function (data) { const r = _load.call(this, data); try { if (r) this.power = (data?.power && typeof data.power.inf === 'object') ? data.power : null; } catch (e) {} return r; };
 }
 if (typeof globalThis !== 'undefined') globalThis.POWER = POWER;
+// v11.10.1 報社老闆過世：繼承人要在過世之前找好（過世後配偶的關係會改掉；遺囑指定的那一位排第一，出遠門的家人也算）
+if (typeof LifecycleSystem !== 'undefined' && LifecycleSystem.prototype._killNpc) {
+    const LS = LifecycleSystem.prototype; const _kill = LS._killNpc;
+    LS._killNpc = function (world, npc, ...rest) {
+        let owns = false, heir = null;
+        try { owns = !!(npc && world?.press?.papers?.some(Pp => Pp.owner === npc.agentId)); if (owns) heir = ((typeof MARKET !== 'undefined' && MARKET.heirsAll) ? (MARKET.heirsAll(world, npc) || [])[0] : null) || POWER.paperHeir(world, npc.agentId, npc.name); } catch (e) {}
+        const r = _kill.call(this, world, npc, ...rest);
+        if (!owns || (npc && !npc.isDead && world.agents?.[npc.agentId])) return r; // 沒有報社，或被救回來了
+        try { POWER.passPapers(world, npc.agentId, heir, npc.name); } catch (e) { console.warn('[Power] passPapers', e); }
+        return r;
+    };
+}
