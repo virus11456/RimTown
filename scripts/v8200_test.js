@@ -25,7 +25,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     await page.goto(BASE + 'town.html', { waitUntil: 'load' }); await page.waitForFunction(() => window.rimtownApp?._initReady, null, { timeout: 90000 }); await page.waitForTimeout(600);
     const r = await page.evaluate(async () => {
       const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; app._gameAlert = () => {};
-      const w = app.world; w.observerMode = true; const out = {}; const R0 = Math.random; const fix = (v, f) => { Math.random = () => v; try { return f(); } finally { Math.random = R0; } }; const offD = (f) => { const o = DECIDE.on; DECIDE.on = () => false; try { return f(); } finally { DECIDE.on = o; } }; // v11.7.0 萬靈藥、道歉改由當事人決定（v110700_test.js）；這裡測的是決策核心沒開時原本的機率
+      const w = app.world; w.observerMode = true; const out = {}; const R0 = Math.random; const fix = (v, f) => { Math.random = () => v; try { return f(); } finally { Math.random = R0; } }; const offD = (f) => { const o = DECIDE.on; DECIDE.on = () => false; try { return f(); } finally { DECIDE.on = o; } }; // v11.7.0 萬靈藥、道歉改由當事人決定（v110700_test.js）；v11.10.1 擲骰的舊路拿掉了，這裡照現在的流程測，offD 只剩「沒有人可以問時賣的人退不退錢」那一段在用
       const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead); const A = () => npcs().filter(a => (a.age ?? 30) >= 18 && !w.isAway?.(a.agentId));
       for (const a of npcs()) WALLET.get(w, a);
       let d0 = w._absDay(); const setDay = (n) => { d0 = n; w._absDay = () => n; }; const next = () => setDay(d0 + 1);
@@ -79,13 +79,15 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       // 7) 萬靈藥:錢只在村民之間移動;喝了照樣病倒就拆穿;退錢;被騙過的不買、拆穿過的不敢再賣
       { const X = fresh(); X.phase = 'panic'; C.burned = []; C.sold = []; const ppl = A(); const s = ppl[1]; traits(s, ['greedy']); for (const o of ppl) if (o !== s && o.personality.traits.includes('greedy')) traits(o, []); WALLET.S(w).bal[s.agentId] = 100;
         for (const b of ppl.slice(2, 9)) { traits(b, ['pessimist']); WALLET.S(w).bal[b.agentId] = 60; }
-        const T0 = MONEY.total(w); offD(() => fix(0, () => T.panaceaDaily(w, X, d0))); const pn = X.pw.pan; const T1 = MONEY.total(w);
+        const T0 = MONEY.total(w); /* v11.10.1 一次擲骰賣完的舊路拿掉了。現在是：賣的人擺攤、買的人各自付錢、隔天收攤（誰決定賣、誰決定買測在 v110700_test.js）；這裡直接擺攤、讓七個人買、收攤 */ X.pw.pan = { s: s.agentId, b: [], sum: 0, d: d0 - 1, nm: '萬靈藥', steam: 0, exp: 0, open: 1 }; for (const b of ppl.slice(2, 9)) PW.panBuy(w, b, { s: s.agentId, d: d0 }); PW.panClose(w, X, d0); const pn = X.pw.pan; const T1 = MONEY.total(w);
         const buyer = pn && w.agents[pn.b[0][0]]; if (buyer) X.st[buyer.agentId] = { s: 'I', d: d0, on: d0, end: d0 + 5 };
         const sf = WAYS.faceOf(w, s); offD(() => fix(0, () => T.panaceaCheck(w, X, d0, false))); const T2 = MONEY.total(w);
         out.pan = { made: !!pn, n: pn?.b?.length || 0, sum: pn?.sum || 0, seller: pn?.s === s.agentId, money1: Math.round((T1 - T0) * 100) / 100, exp: pn?.exp > 0, face: sf - WAYS.faceOf(w, s), back: pn?.back || 0, money2: Math.round((T2 - T0) * 100) / 100, burned: (C.burned || []).length, sold: (C.sold || []).includes(s.agentId), log: /🧴/.test(logs()) };
         // 下一場:被騙過的人不買、拆穿過的人不賣
-        const X2 = fresh(); X2.phase = 'panic'; C.hist.unshift({ name: 'x', end: d0, died: 0, pw: { pan: 'none' } }); offD(() => fix(0, () => T.panaceaDaily(w, X2, d0))); const p2 = X2.pw.pan; C.hist.shift();
-        out.pan.again = { seller2: p2 ? p2.s !== s.agentId : true, noBurned: p2 ? !p2.b.some(([id]) => C.burned.includes(id)) : true }; }
+        const X2 = fresh(); X2.phase = 'panic'; const askL = []; let obs7 = true; DECIDE.observe((ev, o) => { if (obs7 && ev === 'asked' && /^calPan/.test(o.kind)) askL.push([o.kind, o.a.agentId]); });
+        WALLET.S(w).bal[s.agentId] = 100; T.panaceaDaily(w, X2, d0); const sellAsk = askL.filter(x => x[0] === 'calPanSell').map(x => x[1]); // 最有動機的是貪心的那位，但他被拆穿過，不該被問
+        X2.pw.pan = null; const s2 = ppl.find(o => o !== s && !C.burned.includes(o.agentId)); const n7 = askL.length; if (s2) { WALLET.S(w).bal[s2.agentId] = 60; PW.panOpen(w, s2); } const buyAsk = askL.slice(n7).filter(x => x[0] === 'calPanBuy').map(x => x[1]); obs7 = false; X2.pw.pan = null;
+        out.pan.again = { seller2: !sellAsk.includes(s.agentId), noBurned: buyAsk.length > 0 && !buyAsk.some(id => C.burned.includes(id)), sellAsk: sellAsk.length, buyAsk: buyAsk.length }; }
       // 8) 集體記憶
       { const X = fresh(); const ppl = A(); const lived = ppl.slice(0, Math.max(3, ppl.length - 2)).map(a => a.agentId); const newbie = ppl[ppl.length - 1];
         C.hist.unshift({ name: '舊咳病', day: d0 - 150, end: d0 - 100, died: 4, inf: 12, ppl: lived });
@@ -102,8 +104,11 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       { const X = fresh(); const ppl = A(); const sc = ppl[3]; X.scape = sc.agentId; for (const o of ppl.slice(4, 7)) setAff(o, sc, -20);
         const dead = { id: 'gone1', n: ppl[5].name, s: WAYS.routineOf(w, ppl[4]).s, t: WAYS.routineOf(w, ppl[4]).t }; X.pw.lost = [dead];
         C.hist = C.hist || []; if (C.hist[0]) C.hist[0].ppl = ['old']; const before = aff(ppl[4], sc);
-        X.st = {}; X.quiet = 5; offD(() => fix(0, () => { X.lastDay = null; CALAMITY.daily(w); })); const h = C.hist[0];
-        out.end = { over: !C.cur, ppl: (h?.ppl || []).length, oldClear: !(C.hist[1]?.ppl), sorry: aff(ppl[4], sc) > before || /🙇/.test(logs()), reunion: /🍻/.test(logs()), seat: /🪑/.test(logs()), pw: !!h?.pw }; }
+        const sAsk = []; let obs10 = true; DECIDE.observe((ev, o) => { if (obs10 && ev === 'asked' && o.kind === 'calSorry') sAsk.push(o); });
+        X.st = {}; X.quiet = 5; fix(0, () => { X.lastDay = null; CALAMITY.daily(w); }); obs10 = false; const h = C.hist[0];
+        // v11.10.1 道不道歉由怪過他的人自己決定（擲骰的舊路拿掉了）：怪過他的人有被問到，選了道歉就真的去道歉
+        const q10 = sAsk.find(o => o.ctx?.sc === sc.agentId); if (q10) { const op = DECIDE.KINDS.calSorry.options(w, q10.a, q10.ctx).find(x => String(x.id).split(':')[0] === 'sorry'); if (op) op.run(w, q10.a, q10.ctx); }
+        out.end = { over: !C.cur, ppl: (h?.ppl || []).length, oldClear: !(C.hist[1]?.ppl), sorry: !!q10 && [ppl[4], ppl[5], ppl[6]].includes(q10.a) && /🙇/.test(logs()), reunion: /🍻/.test(logs()), seat: /🪑/.test(logs()), pw: !!h?.pw }; }
       // 11) 週年點蠟燭(死過人的)
       { C.hist.unshift({ name: '舊咳病', day: d0 - 400, end: d0 - 360, died: 3, inf: 9, ppl: A().map(a => a.agentId) }); PW.anniv(w); out.anniv = /🕯️/.test(logs()); C.hist.shift(); }
       // 12) 疫情期間成效不算提案功過

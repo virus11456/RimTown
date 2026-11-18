@@ -146,8 +146,7 @@ const PLAGUEWAYS = (function () {
     };
     function stayDaily(w, X, d) {
         const p = P(X); if (!X.found || !['rumor', 'panic'].includes(X.phase)) return;
-        if (deciding(w, 'calStay')) { stayAsk(w, X, d, p); for (const [id, v] of Object.entries(p.home)) if (v <= d) delete p.home[id]; return; } // v11.7.0 怕的人自己決定待不待在家
-        for (const a of adults(w)) { if (p.home[a.agentId] > d || stOf(X, a)) continue; const scared = hasT(a, 'pessimist') || (a.age ?? 30) >= 60 || (X.bereaved || []).includes(a.agentId); if (!scared || Math.random() > (X.phase === 'panic' ? 0.25 : 0.1)) continue; p.home[a.agentId] = d + 5 + Math.floor(Math.random() * 6); p.stay++; if (p.stay <= 3 || cool(p, 'stay', d, 6)) mem(w, a, '怕被傳染，這幾天哪裡都不去，連{spot}都沒去。', { spot: SPOT_NAME[ways()?.routineOf?.(w, a)?.s] || '廣場' }, 4); }
+        if (deciding(w, 'calStay')) stayAsk(w, X, d, p); // 怕的人自己決定待不待在家
         for (const [id, v] of Object.entries(p.home)) if (v <= d) delete p.home[id];
     }
     if (ways()?.ABSENT) ways().ABSENT.push((w, a) => { const X = w?.calamity?.cur; return !!X?.pw?.home && X.pw.home[a.agentId] > day(w); });
@@ -158,20 +157,7 @@ const PLAGUEWAYS = (function () {
 
     // ---------- ④ 送飯 ----------
     function foodDaily(w, X, d) {
-        if (!X.found) return; const p = P(X); const W = ways(); let n = 0;
-        if (deciding(w, 'calFood')) return foodAsk(w, X, d, p); // v11.7.0 被想到的那個人自己決定送不送
-        const sick = here(w).filter(a => sickI(X, a)).sort(() => Math.random() - 0.5);
-        for (const a of sick) {
-            if (n >= 2) break; if (Math.random() > (X.ms.quar ? 0.3 : 0.15)) continue;
-            const fam = (typeof MONEY !== 'undefined' && MONEY.familyOf ? MONEY.familyOf(w, a) : []).map(x => x.agentId);
-            const helper = adults(w).filter(b => b !== a && !fam.includes(b.agentId) && !stOf(X, b) && aff(b, a) >= 25 && !hasT(b, 'pessimist') && !(p.home[b.agentId] > d) && !(W?.coldWith?.(w, a, b)))
-                .sort((x, y) => (aff(y, a) + (hasT(y, 'kind') ? 20 : 0) + (hasV(y, '社群') ? 10 : 0)) - (aff(x, a) + (hasT(x, 'kind') ? 20 : 0) + (hasV(x, '社群') ? 10 : 0)))[0];
-            if (!helper) continue; n++; p.food++;
-            if (W) W.owe(w, a, helper, 2); addAff(a, helper, 4); addAff(helper, a, 2);
-            mem(w, a, '生病的時候，{b}每天把飯放在我家門口。這份情我記著。', { b: helper.name }, 7); mem(w, helper, '{a}病著，我送了飯過去，放在門口就走。', { a: a.name }, 4);
-            if (cool(p, 'food', d, 3)) log(w, '🍲 {b}把一鍋熱湯放在{a}家門口，敲了兩下門就走。', { a: a.name, b: helper.name }, helper.name, a.name);
-            const s = X.spec; if ((s.route.includes('droplet') || s.route.includes('contact')) && !X.vx?.[helper.agentId] && Math.random() < 0.03) C0.infect(w, X, helper, d); // 送飯的人自己也冒著風險
-        }
+        if (!X.found || !deciding(w, 'calFood')) return; foodAsk(w, X, d, P(X)); // 病人身邊交情最好的那一位自己決定送不送
     }
 
     // ---------- ⑤ 嘴硬 ----------
@@ -185,31 +171,13 @@ const PLAGUEWAYS = (function () {
             for (const a of against) W.loseFace(w, a, 4);
             const prop = w.agents[pr.proposerId]; if (prop && !prop.isDead) { W.setFace(w, prop, W.faceOf(w, prop) + 8); mem(w, prop, '當初提「{t}」被否決了，現在大家都說早該聽我的。', { t: title }, 6); }
             const a = rnd(against); if (!a) continue;
-            if (deciding(w, 'calStub')) { ask(w, [{ a, kind: 'calStub', ctx: { pr: pr.id, t: title, n: after, by: prop?.agentId || null, d } }]); continue; } // v11.7.0 被追問的人自己決定認錯還是嘴硬
-            const admit = hasT(a, 'kind') || hasT(a, 'honest') || (typeof DARK !== 'undefined' && DARK.honesty && DARK.honesty(a) >= 2);
-            if (admit) { p.admit++; if (prop) addAff(prop, a, 3); log(w, '😔 「{t}」被否決之後又走了 {n} 個人。當初投反對的{a}低著頭說：「早知道就該聽{b}的。」', { t: title, n: after, a: a.name, b: prop?.name || t('醫生') }, a.name); }
-            else { p.stub++; for (const b of adults(w).filter(x => x !== a && Math.random() < 0.2)) addAff(b, a, -2); log(w, '😤 「{t}」被否決之後又走了 {n} 個人。當初投反對的{a}還是說：「人本來就會死，跟那個有什麼關係。」', { t: title, n: after, a: a.name }, a.name); }
+            if (deciding(w, 'calStub')) ask(w, [{ a, kind: 'calStub', ctx: { pr: pr.id, t: title, n: after, by: prop?.agentId || null, d } }]); // 被追問的人自己決定認錯還是嘴硬
         }
     }
 
     // ---------- ⑧ 萬靈藥 ----------
     function panaceaDaily(w, X, d) {
-        if (deciding(w, 'calPanSell')) return panSellDaily(w, X, d); // v11.7.0 賣不賣由有動機的人自己決定，買不買由買的人決定
-        const p = P(X); if (!X.found || p.pan || !['rumor', 'panic'].includes(X.phase) || Math.random() > 0.12) return;
-        const steam = built(w, 'alchemy_lab'); const nm = steam ? '萬靈藥' : '祖傳偏方';
-        const C = w.calamity; if ((C.hist || [])[0]?.pw?.pan === 'fake' && Math.random() < 0.5) return; // 上次才被騙過,大家學乖了一點
-        const sold = new Set(C.sold || []); // 被拆穿過的人不敢再賣
-        const pool = adults(w).filter(a => !sickI(X, a) && wal(w, a) >= 20 && !sold.has(a.agentId));
-        const seller = pool.filter(a => hasT(a, 'greedy') || hasT(a, 'charismatic') || a.job?.key === 'trader').sort((x, y) => (hasT(y, 'greedy') ? 2 : 0) - (hasT(x, 'greedy') ? 2 : 0))[0]; if (!seller) return;
-        const burned = new Set(C.burned || []); // 上次被騙過的人不買
-        const buyers = adults(w).filter(a => a !== seller && !burned.has(a.agentId) && wal(w, a) >= 8 && (hasT(a, 'pessimist') || (a.age ?? 30) >= 55 || (X.bereaved || []).includes(a.agentId) || Math.random() < 0.15)).sort(() => Math.random() - 0.5).slice(0, 3 + Math.floor(Math.random() * 5));
-        const paid = []; let sum = 0;
-        for (const b of buyers) { const n = Math.max(5, Math.min(20, Math.round(wal(w, b) * 0.15))); if (typeof WALLET !== 'undefined' && WALLET.pay(w, b, seller, n, t(nm))) { paid.push([b.agentId, n]); sum += n; mem(w, b, '花了 {n} 銀幣跟{s}買了{x}，說喝了就不會染上。', { n, s: seller.name, x: nm }, 5); } }
-        if (paid.length < 2) { // 沒什麼人買,錢退回去
-            for (const [id, n] of paid) { const b = w.agents[id]; if (b) WALLET.pay(w, seller, b, n, t('退錢')); } return; }
-        p.pan = { s: seller.agentId, b: paid, sum, d, nm, steam: steam ? 1 : 0, exp: 0 };
-        mem(w, seller, '這陣子賣{x}賺了 {n} 銀幣。', { x: nm, n: sum }, 5);
-        log(w, '🧴 {s}在市集擺攤賣「{x}」，說喝了就不會染上{n}。{k} 個人掏錢買了，一共 {m} 銀幣。', { s: seller.name, x: nm, n: X.spec.name, k: paid.length, m: sum }, seller.name);
+        if (deciding(w, 'calPanSell')) panSellDaily(w, X, d); // 賣不賣由有動機的人自己決定，買不買由買的人決定
     }
     function panaceaCheck(w, X, d, atEnd) {
         const p = P(X); const pn = p.pan; if (!pn || pn.exp || pn.open) return; const s = w.agents[pn.s]; if (!s) { pn.exp = d; return; }
@@ -230,9 +198,10 @@ const PLAGUEWAYS = (function () {
     }
 
     // ================= v11.7.0 災難裡的人 =================
-    // 以前怕的人待不待在家、送不送飯、打不打疫苗、賣不賣假藥、買不買、退不退錢、道不道歉、認不認錯、有錢人逃不逃，都是擲骰替人決定；
-    // 現在交給當事人自己決定（選擇點登記在 sim-decide-calam.js）。這裡只管「誰才會被問、多久問一次」，選了之後真的去做也在這裡。
-    // 疫情本身（誰被傳染、病多重、死不死、偷溜會不會被抓）照舊看天。決策核心沒開、舊存檔照原本的機率。
+    // 怕的人待不待在家、送不送飯、打不打疫苗、賣不賣假藥、買不買、退不退錢、道不道歉、認不認錯、有錢人逃不逃，由當事人自己決定
+    // （選擇點登記在 sim-decide-calam.js）。這裡只管「誰才會被問、多久問一次」，選了之後真的去做也在這裡。
+    // 疫情本身（誰被傳染、病多重、死不死、偷溜會不會被抓）看天。決策核心還沒在運作時（例如開鎮第一天錢包還沒建好），這幾件事當天不發生；
+    // 假藥被拆穿時賣的人不在鎮上、或沒有買的人可以對質，照「心軟的、或四成的機會」退錢（panaceaCheck）。
     const deciding = (w, k) => { try { return !!(w?.observerMode && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.[k]); } catch (e) { return false; } };
     const ask = (w, list) => { try { DECIDE.askNow(w, list); } catch (e) { console.warn('[PlagueWays] ask', e); } };
     const recent = (p, k, a, d, gap) => d - (p.ask[k + a.agentId] ?? -99) < gap;
@@ -448,9 +417,7 @@ const PLAGUEWAYS = (function () {
         // ⑥ 怪罪與平反
         const sc = X.scape && w.agents[X.scape]; if (sc && !sc.isDead) {
             const blamers = adults(w).filter(a => a !== sc && aff(a, sc) < 0).sort((x, y) => aff(x, sc) - aff(y, sc));
-            if (deciding(w, 'calSorry') && blamers.length) { const who = [...new Set([blamers[0], ...blamers.slice(-2).reverse()])]; ask(w, who.map(a => ({ a, kind: 'calSorry', ctx: { sc: sc.agentId, n: X.spec.name, d } }))); } // v11.7.0 怪過他的人自己決定道不道歉（最怪他的那一位、和怪得最輕的兩位）
-            else if (Math.random() < 0.55 && blamers.length) { const who = blamers.slice(-3); for (const a of who) { addAff(a, sc, 6); addAff(sc, a, 3); } p.sorry++; log(w, '🙇 {n}過去之後，{a}跑去跟{x}道歉：「那時候不該怪你。」', { n: X.spec.name, a: who[0].name, x: sc.name }, who[0].name, sc.name); mem(w, sc, '{a}來跟我道歉了，說那時候不該怪我。', { a: who[0].name }, 6); }
-            else if (blamers[0] && W) { p.grudge++; mem(w, sc, '到現在{a}還把{n}算在我頭上。', { a: blamers[0].name, n: X.spec.name }, 7); W.quarrel(w, blamers[0], sc); }
+            if (deciding(w, 'calSorry') && blamers.length) { const who = [...new Set([blamers[0], ...blamers.slice(-2).reverse()])]; ask(w, who.map(a => ({ a, kind: 'calSorry', ctx: { sc: sc.agentId, n: X.spec.name, d } }))); } // 怪過他的人自己決定道不道歉（最怪他的那一位、和怪得最輕的兩位）
         }
         // ① 老地方重新熱鬧、空位子
         if (W) {

@@ -126,7 +126,7 @@ async function client(browser, lang) {
 }
 function sources() {
   console.log('— 各功能的字數處理');
-  const dir = path.join(__dirname, '..', 'chrome-extension'); const need = ['sim-politics', 'sim-culture', 'sim-dream', 'sim-bank', 'sim-diplo', 'sim-crown', 'sim-legacy', 'sim-mind', 'sim-epic', 'sim-aftermath', 'sim-ceremony', 'sim-biz', 'sim-things'];
+  const dir = path.join(__dirname, '..', 'chrome-extension'); const need = ['sim-politics', 'sim-culture', 'sim-dream', 'sim-bank', 'sim-diplo', 'sim-crown', 'sim-legacy', 'sim-mind', 'sim-epic', 'sim-ceremony', 'sim-biz', 'sim-things']; // v11.10.1 災後反應（sim-aftermath）整批問模型的舊路已經拿掉，改走決策核心的 crisis，理由長度由決策核心管
   const miss = need.filter(f => !/LLMClient\.clip\(/.test(fs.readFileSync(path.join(dir, f + '.js'), 'utf8')));
   ok(miss.length === 0, `${need.length} 個 AI 功能都改成切在句子結尾（不再固定字數硬切）`, miss);
   const bank = fs.readFileSync(path.join(dir, 'sim-bank.js'), 'utf8');

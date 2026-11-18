@@ -3,7 +3,7 @@
 //   B) 喪屍：被咬的人去不去診所、家人瞞不瞞（瞞著的兩天後在家裡變喪屍）、獵人下不下手、家人擋不擋
 //   C) 末日：將至時有錢人走不走、帶誰走、花錢買避難位子（錢進公庫，死的時候排在後面）；大災之後誰走；一個人一場最多問兩次
 //   D) 災後反應接進決策核心：選項就是原本那十種反應，傾向分數是原本的分數乘 1.5，結算照原本
-//   共同：登記、用 calam 那一組額度、事實裡的數字和交情對得上、交情與個性改變傾向、問不到的人（決策核心沒開）走舊機率、
+//   共同：登記、用 calam 那一組額度、事實裡的數字和交情對得上、交情與個性改變傾向、決策核心沒開時這件事當天不發生、
 //         一個人不會被重複問、存讀檔（含災難進行到一半、舊存檔）、開 AI 時題目送出、回答被採用、英文題目沒有中文、整場疫情與整場喪屍危機跑完沒有錯誤、錢守恆
 // 用法：BASE=http://localhost:8181/ node scripts/v110700_test.js（需要本機伺服器服務 chrome-extension/）
 const { chromium, devices } = require('playwright');
@@ -78,7 +78,7 @@ async function run(browser, dev, lang) {
       const n1 = asked.length; PW._t.stayDaily(w, X, day()); const again = asked.slice(n1).filter(e => e.kind === 'calStay' && got.some(g => g.who === e.who)).length;
       A1.ask = { n: got.length, okWho, max8: got.length <= 8, again, distinct: new Set(got.map(e => e.who)).size === got.length };
       // 決策核心沒開：照舊每天擲骰
-      for (const x of adults()) delete P0.home[x.agentId]; const n2 = asked.length; Math.random = () => 0.01; try { offDecide(() => PW._t.stayDaily(w, X, day() + 1)); } finally { Math.random = R0; } A1.off = { asked: asked.length - n2, home: Object.keys(P0.home).length };
+      for (const x of adults()) delete P0.home[x.agentId]; const n2 = asked.length; const h0 = new Set(Object.keys(P0.home)); let offErr = null; Math.random = () => 0.01; try { offDecide(() => PW._t.stayDaily(w, X, day() + 1)); } catch (e) { offErr = String(e.message); } finally { Math.random = R0; } A1.off = { asked: asked.length - n2, home: Object.keys(P0.home).filter(k => !h0.has(k)).length, err: offErr };
       for (const x of adults()) delete P0.home[x.agentId]; heal(sp); for (const x of pool.slice(4, 8)) heal(x); }
     out.A1 = A1;
 
@@ -103,7 +103,7 @@ async function run(browser, dev, lang) {
       // 傾向：心腸好又很親的送；悲觀、跟他不熟的不敢
       b.personality.traits = ['kind']; b.personality.values = ['社群']; setAff(b, s, 80); X.ms.quar = day(); const pKind = pick(KK.calFood, b, ctx); const mKind = marg(KK.calFood, b, ctx, 'give'); plain(b); b.personality.traits = ['pessimist', 'neurotic']; setAff(b, s, 25); const pScared = pick(KK.calFood, b, ctx); const mScared = marg(KK.calFood, b, ctx, 'give'); delete X.ms.quar; A2.lean = { kind: pKind, scared: pScared, mKind, mScared };
       // 沒開：照舊
-      for (const k of Object.keys(P0.ask)) delete P0.ask[k]; plain(b); setAff(b, s, 70); heal(b); delete P0.home[b.agentId]; /* 送飯的人不能自己也病著或關在家裡 */ const n2 = asked.length; const f2 = P0.food; Math.random = () => 0.01; try { offDecide(() => PW._t.foodDaily(w, X, day())); } finally { Math.random = R0; } A2.off = { asked: asked.length - n2, fed: P0.food - f2 };
+      for (const k of Object.keys(P0.ask)) delete P0.ask[k]; plain(b); setAff(b, s, 70); heal(b); delete P0.home[b.agentId]; /* 送飯的人不能自己也病著或關在家裡 */ const n2 = asked.length; const f2 = P0.food; Math.random = () => 0.01; let offErr = null; try { offDecide(() => PW._t.foodDaily(w, X, day())); } catch (e) { offErr = String(e.message); } finally { Math.random = R0; } A2.off = { asked: asked.length - n2, fed: P0.food - f2, err: offErr };
       P0.feed = {}; heal(s); }
     out.A2 = A2;
 
@@ -130,8 +130,8 @@ async function run(browser, dev, lang) {
       const go = opOf(KK.calVax, a, { d: d0 }, 'go'); X.va[a.agentId].n = 1; go.run(w, a, { d: d0 }); A3.go = { queued: X.vq.includes(a.agentId) };
       // 排隊上限：想打的人比醫生打得完的多，一天只打得完 cap 個
       X.vx = {}; X.vq = all.filter(x => !X.st[x.agentId]).map(x => x.agentId); X.va = {}; for (const x of all) X.va[x.agentId] = { n: 1, at: null }; const capN = Math.max(1, Math.round(all.filter(x => !X.st[x.agentId]).length * 0.3)); PW._t.vaxDaily(w, X, d0 + 6); A3.queueCap = { shots: Object.keys(X.vx).length, cap: capN, left: X.vq.length };
-      // 沒開：疫苗那一段不歸本人決定，sim-calamity.js 照原本每天三成
-      A3.off = offDecide(() => C.H.vax(w, X, d0 + 7)) === false; A3.on = C.H.vax(w, X, d0 + 7) === true;
+      // 沒開：這一天沒有人去打（sim-calamity.js 不再替人擲骰）
+      { const v0 = Object.keys(X.vx || {}).length; const q0 = (X.vq || []).length; const ret = offDecide(() => C.H.vax(w, X, d0 + 7)); A3.off = ret === false && Object.keys(X.vx || {}).length === v0 && (X.vq || []).length === q0; } A3.on = C.H.vax(w, X, d0 + 7) === true;
       X.vax = null; X.vx = {}; X.vq = []; X.va = {}; }
     out.A3 = A3;
 
@@ -233,7 +233,7 @@ async function run(browser, dev, lang) {
       // 今天輪不輪到、輪到誰看天；輪到了問那位獵人
       const R1 = Math.random; const n0 = asked.length; Math.random = () => 0.01; try { WC._t.zombieDaily(w, c); } finally { Math.random = R1; } const hu = asked.slice(n0).find(e => e.kind === 'zbHunt'); B2.turn = { asked: !!hu, guard: hu ? (w.agents[hu.who].job?.key === 'guard' || (w.agents[hu.who].personality.traits || []).includes('brave')) : false };
       // 沒開：照舊（家人 50% 擋、40% 瞞）
-      const v4 = zp[9], f4 = zp[10]; plain(v4); unmarry(v4); marry(v4, f4); const hid0 = zb.st.hid; const n2 = asked.length; const ppl0 = zb.ids.slice(); const R2 = Math.random; Math.random = () => 0.05; try { offDecide(() => WC._t.zombieDaily(w, c)); } finally { Math.random = R2; } B2.off = { asked: asked.slice(n2).filter(e => /^zb/.test(e.kind)).length, hid: zb.st.hid - hid0 >= 0 }; }
+      const v4 = zp[9], f4 = zp[10]; plain(v4); unmarry(v4); marry(v4, f4); const hid0 = zb.st.hid; const n2 = asked.length; const ppl0 = zb.ids.slice(); const kl0 = zb.st.killed || 0, tn0 = zb.st.turns || 0; let offErr = null; const R2 = Math.random; Math.random = () => 0.05; try { offDecide(() => WC._t.zombieDaily(w, c)); } catch (e) { offErr = String(e.message); } finally { Math.random = R2; } B2.off = { asked: asked.slice(n2).filter(e => /^zb/.test(e.kind)).length, hid: zb.st.hid - hid0 >= 0, killed: (zb.st.killed || 0) - kl0, turns: (zb.st.turns || 0) - tn0, err: offErr }; }
     out.B2 = B2;
     // B3 存讀檔：喪屍危機進行到一半（有人被咬、瞞著）
     { zb.how = zb.how || {}; const vv = adults().find(x => !zb.ids.includes(x.agentId)); zb.bit[vv.agentId] = day(); zb.how[vv.agentId] = 'hide'; c.bunk = { [vv.agentId]: 1 }; c.asked = { [vv.agentId]: 1 };
@@ -336,7 +336,7 @@ async function run(browser, dev, lang) {
       D1.daily = { asked: got.length, decided: dec.length, acted: Object.values(cr.n).reduce((s, v) => s + v, 0), did: Object.keys(Cr.did).length, inLog: dec.filter(e => e.id !== 'none').every(e => (X0.log[e.who] || []).some(L => L.kind === 'crisis')) };
       Cr.lastDay = null; const did0 = Object.keys(Cr.did); const a1 = asked.length; AFTERMATH.daily(w); D1.again = asked.slice(a1).filter(e => e.kind === 'crisis' && did0.includes(e.who)).length; // 兩天內做過的不再問
       // 沒開：照原本自己算
-      Cr.lastDay = null; Cr.did = {}; const a2 = asked.length; const s0 = Object.values(cr.n).reduce((s, v) => s + v, 0); offDecide(() => AFTERMATH.daily(w)); D1.off = { asked: asked.length - a2, acted: Object.values(cr.n).reduce((s, v) => s + v, 0) - s0 };
+      Cr.lastDay = null; Cr.did = {}; const a2 = asked.length; const s0 = Object.values(cr.n).reduce((s, v) => s + v, 0); let offErr = null; try { offDecide(() => AFTERMATH.daily(w)); } catch (e) { offErr = String(e.message); } D1.off = { asked: asked.length - a2, acted: Object.values(cr.n).reduce((s, v) => s + v, 0) - s0, err: offErr };
       // 原因本身是要翻的詞：直接造一筆搶店（不會被抓），秘密、記憶裡的「疫情」照當下的語言顯示
       { w.crisis = null; const cr2 = AFTERMATH.shock(w, { kind: 'epidemic', sev: 3, cause: '疫情', who: [] }); const th = adults().find(x => x !== a && (DARK.S(w).secrets || []).every(sc => sc.culprit !== x.agentId)); const rich = adults().filter(x => x !== th).sort((x, y) => cash(y) - cash(x))[0]; setCash(rich, Math.max(cash(rich), 200));
         const n0 = (DARK.S(w).secrets || []).length; const R1 = Math.random; const g0 = w.stockpile.get; Math.random = () => 0.99; w.stockpile.get = function (k, ...r) { return k === 'food' ? 0 : g0.call(this, k, ...r); }; let okA; try { okA = AFTERMATH.act(w, th, 'loot', cr2); } finally { Math.random = R1; w.stockpile.get = g0; } // 不會被抓、沒有糧倉可搶：一定去搶店或有錢人家
@@ -383,7 +383,7 @@ async function run(browser, dev, lang) {
     ok(A.fam.home && A.fam.n === 2 && A.fam.absent && A.solo.b && A.solo.sp, `${tag} 選了之後真的待在家（帶家人的連家人一起），固定碰面的地方少了他`, { fam: A.fam, solo: A.solo });
     ok(A.lean.scared !== 'go' && A.lean.brave === 'go', `${tag} 照個性：又怕又有積蓄、家裡死過人的躲；靠工錢過活、勤快樂觀的照常出門`, A.lean);
     ok(A.ask.okWho && A.ask.max8 && A.ask.again === 0 && A.ask.distinct, `${tag} 只問怕的人（悲觀、老人、家裡死過人），一天最多八個（這次 ${A.ask.n} 個），同一天不再問同一個人`, A.ask);
-    ok(A.off.asked === 0 && A.off.home > 0, `${tag} 決策核心沒開：不問，照舊每天擲骰`, A.off); }
+    ok(A.off.asked === 0 && A.off.home === 0 && !A.off.err, `${tag} 決策核心沒開：不問，這一天也沒有人被關在家裡（不再替人擲骰）`, A.off); }
   // A2
   { const A = r.A2;
     ok(A.thought.asked && A.thought.who, `${tag} 送飯：病人身邊交情最好的那一位被想到、被問`, A.thought);
@@ -393,7 +393,7 @@ async function run(browser, dev, lang) {
     ok(A.afraid.aff && A.afraid.mem, `${tag} 不敢去：病人記得`, A.afraid);
     ok(A.pass.who && A.pass.via && A.pass.factsVia && A.pass.noPass, `${tag} 託別人送：被託的人被問，題目裡寫著誰託的，不能再轉託`, A.pass);
     ok(A.lean.kind === 'give' && A.lean.scared !== 'give' && A.lean.mKind > A.lean.mScared, `${tag} 照個性（隔離期間）：心腸好、看重鄰里又很親的送，悲觀膽小的不送`, A.lean);
-    ok(A.off.asked === 0 && A.off.fed >= 1, `${tag} 決策核心沒開：照舊擲骰找人送`, A.off); }
+    ok(A.off.asked === 0 && A.off.fed === 0 && !A.off.err, `${tag} 決策核心沒開：不問，這一天也沒有人去送飯（不再替人擲骰）`, A.off); }
   // A3
   { const A = r.A3;
     ok(A.day1.asked > 0 && A.day1.max && A.day1.capOk && A.day1.distinct && A.sameDay === 0, `${tag} 疫苗：一天問的人不超過「打得完的人數＋5」（${A.day1.asked}/${A.day1.cap}），打的不超過上限（${A.day1.shots}），同一天不再問同一個人`, A.day1);
@@ -402,7 +402,7 @@ async function run(browser, dev, lang) {
     ok(A.lean.devout > A.lean.mNo + 0.8 && A.lean.distrust < A.lean.mGo && A.lean.lost > A.lean.mGo && A.lean.plain === 'go', `${tag} 照個性：很虔誠的不打、不信醫生的不急著打，家裡死過人的去打`, A.lean);
     ok(A.wait.at && A.wait.lastNoWait && A.no && A.no.never && A.no.notShot && A.go.queued, `${tag} 再等等的三天後再問（問到第三次就沒有「再等等」）；不打的不再問；去打的排進隊伍`, { wait: A.wait, no: A.no, go: A.go });
     ok(A.queueCap.shots === A.queueCap.cap && A.queueCap.left > 0, `${tag} 想打的人比打得完的多：一天只打 ${A.queueCap.cap} 個，其他的繼續排`, A.queueCap);
-    ok(A.off && A.on, `${tag} 決策核心沒開：交回 sim-calamity.js 原本的每天三成自動打到`, { off: A.off, on: A.on }); }
+    ok(A.off && A.on, `${tag} 決策核心沒開：這一天沒有人打到疫苗、也沒有人排進隊伍；開著時由本人決定`, { off: A.off, on: A.on }); }
   // A4
   { const A = r.A4;
     ok(A.seller.n === 1 && A.seller.who, `${tag} 萬靈藥：每天問一個最有動機的人（貪心）`, A.seller);
@@ -442,7 +442,7 @@ async function run(browser, dev, lang) {
     ok(B.block.alive && B.block.n === 1 && B.block.aff && B.away.killed === 1 && B.away.dead, `${tag} 擋了：獵人放下斧頭（照原本）；轉過頭：照原本清剿`, { b: B.block, a: B.away });
     ok(B.guardLean.brave > 0 && B.guardLean.timid < 0, `${tag} 照個性：勇敢又很親的擋，膽小又不親的轉過頭`, B.guardLean);
     ok(B.spare.alive && B.spare.killed === 0 && B.spare.spare >= 1 && B.spare.drive >= 1, `${tag} 下不了手、趕到墓園：喪屍沒有被殺`, B.spare);
-    ok(B.off.asked === 0, `${tag} 決策核心沒開：不問，照舊 40% 瞞、50% 擋`, B.off); }
+    ok(B.off.asked === 0 && B.off.hid && B.off.killed === 0 && B.off.turns === 0 && !B.off.err, `${tag} 決策核心沒開：不問；被咬的家人照舊 40% 瞞（家人不在鎮上時也是這樣），這一天沒有人去清剿`, B.off); }
   { const B = r.B4;
     ok(B.night1.turned && B.night1.onlyMate && B.night1.hideBitMate && B.night1.tieNone && B.night1.isoNone && B.night1.logged && B.night1.tieLog && B.night1.isoLog, `${tag} 變了的頭一晚：瞞著的先咬同住的人；綁著的、關在診所的不咬人（家人守一整晚、只聽得到抓門聲）`, B.night1);
     ok(B.next.tieOut && B.next.isoOut, `${tag} 隔天：綁著的掙斷繩子、診所裡的撞開門跑出去`, B.next);
@@ -476,7 +476,7 @@ async function run(browser, dev, lang) {
     ok(D.facts && D.ids.includes('none') && D.ids.length >= 5, `${tag} 事實裡有出了什麼事、身上的錢；選項是做得到的反應加照常過日子`, D.ids);
     ok(D.daily.asked > 0 && D.daily.decided === D.daily.asked && D.daily.acted > 0 && D.daily.inLog, `${tag} 每天：有反應的人被問（${D.daily.asked} 人），結算照原本，做過的決定寫進本人的紀錄`, D.daily);
     ok(D.again === 0, `${tag} 兩天內做過的不再問`, D.again);
-    ok(D.off.asked === 0 && D.off.acted >= 0, `${tag} 決策核心沒開：照原本自己算分`, D.off);
+    ok(D.off.asked === 0 && D.off.acted === 0 && !D.off.err, `${tag} 決策核心沒開：不問，這一天也沒有人有反應（不再自己算分）`, D.off);
     ok(D.cause.stored && D.cause.acted && D.cause.secret && (zh ? /疫情/.test(D.cause.secTxt) : !cjk(D.cause.secTxt) && D.cause.secTxt.includes(D.cause.en)), `${tag} 災後反應的原因存原詞、照當下的語言顯示：搶店的秘密${zh ? '' : '（英文）'}裡寫的是「${D.cause.en}」`, D.cause); }
   // AI
   { const M = r.mind;

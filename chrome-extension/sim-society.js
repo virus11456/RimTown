@@ -112,20 +112,12 @@ class FactionSystem {
                     break;
             }
 
-            // v11.8.0 決策核心開著：湊得到 3 個人時，由其中最有動機的那個人決定要不要出面拉大家成立，被拉的人各自決定加不加入（sim-decide-order.js）
-            if (candidates.length >= 3 && typeof ORDER !== 'undefined' && ORDER.on(world)) { ORDER.found(world, this, type, candidates); continue; }
-            if (candidates.length >= 3 && Math.random() < 0.2) { // v9.9.0 2→3 人、0.3→0.2:以前一年成立 39 次、散掉 31 次,大多兩人小團體一下就散
-                // Check members not already in too many factions
-                const filtered = candidates.filter(a => {
-                    const factionCount = Object.values(this.factions).filter(f => f.hasMember(a.agentId)).length;
-                    return factionCount < 2; // max 2 factions per NPC
-                });
-                if (filtered.length >= 3) this._formFaction(world, type, filtered);
-            }
+            // 湊得到 3 個人時，由其中最有動機的那個人決定要不要出面拉大家成立，被拉的人各自決定加不加入（sim-decide-order.js）
+            if (candidates.length >= 3 && typeof ORDER !== 'undefined' && ORDER.on(world)) ORDER.found(world, this, type, candidates);
         }
     }
 
-    // v11.8.0 成立一個小團體（原本寫在 _tryFormFactions 裡，抽出來給「本人決定」那條路共用；效果一模一樣）
+    // 成立一個小團體（有人出面拉、至少兩個人答應之後，sim-decide-order.js 呼叫）
     _formFaction(world, type, filtered) {
         const faction = new Faction(`faction_${++this._counter}`, type, filtered[0].name);
         faction.formedTick = world.tickCount;
@@ -178,14 +170,13 @@ class FactionSystem {
                     if (!other) return sum;
                     return sum + agent.relationships.getOrCreate(otherId, other.name).affinity;
                 }, 0) / Math.max(1, otherMembers.length);
-                // v11.8.0 決策核心開著：待不下去的人（跟裡面的人翻臉、團體跟自己的家人或恩人作對、團體名聲變差）自己決定留下、淡出還是公開退出
-                if (typeof ORDER !== 'undefined' && ORDER.on(world)) { ORDER.leaveCheck(world, this, faction, agent, avgAff); continue; }
-                if (avgAff < -30 && Math.random() < 0.2) this._leaveFaction(world, faction, agent, 'quit');
+                // 待不下去的人（跟裡面的人翻臉、團體跟自己的家人或恩人作對、團體名聲變差）自己決定留下、淡出還是公開退出
+                if (typeof ORDER !== 'undefined' && ORDER.on(world)) ORDER.leaveCheck(world, this, faction, agent, avgAff);
             }
         }
     }
 
-    // v11.8.0 退出小團體：quit 是原本的公開退出（日誌＋記憶），fade 是悄悄淡出（只有自己記得，不上日誌）
+    // v11.8.0 退出小團體：quit 是公開退出（日誌＋記憶），fade 是悄悄淡出（只有自己記得，不上日誌）
     _leaveFaction(world, faction, agent, how) {
         if (!faction.hasMember(agent.agentId)) return false;
         faction.removeMember(agent.agentId);
@@ -202,33 +193,14 @@ class FactionSystem {
         // Pick two factions for interaction
         const [fA, fB] = shuffle(factionList).slice(0, 2);
         const roll = Math.random();
-        // v11.8.0 決策核心開著：哪兩派碰上照舊看天；碰上了，帶頭的人自己決定怎麼對另一派（槓上／示好／不理），對方帶頭的人決定怎麼回（sim-decide-order.js）
-        const ord = typeof ORDER !== 'undefined' && ORDER.on(world);
-        if (ord && roll < 0.7) { let iss = null; try { iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null; } catch (e) {} ORDER.rival(world, this, fA, fB, iss); return; }
-        // v9.9.0 派系吵架要有理由:兩派對鎮上同一件新東西看法相反,就為那件事吵(民意與派系)
-        try { const iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null;
-            if (!ord && iss && roll < 0.7) { this._clash(world, fA, fB, iss); return; } } catch (e) {}
-
-        if (ord) {
-            // v11.8.0 團體裡的摩擦：最受不了某人的那一位自己決定要不要當眾指責
-            const faction = pickRandom([fA, fB]); if (faction.size >= 3) ORDER.row(world, this, faction);
-        } else if (roll < 0.4) {
-            // Conflict between factions
-            if (fA.rivalFactionId === fB.id || Math.random() < 0.3) this._clash(world, fA, fB, null);
-        } else if (roll < 0.7) {
-            this._ally(world, fA, fB);
-        } else {
-            // Internal faction drama
-            const faction = pickRandom([fA, fB]);
-            if (faction.size >= 3 && Math.random() < 0.4) {
-                const members = faction.members.map(id => world.agents[id]).filter(Boolean);
-                const [instigator, target] = shuffle(members).slice(0, 2);
-                this._drama(world, faction, instigator, target);
-            }
-        }
+        // 哪兩派碰上看天；碰上了，帶頭的人自己決定怎麼對另一派（槓上／示好／不理），對方帶頭的人決定怎麼回；
+        // 不然是團體裡的摩擦：最受不了某人的那一位自己決定要不要當眾指責（sim-decide-order.js）。決策核心還沒在運作時這一天沒有事
+        if (typeof ORDER === 'undefined' || !ORDER.on(world)) return;
+        if (roll < 0.7) { let iss = null; try { iss = typeof THINGS !== 'undefined' ? THINGS.splitIssue(world, fA.members, fB.members) : null; } catch (e) {} ORDER.rival(world, this, fA, fB, iss); return; }
+        const faction = pickRandom([fA, fB]); if (faction.size >= 3) ORDER.row(world, this, faction);
     }
 
-    // v11.8.0 下面三段是原本 _tryFactionEvents 裡的結算，抽出來給「本人決定」那條路共用；效果一模一樣
+    // 下面三段是兩派碰上、團體裡起摩擦之後的結算（sim-decide-order.js 照本人選的那一項呼叫）
     // 兩派結怨（iss：兩派對鎮上同一件新東西看法相反，就為那件事吵）
     _clash(world, fA, fB, iss) {
         fA.rivalFactionId = fB.id;

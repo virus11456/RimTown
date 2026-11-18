@@ -7,7 +7,9 @@
 'use strict';
 const TOWN_ISSUES = (() => {
     const MAX = 8;
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('issues.npcs', () => npcs0(w)).slice() : npcs0(w);
     const fill = (k, p) => { let s = t(k); for (const [x, v] of Object.entries(p || {})) s = s.split('{' + x + '}').join(String(v)); return s; };
     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
     const name = (a) => (typeof LLM_LANG !== 'undefined' && LLM_LANG.get() === 'en' && typeof I18N !== 'undefined' && I18N.localizeNames) ? I18N.localizeNames(a.name, true) : a.name;

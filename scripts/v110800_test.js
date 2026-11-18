@@ -83,7 +83,7 @@ async function run(browser, dev, lang) {
       // 同一天最多問三個人要不要出面
       Fs.factions = {}; O.pend = {}; O.fd = null; const n2 = asked.length; const types = ['work_buddies', 'drinking_pals', 'gossip_circle', 'romantics', 'troublemakers']; hold(() => { for (const ty of types) ORDER.found(w, Fs, ty, [b, c, a, d]); }); A1.cap = since(n2, 'facFound').length;
       // 決策核心沒開：照舊 20% 直接成立，不問
-      Fs.factions = {}; O.pend = {}; const n3 = asked.length; const nf0 = Object.keys(Fs.factions).length; withR(0.01, () => offDecide(() => Fs._tryFormFactions(w))); A1.off = { asked: since(n3).length, made: Object.keys(Fs.factions).length - nf0 };
+      Fs.factions = {}; O.pend = {}; const n3 = asked.length; const nf0 = Object.keys(Fs.factions).length; let offErr = null; try { withR(0.01, () => offDecide(() => Fs._tryFormFactions(w))); } catch (e) { offErr = String(e.message); } A1.off = { asked: since(n3).length, made: Object.keys(Fs.factions).length - nf0, err: offErr };
       Fs.factions = {}; O.pend = {}; }
     out.A1 = A1;
 
@@ -108,7 +108,7 @@ async function run(browser, dev, lang) {
       // 散不散看人數：退到剩一個人就散
       const H = Fs._formFaction(w, 'night_owls', [b, c]); Fs._leaveFaction(w, H, b, 'quit'); Fs._cleanupDeadFactions(w); A2.dissolve = !Fs.factions[H.id];
       // 決策核心沒開：照舊 20% 退出，不問
-      F.addMember(a.agentId); setAff(a, b, -90); setAff(a, c, -90); F.rivalFactionId = null; a._parentNames = []; const n3 = asked.length; withR(0.01, () => offDecide(() => Fs._updateCohesion(w))); A2.off = { asked: since(n3).length, left: !F.hasMember(a.agentId) };
+      F.addMember(a.agentId); setAff(a, b, -90); setAff(a, c, -90); F.rivalFactionId = null; a._parentNames = []; const n3 = asked.length; let offErr = null; try { withR(0.01, () => offDecide(() => Fs._updateCohesion(w))); } catch (e) { offErr = String(e.message); } A2.off = { asked: since(n3).length, left: !F.hasMember(a.agentId), err: offErr };
       Fs.factions = {}; }
     out.A2 = A2;
 
@@ -131,8 +131,8 @@ async function run(browser, dev, lang) {
       setAff(b, c, -80); setAff(a, b, 10); setAff(a, c, 10); setAff(c, b, 0); setAff(b, a, 10); setAff(c, a, 10); const n3 = asked.length; hold(() => ORDER.row(w, Fs, F)); const g3 = since(n3, 'facRow')[0]; A3.row = { who: g3?.who === b.agentId, x: g3?.ctx?.x === c.agentId };
       const rc = { f: F.id, x: c.agentId, d: day() }; const fr = KK.facRow.facts(w, b, rc); allTexts(KK.facRow, b, rc); A3.row.facts = fr.includes('-80') && (fr.includes(t(c.name)) || fr.includes(c.name)); A3.row.ids = ids(KK.facRow, b, rc);
       const coh0 = F.cohesion; runOp(KK.facRow, b, rc, 'call'); A3.row.call = F.cohesion < coh0; const bc0 = b.relationships.relationships[c.agentId].affinity; runOp(KK.facRow, b, rc, 'talk'); A3.row.talk = b.relationships.relationships[c.agentId].affinity > bc0;
-      // 沒開：照舊擲骰
-      const n4 = asked.length; withR(0.1, () => offDecide(() => Fs._tryFactionEvents(w))); A3.off = since(n4).length;
+      // 沒開：這一天兩派之間、團體裡都沒有事（不再替人擲骰）
+      { const snap = () => JSON.stringify(Object.values(Fs.factions).map(f => [f.id, f.rivalFactionId || null, f.allyFactionId || null, Math.round((f.cohesion || 0) * 1000), f.members.slice()])); const s0 = snap(); const l0 = (w.messageLog || []).length; const n4 = asked.length; let offErr = null; try { withR(0.1, () => offDecide(() => Fs._tryFactionEvents(w))); } catch (e) { offErr = String(e.message); } A3.off = { asked: since(n4).length, same: snap() === s0, logs: (w.messageLog || []).length - l0, err: offErr }; }
       mkPrompt('facRival', a, ctx); if (g1) mkPrompt('facReply', d, g1.ctx); mkPrompt('facRow', b, rc);
       Fs.factions = {}; }
     out.A3 = A3;
@@ -365,21 +365,21 @@ async function run(browser, dev, lang) {
     ok(A.leanJoin.mClose > A.leanJoin.mFar + 0.8 && A.leanJoin.pFar === 'no', `${tag} 照個性：跟出面的人很親的偏加入；處不來、害羞的不加入`, A.leanJoin);
     ok(A.leanFound.charismatic > A.leanFound.shy + 0.5, `${tag} 照個性：有號召力、看重鄰里的人比害羞的人想出面`, A.leanFound);
     ok(A.cap === 3, `${tag} 同一天最多問三個人要不要出面`, A.cap);
-    ok(A.off.asked === 0 && A.off.made >= 1, `${tag} 決策核心沒開：照舊擲骰直接成立，不問`, A.off); }
+    ok(A.off.asked === 0 && A.off.made === 0 && !A.off.err, `${tag} 決策核心沒開：不問，這一天也沒有小團體成立（不再替人擲骰）`, A.off); }
   { const A = r.A2;
     ok(A.feudAsk.asked && A.feudAsk.why === 'feud' && Object.values(A.facts).every(Boolean) && A.ids.join() === 'stay,fade,quit', `${tag} 待不下去：跟團體裡的人翻臉的人被問；事實裡有平均好感、最受不了誰；選項：留下、淡出、公開退出`, { a: A.feudAsk, f: A.facts, ids: A.ids });
     ok(A.fade.gone && A.fade.quiet && A.quit.gone && A.quit.log, `${tag} 淡出：離開但不上日誌；公開退出：日誌寫著退出`, { fade: A.fade, quit: A.quit });
     ok(A.kin.asked && A.kin.x && A.kin.facts && A.kin.again === 0, `${tag} 團體跟自己的家人作對：被問，事實寫著家人在對頭那邊；十二天內不再問`, A.kin);
     ok(A.lean.shyFade && A.lean.abQuit, `${tag} 照個性：害羞的偏淡出，刻薄的偏公開退出`, A.lean);
     ok(A.dissolve, `${tag} 散不散看人數：剩一個人就散（不擲骰）`, A.dissolve);
-    ok(A.off.asked === 0 && A.off.left, `${tag} 決策核心沒開：照舊擲骰退出，不問`, A.off); }
+    ok(A.off.asked === 0 && !A.off.left && !A.off.err, `${tag} 決策核心沒開：不問，這一天也沒有人退出（不再替人擲骰）`, A.off); }
   { const A = r.A3;
     ok(A.ask.who && A.facts.lead && A.facts.tie && A.facts.n && A.ids.join() === 'ignore,clash,befriend', `${tag} 兩派碰上：帶頭的人被問；事實裡有對方帶頭的是誰、交情、兩邊人數；選項：不理、槓上、示好`, { a: A.ask, f: A.facts, ids: A.ids });
     ok(A.clash.rival && A.clash.aff && A.clash.reply && A.replyIds.join() === 'let,back,calm' && A.calm, `${tag} 槓上：兩派結怨、兩邊的人好感下降，對方帶頭的被問（不理、嗆回去、說開）；說開了就不再是死對頭`, { c: A.clash, ids: A.replyIds, calm: A.calm });
     ok(A.befriend.reply && A.befriend.noAllyYet && A.allyIds.join() === 'let,accept,refuse' && A.refuse && A.accept, `${tag} 示好：要對方接受才合作，婉拒就不合作`, { b: A.befriend, ids: A.allyIds, r: A.refuse, a: A.accept });
     ok(A.lean.warm && A.lean.cold, `${tag} 照個性：兩邊感情好的偏示好；刻薄、兩邊有過節的偏槓上`, A.lean);
     ok(A.row.who && A.row.x && A.row.facts && A.row.ids.join() === 'hold,call,talk' && A.row.call && A.row.talk, `${tag} 團體裡的摩擦：最受不了別人的那一位被問；當眾指責團結度下降，私下講開好感回升`, A.row);
-    ok(A.off === 0, `${tag} 決策核心沒開：照舊擲骰，不問`, A.off); }
+    ok(A.off.asked === 0 && A.off.same && A.off.logs === 0 && !A.off.err, `${tag} 決策核心沒開：不問，這一天兩派之間、團體裡都沒有事（不再替人擲骰）`, A.off); }
   { const B = r.B; const B1 = B.B1;
     ok(B.papers.P && B.papers.Pg, `${tag} 鎮上有中立報和八卦報`, B.papers);
     ok(B1.ask.who && B1.ask.seen && Object.values(B1.facts).every(Boolean) && B1.ids.join() === 'bury,print,deal,verify', `${tag} 挖到醜聞：主筆被問；事實裡有候選人、什麼事、交情、報社信譽；選項：壓下來、照實登、談條件、先查證`, { a: B1.ask, f: B1.facts, ids: B1.ids });
