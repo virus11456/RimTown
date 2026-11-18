@@ -728,8 +728,8 @@ class World {
     }
 
     // v5.49.0 戲劇導演(張力保底):湧現式模擬偶爾會風平浪靜好幾天——
-    // 連續 4 天沒有名場面時,從三種手法挑一種在後台「輕推」,像編劇埋伏筆,而不是硬寫死劇本:
-    // a) 暗戀萌芽:合得來的單身村民之間種下心動  b) 舊怨復發:交惡的兩人再往絕交推一步  c) 嫉妒:單戀有主之人者情緒升溫
+    // 連續 4 天沒有名場面時,從三種場合挑一種安排兩個人碰面(_dirArrange),碰上之後怎麼想由當事人決定:
+    // a) 合得來的兩個單身村民碰在一起  b) 交惡的兩人在酒館或廣場碰上  c) 單戀有主之人的人看見心上人跟另一半在一起
     _dramaDirector() {
         const absDay = this._absDay(); // v6.43.2 含季節(以前季末有名場面,下一季整季導演都不出手)
         // 距上一場名場面幾天
@@ -741,70 +741,11 @@ class World {
         if (absDay - (this._directorLastDay || -99) < 3) return; // 導演出手後至少醞釀 3 天
         const npcs = Object.values(this.agents).filter(a => !a.isPlayer && !a.isDead);
         if (npcs.length < 4) return;
-        // v11.10.0 決策核心開著：導演只安排場合（讓人傍晚碰在同一個地方），心動、心結由當事人自己決定；沒開或少了那幾個選擇點才走舊路徑直接改數值
-        if (this._dirOn()) return this._dirArrange(absDay, npcs);
-        return this._dramaDirectorOld(absDay, npcs);
+        // v11.10.0 導演只安排場合（讓人傍晚碰在同一個地方），心動、心結由當事人自己決定；決策核心還沒在運作時這一天不出手
+        if (this._dirOn()) this._dirArrange(absDay, npcs);
     }
-    // v5.49.0 舊路徑（決策核心沒開、舊存檔）：照原本直接改心動與好感
-    _dramaDirectorOld(absDay, npcs) {
-        const strategies = shuffle(['crush', 'grudge', 'jealousy']);
-        for (const strat of strategies) {
-            if (strat === 'crush') {
-                // 找一對單身、互有基本好感、還沒心動的
-                const singles = npcs.filter(a => !a.relationships.getPartner());
-                for (const a of shuffle(singles)) {
-                    const cand = Object.values(a.relationships.relationships).find(r => {
-                        const b = this.agents[r.targetId];
-                        return b && !b.isPlayer && !b.isDead && !b.relationships.getPartner()
-                            && r.affinity >= 20 && (r.romanticInterest || 0) < 20 && !r.status;
-                    });
-                    if (cand) {
-                        cand.modifyRomantic(12 + randInt(0, 5));
-                        a.memory.addT(this.tickCount, this.clock.timeStr, 'reflection', '奇怪...最近看{targetName}的眼神,好像跟以前不一樣了。', { targetName: cand.targetName }, 7, [cand.targetName]);
-                        this._directorLastDay = absDay;
-                        return;
-                    }
-                }
-            } else if (strat === 'grudge') {
-                // 交惡但還沒仇視的兩人,舊帳重翻
-                for (const a of shuffle(npcs)) {
-                    const foe = Object.values(a.relationships.relationships).find(r => {
-                        const b = this.agents[r.targetId];
-                        return b && !b.isPlayer && !b.isDead && r.affinity <= -18 && r.affinity > -34 && !r.isFeud;
-                    });
-                    if (foe) {
-                        const b = this.agents[foe.targetId];
-                        foe.modifyAffinity(-(6 + randInt(0, 4)));
-                        b.relationships.getOrCreate(a.agentId, a.name).modifyAffinity(-(6 + randInt(0, 4)));
-                        a.memory.addT(this.tickCount, this.clock.timeStr, 'reflection', '本來想算了,但一想到{targetName}那件事,火又上來了。', { targetName: foe.targetName }, 7, [foe.targetName]);
-                        b.memory.addT(this.tickCount, this.clock.timeStr, 'reflection', '聽說{a}又在背後提那件事...是不打算善了了?', { a: a.name }, 7, [a.name]);
-                        this._directorLastDay = absDay;
-                        return;
-                    }
-                }
-            } else {
-                // 嫉妒:單戀有主之人者,情緒升溫(對情敵觀感變差)
-                for (const c of shuffle(npcs)) {
-                    const crush = c.relationships.getRomanticInterests().find(r => !r.status && (r.romanticInterest || 0) >= 25);
-                    if (!crush) continue;
-                    const b = this.agents[crush.targetId];
-                    const partner = b && !b.isDead ? b.relationships.getPartner?.() : null;
-                    if (!partner) continue;
-                    const rival = this.agents[partner.targetId];
-                    if (!rival || rival.isDead || rival.isPlayer) continue;
-                    crush.modifyRomantic(8);
-                    c.relationships.getOrCreate(rival.agentId, rival.name).modifyAffinity(-(5 + randInt(0, 4)));
-                    c.memory.addT(this.tickCount, this.clock.timeStr, 'reflection', '看到{b}和{rival}走在一起,心口悶得發疼。憑什麼是他。', { b: b.name, rival: rival.name }, 8, [b.name, rival.name]);
-                    this._directorLastDay = absDay;
-                    return;
-                }
-            }
-        }
-    }
-
     // ================= v11.10.0 戲劇導演：只安排場合，不改心 =================
-    // 以前導演直接替人寫下「最近看他的眼神不一樣了」「火又上來了」「心口悶得發疼」，連帶把心動、好感改掉，當事人沒有決定過任何事。
-    // 現在導演挑的還是同一種人，但只做一件事：讓他們今天傍晚真的走到同一個地方（跟公告欄邀約、家族儀式一樣用 THINGS.setGo 約好時間地點）。
+    // 導演挑人，只做一件事：讓他們今天傍晚真的走到同一個地方（跟公告欄邀約、家族儀式一樣用 THINGS.setGo 約好時間地點）。
     // 碰上了之後，各自怎麼看待這次碰面由本人決定（sim-decide-love.js 的 spark、heartache，sim-decide-soc.js 的 stir），數值只跟著他選的那件事變。
     // 沒碰上（有人病倒、出遠門、被別的事絆住）就隔天傍晚再安排一次；再沒碰上這次就算了。觀察者在「真相」頁看得到導演安排了什麼、兩人各自怎麼選。
     _dirOn() { try { const K = typeof DECIDE !== 'undefined' ? DECIDE.KINDS : null; return !!(K && K.spark && K.heartache && K.stir && DECIDE.on(this) && typeof THINGS !== 'undefined' && THINGS.setGo); } catch (e) { return false; } }

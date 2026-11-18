@@ -40,7 +40,8 @@ const WORLDCAL = (function () {
     const devout = (w, a) => { try { return typeof FAITH !== 'undefined' && w.faith && FAITH.relOf?.(w, a) && FAITH.pietyOf(w, a) >= 60; } catch (e) { return false; } };
     const pious = (w, a, n) => { try { if (typeof FAITH !== 'undefined' && w.faith && FAITH.relOf?.(w, a)) FAITH.bumpP(w, a, n); } catch (e) {} };
     const stanceOf = (w, a) => a.techStance || (w.ideaSystem?.stanceLabel ? w.ideaSystem.stanceLabel(w, a) : 'moderate');
-    // v11.7.0 災難裡的人：去留、自保、喪屍面前的家人與獵人，交給本人決定（選擇點在 sim-decide-calam.js）；決策核心沒開照原本的機率
+    // v11.7.0 災難裡的人：去留、自保、喪屍面前的家人與獵人，交給本人決定（選擇點在 sim-decide-calam.js）。決策核心還沒在運作時（開鎮第一天錢包還沒建好）這幾件事當天不發生；
+    // 被咬的人家人都不在鎮上時，照「四成家人幫忙瞞著」的機率（zombieDaily）
     const deciding = (w, k) => { try { return !!(w?.observerMode && typeof DECIDE !== 'undefined' && DECIDE.on(w) && DECIDE.KINDS?.[k]); } catch (e) { return false; } };
     const ask = (w, list) => { try { DECIDE.askNow(w, list); } catch (e) { console.warn('[WorldCal] ask', e); } };
     const ASK_MAX = 2; // 一個人一場災厄裡最多被問兩次去留
@@ -239,9 +240,7 @@ const WORLDCAL = (function () {
                 propose(w, 'wc_focus', fw, '先救「{f}」', '{who}說三條線不可能全部救起來，提議研究員先集中救最危險的「{f}」，另外兩線只留少數人。救起來的那一線會快很多，其他兩線就要碰運氣。', { f: FRONTS[weak].name }, { front: weak }, { f: FRONTS[weak].name }); }
             // 有錢、膽小的人先走
             const rich0 = adults(w).filter(a => (hasT(a, 'neurotic') || hasT(a, 'pessimist') || c.warn.includes(a.agentId)) && wal(w, a) >= 80).sort((x, y) => wal(w, y) - wal(w, x));
-            if (deciding(w, 'calFlee')) { const q = rich0.filter(a => askable(c, a)).slice(0, 3); for (const a of q) c.asked[a.agentId] = (c.asked[a.agentId] || 0) + 1; ask(w, q.map(a => ({ a, kind: 'calFlee', ctx: { src: 'wc', t: 'early', d: day(w), q: adults(w).length >= 30 ? 0.5 : 0.35 } }))); } // v11.7.0 走不走、帶誰走、花錢買避難的位子，由本人決定
-            const rich = deciding(w, 'calFlee') ? [] : rich0.slice(0, adults(w).length >= 30 && Math.random() < 0.5 ? 2 : 1);
-            for (const a of rich) { if (adults(w).length <= 6) break; try { if (w.leaveTown?.(a.agentId, t('{name}要來了，先搬去遠一點的地方').replace('{name}', t(K.name)))) { c.left++; log(w, '🧳 {a}收拾了細軟，說要去遠方的親戚家「住一陣子」。', { a: a.name }); } } catch (e) {} }
+            if (deciding(w, 'calFlee')) { const q = rich0.filter(a => askable(c, a)).slice(0, 3); for (const a of q) c.asked[a.agentId] = (c.asked[a.agentId] || 0) + 1; ask(w, q.map(a => ({ a, kind: 'calFlee', ctx: { src: 'wc', t: 'early', d: day(w), q: adults(w).length >= 30 ? 0.5 : 0.35 } }))); } // 走不走、帶誰走、花錢買避難的位子，由本人決定
             note(w, 'rumor');
         } else if (ph === 'panic') {
             log(w, K.panic); news(w, K.panic, {}, 9, []);
@@ -304,7 +303,7 @@ const WORLDCAL = (function () {
     // 喪屍危機裡「家人」照原本的算法（配偶、爸媽，MONEY.familyOf）：被咬了誰會瞞、清剿時誰會擋，人數才跟以前一樣
     const famHere = (w, a) => { const H = here(w); return famOf(w, a).filter(f => f && f !== a && !f.isDead && !isZ(w, f) && H.includes(f)); };
     const kinZ = (w, z) => { const R = z?.relationships?.relationships || {}; return here(w).filter(o => o !== z && (R[o.agentId]?.status === 'married' || (z._parentNames || []).includes(o.name) || (o._parentNames || []).includes(z.name) || (o.relationships?.relationships?.[z.agentId]?.status === 'married'))); };
-    // v11.7.0 大災之後誰走：以前直接挑 cnt 個人搬走；現在從同一群人裡問 cnt ÷ 0.45 個，走不走、帶誰走由本人決定（照個性算的時候當場就有答案）
+    // v11.7.0 大災之後誰走：從可能會走的那群人裡問 cnt ÷ 0.45 個（照個性大約四成五會走），走不走、帶誰走由本人決定（照個性算的時候當場就有答案）
     function goAsk(w, c, pool, cnt, tk) {
         const q = pool.filter(a => askable(c, a)).slice(0, Math.max(1, Math.round(cnt / GO_P))); for (const a of q) c.asked[a.agentId] = (c.asked[a.agentId] || 0) + 1;
         c.goneNow = []; ask(w, q.map(a => ({ a, kind: 'calFlee', ctx: { src: 'wc', t: tk, d: day(w), q: GO_P } }))); const out = c.goneNow; c.goneNow = null; return out;
@@ -345,11 +344,7 @@ const WORLDCAL = (function () {
             if (hit && deciding(w, 'calFlee')) { const seen = new Set(); const max = Math.max(1, Math.round(pop0 * 0.05)); const q = [];
                 for (const a0 of shuffle(wedded)) { if (seen.has(a0.agentId)) continue; const sp = Object.values(a0.relationships?.relationships || {}).find(r => r.status === 'married'); const b0 = sp ? w.agents[sp.targetId] : null; seen.add(a0.agentId); if (sp) seen.add(sp.targetId); const a = b0 && hasV(b0, '家庭') && !hasV(a0, '家庭') ? b0 : a0; if (!askable(c, a)) continue; q.push(a); if (q.length >= Math.ceil(max / 0.55)) break; } // 一對夫妻問一個人：比較想要孩子（看重家庭）的那一位
                 c.goneNow = []; c.pairsNow = 0; for (const a of q) c.asked[a.agentId] = (c.asked[a.agentId] || 0) + 1; ask(w, q.map(a => ({ a, kind: 'calFlee', ctx: { src: 'wc', t: 'kids', d: day(w), q: 0.4 } })));
-                leave.push(...c.goneNow); c.pairs = c.pairsNow; c.goneNow = null; } // v11.7.0 走不走由夫妻自己決定（以前：看重家庭的，或四成的人）
-            else if (hit) { const seen = new Set(); const want = wedded.filter(a => hasV(a, '家庭') || Math.random() < 0.4); const max = Math.max(1, Math.round(pop0 * 0.05)); let pairs = 0;
-                for (const a of shuffle(want)) { if (pairs >= max || adults(w).length <= 6) break; if (seen.has(a.agentId)) continue; const sp = Object.values(a.relationships?.relationships || {}).find(r => r.status === 'married'); const b = sp ? w.agents[sp.targetId] : null; seen.add(a.agentId); if (b) seen.add(b.agentId);
-                    const why = t('{name}之後想去外地碰運氣生孩子').replace('{name}', cause); let ok = false; try { ok = !!w.leaveTown?.(a.agentId, why); } catch (e) {} if (!ok) continue; leave.push(a); pairs++; if (b && !b.isDead && !b.isPlayer && w.agents[b.agentId]) { try { if (w.leaveTown?.(b.agentId, why)) leave.push(b); } catch (e) {} } }
-                c.pairs = pairs; }
+                leave.push(...c.goneNow); c.pairs = c.pairsNow; c.goneNow = null; } // 走不走由夫妻自己決定
             score = hit ? 18 : 8;
         } else if (c.kind === 'blacksun') {
             // v9.3.0 黑日:三條戰線各自算結果。方舟讓每一線的傷害都少一些
@@ -362,7 +357,7 @@ const WORLDCAL = (function () {
                 for (const pl of (w.farm?.plots || [])) if (pl.state === 'growing' && Math.random() < (hit ? 0.8 : 0.4)) pl.state = 'withered';
                 if (hit) { dead = dead.concat(kill(w, Math.max(1, Math.round(pop0 * 0.04 * (ark ? 0.5 : 1))), cause, a => (a.age ?? 30) >= 60 || a.health?.sick)); S(w).sterile = { until: day(w) + 180, f: ark ? 0.6 : 0.4, blocked: 0 }; lost.push(...FRONTS.bio.only); }
                 log(w, hit ? '🌱 田裡的作物全枯了，連雞都不下蛋了。接下來半年，想生孩子的夫妻都要碰運氣。' : '🌱 作物枯了一半，倉庫裡的糧少了一截，但種子庫保住了。'); }
-            if (fo.steam !== 'averted') { const hit = fo.steam === 'hit'; c.winter = hit ? 2 : 1; if (hit) { const alive = shuffle(adults(w)); const cnt = Math.max(1, Math.round(alive.length * 0.06 * (ark ? 0.5 : 1))); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, alive.filter(x => !owner(w, x)), cnt, 'dark')); else for (const a of alive.filter(x => !owner(w, x)).slice(0, cnt)) { if (adults(w).length <= 5) break; try { if (w.leaveTown?.(a.agentId, t('{name}之後往有光的地方去了').replace('{name}', cause))) leave.push(a); } catch (e) {} } lost.push(...FRONTS.steam.only); wrecked = wrecked.concat(wreck(w, 'blacksun', 1)); }
+            if (fo.steam !== 'averted') { const hit = fo.steam === 'hit'; c.winter = hit ? 2 : 1; if (hit) { const alive = shuffle(adults(w)); const cnt = Math.max(1, Math.round(alive.length * 0.06 * (ark ? 0.5 : 1))); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, alive.filter(x => !owner(w, x)), cnt, 'dark')); lost.push(...FRONTS.steam.only); wrecked = wrecked.concat(wreck(w, 'blacksun', 1)); }
                 log(w, hit ? '🔮 以太燈全熄了，天冷得像冰河期，有人說要往南邊找有光的地方。' : '🔮 以太燈只剩一半亮著，晚上大家擠在燈下取暖。'); }
             c.lostOnly = lost; score = hits * 18 + eases * 7 + (dead.length / Math.max(1, pop0)) * 120 + (leave.length / Math.max(1, pop0)) * 50 - (ark ? 10 : 0);
             for (const a of dead) for (const f of famOf(w, a)) if (!f.isDead) { f.addThought?.('wc_grief', w); mem(w, f, '黑日那幾天，我的家人沒能等到天亮。', {}, 9); }
@@ -386,7 +381,7 @@ const WORLDCAL = (function () {
             const fr = (hit ? 0.05 + Math.random() * 0.04 : 0.01 + Math.random() * 0.02) * (stock ? 0.4 : 1);
             dead = kill(w, Math.max(hit ? 1 : 0, Math.round(pop0 * fr)), cause, a => (a.age ?? 30) >= 60 || a.health?.sick);
             if (hit) wrecked = wreck(w, 'iceage', 1); // 屋頂被雪壓垮
-            if (hit) { const alive = shuffle(adults(w)); const cnt = Math.max(1, Math.round(alive.length * (0.06 + Math.random() * 0.06) * (stock ? 0.6 : 1))); const go = deciding(w, 'calFlee') ? [] : alive.filter(a => !owner(w, a)).slice(0, cnt); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, alive.filter(a => !owner(w, a)), cnt, 'cold')); for (const a of go) { if (adults(w).length <= 5) break; try { if (w.leaveTown?.(a.agentId, t('{name}太冷了，往南方逃去').replace('{name}', cause))) leave.push(a); } catch (e) {} } }
+            if (hit) { const alive = shuffle(adults(w)); const cnt = Math.max(1, Math.round(alive.length * (0.06 + Math.random() * 0.06) * (stock ? 0.6 : 1))); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, alive.filter(a => !owner(w, a)), cnt, 'cold')); }
             score = (hit ? 35 : 15) + (dead.length / Math.max(1, pop0)) * 120 + (leave.length / Math.max(1, pop0)) * 50 - (stock ? 10 : 0);
             for (const a of dead) for (const f of famOf(w, a)) if (!f.isDead) { f.addThought?.('wc_grief', w); mem(w, f, '那年冬天太冷了，我的家人沒能醒來。', {}, 9); }
             for (const a of here(w)) { a.moodModifier = (a.moodModifier || 0) - (hit ? 12 : 6); a.addThought?.('wc_fear', w); }
@@ -406,7 +401,7 @@ const WORLDCAL = (function () {
             if (c.kind === 'nukewar') { const pool = shuffle(adults(w)).slice(0, Math.round(adults(w).length * (hit ? 0.3 : 0.15) * (shelter ? 0.5 : 1))); for (const a of pool) { try { if (typeof HEALTH !== 'undefined') HEALTH.addAil(w, a, { p: 'l', k: 'disease', s: hit ? 2 : 1, dmg: hit ? 15 : 8 }, '輻射病'); } catch (e) {} if (w.tech?.mk && !w.tech.mk[a.agentId]) w.tech.mk[a.agentId] = 'rad'; } sick = pool.length;
                 const food = w.stockpile?.get?.('food') || 0; if (food > 0) w.stockpile.consume('food', Math.round(food * (hit ? 0.4 : 0.2)), w.tickCount, t('輻射塵'), 'event'); }
             wrecked = wreck(w, c.kind, hit ? 2 + Math.floor(Math.random() * 3) : 1);
-            if (hit) { const alive = adults(w).sort((x, y) => wal(w, y) - wal(w, x)); const top = alive.slice(0, Math.ceil(alive.length / 2)).sort(() => Math.random() - 0.5); const cnt = Math.max(1, Math.round(alive.length * (0.08 + Math.random() * 0.07))); const go = deciding(w, 'calFlee') ? [] : top.slice(0, cnt); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, top, cnt, 'after')); for (const a of go) { if (adults(w).length <= 5) break; try { if (w.leaveTown?.(a.agentId, t('{name}之後不敢住了').replace('{name}', cause))) leave.push(a); } catch (e) {} } }
+            if (hit) { const alive = adults(w).sort((x, y) => wal(w, y) - wal(w, x)); const top = alive.slice(0, Math.ceil(alive.length / 2)).sort(() => Math.random() - 0.5); const cnt = Math.max(1, Math.round(alive.length * (0.08 + Math.random() * 0.07))); if (deciding(w, 'calFlee')) leave = leave.concat(goAsk(w, c, top, cnt, 'after')); }
             score = (hit ? 45 : 22) + (dead.length / Math.max(1, pop0)) * 150 + (leave.length / Math.max(1, pop0)) * 60 - (shelter ? 12 : 0);
             for (const a of dead) for (const f of famOf(w, a)) if (!f.isDead) { f.addThought?.('wc_grief', w); mem(w, f, '{name}奪走了我的家人。', { name: K.name }, 9); }
             for (const a of here(w)) { a.moodModifier = (a.moodModifier || 0) - (hit ? 15 : 7); a.addThought?.('wc_fear', w); }
@@ -466,12 +461,8 @@ const WORLDCAL = (function () {
         // 守衛、勇敢的人白天清剿(會死人);家人會擋
         const hunters = adults(w).filter(a => a.job?.key === 'guard' || hasT(a, 'brave'));
         if (zb.ids.length && hunters.length && Math.random() < Math.min(0.6, 0.15 + hunters.length * 0.08) && c.prog < 90) {
-            const z = w.agents[rnd(zb.ids)]; const h = rnd(hunters); const fam = famOf(w, z).filter(f => !f.isDead && !isZ(w, f));
-            if (deciding(w, 'zbHunt') && z) { zb.st.turns = (zb.st.turns || 0) + 1; ask(w, [{ a: h, kind: 'zbHunt', ctx: { z: z.agentId, d } }]); } // v11.7.0 輪到誰、今天有沒有人出手照舊看天；下不下手由那位獵人決定，擋不擋由家人決定
-            else if (fam.length && Math.random() < 0.5) { const f = rnd(fam); aff(f, h, -12); log(w, '🛑 {h}舉起斧頭，{f}衝出來擋在{z}前面：「再等幾天，解藥就快好了！」{h}放下了斧頭。', { h: h.name, f: f.name, z: z.name }, h.name); }
-            else { z._deathCause = t('喪屍危機'); try { w.lifecycle?._killNpc?.(w, z); } catch (e) {} zb.ids = zb.ids.filter(id => id !== z.agentId); zb.st.killed++; c.dead++;
-                log(w, '🪓 {h}帶著守衛在墓園邊圍住了{z}。結束以後，{h}在雨裡站了很久。', { h: h.name, z: z.name }, h.name); mem(w, h, '我親手結束了{z}。那曾經是我的鄰居。', { z: z.name }, 9);
-                for (const f of famOf(w, z)) if (!f.isDead && !isZ(w, f)) { aff(f, h, -20); f.addThought?.('wc_grief', w); mem(w, f, '{h}殺了{z}。我知道那已經不是{z}了，可是我沒辦法原諒。', { h: h.name, z: z.name }, 9); } }
+            const z = w.agents[rnd(zb.ids)]; const h = rnd(hunters);
+            if (deciding(w, 'zbHunt') && z) { zb.st.turns = (zb.st.turns || 0) + 1; ask(w, [{ a: h, kind: 'zbHunt', ctx: { z: z.agentId, d } }]); } // 輪到誰、今天有沒有人出手看天；下不下手由那位獵人決定，擋不擋由家人決定
         }
     }
     // v11.7.0 同住的人：真的同一棟房子（sim-housing.js 那張「誰住哪一棟」的表，w.housing.map；地圖在的話照地圖分好的房子）。homeLocation 是整個住宅區，不能拿來算。

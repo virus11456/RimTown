@@ -87,9 +87,9 @@ async function apiTest() {
       for (const a of people().slice(0, 4)) { a.personality = a.personality || {}; a.personality.traits = [...(a.personality.traits || []), 'brave']; } // 有人敢清剿
       const n0 = C.zb.ids.length; let bitSeen = 0, hidMem = false;
       const R0 = Math.random; let seq = 0; Math.random = () => { seq++; return (seq % 7) / 7; };
-      const _on = DECIDE.on; DECIDE.on = () => false; // v11.7.0 瞞不瞞、下不下手改由當事人決定（v110700_test.js）；這裡用固定的亂數測決策核心沒開時原本的機率
+      const _on = DECIDE.on; DECIDE.on = () => false; // 瞞不瞞、下不下手由當事人決定（v110700_test.js）；這裡用固定的亂數測決策核心沒開時：咬人、發病照舊看天，被咬的家人照 40% 瞞，沒有人去清剿
       try { for (let i = 0; i < 6 && w.worldcal.cur; i++) { WORLDCAL._t.zombieDaily(w, C); bitSeen = Math.max(bitSeen, Object.keys(C.zb.bit).length); d++; } } finally { Math.random = R0; DECIDE.on = _on; }
-      out.spread = { n0, n1: C.zb.ids.length, bit: C.zb.st.bitten, turned: C.zb.st.turned, killed: C.zb.st.killed, hid: C.zb.st.hid, bitSeen, cap: C.zb.ids.length + Object.keys(C.zb.bit).length <= Math.ceil((people().length + C.zb.ids.length) * 0.4) + 1, left: people().length };
+      out.spread = { n0, n1: C.zb.ids.length, bit: C.zb.st.bitten, turned: C.zb.st.turned, killed: C.zb.st.killed, turns: C.zb.st.turns || 0, hid: C.zb.st.hid, bitSeen, cap: C.zb.ids.length + Object.keys(C.zb.bit).length <= Math.ceil((people().length + C.zb.ids.length) * 0.4) + 1, left: people().length };
       // 5) 解藥做完 → 全部變回人
       if (!C.zb.ids.length) WORLDCAL._t.zTurn(w, C, people()[0], true); // 守衛可能已經清光,補一個
       C.fast = 1; C.prog = 99.9; const before = C.zb.ids.length; WORLDCAL._t.zombieDaily(w, C);
@@ -140,7 +140,7 @@ async function apiTest() {
     ok(r.arrive.night === 'town_square' && ['graveyard', 'town_square'].includes(r.arrive.day) && r.arrive.act === 'wandering' && /喪屍|zombie/i.test(r.arrive.town) && r.arrive.brief, '喪屍白天在墓園、晚上在廣場遊蕩；AI 知道鎮上有喪屍', r.arrive);
     ok(r.save.ids && r.save.isZ, '存讀檔：誰是喪屍都還在', r.save);
     ok(r.spread.bit >= 1 && r.spread.turned > r.spread.n0 - 1 && r.spread.cap && r.spread.left >= 5, '夜裡咬人、被咬兩天後發病；喪屍最多四成、至少留五個人', r.spread);
-    ok(r.spread.killed >= 1 || r.spread.hid >= 1, '守衛清剿或家人幫忙瞞著', r.spread);
+    ok(r.spread.killed === 0 && r.spread.turns === 0 && r.spread.hid >= 0, '決策核心沒開：這幾天沒有人去清剿（下不下手由獵人決定，見 v110700）；被咬的家人照舊可能幫忙瞞著', r.spread);
     ok(r.cure.after === 0 && r.cure.bit === 0 && r.cure.cured >= 1, '解藥做完 → 喪屍和被咬的人全部變回來', r.cure);
     ok(r.end.kind === 'zombie' && r.end.unl && r.end.flags === 0, '結束：寫進歷史、解鎖（之後任何城鎮都能打）、沒有人還是喪屍', r.end);
     ok(r.noCure.n >= 1 && r.noCure.dead && r.noCure.dc, '解藥一直沒做出來：最後的喪屍被圍住、算進死亡', r.noCure);
