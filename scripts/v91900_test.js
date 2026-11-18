@@ -72,7 +72,8 @@ async function run(browser, lang, vp) {
 
     // ---------- 5) AI 版 ----------
     const save = { ok: ce.fullAgentOk, ask: ce._askJson }; let prompts = []; let reply = null;
-    ce.fullAgentOk = () => true; ce._askJson = async (p) => { prompts.push(p); return typeof reply === 'function' ? reply(p) : reply; };
+    let only = F; /* 只回答問到 F 的題目：v11.9.0、v11.10.0 之後，別人碰上的事（商量生孩子、撞見心上人）也會當場送題目出去，假 AI 要是照樣回答，會被算成多問一次、連別人也照著做 */ const mine = (p) => !only || String(p).split('=== ').slice(1).some(s => { const m = s.match(/^\d+\. (.*)/); return !!m && m[1].startsWith(who(only)); });
+    ce.fullAgentOk = () => true; ce._askJson = async (p) => { if (!mine(p)) return null; prompts.push(p); return typeof reply === 'function' ? reply(p) : reply; };
     const letterOf = (p, who, re) => { const blk = p.split('=== ').slice(1).find(s => s.includes(who)) || ''; /* 第 0 段是鎮況,裡面也可能提到這個人 */ const line = (blk.split('\n').find(s => /【可以選】|\[You can choose\]/.test(s)) || ''); const parts = line.split(' ／ '); for (const x of parts) { const m = x.match(/([\w:.-]+)＝(.*)$/); if (m && re.test(m[2])) return m[1]; /* v9.23.2 選項改用固定代號（＝前面那個字） */ } return ''; };
     const who = (a) => (typeof I18N !== 'undefined' && I18N.getLang?.() === 'en' ? I18N.localizeNames(a.name, true) : a.name);
     // 5a) AI 選一個選項,附理由和打算
@@ -96,11 +97,11 @@ async function run(browser, lang, vp) {
     reset(); B[F.agentId] = 400; reply = () => null;
     { fix(0.5, today); await DECIDE.flush(); const e = lastLog(F); out.nul = { decided: !!e, ai: e && e.ai }; }
     // 5e) AI 一直不回話:隔天先照個性決定;晚到的回話不算數
-    reset(); B[F.agentId] = 3000; const held = []; const release = () => { for (const f of held.splice(0)) f(); }; reply = () => new Promise(res => { held.push(() => res([{ n: 1, pick: 'a', why: 'LATE' }])); });
-    { today(); const pending = !lastLog(F); for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } w.fullAgentMode = true; const e = lastLog(F); const n1 = (X.log[F.agentId] || []).length; reply = () => null; release(); await DECIDE.flush(); await new Promise(x => setTimeout(x, 30));
-      out.slow = { pending, decided: !!e, gone: F.currentLocation === 'exploration' || !!w.isAway?.(F.agentId) || !!F.isDead, loc: F.currentLocation, cash: Math.round(B[F.agentId]), jail: w.civic?.jail?.[F.agentId] || 0, ai: e && e.ai, late: (X.log[F.agentId] || []).length === n1 && !JSON.stringify(X.log[F.agentId] || []).includes('LATE') }; }
+    reset(); B[F.agentId] = 3000; const held = []; const release = () => { held.splice(0).forEach((f, i) => f(i === 0)); }; /* 只有最早那一題晚到；這一天裡 F 另外碰上的事（撞見心上人之類）也卡在假 AI 那裡，放掉時當作沒回話 */ reply = () => new Promise(res => { held.push((first) => res(first ? [{ n: 1, pick: 'a', why: 'LATE' }] : null)); });
+    { today(); const pending = !lastLog(F); for (let i = 0; i < 96; i++) { w.paused = false; w.tick(); } w.fullAgentMode = true; const e = lastLog(F); const sameKind = () => (X.log[F.agentId] || []).filter(x => x.kind === e?.kind).length; const n1 = sameKind(); reply = () => null; release(); await DECIDE.flush(); await new Promise(x => setTimeout(x, 30));
+      out.slow = { pending, decided: !!e, gone: F.currentLocation === 'exploration' || !!w.isAway?.(F.agentId) || !!F.isDead, loc: F.currentLocation, cash: Math.round(B[F.agentId]), jail: w.civic?.jail?.[F.agentId] || 0, ai: e && e.ai, late: sameKind() === n1 && !JSON.stringify(X.log[F.agentId] || []).includes('LATE') }; }
     // 5f) 一天問 AI 的人數有上限,其餘照個性
-    reset(); for (const a of all) B[a.agentId] = 400; let asked = 0; reply = (p) => { const n = (p.match(/=== \d+\. /g) || []).length; asked += n; return Array.from({ length: n }, (_, i) => ({ n: i + 1, pick: 'a', why: 'ok' })); };
+    only = null; reset(); for (const a of all) B[a.agentId] = 400; let asked = 0; reply = (p) => { const n = (p.match(/=== \d+\. /g) || []).length; asked += n; return Array.from({ length: n }, (_, i) => ({ n: i + 1, pick: 'a', why: 'ok' })); };
     { today(); await DECIDE.flush(); out.cap = { asked, max: DECIDE.AI_MAX, batch: DECIDE.BATCH, everyone: all.filter(a => (X.log[a.agentId] || []).length).length, eligible: all.filter(a => DECIDE.KINDS.spare.when(w, a) || (X.log[a.agentId] || []).length).length }; }
     // 5g) 原本的 AI 投票也看得到帳本
     reset(); { let vp = ''; ce._askJson = async (p) => { vp = p; return null; }; const p0 = (w.proposals.items || [])[0]; if (p0) { try { await ce.decideVotes(w, p0, all.slice(0, 2), w.agents[p0.proposerId] || all[3]); } catch (e) {} } out.vote = { has: !p0 || /【錢】|\[Money\]/.test(vp) }; }
