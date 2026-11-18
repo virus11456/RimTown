@@ -10,7 +10,9 @@
 'use strict';
 
 const INVEST = (() => {
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_'));
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('invest.npcs', () => npcs0(w)).slice() : npcs0(w);
     const day = (w) => (w._absDay ? w._absDay() : 0);
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const hasV = (a, v) => { const vs = a?.personality?.values || []; return vs.includes(v) || vs.includes(t(v)); };

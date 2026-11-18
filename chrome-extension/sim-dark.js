@@ -10,7 +10,9 @@
 // 載入順序：sim-pets.js 之後。
 'use strict';
 const DARK = (() => {
-    const npcs = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    const npcs0 = (w) => Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead);
+    // 每天掃一輪「誰有事要拿主意」、付三餐那一圈（SCAN.run 包住的段落）沒有人進出鎮上、也沒有人過世：全鎮名單同一輪只篩一次，每次給一份新的陣列（跟 sim-market.js 一樣的做法）
+    const npcs = (w) => SCAN.on() ? SCAN.memo('dark.npcs', () => npcs0(w)).slice() : npcs0(w);
     const has = (a, tr) => (a?.personality?.traits || []).includes(tr);
     const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
     const rnd = (arr, n) => arr.slice().sort(() => Math.random() - 0.5).slice(0, n);
