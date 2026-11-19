@@ -146,7 +146,7 @@ Object.assign(RimTownApp.prototype, {
     // 以前:「產業與老闆」是一長串用「·」接起來的字,被自動拆成沒有標題的數字格(看不出那個 0 是什麼的 0);
     //       農田掉在卡片外面(收起農場還看得到);工廠配方是空的;工廠、店、銀行、產業等級、農場各用各的樣子
     // 現在:一件事一張資訊卡,每個數字都有說明,細項收進「展開詳細」。資料全部照舊。
-    //       產業與老闆 → 鎮上的店 → 工廠 → 基礎產業 → 農場 → 銀行 → 貧富與住房 → 金權與報社 → 工會 → 離鎮
+    //       產業與老闆 → 鎮上的店 → 工廠 → 全鎮設施等級(原「基礎產業」) → 田地(原「農場」) → 銀行 → 貧富與住房 → 金權與報社 → 工會 → 離鎮
     _PG_RI: { salt: '🧂', paper: '📄', food: '🌾', wood: '🪵', stone: '🪨', metal: '⚙️', cloth: '🧵', herbs: '🌿', silver: '💰', meals: '🍲', tools: '🔧', clothing: '👕', medicine: '💊', furniture: '🪑', research_points: '📚',
         plank: '🪵', hardwood: '🪓', brick: '🧱', marble: '🏛️', steel: '⚔️', gold: '🥇', wheat: '🌾', rice: '🍚', corn: '🌽', potato: '🥔', cotton: '🧶', flowers: '🌸', mushroom: '🍄', sugarcane: '🎋', tea: '🍵', grapes: '🍇', golden_wheat: '✨', dragon_fruit: '🐉',
         bread: '🍞', pastry: '🧁', beer: '🍺', wine: '🍷', perfume: '🌹', fine_tea: '🫖', herbal_tea: '🍃', sugar: '🍬', jam: '🫙', luxury_furniture: '🛋️' },
@@ -179,7 +179,7 @@ Object.assign(RimTownApp.prototype, {
         const priv = rows.filter(r => r.owner).length; const rev = rows.reduce((s, r) => s + (r.rev7 || 0), 0);
         return this._ic({ id: 'ind-biz', cls: 'market-section', icon: '🏭', title: t('產業與老闆'), defOpen: true, sum: `<b>${rows.length}</b> ${t('家')}`,
             kpis: rows.length ? [{ v: rows.length, u: t('家'), l: t('產業') }, { v: priv, u: t('家'), l: t('有老闆') }, { v: N(rev), l: t('七天營收') }] : null,
-            body: rows.length ? `<div class="pg-firms">${rows.map(firm).join('')}</div>` : `<div class="ic-note">${t('還沒有人經營產業。')}</div>`, detail: d,
+            body: `<div class="ic-note pg-lead">${t('有東家、有夥計、發工資的生意。村民上班、領薪水都在這裡。')}</div>` + (rows.length ? `<div class="pg-firms">${rows.map(firm).join('')}</div>` : `<div class="ic-note">${t('還沒有人經營產業。')}</div>`), detail: d,
             info: t('產業是大家每天都要買的民生行業（三餐、衣服、柴火、建材），一行一家，老闆會換，行業一直都在。') + t('公營的產業由公庫發薪水；有老闆的由老闆發薪水，賺的錢歸老闆和股東。「工資水準」是照標準工資的幾成在發。') });
     },
     // 鎮上的店(村民自己開的):前幾家直接看,其他收進詳細
@@ -219,17 +219,23 @@ Object.assign(RimTownApp.prototype, {
     _indBase(before) {
         const ind = this.state.industry || {}; const esc = (x) => this._icEsc(x); const ID = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES : {};
         const list = Object.entries(ind.industries || {}); const syn = ind.activeSynergies || [];
-        const one = ([key, data]) => { const def = ID[key]; const lv = def?.levels?.find(l => l.lv === data.level), nx = def?.levels?.find(l => l.lv === data.level + 1); const wk = Array.isArray(data.workers) ? data.workers.length : (data.workers || 0); const out = Object.entries(data.dailyOutput || {});
+        const one = ([key, data]) => { const def = ID[key]; const lv = def?.levels?.find(l => l.lv === data.level), nx = def?.levels?.find(l => l.lv === data.level + 1); const out = Object.entries(data.dailyOutput || {});
+            // v11.12.2 工人數照實算：產出是看鎮上有幾個人做這一行（industry.js 的 dailyUpdate），不是看 data.workers（那個欄位從來沒有填過，所以以前永遠顯示 0）
+            const have = Object.values(this.world?.agents || {}).filter(a => !a.isPlayer && !a.isDead && a.job?.key === def?.npcJob && (!a.status || a.status === 'normal')).length; const need = lv?.workers || 0; const wk = need ? Math.min(have, need) : have;
+            const more = have > need && need ? ` <span class="pg-kv-more">${t('（鎮上做這一行的有 {n} 人）').replace('{n}', have)}</span>` : (!have ? ` <span class="pg-kv-more">${t('（沒有人做這一行，只剩三成產出）')}</span>` : ''); // 不用 <small>：這一列裡的 small 會小於 11px
+            // 存量夠了會放慢：把放慢到幾成寫出來，不然每天產出比等級該有的少很多，看不出為什麼
+            const slow = (typeof FLOW !== 'undefined' && this.world) ? Object.keys(lv?.output || {}).map(r => [r, FLOW.demandMult(this.world, r)]).filter(([, m]) => m < 0.95) : [];
+            const slowNote = slow.length ? `<div class="ic-note">${t('存量夠了，先少做一點：')}${slow.map(([r, m]) => `${esc(this._resName(r))} ${Math.round(m * 100)}%`).join(t('、'))}</div>` : '';
             return `<div class="pg-firm build-card">` + this._indHead(`${def?.icon || '?'} ${esc(def?.name || key)}`, `Lv${data.level}`, 'own')
-                + (lv ? `<div class="ic-note">${esc(lv.bonus || lv.name)}</div>` : '')
-                + this._indKv(t('工人'), `<span><b>${wk}</b>/${lv?.workers || '?'}</span>`)
-                + (out.length ? this._indKv(t('每天產出'), this._indRes(Object.fromEntries(out))) : '')
+                + (lv ? `<div class="ic-note">${esc(lv.name)}${lv.bonus ? t('：') + esc(lv.bonus) : ''}</div>` : '')
+                + this._indKv(t('工人'), `<span><b>${wk}</b>/${lv?.workers || '?'}${more}</span>`)
+                + (out.length ? this._indKv(t('每天產出'), this._indRes(Object.fromEntries(out))) : '') + slowNote
                 + (nx ? this._indKv(t('升下一級要'), this._indRes(nx.cost, true)) : '') + `</div>`; };
         let avail = []; if (ind.needsIndustryChoice || ind._pendingUnlock) { try { avail = this.world.industry.getAvailableIndustries(this.world) || []; } catch (e) {} }
-        const pick = avail.length ? this._icSub(ind.needsIndustryChoice ? t('第一個產業（等村民提案）') : t('可開啟新產業（等村民提案）'), `<div class="pg-firms">${avail.map(i => `<div class="pg-firm build-card">` + this._indHead(`${i.icon} ${esc(t(i.name))}`, '') + `<div class="ic-note">${esc(i.desc)}</div></div>`).join('')}</div>`) : '';
-        return this._ic({ id: 'ind-base', icon: '🏘️', title: t('基礎產業'), defOpen: !before || !!(ind.needsIndustryChoice || ind._pendingUnlock), /* 前面沒有別的卡(剛開鎮)或正等著選產業時先展開 */ chip: { t: `${ind.townLevelName || t('荒村')} Lv${ind.townLevel || 1}`, tone: '' }, sum: `<b>${list.length}</b>/${ind.maxIndustries || 1}`,
-            kpis: [{ v: `Lv${ind.townLevel || 1}`, l: `${t('小鎮等級')}・${ind.townLevelName || t('荒村')}` }, { v: ind.maxIndustries || 1, l: t('產業上限') }, { v: list.length, l: t('已開啟') }],
-            body: (list.length ? `<div class="pg-firms">${list.map(one).join('')}</div>` : (pick ? '' : `<div class="ic-note">${t('還沒有開啟任何產業。')}</div>`)) + pick
+        const pick = avail.length ? this._icSub(ind.needsIndustryChoice ? t('第一項設施（等村民提案）') : t('可開啟新設施（等村民提案）'), `<div class="pg-firms">${avail.map(i => `<div class="pg-firm build-card">` + this._indHead(`${i.icon} ${esc(t(i.name))}`, '') + `<div class="ic-note">${esc(i.desc)}</div></div>`).join('')}</div>`) : '';
+        return this._ic({ id: 'ind-base', icon: '🏘️', title: t('全鎮設施等級'), info: t('這裡是全鎮共用的生產設施，不屬於哪一家。等級決定每天固定產出多少、田地有幾塊，要靠提案升級。真正在做事、領工資的人，是上面「產業與老闆」那幾家的夥計；這一行的人夠不夠，會影響這裡的產出。'), defOpen: !before || !!(ind.needsIndustryChoice || ind._pendingUnlock), /* 前面沒有別的卡(剛開鎮)或正等著選產業時先展開 */ chip: { t: `${ind.townLevelName || t('荒村')} Lv${ind.townLevel || 1}`, tone: '' }, sum: `<b>${list.length}</b>/${ind.maxIndustries || 1}`,
+            kpis: [{ v: `Lv${ind.townLevel || 1}`, l: `${t('小鎮等級')}・${ind.townLevelName || t('荒村')}` }, { v: ind.maxIndustries || 1, l: t('設施上限') }, { v: list.length, l: t('已開啟') }],
+            body: `<div class="ic-note pg-lead">${t('全鎮共用的生產設施，不是哪一家的生意。等級靠提案升級，決定每天的基本產出。')}</div>` + (list.length ? `<div class="pg-firms">${list.map(one).join('')}</div>` : (pick ? '' : `<div class="ic-note">${t('還沒有開啟任何設施。')}</div>`)) + pick
                 + (syn.length ? this._icSub('✨ ' + t('產業加成') + ` <small>${syn.length}</small>`, this._icPills(syn.map(s => `${s.icon} ${esc(t(s.name))}`))) : '') });
     },
     // 農場:每塊田一格(狀態、作物、進度條、水分),收穫紀錄收進詳細
@@ -243,10 +249,10 @@ Object.assign(RimTownApp.prototype, {
             if (crop && p.state === 'growing') { const g = Math.round(p.growthProgress), wl = Math.round(p.waterLevel); h += `<div class="pg-stage"><span>${t('進度')}</span><div class="ic-bar"><i style="width:${Math.max(2, g)}%"></i></div><b>${g}%</b></div><div class="pg-stage pg-water${wl < 30 ? ' low' : ''}"><span>💧 ${t('水分')}</span><div class="ic-bar"><i style="width:${Math.max(2, wl)}%"></i></div><b>${wl}%</b></div>`; }
             return h + `</div>`; };
         const log = (farm.harvestLog || []).slice(-5).reverse();
-        return this._ic({ id: 'ind-farm', icon: '🌾', title: t('農場'), defOpen: false, chip: { t: `${plots.length}/${farm.maxPlots || 0} ${t('塊田')}`, tone: wd ? 'r' : '' }, sum: rd ? `✅ ${rd}` : '',
+        return this._ic({ id: 'ind-farm', icon: '🌾', title: t('田地'), info: t('這幾塊田是農莊的夥計在種的：依季節種作物、澆水、收成。有幾塊田看上面「全鎮設施等級」裡農業的等級。鎮上什麼都不缺時會休耕，省種子錢。'), defOpen: false, chip: { t: `${plots.length}/${farm.maxPlots || 0} ${t('塊田')}`, tone: wd ? 'r' : '' }, sum: rd ? `✅ ${rd}` : '',
             alert: wd ? { t: t('{n} 塊田枯萎了').replace('{n}', wd), tone: 'y' } : dry ? { t: t('{n} 塊田快沒水了').replace('{n}', dry), tone: 'y' } : null,
             kpis: plots.length ? [{ v: cnt('growing'), u: t('塊'), l: t('生長中') }, { v: rd, u: t('塊'), l: t('可收穫'), tone: rd ? 'g' : '' }, { v: cnt('empty') + cnt('tilled'), u: t('塊'), l: t('空地') }].concat(wd ? [{ v: wd, u: t('塊'), l: t('枯萎'), tone: 'r' }] : []) : null,
-            body: plots.length ? `<div class="pg-plots">${plots.map(one).join('')}</div>` : `<div class="ic-note">${t('需要先開啟農業產業才能使用農場。')}</div>`,
+            body: plots.length ? `<div class="ic-note pg-lead">${t('農莊的夥計在這幾塊田上種作物。塊數看農業設施的等級。')}</div><div class="pg-plots">${plots.map(one).join('')}</div>` : `<div class="ic-note">${t('要先有「農業」這項設施才有田地。')}</div>`,
             detail: log.length ? this._icSub(t('收穫紀錄'), this._icRows(log.map(h => [`${esc(t(h.cropName))} <b>×${h.amount}</b> <small>${esc(t(h.quality))}</small>`, `${esc(t(h.season))}・${t('第 {n} 天').replace('{n}', h.day)}`]), 'pg-harv')) : '' });
     },
     // 銀行:狀態、存款／放款／準備金,其他一列一項
