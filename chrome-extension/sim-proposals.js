@@ -87,7 +87,9 @@ class ProposalSystem {
 
     _abs(w) { return w._absDay ? w._absDay() : (w.clock.year * 60 + ['春季', '夏季', '秋季', '冬季'].indexOf(w.clock.season) * 15 + w.clock.day); }
     _npcs(w) { return Object.values(w.agents || {}).filter(a => !a.isPlayer && !a.isDead && !String(a.agentId).startsWith('visit_') && a.currentLocation !== 'exploration'); }
-    _fill(k, p) { let s = (typeof t === 'function') ? t(k) : k; for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(typeof t === 'function' && typeof b === 'string' ? t(b) : String(b)); return s; }
+    _fill(k, p) { let s = (typeof t === 'function') ? t(k) : k; for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(this._fillVal(b)); return s; }
+    // v11.12.1 參數可以是一段要再填字的句子 { k, p }、或不翻譯的原文 { raw }（空字串＝這一段不寫）。以前一律轉成文字，說明裡就出現 [object Object]
+    _fillVal(b) { if (b == null) return ''; if (typeof b === 'string') return typeof t === 'function' ? t(b) : b; if (typeof b === 'object') { if ('raw' in b) return String(b.raw ?? ''); if (typeof b.k === 'string') return this._fill(b.k, b.p || {}); return Array.isArray(b) ? String(b) : ''; } return String(b); }
     _hasValue(a, v) { const vs = a.personality?.values || []; return vs.includes(v) || (typeof t === 'function' && vs.includes(t(v))); }
     _hasTrait(a, tr) { return (a.personality?.traits || []).includes(tr); }
     open() { return this.items.filter(p => p.status === 'open'); }
