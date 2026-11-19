@@ -219,11 +219,17 @@ Object.assign(RimTownApp.prototype, {
     _indBase(before) {
         const ind = this.state.industry || {}; const esc = (x) => this._icEsc(x); const ID = typeof INDUSTRIES !== 'undefined' ? INDUSTRIES : {};
         const list = Object.entries(ind.industries || {}); const syn = ind.activeSynergies || [];
-        const one = ([key, data]) => { const def = ID[key]; const lv = def?.levels?.find(l => l.lv === data.level), nx = def?.levels?.find(l => l.lv === data.level + 1); const wk = Array.isArray(data.workers) ? data.workers.length : (data.workers || 0); const out = Object.entries(data.dailyOutput || {});
+        const one = ([key, data]) => { const def = ID[key]; const lv = def?.levels?.find(l => l.lv === data.level), nx = def?.levels?.find(l => l.lv === data.level + 1); const out = Object.entries(data.dailyOutput || {});
+            // v11.12.2 工人數照實算：產出是看鎮上有幾個人做這一行（industry.js 的 dailyUpdate），不是看 data.workers（那個欄位從來沒有填過，所以以前永遠顯示 0）
+            const have = Object.values(this.world?.agents || {}).filter(a => !a.isPlayer && !a.isDead && a.job?.key === def?.npcJob && (!a.status || a.status === 'normal')).length; const need = lv?.workers || 0; const wk = need ? Math.min(have, need) : have;
+            const more = have > need && need ? ` <small>${t('（鎮上做這一行的有 {n} 人）').replace('{n}', have)}</small>` : (!have ? ` <small>${t('（沒有人做這一行，只剩三成產出）')}</small>` : '');
+            // 存量夠了會放慢：把放慢到幾成寫出來，不然每天產出比等級該有的少很多，看不出為什麼
+            const slow = (typeof FLOW !== 'undefined' && this.world) ? Object.keys(lv?.output || {}).map(r => [r, FLOW.demandMult(this.world, r)]).filter(([, m]) => m < 0.95) : [];
+            const slowNote = slow.length ? `<div class="ic-note">${t('存量夠了，先少做一點：')}${slow.map(([r, m]) => `${esc(this._resName(r))} ${Math.round(m * 100)}%`).join(t('、'))}</div>` : '';
             return `<div class="pg-firm build-card">` + this._indHead(`${def?.icon || '?'} ${esc(def?.name || key)}`, `Lv${data.level}`, 'own')
                 + (lv ? `<div class="ic-note">${esc(lv.bonus || lv.name)}</div>` : '')
-                + this._indKv(t('工人'), `<span><b>${wk}</b>/${lv?.workers || '?'}</span>`)
-                + (out.length ? this._indKv(t('每天產出'), this._indRes(Object.fromEntries(out))) : '')
+                + this._indKv(t('工人'), `<span><b>${wk}</b>/${lv?.workers || '?'}${more}</span>`)
+                + (out.length ? this._indKv(t('每天產出'), this._indRes(Object.fromEntries(out))) : '') + slowNote
                 + (nx ? this._indKv(t('升下一級要'), this._indRes(nx.cost, true)) : '') + `</div>`; };
         let avail = []; if (ind.needsIndustryChoice || ind._pendingUnlock) { try { avail = this.world.industry.getAvailableIndustries(this.world) || []; } catch (e) {} }
         const pick = avail.length ? this._icSub(ind.needsIndustryChoice ? t('第一個產業（等村民提案）') : t('可開啟新產業（等村民提案）'), `<div class="pg-firms">${avail.map(i => `<div class="pg-firm build-card">` + this._indHead(`${i.icon} ${esc(t(i.name))}`, '') + `<div class="ic-note">${esc(i.desc)}</div></div>`).join('')}</div>`) : '';

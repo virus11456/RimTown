@@ -63,7 +63,8 @@ class VillagerAutonomy {
                 // 缺糧優先種糧食；否則輪作（跟上一季不同）、等級高的作物優先、偶爾種經濟作物
                 let pool = crops.slice();
                 if (food < 120) { const f = pool.filter(foodCrop); if (f.length) pool = f; }
-                const rot = pool.filter(c => c.key !== plot.lastCrop); if (rot.length) pool = rot;
+                // v11.12.2 輪作是偏好，不是硬規定：換別的作物都不值得種（鎮上不缺）時，照樣種鎮上要的那一種。以前上一季種小麥、這一季鎮上只缺小麥，田就整季空著
+                const rot = pool.filter(c => c.key !== plot.lastCrop); if (rot.length && (typeof FLOW === 'undefined' || rot.some(c => FLOW.cropScore(w, c) >= 0.15))) pool = rot;
                 if (typeof FLOW !== 'undefined') { pool.sort((a, b) => FLOW.cropScore(w, b) - FLOW.cropScore(w, a)); if (FLOW.cropScore(w, pool[0]) < 0.15) continue; } // v6.79.0 種鎮上需要的(缺糧種糧、工坊缺料種原料);什麼都不缺就休耕,省種子錢
                 else pool.sort((a, b) => b.reqLevel - a.reqLevel || b.sellPrice - a.sellPrice);
                 const top = pool.slice(0, 3);
