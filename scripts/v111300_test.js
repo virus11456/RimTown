@@ -337,7 +337,7 @@ async function run(browser, dev, lang) {
   const tag = `[${dev} ${lang}]`; const cjk = (s) => /[一-鿿]/.test(String(s));
   ok(r.on && r.pop >= 60 && r.head, `${tag} 決策核心開著，鎮上 ${r.pop} 人，首長在鎮上`, { on: r.on, pop: r.pop, head: r.head });
   { const g = Object.fromEntries(r.reg.map(x => [x.k, x]));
-    ok(r.reg.every(x => !x.missing && x.scan === false && x.title) && r.total === 187, `${tag} 登記了六種新的選擇點，都由那一刻送進來（共 ${r.total} 種）`, r.reg);
+    ok(r.reg.every(x => !x.missing && x.scan === false && x.title) && r.total === 194, `${tag} 登記了六種新的選擇點，都由那一刻送進來（共 ${r.total} 種）`, r.reg);
     ok(g.jobSeek.g === 'jobs' && g.jobSeek.kind === 3 && g.jobSwitch.g === 'jobs' && g.wildcat.g === 'jobs' && g.wildcat.kind === 3 && g.wildcatEnd.g === 'jobs' && g.ordain.g === 'jobs' && g.pubCut.g === 'civic' && g.pubCut.kind === 2 && r.groups.jobs === 8 && r.groups.work === 6 && r.groups.civic === 6 && r.groups.flag, `${tag} 額度：求職、改行、罷工、東家回應、神職用自己的一組 jobs（一天 8 件），首長裁人用 civic（一天 6 件）；原本各組的數字沒動`, { reg: r.reg, groups: r.groups }); }
   { const A = r.A;
     ok(Object.values(A.facts).every(Boolean), `${tag} 求職：事實裡有失業幾天、每個缺人的行業（缺幾人、工資）、最做得來的那一行與手藝、工資最高的那一行、身上的錢`, A.facts);
