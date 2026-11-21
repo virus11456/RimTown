@@ -57,7 +57,9 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       poor.relationships.getOrCreate(lender.agentId, lender.name).affinity = 95; lender.relationships.getOrCreate(poor.agentId, poor.name).affinity = 95; w.wallet.bal[poor.agentId] = 0;
       const _r = Math.random; Math.random = () => 0.01; try { WALLET.daily(w); } finally { Math.random = _r; }
       // v9.19.0 借不借由兩個人自己決定:手頭很緊的人開口(選項裡有這位朋友)、朋友答應
-      { const K = DECIDE.KINDS.pinch; const op = K.options(w, poor, K.when(w, poor)).find(o => o.id === 'borrow:' + lender.agentId); if (op) { op.run(w, poor); const R = Math.random; Math.random = () => 0.5; try { DECIDE.drain(w, DECIDE.S(w), w._absDay()); } finally { Math.random = R; } } }
+      let bdbg = null; { const K = DECIDE.KINDS.pinch; const ctx0 = K.when(w, poor); const opts0 = ctx0 ? K.options(w, poor, ctx0) : []; const op = opts0.find(o => o.id === 'borrow:' + lender.agentId); const X0 = DECIDE.S(w); const n0 = (X0.log[lender.agentId] || []).length; let ran = null;
+        if (op) { ran = op.run(w, poor); const R = Math.random; Math.random = () => 0.5; try { DECIDE.drain(w, X0, w._absDay()); } finally { Math.random = R; } }
+        bdbg = { on: DECIDE.on(w), ctx: ctx0, opts: opts0.map(o => o.id.split(':')[0]), hasOp: !!op, ran, cashP: WALLET.get(w, poor), cashL: WALLET.get(w, lender), loan: WALLET.loanSize ? WALLET.loanSize(w, lender) : null, lenderLog: (X0.log[lender.agentId] || []).slice(n0).map(e => e.kind + '.' + e.id), ai: !!w.fullAgentMode, here: [poor.currentLocation, lender.currentLocation], affLP: lender.relationships.getOrCreate(poor.agentId, poor.name).affinity }; }
       const debt = (w.dark?.debts || []).find(d => d.cash && d.r === poor.agentId);
       // 提案出資
       const cands = P._candidates(w, P._abs(w)); const rich = npcs.find(a => a !== poor); w.wallet.bal[rich.agentId] = 5000;
@@ -72,7 +74,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       const save = w.serialize(); const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(save)));
       // 很多人窮 → 鎮況急事
       for (const a of npcs.slice(0, 6)) w.wallet.bal[a.agentId] = 0; const iss = WALLET.issues(w).map(i => i.key);
-      return { wage, gain: +(after - before).toFixed(1), tr: +(w.stockpile.get('silver') - tr0).toFixed(1), poorTh, poorHunger, debt: !!debt, poorGot: WALLET.get(w, poor) > 0 || !!debt, fundBy: pSelf?.fund?.by, value: pSelf?.fund?.value, why, collected, fundText: item?.fundText, brief: /銀幣|silver/i.test(brief), rt: !!w2.wallet && Object.keys(w2.wallet.bal).length === Object.keys(w.wallet.bal).length, iss };
+      return { wage, gain: +(after - before).toFixed(1), tr: +(w.stockpile.get('silver') - tr0).toFixed(1), poorTh, poorHunger, debt: !!debt, poorGot: WALLET.get(w, poor) > 0 || !!debt, bdbg, fundBy: pSelf?.fund?.by, value: pSelf?.fund?.value, why, collected, fundText: item?.fundText, brief: /銀幣|silver/i.test(brief), rt: !!w2.wallet && Object.keys(w2.wallet.bal).length === Object.keys(w.wallet.bal).length, iss };
     });
     ok(wl.gain > 0 && Math.abs(wl.gain + 3 - wl.wage) < 1.5, '有工作的人每天領工資（扣稅後）再付三餐', wl);
     ok(wl.poorTh && wl.poorHunger <= 55, '身無分文的人付不起三餐，會餓、心情變差', wl);
