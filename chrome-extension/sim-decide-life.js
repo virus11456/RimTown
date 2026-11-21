@@ -9,6 +9,13 @@
 //   跟某人結怨很深(scheme)          忍著／栽贓／破壞他的工作／私下拉票／搶功
 //   想不想自己開店(startup)         再想想／開哪一種店(v11.1.0 自己挑)
 //   別鎮開高薪來挖角(poach)         留下／搬過去                          ← 對手鎮來挖角時才會遇到
+// v11.14.0 房子（以前是寫死的規則：最有錢的人一定買、撐不下去的人一定賣、有錢就自動請人、被請的人一定去）：
+//   有一棟房子可以買(houseBuy)      公有房舍標售：不買／買；屋主賣自住的房子：不買／照開價買／只出八折
+//   撐不下去，房子賣不賣(homeSell)  咬牙撐著／拿出來賣／拿去銀行抵押；有人只出八折：不賣這個價／接受
+//   鎮上缺房子(buildRent)           不蓋／自己出錢蓋一棟出租／跟銀行借錢蓋
+//   要不要請人幫傭(hireHelp)        不請／請某一位；錢少了：再撐一陣子／辭退
+//   有人請你去幫傭(helpOffer)       不去／去
+//   這五種（加上首長的 townSale、townBuild，登記在 sim-decide-pol.js）都由 sim-estate.js 在該問的時候送進來，不是每天掃；另有自己的每日額度（DECIDE.AI_GROUP.house，一天 8 件）
 // 結算全部在原本的系統裡（sim-invest.js、sim-shares.js、sim-housing.js、sim-bank.js、sim-faith.js、sim-dark.js、sim-biz.js、sim-rival.js），這裡不動任何數字。
 // AI 開著由 AI 依帳本選（也可以選「其他」）；AI 不在時算每個選項的傾向分數（個性、處境、交情），不是固定機率。
 // 必須在 sim-decide.js 之後載入。
@@ -243,4 +250,16 @@
             return out;
         },
     });
+
+    // ================= 房子（v11.14.0） =================
+    // 事實、選項與結算都在 sim-estate.js（ESTATE.hsFacts／hsOptions）：那邊每週看一次誰夠格、誰撐不下去、缺不缺房，該問的時候才送進來。
+    // 回話晚到時每個選項都會重新對一次現況，房子已經被買走、已經不缺房、人不在了就作廢。
+    const ES = () => (typeof ESTATE !== 'undefined' ? ESTATE : null);
+    const hsF = (key) => (w, a, ctx) => { const E = ES(); return E && E.hsFacts ? E.hsFacts(key, w, a, ctx) : ''; };
+    const hsO = (key) => (w, a, ctx) => { const E = ES(); return E && E.hsOptions ? E.hsOptions(key, w, a, ctx) : []; };
+    DECIDE.kind('houseBuy', { title: '有一棟房子可以買', scan: false, cool: 0, pri: 1.4, aiGroup: 'house', aiKind: 3, when: () => null, facts: hsF('houseBuy'), options: hsO('houseBuy') });
+    DECIDE.kind('homeSell', { title: '撐不下去，房子賣不賣', scan: false, cool: 0, pri: 2, aiGroup: 'house', aiKind: 3, when: () => null, facts: hsF('homeSell'), options: hsO('homeSell') });
+    DECIDE.kind('buildRent', { title: '鎮上缺房子，要不要蓋一棟出租', scan: false, cool: 0, pri: 1.3, aiGroup: 'house', aiKind: 3, when: () => null, facts: hsF('buildRent'), options: hsO('buildRent') });
+    DECIDE.kind('hireHelp', { title: '要不要請人到家裡幫傭', scan: false, cool: 0, pri: 1, aiGroup: 'house', aiKind: 3, when: () => null, facts: hsF('hireHelp'), options: hsO('hireHelp') });
+    DECIDE.kind('helpOffer', { title: '有人請你去幫傭', scan: false, cool: 0, pri: 1.5, aiGroup: 'house', aiKind: 3, when: () => null, facts: hsF('helpOffer'), options: hsO('helpOffer') });
 })();
