@@ -90,35 +90,65 @@ const LABOR = (() => {
     function setJob(w, a, k) { if (typeof Job === 'undefined' || typeof JOB_DEFINITIONS === 'undefined' || !JOB_DEFINITIONS[k]) return false; a.job = new Job(k); return true; }
     // 一位沒工作的人挑最適合的職缺(擅長＋興趣＋工資)
     function bestOpening(a, open) { let best = null, bs = -1e9; for (const [k, n] of Object.entries(open)) { if (n <= 0) continue; const s = skillOf(a, k) + wage(k) * 0.6 + Math.random() * 2 + (typeof HEALTH !== 'undefined' ? (HEALTH.jobFit(a, k) - 1) * 6 : 0); if (s > bs) { bs = s; best = k; } } return best; }
-    function weekly(w) {
+    // v11.13.0 結算（照規則配置的舊路與「交給本人決定」共用，數字、日誌、記憶都不變）
+    // 現在的職缺：名額－已經在做的人（出遠門的不算）
+    function openNow(w) { const all = npcs(w).filter(a => !(w.isAway?.(a.agentId))); const sl = slots(w, all), fl = filled(all); const open = {}; for (const k of Object.keys(RATIO)) open[k] = sl[k] - (fl[k] || 0); return { all, sl, fl, open }; }
+    // 這份工作一天大約領多少（私人產業照東家現在開的成數）
+    function payOf(w, k) { let r = 1; try { const sec = typeof MARKET !== 'undefined' && w.market ? MARKET.JOB2S[k] : null; if (sec && MARKET.ownerOf(w, sec)) r = MARKET.payRate(w, sec); } catch (e) {} return Math.round(wage(k) * (typeof WALLET !== 'undefined' && WALLET.wageIdx ? WALLET.wageIdx() : 1) * r * 10) / 10; }
+    function hire(w, a, k) {
+        const L = S(w); const first = L.jobless[a.agentId] == null && (a.age ?? 30) < ADULT + 4; // 第一次找工作
+        if (!setJob(w, a, k)) return false; delete L.jobless[a.agentId]; L.stats.hired++; if (first) L.stats.grads++;
+        mem(w, a, first ? '我找到第一份工作了：當{j}。' : '總算找到工作了，以後當{j}。', { j: t(jt(k)) }, 7);
+        log(w, first ? '🎓 {a}成年了，找到第一份工作：{j}。' : '💼 {a}找到工作，當上了{j}。', { a: a.name, j: t(jt(k)) }, a.name);
+        return true;
+    }
+    function idle(w, a, d, sad = true) { const L = S(w); if (L.jobless[a.agentId] == null) L.jobless[a.agentId] = d; if (sad) a.addThought?.('jobless', w); }
+    // by：出面裁人的首長（公職、公營行業；交給首長決定時才有）
+    function layoff(w, a, k, d, by) {
+        const L = S(w); a.job = null; L.jobless[a.agentId] = d; L.stats.laidOff++; try { if (typeof BOSS !== 'undefined' && w.market) BOSS.noteCut(w, 1); } catch (e) {}
+        a.addThought?.('laid_off', w);
+        if (by) { mem(w, a, '{j}的人太多了，{h}決定把我裁掉，得重新找工作。', { j: t(jt(k)), h: by.name }, 7); mem(w, by, '{j}的人太多了，我請{a}另外找工作。', { j: t(jt(k)), a: a.name }, 5); try { a.relationships?.getOrCreate?.(by.agentId, by.name)?.modifyAffinity?.(-6); } catch (e) {}
+            log(w, '📉 {j}的人手過剩，{h}決定請{a}另外找工作。', { j: t(jt(k)), h: by.name, a: a.name }, a.name); }
+        else { mem(w, a, '{j}的人太多了，我被裁掉了，得重新找工作。', { j: t(jt(k)) }, 7); log(w, '📉 {j}的人手過剩，{a}被裁員了。', { j: t(jt(k)), a: a.name }, a.name); }
+    }
+    function switchTo(w, a, k0, k1) {
+        if (!a || !setJob(w, a, k1)) return false; S(w).stats.switched++;
+        mem(w, a, '做{a}的人太多了，我改行當{b}。', { a: t(jt(k0)), b: t(jt(k1)) }, 6); log(w, '🔁 {n}從{a}改行當{b}。', { n: a.name, a: t(jt(k0)), b: t(jt(k1)) }, a.name); return true;
+    }
+    const overfull = (n, s) => n > s + 1 && n > s * 1.2;
+    // 這一行可以裁的人（老闆本人、工會領袖不裁），最不擅長、身體最不適合的排前面
+    function cutPool(w, all, k) { const fit = (a) => (typeof HEALTH !== 'undefined' ? HEALTH.jobFit(a, k) : 1); return all.filter(a => a.job?.key === k && !isBoss(w, a) && w.union?.leader !== a.agentId).sort((x, y) => skillOf(x, k) * fit(x) - skillOf(y, k) * fit(y)); } // v7.4.0 身體不適合的先被裁
+    // ch = 這一週的求職、轉行、公職與公營行業的裁員交給本人決定（v11.13.0，每日流程帶進來；選擇點 jobSeek／jobSwitch／pubCut 登記在 sim-decide-work.js）。
+    // 直接呼叫不帶 ch：照舊由規則配置
+    function weekly(w, ch) {
         const L = S(w), d = day(w), wk = Math.floor(d / 7); if (L.lastWeek === wk) return; L.lastWeek = wk;
+        const J = ch && typeof JOBS !== 'undefined' && JOBS.on(w) ? JOBS : null;
         const all = npcs(w).filter(a => !(w.isAway?.(a.agentId))); const sl = slots(w, all); let fl = filled(all);
         // 1) 裁員:人比職缺多出兩成以上的行業,裁掉最不擅長的人(老闆本人、工會領袖不裁),每週最多 2 人
         let cut = typeof BOSS !== 'undefined' && w.market ? BOSS.cutsThisWeek(w) : 0; // v11.6.0 東家這週自己裁的也算在一週 2 人裡
+        let asked = 0;
         for (const k of Object.keys(RATIO).sort((x, y) => ((fl[y] || 0) - sl[y]) - ((fl[x] || 0) - sl[x]))) {
-            if (cut >= 2) break; const n = fl[k] || 0; if (n <= sl[k] + 1 || n <= sl[k] * 1.2) continue;
+            if (cut >= 2) break; const n = fl[k] || 0; if (!overfull(n, sl[k])) continue;
             { const sec = typeof MARKET !== 'undefined' ? MARKET.JOB2S[k] : null; if (sec && typeof BOSS !== 'undefined' && w.market && BOSS.took(w, sec, 'cut')) continue; } // v11.6.0 這一行有東家、這週他自己決定過裁誰或不裁（sim-boss.js）；公職、公營的照這條
-            const fit = (a) => (typeof HEALTH !== 'undefined' ? HEALTH.jobFit(a, k) : 1); const pool = all.filter(a => a.job?.key === k && !isBoss(w, a) && w.union?.leader !== a.agentId).sort((x, y) => skillOf(x, k) * fit(x) - skillOf(y, k) * fit(y)); // v7.4.0 身體不適合的先被裁
-            const a = pool[0]; if (!a) continue; a.job = null; L.jobless[a.agentId] = d; L.stats.laidOff++; cut++; fl[k] = n - 1; try { if (typeof BOSS !== 'undefined' && w.market) BOSS.noteCut(w, 1); } catch (e) {}
-            a.addThought?.('laid_off', w); mem(w, a, '{j}的人太多了，我被裁掉了，得重新找工作。', { j: t(jt(k)) }, 7);
-            log(w, '📉 {j}的人手過剩，{a}被裁員了。', { j: t(jt(k)), a: a.name }, a.name);
+            // v11.13.0 公職與公營的行業沒有東家：首長人在鎮上就由他決定裁誰或不裁（一週最多問兩行）；首長不在、這一行有東家但這週沒輪到他看帳，照原本的規則
+            if (J && J.publicJob(w, k)) { const head = J.headOf(w); if (head) { if (asked >= 2) continue; asked++; const c0 = L.stats.laidOff; J.cutAsk(w, head, k, d); cut += L.stats.laidOff - c0; fl = filled(all); continue; } }
+            const a = cutPool(w, all, k)[0]; if (!a) continue; layoff(w, a, k, d); cut++; fl[k] = n - 1;
         }
         // 2) 求職:沒工作的成年人照擅長、興趣、工資挑職缺;滿 16 歲的孩子也在這裡第一次找工作
         const open = {}; for (const k of Object.keys(RATIO)) open[k] = sl[k] - (fl[k] || 0);
         const seekers = all.filter(a => adult(a) && !a.job).sort(() => Math.random() - 0.5);
-        for (const a of seekers) {
+        if (J) { J.seek(w, seekers, d); fl = filled(all); for (const k of Object.keys(RATIO)) open[k] = sl[k] - (fl[k] || 0); } // v11.13.0 誰先聽到有缺照舊看運氣；接哪一個、要不要先不找，由本人決定（職缺是共用的，前面的人接走就沒了）
+        else for (const a of seekers) {
             const k = bestOpening(a, open);
-            if (!k) { if (L.jobless[a.agentId] == null) L.jobless[a.agentId] = d; a.addThought?.('jobless', w); continue; }
-            const first = L.jobless[a.agentId] == null && (a.age ?? 30) < ADULT + 4; // 第一次找工作
-            if (!setJob(w, a, k)) continue; open[k]--; fl[k] = (fl[k] || 0) + 1; delete L.jobless[a.agentId]; L.stats.hired++; if (first) L.stats.grads++;
-            mem(w, a, first ? '我找到第一份工作了：當{j}。' : '總算找到工作了，以後當{j}。', { j: t(jt(k)) }, 7);
-            log(w, first ? '🎓 {a}成年了，找到第一份工作：{j}。' : '💼 {a}找到工作，當上了{j}。', { a: a.name, j: t(jt(k)) }, a.name);
+            if (!k) { idle(w, a, d); continue; }
+            if (!hire(w, a, k)) continue; open[k]--; fl[k] = (fl[k] || 0) + 1;
         }
         // 3) 轉行:人太多的行業有一人轉到職缺最多的行業
         const over = Object.keys(RATIO).filter(k => (fl[k] || 0) > sl[k]); const best = Object.entries(open).filter(([, n]) => n > 0).sort((x, y) => y[1] - x[1])[0];
         if (over.length && best) {
-            const k0 = over[Math.floor(Math.random() * over.length)]; const a = all.filter(x => x.job?.key === k0 && !isBoss(w, x) && w.union?.leader !== x.agentId).sort((x, y) => skillOf(y, best[0]) - skillOf(x, best[0]))[0];
-            if (a && setJob(w, a, best[0])) { L.stats.switched++; mem(w, a, '做{a}的人太多了，我改行當{b}。', { a: t(jt(k0)), b: t(jt(best[0])) }, 6); log(w, '🔁 {n}從{a}改行當{b}。', { n: a.name, a: t(jt(k0)), b: t(jt(best[0])) }, a.name); }
+            const k0 = over[Math.floor(Math.random() * over.length)]; const cands = all.filter(x => x.job?.key === k0 && !isBoss(w, x) && w.union?.leader !== x.agentId).sort((x, y) => skillOf(y, best[0]) - skillOf(x, best[0]));
+            if (J) J.switchAsk(w, cands.slice(0, 2), k0, best[0], d); // v11.13.0 最適合新工作的兩個人各自決定要不要改行（以前是最適合的那一位直接被轉走）
+            else switchTo(w, cands[0], k0, best[0]);
         }
         for (const id of Object.keys(L.jobless)) { const a = w.agents[id]; if (!a || a.isDead || a.job) delete L.jobless[id]; }
     }
@@ -133,7 +163,7 @@ const LABOR = (() => {
         return { jobs: Object.keys(RATIO).map(k => ({ k, title: t(jt(k)), slots: sl[k], filled: fl[k] || 0 })), unemployed: u, rate: adults ? Math.round(u / adults * 100) : 0, stats: L.stats }; }
     function brief(w, a) { if (!w.labor || !a || a.isPlayer) return ''; if (adult(a) && !a.job) { const since = S(w).jobless[a.agentId]; return since != null ? t('我現在沒有工作（已經 {n} 天）').replace('{n}', Math.max(0, day(w) - since)) : t('我現在沒有工作'); } return ''; }
     function townBrief(w) { if (!w.labor) return ''; const v = view(w); return v.unemployed ? `${t('失業')} ${v.unemployed} ${t('人')}${t('（')}${v.rate}%${t('）')}` : ''; }
-    return { S, RATIO, slots, filled, weekly, fitImmigrant, unemployed, view, brief, townBrief, skillOf };
+    return { S, RATIO, PRIMARY, slots, filled, weekly, fitImmigrant, unemployed, view, brief, townBrief, skillOf, openNow, payOf, hire, idle, layoff, switchTo, cutPool, overfull, jobTitle: jt };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
@@ -145,7 +175,7 @@ if (typeof ProposalSystem !== 'undefined') {
     const PS = ProposalSystem.prototype; const _daily = PS.daily;
     PS.daily = function (w, ...rest) {
         const r = _daily.call(this, w, ...rest);
-        try { if (w.observerMode && w.wallet) { PRICES.daily(w); LABOR.weekly(w); } } catch (e) { console.warn('[Finance] daily', e); }
+        try { if (w.observerMode && w.wallet) { PRICES.daily(w); LABOR.weekly(w, true); } } catch (e) { console.warn('[Finance] daily', e); }
         return r;
     };
     // 物價高、失業多:救濟、生活補助、最低工資的提案更常出現

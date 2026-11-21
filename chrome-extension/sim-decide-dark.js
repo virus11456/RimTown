@@ -32,7 +32,7 @@
     const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
     const tx = (x) => (x && typeof x === 'object') ? (x.raw != null ? String(x.raw) : fill(x.k, x.p)) : (typeof x === 'string' ? t(x) : (x == null ? '' : x));
     const fill = (k, p) => { let s = t(k); for (const [a, b] of Object.entries(p || {})) s = s.split('{' + a + '}').join(tx(b)); return s; };
-    const names = (list) => list.map(o => o.name).join(t('、'));
+    const names = (list) => list.map(o => t(o.name)).join(t('、')); // v11.14.0 名字也要翻：英文介面以前對手的名字照中文印出來
     const DK = () => (typeof DARK !== 'undefined' ? DARK : null);
     const WL = () => (typeof WALLET !== 'undefined' ? WALLET : null);
     const PR = () => (typeof PRESS !== 'undefined' ? PRESS : null);

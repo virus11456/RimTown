@@ -160,6 +160,11 @@
         facts(w, a, ctx) { const P = PR(); return P ? P.tradeFacts(w, a, ctx) : ''; },
         options(w, a, ctx) { const P = PR(); return P ? P.tradeOptions(w, a, ctx) : []; } });
     DECIDE.source('eco', (w, a) => { const P = PR(); return P ? P.brief(w, a) : ''; });
+    // v11.14.0 公有房舍的兩件事交給首長（以前每週自動標售給最有錢的人；有人睡街上、公庫有錢就自動蓋）。
+    // 由 sim-estate.js 在該問的時候送進來：這陣子賣不賣 28 天問一次（有人出得起才問）；蓋不蓋在有人睡街上又一間空屋都沒有的那一週問。額度跟買房賣房同一組（house，一天 8 件）
+    const HSE = (key, what) => (w, a, ctx) => (typeof ESTATE !== 'undefined' && ESTATE[what] ? ESTATE[what](key, w, a, ctx) : (what === 'hsFacts' ? '' : []));
+    DECIDE.kind('townSale', { title: '公有房舍這陣子賣不賣', scan: false, cool: 0, pri: 1.8, aiGroup: 'house', aiKind: 2, when: () => null, facts: HSE('townSale', 'hsFacts'), options: HSE('townSale', 'hsOptions') });
+    DECIDE.kind('townBuild', { title: '有人睡在廣場，公庫蓋不蓋房子', scan: false, cool: 0, pri: 2.4, aiGroup: 'house', aiKind: 2, when: () => null, facts: HSE('townBuild', 'hsFacts'), options: HSE('townBuild', 'hsOptions') });
     // v11.12.0 公庫吃緊，首長怎麼辦（sim-fiscal.js 在公庫連續 5 天不到 10 天、或監管職位因為公庫吃緊空著時送進來，最多十天一次）：先撐著／先補稅務員／向銀行借／提案加稅
     DECIDE.kind('fiscTight', { title: '公庫吃緊，首長怎麼辦', scan: false, cool: 0, pri: 2.5, aiGroup: 'civic', aiKind: 2,
         facts(w, a, ctx) { return typeof FISCAL !== 'undefined' && FISCAL.tightFacts ? FISCAL.tightFacts(w, a, ctx) : ''; },
