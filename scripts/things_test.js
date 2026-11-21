@@ -16,7 +16,10 @@ async function run(browser, lang, vp) {
     const app = window.rimtownApp; app._setPaused?.(true); clearInterval(app.simInterval); app.simInterval = null; const w = app.world; w.observerMode = true; w.fullAgentMode = false; const out = {};
     const tick = (n) => { for (let k = 0; k < n; k++) { w.paused = false; w.tick(); } };
     tick(96 * 21);
-    const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && !a.isDead && (a.age ?? 30) >= 18 && !w.isAway?.(a.agentId));
+    // 名單只收「人在鎮上」的大人，跟遊戲自己的算法一樣（sim-things.js 的 here()）：出門探險的人每格都被跳過、THINGS.daily 也不輪到他，訪客不算鎮民。
+    // 以前名單裡混著正在探險的人，照位置分派角色時剛好派到他，那一段就整段落空：all[3]（晚上去賭場的人）不會走過去、all[13]（勸家人的人）根本沒開口（tried: 0）
+    const inTown = (a) => w.agents[a.agentId] === a && !a.isDead && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) && !String(a.agentId).startsWith('visit_');
+    const npcs = () => Object.values(w.agents).filter(a => !a.isPlayer && (a.age ?? 30) >= 18 && inTown(a));
     const B = w.wallet.bal; const T = () => MONEY.total(w); const P0 = () => MONEY.S(w).pend;
     const logs = () => (w.messageLog || []).slice(-60).map(m => String(m.content || '')).join('\n');
     const fix = (v, f) => { const R = Math.random; Math.random = () => v; try { return f(); } finally { Math.random = R; } };
@@ -55,13 +58,14 @@ async function run(browser, lang, vp) {
       // ---------- 到門口抗議：帶頭的人找看法相近的人一起去；老闆回應；人多就提案禁止 ----------
       { const crowd = all.filter(a => a !== boss && a !== lover && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId)).slice(3, 11); /* 只挑人在鎮上的：帶頭的人如果剛好出門探險，就沒有人號召，這一段會整段落空 */ for (const a of crowd) { X.att[id][a.agentId] = -85; for (const b of crowd) if (a !== b) a.relationships.getOrCreate(b.agentId, b.name).affinity = 40; }
         (X.intent || (X.intent = {}))[id + '|' + crowd[0].agentId] = 'protest'; Th.protest = null; X.lastProtest = -99; /* 全鎮抗議的七天冷卻也要清：隨機小鎮前幾天如果剛好有人抗議過別的東西，帶頭的人就沒有「號召抗議」這個選項，這一段會整段落空 */ Th.banProp = -99; w.proposals.items = (w.proposals.items || []).filter(q => q.kind !== 'thing_ban');
+        for (const o of THINGS.live(w)) if (o.id !== id) o.banProp = w._absDay(); /* 全鎮同時只能掛一件「禁止新東西」的提案：前面隨機那幾週有村民開了店、又剛好惹人嫌的話，這一天輪到它先提，賭場這一案就提不出來（找到的提案是禁那家店的）。別的東西當成「最近才提過」，這一段只看賭場 */
         await daily(0.05);
         if (Th.call) { for (const a of crowd.slice(1)) THINGS.rallyBy(w, a, { tid: id, side: 'con' }); DECIDE.S(w).q = []; Th.call.d = w._absDay() - 1; await daily(0.05); } // v9.27.0 跟不跟由每個人自己決定、隔天才集合：這裡讓大家都答應，再跑隔天
         const pr = (w.proposals.items || []).find(q => q.kind === 'thing_ban');
         out.protest = { n: Th.protest?.n || 0, go: crowd.filter(a => a._thingGo?.place === 'casino_front').length, log: /門口抗議|protest outside/.test(logs()), owner: /捐了|donates|冷冷|coldly/.test(logs()), prop: !!pr && pr.thing === id };
         tick(1); out.protest.at = crowd.filter(a => a._thingAt === 'casino_front').length; out.pr = pr ? pr.id : null; }
       // ---------- 勸家人別再去：成功就答應戒賭 ----------
-      { const reg = all[12] || all[5], fam = all[13] || all[6]; C.v[reg.agentId] = 5; reg.relationships.getOrCreate(fam.agentId, fam.name).status = 'married'; fam.relationships.getOrCreate(reg.agentId, reg.name).status = 'married'; reg.relationships.getOrCreate(fam.agentId, fam.name).affinity = 60;
+      { const home = all.filter(inTown); /* 開場到這裡已經過了大半天：只從現在還在鎮上的人裡挑，開口勸的人不在鎮上就不會有這一次勸 */ const reg = home[12] || home[5], fam = home[13] || home[6]; C.v[reg.agentId] = 5; reg.relationships.getOrCreate(fam.agentId, fam.name).status = 'married'; fam.relationships.getOrCreate(reg.agentId, reg.name).status = 'married'; reg.relationships.getOrCreate(fam.agentId, fam.name).affinity = 60;
         X.att[id][fam.agentId] = -80; X.att[id][reg.agentId] = 30; X.intent[id + '|' + fam.agentId] = 'persuade'; const p0 = X.st.pers;
         await daily(0.0); out.persuade = { tried: X.st.pers - p0, quit: THINGS.quitting(w, id, reg), mult: THINGS.useMult(w, id, reg), log: /苦勸|pleads with/.test(logs()) }; }
       // ---------- 受害者：家人跟著心寒；交情好的朋友拉一把 ----------
