@@ -72,7 +72,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       ok(v.graves >= [2, 5, 9, 13][size] && (size === 0 || v.built >= 3), `初遇${['村莊', '城鎮', '城市', '王都'][size]}：已有老墓碑與建築`, { g: v.graves, b: v.built });
       ok(v.mayor && (zh ? /觀察開始前/.test(v.mayor.period) && /已做了/.test(v.mayor.notes.join('')) : /before we arrived/.test(v.mayor.period)), '現任首長記成觀察開始前就已在任', v.mayor);
       ok(zh ? /第一次見到/.test(v.log) : /First sight of/.test(v.log), '日誌寫「第一次見到某鎮」', v.log);
-      ok(!v.err && v.lvAfter === size, '跑一段時間沒有錯誤、也沒掉級', { e: v.err, lv: v.lvAfter });
+      ok(!v.err && v.lvAfter >= size, '跑一段時間沒有錯誤、也沒掉級', { e: v.err, lv: v.lvAfter }); // 這一項量的是「沒掉級」：初遇的村莊 30 天內長成城鎮（0 → 1）是升格，以前寫成「等級要一模一樣」，大約三次會有一次誤判
       ok(v.saveOrigin, '存讀檔保留城鎮來歷與老底子加成', v.saveOrigin);
     }
     ok(!errs.length, '沒有頁面錯誤', errs.slice(0, 3));

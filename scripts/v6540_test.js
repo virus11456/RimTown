@@ -42,14 +42,19 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       { const MK = w.market; if (MK) { for (const k of Object.keys(MK.owners || {})) if (MK.owners[k] === worker.agentId) { MK.owners[k] = null; if (MK.shares) delete MK.shares[k]; } MK.lastDay = w._absDay(); } } /* v8.7 起合股常讓這個工人變老闆或出錢入股:先拿掉,這裡只量工資和三餐 */
       const before = WALLET.get(w, worker);
       // 一個人身無分文
-      const poor = npcs.find(a => a !== worker); /* v6.90 開局有家族,家人會接濟:先讓他孤身一人 */ for (const o of Object.values(w.agents)) { if (o === poor) continue; if ((o._parentNames || []).includes(poor.name)) o._parentNames = o._parentNames.filter(n => n !== poor.name); const rr = o.relationships?.relationships?.[poor.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; } poor._parentNames = []; for (const rr of Object.values(poor.relationships?.relationships || {})) if (['married', 'dating'].includes(rr.status)) rr.status = 'ex'; w.wallet.bal[poor.agentId] = 0; poor.needs.hunger = 80; const pj = poor.job; poor.job = null; // 沒工作就沒工資
+      const steady = (a) => (a.age ?? 30) >= 18 && a.currentLocation !== 'exploration' && !w.isAway?.(a.agentId) && (!a.status || a.status === 'normal') && !(w.civic?.jail || {})[a.agentId]; /* 隨手抓到出遠門、坐牢、生病或未成年的人，這幾項會量不到（偶發失敗的來源） */
+      const poor = npcs.find(a => a !== worker && steady(a)) || npcs.find(a => a !== worker); /* v6.90 開局有家族,家人會接濟:先讓他孤身一人 */ for (const o of Object.values(w.agents)) { if (o === poor) continue; if ((o._parentNames || []).includes(poor.name)) o._parentNames = o._parentNames.filter(n => n !== poor.name); const rr = o.relationships?.relationships?.[poor.agentId]; if (rr && ['married', 'dating'].includes(rr.status)) rr.status = 'ex'; } poor._parentNames = []; for (const rr of Object.values(poor.relationships?.relationships || {})) if (['married', 'dating'].includes(rr.status)) rr.status = 'ex'; w.wallet.bal[poor.agentId] = 0; poor.needs.hunger = 80; const pj = poor.job; poor.job = null; // 沒工作就沒工資
       { const _md = MARKET.daily; MARKET.daily = () => {}; try { WALLET.daily(w); } finally { MARKET.daily = _md; } } poor.job = pj; /* 只量工資和三餐:市場結算(合股入股)先關掉 */
       const wage = WALLET.WAGE[worker.job.key] * 0.9;
       const after = WALLET.get(w, worker);
       const poorTh = (poor.thoughts || []).some(x => x.kind === 'broke_hungry'), poorHunger = poor.needs.hunger;
       // 借錢:真的有錢移動
-      w.wallet.lastDay = null; const lender = npcs.filter(a => a !== poor).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0]; w.wallet.bal[lender.agentId] = 200; lender.personality.traits = (lender.personality.traits || []).filter(x => x !== 'greedy');
-      poor.relationships.getOrCreate(lender.agentId, lender.name).affinity = 60; lender.relationships.getOrCreate(poor.agentId, poor.name).affinity = 60; w.wallet.bal[poor.agentId] = 0;
+      w.wallet.lastDay = null; const lentOut = (a) => (w.dark?.debts || []).some(x => !x.done && x.cash && x.l === a.agentId); const lender = npcs.filter(a => a !== poor && a !== worker && steady(a) && !lentOut(a)).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0] || npcs.filter(a => a !== poor).sort((x, y) => WALLET.get(w, y) - WALLET.get(w, x))[0]; w.wallet.bal[lender.agentId] = 200;
+      // 這裡量的是「錢真的移動、記成債」：朋友設成沒有特別個性、手上沒有還沒收回的借款、跟他沒有過節的人（最有錢的那位常常已經借出好幾筆，照個性會婉拒）
+      lender.personality.traits = []; lender.personality.values = []; if (w.dark?.wrongs) w.dark.wrongs = w.dark.wrongs.filter(x => !(x.by === poor.agentId && x.to === lender.agentId));
+      // 開口的對象只列「對他最有好感的兩位」：別人對他的好感比這位朋友高的話，這位朋友不在選項裡，所以把這位設成最高
+      for (const o of npcs) { if (o === poor || o === lender) continue; const rr = o.relationships?.relationships?.[poor.agentId]; if (rr && rr.affinity >= 90) rr.affinity = 89; }
+      poor.relationships.getOrCreate(lender.agentId, lender.name).affinity = 95; lender.relationships.getOrCreate(poor.agentId, poor.name).affinity = 95; w.wallet.bal[poor.agentId] = 0;
       const _r = Math.random; Math.random = () => 0.01; try { WALLET.daily(w); } finally { Math.random = _r; }
       // v9.19.0 借不借由兩個人自己決定:手頭很緊的人開口(選項裡有這位朋友)、朋友答應
       { const K = DECIDE.KINDS.pinch; const op = K.options(w, poor, K.when(w, poor)).find(o => o.id === 'borrow:' + lender.agentId); if (op) { op.run(w, poor); const R = Math.random; Math.random = () => 0.5; try { DECIDE.drain(w, DECIDE.S(w), w._absDay()); } finally { Math.random = R; } } }

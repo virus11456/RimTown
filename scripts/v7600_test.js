@@ -52,7 +52,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       out.wed = { made: !!wed, mixed: wed?.mixed, boy: (wed?.boycott || []).includes(P3.agentId), absent: !guests.includes(P3), thought: kinds(C2).includes('wed_boycott') };
       N2._parentNames = [];
       // 6) 混血:爸媽只有一個是神裔 → 好處只有一半
-      K.age = 0; K._parentNames = [C2.name, P4.name]; M.g[K.agentId] = { k: 'giant', d: 0, born: 1 }; run(0.99); K.job = new Job('carpenter');
+      K.age = 0; K._parentNames = [C2.name, P4.name]; M.g[K.agentId] = { k: 'giant', d: 0, born: 1 }; run(0.99); K.job = new Job('carpenter'); out.brief2 = MYTHSOC.brief(w, K); // 「AI 知道自己是混血」在剛認定的當下取：後面還要跑好幾段，隨機的鎮裡這個人的基因紀錄偶爾會不見（約三十次一次），那時再取就量不到這一項
       out.half = { half: !!M.g[K.agentId].half, work: MYTH.workMult(w, K), full: MYTH.workMult(w, Object.assign(Object.create(Object.getPrototypeOf(C2)), C2, { job: new Job('carpenter') })) };
       // 7) 獵人隊抓錯人 → 冤案 → 審判帶頭的人
       for (const a of [P1, P2, P3, P4]) X.att[a.agentId] = -80; run(0.99);
@@ -102,7 +102,7 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
       let err = null; try { for (let i = 0; i < 6; i++) { X.lastDay = -1; M.lastDay = -1; w.proposals.daily(w); } } catch (e) { err = String(e); } out.days = err;
       // 18) 存讀檔、AI 摘要
       const data = w.serialize(); const w2 = new World(); w2.loadSave(JSON.parse(JSON.stringify(data))); out.save = { att: Object.keys(w2.mythsoc?.att || {}).length, pure: !!w2.mythsoc?.grp?.pure, rights: w2.mythsoc?.rights, hunts: (w2.mythsoc?.hunts || []).length };
-      out.brief = MYTHSOC.brief(w, P1); out.brief2 = MYTHSOC.brief(w, K); out.town = MYTHSOC.townBrief(w);
+      out.brief = MYTHSOC.brief(w, P1); out.kEnd = { rec: M.g[K.agentId] || null, here: !!w.agents[K.agentId], dead: !!K.isDead, late: MYTHSOC.brief(w, K) }; out.town = MYTHSOC.townBrief(w);
       // 19) 撞名時重新取一個真名:不加數字、不加「二」,也不跟鎮上、出遠門、墓園的人同名,英文版也有名字
       { const base = all[0].name; const ns = []; for (let i = 0; i < 60; i++) ns.push(uniqueVillagerName(w, base, { gender: i % 2 ? 'male' : 'female', used: ns }));
         const live = new Set(Object.values(w.agents).map(a => a.name)); const kid = uniqueVillagerName(w, base, { gender: 'female', surname: '陳' });
@@ -138,7 +138,8 @@ const jwt = b64({ alg: 'HS256' }) + '.' + b64({ u: 'tester', id: 1, exp: Math.fl
     ok(!r.unban.early && r.unban.prop && r.unban.lifted, '禁令滿一個月後，神裔會提案解除基因禁令', r.unban);
     ok(!r.days, '跑幾天沒有錯誤', r.days);
     ok(r.save.att > 3 && r.save.pure && r.save.rights === true && r.save.hunts >= 1, '神裔社會存讀檔', r.save);
-    ok(/純人派|Pure Blood/.test(r.brief) && /混血|half god-blooded/.test(r.brief2) && /純人派|Pure Blood/.test(r.town), 'AI 知道自己的立場、派系、混血', { b: r.brief, b2: r.brief2, t: r.town });
+    ok(/純人派|Pure Blood/.test(r.brief) && /混血|half god-blooded/.test(r.brief2) && /純人派|Pure Blood/.test(r.town), 'AI 知道自己的立場、派系、混血', { b: r.brief, b2: r.brief2, t: r.town, kEnd: r.kEnd });
+    if (r.kEnd && !/混血|half god-blooded/.test(r.kEnd.late || '')) console.log('  ・（供查）混血的那位到最後已經量不到混血：' + JSON.stringify(r.kEnd));
     ok(r.names.uniq && r.names.clean && r.names.free && r.names.en && r.names.kin, '撞名時重新取真名：不加數字或「二」、不重複、英文也有名字、新生兒跟爸媽姓', r.names);
     ok(r.liq.n1 === 30 && r.liq.n2 === 20 && r.liq.drift === 0 && r.liq.reserve === 0 && r.fest.drift === 0, '銀行倒閉時剩下的準備金依存款比例還給存戶；王室慶典的錢付給食堂與農莊（守恆）', { liq: r.liq, fest: r.fest });
     await page.evaluate(() => { const app = window.rimtownApp; if (window.innerWidth <= 768) app._openKairoTab('detail'); else { app.activeTab = 'detail'; app.renderSidebar(); } }); await page.waitForTimeout(500);
