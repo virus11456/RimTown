@@ -86,11 +86,11 @@ const CLERGY = (() => {
         log(w, '⛪ {r}的奉獻養不起這麼多神職，{a}卸下神職，另外找工作。', { r: R.name[0], a: a.name }, a.name);
     }
     const isBoss = (w, a) => { try { return typeof MARKET !== 'undefined' && w.market && MARKET.ownedBy(w, a.agentId).length > 0; } catch (e) { return false; } };
-    function ordain(w, C, R, d) {
-        const pool = FAITH.believers(w, R).filter(a => !isPriest(a) && (a.age ?? 30) >= 18 && a.job?.key !== 'mayor' && !isBoss(w, a) && !(w.isAway?.(a.agentId)) && piety(w, a) >= CALL);
-        const idle = pool.filter(a => !a.job).sort((x, y) => piety(w, y) - piety(w, x))[0];
-        const called = idle ? null : pool.filter(a => piety(w, a) >= CALL_QUIT && !['guard', 'doctor', 'researcher'].includes(a.job?.key)).sort((x, y) => piety(w, y) - piety(w, x))[0];
-        const a = idle || (called && Math.random() < 0.5 ? called : null); if (!a) return null;
+    // 可以被按立的人：這個教團夠虔誠的成年信徒（首長、東家不算）
+    const callPool = (w, R) => FAITH.believers(w, R).filter(a => !isPriest(a) && (a.age ?? 30) >= 18 && a.job?.key !== 'mayor' && !isBoss(w, a) && !(w.isAway?.(a.agentId)) && piety(w, a) >= CALL);
+    const canQuit = (w, a) => piety(w, a) >= CALL_QUIT && !['guard', 'doctor', 'researcher'].includes(a.job?.key);
+    // 當上神職的結算（照規則的舊路與本人自己答應共用）
+    function take(w, C, R, a) {
         if (typeof Job === 'undefined' || typeof JOB_DEFINITIONS === 'undefined' || !JOB_DEFINITIONS.priest) return null;
         const was = a.job?.title || null; a.job = new Job('priest'); C.owe[a.agentId] = 0; C.st.in++;
         try { if (w.labor?.jobless) delete w.labor.jobless[a.agentId]; } catch (e) {}
@@ -98,7 +98,22 @@ const CLERGY = (() => {
         log(w, '⛪ {r}的奉獻夠養多一位神職，{a}成了神職。', { r: R.name[0], a: a.name }, a.name);
         return a;
     }
-    function review(w, C, F, d) {
+    // ch = 當不當神職交給本人決定（v11.13.0，每日流程帶進來；選擇點 ordain 登記在 sim-decide-work.js）；直接呼叫不帶 ch 照舊
+    function ordain(w, C, R, d, ch) {
+        const pool = callPool(w, R);
+        if (ch) { // 以前沒工作的直接變神職、有工作的擲 50% 辭職；現在照同樣的順序去問本人：最虔誠、沒工作的先問，沒有才問有工作的。婉拒過的四週內不再問；一次檢討最多問兩位
+            C.no = C.no || {}; C.ask = C.ask || {}; for (const id of Object.keys(C.no)) if (C.no[id] <= d) delete C.no[id];
+            const pe = C.ask[R.id]; if (pe && d - pe.d < 2 && w.agents[pe.id] && !isPriest(w.agents[pe.id]) && !(C.no[pe.id] > d)) return null; // 上一位還在想
+            const free = pool.filter(a => !(C.no[a.agentId] > d)); const order = free.filter(a => !a.job).sort((x, y) => piety(w, y) - piety(w, x)).concat(free.filter(a => a.job && canQuit(w, a)).sort((x, y) => piety(w, y) - piety(w, x)));
+            for (const a of order.slice(0, 2)) { if (priestsOf(w, R).length >= cap(w, R)) break; C.ask[R.id] = { id: a.agentId, d }; let sent = false; try { sent = JOBS.ordainAsk(w, a, R, d); } catch (e) { console.warn('[Jobs] ordain', e); } if (!sent) { delete C.ask[R.id]; continue; } if (isPriest(a)) return a; if (!(C.no[a.agentId] > d)) return null; /* 還在想：等他回話 */ }
+            return null;
+        }
+        const idle = pool.filter(a => !a.job).sort((x, y) => piety(w, y) - piety(w, x))[0];
+        const called = idle ? null : pool.filter(a => canQuit(w, a)).sort((x, y) => piety(w, y) - piety(w, x))[0];
+        const a = idle || (called && Math.random() < 0.5 ? called : null); if (!a) return null;
+        return take(w, C, R, a);
+    }
+    function review(w, C, F, d, ch) {
         for (const R of F.rels) {
             if (!ready(w, R)) continue;
             const ps = priestsOf(w, R); const k = keep(w, R); const h = headId(w, R);
@@ -106,13 +121,13 @@ const CLERGY = (() => {
             const out = ps.slice().sort((x, y) => ((x.agentId === h) - (y.agentId === h)) || ((C.owe[y.agentId] || 0) - (C.owe[x.agentId] || 0)) || (piety(w, x) - piety(w, y)))[0];
             if (ps.length > k && out) { leave(w, C, R, out, d); continue; }
             const late = ps.find(a => (C.owe[a.agentId] || 0) >= OWE_OUT && ps.length > 1); if (late) { leave(w, C, R, late, d); continue; }
-            if (ps.length < cap(w, R)) ordain(w, C, R, d);
+            if (ps.length < cap(w, R)) ordain(w, C, R, d, ch);
         }
     }
     function daily(w) {
         if (!on(w)) return; const C = S(w), F = FAITH.S(w), d = day(w); if (C.lastDay === d) return; C.lastDay = d;
         track(w, C, F); adopt(w, F); pay(w, C, F);
-        if (d % 7 === 3) review(w, C, F, d);
+        if (d % 7 === 3) review(w, C, F, d, typeof JOBS !== 'undefined' && JOBS.on(w));
     }
     // 給信徒看的一句話（要不要奉獻時）
     function titheLine(w, R) {
@@ -129,7 +144,7 @@ const CLERGY = (() => {
         if (!on(w)) return null; const ps = priestsOf(w, R);
         return { n: ps.length, cap: cap(w, R), keep: keep(w, R), ready: ready(w, R), income: r2(income(w, R)), wage: r2(ps.reduce((s, a) => s + wageOf(w, a), 0)), std: r2(std(w)), short: short(w, R), reach: reach(w, R), paid: Math.round(R.wages || 0) };
     }
-    return { S, on, paidBy, isPriest, priestsOf, count, wageOf, std, income, budget, cap, keep, ready, reach, reserve, short, daily, review, pay, track, ordain, titheLine, describe, rowOf, SPAN, FUND_DAYS, OWE_OUT };
+    return { S, on, paidBy, isPriest, priestsOf, count, wageOf, std, income, budget, cap, keep, ready, reach, reserve, short, daily, review, pay, track, ordain, take, callPool, canQuit, relOf, piety, headId, CALL, CALL_QUIT, titheLine, describe, rowOf, SPAN, FUND_DAYS, OWE_OUT };
 })();
 if (typeof globalThis !== 'undefined') globalThis.CLERGY = CLERGY;
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, { clergy_unpaid: { mood: -5, opinion: 0, days: 3, label: t('教團發不出薪水') } });

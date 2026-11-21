@@ -114,11 +114,12 @@ const MARKET = (() => {
         const M = S(w); const tax = Wl.tax || 0; const floorNet = Wl.minWage || 0;
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id) continue; const boss = w.agents[id];
-            if ((M.strike?.[k] || -1) >= day(w)) continue; // v6.90.0 罷工期間沒上工、也沒工資
+            const out = (M.strike?.[k] || -1) >= day(w) ? (M.strikers?.[k] || true) : null; // v11.13.0 罷工由工人各自決定：只有站出來的人沒上工、沒工資，其餘照常領（照規則的舊路沒有名單，整行都算）
+            if (out === true) continue; // v6.90.0 罷工期間沒上工、也沒工資
             const jail = typeof MONEY !== 'undefined' && MONEY.laborSet ? MONEY.laborSet(w) : null; // v7.7.2 服公共勞役的人沒工資
             const R = rivalOf(w, k); // v9.7.0 對手店的工人由對手老闆發薪
             if (R) { const rws = workersOf(w, k, all).filter(a => R.emp?.[a.agentId] && a.agentId !== R.owner && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a))); if (rws.length) payFirm(w, Wl, k, R.owner, rws, R.pay ?? 1, R); }
-            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(R && R.emp?.[a.agentId]) && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a))); if (!ws.length) continue; // v11.2.0 沒去上工的那天沒有工資 // v6.93.0 罷工中的會員、被開除的人沒工資
+            const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !(R && R.emp?.[a.agentId]) && !(typeof UNION !== 'undefined' && UNION.idle(w, a)) && !(jail && jail.has(a.agentId)) && !(typeof DAY !== 'undefined' && DAY.noPay(w, a)) && !(out && out.includes(a.agentId))); if (!ws.length) continue; // v11.2.0 沒去上工的那天沒有工資 // v6.93.0 罷工中的會員、被開除的人沒工資
             payFirm(w, Wl, k, id, ws, payRate(w, k), null);
         }
     }
@@ -149,8 +150,9 @@ const MARKET = (() => {
             const R = M.rival?.[k]; if (R) { R.hist = R.hist || []; R.hist.push([Math.round((R.rev || 0) * 10) / 10, Math.round((R.cost || 0) * 10) / 10]); if (R.hist.length > 7) R.hist.shift(); R.rev = 0; R.cost = 0; } }
         assign(w, all, d);
         try { if (typeof BOSS !== 'undefined') BOSS.daily(w); } catch (e) { console.warn('[Boss] daily', e); } // v11.6.0 今天輪到的東家看帳：帳記完、產權交接完，任何一條每週規則之前
-        if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d); risk(w, all); }
-        endStrikes(w, all, d);
+        const ch = typeof JOBS !== 'undefined' && JOBS.on(w); // v11.13.0 沒有工會的罷工：工人罷不罷、東家讓不讓，交給本人決定（選擇點 wildcat／wildcatEnd，登記在 sim-decide-work.js）
+        if (d % 7 === 0) { corpTax(w, all); adjust(w, all); unrest(w, all, d, ch); risk(w, all); }
+        endStrikes(w, all, d, ch);
         hunger(w, all);
     }
     // 產業估價:底價＋每個工人＋最近一週的利潤。公營產業的工資由公庫付、帳上看不到,要用估計的工資扣掉(以前漏扣,估價虛高到沒人買得起)
@@ -218,25 +220,47 @@ const MARKET = (() => {
         }
     }
     // v6.90.0 罷工:工資被壓到七成以下、工人心情又差,就罷工兩天;老闆通常讓步加薪(吝嗇的不一定)
-    function unrest(w, all, d) {
+    // ch = 交給本人決定（v11.13.0，每日流程帶進來）；直接呼叫不帶 ch 照舊擲骰
+    function unrest(w, all, d, ch) {
         const M = S(w); M.strike = M.strike || {};
         for (const k of Object.keys(SECTORS)) {
             const id = ownerOf(w, k); if (!id || (M.strike[k] || -1) >= d) continue; const ws = workersOf(w, k, all).filter(a => a.agentId !== id && !isRivalEmp(w, k, a)); if (ws.length < 4) continue; // v9.7.0 對手店的工人不跟著罷工
             // v9.6.0 工資壓在七成以下超過三週,心情再好也忍不下去(以前要心情低於 48 才罷工,一整年幾乎沒人罷工,工資一直卡在五成)
             M.low = M.low || {}; if (payRate(w, k) > 0.7) { delete M.low[k]; continue; } if (M.low[k] == null) M.low[k] = d;
             if (typeof UNION !== 'undefined' && w.union?.on && ws.filter(a => UNION.isMember(w, a)).length >= Math.max(2, ws.length / 2)) continue; // v9.9.1 這一行過半是工會會員:交給工會談判、由工會罷工(以前兩套罷工會同時發生)
-            const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if ((mood > 48 && d - M.low[k] < 21) || Math.random() > 0.5) continue;
+            const mood = ws.reduce((s, a) => s + (a.mood || 50), 0) / ws.length; if (mood > 48 && d - M.low[k] < 21) continue;
+            if (ch) { try { JOBS.walkAsk(w, k, ws, d); } catch (e) { console.warn('[Jobs] walk', e); } continue; } // v11.13.0 以前這裡擲 50%；現在每個工人自己決定罷不罷，夠多人站出來才罷得成
+            if (Math.random() > 0.5) continue;
+            if (M.strikers) delete M.strikers[k]; if (M.walk) delete M.walk[k];
             M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1; const boss = w.agents[id];
             log(w, '✊ {s}的 {n} 個工人罷工了，要求{o}加薪。', { s: name(k), n: ws.length, o: boss?.name || '' }, boss?.name || '');
             for (const a of ws) mem(w, a, '我們{s}的人一起罷工，工資再這樣壓下去活不下去。', { s: name(k) }, 7);
         }
     }
-    function endStrikes(w, all, d) {
+    // v11.13.0 夠多工人決定罷工：罷工兩天；yes 是站出來的人（只有他們不上工、沒工資），lead 是帶頭的那一位
+    function walkStart(w, k, yes, lead, n, d = day(w)) {
+        const M = S(w); M.strike = M.strike || {}; const id = ownerOf(w, k); const boss = w.agents[id]; M.strikers = M.strikers || {}; M.strikers[k] = yes.map(a => a.agentId);
+        M.strike[k] = d + 2; M.strikes = (M.strikes || 0) + 1;
+        log(w, '✊ {s}的 {m} 個工人裡有 {n} 個罷工了，要求{o}加薪。帶頭的是{l}。', { s: name(k), m: n, n: yes.length, o: boss?.name || '', l: lead?.name || '' }, boss?.name || '');
+        for (const a of yes) mem(w, a, '我們{s}的人一起罷工，工資再這樣壓下去活不下去。', { s: name(k) }, 7);
+        if (boss) mem(w, boss, '{s}的工人罷工了，帶頭的是{l}。', { s: name(k), l: lead?.name || '' }, 6);
+    }
+    // 罷工之後東家的三種回應（照規則的舊路與東家自己決定共用）
+    function giveIn(w, k, boss) { const M = S(w); M.pay[k] = Math.min(1.1, Math.round((payRate(w, k) + 0.15) * 100) / 100); log(w, '🤝 {o}讓步了，{s}的工資調回原本的 {p}%。', { o: boss.name, s: name(k), p: Math.round(M.pay[k] * 100) }, boss.name); return M.pay[k]; }
+    function holdOut(w, k, boss) { log(w, '😠 {o}不肯讓步，{s}的工人只好回去上工。', { o: boss.name, s: name(k) }, boss.name); }
+    function sackLead(w, k, boss, lead) {
+        if (!lead || lead.isDead || JOB2S[lead.job?.key] !== k) return false; const d = day(w);
+        lead.job = null; try { if (typeof LABOR !== 'undefined') { const L = LABOR.S(w); L.jobless[lead.agentId] = d; L.stats.laidOff++; } } catch (e) {}
+        lead.addThought?.('laid_off', w); mem(w, lead, '{o}因為我帶頭罷工，把我開除了。', { o: boss.name }, 8); try { lead.relationships?.getOrCreate?.(boss.agentId, boss.name)?.modifyAffinity?.(-25); } catch (e) {}
+        log(w, '🚪 {o}不肯讓步，還開除了帶頭罷工的{a}。', { o: boss.name, a: lead.name }, boss.name); return true;
+    }
+    function endStrikes(w, all, d, ch) {
         const M = S(w); if (!M.strike) return;
         for (const [k, until] of Object.entries(M.strike)) {
             if (until !== d - 1) continue; const id = ownerOf(w, k); const boss = id && w.agents[id]; if (!boss) continue;
-            if (!has(boss, 'greedy') || Math.random() < 0.4) { M.pay[k] = Math.min(1.1, Math.round((payRate(w, k) + 0.15) * 100) / 100); log(w, '🤝 {o}讓步了，{s}的工資調回原本的 {p}%。', { o: boss.name, s: name(k), p: Math.round(M.pay[k] * 100) }, boss.name); }
-            else log(w, '😠 {o}不肯讓步，{s}的工人只好回去上工。', { o: boss.name, s: name(k) }, boss.name);
+            if (ch) { let took = false; try { took = JOBS.endAsk(w, k, boss, d, until); } catch (e) { console.warn('[Jobs] end', e); } if (took) continue; } // v11.13.0 東家人在鎮上就由他決定讓不讓；問不到他才照下面的規則
+            if (!has(boss, 'greedy') || Math.random() < 0.4) giveIn(w, k, boss);
+            else holdOut(w, k, boss);
         }
     }
     // v6.90.0 經營風險:每週每家產業有小機率出事(火災、壞帳、貨物被偷),老闆自己吸收損失
@@ -253,7 +277,7 @@ const MARKET = (() => {
               if (to) addId(w, to.agentId, loss); else toTown(w, loss, t('修繕與賠償')); }
         }
     }
-    const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; if (typeof UNION !== 'undefined' && UNION.idle(w, a)) return true; /* v6.93.0 工會罷工的會員、被開除的人不上工 */ return !!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId); };
+    const onStrike = (w, a) => { const k = JOB2S[a?.job?.key]; const M = w.market; if (typeof UNION !== 'undefined' && UNION.idle(w, a)) return true; /* v6.93.0 工會罷工的會員、被開除的人不上工 */ if (!(k && M?.strike && (M.strike[k] || -1) >= day(w) && ownerOf(w, k) !== a.agentId)) return false; const out = M.strikers?.[k]; return out ? out.includes(a.agentId) : true; /* v11.13.0 工人各自決定罷不罷時，只有站出來的人不上工 */ };
     // 沒錢就真的吃不到:先找家人接濟
     function family(w, a) {
         const out = new Set(); const R = a.relationships?.relationships || {};
@@ -340,7 +364,7 @@ const MARKET = (() => {
         const v = npcs(w).map(a => bal(w, a.agentId)).sort((x, y) => x - y); const n = v.length; const s = v.reduce((x, y) => x + y, 0); if (!n || !s) return 0;
         let c = 0; v.forEach((x, i) => { c += (2 * (i + 1) - n - 1) * x; }); return Math.round(c / (n * s) * 100) / 100;
     }
-    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sellFirm, sale, procure, payroll, daily, assign, adjust, feed, markFed, isHungry, hunger, leaveHungry, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
+    return { canBuy, rivalOf, isRivalEmp, firmsOf, capOf, shareOf, quality, rebate, SECTORS, PUBLIC, JOB2S, SPLIT, S, sell, sellFirm, sale, procure, payroll, daily, assign, adjust, walkStart, giveIn, holdOut, sackLead, feed, markFed, isHungry, hunger, leaveHungry, heirsOf, heirsAll, ownerOf, ownedBy, workersOf, payRate, privatePaid, brief, describe, view, gini, name, value, corpTax, unrest, endStrikes, risk, onStrike, TAX, CORP, PROCURE_SHARE };
 })();
 
 if (typeof THOUGHT_DEFS !== 'undefined') Object.assign(THOUGHT_DEFS, {
