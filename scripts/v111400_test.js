@@ -224,6 +224,8 @@ async function run(browser, dev, lang) {
         // 先不蓋：沒有房子，睡廣場的人記得
         const n0 = Object.keys(E.units).length; const tr0 = w.stockpile.get('silver'); const a0 = h1.relationships.getOrCreate(L.agentId, L.name).affinity || 0; const Ln = leak(() => runOp(KT, L, c, 'no'));
         D.no = { units: Object.keys(E.units).length - n0, tr: r3(tr0 - w.stockpile.get('silver')), leak: Ln.leak, log: logs().slice(-15).some(x => x.includes('🏚️') && has(x, L)), mem: memHas(h1, '我們沒地方住，{a}卻說公庫先不蓋房子。'), aff: (h1.relationships.relationships[L.agentId]?.affinity || 0) < a0, still: E.homeless[h1.agentId] !== undefined, again: KT.options(w, L, c).length };
+        // v11.14.0 整合時加：同一位首長說過先不蓋，三週內不再問（以前每週都問、每週都扣睡廣場的人對他的好感）；過了三週、或換了首長，重新問
+        { const q = () => capture(() => ESTATE.marketBy(w, hh2)).got.filter(x => x.kind === 'townBuild').length; const P = H.pubNo; const q1 = q(); P.d -= 20; const q20 = q(); P.by = 'someone_else'; const qNew = q(); P.by = L.agentId; P.d -= 1; const q21 = q(); D.quiet = { set: P.by === L.agentId, q1, q20, qNew, q21 }; }
         // 蓋一棟：公庫付錢、用掉料，睡廣場的人當下就搬進去
         aged(); const Cq2 = capture(() => ESTATE.marketBy(w, hh2)).got.filter(x => x.kind === 'townBuild'); const c2 = Cq2[0]?.ctx || {}; const wd0 = w.stockpile.get('wood'), st0 = w.stockpile.get('stone'); const pb0 = E.stats.publicBuilt || 0; const a1 = h2.relationships.getOrCreate(L.agentId, L.name).affinity || 0;
         const Lb = leak(() => runOp(KT, L, c2, 'one')); const housed = [h1, h2].filter(h => E.homeless[h.agentId] === undefined && E.home[h.agentId] && E.units[E.home[h.agentId]]?.pub);
@@ -405,6 +407,7 @@ async function run(browser, dev, lang) {
     ok(D.homeless === 2 && D.ask.n === 1 && D.ask.who && D.ask.num >= 1 && D.ask.tok, `${tag} 有人睡在廣場、一間空屋都沒有：問首長公庫蓋不蓋`, { h: D.homeless, a: D.ask });
     ok(Object.values(D.facts).every(Boolean) && /^no,one(,two)?$/.test(D.ids) && D.notLeader === 0, `${tag} 題目：幾戶幾個人沒地方住、蓋一棟多少錢與用多少料、公庫有多少、可以動用多少；選項是先不蓋／蓋一棟（／蓋兩棟）；不是首長不問`, { f: D.facts, ids: D.ids });
     ok(D.lean.ok, `${tag} 照個性：心腸好、看重社群的首長比小氣貪心的更會蓋`, D.lean);
+    ok(D.quiet.set && D.quiet.q1 === 0 && D.quiet.q20 === 0 && D.quiet.qNew === 1 && D.quiet.q21 === 1, `${tag} 先不蓋之後同一位首長三週內不再被問，換了首長或過了三週才再問`, D.quiet);
     ok(D.no.units === 0 && D.no.tr === 0 && D.no.leak === 0 && D.no.log && D.no.mem && D.no.aff && D.no.still && D.no.again === 0, `${tag} 先不蓋：公庫不動，鎮上看得到這個決定，睡廣場的人記得、對首長的好感下降`, D.no);
     ok(D.one.units === 1 && D.one.pub === 1 && D.one.tr > 0 && D.one.tr <= 100 && D.one.wood === 10 && D.one.stone === 6 && D.one.leak === 0 && D.one.housed === 1 && D.one.log && D.one.mem && D.one.hmem && D.one.aff, `${tag} 蓋一棟：公庫出 100 銀幣（工程款有一部分付給鎮上的木作坊，公庫淨少 ${D.one.tr}）、用掉 10 木 6 石，睡廣場的一戶當下就搬進去，大家記得`, D.one);
     ok(D.broke.ids === '' && D.broke.asked === 0 && D.twoIds === 'no,one,two' && D.two.units === 2 && D.two.tr > D.one.tr && D.two.tr <= 200 && D.two.homeless === 0, `${tag} 公庫沒有可以動用的錢就不問；缺得多時可以一次蓋兩棟，沒有人再睡廣場`, { b: D.broke, t: D.two });

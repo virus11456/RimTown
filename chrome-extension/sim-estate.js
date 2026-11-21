@@ -660,6 +660,7 @@ const ESTATE = (() => {
     function askPubBuild(w, short) {
         const E = S(w), H = E.hs, d = day(w); const left = short - Object.values(E.units).filter(u => u.built === d).length; const n = Math.min(2, left, pubCan(w)); if (!needPub(w) || n <= 0) return;
         const L = leaderOf(w); if (!L) { pubBuildDo(w, n, null); return; } // 首長不在鎮上、或鎮上還沒有首長：照原本的規則，公庫直接蓋
+        if (H.pubNo && H.pubNo.by === L.agentId && d - H.pubNo.d < 21) return; // 同一位首長說過先不蓋：三週內不再問（換了首長就重新問），不然每週都問、每週都讓睡廣場的人再失望一次
         H.pubB = { d, n, tok: ++H.n }; askMany(w, [{ a: L, kind: 'townBuild', ctx: { t: 'build', d, n, tok: H.pubB.tok } }]);
     }
     function livePubBuild(w, a, c) {
@@ -680,7 +681,7 @@ const ESTATE = (() => {
         const go = (k) => (w2, a2) => { const X2 = livePubBuild(w2, a2, c); if (!X2) return null; delete X2.E.hs.pubB; const n = pubBuildDo(w2, Math.min(k, X2.n), a2); if (!n) return { k: '公庫的錢或料不夠，沒蓋成' };
             st(w2, 'hsPubYes'); mem(w2, a2, '有人睡在廣場，我決定由公庫出錢蓋公有房舍。', {}, 6); tell(w2, a2, '{a}決定由公庫蓋房子給沒地方住的人。', 5); rehouse(w2); return { k: '公庫蓋了 {n} 棟公有房舍', p: { n } }; };
         const out = [{ id: 'no', quiet: true, text: '公庫先不蓋，錢留著', say: '決定公庫先不蓋公有房舍', why: '公庫的錢要留著發薪水，房子的事再等等。', lean: { safe: 0.2 }, adj: -care * 0.5,
-            run: (w2, a2) => { const X2 = livePubBuild(w2, a2, c); if (!X2) return null; delete X2.E.hs.pubB; st(w2, 'hsPubNo'); log(w2, '🏚️ {a}決定公庫先不蓋房子，{n} 戶人家還睡在廣場。', { a: a2.name, n: X2.hids.length }, a2.name); tell(w2, a2, '我們沒地方住，{a}卻說公庫先不蓋房子。', -6); return { k: '公庫先不蓋' }; } },
+            run: (w2, a2) => { const X2 = livePubBuild(w2, a2, c); if (!X2) return null; delete X2.E.hs.pubB; X2.E.hs.pubNo = { by: a2.agentId, d: day(w2) }; st(w2, 'hsPubNo'); log(w2, '🏚️ {a}決定公庫先不蓋房子，{n} 戶人家還睡在廣場。', { a: a2.name, n: X2.hids.length }, a2.name); tell(w2, a2, '我們沒地方住，{a}卻說公庫先不蓋房子。', -6); return { k: '公庫先不蓋' }; } },
             { id: 'one', quiet: true, text: { k: '公庫出 {n} 銀幣，蓋一棟公有房舍', p: { n: PUB_COST } }, say: '由公庫出錢蓋一棟公有房舍', why: '不能讓人睡在廣場上。', lean: { bond: 0.2 }, adj: care * 0.5, run: go(1) }];
         if (X.n >= 2) out.push({ id: 'two', quiet: true, text: { k: '公庫出 {n} 銀幣，蓋兩棟公有房舍', p: { n: PUB_COST * 2 } }, say: '由公庫出錢蓋兩棟公有房舍', why: '缺的不只一棟，一次蓋夠。', lean: { bond: 0.2 }, adj: care * 0.5 + (X.hids.length >= 2 ? 0.1 : -0.3), run: go(2) });
         return calib(out, X.n >= 2 ? [0.18, 0.32, 0.5] : [0.2, 0.8]);
