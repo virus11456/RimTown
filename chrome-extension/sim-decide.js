@@ -41,10 +41,11 @@ const DECIDE = (() => {
     const notable = (w, a) => { try { return typeof CROWD !== 'undefined' && CROWD.isNotable ? CROWD.isNotable(w, a) : true; } catch (e) { return true; } };
     const AI_MAX = 10, BATCH = 5, LOG_CAP = 5, NOISE = 1.8;
     const AI_KIND = 2; // v9.28.2 同一類的事一天最多問 AI 兩件，其餘照個性：不然鎮上窮人多的時候，名額全被「手頭很緊」用光，感情、恩怨、選舉這些事輪不到 AI 想
-    const AI_GROUP = { deal: 20, civic: 6, work: 6, calam: 12, order: 8 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
+    const AI_GROUP = { deal: 20, civic: 6, work: 6, calam: 12, order: 8, house: 8 }; // v11.0.0 分組額度：組名 → 一天最多問 AI 幾件（v11.5.0 公家的事另外一組：首長每週的採購、這趟買賣，一天 6 件，不擠掉全鎮的 10 件）
     // v11.6.0 東家每週看帳（bossWeek）另外一組 work，一天 6 件
     // v11.7.0 災難裡的人（疫情、喪屍、末日、災後反應）另外一組 calam，一天 12 件：災難時一天多出很多題，不能把平常的 10 件擠光
     // v11.8.0 派系、報社與治安（小團體、報社主筆、守衛、襲擊時的首長）另外一組 order，一天 8 件
+    // v11.14.0 房子（買房賣房、蓋出租屋、公有房舍、請人幫傭）另外一組 house，一天 8 件：這些事集中在每週收租那一天，不跟東家看帳（work）搶名額
     const AI_RESERVE = 2; // 每天的名額留兩個給「別人找上門」的事(有人來借錢、來道歉、先開口)：不然早上掃一輪就用完，被找上的人只能照個性推估
 
     function S(w) {
