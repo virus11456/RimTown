@@ -57,6 +57,7 @@ let pass = 0, fail = 0; const ok = (c, m, x) => { if (c) { pass++; console.log('
       poor.relationships.getOrCreate(lender.agentId, lender.name).affinity = 95; lender.relationships.getOrCreate(poor.agentId, poor.name).affinity = 95; w.wallet.bal[poor.agentId] = 0;
       const _r = Math.random; Math.random = () => 0.01; try { WALLET.daily(w); } finally { Math.random = _r; }
       // v9.19.0 借不借由兩個人自己決定:手頭很緊的人開口(選項裡有這位朋友)、朋友答應
+      w.wallet.bal[lender.agentId] = 200; /* 上面那一天過完，這位朋友有時候把錢花掉大半（量到過只剩 38.5）：身上不到 40 的人不會被列成開口的對象，這一項就量不到，所以問之前把錢補回去 */
       let bdbg = null; { const K = DECIDE.KINDS.pinch; const ctx0 = K.when(w, poor); const opts0 = ctx0 ? K.options(w, poor, ctx0) : []; const op = opts0.find(o => o.id === 'borrow:' + lender.agentId); const X0 = DECIDE.S(w); const n0 = (X0.log[lender.agentId] || []).length; let ran = null;
         if (op) { ran = op.run(w, poor); const R = Math.random; Math.random = () => 0.5; try { DECIDE.drain(w, X0, w._absDay()); } finally { Math.random = R; } }
         bdbg = { on: DECIDE.on(w), ctx: ctx0, opts: opts0.map(o => o.id.split(':')[0]), hasOp: !!op, ran, cashP: WALLET.get(w, poor), cashL: WALLET.get(w, lender), loan: WALLET.loanSize ? WALLET.loanSize(w, lender) : null, lenderLog: (X0.log[lender.agentId] || []).slice(n0).map(e => e.kind + '.' + e.id), ai: !!w.fullAgentMode, here: [poor.currentLocation, lender.currentLocation], affLP: lender.relationships.getOrCreate(poor.agentId, poor.name).affinity }; }
