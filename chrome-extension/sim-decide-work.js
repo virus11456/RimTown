@@ -281,17 +281,22 @@ const JOBS = (() => {
                 j: jobT(I.fit), fw: skillWord(a, I.fit), fp: I.pay(I.fit), same: I.top === I.fit ? '，也是現在工資最高的' : { raw: '' },
                 top: I.top !== I.fit ? { k: '工資最高的是{j}，一天大約 {p} 銀幣；這一行你{w}。', p: { j: jobT(I.top), p: I.pay(I.top), w: skillWord(a, I.top) } } : { raw: '' },
                 c: I.c, dep: I.dep > 0 ? { k: '，銀行裡還有 {d}', p: { d: I.dep } } : { raw: '' },
-                master: I.master ? { k: '你正在跟{m}學當{j}，還沒出師。', p: { m: I.master.m.name, j: jobT(I.master.k) } } : { raw: '' },
-                learn: I.learn ? { k: '{m}是{j}，願意收你當徒弟：要學 {n} 天，拜師禮 {f} 銀幣，出師以後當{j}；學的這段時間沒有工資。', p: { m: I.learn.m.name, j: I.learn.job, n: I.learn.days, f: I.learn.fee } } : { raw: '' } }); },
+                master: I.master ? { k: '你正在跟{m}學當{j}，還沒出師。學徒本身沒有工資，學的時候也可以先接一份工作，出師時再改當{j}。', p: { m: I.master.m.name, j: jobT(I.master.k) } } : { raw: '' },
+                learn: I.learn ? { k: '{m}是{j}，願意收你當徒弟：要學 {n} 天，拜師禮 {f} 銀幣，出師以後當{j}。學徒本身沒有工資，學的時候也可以接一份工作。', p: { m: I.learn.m.name, j: I.learn.job, n: I.learn.days, f: I.learn.fee } } : { raw: '' } }); },
         options(w, a, c) { const I = seekInfo(w, a, c); if (!I) return []; const L = LB(); const d0 = day(w);
-            const takeRun = (k) => (w2, a2) => { if (a2.job) return null; const O2 = L.openNow(w2); if (!(O2.open[k] > 0)) { L.idle(w2, a2, day(w2)); return { k: '晚了一步，{j}的缺已經被別人補走了', p: { j: jobT(k) } }; } if (!L.hire(w2, a2, k)) return null; st(w2, 'take'); return { k: '當上了{j}', p: { j: jobT(k) } }; };
+            // 想好的時候這個缺已經被別人補走（開著 AI 時好幾個人同時在想）：他本來就是要去做工，還有別的缺就照同樣的標準（最做得來／工資最高）改接那一個，都沒有了才落空
+            const takeRun = (k, by) => (w2, a2) => { if (a2.job) return null; const O2 = L.openNow(w2);
+                if (!(O2.open[k] > 0)) { const alt = Object.keys(O2.open).filter(x => O2.open[x] > 0 && !cant(a2, x)).sort(by === 'pay' ? (x, y) => L.payOf(w2, y) - L.payOf(w2, x) || fitOf(a2, y) - fitOf(a2, x) : (x, y) => fitOf(a2, y) - fitOf(a2, x) || L.payOf(w2, y) - L.payOf(w2, x))[0];
+                    if (alt && L.hire(w2, a2, alt)) { st(w2, 'take'); st(w2, 'takeAlt'); return { k: '晚了一步，{j}的缺已經被別人補走了，改當{b}', p: { j: jobT(k), b: jobT(alt) } }; }
+                    L.idle(w2, a2, day(w2)); return { k: '晚了一步，{j}的缺已經被別人補走了', p: { j: jobT(k) } }; }
+                if (!L.hire(w2, a2, k)) return null; st(w2, 'take'); return { k: '當上了{j}', p: { j: jobT(k) } }; };
             const poor = I.c < 10 ? 1 : 0; const kids = kidsOf(w, a) ? 1 : 0; const hu = hungry(w, a) >= 1 ? 1 : 0; const sF = L.skillOf(a, I.fit), sT = L.skillOf(a, I.top); const pF = I.pay(I.fit), pT = I.pay(I.top);
             const out = [{ id: 'fit:' + I.fit, text: { k: '去當{j}（你最做得來的）', p: { j: jobT(I.fit) } }, say: { k: '去當{j}', p: { j: jobT(I.fit) } }, why: '做自己會的，比較安心。', lean: { safe: 0.2 },
                 adj: clampN(sF / 20, -0.3, 0.4) + (has(a, 'hardworking') ? 0.1 : 0) + (cant(a, I.fit) ? -0.6 : 0), run: takeRun(I.fit) }];
             if (I.top !== I.fit) out.push({ id: 'pay:' + I.top, text: { k: '去當{j}（工資最高的）', p: { j: jobT(I.top) } }, say: { k: '去當{j}', p: { j: jobT(I.top) } }, why: '一樣是做工，當然挑錢多的。', lean: { gain: 0.3 },
-                adj: clampN((pT - pF) / Math.max(1, pF), 0, 1) * 0.9 - clampN((sF - sT) / 16, 0, 0.5) + (poor ? 0.2 : 0) + (cant(a, I.top) ? -1.5 : 0), run: takeRun(I.top) });
+                adj: clampN((pT - pF) / Math.max(1, pF), 0, 1) * 0.9 - clampN((sF - sT) / 16, 0, 0.5) + (poor ? 0.2 : 0) + (cant(a, I.top) ? -1.5 : 0), run: takeRun(I.top, 'pay') });
             out.push({ id: 'wait', text: '這禮拜先不找，再看看', say: '這禮拜先不找工作', why: sF <= 0 ? '這些工作我一樣都不會，再等等看。' : '不急，再看看有沒有更合適的。', lean: { joy: 0.2 },
-                adj: (has(a, 'lazy') ? 0.5 : 0) - (has(a, 'hardworking') ? 0.3 : 0) + (I.c + I.dep >= 400 ? 0.5 : I.c + I.dep >= 150 ? 0.3 : 0) - poor * 0.5 - hu * 0.4 - kids * 0.3 + (sF <= 0 ? 0.25 : 0) + (I.master ? 0.6 : 0) - (I.since != null && d0 - I.since >= 21 ? 0.2 : 0),
+                adj: (has(a, 'lazy') ? 0.5 : 0) - (has(a, 'hardworking') ? 0.3 : 0) + (I.c + I.dep >= 400 ? 0.5 : I.c + I.dep >= 150 ? 0.3 : 0) - poor * 0.5 - hu * 0.4 - kids * 0.3 + (sF <= 0 ? 0.25 : 0) - (I.since != null && d0 - I.since >= 21 ? 0.2 : 0),
                 run: (w2, a2) => { if (a2.job) return null; L.idle(w2, a2, day(w2), false); st(w2, 'wait'); mem(w2, a2, '這禮拜我沒有去找工作，想再看看。', {}, 4); log(w2, '🪑 {a}這禮拜沒有去找工作，想再看看。', { a: a2.name }, a2.name); return { k: '還是沒有工作' }; } });
             if (I.learn) out.push({ id: 'learn', text: { k: '不找工作，拜{m}為師學當{j}', p: { m: I.learn.m.name, j: I.learn.job } }, say: { k: '拜{m}為師', p: { m: I.learn.m.name } }, why: '學一門手藝，以後才有出路。', lean: { gain: 0.2 },
                 adj: (has(a, 'hardworking') ? 0.3 : 0) + (has(a, 'creative') ? 0.3 : 0) + ((a.age ?? 30) <= 25 ? 0.2 : 0) + (I.learn.fast ? 0.2 : 0) + (sF <= 2 ? 0.3 : 0) - (has(a, 'lazy') ? 0.5 : 0) - poor * 0.2 + clampN(aff(a, I.learn.m) / 50, 0, 1) * 0.3,

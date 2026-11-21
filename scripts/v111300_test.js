@@ -105,6 +105,8 @@ async function run(browser, dev, lang) {
       const n1 = logs().length; const L3 = leak(() => runOp(K, s3, c, 'wait')); A.wait = { job: s3.job?.key || null, since: L.jobless[s3.agentId] === day(), mem: memHas(s3, '這禮拜我沒有去找工作，想再看看。'), log: logs().slice(n1).some(x => x.startsWith('🪑')), sad: (s3.thoughts || []).some?.(x => x.kind === 'jobless') || false, leak: L3.leak, still: K.options(w, s3, c).length > 0 };
       // 晚了一步：選項列好之後缺被別人補走
       const opLate = opOf(K, s3, c, 'fit'); setJob(s4, 'farmer'); const lateLeft = LABOR.openNow(w).open.farmer; const LL = leak(() => opLate.run(w, s3, c)); A.late = { left: lateLeft, job: s3.job?.key || null, res: tx(LL.ret), leak: LL.leak }; setJob(s4, null);
+      // v11.14.0 整合時加：缺被補走、但還有別的缺：照同樣的標準改接那一個（開著 AI 時好幾個人同時在想，以前後面的人整週落空）
+      { const opAlt = opOf(K, s3, c, 'fit'); setJob(s4, 'farmer'); slotStub({ farmer: nF + 2, doctor: nD + 2 }); const LA = leak(() => opAlt.run(w, s3, c)); A.alt = { job: s3.job?.key || null, res: tx(LA.ret), leak: LA.leak, over: LABOR.openNow(w).open.doctor }; setJob(s3, null); L.jobless[s3.agentId] = day(); setJob(s4, null); slotStub({ farmer: nF + 2, doctor: nD + 1 }); }
       // 作廢：事情過了三天、已經有工作、鎮上沒有缺
       A.void = { old: K.options(w, s3, { d: day() - 3 }).length, hasJob: K.options(w, s1, c).length }; slotStub({}); A.void.none = K.options(w, s3, c).length;
       // 拜師：有師傅肯收才有這一項
@@ -343,6 +345,7 @@ async function run(browser, dev, lang) {
     ok(A.fit.job === 'farmer' && A.fit.hired === 1 && A.fit.jobless && A.fit.mem && A.fit.log && A.fit.left === 1 && A.fit.leak === 0, `${tag} 去做最做得來的：當上農夫，那一行的缺少一個，日誌與記憶照原本的寫`, A.fit);
     ok(A.pay.job === 'doctor' && A.pay.left === 0 && A.pay.again === 0 && A.pay.leak === 0, `${tag} 去做工資最高的：當上醫生；有了工作，這一題就作廢`, A.pay);
     ok(A.wait.job === null && A.wait.since && A.wait.mem && A.wait.log && !A.wait.sad && A.wait.still && A.wait.leak === 0, `${tag} 先不找：還是沒有工作（從今天算失業），看得到日誌與記憶，不算「找不到工作」`, A.wait);
+    ok(A.alt.job === 'doctor' && /晚了一步.*改當|so they became/.test(A.alt.res) && A.alt.leak === 0 && A.alt.over === 0, `${tag} 晚了一步但還有別的缺：照同樣的標準改接那一個，不會超收`, A.alt);
     ok(A.late.left === 0 && A.late.job === null && /晚了一步|Too late/.test(A.late.res) && A.late.leak === 0, `${tag} 晚了一步：想好的時候缺已經被補走，沒有工作也不會超收`, A.late);
     ok(A.void.old === 0 && A.void.hasJob === 0 && A.void.none === 0, `${tag} 作廢：事情過了三天、已經有工作、鎮上沒有缺`, A.void);
     ok(A.learn.ids === 'fit,wait,learn' && A.learn.fact && A.learn.called === 1 && A.learn.job === null && /30/.test(A.learn.res), `${tag} 有師傅肯收時多一項「拜師」：走原本的拜師，學的這段時間沒有工作`, A.learn);
